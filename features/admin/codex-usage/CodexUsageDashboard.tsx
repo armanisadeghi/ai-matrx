@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import {
   readCodexUsage,
+  readCodexUsageAllowance,
+  type CodexUsageAllowance,
   type CodexUsageGrouping,
   type CodexUsageMetrics,
   type CodexUsageRow,
@@ -90,6 +92,20 @@ function timestamp(value: string | null | undefined): string {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function percentage(value: number | null | undefined): string {
+  return value == null ? "Not available" : `${value.toFixed(0)}%`;
+}
+
+function allowanceLimit(allowance: CodexUsageAllowance | null) {
+  if (!allowance || allowance.status !== "available") return null;
+  return allowance.limits
+    .filter((limit) => limit.remaining_percent != null)
+    .sort(
+      (left, right) =>
+        (left.remaining_percent ?? 101) - (right.remaining_percent ?? 101),
+    )[0];
 }
 
 function labelFor(row: CodexUsageRow, fallback: string): string {
@@ -232,16 +248,19 @@ export function CodexUsageDashboard() {
   const [grouping, setGrouping] = useState<CodexUsageGrouping>("model");
   const [startDate, setStartDate] = useState(() => localDate(new Date()));
   const [endDate, setEndDate] = useState(() => localDate(new Date()));
+  const [resumeRange, setResumeRange] = useState<TimeRange | null>(null);
   const [snapshot, setSnapshot] = useState<CodexUsageSnapshot | null>(null);
+  const [allowance, setAllowance] = useState<CodexUsageAllowance | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load(refresh = false) {
-    const range =
+    const computedRange =
       preset === "custom"
         ? dateRange(startDate, endDate)
         : rangeForPreset(preset);
+    const range = resumeRange ?? computedRange;
     if (!range) {
       setError(
         "Choose a date range whose end date is on or after its start date.",
@@ -251,12 +270,21 @@ export function CodexUsageDashboard() {
     }
     refresh ? setRefreshing(true) : setLoading(true);
     try {
-      const next = await readCodexUsage(presence, {
-        ...range,
-        grouping,
-        refresh,
-      });
+      const [next, nextAllowance] = await Promise.all([
+        readCodexUsage(presence, {
+          ...range,
+          grouping,
+          refresh,
+        }),
+        readCodexUsageAllowance(presence),
+      ]);
       setSnapshot(next);
+      setAllowance(nextAllowance);
+      if (next.coverage.can_resume === true) {
+        setResumeRange({ start: next.range.start, end: next.range.end });
+      } else {
+        setResumeRange(null);
+      }
       setError(null);
     } catch (cause) {
       setSnapshot(null);
@@ -277,9 +305,23 @@ export function CodexUsageDashboard() {
     // React effect contract and causes a needless cascading render.
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
-  }, [preset, grouping, startDate, endDate, presence]);
+  }, [preset, startDate, endDate, presence]);
 
   const activity = snapshot ? optionalActivity(snapshot.totals) : [];
+  const currentAllowance = allowanceLimit(allowance);
+  const canResume = snapshot?.coverage.can_resume === true;
+  const completedCandidates = snapshot?.coverage.completed_candidates;
+  const totalCandidates = snapshot?.coverage.total_candidates;
+  const collectionProgress =
+    typeof completedCandidates === "number" &&
+    typeof totalCandidates === "number" &&
+    totalCandidates > 0
+      ? {
+          completed: completedCandidates,
+          total: totalCandidates,
+          percent: Math.round((completedCandidates / totalCandidates) * 100),
+        }
+      : null;
   const coverageText = snapshot
     ? Object.entries(snapshot.coverage)
         .filter(
@@ -396,6 +438,15 @@ export function CodexUsageDashboard() {
             )}{" "}
             Refresh
           </Button>
+          {canResume ? (
+            <Button
+              size="sm"
+              disabled={refreshing}
+              onClick={() => void load(true)}
+            >
+              Continue collection
+            </Button>
+          ) : null}
         </div>
       </section>
 
@@ -425,7 +476,7 @@ export function CodexUsageDashboard() {
 
       {snapshot ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <CountCard
               label="Estimated standard credits"
               value={estimatedCredits(snapshot.credits.estimated_standard)}
@@ -435,6 +486,19 @@ export function CodexUsageDashboard() {
               label="Responses"
               value={metric(snapshot.totals.response_count)}
               detail="Captured responses in this range"
+            />
+            <CountCard
+              label="Account allowance"
+              value={
+                currentAllowance
+                  ? percentage(currentAllowance.remaining_percent)
+                  : "Unavailable"
+              }
+              detail={
+                currentAllowance
+                  ? "Remaining in the most constrained current window"
+                  : (allowance?.reason ?? "Codex did not expose an allowance")
+              }
             />
             <CountCard
               label="Conversations"
@@ -456,15 +520,42 @@ export function CodexUsageDashboard() {
                   Collected {timestamp(snapshot.collected_at)} · Range{" "}
                   {timestamp(snapshot.range.start)} to{" "}
                   {timestamp(snapshot.range.end)} (end exclusive)
+                  {snapshot.indexed_at
+                    ? ` · Index frozen ${timestamp(snapshot.indexed_at)}`
+                    : ""}
                 </p>
               </div>
               <Badge variant="outline">
-                Measured allowance: unavailable by design
+                {currentAllowance
+                  ? `Allowance observed ${timestamp(allowance?.observed_at)}`
+                  : "Allowance unavailable"}
               </Badge>
             </div>
             {coverageText ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {coverageText}
+              </p>
+            ) : null}
+            {collectionProgress ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {collectionProgress.completed} of {collectionProgress.total}{" "}
+                candidates collected ({collectionProgress.percent}% of collected
+                data).
+                {canResume
+                  ? " Continue collection to keep this exact frozen range."
+                  : ""}
+              </p>
+            ) : null}
+            {currentAllowance ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Account-level allowance is read-only and is not attributed to
+                these responses or estimated standard credits.
+                {currentAllowance.window_minutes != null
+                  ? ` Window: ${number.format(currentAllowance.window_minutes)} minutes.`
+                  : ""}
+                {currentAllowance.resets_at != null
+                  ? ` Resets ${timestamp(new Date(currentAllowance.resets_at * 1000).toISOString())}.`
+                  : ""}
               </p>
             ) : null}
           </section>
@@ -492,6 +583,11 @@ export function CodexUsageDashboard() {
               <p className="font-medium">Peer and child-agent activity</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {snapshot.activity.classification}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Peer counts describe submitted tool-call expressions, not
+                confirmed delivery. Titles and recipient titles are only
+                supplied through this authenticated owner connection.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <CountCard

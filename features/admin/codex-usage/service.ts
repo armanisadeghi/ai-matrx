@@ -8,7 +8,7 @@ export interface CodexUsageMetrics {
   reasoning_output_tokens?: number;
   total_tokens?: number;
   response_count?: number;
-  estimated_standard_credits?: number;
+  estimated_standard_credits?: number | null;
   peer_message_call_ids?: number;
   peer_message_invocations?: number;
   child_call_ids?: number;
@@ -34,6 +34,7 @@ export interface CodexUsageRow extends CodexUsageMetrics {
 
 export interface CodexUsageSnapshot {
   collected_at: string;
+  indexed_at?: string;
   range: { start: string; end: string };
   coverage: Record<string, unknown>;
   credits: {
@@ -58,6 +59,21 @@ export interface CodexUsageSnapshot {
   bins: CodexUsageRow[];
 }
 
+export interface CodexAllowanceLimit {
+  used_percent: number | null;
+  remaining_percent: number | null;
+  window_minutes: number | null;
+  resets_at: number | null;
+}
+
+export interface CodexUsageAllowance {
+  status: "available" | "unavailable";
+  observed_at: string;
+  account_hash?: string;
+  reason?: string;
+  limits: CodexAllowanceLimit[];
+}
+
 export type CodexUsageGrouping = "model" | "model_effort";
 
 export interface CodexUsageReadInput {
@@ -78,7 +94,54 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isRows(value: unknown): value is CodexUsageRow[] {
-  return Array.isArray(value) && value.every(isRecord);
+  return Array.isArray(value) && value.every(isUsageRow);
+}
+
+function isNonNegativeFinite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isOptionalMetric(value: unknown): boolean {
+  return value === undefined || isNonNegativeFinite(value);
+}
+
+function isNullableNonNegative(value: unknown): boolean {
+  return value === null || isNonNegativeFinite(value);
+}
+
+function isUsageRow(value: unknown): value is CodexUsageRow {
+  if (!isRecord(value)) return false;
+  const metrics = [
+    "input_tokens",
+    "cached_input_tokens",
+    "uncached_input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens",
+    "total_tokens",
+    "response_count",
+    "peer_message_call_ids",
+    "peer_message_invocations",
+    "child_call_ids",
+    "child_invocations",
+  ];
+  return (
+    metrics.every((metric) => isOptionalMetric(value[metric])) &&
+    (value.estimated_standard_credits === undefined ||
+      value.estimated_standard_credits === null ||
+      isNonNegativeFinite(value.estimated_standard_credits))
+  );
+}
+
+function isActivity(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.classification === "string" &&
+    isNonNegativeFinite(value.outbound_peer_calls) &&
+    isNonNegativeFinite(value.child_calls) &&
+    (isNonNegativeFinite(value.inbound_peer_wakes) ||
+      value.inbound_peer_wakes === "unknown") &&
+    (isNonNegativeFinite(value.causal_cost) || value.causal_cost === "unknown")
+  );
 }
 
 function isSnapshot(value: unknown): value is CodexUsageSnapshot {
@@ -86,23 +149,43 @@ function isSnapshot(value: unknown): value is CodexUsageSnapshot {
     return false;
   return (
     typeof value.collected_at === "string" &&
+    (typeof value.indexed_at === "string" || value.indexed_at === undefined) &&
     typeof value.range.start === "string" &&
     typeof value.range.end === "string" &&
     isRecord(value.coverage) &&
-    (typeof value.credits.estimated_standard === "number" ||
-      value.credits.estimated_standard === null) &&
-    (typeof value.credits.measured_allowance === "number" ||
-      value.credits.measured_allowance === null) &&
-    isRecord(value.totals) &&
+    Object.values(value.coverage).every(
+      (coverage) =>
+        typeof coverage !== "number" || isNonNegativeFinite(coverage),
+    ) &&
+    isNullableNonNegative(value.credits.estimated_standard) &&
+    isNullableNonNegative(value.credits.measured_allowance) &&
+    isUsageRow(value.totals) &&
     isRows(value.models) &&
     isRows(value.model_effort) &&
     isRows(value.projects) &&
     isRows(value.conversations) &&
     isRows(value.workers) &&
-    (value.activity === null || isRecord(value.activity)) &&
+    (value.activity === null || isActivity(value.activity)) &&
     isRows(value.cells) &&
     isRows(value.tasks) &&
     isRows(value.bins)
+  );
+}
+
+function isAllowance(value: unknown): value is CodexUsageAllowance {
+  return (
+    isRecord(value) &&
+    (value.status === "available" || value.status === "unavailable") &&
+    typeof value.observed_at === "string" &&
+    Array.isArray(value.limits) &&
+    value.limits.every(
+      (limit) =>
+        isRecord(limit) &&
+        isNullableNonNegative(limit.used_percent) &&
+        isNullableNonNegative(limit.remaining_percent) &&
+        isNullableNonNegative(limit.window_minutes) &&
+        isNullableNonNegative(limit.resets_at),
+    )
   );
 }
 
@@ -175,6 +258,31 @@ export async function readCodexUsage(
   if (!isSnapshot(body))
     throw new Error(
       "Matrx Local returned usage data outside the agreed sanitized contract.",
+    );
+  return body;
+}
+
+/** Reads the account-level allowance through the same owner-checked proxy. */
+export async function readCodexUsageAllowance(
+  presence: DesktopPresence | null,
+): Promise<CodexUsageAllowance> {
+  if (!presence || !presence.recordId)
+    throw new Error(
+      "Matrx Local is disconnected. Open and connect Matrx Local, then refresh.",
+    );
+  const target = await resolveLocalProxy(presence.recordId);
+  const url = `${target.base_url.replace(/\/$/, "")}/codex-usage/allowance`;
+  const response = await fetch(url, {
+    headers: { "X-Sandbox-Access-Token": target.access_token },
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok)
+    throw new Error(
+      `Matrx Local allowance read failed (HTTP ${response.status}).`,
+    );
+  if (!isAllowance(body))
+    throw new Error(
+      "Matrx Local returned allowance data outside the agreed sanitized contract.",
     );
   return body;
 }
