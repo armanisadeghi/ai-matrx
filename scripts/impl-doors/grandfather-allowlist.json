@@ -1,7 +1,7 @@
 {
   "why": "THE DECLARED ALLOWLIST for platform.definer_client_grant_grandfather. A grandfather row means \"the §6d-4 event trigger stands down for this function\" — the absence of a decision, not a decision. DD-169 batch 2 (B-64, 2026-09-13) took the table from 1,437 rows to 633 by deciding every anon-executable definer and deleting every row that was provably inert (trigger and SECURITY INVOKER functions the guard skips, rows for functions that no longer exist, rows duplicating a declared door, and rows on functions holding no client grant at all). What remains outside pgsodium is listed here, and every row NAMES ITS REASON AND ITS OWNER. The guard (D2c) refuses any grandfather row that is not in this file, so a new stand-down cannot be inserted in silence — somebody has to write down why and who. This file may only SHRINK: an entry whose grandfather row is gone is a stale entry and fails too (D2d).",
   "generatedAt": "2026-09-13",
-  "generatedBy": "DD-169 batch 2 / B-64",
+  "generatedBy": "DD-169 batch 3 / B-75 (gates)",
   "entries": [
     {
       "fn": "communication.configure_my_sms_task_notifications",
@@ -706,12 +706,6 @@
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
     {
-      "fn": "public.conversations_exist",
-      "args": "p_ids uuid[]",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
       "fn": "public.count_user_files",
       "args": "p_user_id uuid, p_include_folders boolean, p_include_deleted boolean",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
@@ -1296,12 +1290,6 @@
     {
       "fn": "public.get_ssr_shell_data",
       "args": "p_user_id uuid",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
-      "fn": "public.get_structured_list_for_selection",
-      "args": "p_list_id uuid",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
@@ -2410,12 +2398,6 @@
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
     {
-      "fn": "public.lookup_user_by_email",
-      "args": "lookup_email text",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
       "fn": "public.masterwork_improvement_summary",
       "args": "p_mandate_keys text[]",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
@@ -2908,12 +2890,6 @@
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
     {
-      "fn": "seo.ai_autonomy_scope",
-      "args": "p_scope text, p_id uuid",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
       "fn": "seo.dimension_matcher_delete",
       "args": "p_matcher_id uuid",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
@@ -3036,12 +3012,6 @@
     {
       "fn": "seo.fn_situational_sites_owing",
       "args": "p_limit integer",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
-      "fn": "seo.fn_upsert_keyword",
-      "args": "p_phrase text, p_language text, OUT o_id uuid, OUT o_created boolean",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
@@ -3534,12 +3504,6 @@
     {
       "fn": "seo.site_value_worth_upsert",
       "args": "p_site_id uuid, p_value_id uuid, p_effect text, p_amount numeric, p_origin text, p_notes text",
-      "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
-      "owner": "DD-169 batch 3 — the Data Doctrine program chair"
-    },
-    {
-      "fn": "seo.situational_refresh_status",
-      "args": "p_site_id uuid",
       "reason": "Signed-in-only SECURITY DEFINER: `anon` holds no EXECUTE on it (measured live 2026-09-13), so it carries no anonymous exposure. It has NOT yet been triaged into a declared door or a close — that is DD-169 batch 3. Until then the grandfather row is what keeps the §6d-4 re-sweep from taking its `authenticated` grant, and this entry is the standing admission that the decision is still owed.",
       "owner": "DD-169 batch 3 — the Data Doctrine program chair"
     },
