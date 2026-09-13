@@ -62,13 +62,21 @@ const RULEBOOK = {
   name: "Fix — sources",
 } as unknown as Rulebook;
 
+/** A second Rulebook, for proving nothing leaks between them. */
+const OTHER_ID = "66666666-6666-4666-8666-666666666666";
+
 /** Exactly what `useDurableRun` writes when a run is launched. */
 function writePointer(
   surface: "ingest" | "timeline",
-  over: { startedAt?: number; settled?: boolean; runId?: string } = {},
+  over: {
+    startedAt?: number;
+    settled?: boolean;
+    runId?: string;
+    rulebookId?: string;
+  } = {},
 ): void {
   window.localStorage.setItem(
-    `matrx.masterwork-run.${surface}:${RULEBOOK_ID}`,
+    `matrx.masterwork-run.${surface}:${over.rulebookId ?? RULEBOOK_ID}`,
     JSON.stringify({
       runId: over.runId ?? `run-${surface}`,
       startedAt: over.startedAt ?? Date.now() - 30_000,
@@ -140,6 +148,7 @@ beforeEach(() => {
   runningSurface = null;
   settledSurface = null;
   lastTimelineOpen = false;
+  lastReady = false;
 });
 
 describe("findLiveIngestLane", () => {
@@ -186,16 +195,21 @@ describe("findLiveIngestLane", () => {
  * the explicit doors call `openOn` with a named lane.
  */
 let lastTimelineOpen = false;
+let lastReady = false;
 
 function PageWiring({
   requested = null,
+  rulebookId = RULEBOOK_ID,
   onOpenChange,
 }: {
   requested?: IngestLane | null;
+  /** The page passes `rulebook?.id ?? null` — null until the record loads. */
+  rulebookId?: string | null;
   onOpenChange: (open: boolean) => void;
 }) {
-  const ingest = useIngestDialogSession(RULEBOOK_ID);
+  const ingest = useIngestDialogSession(rulebookId);
   lastTimelineOpen = ingest.timelineOpen;
+  lastReady = ingest.ready;
   const openOn = ingest.openOn;
   // A deep link (`?ingest=file`) opens on its own lane, like the page's effect.
   React.useEffect(() => {
@@ -238,7 +252,11 @@ function PageWiring({
           ingest.setOpen(next);
           onOpenChange(next);
         }}
-        rulebook={RULEBOOK}
+        rulebook={
+          rulebookId === RULEBOOK_ID
+            ? RULEBOOK
+            : ({ ...RULEBOOK, id: rulebookId } as unknown as typeof RULEBOOK)
+        }
         initialLane={ingest.lane}
       />
       ) : null}
@@ -275,16 +293,33 @@ function click(testid: string): void {
   });
 }
 
-async function mountPage(requested: IngestLane | null = null) {
-  const opened: boolean[] = [];
+const opened: boolean[] = [];
+
+async function mountPage(
+  requested: IngestLane | null = null,
+  rulebookId: string | null = RULEBOOK_ID,
+) {
+  opened.length = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
   const localRoot = createRoot(container);
   root = localRoot;
+  await renderPage(requested, rulebookId);
+  return opened;
+}
+
+/** Re-render the same tree — the page getting its Rulebook, or another one. */
+async function renderPage(
+  requested: IngestLane | null,
+  rulebookId: string | null,
+) {
+  const localRoot = root;
+  if (!localRoot) throw new Error("nothing mounted");
   await act(async () => {
     localRoot.render(
       <PageWiring
         requested={requested}
+        rulebookId={rulebookId}
         onOpenChange={(next) => opened.push(next)}
       />,
     );
@@ -293,7 +328,6 @@ async function mountPage(requested: IngestLane | null = null) {
   await act(async () => {
     await Promise.resolve();
   });
-  return opened;
 }
 
 afterEach(() => {
@@ -469,6 +503,45 @@ describe("the Rulebook page after a refresh", () => {
     // Still the lane that was asked for.
     expect(mounted.at(-1)?.surface).toBe("ingest");
     expect(lastTimelineOpen).toBe(false);
+  });
+
+  it("is not ready until the REAL Rulebook id has been read from storage", async () => {
+    // 🚨 THE DEFECT (Bugbot HIGH, 2026-09-13). The page calls the probe as
+    // `rulebook?.id ?? null`, so its first effect ran against NO id, and a flag
+    // that only said "probed" reported ready before the real Rulebook had ever
+    // been looked up. The dialog then mounted on the ingest surface one render
+    // later, exactly the first-paint defect it was added to prevent.
+    writePointer("timeline");
+    runningSurface = "timeline";
+
+    await mountPage(null, null);
+    expect(lastReady).toBe(false);
+    expect(mounted).toEqual([]);
+
+    // The record arrives.
+    await renderPage(null, RULEBOOK_ID);
+
+    expect(lastReady).toBe(true);
+    expect(mounted.map((m) => m.surface)).not.toContain("ingest");
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+  });
+
+  it("carries nothing from one Rulebook to the next", async () => {
+    // A session belongs to ONE Rulebook, and so does a probe answer.
+    writePointer("ingest");
+    writePointer("timeline", { rulebookId: OTHER_ID });
+    runningSurface = ["ingest", "timeline"];
+
+    await mountPage(null, RULEBOOK_ID);
+    expect(mounted.at(-1)?.surface).toBe("ingest");
+    click("from-a-source");
+    expect(mounted.at(-1)?.surface).toBe("ingest");
+
+    // Navigate to the other Rulebook, which has a case in flight.
+    await renderPage(null, OTHER_ID);
+
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
   });
 
   it("keeps the rejoined timeline dialog on screen when the run settles", async () => {

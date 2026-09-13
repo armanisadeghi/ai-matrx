@@ -110,25 +110,32 @@ export interface LiveIngestProbe {
   /** The lane with a run still in flight, or null. */
   lane: IngestLane | null;
   /**
-   * Has the probe actually READ storage yet? On the very first paint it has
-   * not — effects have not run — and `lane` is null for that reason, not
-   * because nothing is running. Anything that DECIDES on the lane must wait for
-   * this, or it decides against a value that means "not asked yet" (Bugbot,
+   * Has storage been read FOR THIS RULEBOOK yet? On the first paint it has not
+   * — effects have not run — and `lane` is null for that reason, not because
+   * nothing is running. Anything that DECIDES on the lane must wait for this,
+   * or it decides against a value that means "not asked yet" (Bugbot,
    * 2026-09-13: the dialog mounted on `ingest` on first paint, rejoined
    * whatever was on that pointer, and latched `source` over a newer case).
+   *
+   * 🚨 KEYED TO THE ID IT WAS COMPUTED FOR. The page calls this as
+   * `rulebook?.id ?? null`, so the first effect ran against NO id — and a flag
+   * that just said "probed" then reported ready before the real Rulebook had
+   * ever been looked up, which is the same first-paint defect one render later.
+   * A null id is never probed, and a change of id un-probes: an answer about
+   * Rulebook A is not an answer about Rulebook B.
    */
   probed: boolean;
 }
 
 export function useLiveIngestLane(rulebookId: string | null): LiveIngestProbe {
-  const [probe, setProbe] = useState<LiveIngestProbe>({
-    lane: null,
-    probed: false,
-  });
+  const [probe, setProbe] = useState<{
+    rulebookId: string | null;
+    lane: IngestLane | null;
+  }>({ rulebookId: null, lane: null });
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !rulebookId) return;
     const read = () =>
-      setProbe({ lane: findLiveIngestLane(rulebookId), probed: true });
+      setProbe({ rulebookId, lane: findLiveIngestLane(rulebookId) });
     read();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
@@ -144,7 +151,8 @@ export function useLiveIngestLane(rulebookId: string | null): LiveIngestProbe {
       window.removeEventListener("focus", read);
     };
   }, [rulebookId]);
-  return probe;
+  const probed = rulebookId !== null && probe.rulebookId === rulebookId;
+  return { lane: probed ? probe.lane : null, probed };
 }
 
 /**
@@ -199,9 +207,27 @@ export function useIngestDialogSession(
   rulebookId: string | null,
 ): IngestDialogSession {
   const probe = useLiveIngestLane(rulebookId);
-  const [session, setSession] = useState<IngestLane | null>(null);
-  const lane = session ?? probe.lane;
-  const openOn = useCallback((next: IngestLane) => setSession(next), []);
+  /**
+   * 🚨 A SESSION BELONGS TO ONE RULEBOOK. It is stored WITH the id it was
+   * opened for, so navigating to another Rulebook cannot carry a latched lane
+   * — or an open dialog — across with it.
+   */
+  const [session, setSession] = useState<{
+    rulebookId: string;
+    lane: IngestLane;
+  } | null>(null);
+  const held =
+    session && rulebookId && session.rulebookId === rulebookId
+      ? session.lane
+      : null;
+  const lane = held ?? probe.lane;
+  const openOn = useCallback(
+    (next: IngestLane) => {
+      if (!rulebookId) return;
+      setSession({ rulebookId, lane: next });
+    },
+    [rulebookId],
+  );
   /**
    * 🚨 THE OPEN PATH RESOLVES FROM THE LIVE POINTERS, AT THIS INSTANT, AND
    * NEVER OVERWRITES A SESSION (Bugbot HIGH, 2026-09-13).
@@ -216,29 +242,33 @@ export function useIngestDialogSession(
    * the lane the person actually asked for, because it stamped its own answer
    * instead of deferring to the session that already existed.
    *
-   * So: a functional update reads the CURRENT session — already set means
-   * nothing to decide — and otherwise `findLiveIngestLane` reads storage right
-   * now rather than trusting a snapshot.
+   * So: a functional update reads the CURRENT session — already set for THIS
+   * Rulebook means nothing to decide — and otherwise `findLiveIngestLane` reads
+   * storage right now rather than trusting a snapshot.
    */
   const setOpen = useCallback(
     (next: boolean) => {
-      if (!next) {
+      if (!next || !rulebookId) {
         setSession(null);
         return;
       }
-      setSession(
-        (current) =>
-          current ?? findLiveIngestLane(rulebookId) ?? DEFAULT_INGEST_LANE,
+      setSession((current) =>
+        current && current.rulebookId === rulebookId
+          ? current
+          : {
+              rulebookId,
+              lane: findLiveIngestLane(rulebookId) ?? DEFAULT_INGEST_LANE,
+            },
       );
     },
     [rulebookId],
   );
   return {
-    session,
+    session: held,
     lane,
-    open: session !== null,
+    open: held !== null,
     ready: probe.probed,
-    timelineOpen: session === "timeline",
+    timelineOpen: held === "timeline",
     openOn,
     setOpen,
   };
