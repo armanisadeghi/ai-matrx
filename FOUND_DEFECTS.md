@@ -15,6 +15,37 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
+
+**Latent, not yet biting — say so honestly.** `workbench.note_folders` carries
+`deleted_at`, and THREE of its unique indexes have no `WHERE deleted_at IS NULL`:
+
+| index | columns | status |
+|---|---|---|
+| `note_folders_organization_created_by_name_unique` | `(organization_id, created_by, name)` | **NEW** since the 2026-09-12 census |
+| `note_folders_id_organization_unique` | `(id, organization_id)` | **NEW** since the 2026-09-12 census |
+| `note_folders_created_by_name_unique` | `(created_by, name)` | pre-existing, in the frozen baseline |
+
+Effect: delete a folder called "Projects", try to create "Projects" again, and the
+database refuses — naming a row the person cannot see or restore. The two `name`
+indexes each cause it independently, so the pre-existing one is enough on its own; the
+`(id, organization_id)` one is harmless in practice, since `id` is already unique.
+
+**Nobody has hit it yet:** `select count(*) from workbench.note_folders where
+deleted_at is not null` returns **0**. The first person to delete a folder and reuse its
+name is the first report. Fixing it before that costs nothing; after, it needs a data
+cleanup as well.
+
+Remedy per the guard's own text: re-create the indexes `WHERE deleted_at IS NULL` in a
+migration (pattern: `migrations/soft_delete_partial_unique_indexes_context.sql`). The
+`(id, organization_id)` one deserves a second look — it may exist only to back a
+composite foreign key, in which case it should stay and be listed by hand with that
+reason, which `--update-baseline` deliberately will not do for you.
+
+Surfaced by `check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, whose
+whole diff is two lines of a markdown skill file. The check reads LIVE indexes, so this
+is database state, not this PR's.
+
 ### D319 — 32 HR client doors are ungranted, so those surfaces 403 for EVERY signed-in user (2026-09-13)
 
 🚨 **Live product breakage, measured on Matrx Main, not inferred.** Of the 166
