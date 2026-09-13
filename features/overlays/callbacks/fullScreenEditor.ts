@@ -100,8 +100,13 @@ export function createFullScreenEditorCallbackGroup(
 
   return {
     callbackGroupId,
-    dispose: () => callbackManager.removeGroup(callbackGroupId),
+    dispose: () => disposeFullScreenEditorCallbackGroup(callbackGroupId),
   };
+}
+
+/** One terminal cleanup primitive for bridges and imperative opener handles. */
+export function disposeFullScreenEditorCallbackGroup(callbackGroupId: string | null | undefined): void {
+  if (callbackGroupId) callbackManager.removeGroup(callbackGroupId);
 }
 
 /**
