@@ -84001,6 +84001,49 @@
         }
       }
     },
+    "/directives/apply_state": {
+      "post": {
+        "tags": [
+          "Directives",
+          "Directives"
+        ],
+        "summary": "Read Directive Apply State",
+        "description": "Has this proposed directive already been applied? (DD-144.)\n\nA READ. Nothing here writes, and this is deliberately NOT a second way to\napply anything — it is how a reloaded conversation can render an agent's\nproposal honestly. The client sends back the two-key shells it found in the\nstored assistant messages; the server computes the SAME per-item content key\nthe dispatcher would (frozen `content_key`, derived ledger type, the\nconversation as namespace), reads `platform.matrx_action_ledger`, and answers\n`not_applied` / `in_flight` / `applied` per item — the last carrying the\nledger row's own sentence and resource ids.\n\nWhy the client cannot do this itself: the key hashes the VALIDATED item model,\nso no client can reproduce it, and a client that guessed would offer an\nApprove button beside that proposal's own receipt.",
+        "operationId": "read_directive_apply_state_directives_apply_state_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectiveApplyStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectiveApplyStateResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/analysis": {
       "get": {
         "tags": [
@@ -132891,6 +132934,87 @@
         ],
         "title": "DirectiveApplyResult"
       },
+      "DirectiveApplyStateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "shells": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Shells"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "DirectiveApplyStateRequest",
+        "description": "The shells a client read out of one conversation's stored messages.\n\nBatched on purpose: a reloaded conversation asks about every shell it found in\nONE round trip, so hydrating a long chat is one request and not one per\nmessage. ``conversation_id`` is REQUIRED and is not decoration — it is the\nidempotency NAMESPACE (`dispatcher.apply_directive_items`), so a state read\nthat omitted it would compute different keys from the apply it is asking\nabout and confidently answer \"not applied\" about work that was done."
+      },
+      "DirectiveApplyStateResult": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "shells": {
+            "items": {
+              "$ref": "#/components/schemas/DirectiveShellState"
+            },
+            "type": "array",
+            "title": "Shells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "shells"
+        ],
+        "title": "DirectiveApplyStateResult"
+      },
       "DirectiveCatalog": {
         "properties": {
           "directive_version": {
@@ -133213,6 +133337,43 @@
         ],
         "title": "DirectiveItemFailed"
       },
+      "DirectiveItemState": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "resource_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resource Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "index",
+          "state"
+        ],
+        "title": "DirectiveItemState"
+      },
       "DirectivePublishReport": {
         "properties": {
           "published": {
@@ -133323,6 +133484,69 @@
           "status"
         ],
         "title": "DirectiveReceipt"
+      },
+      "DirectiveShellState": {
+        "properties": {
+          "directive": {
+            "type": "string",
+            "title": "Directive"
+          },
+          "proposal_id": {
+            "type": "string",
+            "title": "Proposal Id"
+          },
+          "directive_class": {
+            "type": "string",
+            "title": "Directive Class"
+          },
+          "noun": {
+            "type": "string",
+            "title": "Noun"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectiveItemState"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "approvable": {
+            "type": "boolean",
+            "title": "Approvable"
+          },
+          "unreadable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unreadable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "directive",
+          "proposal_id",
+          "directive_class",
+          "noun",
+          "item_count",
+          "message",
+          "items",
+          "approvable"
+        ],
+        "title": "DirectiveShellState"
       },
       "DirectusServiceStatus": {
         "properties": {

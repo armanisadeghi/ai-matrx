@@ -37328,6 +37328,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/directives/apply_state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Directive Apply State
+         * @description Has this proposed directive already been applied? (DD-144.)
+         *
+         *     A READ. Nothing here writes, and this is deliberately NOT a second way to
+         *     apply anything — it is how a reloaded conversation can render an agent's
+         *     proposal honestly. The client sends back the two-key shells it found in the
+         *     stored assistant messages; the server computes the SAME per-item content key
+         *     the dispatcher would (frozen `content_key`, derived ledger type, the
+         *     conversation as namespace), reads `platform.matrx_action_ledger`, and answers
+         *     `not_applied` / `in_flight` / `applied` per item — the last carrying the
+         *     ledger row's own sentence and resource ids.
+         *
+         *     Why the client cannot do this itself: the key hashes the VALIDATED item model,
+         *     so no client can reproduce it, and a client that guessed would offer an
+         *     Approve button beside that proposal's own receipt.
+         */
+        post: operations["read_directive_apply_state_directives_apply_state_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/analysis": {
         parameters: {
             query?: never;
@@ -58337,6 +58370,47 @@ export interface components {
             receipts: components["schemas"]["DirectiveReceipt"][];
         };
         /**
+         * DirectiveApplyStateRequest
+         * @description The shells a client read out of one conversation's stored messages.
+         *
+         *     Batched on purpose: a reloaded conversation asks about every shell it found in
+         *     ONE round trip, so hydrating a long chat is one request and not one per
+         *     message. ``conversation_id`` is REQUIRED and is not decoration — it is the
+         *     idempotency NAMESPACE (`dispatcher.apply_directive_items`), so a state read
+         *     that omitted it would compute different keys from the apply it is asking
+         *     about and confidently answer "not applied" about work that was done.
+         */
+        DirectiveApplyStateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Shells */
+            shells?: {
+                [key: string]: unknown;
+            }[];
+            /** Conversation Id */
+            conversation_id: string;
+        };
+        /** DirectiveApplyStateResult */
+        DirectiveApplyStateResult: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Shells */
+            shells: components["schemas"]["DirectiveShellState"][];
+        };
+        /**
          * DirectiveCatalog
          * @description The whole grid: class axis + noun rows + Kind Actions.
          *
@@ -58485,6 +58559,17 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** DirectiveItemState */
+        DirectiveItemState: {
+            /** Index */
+            index: number;
+            /** State */
+            state: string;
+            /** Message */
+            message?: string | null;
+            /** Resource Ids */
+            resource_ids?: string[];
+        };
         /**
          * DirectivePublishReport
          * @description What happened to one directive publish. Never raised; always returned
@@ -58529,6 +58614,27 @@ export interface components {
             detail?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** DirectiveShellState */
+        DirectiveShellState: {
+            /** Directive */
+            directive: string;
+            /** Proposal Id */
+            proposal_id: string;
+            /** Directive Class */
+            directive_class: string;
+            /** Noun */
+            noun: string;
+            /** Item Count */
+            item_count: number;
+            /** Message */
+            message: string;
+            /** Items */
+            items: components["schemas"]["DirectiveItemState"][];
+            /** Approvable */
+            approvable: boolean;
+            /** Unreadable */
+            unreadable?: string | null;
         };
         /** DirectusServiceStatus */
         DirectusServiceStatus: {
@@ -176518,6 +176624,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DirectiveConfirmResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_directive_apply_state_directives_apply_state_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectiveApplyStateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectiveApplyStateResult"];
                 };
             };
             /** @description Validation Error */
