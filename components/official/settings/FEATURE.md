@@ -58,9 +58,15 @@ need; do not add a barrel or a page-local substitute.
   inline footer. Curated user rows omit implementation keys and audit notes.
   Voice choice and preview share one searchable chooser with separate buttons;
   previewing never selects or saves a voice.
+- A chooser's capped flex column reserves the actual search/status height for
+  its scrollable results. Do not subtract a guessed header allowance: the live
+  bottom-positioned one-result menu clipped a 36px row into 20px. Check both
+  natural placements, a single filtered result, and a short-window long list.
 
 ## Change Log
 
+- 2026-09-12: Replaced the voice chooser's fixed header allowance with actual
+  flex sizing after a production bottom-placement check caught a clipped result.
 - 2026-09-12: Repaired clipped selected values and disjoint registry rows;
   unified model/voice trigger styling and moved voice preview into its chooser.
   Prior containment-only browser acceptance did not prove readable controls.
