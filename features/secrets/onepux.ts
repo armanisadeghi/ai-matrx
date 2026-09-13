@@ -12,8 +12,10 @@ function numericLexeme(value: unknown): { negative: boolean; integral: boolean; 
   const match = value.value.match(/^(-?)(\d+)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/); if (!match) return null;
   const negative = match[1] === "-" && !/^0*(?:\.0*)?$/.test(value.value.slice(1).replace(/[eE].*$/, ""));
   const digits = `${match[2]}${match[3] ?? ""}`.replace(/^0+/, "") || "0"; const exponent = BigInt(match[4] ?? "0") - BigInt((match[3] ?? "").length);
-  const integral = digits === "0" || exponent >= 0n || -exponent <= BigInt((digits.match(/0*$/)?.[0].length ?? 0));
-  return { negative, integral, isThree: /^3(?:\.0+)?(?:e[+-]?0+)?$/i.test(value.value) };
+  const zero = BigInt(0); const trailing = BigInt(digits.match(/0*$/)?.[0].length ?? 0);
+  const integral = digits === "0" || exponent >= zero || -exponent <= trailing;
+  const normalized = digits.replace(/0+$/, "") || "0";
+  return { negative, integral, isThree: normalized === "3" && exponent + trailing === zero };
 }
 const integer = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative && parsed.integral; };
 const nonnegativeNumber = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative; };
@@ -91,11 +93,11 @@ export function parseOnePuxData(exportAttributesText: string, exportDataText: st
   const accountIds = new Set<string>();
   for (const accountRow of root.accounts) {
     const account = object(accountRow); const attrs = object(account?.attrs);
-    if (!account || !attrs || !attributes(attrs, true) || !only(account, ["attrs", "vaults"]) || !Array.isArray(account.vaults) || accountIds.has(attrs.uuid as string)) throw new Error("The 1Password account structure is invalid.");
+    if (!account || !attrs || !stringsWithin(attrs, maxCellBytes) || !attributes(attrs, true) || !only(account, ["attrs", "vaults"]) || !Array.isArray(account.vaults) || accountIds.has(attrs.uuid as string)) throw new Error("The 1Password account structure is invalid.");
     accountIds.add(attrs.uuid as string); const vaultIds = new Set<string>();
     for (const vaultRow of account.vaults) {
       const vault = object(vaultRow); const vaultAttrs = object(vault?.attrs);
-      if (!vault || !vaultAttrs || !attributes(vaultAttrs, false) || !only(vault, ["attrs", "items"]) || !Array.isArray(vault.items) || vaultIds.has(vaultAttrs.uuid as string)) throw new Error("The 1Password vault structure is invalid.");
+      if (!vault || !vaultAttrs || !stringsWithin(vaultAttrs, maxCellBytes) || !attributes(vaultAttrs, false) || !only(vault, ["attrs", "items"]) || !Array.isArray(vault.items) || vaultIds.has(vaultAttrs.uuid as string)) throw new Error("The 1Password vault structure is invalid.");
       vaultIds.add(vaultAttrs.uuid as string); const itemIds = new Set<string>();
       for (const item of vault.items) { if (records.length >= limits.maxRecords) throw new Error("The export has more records than this organization allows."); const row = object(item); if (row && typeof row.uuid === "string" && itemIds.has(row.uuid)) throw new Error("The 1Password vault has duplicate item IDs."); if (row && typeof row.uuid === "string") itemIds.add(row.uuid); records.push(row ? loginRecord(row, records.length, exportAttributes, attrs, vaultAttrs, maxCellBytes) : rejected("invalid", records.length, `Item ${records.length + 1}`, "The 1Password item is invalid.")); }
     }
