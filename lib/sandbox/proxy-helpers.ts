@@ -90,6 +90,10 @@ export async function forwardToOrchestrator(
         responseHeaders.set(key, value);
       }
     });
+    // Undici may transparently decode an upstream compressed body. Never relay
+    // its stale representation header with those decoded bytes: browsers then
+    // attempt a second decode and reject the fetch before consumers see JSON.
+    responseHeaders.delete("content-encoding");
 
     return new Response(upstream.body, {
       status: upstream.status,
