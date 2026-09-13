@@ -98,6 +98,30 @@
  *       `execute format('alter table …')` with no gate — proven live as `anon`,
  *       whose call entered the body. Absolute: no baseline, no allowlist.
  *
+ *   D9  No SECURITY INVOKER, non-trigger function in a PostgREST-exposed schema
+ *       whose body WRITES may be executed by `anon`, unless a
+ *       `platform.client_callable_door` row declares it with an ANONYMOUS
+ *       purpose. DD-197 (2026-09-13): 66 of them could be, and not one held a
+ *       door row. An invoker function runs AS THE CALLER, so `anon`'s empty
+ *       privileges applied inside — which is why the refusals came from deep in
+ *       the body and told the truth about nothing. Proven live over HTTPS with
+ *       the published key and no JWT, before the DD-197 migration:
+ *         rpc/cx_canvas_toggle_favorite -> 42501 "permission denied for table
+ *                 canvas_items", hint "GRANT UPDATE ON canvas.canvas_items TO anon;"
+ *         rpc/wsp_upsert_system_task    -> 42501 "permission denied for FUNCTION
+ *                 ensure_personal_organization" — an internal helper the caller
+ *                 never named, and an accidental reason
+ *         rpc/reorder_keywords          -> 204 NO CONTENT. It RAN, and returned
+ *                 success, because the body's first branch returns before it
+ *                 touches a table. Nothing recorded that anon had been inside.
+ *       An invoker writer is not a door at any width: a door is SECURITY DEFINER
+ *       with a gate and a declared row. Reach is measured with
+ *       `has_function_privilege`, never by reading role names out of `proacl` —
+ *       28 of the 66 were reachable through PostgreSQL's own default (a function
+ *       created with no GRANT has `proacl = null`, i.e. EXECUTE for PUBLIC), and
+ *       a grant-name census cannot see one of those. ABSOLUTE: no baseline, no
+ *       allowlist. The population is zero and zero is the only correct number.
+ *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
  *
@@ -629,6 +653,59 @@ interface NullUnsafeRoleRow {
   args: string;
 }
 
+// ─── D9: no SECURITY INVOKER writer is reachable by a signed-out caller ──────
+//
+// DD-197 / B-89 (2026-09-13). D5 asks whether an anon-callable SECURITY DEFINER
+// declared itself a door. D9 asks the question D5 cannot: what about the
+// functions that are NOT definers? An invoker runs as the caller, so it was
+// treated as harmless — and B-75's "the declared doors hold no anon" was read as
+// if it covered the whole anonymous EXECUTE surface. It did not: it bounded the
+// 471 functions somebody had registered, and said nothing about the 66 nobody had.
+//
+// THE RULE. A SECURITY INVOKER, non-trigger function in a PostgREST-exposed
+// schema whose body writes may not be executable by `anon` unless a
+// `platform.client_callable_door` row declares it AND that row says out loud that
+// the caller may have no account. The door register's own wording is the test —
+// every anonymous door on this database says "ANONYMOUS door", "signed-out",
+// "guest", "kiosk" or "outsider" in its reason — because a door row that does not
+// mention the anonymous caller is a declaration about signed-in callers, and
+// silently reading it as permission for a stranger is the drift this closes.
+const ANON_INVOKER_WRITER_QUERY = `
+  select n.nspname || '.' || p.proname as fn,
+         pg_get_function_identity_arguments(p.oid) as args,
+         (p.proacl is null) as via_public_default,
+         (select count(*) from platform.client_callable_door d
+           where d.schema_name = n.nspname and d.function_name = p.proname)::int as door_rows
+  from pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+  where not p.prosecdef
+    and p.prokind = 'f'
+    and p.prorettype <> 'trigger'::regtype
+    and has_function_privilege('anon', p.oid, 'EXECUTE')
+    and p.prosrc ~* '(^|[^a-z_.])(insert into|update |delete from|merge into)'
+    and n.nspname = any (array[
+      'api','public','rag','scraper','workflow','files','legal','knowledge','agent','ai','app',
+      'chat','context','skill','tool','workspace','work','admin','billing','browser','canvas',
+      'code','communication','content_ir','crm','dictionary','docproc','education','extend',
+      'graveyard','growth','hindsight','history','iam','interview','marketing','meta','ops','pdf',
+      'plan','platform','podcast','research','runtime','scheduler','seo','transcripts','ui',
+      'users','web','workbench','assignment','audit','batch','mandate','commerce'])
+    and not exists (
+      select 1 from platform.client_callable_door d
+      where d.schema_name = n.nspname
+        and d.function_name = p.proname
+        and d.reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'
+    )
+  order by 1, 2
+`;
+
+interface AnonInvokerWriterRow {
+  fn: string;
+  args: string;
+  via_public_default: boolean;
+  door_rows: number;
+}
+
 // ─── D10: no membership-role reader lets a NULL past a comparison ────────────
 //
 // DD-199 / B-91 (2026-09-13), the generalisation of D8. D8 guards ONE family —
@@ -787,6 +864,7 @@ async function main(): Promise<number> {
   let definerDdl: DefinerDdlRow[];
   let nullUnsafeRoles: NullUnsafeRoleRow[];
   let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
+  let anonInvokerWriters: AnonInvokerWriterRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -828,6 +906,10 @@ async function main(): Promise<number> {
     nullUnsafeHelpers = await q<NullUnsafeRoleHelperRow>(
       NULL_UNSAFE_ROLE_HELPER_QUERY,
       "D10 membership-role readers with a NULL-unsafe comparison",
+    );
+    anonInvokerWriters = await q<AnonInvokerWriterRow>(
+      ANON_INVOKER_WRITER_QUERY,
+      "D9 anon-executable SECURITY INVOKER functions that write",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1266,6 +1348,61 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       'none') — and keep the strict form of the helper, which refuses first.${C.reset}`,
+    );
+  }
+
+  // ── D9 ────────────────────────────────────────────────────────────────────
+  if (anonInvokerWriters.length === 0) {
+    console.log(
+      `${TAG.ok}D9 no SECURITY INVOKER function that writes is executable by anon ${C.dim}(DD-197)${C.reset}`,
+    );
+  } else {
+    findings += anonInvokerWriters.length;
+    console.log(
+      `${TAG.fail}D9 ${anonInvokerWriters.length} SECURITY INVOKER function(s) that WRITE can be executed by a signed-out caller:`,
+    );
+    for (const r of anonInvokerWriters) {
+      const how = r.via_public_default
+        ? "reachable through PUBLIC (proacl is null — PostgreSQL's own default)"
+        : "explicit anon grant";
+      const door = r.door_rows > 0 ? ", has a door row but it never mentions an anonymous caller" : "";
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${how}${door}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       An invoker runs AS THE CALLER, so anon's empty privileges apply inside and the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       refusal arrives deep in the body — naming an internal table with the GRANT that${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       would open it, or an internal helper nobody called, or not arriving at all:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       DD-197 measured rpc/reorder_keywords returning 204 to an anonymous caller. An${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       invoker writer is not a door at any width. Fix:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       revoke execute on function <fn>(<args>) from anon, public;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       grant execute on function <fn>(<args>) to authenticated, service_role;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Revoke from PUBLIC too — a function created with no GRANT has proacl = null,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       which is EXECUTE for PUBLIC, so revoking "from anon" alone is a no-op that reads${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       like a fix. If a signed-out caller genuinely must reach it, it becomes a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       SECURITY DEFINER door with a gate and a platform.client_callable_door row whose${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       reason says the caller may have no account (the record_guest_execution pattern).${C.reset}`,
     );
   }
 
