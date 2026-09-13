@@ -4,6 +4,7 @@ import {
   type NoteSaveReceipt,
 } from "@/features/notes/service/noteSaveErrors";
 import { advancePreparedNoteSource, isPreparedEditableNoteSource } from "@/features/notes/richDocumentSource";
+import { validateNoteSaveReceipt } from "@/features/notes/service/validateNoteSaveReceipt";
 import type {
   ContentSource,
   NoteEditableContentSource,
@@ -71,19 +72,7 @@ function validateNoteReceipt(
   result: void | NoteSaveReceipt,
   submittedContent: string,
 ): NoteSaveReceipt {
-  if (!result || typeof result !== "object" || !("note" in result) || !("databaseWrite" in result)) {
-    throw new Error("The note save did not return an acknowledgement receipt.");
-  }
-  const receipt = result as NoteSaveReceipt;
-  if (
-    (receipt.databaseWrite !== "saved" && receipt.databaseWrite !== "unchanged") ||
-    !isDenseUniqueContextFields(receipt.succeededFields) ||
-    !isDenseUniqueContextFields(receipt.failedFields) ||
-    receipt.succeededFields.some((field) => receipt.failedFields.includes(field)) ||
-    !isSafeCauseRecord(receipt.safeCauses, receipt.failedFields)
-  ) {
-    throw new Error("The note save returned an invalid context acknowledgement receipt.");
-  }
+  const receipt = validateNoteSaveReceipt({ base: source.editBase, receipt: result, submittedPhysical: { content: submittedContent }, requirePhysicalWrite: false });
   const settled = advancePreparedNoteSource(source, receipt, submittedContent);
   if (
     (receipt.databaseWrite === "saved" && settled.editBase.version <= source.editBase.version) ||

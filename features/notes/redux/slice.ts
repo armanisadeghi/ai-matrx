@@ -788,6 +788,9 @@ const notesSlice = createSlice({
         writeNoteField(record, "content", action.payload.proposedContent);
         record._dirtyFields.add("content");
         record._dirty = true;
+        // Mine is an explicit reviewed rebase: retain the reviewed local
+        // draft but use the reviewed remote physical row as its next CAS base.
+        record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(remote);
         record.updated_at = remote.updated_at;
         record.version = remote.version;
         record._error = null;
