@@ -68,17 +68,48 @@ if [[ ${DD154_CURRENT_SKIP_DRAFT:-0} != 1 ]]; then
     wait "$a_first_pid"
     [[ $a_first_rc -ne 0 ]] && grep -q '55P03' "$RUN_DIR/a-first-b.out" || fail 'A-first exact mapped DO did not block competing ALTER with 55P03'
     echo 'PASS A-first exact mapped DO: competing same-owner ALTER refused with 55P03' | tee -a "$RESULTS"
+  elif [[ ${DD154_CURRENT_COMMITTED_B:-0} == 1 ]]; then
+    # Commit a real supported CREATE OR REPLACE source change first.  The
+    # definition header is taken from the fixture itself, so this preserves its
+    # complete semantic pg_proc/event metadata while making the source unknown.
+    "${PSQL[@]}" -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+DO $b$
+DECLARE d text; h text; s text;
+BEGIN
+  SELECT pg_get_functiondef('platform._ddl_guard()'::regprocedure), prosrc
+    INTO STRICT d, s
+    FROM pg_proc WHERE oid = 'platform._ddl_guard()'::regprocedure;
+  h := split_part(d, '$function$', 1);
+  EXECUTE h || '$function$' || s || E'\n-- committed-B competing source change' || '$function$';
+END
+$b$;
+SQL
+    "${PSQL[@]}" -Atc "SELECT jsonb_build_object('proc', to_jsonb(p), 'events', coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) FROM pg_event_trigger e), '[]'::jsonb))::text FROM pg_proc p WHERE p.oid='platform._ddl_guard()'::regprocedure" >"$RUN_DIR/committed-b-before.json"
+    "${PSQL[@]}" -Atc "SELECT prosrc LIKE '%%committed-B competing source change%%' FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure" | grep -qx t || fail 'Committed-B source mutation was not installed'
+    set +e
+    { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" -v VERBOSITY=verbose >"$RUN_DIR/committed-b-a.out" 2>&1
+    committed_b_rc=$?
+    set -e
+    [[ $committed_b_rc -ne 0 ]] && grep -q 'unknown _ddl_guard source' "$RUN_DIR/committed-b-a.out" || {
+      cat "$RUN_DIR/committed-b-a.out" >&2
+      fail 'Committed-B exact mapped DO did not refuse the unknown source'
+    }
+    "${PSQL[@]}" -Atc "SELECT jsonb_build_object('proc', to_jsonb(p), 'events', coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) FROM pg_event_trigger e), '[]'::jsonb))::text FROM pg_proc p WHERE p.oid='platform._ddl_guard()'::regprocedure" >"$RUN_DIR/committed-b-after.json"
+    cmp -s "$RUN_DIR/committed-b-before.json" "$RUN_DIR/committed-b-after.json" || fail 'Committed-B function/event tuple changed after A refusal'
+    echo 'PASS committed-B exact mapped DO: unknown source refused and full B function/event tuple remained byte-identical' | tee -a "$RESULTS"
+    exit 0
   elif [[ ${DD154_CURRENT_B_FIRST:-0} == 1 ]]; then
     cat > "$RUN_DIR/b-first.sql" <<SQL
 BEGIN;
 ALTER FUNCTION platform._ddl_guard() COST 100;
-\\! touch "$RUN_DIR/b-first-ready"
 DO \$b\$ DECLARE d text; h text; s text; BEGIN SELECT pg_get_functiondef('platform._ddl_guard()'::regprocedure),prosrc INTO d,s FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure; h:=split_part(d,'\$function\$',1); EXECUTE h||'\$function\$'||s||E'\\n-- B-first competing source change'||'\$function\$'; END \$b\$;
+\\! touch "$RUN_DIR/b-first-ready"
 \\! while [ ! -f "$RUN_DIR/b-first-release" ]; do sleep 0.02; done
 COMMIT;
+\\! touch "$RUN_DIR/b-first-committed"
 SQL
     PGAPPNAME=dd154_b_first_b "${PSQL[@]}" -f "$RUN_DIR/b-first.sql" >"$RUN_DIR/b-first.out" 2>&1 & b_first_pid=$!
-    for _ in $(seq 1 40); do [[ -f "$RUN_DIR/b-first-ready" ]] && break; sleep 0.05; done
+    for _ in $(seq 1 240); do [[ -f "$RUN_DIR/b-first-ready" ]] && break; sleep 0.05; done
     [[ -f "$RUN_DIR/b-first-ready" ]] || fail 'B-first did not acquire owner-DDL lock'
     # Keep the observer connected before A begins.  This avoids spending A's
     # intentional 2s lock budget on connection setup after it has reached ALTER.
@@ -96,9 +127,10 @@ BEGIN
       SELECT 1
       FROM pg_stat_activity AS a
       JOIN pg_stat_activity AS b
-        ON b.datname = a.datname
+       ON b.datname = a.datname
        AND b.application_name = 'dd154_b_first_b'
        AND b.pid <> a.pid
+       AND b.pid = ANY(pg_blocking_pids(a.pid))
       WHERE a.datname = current_database()
         AND a.application_name = 'dd154_b_first_a'
         AND a.wait_event_type = 'Lock'
@@ -117,6 +149,7 @@ SQL
     b_first_observer_pid=$!
     for _ in $(seq 1 100); do [[ -f "$RUN_DIR/b-first-observer-ready" ]] && break; sleep 0.01; done
     [[ -f "$RUN_DIR/b-first-observer-ready" ]] || fail 'B-first observer did not establish its database session'
+    b_first_started_ns=$(date +%%s%%N)
     { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | PGAPPNAME=dd154_b_first_a "${PSQL[@]}" -v VERBOSITY=verbose >"$RUN_DIR/b-first-a.out" 2>&1 &
     b_first_a_pid=$!
     touch "$RUN_DIR/b-first-observer-start"
@@ -125,16 +158,21 @@ SQL
     b_first_wait_rc=$?
     set -e
     [[ $b_first_wait_rc -eq 0 ]] && grep -q 'DD154 B-first observed named A lock wait' "$RUN_DIR/b-first-observer.out" || fail 'B-first did not observe A waiting on guard tuple lock'
+    b_first_observed_ns=$(date +%%s%%N)
+    echo "B-first named lock wait observed after $(( (b_first_observed_ns - b_first_started_ns) / 1000000 ))ms" | tee -a "$RESULTS"
     touch "$RUN_DIR/b-first-release"
+    wait "$b_first_pid"
+    [[ -f "$RUN_DIR/b-first-committed" ]] || fail 'B-first did not confirm competing transaction commit'
     set +e
     wait "$b_first_a_pid"; b_first_rc=$?
     set -e
-    wait "$b_first_pid"
+    b_first_marker=$("${PSQL[@]}" -Atc "SELECT prosrc LIKE '%%B-first competing source change%%' FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure")
     if [[ $b_first_rc -eq 0 ]] || ! grep -Eq 'tuple concurrently updated|changed while waiting for owner-DDL lock' "$RUN_DIR/b-first-a.out"; then
-      cat "$RUN_DIR/b-first.out" "$RUN_DIR/b-first-a.out" >&2
+      echo "B-first competing source marker after B commit: $b_first_marker" >&2
+      cat "$RUN_DIR/b-first.out" "$RUN_DIR/b-first-observer.out" "$RUN_DIR/b-first-a.out" >&2
       fail 'B-first exact mapped DO did not refuse competing source change'
     fi
-    "${PSQL[@]}" -Atc "SELECT prosrc LIKE '%%B-first competing source change%%' FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure" | grep -qx t || fail 'B-first competing source change was not preserved'
+    [[ $b_first_marker == t ]] || fail 'B-first competing source change was not preserved'
     echo 'PASS B-first exact mapped DO: competing source change was preserved and A refused after tuple lock' | tee -a "$RESULTS"
     exit 0
   else
