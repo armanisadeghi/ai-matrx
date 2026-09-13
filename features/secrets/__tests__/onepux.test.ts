@@ -56,6 +56,15 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
     const [record] = parseOnePuxData(attrs, data(item().replace('"https://two.example"', '"https://example.com/path"')), limits);
     expect(record).toMatchObject({ status: "supported", urls: ["https://example.com"] });
   });
+  test("preserves huge and exponent-integral numeric lexemes", () => {
+    const huge = data(item().replace('"favIndex":0', '"favIndex":900719925474099312345').replace('"createdAt":1', '"createdAt":3e1').replace('"updatedAt":1', '"updatedAt":3e1'));
+    const [record] = parseOnePuxData(attrs.replace('"version":3', '"version":3.0'), huge, limits);
+    expect(record).toMatchObject({ status: "supported" }); if (record?.status === "supported") expect(record.sourceRecord).toContain("900719925474099312345");
+  });
+  test.each([
+    ['negative underflow', data(item().replace('"url":"https://example.com"', '"url":"https://example.com","ps":-1e-9999'))],
+    ['fractional integer', data(item().replace('"favIndex":0', '"favIndex":1e-1'))],
+  ])("rejects numeric rule: %s", (_name, exportData) => { const [record] = parseOnePuxData(attrs, exportData, limits); expect(record).toMatchObject({ status: "invalid" }); expect(record).not.toHaveProperty("sourceRecord"); });
   test.each([
     ["unknown value", '"value":{"sshKey":"x"}'],
     ["multiple values", '"value":{"string":"x","url":"x"}'],

@@ -13,7 +13,7 @@ function numericLexeme(value: unknown): { negative: boolean; integral: boolean; 
   const negative = match[1] === "-" && !/^0*(?:\.0*)?$/.test(value.value.slice(1).replace(/[eE].*$/, ""));
   const digits = `${match[2]}${match[3] ?? ""}`.replace(/^0+/, "") || "0"; const exponent = BigInt(match[4] ?? "0") - BigInt((match[3] ?? "").length);
   const integral = digits === "0" || exponent >= 0n || -exponent <= BigInt((digits.match(/0*$/)?.[0].length ?? 0));
-  return { negative, integral, isThree: digits === "3" && exponent === 0n };
+  return { negative, integral, isThree: /^3(?:\.0+)?(?:e[+-]?0+)?$/i.test(value.value) };
 }
 const integer = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative && parsed.integral; };
 const nonnegativeNumber = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative; };
