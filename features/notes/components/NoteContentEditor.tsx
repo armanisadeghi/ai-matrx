@@ -814,13 +814,10 @@ export function NoteContentEditor({
     >
       {/* Conflict resolution window */}
       {conflictDecision?.dismissed && (
-        <button
-          type="button"
-          onClick={() => dispatch(reopenNoteConflict({ id: noteId }))}
-          className="absolute right-3 top-3 z-10 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-200"
-        >
-          Reopen conflict review
-        </button>
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
+          <span>Your unsaved conflict review is still available.</span>
+          <button type="button" onClick={() => dispatch(reopenNoteConflict({ id: noteId }))} className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:text-amber-100">Reopen conflict review</button>
+        </div>
       )}
       {conflictDecision != null && !conflictDecision.dismissed && conflictAnalysis != null && (
         <NoteConflictWindow

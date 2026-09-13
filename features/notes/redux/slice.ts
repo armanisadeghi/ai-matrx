@@ -677,14 +677,16 @@ const notesSlice = createSlice({
      * leaves the editor base, dirty fields, and merge draft untouched. */
     refreshNoteConflictComparison(
       state,
-      action: PayloadAction<{ id: string; decisionId: string; reviewId: string; currentRow: Note; nextReviewId: string }>,
+      action: PayloadAction<{ id: string; decisionId: string; reviewId: string; currentRow: Note; nextReviewId: string; requestId: string; liveContent: string }>,
     ) {
       const record = state.notes[action.payload.id];
       const decision = record?._conflictDecision;
-      if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId || decision.organizationId !== record.organization_id) return;
+      const refuse = (reason: string) => { state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason }; };
+      if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh the note again."); return; }
+      if (decision.organizationId !== record.organization_id || action.payload.currentRow.organization_id !== decision.organizationId || action.payload.currentRow.version == null) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
       const observedVersion = record._remoteObservation?.version;
       if (observedVersion !== null && observedVersion !== undefined && observedVersion > action.payload.currentRow.version) {
-        return;
+        refuse("A newer remote change arrived. Refresh this comparison again."); return;
       }
       decision.currentRow = action.payload.currentRow;
       decision.reviewedRemote = action.payload.currentRow;
@@ -694,8 +696,8 @@ const notesSlice = createSlice({
       decision.stale = false;
       decision.dismissed = false;
       decision.reviewedLocal = conflictPhysicalSnapshot(record);
-      // The editor buffer is captured again at the explicit review boundary.
-      decision.reviewedLiveContent = null;
+      decision.reviewedLiveContent = action.payload.liveContent;
+      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.liveContent };
     },
 
     dismissNoteConflict(state, action: PayloadAction<{ id: string }>) {
@@ -729,7 +731,7 @@ const notesSlice = createSlice({
       if (!record || !decision) { refuse("This conflict is no longer available. Refresh the note."); return; }
       if (decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh before applying a choice."); return; }
       if (decision.organizationId !== record.organization_id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
-      if (decision.stale || (currentObserved !== null && currentObserved > decision.comparedVersion)) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
+      if (decision.stale || decision.comparedVersion === null || (currentObserved !== null && currentObserved > decision.comparedVersion)) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
       if (decision.reviewedLiveContent !== action.payload.reviewedLiveContent) { refuse("Your editor buffer changed after this comparison. Refresh before applying a choice."); return; }
       if (!sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)) { refuse("Your note fields changed after this comparison. Refresh before applying a choice."); return; }
       if (decision.reviewedRemote.id !== decision.currentRow.id || decision.reviewedRemote.version !== decision.currentRow.version || JSON.stringify(decision.reviewedRemote) !== JSON.stringify(decision.currentRow)) { refuse("The reviewed server package changed. Refresh before applying a choice."); return; }

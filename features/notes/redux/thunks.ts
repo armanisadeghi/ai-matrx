@@ -422,9 +422,12 @@ export const refreshNoteConflictReview = (args: { noteId: string; decisionId: st
     if (!after || !afterDecision || afterDecision.decisionId !== args.decisionId || afterDecision.reviewId !== args.reviewId || after.organization_id !== decision.organizationId || getUserId(getState) !== decision.actorId) return { status: "refused", reason: "This comparison changed. Refresh the note again." };
     const currentLive = args.getLiveBuffer();
     if (currentLive === null) return { status: "refused", reason: "The editor is no longer mounted. Reopen the note before refreshing." };
-    dispatch(captureNoteConflictLiveBuffer({ id: args.noteId, content: currentLive }));
-    dispatch(refreshNoteConflictComparison({ id: args.noteId, decisionId: args.decisionId, reviewId: args.reviewId, currentRow: remote, nextReviewId: conflictId() }));
-    return { status: "applied", content: currentLive };
+    const requestId = conflictId();
+    dispatch(refreshNoteConflictComparison({ id: args.noteId, decisionId: args.decisionId, reviewId: args.reviewId, currentRow: remote, nextReviewId: conflictId(), requestId, liveContent: currentLive }));
+    const receipt = getState().notes.conflictResolutionReceipts[requestId];
+    dispatch(clearNoteConflictResolutionReceipt(requestId));
+    if (!receipt || receipt.status === "refused") return { status: "refused", reason: receipt?.reason ?? "The refresh could not be applied. Refresh again." };
+    return { status: "applied", content: receipt.content };
   } catch (error) {
     return { status: "refused", reason: error instanceof Error ? error.message : "Could not refresh the saved note." };
   }
