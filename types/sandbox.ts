@@ -233,9 +233,8 @@ export interface SandboxAccessResponse {
  *
  *   - **hosted**: a per-user Docker volume (`matrx-user-<uid>`) mounted at
  *     `/home/agent`, surviving container destruction.
- *   - **ec2**: S3 prefix per user (existing pre-Phase-1 behavior). The
- *     volume API on the EC2 orchestrator may report `kind: 's3'` rather
- *     than a real Docker volume.
+ *   - **ec2**: a retained home belongs to each sandbox. It is not a
+ *     user-level volume and is managed through that sandbox's lifecycle.
  *
  * Fields are optional because the orchestrator may not return every shape on
  * every tier (e.g. EC2 has no `volume_name`, hosted has no `s3_prefix` until
@@ -244,17 +243,21 @@ export interface SandboxAccessResponse {
 export interface UserPersistenceInfo {
   user_id: string;
   tier: SandboxTier;
+  /** Whether this tier read completed. An unavailable tier is never zero. */
+  status: "available" | "unavailable" | "not_configured";
+  /** Actionable, non-secret reason a tier could not be read. */
+  error?: string;
   /** Docker volume name on hosted; null/undefined on EC2 until Phase 6. */
   volume_name?: string | null;
   /** Bytes currently used on disk. May be `null` if the orchestrator hasn't
    *  finished its size sweep — show "—" rather than "0 B" in that case. */
   current_size_bytes?: number | null;
-  /** How many sandbox rows currently reference this volume/prefix. */
+  /** Total durable sandbox records the orchestrator returned for this user. */
   sandbox_count?: number;
+  /** Running/ready/starting records returned by the orchestrator. */
+  active_sandbox_count?: number;
   /** S3 prefix where the volume is being mirrored (Phase 6 — may be absent). */
   s3_prefix?: string | null;
-  /** True if any sandbox is still mounted to this volume — DELETE will refuse. */
-  in_use?: boolean;
   /** Optional last-modified or last-sync timestamp from the orchestrator. */
   last_synced_at?: string | null;
 }
