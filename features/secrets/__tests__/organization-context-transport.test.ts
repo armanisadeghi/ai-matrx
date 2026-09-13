@@ -106,7 +106,7 @@ describe("Vault and Authenticator organization transport", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test("import retry keeps the supplied idempotency key", async () => {
+  test("import retry uses the Vault API Idempotency-Key header", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ id: "item-1", fields: [], attachments: [] }),
     );
@@ -118,7 +118,7 @@ describe("Vault and Authenticator organization transport", () => {
       },
     );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
-      "x-idempotency-key": "00000000-0000-4000-8000-000000000001",
+      "idempotency-key": "00000000-0000-4000-8000-000000000001",
     });
   });
 

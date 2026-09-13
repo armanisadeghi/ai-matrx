@@ -199,7 +199,7 @@ export function createVaultItem(
       method: "POST",
       body: JSON.stringify(body),
       headers: options?.idempotencyKey
-        ? { "X-Idempotency-Key": options.idempotencyKey }
+        ? { "Idempotency-Key": options.idempotencyKey }
         : undefined,
     },
     options?.expectedActor,
