@@ -126,6 +126,18 @@ export function KnobOverrideRow(props: {
   system?: { canWrite: boolean; registeredDefault: unknown };
   /** Retained for existing callers; user-preference locks have no mutable UI. */
   showUserLockControl?: boolean;
+  /**
+   * DD-183 — this row is ONE picked scope row at a per-row rung (a table, an
+   * agent, a pay group), not the rung the section is standing in. The row is
+   * then named by the SCOPE ("wine_tasting"), because the knob's own name is
+   * already the heading above it, and its DOM identity is qualified by that
+   * scope so twenty exceptions for one key are twenty distinct controls rather
+   * than twenty elements sharing one id.
+   *
+   * It changes what the row is CALLED and nothing about what it does: the same
+   * editor, the same ladder, the same doors (settings-ladder rule 2).
+   */
+  scopeLabel?: string;
   stateOnly?: { reason: string; consumerEvidence: string } | null;
   onChanged: () => void;
 }) {
@@ -139,6 +151,7 @@ export function KnobOverrideRow(props: {
     ladder,
     system,
     stateOnly,
+    scopeLabel,
     onChanged,
   } = props;
   const flatOverride =
@@ -296,7 +309,10 @@ export function KnobOverrideRow(props: {
         ? ["true", "false"]
         : (knob.allowed_values ?? []).map(String)
       : null;
-  const inputId = `${knob.full_key}-input`;
+  // A picked scope row qualifies every DOM identity on the row; the section's
+  // own rung keeps the bare key so existing anchors and deep links still land.
+  const rowIdentity = scopeLabel ? `${knob.full_key}@${scopeKind}:${scopeId}` : knob.full_key;
+  const inputId = `${rowIdentity}-input`;
   const labelId = `${inputId}-label`;
   const usesLabelledGroup =
     Boolean(stateOnly) ||
@@ -309,11 +325,11 @@ export function KnobOverrideRow(props: {
   return (
     <SettingsRow
       id={inputId}
-      anchorId={knob.full_key}
+      anchorId={rowIdentity}
       labelFor={usesLabelledGroup ? null : inputId}
-      label={knob.label}
-      description={knob.description}
-      helpText={knob.ui.help}
+      label={scopeLabel ?? knob.label}
+      description={scopeLabel ? undefined : knob.description}
+      helpText={scopeLabel ? undefined : knob.ui.help}
       error={
         inlineError ??
         (!canWrite
@@ -361,7 +377,7 @@ export function KnobOverrideRow(props: {
               >
                 <SelectTrigger
                   id={inputId}
-                  aria-label={knob.label}
+                  aria-label={scopeLabel ? `${knob.label} for ${scopeLabel}` : knob.label}
                   size="default"
                   className="w-full min-w-0"
                 >
@@ -384,7 +400,7 @@ export function KnobOverrideRow(props: {
               <Input
                 className="w-full min-w-0"
                 id={inputId}
-                aria-label={knob.label}
+                aria-label={scopeLabel ? `${knob.label} for ${scopeLabel}` : knob.label}
                 placeholder={formatKnobValue(knob.effective_value, knob.unit)}
                 value={draft}
                 disabled={busy || !canWrite}
@@ -406,7 +422,7 @@ export function KnobOverrideRow(props: {
             <Button
               size="icon"
               variant="ghost"
-              aria-label={`Options for ${knob.label}`}
+              aria-label={`Options for ${scopeLabel ?? knob.label}`}
               className="h-9 w-9 shrink-0"
             >
               <MoreHorizontal className="h-4 w-4" />

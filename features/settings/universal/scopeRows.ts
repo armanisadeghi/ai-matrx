@@ -61,6 +61,21 @@ export function isSubOrgScopeKind(kind: string): kind is SubOrgScopeKind {
   return (SUB_ORG_SCOPE_KINDS as readonly string[]).includes(kind);
 }
 
+/**
+ * The rungs of ONE key that a person picks a ROW for — its `overridable_by`
+ * narrowed to the rungs this surface offers a picker for, in ladder order.
+ * `organization`, `user` and `device` are excluded because they are not
+ * picked: the screen already knows which organization, which person and which
+ * browser it is standing in.
+ */
+export function pickableRungsFor(
+  overridableBy: readonly string[],
+): SubOrgScopeKind[] {
+  return SUB_ORG_SCOPE_SOURCES.map((source) => source.kind).filter((kind) =>
+    overridableBy.includes(kind),
+  );
+}
+
 function sourceFor(kind: SubOrgScopeKind) {
   const source = SUB_ORG_SCOPE_SOURCES.find((entry) => entry.kind === kind);
   if (!source) throw new Error(`No scope source for rung ${kind}`);
