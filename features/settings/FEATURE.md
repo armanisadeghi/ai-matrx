@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-08-15
+**Last updated:** 2026-09-12
 
 > Active campaign — Unified Settings & Configuration Platform: /Users/armanisadeghi/code/common-docs/projects/unified-settings-platform/PLAN.md — read it before adding, moving, or migrating ANY setting in ANY repo (register: REGISTER.md, ruling ledger: DECISIONS.md).
 
@@ -12,7 +12,7 @@
 
 The single user-facing surface for every preference in the app — a flat, Notion-style section list on desktop and an iOS-style push-nav drawer on mobile. Every preference across every Redux slice (`userPreferences`, `theme`, `adminPreferences`, `layout`, `windowManager`) is read and written through one unified hook (`useSetting`) and composed from one tightly controlled set of primitives. No tab imports Redux directly; no tab imports shadcn directly. Any behavior governed here from another surface reaches the exact control through the platform-wide setting-door contract in [`common-docs/systems/platform/setting-doors/FEATURE.md`](../../../common-docs/systems/platform/setting-doors/FEATURE.md).
 
-The registry-backed editor (`universal/`) has an explicit Personal, Organization, or super-admin-only System context. Personal values remain organization-qualified; account and session controls remain visibly outside that ladder. System defaults read the complete `platform.feature_knob` register, write only through `feature_knob_set`, and render a structured refusal inline rather than claiming success. `useSettingsControlSearch(query, isAdmin)` is the public search seam: it returns stable static-control and registry full-key anchors with the visible destination path for the route shell.
+The registry-backed editor (`universal/`) receives a fixed user, route organization, or administration System destination from its host; it never asks the person to choose an editing role. Personal values remain organization-qualified; account and session controls remain visibly outside that ladder. System defaults read the complete `platform.feature_knob` register, write only through `feature_knob_set`, and render a structured refusal inline rather than claiming success. `useSettingsControlSearch(query, isAdmin)` is the public search seam: it returns stable static-control and registry full-key anchors with the visible destination path for the route shell.
 
 ---
 
@@ -265,6 +265,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-12 — Feedback summaries retain readable subjects in narrow settings panes.** The card measures its own container: subject and edit action occupy the first line, with status and progress beneath until the card has room for a single row. Expanded stage layout follows the same container width, and long description/message tokens wrap. This corrects the zero-width subject found in the 320-pixel browser audit; independent visual recheck is required.
 
 - **2026-09-12 — Personal configuration follows the active organization.** `PersonalConfigTab` reads `selectOrganizationId`, the same app destination used by `UniversalSettingsProvider`; it never chooses an organization locally or falls back to the first membership. With no active organization, it tells the person to choose one in the app header and renders no override writer.
 

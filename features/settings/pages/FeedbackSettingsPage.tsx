@@ -238,7 +238,7 @@ function FeedbackProgressStepper({ status }: { status: FeedbackStatus }) {
   return (
     <>
       {/* Desktop: Horizontal stepper */}
-      <div className="hidden md:flex items-start gap-0 w-full">
+      <div className="hidden @[40rem]/feedback:flex items-start gap-0 w-full">
         {STAGES.map((stage, i) => {
           const Icon = stage.icon;
           const isCompleted = i < activeIndex;
@@ -304,7 +304,7 @@ function FeedbackProgressStepper({ status }: { status: FeedbackStatus }) {
       </div>
 
       {/* Mobile: Vertical compact stepper */}
-      <div className="md:hidden space-y-0">
+      <div className="@[40rem]/feedback:hidden space-y-0">
         {STAGES.map((stage, i) => {
           const Icon = stage.icon;
           const isCompleted = i < activeIndex;
@@ -534,7 +534,7 @@ function FeedbackItem({
   });
 
   return (
-    <div className="border border-border rounded-lg bg-card overflow-hidden">
+    <div className="@container/feedback border border-border rounded-lg bg-card overflow-hidden">
       {/* Summary Row */}
       <div
         role="button"
@@ -546,45 +546,54 @@ function FeedbackItem({
             setExpanded(!expanded);
           }
         }}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors cursor-pointer"
+        aria-expanded={expanded}
+        className="flex w-full min-w-0 flex-col gap-2 px-4 py-3 text-left hover:bg-muted/50 transition-colors cursor-pointer @[40rem]/feedback:flex-row @[40rem]/feedback:items-center @[40rem]/feedback:gap-3"
       >
-        {expanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        )}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {expanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          )}
 
-        <FeedbackTypeIcon type={isEditing ? editType : item.feedback_type} />
+          <span className="shrink-0">
+            <FeedbackTypeIcon
+              type={isEditing ? editType : item.feedback_type}
+            />
+          </span>
 
-        <span className="flex-1 truncate text-sm text-foreground">
-          {item.description.length > 80
-            ? item.description.slice(0, 80) + "..."
-            : item.description}
-        </span>
+          <span className="min-w-0 flex-1 text-sm text-foreground line-clamp-2 [overflow-wrap:anywhere] @[40rem]/feedback:block @[40rem]/feedback:truncate">
+            {item.description}
+          </span>
 
-        {canEdit && !isEditing && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 flex-shrink-0"
-            onClick={handleStartEdit}
-            title="Edit this submission"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-        )}
+          {canEdit && !isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 flex-shrink-0"
+              onClick={handleStartEdit}
+              title="Edit this submission"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
 
-        {isUserReview && !confirmed && (
-          <Badge className="bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-0 text-[10px] gap-1 animate-pulse">
-            <UserCheck className="w-3 h-3" />
-            Your Review
-          </Badge>
-        )}
-        <CompactProgressIndicator status={confirmed ? "closed" : item.status} />
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 @[40rem]/feedback:shrink-0">
+          {isUserReview && !confirmed && (
+            <Badge className="bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-0 text-[10px] gap-1 animate-pulse">
+              <UserCheck className="w-3 h-3" />
+              Your Review
+            </Badge>
+          )}
+          <CompactProgressIndicator
+            status={confirmed ? "closed" : item.status}
+          />
 
-        <span className="text-xs text-muted-foreground flex-shrink-0 hidden sm:inline">
-          {formattedDate}
-        </span>
+          <span className="text-xs text-muted-foreground flex-shrink-0 hidden sm:inline">
+            {formattedDate}
+          </span>
+        </div>
       </div>
 
       {/* Expanded Detail */}
@@ -655,7 +664,7 @@ function FeedbackItem({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-foreground whitespace-pre-wrap">
+              <p className="text-sm text-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">
                 {item.description}
               </p>
             )}
@@ -744,7 +753,7 @@ function FeedbackItem({
                             })}
                           </span>
                         </div>
-                        <p className="whitespace-pre-wrap text-foreground/90">
+                        <p className="whitespace-pre-wrap text-foreground/90 [overflow-wrap:anywhere]">
                           {msg.content}
                         </p>
                       </div>
