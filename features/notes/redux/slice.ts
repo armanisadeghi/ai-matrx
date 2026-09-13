@@ -10,6 +10,7 @@ import {
   type NoteUndoableField,
   type NoteFetchStatus,
   type NoteFieldSnapshot,
+  type NoteConflictDecision,
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
@@ -283,6 +284,19 @@ function applyServerNoteUpsert(
     return;
   }
 
+  const incomingVersion = typeof note.version === "number" ? note.version : null;
+  const heldVersion = typeof existing.version === "number" ? existing.version : null;
+  const isNewerVersion =
+    incomingVersion !== null && heldVersion !== null
+      ? incomingVersion > heldVersion
+      : false;
+  const incomingTimestamp = Date.parse(note.updated_at ?? "");
+  const heldTimestamp = Date.parse(existing.updated_at ?? "");
+  const isNewerTimestamp =
+    Number.isFinite(incomingTimestamp) &&
+    Number.isFinite(heldTimestamp) &&
+    incomingTimestamp > heldTimestamp;
+
   // ── Monotonic updated_at guard ─────────────────────────────────────
   // Realtime echoes and list-fetch races can deliver payloads OLDER than
   // the state we already hold (our own save's echo lands after
@@ -314,30 +328,40 @@ function applyServerNoteUpsert(
     existing._sharedMeta = sharedMeta;
   }
 
-  // If user has local edits, don't overwrite — mark conflict if content changed
-  //
-  // "Changed" means changed by SOMEONE ELSE. A value this client itself wrote
-  // (`_lastWrittenValues`) is our own work coming back — our write's realtime
-  // echo lands 50–500ms after the REST response, so if the user kept typing in
-  // that window the echo no longer matches the live buffer. Comparing only
-  // against the live buffer asked "is this different from what I'm typing right
-  // now?" and answered yes for every own-echo-during-typing, which is exactly
-  // the recurring false "another device edited this note" report. Check the
-  // actual data we sent before telling the user anything.
-  if (existing._dirty) {
-    const written = existing._lastWrittenValues;
-    const serverContentChanged =
-      note.content !== undefined &&
-      note.content !== existing.content &&
-      note.content !== written?.content;
-    const serverLabelChanged =
-      note.label !== undefined &&
-      note.label !== existing.label &&
-      note.label !== written?.label;
-    if (serverContentChanged || serverLabelChanged) {
-      // Store server data but keep local edits — saveState handled by consumers
-      existing._error = "conflict";
+  // A dirty editor retains its acknowledged base and local fields. Realtime is
+  // only evidence: it cannot manufacture a conflict dialog or silently rebase
+  // a draft. A full CAS rejection is the sole source of a decision package.
+  const hasDirtyPhysicalField = Array.from(existing._dirtyFields).some(
+    (field) => field !== "project_id" && field !== "task_id",
+  );
+  if (existing._dirty && hasDirtyPhysicalField) {
+    const heldObservationVersion = existing._remoteObservation?.version ?? null;
+    const isNewerObservation =
+      incomingVersion !== null &&
+      (heldObservationVersion === null || incomingVersion > heldObservationVersion);
+    if (
+      isNewerObservation ||
+      (incomingVersion !== null &&
+        incomingVersion === heldObservationVersion &&
+        fetchStatus === "full" &&
+        existing._remoteObservation?.complete === false) ||
+      (incomingVersion === null && isNewerTimestamp)
+    ) {
+      existing._remoteObservation = {
+        version: incomingVersion,
+        updatedAt: note.updated_at ?? null,
+        complete: fetchStatus === "full",
+        note: { ...note },
+      };
+      if (
+        existing._conflictDecision &&
+        incomingVersion !== null &&
+        incomingVersion > (existing._conflictDecision.comparedVersion ?? -1)
+      ) {
+        existing._conflictDecision.stale = true;
+      }
     }
+    return;
   }
 
   // Merge server fields (don't overwrite undoable fields if dirty).
@@ -566,6 +590,115 @@ const notesSlice = createSlice({
       };
     },
 
+    /** Store a full CAS miss before the thunk rejects so UI decisions have no
+     * second fetch, timestamp fallback, or inferred server row. */
+    recordNoteConflict(
+      state,
+      action: PayloadAction<{
+        id: string;
+        expectedVersion: number;
+        currentVersion: number;
+        currentRow: Note;
+        sentSnapshot: NoteFieldSnapshot;
+      }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      if (!record) return;
+      const decision: NoteConflictDecision = {
+        expectedVersion: action.payload.expectedVersion,
+        currentVersion: action.payload.currentVersion,
+        currentRow: action.payload.currentRow,
+        sentSnapshot: action.payload.sentSnapshot,
+        comparedVersion: action.payload.currentVersion,
+        stale:
+          record._remoteObservation?.version !== null &&
+          record._remoteObservation?.version !== undefined &&
+          record._remoteObservation.version > action.payload.currentVersion,
+        dismissed: false,
+      };
+      record._conflictDecision = decision;
+      record._error = "conflict";
+      record._saving = false;
+      state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
+    },
+
+    /** A refresh replaces only the reviewed server comparison. It intentionally
+     * leaves the editor base, dirty fields, and merge draft untouched. */
+    refreshNoteConflictComparison(
+      state,
+      action: PayloadAction<{ id: string; currentRow: Note }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      const decision = record?._conflictDecision;
+      if (!record || !decision) return;
+      const observedVersion = record._remoteObservation?.version;
+      if (observedVersion !== null && observedVersion !== undefined && observedVersion > action.payload.currentRow.version) {
+        return;
+      }
+      decision.currentRow = action.payload.currentRow;
+      decision.currentVersion = action.payload.currentRow.version;
+      decision.comparedVersion = action.payload.currentRow.version;
+      decision.stale = false;
+      decision.dismissed = false;
+    },
+
+    dismissNoteConflict(state, action: PayloadAction<{ id: string }>) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision) decision.dismissed = true;
+    },
+
+    reopenNoteConflict(state, action: PayloadAction<{ id: string }>) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision) decision.dismissed = false;
+    },
+
+    acceptRemoteNoteConflict(state, action: PayloadAction<{ id: string }>) {
+      const record = state.notes[action.payload.id];
+      const decision = record?._conflictDecision;
+      if (!record || !decision || decision.stale) return;
+      const remote = decision.currentRow;
+      // Physical row fields are replaced from the reviewed CAS row. Context
+      // links are separate association writes and intentionally survive.
+      for (const field of [
+        "label",
+        "content",
+        "folder_name",
+        "folder_id",
+        "tags",
+        "metadata",
+        "visibility",
+        "position",
+        "organization_id",
+        "updated_at",
+        "version",
+        "sync_version",
+        "content_hash",
+        "file_path",
+        "last_device_id",
+        "deleted_at",
+        "created_at",
+        "created_by",
+        "updated_by",
+      ] as const) {
+        writeNoteField(record, field, remote[field]);
+      }
+      for (const field of [
+        "content",
+        "label",
+        "folder_name",
+        "folder_id",
+        "tags",
+        "visibility",
+        "organization_id",
+      ] as const) {
+        record._dirtyFields.delete(field);
+        delete record._fieldHistory[field];
+      }
+      record._dirty = record._dirtyFields.size > 0;
+      record._error = null;
+      record._conflictDecision = null;
+    },
+
     markNoteSaving(state, action: PayloadAction<string>) {
       const record = state.notes[action.payload];
       if (record) record._saving = true;
@@ -595,7 +728,9 @@ const notesSlice = createSlice({
       const record = state.notes[action.payload.id];
       if (!record) return;
       record._saving = false;
-      record._error = null;
+      // A later acknowledgement may settle only its sent fields. Do not erase
+      // a CAS decision or remote evidence that arrived during the request.
+      if (!record._conflictDecision) record._error = null;
       // A save landed — the failure streak (and the blocking banner it drives)
       // ends here, not on the next edit.
       record._consecutiveSaveFailures = 0;
@@ -680,6 +815,7 @@ const notesSlice = createSlice({
     ) {
       const record = state.notes[action.payload.id];
       if (!record) return;
+      if (record._conflictDecision?.stale) return;
       if (record._error === "conflict") record._error = null;
       if (action.payload.updatedAt) {
         record.updated_at = action.payload.updatedAt;
@@ -687,6 +823,7 @@ const notesSlice = createSlice({
       if (action.payload.version !== undefined) {
         record.version = action.payload.version;
       }
+      record._conflictDecision = null;
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -1277,6 +1414,11 @@ export const {
   upsertNoteFromServer,
   upsertNotesFromServer,
   resolveNoteConflict,
+  recordNoteConflict,
+  refreshNoteConflictComparison,
+  dismissNoteConflict,
+  reopenNoteConflict,
+  acceptRemoteNoteConflict,
   removeNote,
   recordNoteWriteAttempt,
   markNoteSaving,

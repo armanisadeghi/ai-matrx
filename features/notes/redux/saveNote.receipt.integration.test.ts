@@ -115,6 +115,31 @@ describe("saveNote receipt integration", () => {
     expect(schema).not.toHaveBeenCalled();
   });
 
+  it("stores the full guarded-update CAS row before rejecting and releases its queue", async () => {
+    const existing = query({ data: note(), error: null });
+    const missedCas = query({ data: null, error: null });
+    const winner = query({ data: note({ content: "remote winner", version: 8, updated_at: "2026-09-12T00:01:00.000Z" }), error: null });
+    schema.mockReturnValue({ from: jest.fn()
+      .mockReturnValueOnce(existing)
+      .mockReturnValueOnce(missedCas)
+      .mockReturnValueOnce(winner) });
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
+
+    const action = await store.dispatch(saveNote(NOTE_ID));
+
+    expect(saveNote.rejected.match(action)).toBe(true);
+    const record = store.getState().notes.notes[NOTE_ID];
+    expect(record._conflictDecision).toMatchObject({
+      expectedVersion: 7,
+      currentVersion: 8,
+      currentRow: { content: "remote winner", version: 8 },
+      sentSnapshot: { content: "local draft" },
+    });
+    expect(record._saving).toBe(false);
+    expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
+  });
+
   it("does not advance a context-only readback over a physical edit typed while edges settle", async () => {
     const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
     const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });

@@ -1444,7 +1444,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       type="button"
                       aria-label={`New Note in ${label}`}
                       disabled={draftControl.pending}
-                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 group-hover:opacity-60 disabled:pointer-events-none disabled:opacity-30"
+                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-60 disabled:pointer-events-none disabled:opacity-30"
                       onClick={(e) => {
                         e.stopPropagation();
                         void handleNewNote(groupKey).catch(() => undefined);

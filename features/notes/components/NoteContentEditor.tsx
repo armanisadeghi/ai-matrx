@@ -21,12 +21,13 @@ import {
   updateNoteLabel,
   updateNoteTags,
   removeInstanceTab,
-  markNoteSaved,
   markTabInteraction,
   setNoteEditorMode,
   setInstanceOutlineOpen,
   resolveNoteConflict,
-  upsertNoteFromServer,
+  acceptRemoteNoteConflict,
+  dismissNoteConflict,
+  refreshNoteConflictComparison,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
@@ -41,7 +42,6 @@ import {
   selectNoteLabel,
   selectFolderReferences,
   selectInstanceTabs,
-  selectNoteSaveState,
 } from "../redux/selectors";
 import { editorDisplayName } from "../utils/editorDisplayName";
 import {
@@ -59,7 +59,6 @@ import {
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
 import { analyzeDiff } from "../utils/diffAnalysis";
-import { supabase } from "@/utils/supabase/client";
 import { NoteEditorCore } from "./NoteEditorCore";
 import { setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
@@ -157,7 +156,6 @@ export function NoteContentEditor({
   const noteLabel = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
 
-  const saveState = useAppSelector(selectNoteSaveState(noteId));
   // Live collaborator attribution (realtime `updated_by`) — drives the
   // change-anchored "{name} · editing" bubble in RecentChangeOverlay.
   const noteEditor = useAppSelector(selectNoteEditor(noteId));
@@ -187,14 +185,9 @@ export function NoteContentEditor({
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
-  // ── Conflict state ────────────────────────────────────────────────
-  // `updatedAt` rides along so resolution can adopt the server's timestamp —
-  // without it the next save's optimistic lock (`WHERE updated_at =`) fails
-  // again and the conflict is sticky/infinite.
-  const [conflictRemote, setConflictRemote] = useState<{
-    content: string;
-    updatedAt: string | null;
-  } | null>(null);
+  // A conflict is created only by a full service CAS rejection. Realtime may
+  // record newer evidence, but it cannot open a modal or replace this base.
+  const conflictDecision = noteExists?._conflictDecision ?? null;
 
   // ── Local content state — initialized from Redux, synced back on debounce
   const [localContent, setLocalContent] = useState(reduxContent);
@@ -204,49 +197,6 @@ export function NoteContentEditor({
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
 
-  // When Redux detects a conflict, fetch the remote version to show diff.
-  // Declared after `localContentRef` because it reads the live editor buffer to
-  // verify the conflict is real before surfacing it.
-  useEffect(() => {
-    if (saveState !== "conflict") {
-      setConflictRemote(null);
-      return;
-    }
-    // Fetch fresh remote content
-    supabase
-      .schema("workbench")
-      .from("notes")
-      .select("content, updated_at")
-      .eq("id", noteId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.content == null) return;
-
-        // LAST LINE OF DEFENSE — never show a conflict the real data does not
-        // support. If the live server row already holds exactly what is in the
-        // editor right now, there is nothing to reconcile: adopt the server's
-        // `updated_at` (so the next save's optimistic lock passes) and clear
-        // the flag silently instead of alarming the user about their own work.
-        if (data.content === localContentRef.current) {
-          console.warn(
-            "[Notes] false conflict suppressed — server content already matches the editor for",
-            noteId,
-          );
-          dispatch(
-            resolveNoteConflict({
-              id: noteId,
-              updatedAt: data.updated_at ?? undefined,
-            }),
-          );
-          return;
-        }
-
-        setConflictRemote({
-          content: data.content,
-          updatedAt: data.updated_at ?? null,
-        });
-      });
-  }, [saveState, noteId, dispatch]);
 
   useEffect(() => {
     localContentRef.current = localContent;
@@ -730,6 +680,7 @@ export function NoteContentEditor({
   // forever (2026-07 freeze class).
   const handleKeepMine = useCallback(
     (editedContent: string) => {
+      if (!conflictDecision || conflictDecision.stale) return;
       // User chose their version (possibly edited in the conflict window).
       setLocalContent(editedContent);
       lastReduxRef.current = editedContent;
@@ -740,41 +691,34 @@ export function NoteContentEditor({
       dispatch(
         resolveNoteConflict({
           id: noteId,
-          updatedAt: conflictRemote?.updatedAt ?? undefined,
+          updatedAt: conflictDecision.currentRow.updated_at ?? undefined,
+          version: conflictDecision.currentRow.version,
         }),
       );
       dispatch(updateNoteContent({ id: noteId, content: editedContent }));
-      setConflictRemote(null);
+      dispatch(saveNote(noteId));
     },
-    [dispatch, noteId, conflictRemote],
+    [dispatch, noteId, conflictDecision],
   );
 
   const handleAcceptRemote = useCallback(() => {
-    if (conflictRemote == null) return;
-    // Accept the remote version — overwrite local.
-    setLocalContent(conflictRemote.content);
-    lastReduxRef.current = conflictRemote.content;
-    // Remote is already saved: drop local dirt, then write the server's
-    // content + updated_at into the store (upsert is a no-op merge for a
-    // clean record). No autosave gets armed — there is nothing to save.
-    dispatch(markNoteSaved({ id: noteId }));
-    dispatch(
-      upsertNoteFromServer({
-        note: {
-          id: noteId,
-          content: conflictRemote.content,
-          updated_at: conflictRemote.updatedAt ?? undefined,
-        },
-        fetchStatus: "full",
-      }),
-    );
-    setConflictRemote(null);
-  }, [dispatch, noteId, conflictRemote]);
+    if (!conflictDecision || conflictDecision.stale) return;
+    setLocalContent(conflictDecision.currentRow.content ?? "");
+    lastReduxRef.current = conflictDecision.currentRow.content ?? "";
+    dispatch(acceptRemoteNoteConflict({ id: noteId }));
+  }, [dispatch, noteId, conflictDecision]);
 
   const handleCancelConflict = useCallback(() => {
-    // Dismiss conflict window — keep local edits as dirty
-    setConflictRemote(null);
-  }, []);
+    // Dismissal keeps the unresolved decision and draft available to reopen.
+    dispatch(dismissNoteConflict({ id: noteId }));
+  }, [dispatch, noteId]);
+
+  const handleRefreshConflict = useCallback(async () => {
+    if (!conflictDecision) return;
+    const remote = await dispatch(fetchNoteContent(noteId)).unwrap();
+    if (!remote) return;
+    dispatch(refreshNoteConflictComparison({ id: noteId, currentRow: remote }));
+  }, [dispatch, noteId, conflictDecision]);
 
   // Memoized — analyzeDiff builds an O(lines²) LCS matrix. Computing it
   // inline in JSX re-ran it on EVERY render (i.e. every keystroke while a
@@ -782,10 +726,10 @@ export function NoteContentEditor({
   // large note (2026-07 freeze class).
   const conflictAnalysis = useMemo(
     () =>
-      conflictRemote != null
-        ? analyzeDiff(localContent, conflictRemote.content)
+      conflictDecision != null
+        ? analyzeDiff(localContent, conflictDecision.currentRow.content ?? "")
         : null,
-    [localContent, conflictRemote],
+    [localContent, conflictDecision],
   );
 
   // A deep link adds its tab before the request resolves. Treating that
@@ -853,15 +797,31 @@ export function NoteContentEditor({
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       {/* Conflict resolution window */}
-      {conflictRemote != null && conflictAnalysis != null && (
+      {conflictDecision != null && !conflictDecision.dismissed && conflictAnalysis != null && (
         <NoteConflictWindow
           noteTitle={noteLabel}
           localContent={localContent}
-          remoteContent={conflictRemote.content}
+          remoteContent={conflictDecision.currentRow.content ?? ""}
           analysis={conflictAnalysis}
+          remoteDetails={[
+            { label: "Title", value: conflictDecision.currentRow.label ?? "Untitled" },
+            { label: "Folder", value: conflictDecision.currentRow.folder_name ?? "Uncategorized" },
+            { label: "Tags", value: conflictDecision.currentRow.tags?.join(", ") || "None" },
+            { label: "Visibility", value: conflictDecision.currentRow.visibility },
+            { label: "Position", value: String(conflictDecision.currentRow.position ?? "Unset") },
+            {
+              label: "Metadata",
+              value:
+                conflictDecision.currentRow.metadata && typeof conflictDecision.currentRow.metadata === "object"
+                  ? `${Object.keys(conflictDecision.currentRow.metadata).length} fields`
+                  : "None",
+            },
+          ]}
+          stale={conflictDecision.stale}
           onKeepMine={handleKeepMine}
           onAcceptChanges={handleAcceptRemote}
           onCancel={handleCancelConflict}
+          onRefresh={handleRefreshConflict}
         />
       )}
 

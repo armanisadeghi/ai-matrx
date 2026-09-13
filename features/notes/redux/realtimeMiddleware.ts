@@ -76,6 +76,27 @@ const notesChannel = defineChannelNamespace({
 
 const NOTES_TABLE = "workbench.notes";
 
+/** Postgres change payloads are usually full rows, but that is transport
+ * behavior, not a reducer contract. A partial event may advance version
+ * evidence while it must never be used as a complete conflict comparison. */
+function isCompleteNotePayload(row: Record<string, unknown>): boolean {
+  return [
+    "id",
+    "organization_id",
+    "label",
+    "content",
+    "folder_name",
+    "tags",
+    "metadata",
+    "visibility",
+    "position",
+    "version",
+    "updated_at",
+    "created_at",
+    "created_by",
+  ].every((field) => Object.hasOwn(row, field));
+}
+
 /** Ledger tickets for saves currently in flight, keyed by note id. */
 const openWrites = new Map<string, ReturnType<WriteLedger["begin"]>>();
 
@@ -231,7 +252,7 @@ export const notesRealtimeMiddleware: Middleware<
             created_by: newRecord.created_by as string | undefined,
             version: newRecord.version as number | undefined,
           },
-          fetchStatus: "full",
+          fetchStatus: isCompleteNotePayload(newRecord) ? "full" : "list",
         }),
       );
 
@@ -261,7 +282,7 @@ export const notesRealtimeMiddleware: Middleware<
             created_by: newRecord.created_by as string | undefined,
             version: newRecord.version as number | undefined,
           },
-          fetchStatus: "full",
+          fetchStatus: isCompleteNotePayload(newRecord) ? "full" : "list",
         }),
       );
 
