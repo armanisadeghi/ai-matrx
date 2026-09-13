@@ -25,6 +25,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
+import type { StructuredImportWorkerResponse } from "../structured-import-worker-protocol";
 import {
   type StructuredImportRecord,
   hasVisiblePublicKey,
@@ -131,7 +132,7 @@ export function VaultCsvImportDialog({
   const cancelled = useRef(false);
   const parseGeneration = useRef(0);
   const jsonWorker = useRef<Worker | null>(null);
-  const cancelOnePuxParse = useRef<(() => void) | null>(null);
+  const cancelJsonParse = useRef<(() => void) | null>(null);
   const jsonWorkerTimeout = useRef<number | null>(null);
   const limitsRef = useRef<Awaited<
     ReturnType<typeof fetchCsvImportLimits>
@@ -172,8 +173,8 @@ export function VaultCsvImportDialog({
   const clearSensitiveDraft = (preserveResult = false) => {
     hasActiveFileIntake.current = false;
     parseGeneration.current += 1;
-    cancelOnePuxParse.current?.();
-    cancelOnePuxParse.current = null;
+    cancelJsonParse.current?.();
+    cancelJsonParse.current = null;
     jsonWorker.current?.terminate();
     jsonWorker.current = null;
     if (jsonWorkerTimeout.current !== null)
@@ -219,8 +220,8 @@ export function VaultCsvImportDialog({
     () => () => {
       cancelled.current = true;
       parseGeneration.current += 1;
-      cancelOnePuxParse.current?.();
-      cancelOnePuxParse.current = null;
+      cancelJsonParse.current?.();
+      cancelJsonParse.current = null;
       jsonWorker.current?.terminate();
       jsonWorker.current = null;
       if (jsonWorkerTimeout.current !== null)
@@ -309,15 +310,14 @@ export function VaultCsvImportDialog({
           throw new Error(
             "The file exceeds this organization’s import size limit.",
           );
-        const buffer = await file.arrayBuffer();
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const { createBitwardenJsonWorker } =
+        const { cancelBitwardenJsonWorker, createBitwardenJsonWorker } =
           await import("../bitwarden-json-worker-client");
         if (generation !== parseGeneration.current || cancelled.current) return;
         const parser = createBitwardenJsonWorker();
+        const requestId = crypto.randomUUID();
         jsonWorker.current = parser;
+        cancelJsonParse.current = () =>
+          cancelBitwardenJsonWorker(parser, requestId);
         let settled = false;
         const settle = (message?: string) => {
           if (settled) return false;
@@ -325,6 +325,7 @@ export function VaultCsvImportDialog({
           if (jsonWorkerTimeout.current !== null)
             window.clearTimeout(jsonWorkerTimeout.current);
           jsonWorkerTimeout.current = null;
+          cancelJsonParse.current = null;
           parser.terminate();
           if (jsonWorker.current === parser) jsonWorker.current = null;
           if (generation !== parseGeneration.current || cancelled.current)
@@ -343,22 +344,22 @@ export function VaultCsvImportDialog({
         parser.onmessageerror = () =>
           settle("The JSON export could not be read.");
         parser.onmessage = (
-          event: MessageEvent<{
-            ok: boolean;
-            records?: StructuredImportRecord[];
-            error?: string;
-          }>,
+          event: MessageEvent<StructuredImportWorkerResponse>,
         ) => {
+          if (event.data.requestId !== requestId) return;
           if (!event.data.ok) {
             settle(jsonImportErrorMessage(event.data.error));
             return;
           }
           if (!settle()) return;
-          setJsonRecords(event.data.records ?? []);
+          setJsonRecords(event.data.records);
+          setBinaryMembers(event.data.binaryMemberCount);
           setJsonLoaded(true);
         };
         parser.postMessage({
-          text,
+          type: "parse",
+          requestId,
+          file,
           limits: {
             maxFileBytes: limits.maxFileBytes,
             maxRecords: limits.maxRecords,
@@ -379,7 +380,7 @@ export function VaultCsvImportDialog({
         const parser = createOnePuxWorker();
         const requestId = crypto.randomUUID();
         jsonWorker.current = parser;
-        cancelOnePuxParse.current = () => cancelOnePuxWorker(parser, requestId);
+        cancelJsonParse.current = () => cancelOnePuxWorker(parser, requestId);
         let settled = false;
         const settle = (message?: string) => {
           if (settled) return false;
@@ -387,7 +388,7 @@ export function VaultCsvImportDialog({
           if (jsonWorkerTimeout.current !== null)
             window.clearTimeout(jsonWorkerTimeout.current);
           jsonWorkerTimeout.current = null;
-          cancelOnePuxParse.current = null;
+          cancelJsonParse.current = null;
           parser.terminate();
           if (jsonWorker.current === parser) jsonWorker.current = null;
           if (generation !== parseGeneration.current || cancelled.current)
@@ -407,12 +408,7 @@ export function VaultCsvImportDialog({
         parser.onmessageerror = () =>
           settle("The 1Password archive could not be read.");
         parser.onmessage = (
-          event: MessageEvent<{
-            ok: boolean;
-            requestId?: string;
-            records?: StructuredImportRecord[];
-            binaryMemberCount?: number;
-          }>,
+          event: MessageEvent<StructuredImportWorkerResponse>,
         ) => {
           if (event.data.requestId !== requestId) return;
           if (!event.data.ok) {
@@ -420,8 +416,8 @@ export function VaultCsvImportDialog({
             return;
           }
           if (!settle()) return;
-          setJsonRecords(event.data.records ?? []);
-          setBinaryMembers(event.data.binaryMemberCount ?? 0);
+          setJsonRecords(event.data.records);
+          setBinaryMembers(event.data.binaryMemberCount);
           setJsonLoaded(true);
         };
         parser.postMessage({

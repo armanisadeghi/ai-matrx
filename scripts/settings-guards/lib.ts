@@ -31,6 +31,8 @@ import { createClient } from "@supabase/supabase-js";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const AIDREAM_DIR = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
+/** The sandbox orchestrator — the ONLY reader of `infrastructure.sandbox` (migration 0636). */
+export const SANDBOX_DIR = process.env.MATRX_SANDBOX_DIR ?? resolve(ROOT, "..", "matrx-sandbox");
 
 export const C = {
   reset: "\x1b[0m",
@@ -203,9 +205,15 @@ export const SKIP_FILE_RE = /(\.test\.tsx?$|\.spec\.tsx?$|\.d\.ts$|_test\.py$|^t
 export interface SourceFile {
   /** Absolute path. */
   abs: string;
-  /** `matrx-frontend/...` or `aidream/...` — stable across both checkouts. */
+  /** `matrx-frontend/...`, `aidream/...` or `matrx-sandbox/...` — stable across checkouts. */
   rel: string;
   text: string;
+  /**
+   * The feature a ONE-argument knob call in this file reads from — the
+   * matrx-sandbox shape (`knob_int("warm_pool_size")`, feature defaulted from
+   * `orchestrator/knobs.py`'s `FEATURE`). Absent for the two-argument families.
+   */
+  implicitFeature?: string;
 }
 
 function walk(dir: string, base: string, prefix: string, out: string[], exts: RegExp): void {
@@ -256,6 +264,51 @@ export function collectAidream(dirs: string[]): SourceFile[] | null {
   }));
 }
 
+export const SANDBOX_SCAN_DIRS = ["orchestrator/orchestrator"];
+
+/**
+ * matrx-sandbox's orchestrator — the reader of every `infrastructure.sandbox`
+ * row. Its knob family is KEY-FIRST with the feature defaulted from the helper
+ * module (`knob_int(key, feature=FEATURE)`), so each file carries
+ * `implicitFeature`, read from that module's own `FEATURE = "…"` line rather
+ * than hardcoded here (a rename there must not silently orphan the fleet).
+ *
+ * Returns `{ files: null, why }` when the checkout is absent — the CALLER must
+ * say so out loud (the 13 sandbox rows would otherwise be reported as orphans
+ * by a guard that simply never looked).
+ */
+export function collectSandbox(
+  dirs: string[] = SANDBOX_SCAN_DIRS,
+): { files: SourceFile[]; feature: string } | { files: null; why: string } {
+  try {
+    if (!statSync(SANDBOX_DIR).isDirectory()) return { files: null, why: `${SANDBOX_DIR} is not a directory` };
+  } catch {
+    return { files: null, why: `${SANDBOX_DIR} does not exist (clone matrx-sandbox beside this repo or set MATRX_SANDBOX_DIR)` };
+  }
+  const helper = join(SANDBOX_DIR, "orchestrator", "orchestrator", "knobs.py");
+  let helperText: string;
+  try {
+    helperText = readFileSync(helper, "utf8");
+  } catch {
+    return { files: null, why: `${helper} is missing — the orchestrator's knob reader moved; update SANDBOX_SCAN_DIRS/collectSandbox` };
+  }
+  const feature = localStringConsts(helperText).get("FEATURE");
+  if (!feature) {
+    return { files: null, why: `${helper} declares no FEATURE = "…" constant — the key-first family cannot be resolved` };
+  }
+  const files: string[] = [];
+  for (const d of dirs) walk(join(SANDBOX_DIR, d), SANDBOX_DIR, "matrx-sandbox", files, /\.py$/);
+  return {
+    feature,
+    files: files.map((abs) => ({
+      abs,
+      rel: `matrx-sandbox/${relative(SANDBOX_DIR, abs)}`,
+      text: readFileSync(abs, "utf8"),
+      implicitFeature: feature,
+    })),
+  };
+}
+
 export const AIDREAM_SCAN_DIRS = ["aidream", "packages", "services", "core", "common", "apps", "api_management", "knowledgebase", "matrx_cms", "media_editing", "research", "seo", "utils"];
 
 /**
@@ -284,24 +337,68 @@ export function lineOf(text: string, index: number): number {
 //
 //   matrx-frontend  lib/knobs/featureKnobs.ts   knobNumber/knobInt/knobBool/knobString/knobInts
 //                   lib/scoped-config           useScopedKnobs({featurePrefix}) + `.key === "…"`
-//   aidream         services/feature_knobs      knob_int/knob_str/knob_bool/knob_decimal + scoped_knob_*
+//                   lib/scoped-config           useEffectiveKnob/ensureEffectiveKnob/peekEffectiveKnob/
+//                                               useSessionKnob/getSessionKnob("feature.key") — FULL-KEY family
+//                   feature maps                fetchFeatureKnobValues("X") / fetchKnobIndex({featurePrefix:"X"})
+//                                               then `values.key` / `data?.key` / `["key"]` — the file names ONE
+//                                               feature and every registry key of it that appears as a property
+//                                               or quoted literal in that file is read (needs the registry)
+//   aidream         services/feature_knobs      knob_int/knob_str/knob_bool/knob_decimal (+ *_sync) + scoped_knob_*
 //   packages        matrx_seo.knobs, matrx_batch.knobs   usd_knob/int_knob/str_knob/float_knob/bool_knob
+//                   0663 seams                  parser_knob/extraction_knob/dry_run_knob/catalog_knob("key", MIRROR)
+//                                               — key-first, feature from the seam module (implicitFeature)
+//   matrx-sandbox   orchestrator/knobs.py       knob_int/knob_float/knob_str/knob_bool("key") — KEY-FIRST, the
+//                                               feature is the helper's FEATURE constant (implicitFeature)
+//   templates       f"max_live_{x}_runs" / `max_live_${x}_runs` — a computed key whose SHAPE is static:
+//                   every registry key of that feature matching the template counts as read (needs the registry)
+//   KNOB MIRROR     `KNOB MIRROR … "feature" "key"` beside a synchronous constant — the documented posture
+//                   check:settings-hardcoded accepts; the comment IS the read, and is graded as one
 //   database        pg_proc sources (hr._clock_knob, hr._kiosk_device_config, …) — see dbReaders()
 
 export const TS_KNOB_FNS = "knobNumber|knobInt|knobBool|knobString|knobInts";
 export const PY_KNOB_FNS =
-  "knob_int|knob_bool|knob_str|knob_string|knob_decimal|knob_number|knob_json|knob_raw" +
+  "knob_int|knob_bool|knob_str|knob_string|knob_decimal|knob_number|knob_json|knob_raw|knob_float" +
+  "|knob_int_sync|knob_bool_sync|knob_str_sync|knob_raw_sync" +
   "|scoped_knob_int|scoped_knob_str|scoped_knob_bool|scoped_knob_json|scoped_knob_decimal|scoped_knob_raw" +
   "|usd_knob|int_knob|str_knob|float_knob|bool_knob|decimal_knob|json_knob";
+/** Key-first readers: `fn("key")` (matrx-sandbox) and `fn("key", MIRROR)` (the 0663 package seams). */
+export const KEY_FIRST_FNS = "knob_int|knob_float|knob_str|knob_bool|parser_knob|extraction_knob|dry_run_knob|catalog_knob";
+/** The 0663 package seams and the feature each one reads (declared in its module's FEATURE). */
+export const SEAM_MODULES: Array<{ re: RegExp; fn: string }> = [
+  { re: /aidream\/packages\/matrx-scraper\/matrx_scraper\/parser\/knobs\.py$/, fn: "parser_knob" },
+  { re: /aidream\/packages\/matrx-files\/matrx_files\/specific_handlers\/knobs\.py$/, fn: "extraction_knob" },
+  { re: /aidream\/packages\/matrx-graph\/matrx_graph\/knobs\.py$/, fn: "dry_run_knob" },
+  { re: /aidream\/packages\/matrx-ai\/matrx_ai\/catalog\/knobs\.py$/, fn: "catalog_knob" },
+];
+/** Full-key readers: `fn(org, user, "feature.key")` / `fn("feature.key")` — the key is the LAST dotted segment. */
+export const FULL_KEY_FNS = "useEffectiveKnob|ensureEffectiveKnob|peekEffectiveKnob|useSessionKnob|getSessionKnob";
+/** Whole-feature fetchers: the file names ONE feature and reads its keys as properties. */
+export const FEATURE_MAP_FNS = "fetchFeatureKnobValues";
 
 const TS_CALL_RE = new RegExp(`\\b(${TS_KNOB_FNS})\\s*\\(\\s*([^,()]+?)\\s*,\\s*([\\s\\S]{0,240}?)\\)`, "g");
 const PY_CALL_RE = new RegExp(`\\b(${PY_KNOB_FNS})\\s*\\(\\s*([^,()]+?)\\s*,\\s*([\\s\\S]{0,240}?)\\)`, "g");
 const TS_PREFIX_RE = /featurePrefix\s*:\s*["']([A-Za-z][\w.]*)["']/g;
 const TS_KEY_EQ_RE = /\.(?:key|full_key)\s*===?\s*(["'][^"'\n]+["']|[A-Z][A-Z0-9_]{2,})/g;
+// Key-first: `knob_int("key")`, `knobs.knob_float("key")`, `parser_knob("key", MIRROR)`,
+// with an optional explicit `feature=` keyword (sandbox) that overrides the implicit one.
+const KEY_FIRST_RE = new RegExp(
+  `\\b(${KEY_FIRST_FNS})\\s*\\(\\s*(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})\\s*(?:,\\s*(?:feature\\s*=\\s*)?([^,()]+?)\\s*)?\\)`,
+  "g",
+);
+const FULL_KEY_RE = new RegExp(
+  `\\b(${FULL_KEY_FNS})\\s*\\(\\s*(?:[^,()]+?\\s*,\\s*[^,()]+?\\s*,\\s*)?(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})\\s*\\)`,
+  "g",
+);
+const FEATURE_MAP_RE = new RegExp(`\\b(${FEATURE_MAP_FNS})\\s*\\(\\s*(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})`, "g");
+// `KNOB MIRROR of platform.feature_knob "feature" "key"` (also `KNOB-MIRROR`, any words between).
+const KNOB_MIRROR_RE = /KNOB[ -]?MIRROR[^\n]*?["']([A-Za-z][\w.]*)["']\s*["']([A-Za-z][\w.]*)["']/g;
+// A computed key whose shape is static: f"max_live_{x}_runs" / `max_live_${x}_runs`.
+const PY_FSTRING_RE = /^f["']([^"'\n]*\{[^"'\n]*)["']$/;
+const TS_TEMPLATE_RE = /^`([^`\n]*\$\{[^`\n]*)`$/;
 
 /** The knob HELPERS themselves — their parameter lists are not call sites. */
 export const HELPER_MODULES =
-  /(matrx-frontend\/lib\/knobs\/featureKnobs\.ts$|matrx-frontend\/lib\/scoped-config\/|aidream\/aidream\/services\/feature_knobs\/service\.py$|aidream\/packages\/matrx-[a-z]+\/matrx_[a-z]+\/knobs\.py$)/;
+  /(matrx-frontend\/lib\/knobs\/featureKnobs\.ts$|matrx-frontend\/lib\/scoped-config\/|aidream\/aidream\/services\/feature_knobs\/service\.py$|aidream\/packages\/matrx-[a-z]+\/matrx_[a-z]+\/(?:[\w]+\/)*knobs\.py$|matrx-sandbox\/orchestrator\/orchestrator\/knobs\.py$)/;
 
 export interface ReadSite {
   file: string;
@@ -330,7 +427,10 @@ function unquote(raw: string): string | null {
  * `NAME = "literal"` across all scanned files, so a feature constant declared in
  * one module and imported into another still resolves.
  */
-export function scanKnobReads(files: SourceFile[]): {
+export function scanKnobReads(
+  files: SourceFile[],
+  registry: KnobRow[] = [],
+): {
   sites: ReadSite[];
   dynamic: DynamicRead[];
   consts: Map<string, string>;
@@ -341,6 +441,29 @@ export function scanKnobReads(files: SourceFile[]): {
   const dynamic: DynamicRead[] = [];
   const resolveName = (raw: string, local: Map<string, string>) =>
     unquote(raw) ?? local.get(raw.trim()) ?? consts.get(raw.trim()) ?? null;
+  // The registry's keys per feature — what the feature-map and template
+  // families resolve against. Without a registry those two families stay
+  // silent (they can only ever name keys that exist).
+  const keysOf = new Map<string, string[]>();
+  for (const r of registry) keysOf.set(r.feature, [...(keysOf.get(r.feature) ?? []), r.key]);
+  // The 0663 package seams declare their own feature; a call to `parser_knob`
+  // in any file of that package reads it. Learned from the seam modules, not typed here.
+  const seamFeature = new Map<string, string>();
+  for (const f of files) {
+    const seam = SEAM_MODULES.find((m) => m.re.test(f.rel));
+    if (!seam) continue;
+    const feature = localStringConsts(f.text).get("FEATURE");
+    if (feature) seamFeature.set(seam.fn, feature);
+  }
+  const templateSites = (feature: string, template: string, file: string, line: number, fn: string) => {
+    // f"max_live_{x}_runs" → /^max_live_.+_runs$/ against the registry's keys for that feature.
+    const pattern = new RegExp(
+      `^${template.replace(/\$?\{[^}]*\}/g, "\u0000").replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\u0000/g, ".+")}$`,
+    );
+    const hits = (keysOf.get(feature) ?? []).filter((k) => pattern.test(k));
+    for (const key of hits) sites.push({ file, line, fn: `${fn} (template)`, feature, key });
+    return hits.length;
+  };
 
   for (const f of files) {
     if (!/knob/i.test(f.text) || HELPER_MODULES.test(f.rel)) continue;
@@ -364,10 +487,67 @@ export function scanKnobReads(files: SourceFile[]): {
       for (const rk of rawKeys) {
         const key = resolveName(rk, local);
         if (!key) {
-          dynamic.push({ file: f.rel, line, fn, raw: `${feature}, ${rk.trim().replace(/\s+/g, " ").slice(0, 60)}`, why: "key is computed at run time" });
+          const tpl = (isPy ? PY_FSTRING_RE : TS_TEMPLATE_RE).exec(rk.trim());
+          if (tpl && templateSites(feature, tpl[1], f.rel, line, fn) > 0) continue;
+          dynamic.push({ file: f.rel, line, fn, raw: `${feature}, ${rk.trim().replace(/\s+/g, " ").slice(0, 60)}`, why: tpl ? "key template matches no registry key" : "key is computed at run time" });
           continue;
         }
         sites.push({ file: f.rel, line, fn, feature, key });
+      }
+    }
+
+    // KEY-FIRST family: `knob_int("key")` in matrx-sandbox (feature = the
+    // helper's FEATURE, or an explicit `feature=`), and the 0663 seams
+    // `parser_knob("key", MIRROR)` anywhere in their package.
+    KEY_FIRST_RE.lastIndex = 0;
+    for (let m = KEY_FIRST_RE.exec(f.text); m; m = KEY_FIRST_RE.exec(f.text)) {
+      const [, fn, rawKey, rawFeature] = m;
+      const line = lineOf(f.text, m.index);
+      const before = f.text.slice(Math.max(0, m.index - 24), m.index);
+      if (/\b(?:async\s+)?(?:def|function)\s+$/.test(before)) continue;
+      const seam = seamFeature.get(fn);
+      // A two-arg call is the seam shape only when the fn IS a seam; for the
+      // sandbox family a second arg is `feature=…`.
+      let feature: string | null = null;
+      if (seam) feature = seam;
+      else if (f.implicitFeature) feature = rawFeature && /feature\s*=/.test(m[0]) ? resolveName(rawFeature, local) : f.implicitFeature;
+      if (!feature) continue; // a two-arg `knob_int(feature, key)` already handled above
+      if (!seam && rawFeature && !/feature\s*=/.test(m[0])) continue; // `knob_int(FEATURE, "key")` — the two-arg family
+      const key = resolveName(rawKey, local);
+      if (!key) {
+        dynamic.push({ file: f.rel, line, fn, raw: `${feature}, ${rawKey.trim()}`, why: "key is computed at run time" });
+        continue;
+      }
+      sites.push({ file: f.rel, line, fn, feature, key });
+    }
+
+    // KNOB MIRROR family: the documented posture for a synchronous constant —
+    // `KNOB MIRROR of platform.feature_knob "feature" "key"`. The comment is
+    // the contract (check:settings-hardcoded accepts it), so it is graded as
+    // a read here and as an UNREGISTERED read when the row does not exist.
+    KNOB_MIRROR_RE.lastIndex = 0;
+    for (let m = KNOB_MIRROR_RE.exec(f.text); m; m = KNOB_MIRROR_RE.exec(f.text)) {
+      sites.push({ file: f.rel, line: lineOf(f.text, m.index), fn: "KNOB MIRROR", feature: m[1], key: m[2] });
+    }
+
+    // FULL-KEY family: useEffectiveKnob(org, user, "feature.key") /
+    // useSessionKnob("feature.key") — the key is the last dotted segment.
+    if (!isPy) {
+      FULL_KEY_RE.lastIndex = 0;
+      for (let m = FULL_KEY_RE.exec(f.text); m; m = FULL_KEY_RE.exec(f.text)) {
+        const [, fn, rawFull] = m;
+        const line = lineOf(f.text, m.index);
+        const full = resolveName(rawFull, local);
+        if (!full) {
+          dynamic.push({ file: f.rel, line, fn, raw: rawFull.trim(), why: "full key is computed at run time" });
+          continue;
+        }
+        const at = full.lastIndexOf(".");
+        if (at <= 0) {
+          dynamic.push({ file: f.rel, line, fn, raw: full, why: "full key has no feature segment" });
+          continue;
+        }
+        sites.push({ file: f.rel, line, fn, feature: full.slice(0, at), key: full.slice(at + 1) });
       }
     }
 
@@ -376,6 +556,28 @@ export function scanKnobReads(files: SourceFile[]): {
     // one is ambiguous and is listed as dynamic rather than guessed.
     if (isPy) continue;
     const prefixes = [...new Set([...f.text.matchAll(TS_PREFIX_RE)].map((m) => m[1]))];
+    // FEATURE-MAP family: fetchFeatureKnobValues("X") / fetchKnobIndex({featurePrefix:"X"})
+    // hand the file a map of every key; the keys it reads appear as properties
+    // (`values.json_max_depth`, `data?.window_days`) or quoted literals. With ONE
+    // feature named in the file, every registry key of it that appears is read.
+    FEATURE_MAP_RE.lastIndex = 0;
+    const mapFeatures = new Set<string>(prefixes);
+    for (let m = FEATURE_MAP_RE.exec(f.text); m; m = FEATURE_MAP_RE.exec(f.text)) {
+      const feature = resolveName(m[2], local);
+      if (feature) mapFeatures.add(feature);
+      else dynamic.push({ file: f.rel, line: lineOf(f.text, m.index), fn: m[1], raw: m[2].trim(), why: "feature is not a string literal or a module constant" });
+    }
+    if (mapFeatures.size === 1 && keysOf.size > 0) {
+      const feature = [...mapFeatures][0];
+      for (const key of keysOf.get(feature) ?? []) {
+        const esc = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const propRe = new RegExp(`(?:\\?\\.|\\.)${esc}\\b|\\[["']${esc}["']\\]|["']${esc}["']`);
+        const hit = propRe.exec(f.text);
+        if (hit) sites.push({ file: f.rel, line: lineOf(f.text, hit.index), fn: "feature map", feature, key });
+      }
+    } else if (mapFeatures.size > 1 && keysOf.size > 0) {
+      dynamic.push({ file: f.rel, line: 1, fn: "feature map", raw: [...mapFeatures].join("|"), why: "several features fetched as maps in one file — property reads cannot be attributed" });
+    }
     if (prefixes.length === 0) continue;
     TS_KEY_EQ_RE.lastIndex = 0;
     for (let m = TS_KEY_EQ_RE.exec(f.text); m; m = TS_KEY_EQ_RE.exec(f.text)) {
@@ -409,8 +611,15 @@ export async function dbReaders(rows: KnobRow[]): Promise<Map<string, string[]> 
   // Candidate sources come down once (~770 bodies, ~3 MB, ~7 s); the per-key
   // match runs here because 448 keys × 3,300 bodies as a SQL join hits the
   // statement timeout.
+  // ONE regex per body (every feature name alternated), not one LIKE per
+  // feature per body: at 591 rows / ~100 features × 6,656 procs the LIKE
+  // form crossed execute_admin_query's ~8.2 s ceiling on 2026-09-13 and the
+  // guard went UNMEASURED.
   const res = await adminQuery<{ name: string; body: string }>(`
-    with feats as (select distinct feature from platform.feature_knob),
+    with pat as (
+      select '(' || string_agg(regexp_replace(feature, '([.\\\\+*?\\[^\\]$(){}=!<>|:-])', '\\\\\\1', 'g'), '|') || ')' as re
+        from (select distinct feature from platform.feature_knob) f
+    ),
     src as (
       select n.nspname || '.' || p.proname as name, p.prosrc as body
         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -425,7 +634,7 @@ export async function dbReaders(rows: KnobRow[]): Promise<Map<string, string[]> 
     )
     select name, body from src
      where body ilike '%knob%'
-        or exists (select 1 from feats f where src.body like '%' || f.feature || '%')`);
+        or body ~ (select re from pat)`);
   if (!res.rows) return null;
   const out = new Map<string, string[]>();
   for (const r of rows) {

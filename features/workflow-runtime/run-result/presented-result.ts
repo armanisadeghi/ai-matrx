@@ -198,6 +198,8 @@ export function absentResultReason(args: {
 const UNREADABLE_KEY = /(^_|^__|_id$|^id$|_ids$|^ids$|_key$|^key$|^kind$|slug|^status$|^usage$|^cost|^model$|^order$|_at$)/i;
 
 /** A string only counts as a preview when it reads as a sentence, not a flag. */
+// KNOB MIRROR of platform.feature_knob "workflow.run_result" "min_preview_chars" — a synchronous pure function.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const MIN_PREVIEW_CHARS = 24;
 
 /**

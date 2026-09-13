@@ -106,6 +106,8 @@ export interface StoreKindRecordResult extends SaveKindInstanceResult {
  * generous enough for a normal write under load and short enough that nobody
  * is left staring at a lie.
  */
+// KNOB MIRROR of platform.feature_knob "content_ir.studio" "save_timeout_ms" — exported to a synchronous timer test contract.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 export const SAVE_TIMEOUT_MS = 20_000;
 
 function withSaveTimeout<T>(promise: Promise<T>, what: string): Promise<T> {

@@ -99,6 +99,8 @@ const MONOLOGUE_MANDATE_KEY = MANDATE_KEYS.masterwork__monologue_distiller;
 const MONOLOGUE_ACCEPT = "audio/*,video/*";
 
 /** The server's own floor (`IngestTimelineRequest.text`, min_length=200). */
+// KNOB MIRROR of platform.feature_knob "masterwork.ingest" "min_source_chars" — a synchronous form check mirroring the server's min_length.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const MIN_SOURCE_CHARS = 200;
 
 /** The published declaration shared with the server. */

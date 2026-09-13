@@ -117,11 +117,16 @@ describe("1PUX worker production handler", () => {
       await import("../onepux.worker");
     await createOnePuxWorkerMessageHandler((response) =>
       responses.push(response),
-    )({ type: "parse", file: new Blob(["not a zip"]), limits });
+    )({
+      type: "parse",
+      requestId: "request-2",
+      file: new Blob(["not a zip"]),
+      limits,
+    });
     expect(responses).toEqual([
       {
         ok: false,
-        requestId: undefined,
+        requestId: "request-2",
         error: "The 1Password archive could not be read.",
       },
     ]);

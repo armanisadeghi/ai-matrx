@@ -100,6 +100,8 @@ const RETRY_BASE_MS = 1000;
 // purpose: the fast path already spent ~7s of exponential backoff, so this is
 // the "keep knocking until the tab closes" lane, not a hot loop. One POST per
 // conversation per interval, carrying every answer still undelivered for it.
+// KNOB MIRROR of platform.feature_knob "agents.tool_results" "outbox_interval_ms" — the timer is armed synchronously in scheduleOutboxDrain.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const OUTBOX_INTERVAL_MS = 20_000;
 
 // ── Module-level queue + scheduling ──────────────────────────────────────────

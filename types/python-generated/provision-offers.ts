@@ -64,15 +64,6 @@ export interface AgentFactoryBuildRequestOffer {
   prompt_purpose: string;
 }
 
-/** Offered shape of provision `alchemy.prepared_content` (kind `alchemy.prepared_content.offer`). */
-export interface AlchemyPreparedContentOffer {
-  __kind?: "alchemy.prepared_content.offer";
-  prepared_content: string;
-  content_label: string;
-  coverage_description: string;
-  omission_description: string;
-}
-
 /** Offered shape of provision `ambient.page_guidance` (kind `ambient.page_guidance.offer`). */
 export interface AmbientPageGuidanceOffer {
   __kind?: "ambient.page_guidance.offer";
@@ -1323,17 +1314,6 @@ export interface MasterworkCorpusSynthesisOffer {
   corpus_digest: string;
 }
 
-/** Offered shape of provision `masterwork.draft_triage` (kind `masterwork.draft_triage.offer`). */
-export interface MasterworkDraftTriageOffer {
-  __kind?: "masterwork.draft_triage.offer";
-  drafts: unknown;
-  keep: string;
-  set_aside?: string;
-  rulebook_name?: string;
-  rulebook_description?: string;
-  intake_goal?: string;
-}
-
 /** Offered shape of provision `masterwork.intake_design` (kind `masterwork.intake_design.offer`). */
 export interface MasterworkIntakeDesignOffer {
   __kind?: "masterwork.intake_design.offer";
@@ -1342,22 +1322,6 @@ export interface MasterworkIntakeDesignOffer {
   rulebook_source_line?: string;
   section_labels: string;
   masterwork_kind: string;
-}
-
-/** Offered shape of provision `masterwork.outcome_judgment` (kind `masterwork.outcome_judgment.offer`). */
-export interface MasterworkOutcomeJudgmentOffer {
-  __kind?: "masterwork.outcome_judgment.offer";
-  question: string;
-  rubric_name: string;
-  rubric: string;
-  verdict_values: string[];
-  subject_label: string;
-  subject_content: string;
-  subject_metrics?: unknown;
-  reference_label?: string;
-  reference_content?: string;
-  reference_metrics?: unknown;
-  context?: unknown;
 }
 
 /** Offered shape of provision `masterwork.rule_improve` (kind `masterwork.rule_improve.offer`). */
@@ -1383,32 +1347,6 @@ export interface MasterworkScoutInterviewOffer {
   __kind?: "masterwork.scout_interview.offer";
   rulebook_id: string;
   rulebook_document: string;
-}
-
-/** Offered shape of provision `masterwork.timeline_segment` (kind `masterwork.timeline_segment.offer`). */
-export interface MasterworkTimelineSegmentOffer {
-  __kind?: "masterwork.timeline_segment.offer";
-  narrative: string;
-  source_note?: string;
-  rulebook_name?: string;
-  rulebook_description?: string;
-}
-
-/** Offered shape of provision `masterwork.timeline_step` (kind `masterwork.timeline_step.offer`). */
-export interface MasterworkTimelineStepOffer {
-  __kind?: "masterwork.timeline_step.offer";
-  known_before: string;
-  revealed: string;
-  action_taken: string;
-  action_kind?: string;
-  cost?: string;
-  risk?: string;
-  result?: string;
-  step_index: number;
-  step_label?: string;
-  step_count: number;
-  rulebook_name?: string;
-  source_note?: string;
 }
 
 /** Offered shape of provision `masterwork.transcript_shortlist` (kind `masterwork.transcript_shortlist.offer`). */
@@ -1476,7 +1414,6 @@ export interface MeetMeetingRecordOffer {
   note_count: number;
   recording_state?: string;
   note_taker_state?: string;
-  writer_correction?: string;
 }
 
 /** Offered shape of provision `messaging.conversation` (kind `messaging.conversation.offer`). */
@@ -2583,7 +2520,6 @@ export interface ProvisionOffers {
   "agent_apps.auto_create_request": AgentAppsAutoCreateRequestOffer;
   "agent_apps.metadata_request": AgentAppsMetadataRequestOffer;
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
-  "alchemy.prepared_content": AlchemyPreparedContentOffer;
   "ambient.page_guidance": AmbientPageGuidanceOffer;
   "chat.mandated_start": ChatMandatedStartOffer;
   "code_editor.session": CodeEditorSessionOffer;
@@ -2683,14 +2619,10 @@ export interface ProvisionOffers {
   "masterwork.conduct": MasterworkConductOffer;
   "masterwork.corpus_clean": MasterworkCorpusCleanOffer;
   "masterwork.corpus_synthesis": MasterworkCorpusSynthesisOffer;
-  "masterwork.draft_triage": MasterworkDraftTriageOffer;
   "masterwork.intake_design": MasterworkIntakeDesignOffer;
-  "masterwork.outcome_judgment": MasterworkOutcomeJudgmentOffer;
   "masterwork.rule_improve": MasterworkRuleImproveOffer;
   "masterwork.rulebook_audit": MasterworkRulebookAuditOffer;
   "masterwork.scout_interview": MasterworkScoutInterviewOffer;
-  "masterwork.timeline_segment": MasterworkTimelineSegmentOffer;
-  "masterwork.timeline_step": MasterworkTimelineStepOffer;
   "masterwork.transcript_shortlist": MasterworkTranscriptShortlistOffer;
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
@@ -2807,7 +2739,6 @@ export const PROVISION_OFFER_KINDS = {
   "agent_apps.auto_create_request": "agent_apps.auto_create_request.offer",
   "agent_apps.metadata_request": "agent_apps.metadata_request.offer",
   "agent_factory.build_request": "agent_factory.build_request.offer",
-  "alchemy.prepared_content": "alchemy.prepared_content.offer",
   "ambient.page_guidance": "ambient.page_guidance.offer",
   "chat.mandated_start": "chat.mandated_start.offer",
   "code_editor.session": "code_editor.session.offer",
@@ -2907,14 +2838,10 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.conduct": "masterwork.conduct.offer",
   "masterwork.corpus_clean": "masterwork.corpus_clean.offer",
   "masterwork.corpus_synthesis": "masterwork.corpus_synthesis.offer",
-  "masterwork.draft_triage": "masterwork.draft_triage.offer",
   "masterwork.intake_design": "masterwork.intake_design.offer",
-  "masterwork.outcome_judgment": "masterwork.outcome_judgment.offer",
   "masterwork.rule_improve": "masterwork.rule_improve.offer",
   "masterwork.rulebook_audit": "masterwork.rulebook_audit.offer",
   "masterwork.scout_interview": "masterwork.scout_interview.offer",
-  "masterwork.timeline_segment": "masterwork.timeline_segment.offer",
-  "masterwork.timeline_step": "masterwork.timeline_step.offer",
   "masterwork.transcript_shortlist": "masterwork.transcript_shortlist.offer",
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",

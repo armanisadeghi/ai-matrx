@@ -150,11 +150,15 @@ const RECONNECT_MAX_UNREACHABLE = 5;
  */
 const OVERDUE_FACTOR = 3;
 /** How often the elapsed clock moves while a run is in flight. */
+// KNOB MIRROR of platform.feature_knob "durable_run" "elapsed_tick_ms" — armed synchronously inside a React effect.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const ELAPSED_TICK_MS = 1_000;
 /**
  * A caller that states no expectation still may not promise forever. One minute
  * is what every one of these dialogs already told the user out loud.
  */
+// KNOB MIRROR of platform.feature_knob "durable_run" "default_expected_ms" — an exported render-path default.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 export const DEFAULT_EXPECTED_MS = 60_000;
 
 /**

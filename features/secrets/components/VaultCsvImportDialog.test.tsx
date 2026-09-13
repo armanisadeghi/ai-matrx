@@ -123,6 +123,8 @@ jest.mock("../bitwarden-json-worker-client", () => ({
     workers.push(worker);
     return worker;
   },
+  cancelBitwardenJsonWorker: (worker: ControlledWorker, requestId: string) =>
+    worker.postMessage({ type: "cancel", requestId }),
 }));
 jest.mock("../onepux-worker-client", () => ({
   createOnePuxWorker: () => {
@@ -516,14 +518,18 @@ describe("VaultCsvImportDialog", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
     });
     expect(fetchBitwardenJsonImportLimitsMock).toHaveBeenCalled();
-    expect(file.arrayBuffer).toHaveBeenCalled();
+    expect(file.arrayBuffer).not.toHaveBeenCalled();
     expect(workers).toHaveLength(1);
     if (!mockAuthStateListener) throw new Error("auth listener missing");
     await act(async () => mockAuthStateListener?.("SIGNED_OUT"));
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [{ ordinal: 0, title: "late" }] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [{ ordinal: 0, title: "late" }],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("late");
@@ -557,7 +563,11 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "late signed in" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "late signed in" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("late signed in");
@@ -669,12 +679,20 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "stale" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "stale" })],
+        },
       } as MessageEvent),
     );
     await act(async () =>
       workers[1]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "fresh" })] },
+        data: {
+          requestId: workers[1]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "fresh" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("stale");
@@ -716,7 +734,11 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "principal stale" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "principal stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).toContain("destination changed");
@@ -747,6 +769,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[1]?.onmessage?.({
         data: {
+          requestId: workers[1]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [jsonRecord({ title: "organization stale" })],
         },
@@ -782,7 +805,11 @@ describe("VaultCsvImportDialog", () => {
     if (!first) throw new Error("worker missing");
     await act(async () =>
       first.onmessage?.({
-        data: { ok: false, error: "untrusted export detail" },
+        data: {
+          requestId: first.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: false,
+          error: "untrusted export detail",
+        },
       } as MessageEvent),
     );
     expect(first.terminate).toHaveBeenCalled();
@@ -790,7 +817,11 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).not.toContain("untrusted export detail");
     await act(async () =>
       first.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "error stale" })] },
+        data: {
+          requestId: first.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "error stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("error stale");
@@ -813,7 +844,11 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).toContain("took too long");
     await act(async () =>
       second.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "timeout stale" })] },
+        data: {
+          requestId: second.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "timeout stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("timeout stale");
@@ -845,6 +880,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[0]?.onmessage?.({
         data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [
             jsonRecord(),
@@ -942,6 +978,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[0]?.onmessage?.({
         data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [
             jsonRecord({ title: "First" }),
