@@ -75,8 +75,9 @@ describe("createNewNote empty-note reuse integration", () => {
       project_id: projectId, task_id: taskId,
     }));
     expect(createNewNote.rejected.match(action)).toBe(true);
-    expect(action.error.message).toMatch(/one or more context links/i);
-    expect(store.getState().notes.notes[noteId]).toBeUndefined();
+    expect(action.payload).toMatchObject({ code: "context_partial", receipt: { failedFields: ["task_id"] } });
+    expect(store.getState().notes.notes[noteId]).toMatchObject({ id: noteId, project_id: projectId, task_id: taskId, _dirty: true });
+    expect(store.getState().notes.notes[noteId]._dirtyFields).toEqual(new Set(["task_id"]));
   });
 
   it("returns a created note when cache recovery follows durable context settlement", async () => {

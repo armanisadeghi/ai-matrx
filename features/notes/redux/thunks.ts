@@ -36,6 +36,7 @@ import {
 import {
   NoteContextPartialSaveError,
   NoteUpdateConflictError,
+  type NoteSaveReceipt,
 } from "../service/noteSaveErrors";
 import {
   noteSaveErrorMessage,
@@ -59,6 +60,7 @@ import {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
+  settlePartialNoteCreate,
   setListStatus,
   setListError,
   setActiveNote,
@@ -464,12 +466,36 @@ export const saveNote = createAsyncThunk<void, string>(
  */
 export const createNewNote = createAsyncThunk<
   Note,
-  CreateNoteInput
->("notes/createNewNote", async (input, { dispatch, getState }) => {
+  CreateNoteInput,
+  { rejectValue: { code: "context_partial"; message: string; receipt: Omit<NoteSaveReceipt, "postSaveRecoveryError"> & { postSaveRecoveryError?: string } } }
+>("notes/createNewNote", async (input, { dispatch, getState, rejectWithValue }) => {
   // NotesService owns organization admission, parent validation, empty-note
   // reuse, metadata/position, and context links. Keep Redux as hydration only.
-  getUserId(getState);
-  const note = await createNote(input);
+  const expectedUserId = getUserId(getState);
+  let note: Note;
+  try {
+    note = await createNote(input);
+  } catch (error) {
+    if (error instanceof NoteContextPartialSaveError) {
+      if (getUserId(getState) !== expectedUserId) {
+        throw error;
+      }
+      const failedValues: Partial<Pick<Note, "project_id" | "task_id">> = {};
+      for (const field of error.failedFields) failedValues[field] = input[field];
+      dispatch(settlePartialNoteCreate({ note: error.actualStoredNote, failedValues, error: error.message }));
+      dispatch(addTab(error.actualStoredNote.id));
+      dispatch(setActiveNote(error.actualStoredNote.id));
+      return rejectWithValue({
+        code: "context_partial",
+        message: error.message,
+        receipt: {
+          ...error.receipt,
+          ...(error.receipt.postSaveRecoveryError ? { postSaveRecoveryError: error.receipt.postSaveRecoveryError.message } : {}),
+        },
+      });
+    }
+    throw error;
+  }
 
   dispatch(
     upsertNoteFromServer({

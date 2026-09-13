@@ -647,6 +647,23 @@ const notesSlice = createSlice({
       );
     },
 
+    settlePartialNoteCreate(
+      state,
+      action: PayloadAction<{ note: Note; failedValues: Partial<Pick<Note, "project_id" | "task_id">>; error: string }>,
+    ) {
+      applyServerNoteUpsert(state.notes, { note: action.payload.note, fetchStatus: "full" });
+      const record = state.notes[action.payload.note.id];
+      if (!record) return;
+      for (const [field, value] of Object.entries(action.payload.failedValues) as Array<["project_id" | "task_id", string | null]>) {
+        record[field] = value;
+        record._dirtyFields.add(field);
+      }
+      record._dirty = record._dirtyFields.size > 0;
+      record._saving = false;
+      record._error = action.payload.error;
+      state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
+    },
+
     /** Resolve a save conflict without touching dirty state.
      *  - Keep-mine: pass the server's `updatedAt` so the record adopts it and
      *    the next autosave's optimistic lock (`WHERE updated_at =`) passes —
@@ -1256,6 +1273,7 @@ export const {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
+  settlePartialNoteCreate,
   clearSavingNoteId,
   setActiveNote,
   addTab,
