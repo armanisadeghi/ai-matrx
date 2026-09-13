@@ -363,6 +363,7 @@
     "check:staff-door:strict": "tsx scripts/check-staff-door.ts --strict",
     "check:staff-door:self-test": "tsx scripts/check-staff-door.ts --self-test",
     "check:list-scope": "tsx scripts/check-list-scope.ts",
+    "check:backend-door-callers": "tsx scripts/check-backend-door-callers.ts",
     "check:definer-class": "tsx scripts/check-definer-class.ts",
     "check:definer-class:strict": "tsx scripts/check-definer-class.ts --strict",
     "check:definer-class:self-test": "tsx scripts/check-definer-class.ts --self-test",
