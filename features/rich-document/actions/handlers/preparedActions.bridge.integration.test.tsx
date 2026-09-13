@@ -21,7 +21,7 @@ import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
 import type { RichDocumentActionContext } from "../../types";
-import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
+import { captureNoteEditSource, noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { noteAdapter } from "../sources/note";
 import { getAction } from "../registry";
 import { FullScreenMarkdownEditorBridge } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge";
@@ -52,9 +52,9 @@ function makeStore() {
   store.dispatch({ type: "test/seed", payload: null });
   return store;
 }
-function context(store: ReturnType<typeof makeStore>): RichDocumentActionContext {
+function context(store: ReturnType<typeof makeStore>, source = noteIdentityContentSource(ID, "identity-source")): RichDocumentActionContext {
   return {
-    content: "selection only", source: noteIdentityContentSource(ID, "identity-source"), metadata: null,
+    content: "selection only", source, metadata: null,
     dispatch: store.dispatch as AppDispatch, organizationId: ORG, isAuthenticated: true, isAdmin: false, isCreator: false,
     surfaceKey: null, onClose: () => {}, instanceKey: (prefix) => `note:${prefix}`, sourceAdapter: noteAdapter,
     extensions: { type: "note", isOwner: true },
@@ -86,6 +86,22 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     await editorProps.onSave("saved full body");
     expect(write.update).toHaveBeenCalledWith({ content: "saved full body", version: 1 });
     expect(write.eq).toHaveBeenCalledWith("id", ID); expect(write.eq).toHaveBeenCalledWith("organization_id", ORG); expect(write.eq).toHaveBeenCalledWith("version", 0);
+  });
+
+  it("uses a dirty captured base without a save-time reread", async () => {
+    const existing = query({ data: note({ content: "acknowledged", version: 4 }), error: null });
+    const write = query({ data: note({ content: "second dirty body", version: 5 }), error: null });
+    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "acknowledged", version: 4 }), displayedNote: note({ content: "first dirty body", version: 4 }), actorId: "user-1", sourceId: "dirty", snapshotId: "dirty-1" });
+    const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
+    await action.run(context(store, source));
+    const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
+    if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("missing prepared overlay");
+    expect(overlay.data.content).toBe("first dirty body");
+    expect(mockSchema).not.toHaveBeenCalledWith(expect.anything());
+    await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlay.data.content} callbackGroupId={overlay.data.callbackGroupId} /></Provider>));
+    if (!editorProps) throw new Error("missing rendered editor"); await editorProps.onSave("second dirty body");
+    expect(write.eq).toHaveBeenCalledWith("version", 4);
   });
 });
 
