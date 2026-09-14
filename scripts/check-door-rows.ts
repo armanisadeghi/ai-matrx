@@ -55,13 +55,19 @@
  *
  *   PASS        the door refused with a real authorization error, or answered
  *               with nothing, or answered only with rows the caller can SELECT
- *               directly under RLS.
+ *               directly under RLS — AND wrote nothing across the boundary.
  *   FAIL        the door answered with a row the caller cannot SELECT under
- *               RLS, or minted a row into a victim organization.
- *   UNMEASURED  the arguments could not be derived, or the call failed for a
- *               reason that is not an authorization decision (a type error, a
- *               missing required payload, a timeout). Named, with the reason.
- *               NEVER counted as a pass.
+ *               RLS, or minted a row into a victim organization. 🚨 DD-213: a
+ *               REFUSAL IS NOT A CLEAN BILL. Every probe now measures what the
+ *               call wrote on EVERY outcome, refusals included — a door that
+ *               says no and writes a row into a stranger's organization anyway
+ *               is a FAIL, and was scored PASS by this gate until 2026-09-14.
+ *   UNMEASURED  the arguments could not be derived, the door answers only a
+ *               boolean (no row exists to place against the caller's standing,
+ *               so this method has no oracle — `iam.is_discoverable`), or the
+ *               call failed for a reason that is not an authorization decision
+ *               (a type error, a missing required payload, a timeout). Named,
+ *               with the reason. NEVER counted as a pass.
  *
  *   pnpm check:door-rows            # loud, non-blocking (exit 0)
  *   pnpm check:door-rows:strict     # the b75 lane (477 doors). exit 1 on any
@@ -269,7 +275,20 @@ interface Door {
   argTypes: string[]; // format_type text, e.g. "uuid", "text", "uuid[]"
   argDefaults: number; // count of arguments with defaults (trailing)
   retSet: boolean;
+  retType: string; // pg_get_function_result, e.g. "boolean", "jsonb", "TABLE(id uuid)"
 }
+
+/**
+ * 🚨 DD-213. A door that can only ever answer `true` or `false` cannot be judged
+ * by a method whose oracle is "which rows came back". `iam.is_discoverable`
+ * returns a boolean, so its probe is recorded as EMPTY and it scored PASS
+ * fourteen times over — while it happily answers questions about ANOTHER
+ * person's `p_user_id`, which is the identity-swap shape this harness has no way
+ * to see. A PASS that is true by construction is worse than no reading at all,
+ * so a boolean-only door is UNMEASURED BY NAME. It is still measured for WRITES:
+ * a boolean door that writes across the boundary is a FAIL like any other.
+ */
+const BOOLEAN_ONLY = (door: Door): boolean => /^(setof\s+)?boolean$/i.test(door.retType.trim());
 
 type Verdict = "PASS" | "FAIL" | "UNMEASURED";
 
@@ -623,9 +642,11 @@ async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown
     argnames: string[] | null;
     argtypes: string[] | null;
     ndefaults: number;
+    rettype: string;
   }>(`
     select d.schema_name, d.function_name, d.identity_args, d.declared_by, d.gate_predicate,
            p.oid::int as oid, p.provolatile, p.proretset,
+           pg_get_function_result(p.oid) as rettype,
            coalesce(p.proargnames[1:p.pronargs], array[]::text[]) as argnames,
            (select array_agg(format_type(t, null) order by ord)
               from unnest(p.proargtypes::oid[]) with ordinality as u(t, ord)) as argtypes,
@@ -649,6 +670,7 @@ async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown
     argTypes: r.argtypes ?? [],
     argDefaults: Number(r.ndefaults ?? 0),
     retSet: r.proretset,
+    retType: r.rettype ?? "",
   }));
   if (ONLY) doors = doors.filter((d) => `${d.schema}.${d.fn}` === ONLY);
   if (LIMIT) doors = doors.slice(0, LIMIT);
@@ -1059,13 +1081,74 @@ async function runProbe(
       await db.query("rollback to savepoint probe");
     }
 
+    // ── WHAT DID THE CALL WRITE? ────────────────────────────────────────────
+    //
+    // 🚨 DD-213. THIS RUNS ON EVERY OUTCOME, INCLUDING A REFUSAL. Until
+    // 2026-09-14 the write arm below sat AFTER the three early returns, so a
+    // door that refused — by raising, by a refusal envelope, or by answering
+    // nothing — was scored PASS without its writes ever being looked at. That
+    // is precisely how DD-213 hid in plain sight: five doors handed a stranger
+    // a refusal envelope AND wrote a row into an organization's `hr.access_audit`
+    // that the stranger has no standing in, and all five were PASS in a blocking
+    // gate. A refusal is a statement about the ANSWER; it says nothing about the
+    // side effects, and this gate must never again read one as the other.
+    //
+    // An answer carrying no row id is not proof either:
+    // `public.hr_module_set_enabled` answered a non-member
+    // `{"ok": true, "module_enabled": false}` — no uuid anywhere — while
+    // switching another organization's HR module off. So the writes are measured
+    // from the transaction itself (`pg_stat_xact_user_tables`, narrowed row by
+    // row by xid), never inferred from the answer.
+    //
+    // On the raised path the call was already rolled back to its savepoint, so
+    // its rows are gone and the xid confirmation reports nothing — which is the
+    // truth: a door that raises leaves nothing behind.
+    await db.query("reset role");
+    const wrote = await writesCrossingTheBoundary(db, caller);
+    await db.query("set local role authenticated");
+
+    const answerShape =
+      rows === null
+        ? isRefusal(errCode, errMsg)
+          ? "REFUSED"
+          : "ERROR"
+        : isRefusalEnvelope(rows)
+          ? "REFUSED (envelope)"
+          : isEmptyAnswer(rows)
+            ? "EMPTY"
+            : "ROWS";
+
+    if (wrote.crossed.length) {
+      await db.query(TX_ROLLBACK());
+      return {
+        verdict: "FAIL",
+        why: `wrote across the boundary (the answer was ${answerShape})`,
+        leaked: wrote.crossed,
+        probe: {
+          caller: caller.label,
+          args: filled.sql,
+          outcome: `${answerShape} + CROSS-BOUNDARY WRITE`,
+          detail: wrote.crossed.join(" · ").slice(0, 400),
+        },
+      };
+    }
+    if (wrote.unjudged.length) {
+      await db.query(TX_ROLLBACK());
+      return {
+        verdict: "UNMEASURED",
+        why: wrote.unjudged[0],
+        leaked: [],
+        probe: { caller: caller.label, args: filled.sql, outcome: "WRITE (unplaceable)", detail: wrote.unjudged.join(" · ").slice(0, 300) },
+      };
+    }
+
     if (rows === null) {
       const refused = isRefusal(errCode, errMsg);
       await db.query(TX_ROLLBACK());
       return refused
         ? {
             verdict: "PASS",
-            why: `refused ${errCode}`,
+            why: `refused ${errCode}, and wrote nothing`,
             leaked: [],
             probe: { caller: caller.label, args: filled.sql, outcome: "REFUSED", detail: `${errCode} ${errMsg.slice(0, 160)}` },
           }
@@ -1077,17 +1160,34 @@ async function runProbe(
           };
     }
 
+    // A boolean door can never be judged by the row oracle — say so, never pass it.
+    if (BOOLEAN_ONLY(door)) {
+      await db.query(TX_ROLLBACK());
+      return {
+        verdict: "UNMEASURED",
+        why: `the door returns ${door.retType.trim()} and wrote nothing — a true/false answer carries no row to place against the caller's standing, so its boundedness is NOT measured by this method`,
+        leaked: [],
+        probe: {
+          caller: caller.label,
+          args: filled.sql,
+          outcome: "BOOLEAN (unmeasurable)",
+          detail: JSON.stringify(rows).slice(0, 120),
+        },
+      };
+    }
+
     // A REFUSAL ENVELOPE is a refusal, not an answer. Several doors refuse by
     // returning `{"granted": false, "reason": …, "audit_id": …}` rather than
     // raising — `hr.reveal_ssn` writes the denial into `hr.access_audit` and
     // hands back the receipt id. The receipt names a row the caller cannot
     // read BECAUSE the door refused, which is the opposite of a leak; reading
     // it as one would make this gate cry wolf on the doors that behave best.
+    // (Its SIDE EFFECTS were measured above, before we got here.)
     if (isRefusalEnvelope(rows)) {
       await db.query(TX_ROLLBACK());
       return {
         verdict: "PASS",
-        why: "refused in its answer envelope",
+        why: "refused in its answer envelope, and wrote nothing",
         leaked: [],
         probe: {
           caller: caller.label,
@@ -1102,44 +1202,11 @@ async function runProbe(
       await db.query(TX_ROLLBACK());
       return {
         verdict: "PASS",
-        why: "answered nothing",
+        why: "answered nothing, and wrote nothing",
         leaked: [],
         probe: { caller: caller.label, args: filled.sql, outcome: "EMPTY", detail: JSON.stringify(rows).slice(0, 120) },
       };
     }
-
-    // WHAT DID THE CALL WRITE? An answer carrying no row id is not proof that
-    // nothing crossed the boundary: `public.hr_module_set_enabled` answered a
-    // non-member `{"ok": true, "module_enabled": false}` — no uuid anywhere —
-    // while switching another organization's HR module off. So the writes are
-    // measured from the transaction itself (`pg_stat_xact_user_tables`), not
-    // inferred from the answer.
-    await db.query("reset role");
-    const wrote = await writesCrossingTheBoundary(db, caller);
-    if (wrote.crossed.length) {
-      await db.query(TX_ROLLBACK());
-      return {
-        verdict: "FAIL",
-        why: "wrote across the boundary",
-        leaked: wrote.crossed,
-        probe: {
-          caller: caller.label,
-          args: filled.sql,
-          outcome: "CROSS-BOUNDARY WRITE",
-          detail: wrote.crossed.join(" · ").slice(0, 400),
-        },
-      };
-    }
-    if (wrote.unjudged.length) {
-      await db.query(TX_ROLLBACK());
-      return {
-        verdict: "UNMEASURED",
-        why: wrote.unjudged[0],
-        leaked: [],
-        probe: { caller: caller.label, args: filled.sql, outcome: "WRITE (unplaceable)", detail: wrote.unjudged.join(" · ").slice(0, 300) },
-      };
-    }
-    await db.query("set local role authenticated");
 
     // Rows came back. Which of the uuids in them can this caller SELECT?
     const injected = new Set(filled.injectedIds.map((s) => s.toLowerCase()));
@@ -1328,6 +1395,50 @@ async function orgsMintedForTheCallerByThisCall(db: pg.Client, caller: Principal
   }
 }
 
+/**
+ * The same written rows, counted a second time as the CALLER — the JWT claims are
+ * already set `local` on this transaction, so `set local role authenticated` puts
+ * us back in their seat. Returns null when the caller's view cannot be taken at
+ * all (a table they hold no SELECT grant on); never an exception, and never a
+ * number that could be mistaken for "nothing was written".
+ */
+async function rowsVisibleToTheCaller(
+  db: pg.Client,
+  sch: string,
+  tab: string,
+  placeCol: string,
+  placeVal: string | null,
+): Promise<number | null> {
+  // A failed read here must never poison the probe transaction, so it is taken
+  // inside its own savepoint.
+  await db.query("savepoint caller_view");
+  try {
+    await db.query("set local role authenticated");
+    const r = await db.query(
+      `select count(*)::int as n from ${qi(sch)}.${qi(tab)}
+        where ${WRITTEN_BY_THIS_CALL} and ${
+          placeVal === null ? `${qi(placeCol)} is null` : `${qi(placeCol)}::text = $1`
+        }`,
+      placeVal === null ? [] : [placeVal],
+    );
+    await db.query("release savepoint caller_view");
+    return (r.rows[0] as { n: number }).n;
+  } catch {
+    try {
+      await db.query("rollback to savepoint caller_view");
+    } catch {
+      /* nothing left to roll back to */
+    }
+    return null;
+  } finally {
+    try {
+      await db.query("reset role");
+    } catch {
+      /* the caller's next statement resets it */
+    }
+  }
+}
+
 async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Promise<WriteVerdict> {
   const touched = (
     await db.query(`
@@ -1383,10 +1494,23 @@ async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Prom
     ).rows as { v: string | null; n: number }[];
     for (const r of rows) {
       if (r.v && mine.includes(r.v)) continue;
+      // 🚨 DD-213: A WRITE THE CALLER CANNOT SEE IS STILL A WRITE. The same rows
+      // are counted a second time under the CALLER's own RLS, and the finding
+      // says which it was. The rows this gate was built for are exactly the
+      // invisible kind — a stranger's knock written into an organization's
+      // `hr.access_audit`, a log that stranger can never read back — so a
+      // measurement taken only as the caller would have seen nothing at all.
+      const seen = await rowsVisibleToTheCaller(db, t.sch, t.tab, placeCol, r.v);
+      const lens =
+        seen === null
+          ? "" // the caller's own view could not be taken; the postgres count stands alone
+          : seen === 0
+            ? ", and the caller cannot see a single one of them under RLS"
+            : `, of which the caller can see ${seen} under RLS`;
       crossed.push(
         orgCol || isOrgTable
-          ? `${qualified} — ${r.n} row(s) written by this call into organization ${r.v ?? "NULL"}, which the caller has no standing in`
-          : `${qualified} — ${r.n} row(s) written by this call owned by ${r.v ?? "NULL"}, not the caller`,
+          ? `${qualified} — ${r.n} row(s) written by this call into organization ${r.v ?? "NULL"}, which the caller has no standing in${lens}`
+          : `${qualified} — ${r.n} row(s) written by this call owned by ${r.v ?? "NULL"}, not the caller${lens}`,
       );
     }
     // Deletes are deliberately NOT reported from the counters. A deleted row
@@ -1500,6 +1624,7 @@ async function plantDd191Shape(
     argTypes: ["text", "uuid"],
     argDefaults: 0,
     retSet: true,
+    retType: "TABLE(id uuid)",
   };
 
   await db.query("begin");
@@ -1548,6 +1673,85 @@ async function plantDd191Shape(
   return caught;
 }
 
+/**
+ * DD-213, RED then GREEN, on a REAL door and the REAL defect.
+ *
+ * The DD-191 replay above proves the gate reaches a leaking SHAPE. This proves
+ * the half that was missing: that a door which REFUSES and writes anyway is a
+ * FAIL. `hr._record_access_audit` — the one insert of record behind 74
+ * client-callable HR doors — is restored to its pre-DD-213 body from the bytes
+ * kept at `scripts/door-rows/dd213-pre-fix-record-access-audit.sql`, and the live
+ * door `public.hr_my_compensation` is probed with the harness's own cast. Before
+ * DD-213 that call handed a stranger `{"granted": false, "reason": "not_self"}`
+ * AND a row in an organization's `hr.access_audit`, and this gate scored it PASS.
+ * It must now be a FAIL, naming the row. Then the live body is put back (by the
+ * rollback, never by a second CREATE OR REPLACE) and the same door must be PASS.
+ *
+ * Everything happens inside ONE transaction that is always rolled back, and the
+ * live body is re-read afterwards to prove the DD-213 guard is still there.
+ */
+async function replayDd213(
+  db: pg.Client,
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  cast: Cast,
+  catalog: Catalog,
+  doors: Door[],
+): Promise<boolean> {
+  const door = doors.find((d) => d.schema === "public" && d.fn === "hr_my_compensation");
+  if (!door) {
+    console.log(
+      `${TAG.warn}DD-213 WRITE ARM: public.hr_my_compensation is not in this population (--population=${POPULATION}) — the write arm was NOT proven on this run`,
+    );
+    return true;
+  }
+  const fixture = resolve(ROOT, "scripts/door-rows/dd213-pre-fix-record-access-audit.sql");
+  if (!existsSync(fixture)) {
+    console.log(`${TAG.fail}DD-213 WRITE ARM: the pre-fix fixture is missing at ${fixture} — nothing was proven`);
+    return false;
+  }
+  const preFix = readFileSync(fixture, "utf8");
+
+  let red = false;
+  let green = false;
+  await db.query("begin");
+  OUTER_TX = true;
+  try {
+    // GREEN FIRST, on the live body, so the comparison is like for like.
+    const after = await measureDoor(db, q, cast, catalog, door);
+    green = after.verdict === "PASS";
+    console.log(
+      green
+        ? `${TAG.ok}DD-213 WRITE ARM (live body): public.hr_my_compensation is PASS — ${after.why}`
+        : `${TAG.fail}DD-213 WRITE ARM (live body): public.hr_my_compensation came back ${after.verdict} (${after.why})`,
+    );
+
+    await db.query(preFix);
+    const before = await measureDoor(db, q, cast, catalog, door);
+    red = before.verdict === "FAIL";
+    console.log(
+      red
+        ? `${TAG.ok}DD-213 RED proven: with the pre-fix recorder restored, public.hr_my_compensation is ${before.verdict} — ${before.leaked.slice(0, 2).join(", ")}`
+        : `${TAG.fail}DD-213 RED: the pre-fix recorder came back ${before.verdict} (${before.why}) — this gate is not measuring what a REFUSING door writes, and DD-213 can come back`,
+    );
+  } finally {
+    OUTER_TX = false;
+    await db.query("rollback");
+  }
+
+  // The live body must still carry the DD-213 guard after the rollback.
+  const live = await q<{ src: string }>(
+    `select prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'hr' and p.proname = '_record_access_audit'`,
+  );
+  const guarded = live.every((r) => /_has_any_standing/.test(r.src));
+  console.log(
+    guarded
+      ? `${TAG.info}after rollback, hr._record_access_audit still consults hr._has_any_standing (the live body is intact)`
+      : `${TAG.fail}after rollback, hr._record_access_audit NO LONGER consults hr._has_any_standing — the fixture was left behind`,
+  );
+  return red && green && guarded;
+}
+
 async function selfTest(
   db: pg.Client,
   q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
@@ -1581,6 +1785,7 @@ async function selfTest(
     argTypes: ["uuid"],
     argDefaults: 0,
     retSet: true,
+    retType: "TABLE(id uuid)",
   };
 
   await db.query("begin");
@@ -1649,12 +1854,18 @@ async function selfTest(
   // a FAIL. If it does not, DD-191 could come back and the gate would stay green.
   const replay = await plantDd191Shape(db, q, cast, catalog);
 
+  // THE WRITE ARM. DD-213's defect was not a leaked row — it was a row this gate
+  // never looked for, because the door refused. This replays it on the REAL door
+  // `public.hr_my_compensation` with the REAL pre-fix recorder restored from its
+  // shipped bytes, inside a rolled-back transaction, and asserts FAIL.
+  const writeArm = await replayDd213(db, q, cast, catalog, _doors);
+
   const planted = await q<{ n: string }>(
     `select count(*)::text n from pg_proc where proname like 'dd192_selftest%'`,
   );
   console.log(`${TAG.info}after rollback, planted functions remaining: ${planted[0].n} (must be 0)`);
   const clean = planted[0].n === "0";
-  return failedTheLeak && passedTheBounded && clean && replay ? 0 : 1;
+  return failedTheLeak && passedTheBounded && clean && replay && writeArm ? 0 : 1;
 }
 
 // ─── the by-design allowlist (DD-208) ────────────────────────────────────────
