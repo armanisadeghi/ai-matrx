@@ -42,6 +42,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { transformSync } from "@babel/core";
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 const REPO = path.resolve(__dirname, "..");
 const HOOK = "useContentIrKindVersion";
 
@@ -288,4 +290,4 @@ export function Fixed({ subject }: { subject: { kind: string } }) {
   return 0;
 }
 
-process.exit(process.argv.includes("--self-test") ? selfTest() : run());
+exitAfterDrain(process.argv.includes("--self-test") ? selfTest() : run());

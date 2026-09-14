@@ -33,6 +33,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 const REPO = path.resolve(__dirname, "..");
 
 /**
@@ -277,7 +279,7 @@ function selfTest(): number {
 }
 
 if (require.main === module) {
-  process.exit(
+  exitAfterDrain(
     process.argv.includes("--self-test")
       ? selfTest()
       : process.argv.includes("--update")

@@ -30,6 +30,8 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 export interface Finding {
   file: string;
   line: number;
@@ -192,7 +194,7 @@ export function selfTest(): boolean {
 
 function main(): void {
   if (process.argv.includes("--self-test")) {
-    if (!selfTest()) process.exit(1);
+    if (!selfTest()) exitAfterDrain(1);
     return;
   }
   const findings: Finding[] = [];
@@ -217,7 +219,7 @@ function main(): void {
   console.error(
     '\nFix: signOut({ scope: "local" }) — or route the control through features/shell/auth/useSignOut.ts.',
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 // Entry-point guard: importing the detector from a test must not scan the repo.
