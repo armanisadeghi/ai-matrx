@@ -24,6 +24,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { HrKnobExceptions } from "../HrKnobExceptions";
 import { fetchScopeRows } from "@/features/settings/universal/scopeRows";
+import { fetchKnobWriteDoor } from "@/lib/scoped-config/service";
+import type { KnobWriteDoor } from "@/lib/scoped-config/service";
 import { useUniversalSettings } from "@/features/settings/universal/UniversalSettingsContext";
 import { KNOB_RUNG_CONSUMERS } from "@/features/settings/universal/knobDatabaseConsumers.generated";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
@@ -32,7 +34,11 @@ jest.mock("@/features/settings/universal/scopeRows", () => ({
   ...jest.requireActual("@/features/settings/universal/scopeRows"),
   fetchScopeRows: jest.fn(),
 }));
-jest.mock("@/lib/scoped-config/service", () => ({ setKnobOverride: jest.fn() }));
+jest.mock("@/lib/scoped-config/service", () => ({
+  setKnobOverride: jest.fn(),
+  fetchKnobWriteDoor: jest.fn(),
+  writeKnobOverrideThroughDoor: jest.fn(),
+}));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn(async () => true) }));
 jest.mock("@/features/settings/universal/UniversalSettingsContext", () => ({
@@ -41,6 +47,24 @@ jest.mock("@/features/settings/universal/UniversalSettingsContext", () => ({
 }));
 
 const scopeRows = jest.mocked(fetchScopeRows);
+const readWriteDoor = jest.mocked(fetchKnobWriteDoor);
+
+/**
+ * 🚨 DD-221 — what `platform.knob_write_door_for` answers for an `hr.` key.
+ * HR settings declare HR's own doors, and HR's own gate decides: an HR admin
+ * who is not an org owner/admin MAY set a pay-group exception (measured live
+ * 2026-09-14), and an org admin with no HR standing may not.
+ */
+const HR_DOOR: KnobWriteDoor = {
+  key: "hr.employees.adjusted_service_date_rule",
+  featurePrefix: "hr.",
+  setDoor: "public.hr_knob_set",
+  clearDoor: "public.hr_knob_clear",
+  authorityKind: "hr_settings_gate",
+  mayWrite: true,
+  authorityDetail: "You hold HR admin standing in this organization.",
+  reason: "HR settings are HR's.",
+};
 const settings = jest.mocked(useUniversalSettings);
 
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -119,6 +143,8 @@ function textOf(): string {
 
 beforeEach(() => {
   scopeRows.mockReset();
+  readWriteDoor.mockReset();
+  readWriteDoor.mockImplementation(async () => HR_DOOR);
   scopeRows.mockResolvedValue([{ id: PAY_GROUP, label: "Hourly Biweekly" }]);
   loadRungOverrides.mockReset();
   host = document.createElement("div");
@@ -203,4 +229,44 @@ it("renders nothing at all when the registry read did not carry the key — neve
   mount(ANSWERABLE, {});
   await act(async () => {});
   expect(host.textContent).toBe("");
+});
+
+// ── DD-221: the authority is HR's, and so is the door ───────────────────────
+
+it("offers the add control to an HR admin who is not an org owner or admin", async () => {
+  // The measurement this case exists for (live, 2026-09-14, rolled back):
+  // `20149d3f-…` is `role='member'` with `hr.capability(identity.write)` true.
+  // `knob_override_set(pay_group)` refused them — "Organization configuration
+  // is owner/admin only." — while `hr_knob_set(pay_group)` accepted and filed
+  // an `hr.access_audit` row. The screen followed the WRONG one of those two.
+  mount(ANSWERABLE, { [ANSWERABLE]: hrKnob(ANSWERABLE) });
+  await act(async () => {});
+
+  expect(readWriteDoor).toHaveBeenCalledWith(
+    expect.objectContaining({ fullKey: ANSWERABLE, organizationId: ORG }),
+  );
+  expect(textOf()).toContain("Add override for a pay group");
+});
+
+it("offers NO exception to an org admin with no HR standing, and says HR's own sentence", async () => {
+  // The same asymmetry from the other side: an org owner/admin passes
+  // `knob_override_set`'s gate and writes an HR exception that `hr.access_audit`
+  // never records (1842 rows before, 1842 after). HR's gate is the one that
+  // decides an HR key, so this screen asks it and draws nothing when it says no.
+  readWriteDoor.mockImplementation(async () => ({
+    ...HR_DOOR,
+    mayWrite: false,
+    authorityDetail: "HR settings are HR-admin only.",
+  }));
+  mount(ANSWERABLE, { [ANSWERABLE]: hrKnob(ANSWERABLE) });
+  await act(async () => {});
+  const header = [...host.querySelectorAll("button")].find((b) => /Exceptions by/.test(b.textContent ?? ""));
+  await act(async () => { header!.click(); });
+  await act(async () => {});
+
+  expect(textOf()).not.toContain("Add override for");
+  expect(textOf()).toContain("HR settings are HR-admin only.");
+  // A standing exception is still NAMED — a stored value is never hidden from
+  // the person who owns it; only the control to create a new one is absent.
+  expect(textOf()).toContain("Hourly Biweekly");
 });

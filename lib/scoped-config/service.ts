@@ -92,6 +92,137 @@ export async function setKnobOverride(options: {
 }
 
 /**
+ * 🚨 DD-221 — WHICH DOOR WRITES THIS KEY, AND MAY I USE IT.
+ *
+ * `platform.knob_override_set` is not the one write door; it is the DEFAULT
+ * one. Authority belongs to the KEY, and each feature namespace declares the
+ * door that carries it (`platform.knob_write_door`). `hr.` declares
+ * `public.hr_knob_set` / `public.hr_knob_clear`, because HR's own gate admits
+ * an HR admin who is not an org owner/admin, and HR's own audit trail records
+ * the write. Measured live 2026-09-14: the same pay-group exception was
+ * REFUSED to a real HR admin at the platform door and ACCEPTED at HR's, and an
+ * org owner's write through the platform door left `hr.access_audit` untouched
+ * (1842 rows before, 1842 after). A screen that picks the door by which module
+ * it lives in narrows a capability and holes an audit trail, silently.
+ *
+ * `may_write` comes back from the same read, computed server-side with the
+ * predicates the real gates use — the surface never re-states a gate, and never
+ * infers one from `org_role`.
+ */
+export type KnobWriteDoor = {
+  key: string;
+  featurePrefix: string;
+  /** A schema-qualified function name, e.g. `public.hr_knob_set`. */
+  setDoor: string;
+  clearDoor: string;
+  authorityKind: string;
+  /** Null when no organization was named, so no authority was decided. */
+  mayWrite: boolean | null;
+  /** The sentence to show when `mayWrite` is false. Always present. */
+  authorityDetail: string;
+  /** Why this namespace declares this door — for a developer, not a screen. */
+  reason: string;
+};
+
+type KnobWriteDoorPayload =
+  | {
+      ok: true;
+      key: string;
+      feature_prefix: string;
+      set_door: string;
+      clear_door: string;
+      authority_kind: string;
+      may_write: boolean | null;
+      authority_detail: string;
+      reason: string;
+    }
+  | { ok: false; reason: string; detail?: string };
+
+export async function fetchKnobWriteDoor(options: {
+  fullKey: string;
+  organizationId: string;
+}): Promise<KnobWriteDoor> {
+  const supabase = createClient();
+  const { data, error } = await supabase.schema("platform").rpc("knob_write_door_for", {
+    p_key: options.fullKey,
+    p_organization_id: options.organizationId,
+  });
+  if (error) throw new Error(`knob_write_door_for failed: ${error.message}`);
+  const payload = (data ?? null) as unknown as KnobWriteDoorPayload | null;
+  if (!payload) throw new Error(`knob_write_door_for(${options.fullKey}) returned nothing`);
+  if (!payload.ok) {
+    throw new Error(payload.detail ?? payload.reason.replace(/_/g, " "));
+  }
+  return {
+    key: payload.key,
+    featurePrefix: payload.feature_prefix,
+    setDoor: payload.set_door,
+    clearDoor: payload.clear_door,
+    authorityKind: payload.authority_kind,
+    mayWrite: payload.may_write,
+    authorityDetail: payload.authority_detail,
+    reason: payload.reason,
+  };
+}
+
+/**
+ * Write (or clear) one override THROUGH THE DOOR THE KEY DECLARES (DD-221).
+ *
+ * Every door here takes the same five things and answers the same envelope, so
+ * this is a dispatch and never a translation layer: no door's semantics are
+ * re-implemented, and a door this file does not know is an ERROR naming itself,
+ * never a quiet fall back to the platform door — falling back is precisely the
+ * bug (an `hr.` key written through `knob_override_set` passes the wrong gate
+ * and leaves no HR audit row).
+ */
+export async function writeKnobOverrideThroughDoor(options: {
+  door: KnobWriteDoor;
+  feature: string;
+  key: string;
+  scopeKind: KnobScopeKindName;
+  scopeId: string;
+  organizationId: string;
+  /** `null` CLEARS — the row is removed, so "inherits" and "set to nothing" never blur. */
+  value: unknown;
+  note?: string;
+}): Promise<KnobOverrideSetResult> {
+  const { door, value } = options;
+  const doorName = value === null ? door.clearDoor : door.setDoor;
+
+  if (doorName === "platform.knob_override_set") {
+    return setKnobOverride(options);
+  }
+
+  if (doorName === "public.hr_knob_set" || doorName === "public.hr_knob_clear") {
+    const supabase = createClient();
+    const { data, error } =
+      value === null
+        ? await supabase.rpc("hr_knob_clear", {
+            p_organization_id: options.organizationId,
+            p_feature: options.feature,
+            p_key: options.key,
+            p_scope_kind: options.scopeKind,
+            p_scope_id: options.scopeId,
+          })
+        : await supabase.rpc("hr_knob_set", {
+            p_organization_id: options.organizationId,
+            p_feature: options.feature,
+            p_key: options.key,
+            p_value: value as never,
+            p_scope_kind: options.scopeKind,
+            p_scope_id: options.scopeId,
+          });
+    if (error) throw new Error(`${doorName} failed: ${error.message}`);
+    invalidateEffectiveKnob(`${options.feature}.${options.key}`);
+    return data as unknown as KnobOverrideSetResult;
+  }
+
+  throw new Error(
+    `${options.feature}.${options.key} declares ${doorName} as its write door, and this client does not know how to call it. Teach lib/scoped-config/service.ts that door, or correct the declaration in platform.knob_write_door.`,
+  );
+}
+
+/**
  * EVERY standing override for ONE key at the per-row rungs (table / agent /
  * sub-organization) inside ONE organization — the list the per-rung override
  * picker renders (DD-183).

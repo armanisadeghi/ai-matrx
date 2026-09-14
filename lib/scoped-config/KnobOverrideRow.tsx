@@ -36,7 +36,11 @@ import {
 } from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { availableVoices } from "@/lib/cartesia/voices";
-import { setKnobOverride } from "./service";
+import {
+  setKnobOverride,
+  writeKnobOverrideThroughDoor,
+  type KnobWriteDoor,
+} from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import {
@@ -138,6 +142,14 @@ export function KnobOverrideRow(props: {
    * editor, the same ladder, the same doors (settings-ladder rule 2).
    */
   scopeLabel?: string;
+  /**
+   * 🚨 DD-221 — the door THIS key declares, read from
+   * `platform.knob_write_door_for`. When a caller supplies it, the save and the
+   * removal go through it instead of the default `platform.knob_override_set`,
+   * so an `hr.` exception passes HR's own gate and files HR's own audit row.
+   * Omitted, the row writes through the default door exactly as before.
+   */
+  writeDoor?: KnobWriteDoor;
   stateOnly?: { reason: string; consumerEvidence: string } | null;
   onChanged: () => void;
 }) {
@@ -152,6 +164,7 @@ export function KnobOverrideRow(props: {
     system,
     stateOnly,
     scopeLabel,
+    writeDoor,
     onChanged,
   } = props;
   const flatOverride =
@@ -219,14 +232,26 @@ export function KnobOverrideRow(props: {
         onChanged();
         return true;
       }
-      const result = await setKnobOverride({
-        feature: knob.feature,
-        key: knob.key,
-        scopeKind,
-        scopeId,
-        organizationId,
-        value,
-      });
+      // DD-221: the key's own door when the caller read one, the default door
+      // otherwise. Never a guess about which — the declaration answers.
+      const result = writeDoor
+        ? await writeKnobOverrideThroughDoor({
+            door: writeDoor,
+            feature: knob.feature,
+            key: knob.key,
+            scopeKind,
+            scopeId,
+            organizationId,
+            value,
+          })
+        : await setKnobOverride({
+            feature: knob.feature,
+            key: knob.key,
+            scopeKind,
+            scopeId,
+            organizationId,
+            value,
+          });
       if (!result.ok) {
         const detail =
           result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;

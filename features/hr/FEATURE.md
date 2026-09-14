@@ -178,6 +178,8 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-09-14 (DD-221 — an HR exception is written through HR's own door, under HR's own gate, into HR's own audit)** — the exceptions panel DD-203 mounted on `/hr/settings/*` wrote through `platform.knob_override_set`, which is owner/admin-gated and files nothing in `hr.access_audit`. Live, on `hr.employees.adjusted_service_date_rule` at the pay-group rung: a real HR admin who is not an org owner/admin was REFUSED there and ACCEPTED by `hr_knob_set` (with its audit row), and an org owner's write through the platform door left the HR audit trail untouched. The namespace now declares its doors (`platform.knob_write_door`: `hr.` → `public.hr_knob_set` / `public.hr_knob_clear`, authority `hr_settings_gate`), the screen asks `platform.knob_write_door_for` who may write instead of reading `org_role`, and `platform.knob_override_set` refuses an `hr.` key by name rather than forwarding. `hr_knob_clear` now names the cleared scope row in its audit row, as `hr_knob_set` already did. Migration `migrations/dd221_the_write_goes_through_the_keys_own_door.sql`.
+
 - **2026-09-14 (DD-203 — an HR setting's exceptions are set here, not nowhere)** —
   `/hr/settings/*` now mounts the platform's ONE per-rung override picker
   (`<KnobRungOverrides>`, via `features/hr/settings/components/HrKnobExceptions.tsx`),

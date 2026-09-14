@@ -61359,6 +61359,86 @@ export type Database = {
           },
         ]
       }
+      knob_write_door: {
+        Row: {
+          authority_kind: string
+          clear_door: string
+          created_at: string
+          created_by: string | null
+          feature_prefix: string
+          id: string
+          metadata: Json
+          organization_id: string
+          reason: string
+          set_door: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          authority_kind: string
+          clear_door: string
+          created_at?: string
+          created_by?: string | null
+          feature_prefix: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason: string
+          set_door: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          authority_kind?: string
+          clear_door?: string
+          created_at?: string
+          created_by?: string | null
+          feature_prefix?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          set_door?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knob_write_door_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knob_write_door_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knob_write_door_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knob_write_door_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifecycle_archive: {
         Row: {
           bucket: string
@@ -65152,6 +65232,10 @@ export type Database = {
       }
       knob_scope_rows: {
         Args: { p_kind: string; p_organization_id: string }
+        Returns: Json
+      }
+      knob_write_door_for: {
+        Args: { p_key: string; p_organization_id?: string }
         Returns: Json
       }
       lifecycle_archive_candidates: {
