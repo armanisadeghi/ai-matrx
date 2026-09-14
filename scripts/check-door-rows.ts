@@ -632,9 +632,20 @@ const NORM = (expr: string): string =>
   `lower(btrim(regexp_replace(regexp_replace(${expr}, '(^|[ ,(])[a-z_][a-z0-9_]*\\.', '\\1', 'g'), '\\s+', ' ', 'g')))`;
 
 async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>): Promise<Door[]> {
+  // 🚨 DD-213c. The blocking lane was "the 477 doors DD-169 batch 3 declared" and
+  // nothing else — so `iam.emergency_door_open`, `iam.emergency_door_approve` and
+  // `iam.emergency_door_deny`, declared under their own `declared_by`, were never
+  // probed by the gate that blocks. The first of them handed a stranger a refusal
+  // AND a row in another organization's `iam.access_audit`, and `0 FAIL` was honest
+  // about what it measured and silent about them. A door family that writes into an
+  // access log belongs in the lane that blocks, so the population is the B-75 set
+  // PLUS every declaration named here. Adding a row here is how a family joins the
+  // blocking lane; it is never a way to take one out.
+  const ALWAYS_PROBED = ["iam_emergency_door_dd137a"];
+  const alsoProbed = `or d.declared_by in (${ALWAYS_PROBED.map((s) => `'${s}'`).join(", ")})`;
   const where =
     POPULATION === "b75"
-      ? `and d.declared_by = 'DD-169 batch 3 / B-75'`
+      ? `and (d.declared_by = 'DD-169 batch 3 / B-75' ${alsoProbed})`
       : POPULATION === "signed-in"
         ? ``
         : ``;
@@ -699,7 +710,7 @@ async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown
 
 interface Structural {
   unresolved: { fn: string; args: string; declaredBy: string | null }[];
-  notCallable: { fn: string; args: string; declaredBy: string | null }[];
+  notCallable: { fn: string; args: string; declaredBy: string | null; serviceLane: boolean }[];
 }
 
 async function structuralFindings(
@@ -713,8 +724,14 @@ async function structuralFindings(
       where n.nspname = d.schema_name and p.proname = d.function_name
         and ${NORM("pg_get_function_identity_arguments(p.oid)")} = ${NORM("d.identity_args")})
     order by 1, 2`);
-  const notCallable = await q<{ fn: string; args: string; declared_by: string | null }>(`
-    select d.schema_name || '.' || d.function_name as fn, d.identity_args as args, d.declared_by
+  // 🚨 DD-210 (B-108). A row carrying `non_client_lane` is a SERVICE-LANE door —
+  // reached with the service key, never by a browser — so "no client holds EXECUTE"
+  // is its declared shape, not a discrepancy. The COLUMN is the flag (it holds the
+  // reason, so non-null means declared); the harness never infers the lane from a
+  // name, and never from a word in the free-text `reason`.
+  const notCallable = await q<{ fn: string; args: string; declared_by: string | null; service_lane: boolean }>(`
+    select d.schema_name || '.' || d.function_name as fn, d.identity_args as args, d.declared_by,
+           (d.non_client_lane is not null) as service_lane
     from platform.client_callable_door d
     join pg_namespace n on n.nspname = d.schema_name
     join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
@@ -722,10 +739,11 @@ async function structuralFindings(
     where not has_function_privilege('authenticated', p.oid, 'EXECUTE')
       and not has_function_privilege('anon', p.oid, 'EXECUTE')
     order by 1, 2`);
-  const map = (r: { fn: string; args: string; declared_by: string | null }) => ({
+  const map = (r: { fn: string; args: string; declared_by: string | null; service_lane?: boolean }) => ({
     fn: r.fn,
     args: r.args,
     declaredBy: r.declared_by,
+    serviceLane: r.service_lane === true,
   });
   return { unresolved: unresolved.map(map), notCallable: notCallable.map(map) };
 }
@@ -751,6 +769,28 @@ const DISCRIMINATOR = /^(target_type|container_type|resource_type|entity_type|ow
  * table it points into.
  */
 const DISCRIMINATOR_VOCAB = ["organization", "org", "project", "scope", "site", "brand", "platform", "user"];
+
+/**
+ * The emergency-door argument shape, by SHAPE and not by name, so a fifth door
+ * of the same family is measured the day it is declared.
+ */
+const EMERGENCY_DOOR_SHAPE = (door: Door): boolean =>
+  door.argNames.length === 4 &&
+  ["p_token", "p_id", "p_purpose", "p_justification"].every((n, i) => door.argNames[i] === n);
+
+/**
+ * A victim row for the emergency-door recipe, paired with the table whose token
+ * names it. HR rows first: they are the tier these doors exist for, and the
+ * catalog's victim rows are in organizations neither caller has standing in by
+ * construction.
+ */
+function emergencyDoorVictim(catalog: Catalog, schema: string): { table: string; id: string } | null {
+  for (const name of ["location", "employee", "employment", "incident", "department"]) {
+    const hit = pickEntity(catalog, "hr", [name]) ?? pickEntity(catalog, schema, [name]);
+    if (hit) return hit;
+  }
+  return null;
+}
 
 function doorNeedsDiscriminator(door: Door): boolean {
   return door.argNames.some((n, i) => DISCRIMINATOR.test(n.replace(/^p_/, "")) && /^(text|character varying|citext)$/.test(door.argTypes[i] ?? ""));
@@ -796,6 +836,54 @@ function fillArgs(door: Door, catalog: Catalog, cast: Cast, victimUserId: string
         } else if (isRequired) {
           unresolved.push(`${name} ${type}`);
         }
+        continue;
+      }
+    }
+
+    // 🚨 DD-213c. THE EMERGENCY-DOOR SHAPE: `(p_token, p_id, p_purpose, p_justification)`.
+    // `p_token` is an entity-type token and `p_id` a row of the table that token
+    // names — neither means anything without the other, so ordinary derivation
+    // correctly refused to guess and `iam.emergency_door_open` / `public.hr_break_glass`
+    // sat UNMEASURED while the first of them handed a stranger a refusal AND a row
+    // in another organization's `iam.access_audit` (V-77 §9, proven live). The
+    // recipe pairs a victim row with ITS OWN token, so the door gets a real
+    // cross-boundary probe instead of a type error read as a refusal.
+    if (EMERGENCY_DOOR_SHAPE(door)) {
+      if (bare === "token" && /^(text|character varying|citext)$/.test(type)) {
+        const hit = emergencyDoorVictim(catalog, door.schema);
+        if (hit) {
+          push(name, "text", hit.table.replace(".", "_"));
+        } else if (isRequired) {
+          unresolved.push(`${name} ${type} (no victim row exists for any token this recipe knows)`);
+        }
+        continue;
+      }
+      if (bare === "id" && type === "uuid") {
+        const hit = emergencyDoorVictim(catalog, door.schema);
+        if (hit) {
+          crossed = true;
+          injectedIds.push(hit.id);
+          push(name, "uuid", hit.id);
+        } else if (isRequired) {
+          unresolved.push(`${name} ${type} (no victim row exists for any token this recipe knows)`);
+        }
+        continue;
+      }
+      if (bare === "purpose" && /^(text|character varying|citext)$/.test(type)) {
+        // A purpose the door recognises reaches its DEEPEST refusal (the admin
+        // check). An unregistered one is refused earlier — and wrote a row there
+        // too, before DD-213c — so either value measures the door; this one
+        // measures more of it.
+        push(name, "text", "support_investigation");
+        continue;
+      }
+      if (bare === "justification" && /^(text|character varying|citext)$/.test(type)) {
+        // Long enough to clear the door's own minimum-length refusal.
+        push(
+          name,
+          "text",
+          "check:door-rows (DD-213c) is probing this emergency door from an account with no standing in the organization that owns the row; this call is inside a transaction that is always rolled back.",
+        );
         continue;
       }
     }
@@ -1765,6 +1853,89 @@ async function replayDd213(
   return red && green && guarded;
 }
 
+/**
+ * DD-213c, RED then GREEN, on the SECOND access log.
+ *
+ * `iam.access_audit` is written by four functions, three of which bypass its
+ * recorder, so the rule lives on the table as a BEFORE INSERT trigger as well as
+ * in `iam._record_access_audit`. This replay takes BOTH away — the fixture
+ * `scripts/door-rows/dd213c-pre-fix-iam-record-access-audit.sql` restores the
+ * pre-fix recorder and replaces the trigger's FUNCTION with a pass-through (never
+ * DROP TRIGGER: that needs an ACCESS EXCLUSIVE lock on a busy audit table and
+ * killed this proof on its first run) — inside one rolled-back transaction, and
+ * asserts that `iam.emergency_door_open` is then a FAIL naming the row it wrote
+ * into an organization the caller has no standing in. That door was not even in
+ * this gate's population until DD-213c; it is now, and this is what keeps it
+ * measured rather than hand-proven.
+ */
+async function replayDd213c(
+  db: pg.Client,
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  cast: Cast,
+  catalog: Catalog,
+  doors: Door[],
+): Promise<boolean> {
+  const door = doors.find((d) => d.schema === "iam" && d.fn === "emergency_door_open");
+  if (!door) {
+    console.log(
+      `${TAG.fail}DD-213c WRITE ARM: iam.emergency_door_open is not in this population — the door family DD-213c added is missing and nothing was proven`,
+    );
+    return false;
+  }
+  const fixture = resolve(ROOT, "scripts/door-rows/dd213c-pre-fix-iam-record-access-audit.sql");
+  if (!existsSync(fixture)) {
+    console.log(`${TAG.fail}DD-213c WRITE ARM: the pre-fix fixture is missing at ${fixture} — nothing was proven`);
+    return false;
+  }
+  const preFix = readFileSync(fixture, "utf8");
+
+  let red = false;
+  let green = false;
+  await db.query("begin");
+  OUTER_TX = true;
+  try {
+    const after = await measureDoor(db, q, cast, catalog, door);
+    green = after.verdict === "PASS";
+    console.log(
+      green
+        ? `${TAG.ok}DD-213c WRITE ARM (live body): iam.emergency_door_open is PASS — ${after.why}`
+        : `${TAG.fail}DD-213c WRITE ARM (live body): iam.emergency_door_open came back ${after.verdict} (${after.why})`,
+    );
+
+    await db.query(preFix);
+    const before = await measureDoor(db, q, cast, catalog, door);
+    red = before.verdict === "FAIL";
+    console.log(
+      red
+        ? `${TAG.ok}DD-213c RED proven: with the pre-fix iam recorder and a pass-through trigger restored, iam.emergency_door_open is ${before.verdict} — ${before.leaked.slice(0, 1).join(", ")}`
+        : `${TAG.fail}DD-213c RED: the pre-fix iam recorder came back ${before.verdict} (${before.why}) — the second access log is not being measured`,
+    );
+  } finally {
+    OUTER_TX = false;
+    await db.query("rollback");
+  }
+
+  // Bound AND still carrying the rule — a trigger left pointing at the fixture's
+  // pass-through body would be a trigger that guards nothing.
+  const live = await q<{ n: string }>(
+    `select count(*)::text n from pg_trigger t
+       join pg_class c on c.oid = t.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       join pg_proc p on p.oid = t.tgfoid
+      where n.nspname = 'iam' and c.relname = 'access_audit'
+        and t.tgname = 'access_audit_records_its_own_people' and not t.tgisinternal
+        and t.tgenabled <> 'D'
+        and p.prosrc like '%_has_audit_standing%'`,
+  );
+  const bound = live[0]?.n === "1";
+  console.log(
+    bound
+      ? `${TAG.info}after rollback, the DD-213c trigger on iam.access_audit is bound, enabled and still asks hr._has_audit_standing (the live guard is intact)`
+      : `${TAG.fail}after rollback, the DD-213c trigger on iam.access_audit is missing, disabled, or no longer asks hr._has_audit_standing — the fixture was left behind`,
+  );
+  return red && green && bound;
+}
+
 async function selfTest(
   db: pg.Client,
   q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
@@ -1873,12 +2044,18 @@ async function selfTest(
   // shipped bytes, inside a rolled-back transaction, and asserts FAIL.
   const writeArm = await replayDd213(db, q, cast, catalog, _doors);
 
+  // THE SAME PROOF ON THE SECOND ACCESS LOG. `iam.access_audit` has four writers,
+  // three of which never call its recorder, so DD-213c put the rule on the table
+  // as a trigger AND in the recorder. This drops the trigger and restores the
+  // pre-fix recorder from ITS shipped bytes, then probes `iam.emergency_door_open`.
+  const writeArmIam = await replayDd213c(db, q, cast, catalog, _doors);
+
   const planted = await q<{ n: string }>(
     `select count(*)::text n from pg_proc where proname like 'dd192_selftest%'`,
   );
   console.log(`${TAG.info}after rollback, planted functions remaining: ${planted[0].n} (must be 0)`);
   const clean = planted[0].n === "0";
-  return failedTheLeak && passedTheBounded && clean && replay && writeArm ? 0 : 1;
+  return failedTheLeak && passedTheBounded && clean && replay && writeArm && writeArmIam ? 0 : 1;
 }
 
 // ─── the by-design allowlist (DD-208) ────────────────────────────────────────
@@ -1955,7 +2132,11 @@ function report(results: DoorResult[], structural: Structural): number {
     for (const r of structural.unresolved)
       console.log(`       ${r.fn}(${r.args}) — resolves to no live function [${r.declaredBy ?? "no declared_by"}]`);
     for (const r of structural.notCallable)
-      console.log(`       ${r.fn}(${r.args}) — no client holds EXECUTE; the row declares a door that is not one [${r.declaredBy ?? "no declared_by"}]`);
+      console.log(
+        r.serviceLane
+          ? `       ${r.fn}(${r.args}) — service-lane door, not client-callable (declared non_client_lane); this gate probes browser callers, so it is out of scope by design, not a suspect [${r.declaredBy ?? "no declared_by"}]`
+          : `       ${r.fn}(${r.args}) — no client holds EXECUTE; the row declares a door that is not one [${r.declaredBy ?? "no declared_by"}]`,
+      );
   }
 
   if (allowed.length) {
