@@ -1,5 +1,7 @@
 "use client";
 
+import { cloneElement, isValidElement } from "react";
+
 import { TapTargetButton, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import type { TableToolbarActionProps } from "@ai-matrx/design-system/data-table/host";
 
@@ -15,6 +17,15 @@ export function TableToolbarAction({
   onClick,
   children,
 }: TableToolbarActionWithActiveProps) {
+  // Pass the icon itself through the tap target. A wrapper leaves the target's
+  // 14px `.matrx-tap-icon` class on the nested SVG, despite the wrapper's
+  // descendant utility. Text children are pagination labels and stay text.
+  const icon = isValidElement<{ className?: string }>(children) &&
+    (typeof children.type !== "string" || children.type === "svg")
+    ? cloneElement(children, {
+      className: `!h-5 !w-5 ${children.props.className ?? ""}`,
+    })
+    : children;
   return (
     active ? (
       <TapTargetButton
@@ -24,7 +35,7 @@ export function TableToolbarAction({
         aria-busy={busy || undefined}
         aria-current="page"
         onClick={onClick}
-        icon={children}
+        icon={icon}
       />
     ) : (
       <TapTargetButtonTransparent
@@ -33,7 +44,7 @@ export function TableToolbarAction({
         disabled={disabled}
         aria-busy={busy || undefined}
         onClick={onClick}
-        icon={children}
+        icon={icon}
       />
     )
   );
