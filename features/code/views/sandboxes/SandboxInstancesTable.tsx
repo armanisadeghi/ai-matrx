@@ -1,5 +1,8 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { MatrxDataTableProvider } from "@ai-matrx/design-system/data-table/host";
+
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -199,6 +202,26 @@ export function SandboxInstancesTable({
   showingHistory = false,
   selection,
 }: SandboxInstancesTableProps) {
+  const searchParams = useSearchParams();
+  if (searchParams.get("tablePreview") === "defaults") {
+    const fields = Array.from(new Set(instances.flatMap((row) => Object.keys(row))));
+    const defaultColumns: MatrxColumnDef<SandboxInstance>[] = fields.map((field) => ({
+      accessorKey: field as keyof SandboxInstance,
+      header: field.replaceAll("_", " "),
+    }));
+    return (
+      <MatrxDataTableProvider value={{}}>
+        <MatrxDataTable
+          data={instances}
+          columns={defaultColumns}
+          getRowId={(row) => row.id}
+          tableId="sandbox/package-defaults"
+          toolbar={{ title: "Sandboxes — package defaults" }}
+          isLoading={loading}
+        />
+      </MatrxDataTableProvider>
+    );
+  }
   const columns: MatrxColumnDef<SandboxInstance>[] = [
     {
       accessorKey: "name",
