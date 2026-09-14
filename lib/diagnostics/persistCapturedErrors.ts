@@ -39,9 +39,20 @@ const FLUSH_DELAY_MS = 1500;
 const RECORD_UNAVAILABLE_SETTLE_MS = 10_000;
 const MAX_PER_FLUSH = 20;
 export const EARLY_USER_OBSERVATION_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * DD-237. How long a flush keeps waiting for this browser to acquire SOME
+ * identity — a session or a guest fingerprint — before it gives up on
+ * recording. Both settle within a second or two of boot; this is generous
+ * enough that a slow boot never loses the row and short enough that a browser
+ * which will never have either stops retrying.
+ */
+const IDENTITY_SETTLE_BUDGET_MS = 30_000;
+const IDENTITY_RETRY_DELAY_MS = 2_000;
 
 let installed = false;
 let flushScheduled = false;
+/** Epoch ms of this page's first flush attempt — the identity-wait clock. */
+let firstFlushAt: number | null = null;
 const persistedIds = new Set<string>();
 
 function scheduleFlush(delayMs: number): void {
@@ -98,6 +109,8 @@ function toJson(v: unknown): Json {
 async function flush(): Promise<void> {
   flushScheduled = false;
   if (process.env.NODE_ENV !== "production") return;
+  if (firstFlushAt === null) firstFlushAt = Date.now();
+  const flushStartedAt = firstFlushAt;
 
   let isAuthenticated = false;
   let isGuest = false;
@@ -158,7 +171,31 @@ async function flush(): Promise<void> {
     import("@/lib/services/fingerprint-service"),
   ]);
   const fingerprint = isAuthenticated ? null : getCachedFingerprint();
-  if (!isAuthenticated && !fingerprint) return;
+  if (!isAuthenticated && !fingerprint) {
+    // DD-237 — THE EVIDENCE TRAIL WAS THINNEST WHERE THE DEFECT WAS.
+    // A read that fails BECAUSE no session is attached is, at that same moment,
+    // a read whose scream has neither the authenticated RPC nor (this early) a
+    // guest fingerprint to carry it. `return` dropped it on the floor: the
+    // capture is never marked persisted, but nothing schedules another flush
+    // unless some unrelated error happens to fire later. That is why 18 failing
+    // production reads on 2026-09-14 left no row in `ops.system_error` while the
+    // identical failure at 06:03Z and 08:10Z did.
+    //
+    // The fingerprint service settles within a second or two of boot, so wait
+    // for it instead of losing the row — bounded, because a browser that never
+    // produces one must not retry forever.
+    if (Date.now() - flushStartedAt < IDENTITY_SETTLE_BUDGET_MS) {
+      scheduleFlush(IDENTITY_RETRY_DELAY_MS);
+    } else {
+      console.warn(
+        "[persistCapturedErrors] captured errors could not be recorded: this " +
+          "browser has neither an authenticated session nor a guest fingerprint " +
+          `after ${IDENTITY_SETTLE_BUDGET_MS} ms. They remain visible in the ` +
+          "Error Inspector for this page only.",
+      );
+    }
+    return;
+  }
   for (const candidate of pending) {
     // Re-read after the async import. AccessGate may have reconciled this exact
     // capture while the flush was preparing; persistence must use the settled
@@ -194,6 +231,12 @@ async function flush(): Promise<void> {
         url: e.url,
         browserProvenance: e.browserProvenance,
         name: e.name,
+        // DD-237. Without this a client read refused for carrying no identity
+        // lands as a bare `42501 permission denied`, identical on the wire to a
+        // real grant gap for `authenticated`. `pre_attach` says the auth cookie
+        // was in the browser and the session was not — the boot race, or a
+        // long-lived tab whose session lapsed.
+        session_state: e.sessionState ?? null,
       });
       if (isAuthenticated) {
         await supabase.rpc("log_client_error", {

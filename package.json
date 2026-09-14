@@ -46,6 +46,8 @@
     "test:render-matrix": "jest features/content-ir/render-paths features/content-ir/__tests__/embedded-kind-container-recovery.test.ts features/content-ir/__tests__/nested-parser-combinations.test.ts features/tool-call-visualization/result-fields/__tests__/nested-markdown.test.tsx components/mardown-display/blocks/xml/XmlBlock.test.tsx components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx components/mardown-display/chat-markdown/__tests__/unrecognizedXmlFallback.test.ts --no-coverage",
     "test:workflow-runtime": "jest features/workflow-runtime features/workflow-emit --no-coverage",
     "check:org-header-lanes": "tsx scripts/check-org-header-lanes.ts",
+    "check:session-first-reads": "tsx scripts/check-session-first-reads.ts",
+    "check:session-first-reads:self-test": "tsx scripts/check-session-first-reads.ts --self-test",
     "check:org-refusal-honesty": "tsx scripts/check-org-refusal-honesty.ts",
     "check:org-refusal-honesty:self-test": "tsx scripts/check-org-refusal-honesty.ts --self-test",
     "check:organization-context": "tsx scripts/check-org-header-lanes.ts && tsx scripts/check-org-refusal-honesty.ts && node scripts/check-note-content-source-constructors.mjs && jest organization-context features/marketing/data/organization-scope.test.ts features/agent-shortcuts/resolveShortcutWriteScope.test.ts --runInBand --no-coverage",

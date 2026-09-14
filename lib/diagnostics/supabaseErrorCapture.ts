@@ -18,6 +18,17 @@
  * Browser-only by construction: it wraps the browser client. The server client
  * is untouched (server errors surface in server logs; this layer is about the
  * user's in-browser, on-page visibility).
+ *
+ * IT IS ALSO WHERE THE SESSION BARRIER LIVES (DD-237). Because this is the ONE
+ * proxy every browser `.from()` / `.rpc()` / `.schema()` passes through, it is
+ * the only place that can guarantee "no authenticated read leaves this client
+ * before the session is attached" without asking a thousand call sites to
+ * remember. The rule, the measurements behind it and the budgets are in
+ * `utils/supabase/sessionBarrier.ts`; this file holds the two seams that call
+ * it — a bounded wait before the request, and one retry after a refusal that
+ * means the request carried no identity. `pnpm check:session-first-reads`
+ * fails if either seam or the install call goes missing, or if browser code
+ * starts building a Supabase client that does not pass through here.
  */
 
 import { extractErrorMessage } from "@/utils/errors";
@@ -26,6 +37,15 @@ import {
   captureError,
   type CapturedOperation,
 } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  awaitSessionBeforeSend,
+  canSendImmediately,
+  installSessionBarrier,
+  isSessionRefusal,
+  recoverSessionForRetry,
+  sessionStateMarker,
+  shouldRecoverSession,
+} from "@/utils/supabase/sessionBarrier";
 
 /** Context threaded through a single query-builder chain. */
 interface ChainContext {
@@ -198,6 +218,10 @@ function captureResult(
         ? "TypeError"
         : undefined,
     callSite: cleanCallSite(caller.stack),
+    // DD-237: what the client knew about its own session when this failed.
+    // A bare `42501 permission denied` cost three lanes a day each because
+    // nothing recorded whether the request had an identity at all.
+    sessionState: sessionStateMarker(),
     raw: e,
   });
 }
@@ -218,6 +242,7 @@ function captureException(
     stack: err instanceof Error ? err.stack : undefined,
     status: typeof status === "number" ? status : undefined,
     callSite: cleanCallSite(caller.stack),
+    sessionState: sessionStateMarker(),
     raw: serializeThrown(err),
   });
 }
@@ -263,6 +288,12 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
           // Captured cheaply at execution time; `.stack` is only formatted
           // (the expensive part) if we actually capture an error below.
           const caller = new Error("supabase-call-site");
+          // THE SESSION BARRIER (DD-237), second seam. One retry per chain: a
+          // refusal that means "this request carried no identity" asks for the
+          // session back and replays the request once. A 42501 is raised before
+          // the statement does anything and PostgREST runs each request in its
+          // own transaction, so replaying a refused write replays nothing.
+          let sessionRetried = false;
           const execute = (retryIndex: number): unknown =>
             Reflect.apply(thenFn, target, [
               async (res: unknown) => {
@@ -274,6 +305,18 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
                 ) {
                   await wait(SCHEMA_CACHE_RETRY_DELAYS_MS[retryIndex]);
                   return execute(retryIndex + 1);
+                }
+                if (
+                  res &&
+                  typeof res === "object" &&
+                  !sessionRetried &&
+                  isSessionRefusal(res as PostgrestLikeResult) &&
+                  shouldRecoverSession(ctx)
+                ) {
+                  sessionRetried = true;
+                  if (await recoverSessionForRetry(ctx)) {
+                    return execute(retryIndex);
+                  }
                 }
                 try {
                   if (res && typeof res === "object" && "error" in res) {
@@ -299,7 +342,17 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
               },
             ]);
 
-          return execute(0);
+          // THE SESSION BARRIER (DD-237), first seam. The synchronous path is
+          // the one every healthy request takes — an attached session, a door
+          // declared anonymous-by-design, or a browser with no auth cookie —
+          // and it is byte-identical to the behaviour before the barrier. Only
+          // a request whose session is EXPECTED but not yet in hand waits, and
+          // only for a bounded budget.
+          if (canSendImmediately(ctx)) return execute(0);
+          return (async () => {
+            await awaitSessionBeforeSend(ctx);
+            return execute(0);
+          })();
         };
       }
 
@@ -375,6 +428,11 @@ export function wrapClientForCapture<T>(client: T): T {
   }
   const target = client as object;
   if ((target as { [WRAPPED]?: boolean })[WRAPPED]) return client;
+
+  // THE SESSION BARRIER (DD-237) binds here, at client construction — the
+  // earliest point `INITIAL_SESSION` can be heard, which is what makes the
+  // barrier's wait free on every healthy request. Idempotent and browser-only.
+  installSessionBarrier(target);
 
   return new Proxy(target, {
     get(target, prop, receiver) {

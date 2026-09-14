@@ -313,6 +313,22 @@ export interface CapturedError {
   /** Full JSON-safe dump of the original error object — future-proof. */
   raw?: unknown;
 
+  /**
+   * What the client knew about its own Supabase session when this fired
+   * (DD-237): `attached`, `pre_attach` (the auth cookie says this browser is
+   * signed in but no session was in hand — racing at boot, or lapsed in a
+   * long-lived tab), `signed_out`, or `unknown`.
+   *
+   * It is a FIRST-CLASS field, not a line in `details`, for the same reason
+   * `recoverable` is: a tier rule and the server-side triage query both have
+   * to be able to see it. Until 2026-09-14 a client read refused for having no
+   * identity reached `ops.system_error` as a bare `42501 permission denied`,
+   * indistinguishable from a real grant gap, and three lanes spent a day each
+   * re-deriving which one it was. Stamped by `supabaseErrorCapture.ts` and
+   * persisted into `context.session_state`.
+   */
+  sessionState?: string;
+
   /** False keeps an expected recovery visible locally without filing a system_error. */
   durable?: boolean;
 
@@ -356,6 +372,8 @@ export interface CaptureInput {
   stack?: string;
   callSite?: string;
   raw?: unknown;
+  /** DD-237 — see CapturedError.sessionState. */
+  sessionState?: string;
   /** Set false only for expected, successfully handled diagnostics. Default true. */
   durable?: boolean;
 }
@@ -583,6 +601,7 @@ export function captureError(input: CaptureInput): string {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
+    sessionState: input.sessionState,
     durable: input.durable ?? true,
     dedupeKey: sig,
     // Classified below; seeded to the default so the object is well-typed.

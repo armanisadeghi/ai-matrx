@@ -25,6 +25,55 @@ and anything that runs on every page load. Violations here cost every user on ev
 4. **No client-side Supabase auth calls.** User identity is already in Redux. Use selectors. The only
    legitimate Supabase auth access is server-side (Server Components, API routes, `proxy.ts`).
 
+5. **No authenticated read leaves the client before the session is attached.** You inherit this — see
+   THE CLIENT BOOT LAW below. Never hand-roll a session check, an auth subscription, or a retry
+   around a Supabase read.
+
+---
+
+## THE CLIENT BOOT LAW (DD-237)
+
+**A read that needs a session never leaves this client without one, and a read refused for having
+none is never silent.** You get this for free and you must not reimplement it.
+
+### Why it exists
+
+`supabase-js` attaches the caller's JWT inside its own fetch. When `auth.getSession()` yields
+nothing it silently sends the PUBLISHABLE key instead, PostgREST runs the statement as `anon`, and
+`anon` holds **no grant on any application table in this database**. The read comes back
+`42501 permission denied` at HTTP **401** — a refusal, not an empty list, indistinguishable on the
+wire from a real grant gap. Measured on production over the 48 h to 2026-09-14: 59 such rows across
+28 relations, none retried, none shown to anyone. Two live shapes, both covered: a read racing the
+session at boot, and a long-lived background tab whose session lapsed underneath it.
+
+### What you inherit
+
+`utils/supabase/sessionBarrier.ts`, installed in the ONE proxy the browser client is wrapped in
+(`lib/diagnostics/supabaseErrorCapture.ts`, bound in `utils/supabase/authCookie.ts`). Every
+`.from()` / `.rpc()` / `.schema()` from `@/utils/supabase/client` passes through it:
+
+| | |
+|---|---|
+| **Wait** | When the auth cookie says this browser is signed in but no session is in hand, the request waits — bounded by `SESSION_ATTACH_BUDGET_MS`, and skipped entirely on the healthy path, which stays synchronous. |
+| **Retry once** | A 401 refusal carrying `42501` / `PGRST301` / `28000` re-resolves the session and replays the request exactly once. Safe for writes: a 42501 is raised before the statement does anything. |
+| **Scream** | A barrier that fires says so in the Error Inspector with the remedy, and every Supabase capture is stamped with `sessionState` → `ops.system_error.context.session_state`. |
+
+### The four rules
+
+1. **Get your client from `@/utils/supabase/client`.** A client you build yourself
+   (`createBrowserClient`, `supabaseNext.browserClient()`) inherits neither the barrier nor error
+   capture. Guard: `pnpm check:session-first-reads`.
+2. **Never write your own session gate.** No `if (!userId) return` before a read, no
+   `onAuthStateChange` subscription to re-run a query, no hand-rolled retry. Need to know when a
+   session exists? `whenSessionAttached()` / `hasAttachedSession()` from the barrier — one
+   subscription per tab, and the ONE signal the platform publishes.
+3. **A 42501 at 403 is NOT a session problem.** It is a real grant gap for `authenticated`. The
+   barrier deliberately leaves it alone; so should you. Fix the grant.
+4. **A door that a caller with no account reaches is declared by name** in
+   `utils/supabase/anonymousByDesignDoors.ts`, mirroring
+   `platform.client_callable_door.anonymous_callers`, WITH its purpose. That list only removes a
+   wait — it can never widen access, and the database still answers.
+
 ---
 
 ## User Identity — Client Side

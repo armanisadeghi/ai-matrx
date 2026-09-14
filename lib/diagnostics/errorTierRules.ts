@@ -116,6 +116,18 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
   // pinned annotation IS the "critical platform violation" classification.)
   // ══════════════════════════════════════════════════════════════════════
   {
+    id: "session-barrier-recovered",
+    tier: "orange",
+    persist: false,
+    reason:
+      "DD-237: this read reached the database with no session attached, the session barrier re-resolved the session and replayed the request once, and the caller got its data. It is announced, not swallowed — but a recovery that worked is a dot, not an alarm. The two failing outcomes (SESSION_BARRIER_TIMEOUT, SESSION_BARRIER_UNRECOVERED) stay red and durable on purpose.",
+    addedAt: "2026-09-14",
+    match: {
+      source: "supabase-postgrest",
+      code: "SESSION_BARRIER_RECOVERED",
+    },
+  },
+  {
     id: "handled-auth-token-refusal",
     tier: "yellow",
     persist: false,
