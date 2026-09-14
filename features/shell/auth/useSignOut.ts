@@ -28,6 +28,7 @@
 
 import { useCallback } from "react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectDisplayName,
@@ -109,6 +110,18 @@ export async function performLocalSignOut(redirectTo: string): Promise<void> {
   activeOrgCookie.clear();
   await supabase.auth.signOut({ scope: "local" });
   window.location.href = redirectTo;
+}
+
+/**
+ * A sign-out that could not run says so (law 4: nothing fails silently). The
+ * confirm host can refuse to appear and the network can drop before the
+ * redirect; a `void signOut()` would close the menu and leave a live session
+ * the person believes is gone.
+ */
+export function reportSignOutFailure(error: unknown): void {
+  const detail = error instanceof Error ? error.message : String(error);
+  console.error("[useSignOut] sign-out did not complete:", error);
+  toast.error(`Sign out did not complete — you are still signed in. ${detail}`);
 }
 
 export interface SignOutIdentity {

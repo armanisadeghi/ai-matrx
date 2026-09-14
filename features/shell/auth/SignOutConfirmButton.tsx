@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { runSignOutFlow, type SignOutIdentity } from "./useSignOut";
+import { reportSignOutFailure, runSignOutFlow, type SignOutIdentity } from "./useSignOut";
 
 /**
  * The button on /sign-out. Client-side on purpose: the sign-out must run in
@@ -33,7 +33,7 @@ export function SignOutConfirmButton({ identity }: { identity: SignOutIdentity }
             if (!done) setPending(false);
           } catch (error) {
             setPending(false);
-            throw error;
+            reportSignOutFailure(error);
           }
         }}
       >

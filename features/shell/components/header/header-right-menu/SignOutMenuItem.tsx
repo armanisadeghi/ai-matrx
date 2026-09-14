@@ -2,7 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSignOut } from "@/features/shell/auth/useSignOut";
+import { useSignOut, reportSignOutFailure } from "@/features/shell/auth/useSignOut";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 
 // The one sign-out primitive (device-scoped, super admins warned twice by
@@ -15,7 +15,7 @@ export function SignOutMenuItem() {
         <label htmlFor="shell-user-menu" className="block">
             <button
                 className={cn(MENU_ITEM_CLASS, "text-destructive [&_svg]:text-destructive")}
-                onClick={() => void signOut()}
+                onClick={() => signOut().catch(reportSignOutFailure)}
             >
                 <LogOut />
                 Sign Out

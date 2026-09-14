@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSignOut } from "@/features/shell/auth/useSignOut";
+import { useSignOut, reportSignOutFailure } from "@/features/shell/auth/useSignOut";
 
 interface Links {
   label: string;
@@ -95,7 +95,7 @@ function LogoutAction() {
   // The one sign-out primitive: device-scoped, super admins warned twice.
   const signOut = useSignOut();
 
-  const handleLogout = () => void signOut();
+  const handleLogout = () => signOut().catch(reportSignOutFailure);
 
   return (
     <DropdownMenuItem
