@@ -3,16 +3,14 @@
 /**
  * KIND — a placement the Offering assigner was not sure about (P12, KI-014).
  *
- * The assigner places every keyword it can; one below the `confidence_floor`
- * knob (or every one, while its autonomy mode waits for a person) is written
- * with `metadata.placement.confirmed = false` and waits here.
- *   • Confirm — `seo.gsc_confirm_keyword_topic`, the same write the proposals
- *     table's Confirm uses. It records no reason: the row it confirms is the
- *     shared system-tier placement, which has no tenant-safe place for one
- *     site's words (FOUND_DEFECTS — tier-blind placement readers).
- *   • Place elsewhere — `setKeywordService` (the ONE placement write) at this
- *     site's own tier, with the person's reason. The keyword leaves the
- *     assigner's list for good.
+ * The assigner places every keyword it can on THIS site's offerings; one below
+ * the `confidence_floor` knob (or every one, while its autonomy mode waits for a
+ * person) is written with `metadata.placement.confirmed = false` and waits here.
+ *   • Confirm — `seo.gsc_confirm_keyword_offering`. It writes only this site's
+ *     placement, keeps the person's reason on it (P24), and makes it the site's
+ *     own ruling so the assigner never revisits it.
+ *   • Place elsewhere — `setKeywordOffering` (the ONE placement write) with the
+ *     person's reason.
  *
  * The queue shows the highest-demand page; the full, sortable, filterable set
  * stays the canonical keyword table on the offerings screen (P26 — ONE TABLE),
@@ -22,16 +20,30 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLink from "@/components/navigation/AppLink";
-import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
-import { topicNodeHref } from "@/features/marketing/seo/value-system/reason-links";
+import { Button } from "@/components/ui/button";
 import {
-  confirmKeywordTopics,
-  listAllTopics,
-  listTopicProposals,
-} from "@/features/marketing/seo/value-system/topics/data";
-import { buildTopicTree } from "@/features/marketing/seo/value-system/topics/lib";
-import { TopicPickerDialog } from "@/features/marketing/seo/value-system/topics/TopicPickerDialog";
-import type { TopicProposalRow } from "@/features/marketing/seo/value-system/topics/types";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@ai-matrx/design-system";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { cn } from "@/styles/themes/utils";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  confirmKeywordOfferings,
+  KEYWORD_OFFERINGS_KEY,
+  listOfferingProposals,
+  setKeywordOffering,
+  type OfferingProposalRow,
+} from "@/features/marketing/seo/keyword-workbench/data";
+import {
+  SITE_OFFERINGS_KEY,
+  useSiteOfferings,
+} from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { extractErrorMessage } from "@/utils/errors";
 import { KeywordDoor } from "../doors";
 import type {
@@ -39,6 +51,7 @@ import type {
   ApprovalDecisions,
   ApprovalItem,
   ApprovalKind,
+  ApprovalOutcome,
   ApprovalScope,
   ApprovalSource,
 } from "../types";
@@ -49,10 +62,10 @@ const PAGE = 25;
 const WINDOW_DAYS = 90;
 
 const queryKey = (siteId: string) =>
-  ["seo", "topics", "proposals", siteId] as const;
+  [...SITE_OFFERINGS_KEY, "proposals", siteId] as const;
 
 interface PlacementItem extends ApprovalItem {
-  row: TopicProposalRow;
+  row: OfferingProposalRow;
 }
 
 function window90(): { start: string; end: string } {
@@ -64,15 +77,18 @@ function window90(): { start: string; end: string } {
   };
 }
 
-function toItem(scope: ApprovalScope, row: TopicProposalRow): PlacementItem {
-  const ctx = { brandId: scope.brandId, siteId: scope.siteId };
+function offeringsHref(scope: ApprovalScope): string {
+  return marketingRoutes.site(scope.brandId ?? null, scope.siteId, "/value/offerings");
+}
+
+function toItem(scope: ApprovalScope, row: OfferingProposalRow): PlacementItem {
   const sure = row.confidence == null ? "no confidence given" : `${row.confidence}% sure`;
   return {
-    key: `${KIND_ID}:${row.keyword_id}`,
+    key: `${KIND_ID}:${row.keywordId}`,
     kindId: KIND_ID,
     row,
-    headline: `Place "${row.phrase}" under ${row.topic_name}`,
-    acceptEffect: `Confirms "${row.phrase}" under ${row.topic_name}; the assigner will not revisit it.`,
+    headline: `Place "${row.phrase}" under ${row.offeringName}`,
+    acceptEffect: `Confirms "${row.phrase}" under ${row.offeringName} as this site's own ruling, with your reason; the assigner will not revisit it.`,
     rejectEffect: `Places "${row.phrase}" under the offering you choose, as this site's own ruling.`,
     proposedBy: `Offering assigner · ${sure}`,
     doors: (
@@ -80,10 +96,10 @@ function toItem(scope: ApprovalScope, row: TopicProposalRow): PlacementItem {
         <KeywordDoor scope={scope} phrase={row.phrase} />
         <span>→</span>
         <AppLink
-          href={topicNodeHref(ctx, row.topic_id)}
+          href={offeringsHref(scope)}
           className="font-medium text-primary underline-offset-2 hover:underline"
         >
-          {row.topic_name}
+          {row.offeringName}
         </AppLink>
         <span className="tabular-nums">
           · {row.clicks.toLocaleString()} clicks · {row.impressions.toLocaleString()} impressions
@@ -98,118 +114,179 @@ function useSource(scope: ApprovalScope): ApprovalSource {
     queryKey: queryKey(scope.siteId),
     queryFn: ({ signal }) => {
       const { start, end } = window90();
-      return listTopicProposals(scope.siteId, start, end, PAGE, signal);
+      return listOfferingProposals(scope.siteId, start, end, PAGE, signal);
     },
     staleTime: 60_000,
   });
   const rows = query.data ?? [];
-  const total = rows[0]?.total_count ?? 0;
+  const total = rows[0]?.totalCount ?? 0;
   return {
     items: rows.map((row) => toItem(scope, row)),
     total,
     loading: query.isLoading,
     error: query.error,
     refetch: () => void query.refetch(),
-    moreHref: topicNodeHref({ brandId: scope.brandId, siteId: scope.siteId }, null),
+    moreHref: offeringsHref(scope),
     moreLabel: `Work all ${total.toLocaleString()} in the proposals table`,
   };
 }
 
+function failAll(items: ApprovalItem[], message: string): ApprovalOutcome {
+  return { applied: 0, failures: items.map((item) => ({ key: item.key, message })) };
+}
+
+const NO_ORGANIZATION =
+  "This queue does not know which organization owns the site, so nothing can be written from here. Open the site's own queue.";
+
 function useDecisions(scope: ApprovalScope): ApprovalDecisions {
   const queryClient = useQueryClient();
   const settle = () => {
-    // The tree, its counts and this kind's own list all live under this root.
-    void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+    void queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY });
+    void queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, scope.siteId] });
   };
   return {
-    acceptItems: async (items) => {
-      const ids = (items as PlacementItem[]).map((item) => item.row.keyword_id);
+    acceptItems: async (items, reason) => {
+      if (!scope.organizationId) return failAll(items, NO_ORGANIZATION);
+      const ids = (items as PlacementItem[]).map((item) => item.row.keywordId);
       try {
-        await confirmKeywordTopics(scope.siteId, ids);
-        settle();
-        return { applied: items.length, failures: [] };
-      } catch (error) {
-        const message = extractErrorMessage(error);
-        return {
-          applied: 0,
-          failures: items.map((item) => ({ key: item.key, message })),
-        };
-      }
-    },
-    rejectItems: async (items, reason, choice) => {
-      if (!choice) {
-        return {
-          applied: 0,
-          failures: items.map((item) => ({
-            key: item.key,
-            message: "Choose the offering these keywords belong under.",
-          })),
-        };
-      }
-      const ids = (items as PlacementItem[]).map((item) => item.row.keyword_id);
-      try {
-        await setKeywordService({
+        await confirmKeywordOfferings({
+          organizationId: scope.organizationId,
           siteId: scope.siteId,
           keywordIds: ids,
-          topicId: choice,
           notes: reason,
         });
         settle();
         return { applied: items.length, failures: [] };
       } catch (error) {
-        const message = extractErrorMessage(error);
-        return {
-          applied: 0,
-          failures: items.map((item) => ({ key: item.key, message })),
-        };
+        return failAll(items, extractErrorMessage(error));
+      }
+    },
+    rejectItems: async (items, reason, choice) => {
+      if (!choice) return failAll(items, "Choose the offering these keywords belong under.");
+      if (!scope.organizationId) return failAll(items, NO_ORGANIZATION);
+      const ids = (items as PlacementItem[]).map((item) => item.row.keywordId);
+      try {
+        await setKeywordOffering({
+          organizationId: scope.organizationId,
+          siteId: scope.siteId,
+          keywordIds: ids,
+          offeringId: choice,
+          notes: reason,
+        });
+        settle();
+        return { applied: items.length, failures: [] };
+      } catch (error) {
+        return failAll(items, extractErrorMessage(error));
       }
     },
   };
 }
 
-/** "Not this one — which offering, then?" The canonical offering picker. */
-function RejectChooser({ items, onChosen, onCancel }: ApprovalChooserProps) {
-  const topics = useQuery({
-    queryKey: ["seo", "topics", "catalog"],
-    queryFn: () => listAllTopics(),
-  });
-  const [busy, setBusy] = useState(false);
-  if (!topics.data) return null;
-  const tree = buildTopicTree(topics.data, [], new Map());
+/**
+ * "Not this one — which offering, then?" A plain searchable list of THIS site's
+ * offerings inside the dialog (a portalled picker inside a dialog reads as an
+ * outside click and closes it), plus the reason the write keeps.
+ */
+function RejectChooser({ scope, items, onChosen, onCancel }: ApprovalChooserProps) {
+  const { start, end } = window90();
+  const offerings = useSiteOfferings(scope.siteId, start, end);
+  const [search, setSearch] = useState("");
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
   const placement = items as PlacementItem[];
+  const current = placement.length === 1 ? (placement[0]?.row.offeringId ?? null) : null;
   const label =
-    placement.length === 1
-      ? `"${placement[0]?.row.phrase}"`
-      : `${placement.length} keywords`;
+    placement.length === 1 ? `"${placement[0]?.row.phrase}"` : `${placement.length} keywords`;
+  const needle = search.trim().toLowerCase();
+  const rows = offerings.options.filter(
+    (option) =>
+      option.offeringId !== current &&
+      (!needle ||
+        option.name.toLowerCase().includes(needle) ||
+        option.lineage.toLowerCase().includes(needle)),
+  );
+
   return (
-    <TopicPickerDialog
-      tree={tree}
-      busy={busy}
-      onCancel={onCancel}
-      request={{
-        mode: "keyword",
-        title: `Place ${label} somewhere else`,
-        description:
-          "The assigner's offering was wrong. Choose the right one; it becomes this site's own ruling.",
-        subject: label,
-        currentTopicId: placement.length === 1 ? (placement[0]?.row.topic_id ?? null) : null,
-        forbidden: new Set<string>(),
-        clearLabel: null,
-        reasonPrompt: "Why does it belong there instead?",
-        onChoose: (topicId, reason) => {
-          if (!topicId) return;
-          setBusy(true);
-          onChosen(topicId, reason);
-        },
-      }}
-    />
+    <Dialog open onOpenChange={(open) => (open ? undefined : onCancel())}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base">Place {label} somewhere else</DialogTitle>
+          <DialogDescription>
+            The assigner&apos;s offering was wrong. Choose the right one; it becomes this
+            site&apos;s own ruling.
+          </DialogDescription>
+        </DialogHeader>
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Find an offering…"
+          className="text-base sm:text-sm"
+          aria-label="Find an offering"
+        />
+        <div className="max-h-64 overflow-y-auto rounded-md border border-border">
+          {offerings.loading ? (
+            <p className="p-3 text-xs text-muted-foreground">Loading this site&apos;s offerings…</p>
+          ) : rows.length === 0 ? (
+            <p className="p-3 text-xs text-muted-foreground">
+              No offering matches. Add it on the offerings screen first.
+            </p>
+          ) : (
+            rows.map((option) => (
+              <button
+                key={option.offeringId}
+                type="button"
+                onClick={() => setChosen(option.offeringId)}
+                className={cn(
+                  "flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-accent",
+                  chosen === option.offeringId && "bg-accent",
+                )}
+                style={{ paddingLeft: `${12 + Math.min(option.depth, 6) * 12}px` }}
+              >
+                <span className="min-w-0 truncate text-foreground">{option.name}</span>
+                {option.depth > 0 ? (
+                  <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+                    {option.rootName}
+                  </span>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+        <label htmlFor="placement-reason" className="text-xs font-medium text-foreground">
+          Why does it belong there instead?
+        </label>
+        <ProTextarea
+          id="placement-reason"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          rows={3}
+          className="text-xs"
+        />
+        <DialogFooter>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={!chosen}
+            onClick={() => chosen && onChosen(chosen, reason.trim() || null)}
+          >
+            Place here
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 export const topicPlacementKind: ApprovalKind = {
   id: KIND_ID,
   label: "Offering placement",
-  accept: { label: "Confirm", keepsReason: false },
+  accept: {
+    label: "Confirm",
+    keepsReason: true,
+    reasonPrompt: "Why is this right? (optional — it teaches the assigner)",
+  },
   reject: { label: "Place elsewhere", keepsReason: true },
   useSource,
   useDecisions,

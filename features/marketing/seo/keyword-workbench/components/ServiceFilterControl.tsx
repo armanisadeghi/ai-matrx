@@ -4,42 +4,42 @@
  * THE OFFERING FILTER — "I wanna know what maps to e-waste recycling, what maps
  * to ITAD, and what maps to data destruction."
  *
- * It is a SERVER filter (`topic` in the shared GSC filter dialect, `tp=` in the
- * URL), so it intersects with every other filter and pages honestly: a paged
+ * It is a SERVER filter (`offering` in the shared GSC filter dialect, `of=` in
+ * the URL), so it intersects with every other filter and pages honestly: a paged
  * table sieved in the browser tells you "12 of 4,471" and means "12 of the 50 I
  * happened to fetch".
  *
  * Choosing an offering means that offering AND everything under it — a person
- * filtering "ITAD" is asking about the branch, not the root node's three direct
+ * filtering "ITAD" is asking about the branch, not the root's three direct
  * keywords. "Not placed yet" is a first-class choice: it is the work queue.
  *
  * It lives here rather than in the shared `FilterBar` because only this surface
- * holds the topic catalog, and a chip that reads `tp: 47a36caa-…` is not a
+ * holds the site's offerings, and a chip that reads `of: 47a36caa-…` is not a
  * filter a person can understand. The dialect is shared; the control is local
  * (P22 — shared machinery never obligates a shared UI).
  */
 
 import { Network, X } from "lucide-react";
 
-import type { SiteServices } from "../hooks/useSiteServices";
+import type { SiteOfferings } from "../hooks/useSiteOfferings";
 import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
 
 export function ServiceFilterControl({
   siteId,
-  services,
+  offerings,
   value,
   onChange,
 }: {
   siteId: string;
-  services: SiteServices;
-  /** A topic id, `OFFERING_UNPLACED`, or undefined for "no offering filter". */
+  offerings: SiteOfferings;
+  /** A brand offering id, `OFFERING_UNPLACED`, or undefined for "no offering filter". */
   value: string | undefined;
   onChange: (next: string | undefined) => void;
 }) {
   const active = value
     ? value === OFFERING_UNPLACED
       ? "Not placed yet"
-      : (services.byId.get(value)?.name ?? "That offering")
+      : (offerings.byId.get(value)?.name ?? "That offering")
     : null;
 
   if (active) {
@@ -68,7 +68,7 @@ export function ServiceFilterControl({
     <div className="w-44">
       <OfferingPicker
         siteId={siteId}
-        services={services}
+        offerings={offerings}
         value={null}
         onSelect={(next) => onChange(next)}
         placeholder="Filter by offering"

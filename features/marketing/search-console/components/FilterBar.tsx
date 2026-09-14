@@ -79,10 +79,13 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   location: "Location",
   stamps: "Dimension",
   levels: "Level",
-  // THE OFFERING FILTER is set and shown by the surface that can NAME a topic
-  // (the keyword workbench's own Offering control). This bar has no topic
-  // catalog, so it never offers the key and never renders a raw uuid chip for
+  // THE OFFERING FILTER is set and shown by the surface that can NAME an
+  // offering (the keyword workbench's own Offering control). This bar holds no
+  // offerings, so it never offers the key and never renders a raw uuid chip for
   // it — see SKIPPED_KEYS below.
+  offering: "Offering",
+  // TRANSITION (brand-offerings cutover): the legacy topic-tree filter, set
+  // only by the Offerings screen that still renders the old tree.
   topic: "Offering",
   // WHOSE RULING a placement is. Like the offering filter, it is set by the
   // surface it MAKES (the topic tree's proposals queue), never chosen here —

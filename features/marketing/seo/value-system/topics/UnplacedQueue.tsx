@@ -56,7 +56,7 @@ interface AssignTopicsResult {
 const SURFACE: KeywordTableSurface = {
   id: "seo-unplaced-queue",
   label: "Keyword",
-  listLabel: "Keywords not placed on the tree",
+  listLabel: "Keywords not placed on any offering",
   location: "Marketing — Offering tree — Not placed",
   // Two keyword tables share this route, so each owns its own URL namespace and
   // Back undoes exactly one step on the one you touched.
@@ -71,7 +71,7 @@ const SURFACE: KeywordTableSurface = {
     "impressions",
     "value_band",
   ],
-  baseFilters: { topic: "none" },
+  baseFilters: { offering: "none" },
 };
 
 export function UnplacedQueue({

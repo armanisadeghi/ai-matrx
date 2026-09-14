@@ -14,7 +14,7 @@
  * It composes the canonical reads and adds NO read or write of its own:
  *   • Class · Score · Level · the receipt → `seo.gsc_keyword_value_for`
  *     (search-console/data-insights.ts — ONE resolver, never re-derived here)
- *   • Offering (topic placement) + lineage → `seo.gsc_keyword_topics_for`
+ *   • Offering placement + lineage     → `seo.gsc_keyword_offerings_for`
  *   • Every dimension stamp + provenance → `seo.gsc_keyword_stamps_for`
  *   • The dimension vocabulary itself   → `seo.facet_dimension_catalog`
  *
@@ -32,9 +32,9 @@ import {
   type GscKeywordValueRow,
 } from "@/features/marketing/search-console/data-insights";
 import {
-  getKeywordServices,
+  getKeywordOfferings,
   getKeywordStamps,
-  type KeywordServicePlacement,
+  type KeywordOfferingPlacement,
   type KeywordStamp,
 } from "@/features/marketing/seo/keyword-workbench/data";
 import {
@@ -45,8 +45,8 @@ import {
 export interface KeywordMeaning {
   /** Class / Score / Level / receipt, straight from the one resolver. */
   value: GscKeywordValueRow | null;
-  /** Where this keyword sits on the service tree, with its lineage. */
-  service: KeywordServicePlacement | null;
+  /** Which of this site's offerings this keyword maps to, with its lineage. */
+  service: KeywordOfferingPlacement | null;
   /** Every dimension answer this keyword carries, with provenance. */
   stamps: KeywordStamp[];
   /** Dimensions with NO answer yet — the honest other half of the dossier. */
@@ -77,7 +77,7 @@ export async function getKeywordMeaning(
   const slugs = dimensions.map((dimension) => dimension.slug);
   const [valueMap, serviceMap, stampMap] = await Promise.all([
     getGscKeywordValueFor(siteId, [keywordId], signal),
-    getKeywordServices(siteId, [keywordId], signal),
+    getKeywordOfferings(siteId, [keywordId], signal),
     slugs.length > 0
       ? getKeywordStamps(siteId, [keywordId], slugs, signal)
       : Promise.resolve(new Map()),
@@ -128,7 +128,7 @@ export function keywordMeaningPayload(
   return {
     class: value?.traffic_class ?? null,
     class_source: value?.class_source ?? null,
-    service: service?.topicName ?? null,
+    service: service?.offeringName ?? null,
     service_lineage: service?.lineage ?? null,
     service_assigned_by: service?.assignedBy ?? null,
     score: value?.value_score ?? null,
@@ -168,8 +168,8 @@ export function keywordMeaningLines(
     lines.push([
       "Offering",
       service.lineage
-        ? `${service.lineage} › ${service.topicName}`
-        : service.topicName,
+        ? `${service.lineage} › ${service.offeringName}`
+        : service.offeringName,
     ]);
   }
   if (stamps.length > 0) {

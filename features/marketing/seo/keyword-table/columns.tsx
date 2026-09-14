@@ -12,9 +12,9 @@
  * WHICH of them it opens on (`visible`) and may append its own action column;
  * it never gets to decide whether Clicks sorts, or whether Class filters.
  *
- * Server vs browser: `clicks`, `impressions`, `ctr`, `position`, `key` and
- * `topic` sort in the RPC, and their filters are RPC filters too (metric
- * ranges, the service subtree, the stamp pairs). The remaining columns sort
+ * Server vs browser: `clicks`, `impressions`, `ctr`, `position`, `key` and the
+ * Offering column sort in the RPC, and their filters are RPC filters too (metric
+ * ranges, the offering subtree, the stamp pairs). The remaining columns sort
  * the page on screen and the table SAYS so — sorting 5,823 rows by a stamp the
  * browser never fetched is exactly the quiet lie this system exists to stop.
  */
@@ -36,23 +36,30 @@ import {
 } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
 import { OFFERING_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
-import type { SiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
-import type { KeywordServicePlacement } from "@/features/marketing/seo/keyword-workbench/data";
+import type { SiteOfferings } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
+import type { KeywordOfferingPlacement } from "@/features/marketing/seo/keyword-workbench/data";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { LocationCell } from "@/features/marketing/seo/value-system/locations/LocationCell";
 import type { KeywordCoreColumnId } from "./state";
 import type { KeywordRowsResult } from "./useKeywordRows";
 
+/**
+ * The Offering column's id. It stays `topic` because saved views and shared
+ * links already name columns by id; the header, the sort (`p_sort: 'offering'`)
+ * and the filter (`offering`) are all the canonical offering model.
+ */
+export const OFFERING_COLUMN_ID = "topic";
+
 export interface KeywordColumnHandlers {
-  /** Place one keyword on a service (or take it off the tree with `null`). */
+  /** Place one keyword on an offering (or take it off every offering with `null`). */
   onPlaceService: (
     keywordId: string,
-    topicId: string | null,
+    offeringId: string | null,
     keyword: string,
   ) => void;
-  /** Filter the whole list to one service subtree (or clear it). */
-  onFilterByService: (topicId: string | undefined) => void;
+  /** Filter the whole list to one offering subtree (or clear it). */
+  onFilterByService: (offeringId: string | undefined) => void;
   /** Assign one dimension value to one keyword, no dialog (P23). */
   onQuickAssign: (keywordIds: string[], picked: PickedValue) => void;
   /** Take a ruling back — the same write with `p_clear`. */
@@ -102,11 +109,11 @@ export function buildKeywordColumns({
   const {
     stampFor,
     valueFor,
-    serviceFor,
+    offeringFor,
     locationFor,
     locationsReady,
     classDimension,
-    services,
+    offerings,
   } = data;
   const shown = new Set<string>(visible);
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [];
@@ -137,12 +144,12 @@ export function buildKeywordColumns({
     });
   }
 
-  if (shown.has("topic")) {
+  if (shown.has(OFFERING_COLUMN_ID)) {
     columns.push(
       buildKeywordOfferingColumn({
         siteId,
-        services,
-        serviceFor,
+        offerings,
+        offeringFor,
         onPlace: handlers.onPlaceService,
         onFilter: handlers.onFilterByService,
         onNotOffered:
@@ -461,36 +468,35 @@ export function buildKeywordColumns({
  * the one where you map it to an offering" (2026-08-25, MSR-06, said of the
  * Search Console → Queries table).
  *
- * It lives here rather than inside `buildKeywordColumns` because TWO tables now
+ * It lives here rather than inside `buildKeywordColumns` because TWO tables
  * carry it — the keyword table and the Search Console dimension table — and a
  * second definition is how the two would quietly stop agreeing about what
  * sorts, what filters, and what an unplaced keyword says. Both read the SAME
- * per-site offering catalog (`useSiteServices` over the topic tree) and write
- * through the SAME one placement RPC (`setKeywordService`); this module only
- * owns how the column looks and what it offers.
+ * site offerings (`useSiteOfferings`) and write through the SAME one placement
+ * RPC (`setKeywordOffering`); this module only owns how the column looks.
  *
- * Sort and filter are both SERVER-side (`gsc_perf_breakdown`: `p_sort: 'topic'`
- * and the `topic` filter, which takes a topic id — meaning that topic and
- * everything under it — or `none` for "nobody has placed this yet"). Filtering
- * to `none` is the whole point of the column: it is how a person finds the
- * keywords still waiting to be mapped.
+ * Sort and filter are both SERVER-side (`gsc_perf_breakdown`: `p_sort:
+ * 'offering'` and the `offering` filter, which takes an offering id — meaning
+ * that offering and everything under it on this site — or `none` for "nobody
+ * has placed this yet"). Filtering to `none` is how a person finds the keywords
+ * still waiting to be mapped.
  */
 export function buildKeywordOfferingColumn({
   siteId,
-  services,
-  serviceFor,
+  offerings,
+  offeringFor,
   onPlace,
   onFilter,
   onNotOffered,
   width = 300,
 }: {
   siteId: string;
-  services: SiteServices;
-  serviceFor: (row: GscBreakdownRow) => KeywordServicePlacement | undefined;
-  /** Place one keyword on an offering, or take it off the tree with `null`. */
-  onPlace: (keywordId: string, topicId: string | null, keyword: string) => void;
+  offerings: SiteOfferings;
+  offeringFor: (row: GscBreakdownRow) => KeywordOfferingPlacement | undefined;
+  /** Place one keyword on an offering, or take it off every offering with `null`. */
+  onPlace: (keywordId: string, offeringId: string | null, keyword: string) => void;
   /** Show every keyword that maps to this offering — the pattern-spotting door. */
-  onFilter?: (topicId: string) => void;
+  onFilter?: (offeringId: string) => void;
   /**
    * "This isn't something we offer" — a traffic CLASS, not an offering. Pass it
    * only where the caller owns a class write that can carry the reason the
@@ -501,25 +507,23 @@ export function buildKeywordOfferingColumn({
   width?: number;
 }): MatrxColumnDef<GscBreakdownRow> {
   /**
-   * EMPTY IS A REAL ANSWER. A site whose offering catalog is empty gets the
-   * sentence and the door to the screen that owns the vocabulary — never a
-   * dropdown with nothing in it, which reads as a broken control rather than
-   * as work not done yet. The flat site path resolves the brand itself, so the
-   * door is real from a surface that only knows the site id.
+   * EMPTY IS A REAL ANSWER. A site with no offerings selected gets the sentence
+   * and the door to the screen that owns them — never a dropdown with nothing in
+   * it, which reads as a broken control rather than as work not done yet.
    */
   const manageHref = marketingRoutes.site(null, siteId, "/value/offerings");
-  const noVocabulary = !services.loading && services.options.length === 0;
+  const noOfferings = !offerings.loading && offerings.options.length === 0;
 
   return {
-    id: "topic",
+    id: OFFERING_COLUMN_ID,
     header: "Offering",
     sortable: true,
     filter: "select",
     filterSingle: true,
     filterOptions: [
       { value: OFFERING_UNPLACED, label: "Not placed yet" },
-      ...services.options.map((option) => ({
-        value: option.topicId,
+      ...offerings.options.map((option) => ({
+        value: option.offeringId,
         label:
           option.depth > 0
             ? `${option.rootName} › ${option.name}`
@@ -527,19 +531,19 @@ export function buildKeywordOfferingColumn({
       })),
     ],
     width,
-    accessorFn: (row) => serviceFor(row)?.topicName ?? "",
+    accessorFn: (row) => offeringFor(row)?.offeringName ?? "",
     cell: (row) => {
       if (!row.keyword_id) {
         return <span className="text-[11px] text-muted-foreground">—</span>;
       }
-      if (noVocabulary) {
+      if (noOfferings) {
         return (
           <Link
             href={manageHref}
             onClick={(event) => event.stopPropagation()}
             className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
           >
-            No offerings defined yet — define them
+            No offerings selected yet — add them
           </Link>
         );
       }
@@ -553,10 +557,10 @@ export function buildKeywordOfferingColumn({
         >
           <ServiceCell
             siteId={siteId}
-            services={services}
-            placement={serviceFor(row)}
-            onPlace={(topicId) =>
-              onPlace(row.keyword_id as string, topicId, row.key)
+            offerings={offerings}
+            placement={offeringFor(row)}
+            onPlace={(offeringId) =>
+              onPlace(row.keyword_id as string, offeringId, row.key)
             }
             {...(onFilter ? { onFilter } : {})}
             {...(onNotOffered ? { onNotOffered: () => onNotOffered(row) } : {})}

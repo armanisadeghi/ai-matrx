@@ -28,6 +28,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { SiteTopicValue, TopicNode } from "../types";
+import type { SetOfferingResult } from "@/features/marketing/seo/keyword-workbench/data";
 import type {
   OfferingSplitRow,
   TopicPlacementStatus,
@@ -35,7 +36,6 @@ import type {
   KeywordTopicResult,
   TopicDeleteImpact,
   TopicDeleteResult,
-  TopicPlacementDiffRow,
   TopicProposalRow,
 } from "./types";
 
@@ -298,40 +298,47 @@ export async function deleteTopic(
   return row;
 }
 
-// Placing keywords on the tree is NOT written here. There is ONE placement
-// write for the whole product — `setKeywordService` in
-// `features/marketing/seo/keyword-workbench/data.ts` — and the topic tree
-// calls it like every other surface.
-//
-// This file used to carry a second, thinner wrapper over the same RPC
-// (`setKeywordPrimaryTopic`) that omitted `p_notes`. It worked, which is why
-// it survived: the placement saved and the bands came back. What it dropped
-// was the expert's WHY — so a ruling made from the topic tree, the screen
-// built specifically for an expert to say what their business sells, was the
-// one ruling that arrived with no reason attached (P24). Deleted 2026-08-24.
+/**
+ * TRANSITION (brand-offerings cutover, deleted when this screen moves to brand
+ * offerings in step 4c). Every other surface places keywords through
+ * `setKeywordOffering` (`features/marketing/seo/keyword-workbench/data.ts`) on
+ * this site's own offerings. This screen still renders the legacy `seo.topic`
+ * tree, so its placements carry topic ids and go through
+ * `seo.gsc_set_keyword_topic`, which (since migration
+ * `brand_offerings_step6b_canonical_placement_writer.sql`) also writes the
+ * canonical placement through THE placement writer. The reason (P24) rides
+ * along. No new code may call this.
+ */
+export async function setKeywordTopicPlacement(input: {
+  siteId: string;
+  keywordIds: string[];
+  topicId: string | null;
+  notes?: string | null;
+}): Promise<SetOfferingResult[]> {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_set_keyword_topic", {
+    p_site_id: input.siteId,
+    p_keyword_ids: input.keywordIds,
+    ...(input.topicId ? { p_topic_id: input.topicId } : {}),
+    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    input.topicId ? "place these keywords on that offering" : "take these keywords off the offering",
+  ) as KeywordTopicResult[];
+  // The same result shape `setKeywordOffering` answers with, so a caller moving
+  // to the canonical writer changes nothing but the call.
+  return (rows ?? []).map((row) => ({
+    keywordId: row.keyword_id,
+    valueBand: row.value_band,
+    valueSource: row.value_source,
+    valueScore: row.value_score == null ? null : Number(row.value_score),
+  }));
+}
 
 // ── The placement backfill (ledger-backed) ─────────────────────────────────
-
-/**
- * P30a THE DIFF LAW. Reads `seo.gsc_topic_placement_diff` — bounded to this
- * site's own keywords, and only keywords the site has never itself ruled on.
- * A row here means a higher tier's opinion moved while this site was
- * inheriting it; both "Take it" and "Keep mine" resolve a row through
- * `setKeywordService`, the SAME placement write every other surface uses —
- * never a second door.
- */
-export async function getTopicPlacementDiff(
-  siteId: string,
-  limit = 50,
-  signal?: AbortSignal,
-): Promise<TopicPlacementDiffRow[]> {
-  const response = await (await seoDb())
-    .rpc("gsc_topic_placement_diff", { p_site_id: siteId, p_limit: limit })
-    .abortSignal(signal ?? new AbortController().signal);
-  return (
-    assertData(response.data, response.error, "read the placement diff") ?? []
-  );
-}
 
 /**
  * The assigner's unconfirmed placements for this site, highest demand first,
@@ -388,7 +395,7 @@ export async function getTopicPlacementStatus(
 
 /**
  * The human half of P12: a proposal becomes the site's own ruling. Replacing
- * one instead is the placement write (`setKeywordService`), which stamps
+ * one instead is the placement write (`setKeywordOffering`), which stamps
  * `assigned_by='human'` and takes the keyword off the agent's list for good.
  */
 export async function confirmKeywordTopics(

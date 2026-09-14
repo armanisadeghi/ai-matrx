@@ -77,9 +77,10 @@ import {
   parseStampFilter,
 } from "@/features/marketing/search-console/types";
 import {
-  setKeywordService,
+  setKeywordOffering,
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import { requireOfferingOrganization } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import {
   AssignPanel,
   type AssignTarget,
@@ -92,7 +93,7 @@ import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/com
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
-import { buildKeywordColumns } from "./columns";
+import { buildKeywordColumns, OFFERING_COLUMN_ID } from "./columns";
 import {
   liveSearchParams,
   mergeKeywordTableParams,
@@ -393,19 +394,24 @@ export function KeywordTable({
   /* ----------------------------------------------------------------- writes */
   const placeService = async (
     keywordId: string,
-    topicId: string | null,
+    offeringId: string | null,
     keyword: string,
   ) => {
     try {
-      await setKeywordService({ siteId, keywordIds: [keywordId], topicId });
+      await setKeywordOffering({
+        organizationId: requireOfferingOrganization(data.offerings),
+        siteId,
+        keywordIds: [keywordId],
+        offeringId,
+      });
       await afterWrite();
-      const name = topicId
-        ? (data.services.byId.get(topicId)?.name ?? "that offering")
+      const name = offeringId
+        ? (data.offerings.byId.get(offeringId)?.name ?? "that offering")
         : null;
       toast.success(
         name
           ? `“${keyword}” maps to ${name}.`
-          : `“${keyword}” is off the tree — it maps to no offering now.`,
+          : `“${keyword}” maps to no offering now.`,
       );
     } catch (error) {
       toast.error(
@@ -473,10 +479,10 @@ export function KeywordTable({
   };
 
   /* ---------------------------------------------------------------- filters */
-  const filterByService = (topic: string | undefined) => {
+  const filterByService = (offering: string | undefined) => {
     const filters: GscFilters = { ...state.filters };
-    if (!topic) delete filters.topic;
-    else filters.topic = topic;
+    if (!offering) delete filters.offering;
+    else filters.offering = offering;
     patch({ filters });
   };
 
@@ -522,8 +528,8 @@ export function KeywordTable({
       brandId,
       hasCompare: periods.compare !== null,
       handlers: {
-        onPlaceService: (keywordId, topicId, keyword) =>
-          void placeService(keywordId, topicId, keyword),
+        onPlaceService: (keywordId, offeringId, keyword) =>
+          void placeService(keywordId, offeringId, keyword),
         onFilterByService: filterByService,
         onFilterByLocation: filterByLocation,
         onQuickAssign: (ids, picked) => void quickAssign(ids, picked),
@@ -547,8 +553,11 @@ export function KeywordTable({
   if (searchDraft) {
     tableColumnFilters.key = { kind: "text", value: searchDraft };
   }
-  if (state.filters.topic) {
-    tableColumnFilters.topic = { kind: "select", value: state.filters.topic };
+  if (state.filters.offering) {
+    tableColumnFilters[OFFERING_COLUMN_ID] = {
+      kind: "select",
+      value: state.filters.offering,
+    };
   }
   if (state.filters.location) {
     tableColumnFilters.location = {
@@ -671,9 +680,9 @@ export function KeywordTable({
       );
     };
 
-    const nextTopic = selectedValue("topic");
-    if (nextTopic !== state.filters.topic) {
-      filterByService(nextTopic);
+    const nextOffering = selectedValue(OFFERING_COLUMN_ID);
+    if (nextOffering !== state.filters.offering) {
+      filterByService(nextOffering);
       return;
     }
 
@@ -823,12 +832,12 @@ export function KeywordTable({
             </p>
             <ServiceCell
               siteId={siteId}
-              services={data.services}
-              placement={data.serviceFor(row)}
+              offerings={data.offerings}
+              placement={data.offeringFor(row)}
               disabled={!row.keyword_id}
-              onPlace={(topicId) => {
+              onPlace={(offeringId) => {
                 if (!row.keyword_id) return;
-                void placeService(row.keyword_id, topicId, row.key);
+                void placeService(row.keyword_id, offeringId, row.key);
               }}
               onFilter={filterByService}
               triggerClassName="min-h-11 w-full justify-start px-2"
@@ -1053,11 +1062,11 @@ export function KeywordTable({
               allowedKeys={allowedFilterKeysForTab("queries")}
               siteId={siteId}
             />
-            {surface.baseFilters?.topic ? null : (
+            {surface.baseFilters?.offering ? null : (
               <ServiceFilterControl
                 siteId={siteId}
-                services={data.services}
-                value={state.filters.topic}
+                offerings={data.offerings}
+                value={state.filters.offering}
                 onChange={filterByService}
               />
             )}
@@ -1149,7 +1158,7 @@ export function KeywordTable({
         <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
           <OfferingAssignPanel
             siteId={siteId}
-            services={data.services}
+            offerings={data.offerings}
             target={serviceTarget}
             onCancel={() => setServiceTarget(null)}
             onDone={(result, placed) => {
@@ -1157,9 +1166,9 @@ export function KeywordTable({
               void afterWrite();
               setSelectedIds([]);
               toast.success(
-                placed.topicId
+                placed.offeringId
                   ? `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} now map to ${placed.name}.`
-                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off the tree.`,
+                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off every offering.`,
               );
             }}
           />

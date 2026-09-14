@@ -101,9 +101,6 @@ export interface KeywordTopicResult {
  * `old_topic_id` is null-filtered out by the RPC itself, so every row here is
  * a real "it used to say X, it now says Y" — never a first-time placement.
  */
-export type TopicPlacementDiffRow =
-  Database["seo"]["Functions"]["gsc_topic_placement_diff"]["Returns"][number];
-
 /** One unconfirmed agent placement, highest demand first (`gsc_topic_proposed_keywords`). */
 export type TopicProposalRow =
   Database["seo"]["Functions"]["gsc_topic_proposed_keywords"]["Returns"][number];
