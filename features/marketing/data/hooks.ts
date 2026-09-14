@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { usePaginatedData } from "@ai-matrx/data/react";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import {
   bulkConfirmDiscoveredItems,
@@ -83,7 +84,11 @@ import {
   listSites,
   listAllBrandOptions,
   listBrandOptions,
-  listSnapshots,
+  getSnapshotReceiptWatermark,
+  listSnapshotReceiptPage,
+  decodeSnapshotReceiptCursor,
+  snapshotSourceIdentity,
+  SnapshotReceiptError,
   moveSiteBrand,
   setSitemapActive,
   undismissDiscoveredItem,
@@ -130,6 +135,7 @@ import type {
 } from "@/features/marketing/data/service";
 import type {
   DiscoveredItemStatus,
+  PageSnapshot,
   UpdatePageDesiredValuesInput,
 } from "@/features/marketing/types";
 
@@ -498,12 +504,66 @@ export function useSnapshots(
   pageId: string,
   state: MatrxDataTableQueryState,
 ) {
-  return useQuery({
-    queryKey: marketingKeys.snapshots(siteId, pageId, state),
-    queryFn: ({ signal }) => listSnapshots(siteId, pageId, state, signal),
+  const sourceIdentity = snapshotSourceIdentity(state);
+  const sourceKey = JSON.stringify([siteId, pageId, sourceIdentity]);
+  const receiptKey = [...marketingKeys.page(siteId, pageId), "snapshots-receipt", sourceIdentity] as const;
+  // This tiny query is the cache lineage for page/site invalidation. The rows
+  // remain in the append primitive, which aborts and clears on a new identity.
+  const receipt = useQuery({
+    queryKey: receiptKey,
+    queryFn: () => crypto.randomUUID(),
     enabled: Boolean(siteId && pageId),
-    placeholderData: keepPreviousData,
+    staleTime: Infinity,
   });
+  const seen = useRef({ key: "", ids: new Set<string>(), total: undefined as number | undefined });
+  useEffect(() => {
+    seen.current = { key: sourceKey, ids: new Set(), total: undefined };
+  }, [sourceKey, receipt.data]);
+  const pagination = usePaginatedData<PageSnapshot, string>({
+    queryKey: JSON.stringify([sourceKey, receipt.data ?? "pending"]),
+    initialCursor: "initial",
+    enabled: Boolean(siteId && pageId && receipt.data),
+    getRowId: (row) => row.id,
+    loadPage: async ({ cursor, signal }) => {
+      if (seen.current.key !== sourceKey) {
+        seen.current = { key: sourceKey, ids: new Set(), total: undefined };
+      }
+      if (cursor === "initial") {
+        const watermark = await getSnapshotReceiptWatermark(siteId, pageId, signal);
+        if (!watermark) return { rows: [], nextCursor: null, totalItems: 0 };
+        const page = await listSnapshotReceiptPage({ siteId, pageId, state, watermark, signal });
+        seen.current.total = page.total;
+        for (const row of page.rows) seen.current.ids.add(row.id);
+        if (page.nextCursor === null && page.rows.length !== page.total) {
+          throw new SnapshotReceiptError("the first page ended before the frozen total");
+        }
+        return { rows: page.rows, nextCursor: page.nextCursor, totalItems: page.total };
+      }
+      const decoded = decodeSnapshotReceiptCursor(cursor);
+      const page = await listSnapshotReceiptPage({
+        siteId, pageId, state, watermark: decoded.watermark, cursor: decoded,
+        expectedTotal: seen.current.total, signal,
+      });
+      const duplicates = page.rows.some((row) => seen.current.ids.has(row.id));
+      if (duplicates) throw new SnapshotReceiptError("a page repeated a snapshot");
+      const nextSize = seen.current.ids.size + page.rows.length;
+      if (nextSize > page.total || (page.nextCursor === null && nextSize !== page.total)) {
+        throw new SnapshotReceiptError("the received rows do not match the frozen total");
+      }
+      for (const row of page.rows) seen.current.ids.add(row.id);
+      return { rows: page.rows, nextCursor: page.nextCursor, totalItems: page.total };
+    },
+  });
+  const error = receipt.error ?? pagination.error;
+  return {
+    data: { rows: pagination.rows, total: pagination.totalItems ?? 0 },
+    isLoading: receipt.isLoading || pagination.loading,
+    isFetching: receipt.isFetching || pagination.isFetchingNextPage,
+    isError: Boolean(error),
+    error,
+    pagination,
+    refetch: () => receipt.refetch(),
+  };
 }
 
 export function useSnapshot(
