@@ -92,9 +92,11 @@ import {
   OFFERING_MATCH_OPTIONS,
   ROOT_TYPE_META,
 } from "./types";
-// THE ONE placement write for the whole product. The topic tree used to have
-// its own wrapper over the same RPC that silently dropped the reason (P24).
-import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
+// TRANSITION (brand-offerings cutover): this screen still renders the legacy
+// topic tree, so its placements carry topic ids through the legacy writer, which
+// also writes the canonical placement. Replaced when the screen moves to brand
+// offerings (step 4c).
+import { setKeywordTopicPlacement } from "./data";
 import { UnplacedQueue } from "./UnplacedQueue";
 
 function parseOfferingKpiTarget(
@@ -334,7 +336,7 @@ export function TopicTreeWorkbench() {
       topicId: string | null;
       notes: string | null;
     }) =>
-      setKeywordService({
+      setKeywordTopicPlacement({
         siteId,
         keywordIds: input.keywordIds,
         topicId: input.topicId,

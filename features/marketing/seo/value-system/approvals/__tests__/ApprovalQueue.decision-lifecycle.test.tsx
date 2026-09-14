@@ -24,7 +24,7 @@ import type { ApprovalKind, ApprovalScope } from "../types";
 
 let mockKinds: ApprovalKind[] = [];
 let mockDriftRows: Array<Record<string, unknown>> = [];
-const mockSetKeywordService = jest.fn(async () => undefined);
+const mockSetKeywordOffering = jest.fn(async () => []);
 let slotMounts = 0;
 
 jest.mock("../registry", () => ({
@@ -46,10 +46,13 @@ jest.mock("@/features/overlays/openers/keywordWindow", () => ({
   useOpenKeywordWindow: () => () => undefined,
 }));
 jest.mock("@/features/marketing/seo/keyword-workbench/data", () => ({
-  setKeywordService: (...args: unknown[]) => mockSetKeywordService(...(args as [])),
+  KEYWORD_OFFERINGS_KEY: ["marketing", "seo", "keyword-offerings"],
+  getOfferingPlacementDrift: async () => [...mockDriftRows],
+  setKeywordOffering: (...args: unknown[]) => mockSetKeywordOffering(...(args as [])),
+  confirmKeywordOfferings: (...args: unknown[]) => mockSetKeywordOffering(...(args as [])),
 }));
-jest.mock("@/features/marketing/seo/value-system/topics/data", () => ({
-  getTopicPlacementDiff: async () => [...mockDriftRows],
+jest.mock("@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings", () => ({
+  SITE_OFFERINGS_KEY: ["marketing", "offerings"],
 }));
 jest.mock("@/components/ui/confirm-dialog", () => ({
   ConfirmDialog: ({
@@ -125,14 +128,14 @@ const flush = async () => {
 };
 
 const DRIFT_ROW = {
-  keyword_id: "k1",
+  keywordId: "k1",
   phrase: "hard drive shredding",
-  scope_tier: "brand",
-  old_topic_id: "t-old",
-  old_topic_name: "Old offering",
-  new_topic_id: "t-new",
-  new_topic_name: "New offering",
-  changed_at: "2026-09-14T00:00:00Z",
+  oldOfferingId: "o-old",
+  oldOfferingName: "Old offering",
+  newOfferingId: "o-new",
+  newOfferingName: "New offering",
+  confidence: 60,
+  changedAt: "2026-09-14T00:00:00Z",
 };
 
 describe("ApprovalQueue decision lifecycle", () => {
@@ -145,7 +148,7 @@ describe("ApprovalQueue decision lifecycle", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     fakeRows = ["one"];
     mockDriftRows = [DRIFT_ROW];
-    mockSetKeywordService.mockClear();
+    mockSetKeywordOffering.mockClear();
     slotMounts = 0;
     errors = [];
     spy = jest

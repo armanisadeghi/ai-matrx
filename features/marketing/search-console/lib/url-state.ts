@@ -68,6 +68,8 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["search_appearance", "appearance"],
   ["stamps", "st"],
   ["levels", "lv"],
+  ["offering", "of"],
+  // TRANSITION (brand-offerings cutover): the legacy topic-tree filter.
   ["topic", "tp"],
   ["placement", "pl"],
   // C10 — which business location a local search belongs to.
@@ -396,7 +398,9 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   // C6: dimension stamps + levels are keyword-level — the query/page group
   "stamps",
   "levels",
-  // The SERVICE filter — one topic subtree, or "none" for the unplaced.
+  // The OFFERING filter — one offering subtree on this site, or "none" for the unplaced.
+  "offering",
+  // TRANSITION (brand-offerings cutover): the legacy topic-tree filter.
   "topic",
   // P28 — whose ruling the placement is (proposed / agent / human).
   "placement",

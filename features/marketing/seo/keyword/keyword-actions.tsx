@@ -54,7 +54,7 @@ import {
   type AssignTarget,
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import { useSiteOfferings } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { assignKeywordsToSite } from "@/features/marketing/seo/keyword-research/data/queries";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
@@ -303,9 +303,9 @@ export function useKeywordAssignSurfaces(opts: {
                 setServiceTarget(null);
                 void settled();
                 toast.success(
-                  placed.topicId
+                  placed.offeringId
                     ? `Placed under ${placed.name}.`
-                    : "Taken off the offering tree.",
+                    : "Taken off every offering.",
                 );
               }}
             />
@@ -342,13 +342,13 @@ function ServiceAssign({
   window: { start: string; end: string };
   target: AssignTarget;
   onCancel: () => void;
-  onDone: (placed: { topicId: string | null; name: string }) => void;
+  onDone: (placed: { offeringId: string | null; name: string }) => void;
 }) {
-  const services = useSiteServices(siteId, window.start, window.end);
+  const offerings = useSiteOfferings(siteId, window.start, window.end);
   return (
     <OfferingAssignPanel
       siteId={siteId}
-      services={services}
+      offerings={offerings}
       target={target}
       onCancel={onCancel}
       onDone={(_result, placed) => onDone(placed)}

@@ -37,6 +37,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AIDREAM = resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"));
@@ -64,6 +65,8 @@ const EXCLUDE: RegExp[] = [
   /^db\/schema_analysis\//,
   /^scripts\/offering-topic-refs-baseline\.json$/,
   /^scripts\/check-offering-topic-refs\.ts$/,
+  // The cutover's own guards name the legacy relations in order to test them.
+  /^scripts\/check-offering-(tenancy|resolver-equivalence)\.ts$/,
   /\.(png|jpg|svg|ico|lock)$/,
 ];
 
@@ -182,10 +185,10 @@ function selfTest(): boolean {
 }
 
 function main() {
-  if (process.argv.includes("--self-test")) process.exit(selfTest() ? 0 : 1);
+  if (process.argv.includes("--self-test")) exitAfterDrain(selfTest() ? 0 : 1);
   if (!existsSync(AIDREAM)) {
     console.error(`${C.r}UNMEASURED${C.x}: the aidream checkout is not at ${AIDREAM}`);
-    process.exit(STRICT ? 1 : 0);
+    exitAfterDrain(STRICT ? 1 : 0);
   }
   const previous = readBaseline();
   const now = census();
@@ -200,7 +203,7 @@ function main() {
     `${C.b}LEGACY OFFERING REFERENCES${C.x} ${Object.keys(now).length} files · ${total} references · new ${v.added.length} · grew ${v.grew.length} · shrank ${v.shrank.length}`,
   );
   report(v, previous.reasons);
-  if ((v.added.length || v.grew.length) && STRICT) process.exit(1);
+  if ((v.added.length || v.grew.length) && STRICT) exitAfterDrain(1);
 }
 
 main();
