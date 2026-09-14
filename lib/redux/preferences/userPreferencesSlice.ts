@@ -227,16 +227,17 @@ export interface CodingPreferences {
    */
   monacoEnvironmentsEnabled: boolean;
   /**
-   * Chat room "Sandbox" side panel — open / closed, remembered per user.
+   * Reveal the Sandbox in the Canvas the first time the agent works in the
+   * bound box — on by default.
    *
-   * "auto" (the default) means: open on a desktop viewport when the
-   * conversation has a bound sandbox, closed on a phone. Once the user
-   * clicks the header control the choice becomes explicit and travels with
-   * them across devices and reloads. Tri-state on purpose: a plain boolean
-   * cannot tell "the user has never touched this" apart from "the user
-   * closed it", and the phone/desktop defaults differ.
+   * The sandbox is a canvas content type, not a panel: with this on, the
+   * first `shell_execute` / `fs_*` / `git_ingest` of a conversation opens the
+   * canvas on the Sandbox pane, the way Claude Code reveals its terminal when
+   * it runs a command. With it off, the pane is still added to the canvas
+   * switcher — available, never on screen uninvited. Either way the canvas is
+   * never hijacked away from a document or the browser the user is reading.
    */
-  chatSandboxPanelOpen: "auto" | "open" | "closed";
+  sandboxCanvasAutoOpen: boolean;
   /**
    * Client-side favorite conversations. The `cx_conversation` table has no
    * favorite column yet; we persist ids in preferences so favorites still
@@ -1002,7 +1003,7 @@ export const initializeUserPreferencesState = (
       lastSandboxTemplate: "bare",
       monacoEnvironmentsEnabled: true,
       activeAgentSandboxBySurface: {},
-      chatSandboxPanelOpen: "auto",
+      sandboxCanvasAutoOpen: true,
     },
     sandbox: {
       // "slim" = the full coding env without aidream-built-in. Matches what

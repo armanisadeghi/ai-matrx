@@ -37,7 +37,7 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
-import { ChatSandboxDock } from "./sandbox-insight/ChatSandboxDock";
+import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
@@ -708,11 +708,13 @@ export function ChatRoomClient({
             }
           />
           </div>
-          {/* The bound sandbox, live. Renders nothing when no box is bound or
-              the user has the panel closed; a bottom sheet on a phone. */}
-          <ChatSandboxDock conversationId={conversationId} />
         </div>
       </div>
+      {/* The bound sandbox reaches the CANVAS, not a panel of its own: this
+          headless watcher opens the Sandbox pane the first time the agent
+          works in the box, and merely offers it when the canvas is already
+          showing a document or the browser. Renders nothing. */}
+      <SandboxCanvasOpener conversationId={conversationId} />
       {/* ?attachDoc= deep link (fresh routes only) — the working document's
           registry share URL is /chat/new?attachDoc={id}. Own local Suspense:
           useSearchParams requires a boundary, and neither chat page provides

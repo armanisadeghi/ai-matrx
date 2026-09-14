@@ -44,7 +44,15 @@ export type CanvasContentType =
   // Live Cloud Browser surface hosted in the canvas pane. `data` is a pointer
   // `{ initialProfileId?, runId? }`; the body holds live run/screenshot/handoff
   // state (never serializable) — NON_PERSISTABLE, like the editor surfaces.
-  | "cloud_browser";
+  | "cloud_browser"
+  // Live SANDBOX surface hosted in the canvas pane — Terminal / Files /
+  // Activity for the box bound to a conversation. `data` is a pointer
+  // `{ sandboxRowId, fallbackName? }`; the body holds a live pty and a live
+  // file tree, so there is nothing serializable — NON_PERSISTABLE, like the
+  // Cloud Browser. It shares the canvas region with the browser, documents
+  // and artifacts and NEVER owns it (the champions — Claude Code, Codex,
+  // Cursor — all show the terminal on demand in one shared side region).
+  | "sandbox";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —
@@ -63,6 +71,9 @@ export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   // Live Cloud Browser: holds run/screenshot/controller/handoff state — a
   // canvas_items row would freeze a dead pointer with no live session.
   "cloud_browser",
+  // Live sandbox: a pty and a file tree against a running box. A canvas_items
+  // row would freeze a pointer to a box that is gone by the time it is read.
+  "sandbox",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {
@@ -270,6 +281,54 @@ export const canvasSlice = createSlice({
       state.isOpen = true;
     },
 
+    /**
+     * MAKE AVAILABLE WITHOUT TAKING THE REGION.
+     *
+     * Adds an item to the canvas the way `openCanvas` does, but never sets
+     * `isOpen` and never steals `currentItemId` from content the user is
+     * already looking at. The item appears in the canvas switcher (and the
+     * chat's Canvas button grows its dot), so the user can go to it — while
+     * nothing at all changes on screen.
+     *
+     * This is what "the agent started working in the sandbox while you were
+     * reading a document" must do: offer, never hijack. The dedupe key is the
+     * same `sourceMessageId` identity `openCanvas` uses, so offering twice
+     * (a re-render, a second tool call) can never stack two panes.
+     *
+     * `currentItemId` IS set when nothing is current, because the canvas
+     * shell only mounts once something is current — without it the offered
+     * item would be unreachable by ⌘\ or the Canvas button, which is the
+     * dead-end this reducer exists to avoid.
+     */
+    offerCanvasItem: (state, action: PayloadAction<CanvasContent>) => {
+      const sourceMessageId = action.payload.metadata?.sourceMessageId;
+      const sourceTaskId = action.payload.metadata?.sourceTaskId;
+
+      const existing = sourceTaskId
+        ? state.items.find((item) => item.sourceTaskId === sourceTaskId)
+        : sourceMessageId
+          ? state.items.find(
+              (item) =>
+                item.sourceMessageId === sourceMessageId && !item.sourceTaskId,
+            )
+          : undefined;
+
+      if (existing) {
+        existing.content = action.payload;
+        return;
+      }
+
+      const newItem: CanvasItem = {
+        id: `canvas-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        content: action.payload,
+        timestamp: Date.now(),
+        sourceMessageId,
+        sourceTaskId,
+      };
+      state.items.push(newItem);
+      if (!state.currentItemId) state.currentItemId = newItem.id;
+    },
+
     // Close canvas but keep history
     closeCanvas: (state) => {
       state.isOpen = false;
@@ -475,6 +534,7 @@ export const canvasSlice = createSlice({
 // Actions
 export const {
   openCanvas,
+  offerCanvasItem,
   openArtifactInCanvas,
   closeCanvas,
   toggleCanvas,

@@ -47,6 +47,17 @@ const CodePreviewCanvas = dynamic(
     ),
   { ssr: false },
 );
+// The live SANDBOX pane — Terminal / Files / Activity for the box bound to a
+// conversation. Heavy (a pty client + a file tree), so it stays out of the
+// canvas base chunk until a sandbox pane actually opens. CanvasPane supplies
+// the frame and the "Sandbox" header; this body renders bare.
+const SandboxCanvasBody = dynamic(
+  () =>
+    import(
+      "@/features/agents/components/chat/sandbox-insight/SandboxCanvasBody"
+    ).then((m) => ({ default: m.SandboxCanvasBody })),
+  { ssr: false },
+);
 const CodeEditErrorCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
@@ -298,6 +309,7 @@ export function getDefaultTitle(type: string): string {
     working_document: "Documents",
     scratchpad: "Documents",
     cloud_browser: "Cloud Browser",
+    sandbox: "Sandbox",
   };
   return titles[type] || "Canvas View";
 }
@@ -417,6 +429,26 @@ function renderContent(content: CanvasContent): React.ReactNode {
               : undefined
           }
           runId={typeof data?.runId === "string" ? data.runId : undefined}
+          conversationId={content.metadata?.conversationId}
+          className="h-full"
+        />
+      );
+
+    case "sandbox":
+      // `data` is a pointer { sandboxRowId, fallbackName? } and the metadata
+      // carries the chat binding. The body holds the live pty / file tree and
+      // reads the conversation's sandbox tool calls; the pane draws the frame
+      // and the title. Never persisted — see NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <SandboxCanvasBody
+          sandboxRowId={
+            typeof data?.sandboxRowId === "string" ? data.sandboxRowId : ""
+          }
+          fallbackName={
+            typeof data?.fallbackName === "string"
+              ? data.fallbackName
+              : undefined
+          }
           conversationId={content.metadata?.conversationId}
           className="h-full"
         />
