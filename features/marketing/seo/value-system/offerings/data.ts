@@ -292,6 +292,63 @@ export async function setSiteOfferingAvailability(input: {
   }));
 }
 
+export interface OfferingRemovalImpact {
+  offeringId: string;
+  offeringName: string;
+  childCount: number;
+  keywordCount: number;
+  valueCount: number;
+  otherSiteCount: number;
+}
+
+/** What removing an offering from the brand takes with it, read before the click. */
+export async function getOfferingRemovalImpact(
+  siteId: string,
+  offeringId: string,
+  signal?: AbortSignal,
+): Promise<OfferingRemovalImpact | null> {
+  const response = await (await webDb())
+    .rpc("site_offering_delete_impact", { p_site_id: siteId, p_offering_id: offeringId })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "measure what removing it would change");
+  const row = (rows ?? [])[0];
+  if (!row) return null;
+  return {
+    offeringId: row.offering_id,
+    offeringName: row.offering_name,
+    childCount: Number(row.child_count ?? 0),
+    keywordCount: Number(row.keyword_count ?? 0),
+    valueCount: Number(row.value_count ?? 0),
+    otherSiteCount: Number(row.other_site_count ?? 0),
+  };
+}
+
+/**
+ * Remove an offering from this site, and from the brand when no other site
+ * offers it; its keywords move to `replacementOfferingId` or become unplaced.
+ */
+export async function removeSiteOffering(input: {
+  organizationId: string;
+  siteId: string;
+  offeringId: string;
+  replacementOfferingId: string | null;
+}): Promise<{ keywordsReassigned: number; brandOfferingRetired: boolean }> {
+  const response = await (await webDb()).rpc("remove_site_offering", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_offering_id: input.offeringId,
+    ...(input.replacementOfferingId
+      ? { p_replacement_offering_id: input.replacementOfferingId }
+      : {}),
+  });
+  const rows = assertGoverned(response.data, response.error, "remove that offering");
+  const row = (rows ?? [])[0];
+  return {
+    keywordsReassigned: Number(row?.keywords_reassigned ?? 0),
+    brandOfferingRetired: row?.brand_offering_retired === true,
+  };
+}
+
 /** Reparent / reorder within the brand's catalog (D3). */
 export async function moveBrandOffering(input: {
   organizationId: string;

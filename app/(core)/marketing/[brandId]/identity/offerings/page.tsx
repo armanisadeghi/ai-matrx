@@ -2,14 +2,14 @@ import { Suspense } from "react";
 
 import { BrandIdentitySiteSurface } from "@/features/marketing/components/brand/BrandIdentitySiteSurface";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { TopicTreeWorkbench } from "@/features/marketing/seo/value-system/topics/TopicTreeWorkbench";
+import { OfferingsWorkbench } from "@/features/marketing/seo/value-system/offerings/OfferingsWorkbench";
 
-/** The Offering tree: the user-facing name for the shared `seo.topic` hierarchy. */
+/** What this brand sells, and what the selected site offers of it (brand-offerings cutover). */
 export default function BrandOfferingsPage() {
   return (
-    <Suspense fallback={<LoadingSurface label="Loading the offering tree…" />}>
+    <Suspense fallback={<LoadingSurface label="Loading this brand's offerings…" />}>
       <BrandIdentitySiteSurface>
-        <TopicTreeWorkbench />
+        <OfferingsWorkbench />
       </BrandIdentitySiteSurface>
     </Suspense>
   );

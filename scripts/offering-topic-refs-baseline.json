@@ -106,11 +106,7 @@
       "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
     },
     "matrx-frontend/features/marketing/seo/value-system/topics/data.ts": {
-      "count": 19,
-      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
-    },
-    "matrx-frontend/features/marketing/seo/value-system/topics/lib.ts": {
-      "count": 5,
+      "count": 3,
       "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
     },
     "matrx-frontend/features/marketing/seo/value-system/topics/topic-delete-migration-contract.test.ts": {
@@ -122,7 +118,7 @@
       "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
     },
     "matrx-frontend/features/marketing/seo/value-system/topics/types.ts": {
-      "count": 8,
+      "count": 1,
       "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
     },
     "matrx-frontend/features/marketing/seo/value-system/types.ts": {
