@@ -71,6 +71,14 @@ classifier — the "big overarching plan" Arman kept asking for, buried.
   (`useSeoCommandRun`, final kind `seo.strategy_brief_result`) — floats into
   the live window and rejoins after a reload; regenerating SUPERSEDES (history
   is real) and the button names that consequence first.
+- **Regenerate is honest about what it costs and what it repeats.** The run's
+  identity carries the active version's id and a digest of the owner's
+  guidance (aidream `dd036665f`): a regenerate after a new version or a
+  correction is a NEW paid run; two launches with nothing changed in between
+  claim ONE run (the second arrives with `reused_completed_run: true`). An
+  empty ruling is a confirmation ("this is right"); the site brief reads the
+  latest brand strategy whatever its review state and is told that state
+  (`inputs.brand_strategy_status`); supersede + insert are one transaction.
 - **Readers (server-side):** the content-plan generator, the brief writer, the
   page writer and the plan review all receive the composed brand+site guidance
   as a named variable. The brief is inert on its own — it changes no page and
