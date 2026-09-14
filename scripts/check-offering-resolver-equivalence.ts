@@ -48,21 +48,23 @@
  *                                     none.
  *   --strict                          exit 1 on any unexplained row.
  *
+ * MEASURED 2026-09-14 (steps 6a and 6b): 4 sites, 40,574 keywords; 6a 40,513
+ * identical + 61 tenancy + 0 unexplained; 6b 40,574 identical. Self-test RED
+ * 1,820 unexplained, GREEN 0.
+ *
  * UNMEASURED IS NOT PASSED: a missing connection, zero sites, or zero keywords
  * compared is a failure in every mode.
  *
  * Exit codes: 0 pass (or advisory findings without --strict), 1 findings /
  * unmeasured under --strict or --self-test, 2 the script crashed.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, relative, resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
 
-const require_ = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pg: any = require_("pg");
+type Client = Awaited<ReturnType<typeof connectDirect>>;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -74,68 +76,16 @@ const valueOf = (name: string) => {
 const STRICT = flag("--strict");
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
 
-const DB_VARS = [
-  "SUPABASE_MATRIX_USER",
-  "SUPABASE_MATRIX_PASSWORD",
-  "SUPABASE_MATRIX_HOST",
-  "SUPABASE_MATRIX_PORT",
-  "SUPABASE_MATRIX_DATABASE_NAME",
-] as const;
-
-function parseEnvFile(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of readFileSync(path, "utf8").split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 1) continue;
-    let value = line.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    out[line.slice(0, eq).trim()] = value;
+async function connect(): Promise<Client> {
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(
+      `${C.r}LIVE PULL FAILED${C.x} offering resolver equivalence could not be MEASURED. ` +
+        `Wanted ${env.missing.join(", ")} in: ${env.looked.join(", ") || "(no env file)"}`,
+    );
+    process.exit(1);
   }
-  return out;
-}
-
-function resolveDbEnv(): Record<string, string> {
-  const looked: string[] = [];
-  const take = (bag: Record<string, string | undefined>) =>
-    DB_VARS.every((k) => bag[k])
-      ? (Object.fromEntries(DB_VARS.map((k) => [k, bag[k]!])) as Record<string, string>)
-      : null;
-  const fromProcess = take(process.env);
-  if (fromProcess) return fromProcess;
-  for (const path of [
-    resolve(ROOT, ".env.local"),
-    resolve(ROOT, ".env"),
-    resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"), ".env"),
-  ]) {
-    if (!existsSync(path)) continue;
-    looked.push(relative(ROOT, path));
-    const hit = take(parseEnvFile(path));
-    if (hit) return hit;
-  }
-  console.error(
-    `${C.r}LIVE PULL FAILED${C.x} offering resolver equivalence could not be MEASURED. ` +
-      `Wanted ${DB_VARS.join(", ")} in the environment or in: ${looked.join(", ") || "(no env file)"}`,
-  );
-  process.exit(1);
-}
-
-async function connect() {
-  const env = resolveDbEnv();
-  const client = new pg.Client({
-    host: env.SUPABASE_MATRIX_HOST,
-    port: Number(env.SUPABASE_MATRIX_PORT),
-    user: env.SUPABASE_MATRIX_USER,
-    password: env.SUPABASE_MATRIX_PASSWORD,
-    database: env.SUPABASE_MATRIX_DATABASE_NAME,
-    ssl: { rejectUnauthorized: false },
-    application_name: "check-offering-resolver-equivalence",
-    connectionTimeoutMillis: 20000,
-  });
-  await client.connect();
+  const client = await connectDirect(env, "check-offering-resolver-equivalence");
   await client.query("set role none");
   return client;
 }
@@ -204,25 +154,23 @@ type Row = {
   base_root: string | null;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function readTable(client: any, table: string): Promise<Row[]> {
-  const { rows } = await client.query(
+async function readTable(client: Client, table: string): Promise<Row[]> {
+  const { rows } = await client.query<Row>(
     `select site_id::text, keyword_id::text, h, h_rootless, value_score::text, value_band, value_source,
             base_name, base_amount::text, base_root from ${table}`,
   );
-  return rows as Row[];
+  return rows;
 }
 
 /**
  * The keywords whose old answer came through a placement outside the site's
- * own ladder: a primary row at the organization or site tier that belongs to a
- * different organization or site, with no in-scope primary for the same
- * topic. Those are the cross-tenant rows the canonical model cannot represent.
+ * own ladder: a primary row at the organization, brand or site tier that
+ * belongs to a different organization, brand or site. Those are the
+ * cross-tenant rows the canonical model cannot represent.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function outOfScope(client: any, pairs: Array<{ site_id: string; keyword_id: string }>) {
+async function outOfScope(client: Client, pairs: Array<{ site_id: string; keyword_id: string }>) {
   if (pairs.length === 0) return new Set<string>();
-  const { rows } = await client.query(
+  const { rows } = await client.query<{ k: string }>(
     `with p as (
        select (x->>'site_id')::uuid site_id, (x->>'keyword_id')::uuid keyword_id
        from jsonb_array_elements($1::jsonb) x
@@ -239,8 +187,10 @@ async function outOfScope(client: any, pairs: Array<{ site_id: string; keyword_i
                or kt.scope_tier = 'system'))`,
     [JSON.stringify(pairs)],
   );
-  return new Set<string>(rows.map((r: { k: string }) => r.k));
+  return new Set<string>(rows.map((r) => r.k));
 }
+
+type SiteTally = { compared: number; identical: number; tenancy: number; root_relabel: number; unexplained: number };
 
 type Verdict = {
   sites: number;
@@ -252,11 +202,10 @@ type Verdict = {
   missing: number;
   added: number;
   samples: string[];
-  perSite: Record<string, { compared: number; identical: number; tenancy: number; root_relabel: number; unexplained: number }>;
+  perSite: Record<string, SiteTally>;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function diff(client: any, before: Row[], after: Row[]): Promise<Verdict> {
+async function diff(client: Client, before: Row[], after: Row[]): Promise<Verdict> {
   const key = (r: Row) => `${r.site_id}:${r.keyword_id}`;
   const afterMap = new Map(after.map((r) => [key(r), r]));
   const beforeKeys = new Set(before.map(key));
@@ -337,8 +286,7 @@ function unmeasured(v: Verdict) {
   return v.sites === 0 || v.compared === 0;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function begin(client: any) {
+async function begin(client: Client) {
   await client.query("begin");
   await client.query("set local statement_timeout = '20min'");
 }
@@ -379,7 +327,7 @@ async function snapshot(out: string) {
   }
 }
 
-async function compare(file: string) {
+async function compareLive(file: string) {
   const { rows: before } = JSON.parse(readFileSync(file, "utf8")) as { rows: Row[] };
   const client = await connect();
   try {
@@ -409,17 +357,15 @@ async function selfTest() {
     await begin(client);
     await client.query(SNAPSHOT_SQL("_st_a"));
     const a = await readTable(client, "_st_a");
-    await client.query("savepoint green");
     await client.query(SNAPSHOT_SQL("_st_c"));
     const c = await readTable(client, "_st_c");
     const green = await diff(client, a, c);
     report("SELF-TEST GREEN (untouched resolver)", green);
     if (unmeasured(green) || green.unexplained !== 0) ok = false;
-    await client.query("rollback to savepoint green");
-    const { rows } = await client.query(
+    const { rows } = await client.query<{ d: string }>(
       `select pg_get_functiondef('seo.keyword_value_map(uuid, uuid[])'::regprocedure) as d`,
     );
-    const body: string = rows[0].d;
+    const body = rows[0].d;
     const broken = body.replace(/COALESCE\(tb\.base_points, 0\)|COALESCE\(tb\.base_weight, 0\)/, "0");
     if (broken === body) {
       console.error(`${C.r}SELF-TEST could not find the base-points term to break; the harness is stale.${C.x}`);
@@ -448,7 +394,7 @@ async function main() {
   const cmp = valueOf("--compare");
   if (dry) v = await dryRun(dry);
   else if (snap) return snapshot(snap);
-  else if (cmp) v = await compare(cmp);
+  else if (cmp) v = await compareLive(cmp);
   else {
     console.error("usage: --dry-run <migration.sql> | --snapshot <out.json> | --compare <in.json> | --self-test [--strict]");
     process.exit(2);

@@ -1,0 +1,201 @@
+{
+  "note": "Shrink-only census of legacy offering references (scripts/check-offering-topic-refs.ts).",
+  "files": {
+    "aidream/aidream/api/routers/seo_collections.py": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/aidream/services/seo/competitor_autopsy.py": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/aidream/services/seo/keyword_agents.py": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/aidream/services/seo/page_agents.py": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/aidream/services/seo/site_intake.py": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/aidream/services/seo/topic_placement_backfill.py": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/packages/matrx-orm/matrx_orm/resources/org_assignment_trigger_baseline.json": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/packages/matrx-seo/matrx_seo/artifact_writers.py": {
+      "count": 10,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/packages/matrx-seo/matrx_seo/db/models_seo.py": {
+      "count": 17,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/packages/matrx-seo/tests/test_artifact_writers.py": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/scripts/run_seo_workflow_ab.py": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "aidream/tests_trials/seo_ws11_page_agents.py": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/admin/shared-knowledge/packs/PackTopicsSection.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/admin/shared-knowledge/packs/data.ts": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/components/settings/SiteStrategyCard.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/content-plan/data/service.ts": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/search-console/components/GscDimensionTable.tsx": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/search-console/intake/intake-service.ts": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-table/KeywordTable.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-table/useKeywordRows.ts": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel.tsx": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-workbench/components/OfferingPicker.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-workbench/data.ts": {
+      "count": 7,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword-workbench/scope-tiers.ts": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword/KeywordIntelPanel.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword/KeywordMeaningPanel.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword/keyword-actions.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/keyword/keyword-meaning.ts": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/run-console/RunConsole.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/run-console/data.ts": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/approvals/kinds/topic-placement.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/data.ts": {
+      "count": 5,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/ProposedQueue.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/TopicPlacementStrip.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/UnplacedQueue.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/data.ts": {
+      "count": 19,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/lib.ts": {
+      "count": 5,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/topic-delete-migration-contract.test.ts": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/topic-demand-migration-contract.test.ts": {
+      "count": 6,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/topics/types.ts": {
+      "count": 9,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/types.ts": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/workbench/MeaningPanel.tsx": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/features/marketing/seo/value-system/workbench/RulingSession.tsx": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/check-keyword-placement-tenancy.ts": {
+      "count": 7,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/check-offering-resolver-equivalence.ts": {
+      "count": 4,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/check-one-table-law.ts": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/check-topic-placement-ceiling-counter.ts": {
+      "count": 2,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/fixtures/dd154-preapply-catalog.json": {
+      "count": 1,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    },
+    "matrx-frontend/scripts/soft-delete-unique-baseline.json": {
+      "count": 3,
+      "reason": "legacy offering consumer at the start of the brand-offerings cutover; repoint to the canonical offering model"
+    }
+  }
+}
