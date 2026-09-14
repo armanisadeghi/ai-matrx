@@ -793,6 +793,85 @@ const NULL_UNSAFE_ROLE_HELPER_QUERY = `
   order by 1, 3
 `;
 
+// ─── D11: a door's declared reason names the gate its body actually reaches ──
+//
+// DD-195 (2026-09-13). D5 asks whether an anon-callable definer DECLARED itself; D6 asks whether
+// the declared `gate_predicate` is still in the body. Neither reads the REASON — the English
+// sentence every later reviewer trusts instead of opening the function.
+//
+// Measured live before the DD-195 migration: `platform.client_callable_door` said of
+// `public.assoc_for_entity`, `assoc_for_sources` and `assoc_for_targets` that each "resolves access
+// per entity via iam.has_access before touching an edge". Not one of the three had ever called
+// `iam.has_access`. All three are SECURITY DEFINER over `platform.associations`, so they bypass its
+// RLS entirely, and their whole gate was an ORGANIZATION-level predicate — a plain member of the
+// row's organization was handed edges revealing rows the kernel said they could not read (two
+// `personal` conversations and the `personal` working document they hang off, all authored by
+// somebody else). The body was the defect; the sentence is what kept anyone from finding it.
+//
+// THE RULE. If a door's reason names an ACCESS PREDICATE from the live gate vocabulary, the door
+// must actually reach that predicate. Three deliberate choices:
+//
+//  (a) THE VOCABULARY IS READ FROM THE DATABASE, never guessed — the same derivation D6 uses (every
+//      boolean / `uuid[]` / `SETOF uuid` function in `iam` whose name starts with an access-predicate
+//      prefix). So prose that merely mentions `iam.entity_read_expr` (returns text) or
+//      `iam.canonical_certify` is not a gate claim and is not a finding, and a new platform gate is
+//      understood the day it ships without editing this file.
+//  (b) ONE HOP. A door that reaches the kernel through a named helper is honest — `assoc_for_entity`
+//      now calls `iam.assoc_side_readable`, which calls `iam.has_access` — so the closure is the
+//      door's own body PLUS the bodies of the functions its body names. Only suspects pay for that
+//      second pass, so the cost is bounded by the finding count, not by the door count.
+//  (c) ABSOLUTE — no baseline, no allowlist. The population was 3 and is now 0, and zero is the only
+//      correct number: a reason that overstates its gate can always be rewritten to the truth.
+const REASON_CLAIMS_UNREACHED_GATE_QUERY = `
+  with gate_vocab as (
+    select distinct lower('iam.' || p.proname) as fn
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'iam'
+       and pg_get_function_result(p.oid) in ('boolean', 'uuid[]', 'SETOF uuid')
+       and p.proname ~ '^(has_|is_|can_|my_|org_|accessible_|discoverable_|membership_|runnable_|scraper_|assoc_)'
+  ),
+  doors as (
+    select d.schema_name, d.function_name, d.identity_args, d.reason,
+           p.oid as oid, pg_get_functiondef(p.oid) as def
+      from platform.client_callable_door d
+      join pg_catalog.pg_proc p on p.proname = d.function_name
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace and n.nspname = d.schema_name
+     where p.prokind = 'f'
+       and pg_get_function_identity_arguments(p.oid) = d.identity_args
+  ),
+  suspects as (
+    select d.schema_name, d.function_name, d.identity_args, d.def, m.claimed
+      from doors d
+      cross join lateral (
+        select distinct lower(x[1]) as claimed
+          from regexp_matches(d.reason, '(iam\\.[a-z_][a-z0-9_]*)', 'g') x
+      ) m
+     where m.claimed in (select fn from gate_vocab)
+       and strpos(lower(d.def), m.claimed) = 0
+  )
+  select s.schema_name || '.' || s.function_name as fn,
+         s.identity_args as args,
+         s.claimed as claimed
+    from suspects s
+   where not exists (
+     select 1
+       from pg_catalog.pg_proc h
+       join pg_catalog.pg_namespace hn on hn.oid = h.pronamespace
+      where hn.nspname in ('iam', 'public', 'platform')
+        and h.prokind = 'f'
+        and strpos(lower(s.def), lower(hn.nspname || '.' || h.proname)) > 0
+        and strpos(lower(pg_get_functiondef(h.oid)), s.claimed) > 0
+   )
+   order by 1, 3
+`;
+
+interface ReasonClaimRow {
+  fn: string;
+  args: string;
+  claimed: string;
+}
+
 interface NullUnsafeRoleHelperRow {
   fn: string;
   args: string;
@@ -865,6 +944,7 @@ async function main(): Promise<number> {
   let nullUnsafeRoles: NullUnsafeRoleRow[];
   let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
   let anonInvokerWriters: AnonInvokerWriterRow[];
+  let unreachedGateClaims: ReasonClaimRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -910,6 +990,10 @@ async function main(): Promise<number> {
     anonInvokerWriters = await q<AnonInvokerWriterRow>(
       ANON_INVOKER_WRITER_QUERY,
       "D9 anon-executable SECURITY INVOKER functions that write",
+    );
+    unreachedGateClaims = await q<ReasonClaimRow>(
+      REASON_CLAIMS_UNREACHED_GATE_QUERY,
+      "D11 door reasons naming a gate the body never reaches",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1438,6 +1522,41 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       of hr._l1_org_role (the default) wherever the role alone decides privilege.${C.reset}`,
+    );
+  }
+
+  // ── D11 ───────────────────────────────────────────────────────────────────
+  if (unreachedGateClaims.length === 0) {
+    console.log(
+      `${TAG.ok}D11 every door reason that names an access predicate reaches it ${C.dim}(DD-195)${C.reset}`,
+    );
+  } else {
+    findings += unreachedGateClaims.length;
+    console.log(
+      `${TAG.fail}D11 ${unreachedGateClaims.length} declared door reason(s) name a gate the body never reaches:`,
+    );
+    for (const r of unreachedGateClaims) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ claims ${r.claimed}, body never calls it${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A door's reason is the sentence the next reviewer trusts instead of opening the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       function. DD-195: the three assoc reader doors said they resolved access per${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       entity via iam.has_access; none of them had ever called it, and the real gate was${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       organization-level, so a plain member read edges revealing other people's private${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       rows. Fix the BODY if the reason is what you meant; fix the REASON if the body is.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       A helper counts: the closure is the door's body plus the bodies it names (1 hop).${C.reset}`,
     );
   }
 
