@@ -829,6 +829,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  siteDiscoveryWindow: {
+    label: "Business discovery",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   serpAnalyzerWindow: {
     label: "Search Appearance",
     instanceMode: "singleton",

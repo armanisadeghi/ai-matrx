@@ -161,5 +161,15 @@ export async function applyKeywordMeaningProposal(
         detail: { version: saved.guidelines_version },
       };
     }
+
+    case "offering":
+      // KI-040 step 6. The ordinary human path for an Offering is the
+      // brand-offering writer family, which the brand-offerings cutover has
+      // not published yet. Per the rule at the top of this file, approval
+      // never opens a writer of its own — so it refuses, in words, and the
+      // queue never offers the button (approvals/kinds/keyword-meaning.tsx).
+      throw new Error(
+        `Offering setup lands with the brand-offering model, which is not live yet. "${proposal.name}" stays waiting here and nothing was written; reject it now if it is wrong for this business.`,
+      );
   }
 }
