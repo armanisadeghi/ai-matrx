@@ -31,15 +31,29 @@
  * 🚨 WITH ONE EXCEPTION, ADDED 2026-09-14 (DD-200 residue, found by V-65). That
  * exemption is false on a MACHINERY table: `iam.apply_rls` refuses a machinery
  * token by construction, so a class-regime policy there (`std_select`,
- * `std_insert`, `std_update`, `std_delete`, `pub_read`) was written by something
- * else and no generator can be its record. On a machinery relation those names
- * are reported outright. The corpus test cannot cover them — `std_select` occurs
- * in 111 unrelated migration files, so "the name appears somewhere" is satisfied
- * by doors that have nothing to do with the table. `svc_all` and
- * `platform_admin_all` stay exempt everywhere: they are platform-wide lanes their
- * own migrations put on hundreds of tables, machinery included, so they do have a
- * record. This is what let `std_select` on `platform.activity_log` — present in no
- * migration in either repository — sit under a green line.
+ * `std_insert`, `std_update`, `std_delete`, `pub_read`) cannot have the generator
+ * as its record — whatever put it there, nothing will ever regenerate it, and the
+ * next lane that meets it needs the finding rather than a green line. On a
+ * machinery relation those names are reported outright. The corpus test cannot
+ * cover them — `std_select` occurs in 111 unrelated migration files, so "the name
+ * appears somewhere" is satisfied by doors that have nothing to do with the table.
+ * `svc_all` and `platform_admin_all` stay exempt everywhere: they are
+ * platform-wide lanes their own migrations put on hundreds of tables, machinery
+ * included, so they do have a record.
+ *
+ * 🚨 CORRECTION, 2026-09-14 (DD-204). This comment used to say the policy that
+ * prompted the exception — `std_select` on `platform.activity_log` — was "present
+ * in no migration in either repository" and "written by something else". Both are
+ * false, and two greps missed it because they looked for the literal string
+ * `std_select` near `activity` rather than for a generator CALL. Its record is
+ * `migrations/iam_hoist_has_org_access_set_wise_d146.sql` (applied 2026-08-15),
+ * which ends with `SELECT iam.apply_rls('platform','activity_log','activity',
+ * 'ledger')` and whose own comment names the `ledger` variant's `std_select` as
+ * the one shape the generator emits. It was a DELIBERATE generation nine days
+ * before the ruling that made `iam.apply_rls` refuse machinery — residue, not a
+ * hand-applied policy of unknown origin (the DD-113 class). The rule above is
+ * unchanged and right for the reason restated in it; the policy itself was
+ * superseded by `migrations/dd204_access_machinery_carries_no_unexplained_client_lane.sql`.
  *
  * WHY THE TEST IS "THE NAME APPEARS SOMEWHERE"
  * --------------------------------------------
