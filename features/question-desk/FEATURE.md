@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The Question Desk is where a question an agent filed actually reaches the person who decides it. One interview holds many questions; each is put to ONE respondent, one question filling the screen, and what comes back is a **verdict** plus, when he wrote or spoke one, his **verbatim answer**. A second mode (`review`) shows decisions the desk already made in his name as a dense table he can confirm or overturn.
+The Question Desk is where a question an agent filed actually reaches the person who decides it. One interview holds many questions; each is put to ONE respondent, one question filling the screen, and what comes back is a **verdict** plus, when he wrote or spoke one, his **verbatim answer**. A second mode (`review`) serves decisions the desk already made in his name as a triage — batches of ten, one line each, Y/N — he can confirm or overturn.
 
 Cross-repo plan and rulings: `common-docs/projects/question-desk-in-app/PLAN.md` + `REGISTER.md`. The data contract is `aidream/db/migrations/qd_001_decision_interview.sql` — where this doc and that file disagree, the file wins.
 
@@ -26,7 +26,7 @@ The `(admin)` group admits any admin level. That is deliberate and it is not a h
 **Components**
 - `components/InterviewListClient.tsx` — `MatrxDataTable` + `ArchiveFilter`.
 - `components/InterviewClient.tsx` — the orchestrator: state, the keyboard contract, saving, undo.
-- `components/QuestionDeskRail.tsx` · `QuestionScreen.tsx` · `AnswerBar.tsx` · `ReviewTable.tsx` · `AskTable.tsx`.
+- `components/QuestionDeskRail.tsx` · `QuestionScreen.tsx` · `AnswerBar.tsx` · `ReviewTriage.tsx` · `AskTable.tsx`.
 
 **Hooks**
 - `useQuestionDeskKnobs()` — the four `question_desk` knobs, ladder-resolved, with an honest `failed` state.
@@ -68,7 +68,9 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 **3. Answering out loud.** The mic is `ProTextarea`'s, so the level glow, the live streaming transcript, the device menu, the troubleshooting modal and the "you are still recording" protection all come with the field. `V` (or the "Answer by voice" button) opens the box, focuses it, and **starts the microphone** through the field's `startDictation()` handle — the person just talks. `Esc` stops the microphone first and only closes the box on a second press, because a transcript still on its way needs the box to land in. If the field refuses to start, its sentence appears in the action bar instead. When the transcript lands, `onTranscriptionComplete` marks the draft as spoken, so the save writes `answer_source='voice'` instead of `'typed'`. When the recorder's upload lands, `dictationAudioRegistry` announces the `cld_files` id (matched by the `RecordingOriginProvider` stamp around the box) and the save writes it to `answer_audio_file_id`; when the upload FAILS the screen says so and offers the retry, and the answer still saves without the audio.
 
-**4. Confirming or overturning a decision made in his name.** `mode='review'` rows render as the dense table, grouped by `review_kind`. Confirm writes `verdict='confirm'`. Overturn opens an inline box that REQUIRES words and writes `verdict='overturn'` with them — which is what turns the row back into a real question.
+**4. Confirming or overturning a decision made in his name.** `mode='review'` rows render as `ReviewTriage` (Superhuman triage, Linear inbox): NEVER all at once — the open rows are served highest `weight` first in batches of `question_desk.review_batch_size` (knob, default 10) with an honest counter ("10 of 117 · batch 3 of 12 · 2 batches done"); each row is ONE line (`decision`, under 20 words — the 117 seeded rows were rewritten 2026-09-14, the full text kept in `decision_why`), the reason and full text one keystroke away (Enter), never inline. Keys: **Y** confirm · **N** overturn (ProTextarea box, REQUIRES words) · **J/K** · **Enter** detail / next batch · **Esc**; the row advances on answer; every answer saves instantly with the interview's Undo on the row. `status_note` renders live on the answered row, so the server's follow-through ("confirmed — stands", "coming back as a question", "recording…" → "recorded") is visible within one dispatcher sweep. Dashboards are data: no explanatory paragraph on the screen.
+
+**4b. A refused save is named a refusal (2026-09-13).** PostgREST reports an RLS-refused UPDATE as "0 rows, no error" — the wire shape of a version race. `data/questions.ts` tells them apart by the row: same `version` after the re-read = `refused` (`REFUSED_SAVE_MESSAGE`, "NOT SAVED — …"), moved version = conflict, unreadable = "NOT SAVED — cannot be read back by this account". The screen appends who is signed in and whom the interview is addressed to, and shows that same identity line as an alert BEFORE the first answer whenever the signed-in account is neither the respondent nor the filer. Forcing test (run red first): `__tests__/refused-save.test.ts`.
 
 **5. An agent changes a question while he is reading it.** The realtime channel delivers the new row, `mergeRow` accepts it because its `version` is newer, and the screen updates with no reload. His own echoes are dropped by the same rule.
 
@@ -143,4 +145,5 @@ Built 2026-09-12 as lane L2 of the Question Desk campaign, then re-worked the sa
 - `2026-09-12` — L2 (Claude Opus 5): closed the zero-authorship walk's six client findings — refusals render inside the action bar with a toast; `default_in_force`, `blocks`, `door_note` and the filing provenance now reach the screen; the meter counts the rows the rail lists; the list names the respondent; the undo restores the real prior status; the key legend clears the shell's bottom-left chrome.
 - `2026-09-12` — L2 (Claude Opus 5): every text box is `ProTextarea` (Arman's ruling), so the mic, live transcription, the device menu, recording protection and the cleanup actions come from the platform field instead of this feature's own `useVoiceCapture` wiring, which was deleted.
 - `2026-09-12` — L2 (Claude Opus 5): the Undo window became the `question_desk.undo_window_ms` knob (a peer lane registered the row and mirrored the literal here; reading the row is the honest version of that mirror).
+- `2026-09-14` — QD-023/024 (Claude Opus 5): the refused-save class fix + identity line; `ReviewTable` replaced by `ReviewTriage` (batches, one-liners, Y/N/J/K/Enter, live `status_note`); knob `review_batch_size`.
 - `2026-09-12` — L2 (Claude Opus 5): built the feature — interview list with the archive axis, the one-question-per-screen interview with the full keyboard contract, the dense review and ask tables, read-aloud, voice answers, per-question drafts, the undo, realtime, and the three knobs.

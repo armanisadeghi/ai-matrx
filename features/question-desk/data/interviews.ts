@@ -86,7 +86,7 @@ export async function listInterviews(
     else bucket.open += 1;
   }
 
-  const respondents = await respondentEmails(
+  const respondents = await userEmails(
     interviews.map((row) => row.respondent_user_id),
   );
 
@@ -171,7 +171,7 @@ export async function markInterviewOpened(
  * A failed lookup is NOT an error for the list — the interviews are still
  * correct — so it degrades to the raw id, which the column labels honestly.
  */
-async function respondentEmails(
+export async function userEmails(
   userIds: string[],
 ): Promise<Map<string, string>> {
   const unique = [...new Set(userIds)];

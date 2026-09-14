@@ -43,10 +43,14 @@ import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ProTextareaElement } from "@/components/official/ProTextarea";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectUserEmail,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { loadInterview, markInterviewOpened } from "../data/interviews";
 import { reopenAnswer, saveAnswer, type SaveOutcome } from "../data/questions";
+import { userEmails } from "../data/interviews";
 import { useAnswerDraft } from "../hooks/useAnswerDraft";
 import { useInterviewQuestions } from "../hooks/useInterviewQuestions";
 import { useQuestionDeskKnobs } from "../hooks/useQuestionDeskKnobs";
@@ -62,7 +66,7 @@ import { AnswerBar, type SaveLine } from "./AnswerBar";
 import { AskTable } from "./AskTable";
 import { QuestionDeskRail } from "./QuestionDeskRail";
 import { QuestionScreen } from "./QuestionScreen";
-import { ReviewTable } from "./ReviewTable";
+import { ReviewTriage } from "./ReviewTriage";
 
 export interface InterviewClientProps {
   interviewId: string;
@@ -75,6 +79,7 @@ export function InterviewClient({
   initialSlug,
 }: InterviewClientProps) {
   const userId = useAppSelector(selectUserId);
+  const userEmail = useAppSelector(selectUserEmail);
   const knobs = useQuestionDeskKnobs();
   const {
     questions,
@@ -87,6 +92,13 @@ export function InterviewClient({
 
   const [interview, setInterview] = useState<DecisionInterviewRow | null>(null);
   const [interviewError, setInterviewError] = useState<string | null>(null);
+  /**
+   * WHO THIS INTERVIEW IS ADDRESSED TO, in words a person recognises. Shown
+   * beside who is signed in whenever the two differ, BEFORE any answer is
+   * given — 2026-09-13: answers given from the wrong account were refused by
+   * the database and nobody on screen said so.
+   */
+  const [respondentEmail, setRespondentEmail] = useState<string | null>(null);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [view, setView] = useState<"one" | "table" | null>(null);
   const [writing, setWriting] = useState(false);
@@ -124,7 +136,12 @@ export function InterviewClient({
         if (!live) return;
         setInterview(row);
         setInterviewError(row ? null : "This interview does not exist, or it is not yours to read.");
-        if (row) void markInterviewOpened(row);
+        if (row) {
+          void markInterviewOpened(row);
+          void userEmails([row.respondent_user_id]).then((map) => {
+            if (live) setRespondentEmail(map.get(row.respondent_user_id) ?? null);
+          });
+        }
       } catch (loadError) {
         if (!live) return;
         setInterviewError(
@@ -197,6 +214,20 @@ export function InterviewClient({
     if (readAloud.error) toast.error(readAloud.error);
   }, [readAloud.error]);
 
+  // ---- who is answering ---------------------------------------------------
+  // The database decides access (RLS); the screen's job is to SAY, in plain
+  // words, which account is answering and whom the interview was addressed
+  // to, so a refusal is never a mystery and a mismatch is visible before the
+  // first keystroke rather than after 117 of them.
+  const identityMismatch =
+    !!interview &&
+    !!userId &&
+    userId !== interview.respondent_user_id &&
+    userId !== interview.created_by;
+  const identitySentence = interview
+    ? `Signed in as ${userEmail ?? userId ?? "nobody"}; this interview is addressed to ${respondentEmail ?? interview.respondent_user_id}.`
+    : "";
+
   // ---- saving ------------------------------------------------------------
   const finishSave = useCallback(
     (outcome: SaveOutcome, question: DecisionQuestionRow, forRow: boolean) => {
@@ -208,14 +239,20 @@ export function InterviewClient({
         else setSaveLine(line);
         return true;
       }
-      if (outcome.status === "conflict") applyRow(outcome.currentRow);
-      const line: SaveLine = { tone: "warn", text: outcome.message };
+      if (outcome.status === "conflict" || outcome.status === "refused") {
+        applyRow(outcome.currentRow);
+      }
+      const text =
+        outcome.status === "refused"
+          ? `${outcome.message} ${identitySentence}`
+          : outcome.message;
+      const line: SaveLine = { tone: "warn", text };
       if (forRow) setRowLines((c) => ({ ...c, [question.id]: line }));
       else setSaveLine(line);
-      toast.error(outcome.message);
+      toast.error(text);
       return false;
     },
-    [applyRow],
+    [applyRow, identitySentence],
   );
 
   const advance = useCallback(() => {
@@ -284,14 +321,20 @@ export function InterviewClient({
           [row.id]: { tone: "ok", text: "Re-opened." },
         }));
       } else {
-        if (outcome.status === "conflict") applyRow(outcome.currentRow);
-        setSaveLine({ tone: "warn", text: outcome.message });
-        toast.error(outcome.message);
+        if (outcome.status === "conflict" || outcome.status === "refused") {
+          applyRow(outcome.currentRow);
+        }
+        const text =
+          outcome.status === "refused"
+            ? `${outcome.message} ${identitySentence}`
+            : outcome.message;
+        setSaveLine({ tone: "warn", text });
+        toast.error(text);
       }
     } finally {
       setBusyId(null);
     }
-  }, [undoTarget, applyRow, currentId]);
+  }, [undoTarget, applyRow, currentId, identitySentence]);
 
   // The Undo expires with the sentence that offered it.
   // How long it lasts is `question_desk.undo_window_ms`, not taste — and with
@@ -422,6 +465,16 @@ export function InterviewClient({
       }
       if (meta) return;
 
+      // In the table view the review triage owns Y/N/J/K/Enter/Esc and the
+      // ask table has its own buttons; only T (and ⌘Z above) stay here.
+      if (resolvedView === "table") {
+        if (event.key.toLowerCase() === "t") {
+          event.preventDefault();
+          setView("one");
+        }
+        return;
+      }
+
       switch (event.key.toLowerCase()) {
         case "1":
           if (current?.recommendation) {
@@ -494,6 +547,7 @@ export function InterviewClient({
     writing,
     undo,
     undoTarget,
+    resolvedView,
   ]);
 
   // ---- render ------------------------------------------------------------
@@ -571,22 +625,36 @@ export function InterviewClient({
           All interviews
         </Link>
 
+        {identityMismatch ? (
+          <p
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 font-mono text-[11.5px] text-foreground"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
+            <span>
+              {identitySentence} Answers from this account are refused by the
+              database unless it holds an editor grant on this interview — switch
+              accounts before answering.
+            </span>
+          </p>
+        ) : null}
+
         {resolvedView === "table" ? (
           <div className="space-y-10">
             {reviewQuestions.length > 0 ? (
               <section>
-                <h2 className="qd-editorial mb-1 text-[26px] font-semibold tracking-tight text-foreground">
+                <h2 className="qd-editorial mb-3 text-[26px] font-semibold tracking-tight text-foreground">
                   Decided in your name
                 </h2>
-                <p className="mb-4 max-w-[78ch] text-[13.5px] text-foreground/80">
-                  Each row is one decision in force. Confirm it, or overturn it
-                  and it comes back to you as a real question.
-                </p>
-                <ReviewTable
+                <ReviewTriage
                   interviewId={interviewId}
                   questions={reviewQuestions}
+                  batchSize={knobs.reviewBatchSize}
                   lines={rowLines}
                   busyId={busyId}
+                  undoRowId={undoTarget?.row.id ?? null}
+                  onUndo={() => void undo()}
+                  stopHref="/administration/question-desk"
                   onConfirm={(q) =>
                     void record(q, "confirm", null, "keystroke", {
                       fromTable: true,

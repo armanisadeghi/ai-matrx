@@ -69,7 +69,25 @@ export async function loadQuestion(
 export type SaveOutcome =
   | { status: "saved"; row: DecisionQuestionRow }
   | { status: "conflict"; currentRow: DecisionQuestionRow; message: string }
+  /**
+   * THE REFUSAL. The database answered the write with zero rows while the
+   * row is still readable at the very version we wrote against — Postgres
+   * row-level security declined the UPDATE for the signed-in account. Nothing
+   * changed, and nothing "moved somewhere else": this is an access refusal
+   * and the screen must say so in those words (2026-09-13: a refused save
+   * that wears a "changed elsewhere" or "no longer exists" sentence is how an
+   * answer looks lost instead of refused).
+   */
+  | { status: "refused"; currentRow: DecisionQuestionRow; message: string }
   | { status: "failed"; message: string };
+
+/**
+ * The sentence a refused write shows. Exported so the screen and the test
+ * agree on the words; the screen appends WHO is signed in and WHO the
+ * interview was addressed to, which this module cannot know.
+ */
+export const REFUSED_SAVE_MESSAGE =
+  "NOT SAVED — the database refused this write for the account you are signed in as. Nothing was recorded.";
 
 export interface SaveAnswerArgs {
   question: DecisionQuestionRow;
@@ -167,6 +185,18 @@ async function applyGuarded(
     });
     if (result.status === "saved") return { status: "saved", row: result.row };
     if (result.status === "conflict") {
+      // PostgREST reports an RLS-refused UPDATE as "0 rows, no error" — the
+      // same shape as a genuine version race. The two are told apart by the
+      // row itself: a race moved the version on; a refusal left it exactly
+      // where we read it. Only a refusal may be called a refusal, and a
+      // refusal may never be called anything else.
+      if (result.currentRow.version === question.version) {
+        return {
+          status: "refused",
+          currentRow: result.currentRow,
+          message: REFUSED_SAVE_MESSAGE,
+        };
+      }
       return {
         status: "conflict",
         currentRow: result.currentRow,
@@ -176,7 +206,8 @@ async function applyGuarded(
     }
     return {
       status: "failed",
-      message: "This question no longer exists. Your words are still on screen.",
+      message:
+        "NOT SAVED — this question cannot be read back by the account you are signed in as (it was deleted, or this account has no access to it). Your words are still on screen.",
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
