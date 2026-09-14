@@ -69,6 +69,65 @@ export function buildAdvancePayload(
   };
 }
 
+/**
+ * THE RULES, by grade — the server's `ImpactRuleId` set (CONTRACT.md) with a
+ * plain sentence each. The legend is DERIVED from this table (D8): a
+ * hand-written "Red = variables or context slots" missed that the grader
+ * also reds on an action-policy change.
+ */
+export const IMPACT_RULE_SENTENCES: Record<ImpactGrade, ReadonlyArray<{ ruleId: string; sentence: string }>> = {
+  // Grades mirror aidream/services/agent_impact/rules.py (2026-09-14). The
+  // guard for this table is the rules file itself: a rule that moves grade
+  // moves here in the same change.
+  red: [
+    { ruleId: "var.added", sentence: "a variable was added" },
+    { ruleId: "var.removed", sentence: "a variable was removed" },
+    { ruleId: "var.renamed", sentence: "a variable was renamed" },
+    { ruleId: "var.required_flipped", sentence: "a variable became required, or stopped being" },
+    { ruleId: "var.required_default_changed", sentence: "a required variable's default changed" },
+    { ruleId: "slot.added", sentence: "a context slot was added" },
+    { ruleId: "slot.removed", sentence: "a context slot was removed" },
+    { ruleId: "actions.apply_policy_changed", sentence: "the actions apply policy changed" },
+    { ruleId: "actions.allowlist_grew", sentence: "the actions allowlist grew" },
+    { ruleId: "schema.root_shape_changed", sentence: "the output schema's root shape changed" },
+  ],
+  orange: [
+    { ruleId: "slot.config_changed", sentence: "a context slot is configured differently" },
+    { ruleId: "actions.allowlist_shrank", sentence: "the actions allowlist shrank" },
+    { ruleId: "schema.key_removed", sentence: "an output key was removed" },
+    { ruleId: "schema.key_newly_required", sentence: "an output key became required" },
+    { ruleId: "schema.key_redefined", sentence: "an output key was redefined" },
+    { ruleId: "schema.output_kind_changed", sentence: "the output kind changed" },
+    { ruleId: "contract.required_output_keys_unsatisfied", sentence: "the newest version no longer produces an output key this job requires" },
+    { ruleId: "contract.required_context_policies_unsatisfied", sentence: "the newest version no longer carries a context policy this job requires" },
+    { ruleId: "input_kind.changed", sentence: "the input kind changed" },
+    { ruleId: "model.provider_changed", sentence: "the model moved to a different provider" },
+    { ruleId: "tools.changed", sentence: "the tools it can use changed" },
+    { ruleId: "mcp_servers.changed", sentence: "the MCP servers it can reach changed" },
+    { ruleId: "custom_tools.changed", sentence: "its custom tools changed" },
+    { ruleId: "tool_config.changed", sentence: "how its tools are configured changed" },
+    { ruleId: "skill_config.changed", sentence: "the skills it carries changed" },
+    { ruleId: "is_active.changed", sentence: "the version this would move to is switched off" },
+  ],
+  green: [
+    { ruleId: "model.changed_same_provider", sentence: "the model changed on the same provider" },
+    { ruleId: "prompt.changed", sentence: "the instructions (system prompt) were edited" },
+    { ruleId: "schema.additive_only", sentence: "the output schema only gained optional keys" },
+    { ruleId: "input_kind.stamped", sentence: "an input kind was stamped where there was none" },
+    { ruleId: "metadata.changed", sentence: "metadata changed" },
+  ],
+  identical: [
+    { ruleId: "pin.current", sentence: "nothing that affects a run changed between the pinned version and the newest one" },
+  ],
+};
+
+/** The legend line for a grade: every rule that reaches it, in words, joined. */
+export function gradeRulesSentence(grade: ImpactGrade): string {
+  const rules = IMPACT_RULE_SENTENCES[grade];
+  if (rules.length === 0) return "";
+  return rules.map((rule) => rule.sentence).join("; ") + ".";
+}
+
 export interface GradeMeta {
   label: string;
   /** One sentence for a person — the legend and the badge tooltip. */
@@ -79,28 +138,24 @@ export interface GradeMeta {
 export const GRADE_META: Record<ImpactGrade, GradeMeta> = {
   identical: {
     label: "Identical",
-    meaning:
-      "Nothing that affects a run changed between the pinned version and the newest one.",
+    meaning: gradeRulesSentence("identical").replace(/^./, (c) => c.toUpperCase()),
     toneClassName: "border-border bg-muted text-muted-foreground",
   },
   green: {
     label: "Green",
-    meaning:
-      "Only low-risk things changed — the model on the same provider, the prompt, metadata. Almost never breaks a job.",
+    meaning: `Low-risk changes only — ${gradeRulesSentence("green").replace(/\.$/, "")}. Almost never breaks a job.`,
     toneClassName:
       "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   },
   orange: {
     label: "Orange",
-    meaning:
-      "The output changed — its kind or its schema — or the provider changed. Can break whatever reads the result.",
+    meaning: `Can break whatever reads the result — ${gradeRulesSentence("orange").replace(/\.$/, "")}.`,
     toneClassName:
       "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   red: {
     label: "Red",
-    meaning:
-      "Variables or context slots were added, removed or renamed. The most common way a job breaks — look before you move it.",
+    meaning: `The most common way a job breaks — look before you move it: ${gradeRulesSentence("red").replace(/\.$/, "")}.`,
     toneClassName:
       "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400",
   },
@@ -223,14 +278,17 @@ export type BatchEligibility =
   | { batchable: true }
   | { batchable: false; why: string };
 
-export function batchEligibilityOf(verdict: ImpactVerdict): BatchEligibility {
+export function batchEligibilityOf(
+  verdict: ImpactVerdict,
+  context: WriteContext = ADMIN_WRITE_CONTEXT,
+): BatchEligibility {
   if (verdict.blocker) {
     return {
       batchable: false,
       why: `${BLOCKER_META[verdict.blocker].label}: ${BLOCKER_META[verdict.blocker].remedy}`,
     };
   }
-  if (verdict.principal.kind === "user") {
+  if (verdict.principal.kind === "user" && !isOwnPin(verdict, context)) {
     return {
       batchable: false,
       why: "A person's own pin — theirs to advance, never moved on their behalf.",
@@ -254,9 +312,12 @@ export function batchEligibilityOf(verdict: ImpactVerdict): BatchEligibility {
  * (capability measured, no unexpected settings issue, no descendant at a
  * higher grade, old enough).
  */
-export function isSafeGreen(verdict: ImpactVerdict): boolean {
+export function isSafeGreen(
+  verdict: ImpactVerdict,
+  context: WriteContext = ADMIN_WRITE_CONTEXT,
+): boolean {
   return (
-    batchEligibilityOf(verdict).batchable &&
+    batchEligibilityOf(verdict, context).batchable &&
     (verdict.grade === "green" || verdict.grade === "identical") &&
     verdict.auto_advance_eligible === true
   );
@@ -282,12 +343,15 @@ function isImpactReport(value: unknown): value is ImpactReport {
 
 export interface StandingImpact {
   verdicts: ImpactVerdict[];
-  /** Summed across pages; the sentence is the server's, never composed here. */
+  /** Summed across pages and reads, by principal kind. */
   withheldTotal: number;
+  withheldGroups: WithheldGroup[];
+  /** Exactly one sentence (or none) for the merged counts, in the server's form. */
   withheldSentences: string[];
   agentsExamined: number;
   /** Ids the caller asked about that are not live agents it can read (Amendment 3d). */
   unknownAgentIds: string[];
+  /** Exactly one sentence (or none) for the merged ids, in the server's form. */
   unknownSentences: string[];
   /** True when every page was graded against a hypothetical delta (R23). */
   dryRun: boolean;
@@ -306,6 +370,47 @@ export const IMPACT_READ_PATH: Record<ImpactPosture, "/mandates/impact" | "/mand
   admin: "/mandates/impact",
   mine: "/mandates/impact/mine",
 };
+
+/**
+ * The write doors (I3 admin lane, I12 owner lane). SAME writer on the server;
+ * the owner lane moves only the caller's own personal pins and the org rungs
+ * of organizations they administer, and refuses everything else with the
+ * neutral unreadable sentence — never a pin on someone else's behalf.
+ */
+export const IMPACT_WRITE_PATH: Record<
+  ImpactPosture,
+  {
+    advance: "/mandates/impact/advance" | "/mandates/impact/advance/mine";
+    revert: "/mandates/impact/revert" | "/mandates/impact/revert/mine";
+  }
+> = {
+  admin: { advance: "/mandates/impact/advance", revert: "/mandates/impact/revert" },
+  mine: { advance: "/mandates/impact/advance/mine", revert: "/mandates/impact/revert/mine" },
+};
+
+/**
+ * WHO is looking, for the eligibility rules below. `posture: "mine"` with an
+ * `actorUserId` makes that person's OWN personal pins movable (I12 — the
+ * owner lane lets the owner act); every other person's pin stays "theirs to
+ * advance". The default is the admin lane, where no personal pin batches.
+ */
+export interface WriteContext {
+  posture: ImpactPosture;
+  actorUserId: string | null;
+}
+
+export const ADMIN_WRITE_CONTEXT: WriteContext = { posture: "admin", actorUserId: null };
+
+/** A personal pin that belongs to the person looking at it. */
+export function isOwnPin(verdict: ImpactVerdict, context: WriteContext): boolean {
+  return (
+    context.posture === "mine" &&
+    verdict.principal.kind === "user" &&
+    typeof context.actorUserId === "string" &&
+    context.actorUserId.length > 0 &&
+    verdict.principal.subject_user_id === context.actorUserId
+  );
+}
 
 export interface FetchImpactOptions {
   /** Which door to read through. Default `admin` — the console and the batch panel. */
@@ -383,39 +488,93 @@ export async function fetchImpact(
   return mergeImpactReports(reports);
 }
 
+export interface WithheldGroup {
+  principalKind: string;
+  count: number;
+  /** The server's own explanation for this kind, verbatim. */
+  explanation: string;
+}
+
+/**
+ * ONE sentence for merged withheld counts, in the server's own form
+ * ("N rungs withheld: a <explanation>; b <explanation>") built from the
+ * server's per-kind explanations. Pages each carry their own sentence with
+ * their own numbers; printing those beside a summed total was the
+ * "5 rungs withheld — 1 rung withheld… 2 rungs withheld…" screen (D1).
+ */
+export function withheldSentenceOf(groups: readonly WithheldGroup[]): string | null {
+  const count = groups.reduce((sum, group) => sum + group.count, 0);
+  if (count === 0) return null;
+  return (
+    `${count} rung${count === 1 ? "" : "s"} withheld: ` +
+    groups.map((group) => `${group.count} ${group.explanation}`).join("; ")
+  );
+}
+
+/** ONE sentence for merged unknown ids, in the server's own form (Amendment 3d). */
+export function unknownSentenceOf(ids: readonly string[]): string | null {
+  if (ids.length === 0) return null;
+  const many = ids.length !== 1;
+  return (
+    `${ids.length} of the agent ids you sent ${many ? "are" : "is"} not ` +
+    `${many ? "agents" : "an agent"} you can see — ${many ? "they were" : "it was"} ` +
+    `mistyped, deleted, or not shared with you, so ${many ? "they are" : "it is"} ` +
+    `not counted as having no impact: ${ids.join(", ")}`
+  );
+}
+
+function mergeWithheldGroups(
+  parts: ReadonlyArray<readonly WithheldGroup[]>,
+): WithheldGroup[] {
+  const byKind = new Map<string, WithheldGroup>();
+  for (const groups of parts) {
+    for (const group of groups) {
+      const hit = byKind.get(group.principalKind);
+      if (hit) hit.count += group.count;
+      else byKind.set(group.principalKind, { ...group });
+    }
+  }
+  return Array.from(byKind.values()).sort((a, b) =>
+    a.principalKind.localeCompare(b.principalKind),
+  );
+}
+
 /** Sum a set of page reports into one — exported so a test can prove the arithmetic. */
 export function mergeImpactReports(
   reports: readonly ImpactReport[],
 ): StandingImpact {
-  const sentences = new Set<string>();
-  const unknownSentences = new Set<string>();
   const unknownAgentIds = new Set<string>();
-  let withheldTotal = 0;
+  const groupParts: WithheldGroup[][] = [];
   let agentsExamined = 0;
   let computedAt = "";
   let dryRun = reports.length > 0;
   const verdicts: ImpactVerdict[] = [];
   for (const report of reports) {
     verdicts.push(...(report.verdicts ?? []));
-    withheldTotal += report.withheld?.total ?? 0;
-    if (report.withheld?.sentence && (report.withheld.total ?? 0) > 0) {
-      sentences.add(report.withheld.sentence);
-    }
+    groupParts.push(
+      (report.withheld?.by_principal_kind ?? []).map((group) => ({
+        principalKind: group.principal_kind,
+        count: group.count,
+        explanation: group.explanation,
+      })),
+    );
     for (const id of report.unknown_agent_ids ?? []) unknownAgentIds.add(id);
-    if (report.unknown_sentence && (report.unknown_agent_ids ?? []).length > 0) {
-      unknownSentences.add(report.unknown_sentence);
-    }
     agentsExamined += report.agents_examined ?? 0;
     if (report.computed_at > computedAt) computedAt = report.computed_at;
     if (report.dry_run !== true) dryRun = false;
   }
+  const withheldGroups = mergeWithheldGroups(groupParts);
+  const withheldSentence = withheldSentenceOf(withheldGroups);
+  const unknownIds = Array.from(unknownAgentIds);
+  const unknownSentence = unknownSentenceOf(unknownIds);
   return {
     verdicts,
-    withheldTotal,
-    withheldSentences: Array.from(sentences),
+    withheldTotal: withheldGroups.reduce((sum, group) => sum + group.count, 0),
+    withheldGroups,
+    withheldSentences: withheldSentence ? [withheldSentence] : [],
     agentsExamined,
-    unknownAgentIds: Array.from(unknownAgentIds),
-    unknownSentences: Array.from(unknownSentences),
+    unknownAgentIds: unknownIds,
+    unknownSentences: unknownSentence ? [unknownSentence] : [],
     dryRun,
     computedAt,
   };
@@ -425,32 +584,21 @@ export function mergeImpactReports(
 export function mergeStandingImpacts(
   parts: readonly StandingImpact[],
 ): StandingImpact {
-  const merged: StandingImpact = {
-    verdicts: [],
-    withheldTotal: 0,
-    withheldSentences: [],
-    agentsExamined: 0,
-    unknownAgentIds: [],
-    unknownSentences: [],
+  const withheldGroups = mergeWithheldGroups(parts.map((part) => part.withheldGroups));
+  const withheldSentence = withheldSentenceOf(withheldGroups);
+  const unknownIds = Array.from(new Set(parts.flatMap((part) => part.unknownAgentIds)));
+  const unknownSentence = unknownSentenceOf(unknownIds);
+  return {
+    verdicts: parts.flatMap((part) => part.verdicts),
+    withheldTotal: withheldGroups.reduce((sum, group) => sum + group.count, 0),
+    withheldGroups,
+    withheldSentences: withheldSentence ? [withheldSentence] : [],
+    agentsExamined: parts.reduce((sum, part) => sum + part.agentsExamined, 0),
+    unknownAgentIds: unknownIds,
+    unknownSentences: unknownSentence ? [unknownSentence] : [],
     dryRun: parts.length > 0 && parts.every((part) => part.dryRun),
-    computedAt: "",
+    computedAt: parts.reduce((max, part) => (part.computedAt > max ? part.computedAt : max), ""),
   };
-  const withheld = new Set<string>();
-  const unknownSentences = new Set<string>();
-  const unknownIds = new Set<string>();
-  for (const part of parts) {
-    merged.verdicts.push(...part.verdicts);
-    merged.withheldTotal += part.withheldTotal;
-    for (const sentence of part.withheldSentences) withheld.add(sentence);
-    for (const sentence of part.unknownSentences) unknownSentences.add(sentence);
-    for (const id of part.unknownAgentIds) unknownIds.add(id);
-    merged.agentsExamined += part.agentsExamined;
-    if (part.computedAt > merged.computedAt) merged.computedAt = part.computedAt;
-  }
-  merged.withheldSentences = Array.from(withheld);
-  merged.unknownSentences = Array.from(unknownSentences);
-  merged.unknownAgentIds = Array.from(unknownIds);
-  return merged;
 }
 
 /**
@@ -488,10 +636,11 @@ export async function postAdvance(
   dispatch: AppDispatch,
   verdicts: readonly ImpactVerdict[],
   batchLabel: string,
+  posture: ImpactPosture = "admin",
 ): Promise<AdvanceReport> {
   const response = await dispatch(
     callApi({
-      path: "/mandates/impact/advance",
+      path: IMPACT_WRITE_PATH[posture].advance,
       method: "POST",
       body: buildAdvancePayload(verdicts, batchLabel),
     }),
@@ -515,10 +664,11 @@ export async function postRevert(
   batchId: string,
   rowId: string | null,
   batchLabel: string,
+  posture: ImpactPosture = "admin",
 ): Promise<AdvanceReport> {
   const response = await dispatch(
     callApi({
-      path: "/mandates/impact/revert",
+      path: IMPACT_WRITE_PATH[posture].revert,
       method: "POST",
       body: { batch_id: batchId, row_id: rowId, batch_label: batchLabel },
     }),
@@ -596,9 +746,26 @@ export function summarizeAdvanceReport(report: AdvanceReport): string {
   return parts.join(", ") + ".";
 }
 
-/** The rows of a batch that actually moved and can therefore be put back. */
-export function revertableRows(report: AdvanceReport): AdvanceRowResult[] {
-  return (report.results ?? []).filter((row) => row.status === "advanced");
+/**
+ * The rows of a batch that actually moved and can therefore be put back —
+ * MINUS any row a later revert (in `laterReports`) already put back, so a
+ * "Revert (N)" never promises a row the server will refuse as already
+ * reverted (D5).
+ */
+export function revertableRows(
+  report: AdvanceReport,
+  laterReports: readonly AdvanceReport[] = [],
+): AdvanceRowResult[] {
+  const alreadyReverted = new Set<string>();
+  for (const later of laterReports) {
+    if (later.action !== "revert" || later.reverts_batch_id !== report.batch_id) continue;
+    for (const row of later.results ?? []) {
+      if (row.status === "reverted") alreadyReverted.add(rungIdentityOf(row.token));
+    }
+  }
+  return (report.results ?? []).filter(
+    (row) => row.status === "advanced" && !alreadyReverted.has(rungIdentityOf(row.token)),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -671,14 +838,16 @@ export const BATCH_TIER_META: Record<BatchTier, BatchTierMeta> = {
 
 export function batchTierOf(
   verdict: ImpactVerdict,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; context?: WriteContext } = {},
 ): BatchTier {
-  if (verdict.blocker || verdict.principal.kind === "user") return "blocked";
+  const context = options.context ?? ADMIN_WRITE_CONTEXT;
+  if (verdict.blocker) return "blocked";
+  if (verdict.principal.kind === "user" && !isOwnPin(verdict, context)) return "blocked";
   // A DRY RUN grades pinned → pinned ∪ delta (R23): its "latest" is the
   // hypothetical, its token has no target, and pin-vs-newest means nothing.
   // The pile comes from the grade alone; "current" is a post-write answer.
   if (!options.dryRun) {
-    const eligibility = batchEligibilityOf(verdict);
+    const eligibility = batchEligibilityOf(verdict, context);
     if (!eligibility.batchable && !isBehindLatest(verdict)) return "current";
   }
   if (verdict.grade === "red") return "red";
@@ -688,11 +857,14 @@ export function batchTierOf(
 }
 
 /** A row a person may move from the batch panel — safe, drift or red, never blocked/current. */
-export function isBatchActionable(verdict: ImpactVerdict): boolean {
-  const tier = batchTierOf(verdict);
+export function isBatchActionable(
+  verdict: ImpactVerdict,
+  context: WriteContext = ADMIN_WRITE_CONTEXT,
+): boolean {
+  const tier = batchTierOf(verdict, { context });
   return (
     (tier === "safe" || tier === "drift" || tier === "red") &&
-    batchEligibilityOf(verdict).batchable
+    batchEligibilityOf(verdict, context).batchable
   );
 }
 
@@ -705,7 +877,7 @@ export interface BatchTierCounts {
 
 export function countBatchTiers(
   verdicts: readonly ImpactVerdict[],
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; context?: WriteContext } = {},
 ): BatchTierCounts {
   const byTier: Record<BatchTier, number> = {
     safe: 0,
@@ -741,20 +913,23 @@ export function describeBatch(counts: BatchTierCounts): string {
 }
 
 /**
- * The post-edit badge's sentence (I6): "This change reaches N mandates:
- * x safe / y to check / z red". Blocked and current piles are named too —
- * a rung a person's edit reaches but a batch cannot move is still reached.
+ * The post-edit badge's sentence (I6). ACTIONABLE FIRST, then the reach —
+ * the Renovate/Dependabot reference: a notification leads with what the
+ * person can do now, and the blast radius follows. "4 pins can advance now
+ * (1 to check, 2 red) · reaches 26 mandates, 39 rungs not movable here".
+ * The not-movable count stays visible (R31): a rung the edit reaches but
+ * this person cannot move is still reached.
  */
 export function describeReach(counts: BatchTierCounts): string {
-  const head = `This change reaches ${counts.mandates} mandate${counts.mandates === 1 ? "" : "s"}`;
-  const piles = [
-    `${counts.byTier.safe} safe`,
-    `${counts.byTier.drift} to check`,
-    `${counts.byTier.red} red`,
-  ];
-  if (counts.byTier.blocked > 0) piles.push(`${counts.byTier.blocked} not movable here`);
-  if (counts.byTier.current > 0) piles.push(`${counts.byTier.current} already current`);
-  return `${head}: ${piles.join(" / ")}`;
+  const safe = counts.byTier.safe;
+  const head = `${safe} pin${safe === 1 ? "" : "s"} can advance now (${counts.byTier.drift} to check, ${counts.byTier.red} red)`;
+  const reach = `reaches ${counts.mandates} mandate${counts.mandates === 1 ? "" : "s"}`;
+  const tail: string[] = [];
+  if (counts.byTier.blocked > 0) {
+    tail.push(`${counts.byTier.blocked} rung${counts.byTier.blocked === 1 ? "" : "s"} not movable here`);
+  }
+  if (counts.byTier.current > 0) tail.push(`${counts.byTier.current} already current`);
+  return `${head} · ${reach}${tail.length > 0 ? `, ${tail.join(", ")}` : ""}`;
 }
 
 /** Verdicts grouped by mandate key: the mandate's own default rung, then its bindings. */
@@ -787,8 +962,42 @@ export function groupImpactByMandate(
   return out;
 }
 
+/**
+ * A bare number → "vN"; null → "latest". Use ONLY where null genuinely means
+ * "no pin" (a rung that tracks latest). For a verdict, use the two helpers
+ * below: the server returns null version NUMBERS on some blocked rungs
+ * (set_aside) even though the rung IS pinned, and printing "latest" there
+ * was a screen lie (D3).
+ */
 export function versionLabel(number: number | null | undefined): string {
   return number == null ? "latest" : `v${number}`;
+}
+
+/** The pinned side of a verdict: "vN", "latest" only when the rung tracks latest, else "unknown". */
+export function pinnedLabelOf(verdict: ImpactVerdict): string {
+  if (verdict.pinned_version_number != null) return `v${verdict.pinned_version_number}`;
+  if (verdict.blocker === "tracks_latest") return "latest";
+  if (verdict.pinned_version_id || verdict.apply_token.expected_pinned_version_id) {
+    return "pinned (version unknown)";
+  }
+  return "latest";
+}
+
+/** The newest side of a verdict: "vN", or "unknown" when the read named none (never "latest"). */
+export function newestLabelOf(verdict: ImpactVerdict): string {
+  if (verdict.latest_version_number != null) return `v${verdict.latest_version_number}`;
+  if (verdict.blocker === "unreachable") return "no saved version";
+  return "unknown";
+}
+
+/** "vA → vB" for a verdict, with both sides honest. */
+export function versionsLabelOf(verdict: ImpactVerdict): string {
+  return `${pinnedLabelOf(verdict)} → ${newestLabelOf(verdict)}`;
+}
+
+/** The rung, for a person: "" for the mandate's own default, " (org binding)" for a binding. */
+export function rungSuffixOf(verdict: Pick<ImpactVerdict, "holder_kind" | "principal">): string {
+  return verdict.holder_kind === "binding" ? ` (${verdict.principal.kind} binding)` : "";
 }
 
 /**
@@ -801,20 +1010,49 @@ export function describeAdvance(
   verdicts: readonly ImpactVerdict[],
   revertWindow: RevertWindow,
 ): { title: string; description: string; moves: string[] } {
-  const green = verdicts.filter(
-    (v) => v.grade === "green" || v.grade === "identical",
-  ).length;
-  const anyway = verdicts.length - green;
-  const moves = verdicts.map(
-    (v) =>
-      `${v.mandate_key}${v.holder_kind === "binding" ? ` (${v.principal.kind} binding)` : ""}: ${v.agent_name} ${versionLabel(v.pinned_version_number)} → ${versionLabel(v.latest_version_number)} · ${GRADE_META[v.grade].label}`,
-  );
-  const noun = verdicts.length === 1 ? "mandate pin" : "mandate pins";
+  // Three lines, never two: a green row whose SETTINGS check found something
+  // (the drift pile) is not "green or identical" to a person — it was chosen
+  // despite a warning too (D7).
+  let clean = 0;
+  let settingsWarned = 0;
+  let graded = 0;
+  for (const v of verdicts) {
+    if (v.grade === "orange" || v.grade === "red") graded += 1;
+    else if (settingsSignalOf(v).state !== "clean") settingsWarned += 1;
+    else clean += 1;
+  }
+  const moves = verdicts.map((v) => {
+    const settings = settingsSignalOf(v);
+    const flag =
+      settings.state === "unmeasured"
+        ? " · settings unmeasured"
+        : settings.state === "changed"
+          ? " · settings changed"
+          : "";
+    return `${v.mandate_key}${rungSuffixOf(v)}: ${v.agent_name} ${versionsLabelOf(v)} · ${GRADE_META[v.grade].label}${flag}`;
+  });
+  const n = verdicts.length;
+  const one = n === 1;
+  const noun = one ? "mandate pin" : "mandate pins";
+  const parts: string[] = [];
+  if (clean > 0) parts.push(`${clean} ${clean === 1 ? "is" : "are"} green or identical with a clean settings check`);
+  if (settingsWarned > 0) {
+    parts.push(
+      `${settingsWarned} ${settingsWarned === 1 ? "is" : "are"} low-risk but the settings check found something (or could not run) and you are choosing to advance ${settingsWarned === 1 ? "it" : "them"} anyway`,
+    );
+  }
+  if (graded > 0) {
+    parts.push(
+      `${graded} ${graded === 1 ? "is" : "are"} orange or red and you are choosing to advance ${graded === 1 ? "it" : "them"} anyway`,
+    );
+  }
   return {
-    title: `Advance ${verdicts.length} ${noun}?`,
+    title: `Advance ${n} ${noun}?`,
     description:
-      `This moves ${verdicts.length} ${noun} from the versions they run now to the newest saved version of their agent — every run of those jobs uses the new version from the moment it lands. ` +
-      `${green} ${green === 1 ? "is" : "are"} green or identical; ${anyway} ${anyway === 1 ? "is" : "are"} orange or red and you are choosing to advance ${anyway === 1 ? "it" : "them"} anyway. ` +
+      (one
+        ? `This moves 1 mandate pin from the version it runs now to the newest saved version of its agent — every run of that job uses the new version from the moment it lands. `
+        : `This moves ${n} mandate pins from the versions they run now to the newest saved version of their agent — every run of those jobs uses the new version from the moment it lands. `) +
+      `${parts.join("; ")}. ` +
       `A pin that moved since this page read it is refused, not overwritten. ${revertWindowSentence(revertWindow)}`,
     moves,
   };
@@ -901,13 +1139,18 @@ export function describeRevert(
       `A pin that moved again since the advance, or whose revert window has passed, is refused with the reason, not forced.`,
     moves: rows.map((row) => {
       const verdict = verdictByRung.get(rungIdentityOf(row.token));
-      const from = verdict ? versionLabel(verdict.latest_version_number) : "the advanced version";
+      const from = verdict ? newestLabelOf(verdict) : "the advanced version";
       const to = verdict
-        ? versionLabel(verdict.pinned_version_number)
+        ? pinnedLabelOf(verdict)
         : row.prior_pinned_version_id
           ? "the prior pinned version"
           : "tracking latest (no pin)";
-      return `${row.mandate_key ?? row.token.row_id}: ${from} → ${to}`;
+      const rung = verdict
+        ? rungSuffixOf(verdict)
+        : row.token.holder_kind === "binding"
+          ? " (binding)"
+          : "";
+      return `${row.mandate_key ?? row.token.row_id}${rung}: ${from} → ${to}`;
     }),
   };
 }

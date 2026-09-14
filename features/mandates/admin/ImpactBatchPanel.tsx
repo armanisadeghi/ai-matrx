@@ -52,7 +52,16 @@ import {
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAccessToken,
+  selectAuthReady,
+} from "@/lib/redux/selectors/userSelectors";
 import { fetchUserDisplayNames } from "@/features/mandates/notes";
 import { agentHref } from "./mandate-health";
 import {
@@ -67,16 +76,19 @@ import {
   describeBatch,
   fetchImpact,
   isBatchActionable,
+  isOwnPin,
   mergeStandingImpacts,
   rungIdentityOf,
+  newestLabelOf,
+  pinnedLabelOf,
   settingsSignalOf,
-  versionLabel,
   type BatchTier,
   type ImpactDelta,
   type ImpactGrade,
   type ImpactPosture,
   type ImpactVerdict,
   type StandingImpact,
+  type WriteContext,
 } from "./impact";
 import { ImpactAgentCompanion, type CompanionSection } from "./ImpactAgentCompanion";
 import { useImpactAdvance } from "./impact-advance";
@@ -217,6 +229,28 @@ export function ImpactBatchPanel({
   const dispatch = useAppDispatch();
   const openMandateWindow = useOpenMandateWindow();
   const walkDescendants = includeDescendants ?? mode === "post_batch";
+  // THE WRITE DOOR (I12): a super admin writes through the admin lane; anyone
+  // else through the owner lane, where their OWN personal pins are movable
+  // and the server refuses the rest with its sentence. Never on behalf.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const actorUserId = useAppSelector(selectUserId);
+  const writeContext: WriteContext = {
+    posture: isSuperAdmin ? "admin" : "mine",
+    actorUserId: actorUserId ?? null,
+  };
+  // THE ORG GATE (D2) — the same one MandatesConsole has. A window restored on
+  // a full page load mounts before app-context and auth hydrate; `callApi`
+  // then fails its own preflight ("Select an organization…") and the panel
+  // sat on that error until a manual Re-grade. Wait for the same Redux
+  // authority the transport reads, and re-read when it arrives.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  const accessToken = useAppSelector(selectAccessToken);
+  const authReady = useAppSelector(selectAuthReady);
+  const sessionReady = Boolean(authReady && accessToken && selectedOrganizationId);
+  const noOrganization = Boolean(
+    authReady && accessToken && !selectedOrganizationId && orgBootstrapResolved,
+  );
 
   const [impact, setImpact] = useState<StandingImpact | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +273,8 @@ export function ImpactBatchPanel({
       setImpact(null);
       return;
     }
+    // Not "failed" — not yet. The header says it is waiting for the session.
+    if (!sessionReady) return;
     let cancelled = false;
     setLoading(true);
     // `epoch` is the re-read trigger after a write.
@@ -268,7 +304,7 @@ export function ImpactBatchPanel({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, epoch, posture, scopeKey, walkDescendants]);
+  }, [dispatch, epoch, posture, scopeKey, sessionReady, walkDescendants]);
 
   // Owners of personal pins, by name (I12) — best effort, one lookup.
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(() => new Map());
@@ -303,17 +339,21 @@ export function ImpactBatchPanel({
       out.push({
         id,
         verdict,
-        tier: batchTierOf(verdict, { dryRun: mode === "dry_run" }),
+        tier: batchTierOf(verdict, { dryRun: mode === "dry_run", context: writeContext }),
         grade: verdict.grade,
         mandateKey: verdict.mandate_key,
         agentName: verdict.agent_name,
         rungLabel:
           verdict.holder_kind === "binding"
-            ? `${verdict.principal.kind} binding`
+            ? isOwnPin(verdict, writeContext)
+              ? "your own pin"
+              : `${verdict.principal.kind} binding`
             : "mandate default",
         ownerUserId:
-          verdict.principal.kind === "user" ? (verdict.principal.subject_user_id ?? null) : null,
-        versions: `${versionLabel(verdict.pinned_version_number)} → ${mode === "dry_run" ? "proposed" : versionLabel(verdict.latest_version_number)}`,
+          verdict.principal.kind === "user" && !isOwnPin(verdict, writeContext)
+            ? (verdict.principal.subject_user_id ?? null)
+            : null,
+        versions: `${pinnedLabelOf(verdict)} → ${mode === "dry_run" ? "proposed" : newestLabelOf(verdict)}`,
         settingsState: settingsSignalOf(verdict).state,
         resultStatus: "",
       });
@@ -326,7 +366,7 @@ export function ImpactBatchPanel({
 
   const counts = countBatchTiers(
     rows.map((row) => row.verdict),
-    { dryRun: mode === "dry_run" },
+    { dryRun: mode === "dry_run", context: writeContext },
   );
 
   // Selection: controlled by the host (dry run lifts it) or local.
@@ -341,6 +381,7 @@ export function ImpactBatchPanel({
 
   const writes = useImpactAdvance({
     verdictByRung,
+    posture: writeContext.posture,
     onWritten: () => {
       setSelected([]);
       setEpoch((value) => value + 1);
@@ -351,7 +392,7 @@ export function ImpactBatchPanel({
   const isSelectable = (row: BatchRow): boolean =>
     mode === "dry_run"
       ? row.tier === "safe" || row.tier === "drift" || row.tier === "red"
-      : isBatchActionable(row.verdict);
+      : isBatchActionable(row.verdict, writeContext);
 
   const rowsWithResults = rows.map((row) => ({
     ...row,
@@ -360,12 +401,12 @@ export function ImpactBatchPanel({
 
   const advanceAllSafe = () =>
     void writes.advance(
-      rows.filter((row) => row.tier === "safe" && isBatchActionable(row.verdict)).map((row) => row.verdict),
+      rows.filter((row) => row.tier === "safe" && isBatchActionable(row.verdict, writeContext)).map((row) => row.verdict),
       `${batchLabel}: all safe`,
     );
   const advanceSelected = (selectedRows: BatchRow[]) =>
     void writes.advance(
-      selectedRows.filter((row) => isBatchActionable(row.verdict)).map((row) => row.verdict),
+      selectedRows.filter((row) => isBatchActionable(row.verdict, writeContext)).map((row) => row.verdict),
       `${batchLabel}: ${selectedRows.length} selected`,
     );
   const advanceOne = (row: BatchRow) =>
@@ -455,9 +496,9 @@ export function ImpactBatchPanel({
         width: 110,
         cell: (r) => (
           <span className="inline-flex items-center gap-1 tabular-nums text-xs">
-            {versionLabel(r.verdict.pinned_version_number)}
+            {pinnedLabelOf(r.verdict)}
             <ArrowRight className="h-3 w-3 text-muted-foreground" />
-            {mode === "dry_run" ? "proposed" : versionLabel(r.verdict.latest_version_number)}
+            {mode === "dry_run" ? "proposed" : newestLabelOf(r.verdict)}
           </span>
         ),
       },
@@ -530,7 +571,7 @@ export function ImpactBatchPanel({
               );
             }
             const blocker = r.verdict.blocker;
-            const eligibility = batchEligibilityOf(r.verdict);
+            const eligibility = batchEligibilityOf(r.verdict, writeContext);
             return (
               <span className="text-[11px] text-muted-foreground">
                 {blocker
@@ -567,7 +608,7 @@ export function ImpactBatchPanel({
               <ExternalLink className="h-3 w-3" />
               Open
             </Button>
-            {mode === "post_batch" && isBatchActionable(r.verdict) && r.tier !== "safe" ? (
+            {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) && r.tier !== "safe" ? (
               <Button
                 size="sm"
                 variant="ghost"
@@ -580,7 +621,7 @@ export function ImpactBatchPanel({
                 Advance anyway
               </Button>
             ) : null}
-            {mode === "post_batch" && isBatchActionable(r.verdict) && r.tier === "safe" ? (
+            {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) && r.tier === "safe" ? (
               <Button
                 size="sm"
                 variant="ghost"
@@ -598,7 +639,7 @@ export function ImpactBatchPanel({
       },
   ];
 
-  const safeCount = rows.filter((row) => row.tier === "safe" && isBatchActionable(row.verdict)).length;
+  const safeCount = rows.filter((row) => row.tier === "safe" && isBatchActionable(row.verdict, writeContext)).length;
   const hasScope = readScopes.length > 0;
 
   return (
@@ -620,7 +661,7 @@ export function ImpactBatchPanel({
             size="sm"
             variant="ghost"
             className="ml-auto h-6 gap-1 px-1.5 text-[11px]"
-            disabled={loading || !hasScope}
+            disabled={loading || !hasScope || !sessionReady}
             title="Grade again against the server."
             onClick={() => setEpoch((value) => value + 1)}
           >
@@ -630,6 +671,18 @@ export function ImpactBatchPanel({
         </div>
         {!hasScope ? (
           <p className="text-muted-foreground">No agents in scope — nothing to grade.</p>
+        ) : noOrganization ? (
+          <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              No organization is selected, so nothing can be graded — choose one from the
+              organization picker in the header and this fills in by itself.
+            </span>
+          </p>
+        ) : !sessionReady ? (
+          <p className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Waiting for your session to finish loading…
+          </p>
         ) : error ? (
           <p className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -651,21 +704,18 @@ export function ImpactBatchPanel({
                 those pre-selected.
               </p>
             ) : null}
-            {impact.withheldTotal > 0 ? (
-              <p className="text-amber-700 dark:text-amber-400">
-                {impact.withheldTotal} pin{impact.withheldTotal === 1 ? "" : "s"} withheld
-                {impact.withheldSentences.length > 0 ? ` — ${impact.withheldSentences.join(" ")}` : ""}
+            {/* ONE sentence each, from the merged counts (D1, D4) — never a
+                page's own sentence beside a summed total. */}
+            {impact.withheldSentences.map((sentence) => (
+              <p key={sentence} className="text-amber-700 dark:text-amber-400">
+                {sentence}
               </p>
-            ) : null}
-            {impact.unknownAgentIds.length > 0 ? (
-              <p className="text-amber-700 dark:text-amber-400">
-                {impact.unknownAgentIds.length} agent id
-                {impact.unknownAgentIds.length === 1 ? "" : "s"} not graded
-                {impact.unknownSentences.length > 0 ? ` — ${impact.unknownSentences.join(" ")}` : ""}
-                {" "}
-                <span className="font-mono text-[10px]">{impact.unknownAgentIds.join(", ")}</span>
+            ))}
+            {impact.unknownSentences.map((sentence) => (
+              <p key={sentence} className="text-amber-700 dark:text-amber-400">
+                {sentence}
               </p>
-            ) : null}
+            ))}
           </>
         ) : null}
         {/* The three piles, in words, so no colour has to be decoded. */}

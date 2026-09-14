@@ -29,6 +29,7 @@ import {
   summarizeAdvanceReport,
   type AdvanceReport,
   type AdvanceRowResult,
+  type ImpactPosture,
   type ImpactVerdict,
   type RevertWindow,
 } from "./impact";
@@ -73,6 +74,12 @@ export interface UseImpactAdvanceOptions {
   verdictByRung: ReadonlyMap<string, ImpactVerdict>;
   /** Called after ANY write that changed something, so the caller re-grades. */
   onWritten?: (report: AdvanceReport) => void;
+  /**
+   * Which write door (I12). `admin` is the super-admin lane; `mine` is the
+   * owner lane — the caller's own personal pins and the org rungs they
+   * administer, everything else refused by the server with its sentence.
+   */
+  posture?: ImpactPosture;
 }
 
 function MovesList({ moves }: { moves: string[] }) {
@@ -88,6 +95,7 @@ function MovesList({ moves }: { moves: string[] }) {
 export function useImpactAdvance({
   verdictByRung,
   onWritten,
+  posture = "admin",
 }: UseImpactAdvanceOptions): ImpactAdvanceApi {
   const dispatch = useAppDispatch();
   const [batches, setBatches] = useState<AdvanceReport[]>([]);
@@ -146,7 +154,7 @@ export function useImpactAdvance({
     const frozen = new Map<string, ImpactVerdict>();
     for (const verdict of verdicts) frozen.set(rungIdentityOf(verdict.apply_token), verdict);
     try {
-      const report = await postAdvance(dispatch, verdicts, batchLabel);
+      const report = await postAdvance(dispatch, verdicts, batchLabel, posture);
       setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);
       const summary = summarizeAdvanceReport(report);
@@ -169,7 +177,10 @@ export function useImpactAdvance({
 
   const revert: ImpactAdvanceApi["revert"] = async (batch, rowId) => {
     if (busy) return null;
-    const rows = revertableRows(batch).filter(
+    // Newest first: every batch listed before this one is later than it, so
+    // a row a later revert already put back is not offered again (D5).
+    const later = batches.slice(0, Math.max(0, batches.indexOf(batch)));
+    const rows = revertableRows(batch, later).filter(
       (row) => rowId === null || row.token.row_id === rowId,
     );
     if (rows.length === 0) {
@@ -202,6 +213,7 @@ export function useImpactAdvance({
         batch.batch_id,
         rowId,
         `Revert of ${batch.batch_label ?? batch.batch_id}`,
+        posture,
       );
       setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);

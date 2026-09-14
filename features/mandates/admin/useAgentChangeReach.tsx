@@ -29,7 +29,8 @@ import { useState } from "react";
 import { Loader2, Radar, X } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { Badge } from "@/components/ui/badge";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
@@ -39,6 +40,7 @@ import {
   readPostEditAutoOpen,
   type BatchTierCounts,
   type StandingImpact,
+  type WriteContext,
 } from "./impact";
 import type { AppDispatch } from "@/lib/redux/store";
 
@@ -61,6 +63,7 @@ export type AgentReach =
 export async function readAgentReach(
   dispatch: AppDispatch,
   agentId: string,
+  context: WriteContext,
 ): Promise<AgentReach> {
   try {
     const impact = await fetchImpact(dispatch, [agentId], {
@@ -74,7 +77,9 @@ export async function readAgentReach(
         withheldSentences: impact.withheldSentences,
       };
     }
-    const counts = countBatchTiers(impact.verdicts);
+    // Counted the way THIS person can act (I12): their own personal pins are
+    // movable through the owner lane; other people's are "not movable here".
+    const counts = countBatchTiers(impact.verdicts, { context });
     return { state: "reached", counts, sentence: describeReach(counts), impact };
   } catch (error) {
     return {
@@ -102,6 +107,12 @@ export function useAgentChangeReach(agentId: string) {
   const openImpactBatchWindow = useOpenImpactBatchWindow();
   const [reach, setReach] = useState<AgentReach | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const actorUserId = useAppSelector(selectUserId);
+  const writeContext: WriteContext = {
+    posture: isSuperAdmin ? "admin" : "mine",
+    actorUserId: actorUserId ?? null,
+  };
 
   // The name is passed in, not read from state: the toast's Review door is a
   // closure from the render that started the read, before any state landed.
@@ -123,7 +134,7 @@ export function useAgentChangeReach(agentId: string) {
   const announce = async (name: string | null): Promise<AgentReach> => {
     setAgentName(name);
     setReach({ state: "reading" });
-    const result = await readAgentReach(dispatch, agentId);
+    const result = await readAgentReach(dispatch, agentId, writeContext);
     setReach(result);
     if (result.state === "reached") {
       toast.info(result.sentence, {

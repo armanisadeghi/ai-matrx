@@ -22,8 +22,11 @@ jest.mock("../impact", () => {
     readPostEditAutoOpen: () => readPostEditAutoOpenMock(),
   };
 });
+let viewer: { isSuperAdmin: boolean; userId: string | null } = { isSuperAdmin: true, userId: "admin-1" };
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ userAuth: { id: viewer.userId, adminLevel: viewer.isSuperAdmin ? "super_admin" : null } }),
 }));
 jest.mock("@/features/overlays/openers/impactBatchWindow", () => ({
   useOpenImpactBatchWindow: () => openWindowMock,
@@ -40,7 +43,15 @@ import {
   useAgentChangeReach,
   type AgentReach,
 } from "../useAgentChangeReach";
-import { describeReach, countBatchTiers, type ImpactVerdict, type StandingImpact } from "../impact";
+import {
+  ADMIN_WRITE_CONTEXT,
+  batchTierOf,
+  countBatchTiers,
+  describeReach,
+  isBatchActionable,
+  type ImpactVerdict,
+  type StandingImpact,
+} from "../impact";
 import { testableMandateKeys, versionPairsOf } from "../ImpactAgentCompanion";
 
 (
@@ -80,6 +91,7 @@ function standing(verdicts: ImpactVerdict[], extra: Partial<StandingImpact> = {}
   return {
     verdicts,
     withheldTotal: 0,
+    withheldGroups: [],
     withheldSentences: [],
     agentsExamined: 1,
     unknownAgentIds: [],
@@ -101,6 +113,7 @@ let container: HTMLDivElement | null = null;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  viewer = { isSuperAdmin: true, userId: "admin-1" };
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -118,7 +131,7 @@ const dispatch = jest.fn() as unknown as Parameters<typeof readAgentReach>[0];
 describe("readAgentReach — the read, through the public door, descendants walked", () => {
   it("asks /mandates/impact/mine for this agent with its duplicates", async () => {
     fetchImpactMock.mockResolvedValueOnce(standing([]));
-    await readAgentReach(dispatch, "agent-1");
+    await readAgentReach(dispatch, "agent-1", ADMIN_WRITE_CONTEXT);
     expect(fetchImpactMock).toHaveBeenCalledWith(dispatch, ["agent-1"], {
       includeDescendants: true,
       posture: "mine",
@@ -129,7 +142,7 @@ describe("readAgentReach — the read, through the public door, descendants walk
     fetchImpactMock.mockResolvedValueOnce(
       standing([], { withheldTotal: 3, withheldSentences: ["3 personal pins are theirs to advance."] }),
     );
-    const reach = await readAgentReach(dispatch, "agent-1");
+    const reach = await readAgentReach(dispatch, "agent-1", ADMIN_WRITE_CONTEXT);
     expect(reach).toEqual<AgentReach>({
       state: "none",
       withheldTotal: 3,
@@ -139,7 +152,7 @@ describe("readAgentReach — the read, through the public door, descendants walk
 
   it("is `failed` with the server's own sentence, never a throw", async () => {
     fetchImpactMock.mockRejectedValueOnce(new Error("impact_request_rejected: unknown agent"));
-    const reach = await readAgentReach(dispatch, "agent-1");
+    const reach = await readAgentReach(dispatch, "agent-1", ADMIN_WRITE_CONTEXT);
     expect(reach).toEqual<AgentReach>({
       state: "failed",
       why: "impact_request_rejected: unknown agent",
@@ -190,12 +203,12 @@ describe("the badge and the toast", () => {
     expect(badge).not.toBeNull();
     expect(badge!.textContent).toContain("reaches 2");
     expect(badge!.getAttribute("aria-label")).toBe(
-      "This change reaches 2 mandates: 1 safe / 0 to check / 1 red",
+      "1 pin can advance now (0 to check, 1 red) · reaches 2 mandates",
     );
 
     expect(toastInfoMock).toHaveBeenCalledTimes(1);
     const [sentence, options] = toastInfoMock.mock.calls[0] as [string, { action: { label: string; onClick: () => void } }];
-    expect(sentence).toBe("This change reaches 2 mandates: 1 safe / 0 to check / 1 red");
+    expect(sentence).toBe("1 pin can advance now (0 to check, 1 red) · reaches 2 mandates");
     expect(options.action.label).toBe("Review");
 
     // The knob is off by default, so nothing opened on its own.
@@ -249,14 +262,51 @@ describe("the badge and the toast", () => {
 });
 
 describe("the sentence and the companion's inputs", () => {
-  it("describeReach names every pile, including the ones a batch cannot move", () => {
+  it("describeReach leads with what the person can act on, then the reach, and keeps the not-movable count visible", () => {
     const counts = countBatchTiers([
       verdict(),
       verdict({ row_id: "r2", mandate_key: "probe.i6_b", grade: "orange" }),
       verdict({ row_id: "r3", mandate_key: "probe.i6_c", blocker: "tracks_latest" }),
     ]);
     expect(describeReach(counts)).toBe(
-      "This change reaches 3 mandates: 1 safe / 1 to check / 0 red / 1 not movable here",
+      "1 pin can advance now (1 to check, 0 red) · reaches 3 mandates, 1 rung not movable here",
+    );
+  });
+
+  it("a personal pin is movable only by its owner through the owner lane, never by an admin on their behalf (I12)", () => {
+    const own = verdict({
+      holder_kind: "binding",
+      row_id: "b1",
+      principal: { kind: "user", organization_id: "org-1", subject_user_id: "user-1" },
+      apply_token: {
+        holder_kind: "binding",
+        row_id: "b1",
+        expected_pinned_version_id: "v1",
+        target_version_id: "v15",
+      },
+    });
+    const theirs = verdict({
+      holder_kind: "binding",
+      row_id: "b2",
+      principal: { kind: "user", organization_id: "org-1", subject_user_id: "user-2" },
+      apply_token: {
+        holder_kind: "binding",
+        row_id: "b2",
+        expected_pinned_version_id: "v1",
+        target_version_id: "v15",
+      },
+    });
+    const mine = { posture: "mine" as const, actorUserId: "user-1" };
+    expect(batchTierOf(own, { context: mine })).toBe("safe");
+    expect(isBatchActionable(own, mine)).toBe(true);
+    expect(batchTierOf(theirs, { context: mine })).toBe("blocked");
+    expect(isBatchActionable(theirs, mine)).toBe(false);
+    // The admin lane never batches a personal pin — not even the admin's own.
+    expect(batchTierOf(own, { context: { posture: "admin", actorUserId: "user-1" } })).toBe("blocked");
+    expect(batchTierOf(own)).toBe("blocked");
+    // The badge counts the same way: the owner's pin is actionable for them.
+    expect(describeReach(countBatchTiers([own, theirs], { context: mine }))).toBe(
+      "1 pin can advance now (0 to check, 0 red) · reaches 1 mandate, 1 rung not movable here",
     );
   });
 
