@@ -28,7 +28,7 @@ function tableActionContent(children: TableToolbarActionProps["children"]) {
 
   if (typeof children.type !== "string" || children.type === "svg") {
     return cloneElement(children, {
-      className: `!h-5 !w-5 ${children.props.className ?? ""}`,
+      className: `![height:var(--matrx-table-action-icon-size,1.25rem)] ![width:var(--matrx-table-action-icon-size,1.25rem)] ${children.props.className ?? ""}`,
     });
   }
 
