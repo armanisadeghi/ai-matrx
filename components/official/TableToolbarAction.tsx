@@ -1,5 +1,7 @@
 "use client";
 
+import { cloneElement, isValidElement } from "react";
+
 import {
   TapTargetButton,
   TapTargetButtonTransparent,
@@ -20,7 +22,15 @@ export function TableToolbarAction({
   onClick,
   children,
 }: TableToolbarActionWithActiveProps) {
-  const icon = <span className="[&_svg]:!size-5">{children}</span>;
+  // Pass the icon itself through the tap target. A wrapper leaves the target's
+  // 14px `.matrx-tap-icon` class on the nested SVG, despite the wrapper's
+  // descendant utility. Text children are pagination labels and stay text.
+  const icon = isValidElement<{ className?: string }>(children) &&
+    (typeof children.type !== "string" || children.type === "svg")
+    ? cloneElement(children, {
+      className: `!h-5 !w-5 ${children.props.className ?? ""}`,
+    })
+    : children;
   return active ? (
     <TapTargetButton
       ariaLabel={ariaLabel}
