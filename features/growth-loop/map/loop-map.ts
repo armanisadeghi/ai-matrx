@@ -195,7 +195,7 @@ export const STAGES: LoopStage[] = [
       },
       ai: {
         state: "live",
-        note: "3 research-wave agents + 1 merger generate the tree server-side.",
+        note: "3 research-wave agents + 1 merger generate the tree server-side; every wave receives the brand strategy + site brief (seo.landscape_brief, two scopes) as the named strategy_guidance variable.",
         ref: "aidream/aidream/services/content_plan/generator.py#generate_merged_plan",
       },
     },
@@ -228,7 +228,7 @@ export const STAGES: LoopStage[] = [
       },
       ai: {
         state: "live",
-        note: "deepen_node does node-scoped research and writes brief + source entities; brief-writer agent stages a draft for the user.",
+        note: "deepen_node does node-scoped research and writes brief + source entities; brief-writer agent stages a draft for the user — grounded in the site brief (strategy_guidance).",
         ref: "aidream/aidream/services/content_plan/generator.py#deepen_node",
       },
     },
@@ -551,7 +551,7 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "live",
-        note: "web.site.settings.content_plan.research_topic_id is the durable link; latest successful document is read on both sides.",
+        note: "web.site.settings.content_plan.research_topic_id is the durable link; latest successful document is read on both sides. The site brief (plan workspace → Brief) is the standing reference the plan reads — built from research, the crawl and Search Console.",
         ref: "ai-matrx/features/marketing/content-plan/setup/draft.ts",
       },
       human: {
