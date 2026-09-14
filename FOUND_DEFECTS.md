@@ -15,6 +15,34 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D321 — Client paths that call a function the caller cannot execute: 16 pre-existing hits outside DD-169 (2026-09-14)
+
+Found by the DD-169 reach census (`pnpm check:impl-doors`, gate **D18**). A call inside a
+SECURITY INVOKER body, an RLS policy, a view or a column default is checked against the
+CALLER's EXECUTE, so a closed function there is a 42501 in a user path. The DD-169 hits were
+fixed (`migrations/dd169_closed_helpers_reached_by_client_paths.sql`); these 16 were not
+DD-169 revokes and are held by name in `scripts/impl-doors/closed-helper-reach-baseline.json`
+(each with its evidence). Proven live as `authenticated` in rolled-back transactions:
+
+- **LIVE 42501:** `INSERT` into `web.site` / `web.brand` fails on the column default
+  `platform.entity_default_visibility()`. No migration file revokes it. Whether any client
+  inserts those rows directly is unproven — check before assuming an outage.
+- **LIVE 42501:** `content_ir.check_kind_admission` → `content_ir.resolve_kind_version`
+  (revoked by `content_ir_resolve_kind_version_definer.sql`); `hr.punch_edit_notify_debt` →
+  `hr._notify_channels` (revoked by hr_l3_114/116). Client callers not yet censused.
+- **Unreachable today:** the `hr.leave_policy` / `hr.leave_enrollment` triggers — `hr_write_forbidden`
+  refuses the client write first.
+- **Unproven:** `web.screenshot` / `web.snapshot` validators → `web.assert_crawl_artifact_file`
+  (the probe stopped at `requires site_id`).
+- **Question, not a reopen:** four `iam.*` invoker tools (`verify_canonical`, `_apply_rls_unchecked`,
+  `entity_read_expr`, `org_readable`) → `iam.class_lanes`: why does `authenticated` hold EXECUTE
+  on the tools at all?
+- `platform.retention_policy` default → `platform.retention_settling_interval` (a DD-169 revoke):
+  no client write path; kept closed.
+
+Fix per the D18 remedy (definer trigger, auth.uid()-bound door, or a declared door) and delete
+the baseline entry in the same commit — the gate fails on a stale entry.
+
 ### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
 
 **Latent, not yet biting — say so honestly.** `workbench.note_folders` carries

@@ -143,6 +143,25 @@
  *       SECURITY DEFINER function carries no door row at all. ABSOLUTE.
  *   D17 Every entry in `scripts/door-rows/by-design-allowlist.json` names its
  *       owner, its reason and the cross-boundary SHAPE it permits. ABSOLUTE.
+ *   D18 No CLOSED helper is reached by a client path. For `authenticated` and
+ *       `anon`, walk every place the database runs code AS THE CALLER —
+ *       SECURITY INVOKER trigger functions on tables the role can write,
+ *       SECURITY INVOKER functions the role can execute (for `anon`, only those
+ *       declared with an anonymous purpose), RLS policies on tables the role can
+ *       touch, views it can read, column defaults on tables it can insert into —
+ *       and fail on a call to a function of which NO overload the role can
+ *       execute. EXECUTE on a function called inside an invoker body is checked
+ *       against the CALLER, so every hit is a 42501 inside a working user path.
+ *       DD-169 batch 3 closed helpers after a census that never read invoker
+ *       bodies: `seo.fn_geo_area_sync_meaning` is called by the
+ *       `seo.site_geo_area` trigger, and every geo-area edit answered `42501
+ *       permission denied for function fn_geo_area_sync_meaning` (2026-09-14;
+ *       the same census found conversation delete and the cross-site rank list
+ *       broken the same way). Calls are read by name from the body with comments
+ *       and string literals stripped, so a generator that only WRITES a call
+ *       into policy text is not a call. Hits that predate this gate live in
+ *       `scripts/impl-doors/closed-helper-reach-baseline.json`, each with a
+ *       reason; the file may only shrink and a stale entry fails.
  *
  *   D13 Every `platform.client_callable_door` row's `anonymous_callers` flag
  *       says the same thing as the live `anon` EXECUTE grant on its function.
@@ -1297,6 +1316,163 @@ function loadByDesignAllowlist(): ByDesignAllowlist | null {
   }
 }
 
+// ─── D18: no closed helper is reached by a client path ───────────────────────
+//
+// See the D18 header note. `closed` is (role, schema, name) where NO overload is
+// executable — a name-only match cannot tell overloads apart, so a function with
+// one open overload is never reported. An unqualified call resolves against the
+// caller's own `search_path` (or `public`), and is skipped when any schema on that
+// path holds an executable function of the name. Every name is rendered from the
+// catalog (schema + relname / oidvectortypes), never through `::regclass` or
+// `::regprocedure`, which drop the schema for whatever the session's search_path
+// holds and would make the baseline keys depend on who runs the gate.
+//
+// One statement per KIND of client path: `execute_admin_query` dies at ~8 s, and
+// the single union over every kind measured 25 s. Each body is tokenized ONCE
+// (`bodies`), however many roles reach it.
+const REACH_KINDS = ["trigger", "invoker", "policy", "view", "default"] as const;
+type ReachKind = (typeof REACH_KINDS)[number];
+
+const REACH_FN_PATH = `coalesce((select string_to_array(replace(replace(substring(c from '^search_path=(.*)$'), '"', ''), ' ', ''), ',')
+                       from unnest(p.proconfig) c where c like 'search_path=%'), array['public'])`;
+const REACH_FN_SIG = `n.nspname || '.' || p.proname || '(' || pg_catalog.oidvectortypes(p.proargtypes) || ')'`;
+const REACH_INVOKER_FN = `not p.prosecdef
+       and p.prolang in (select oid from pg_catalog.pg_language where lanname in ('plpgsql', 'sql'))
+       and n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema'
+       and not exists (select 1 from pg_catalog.pg_depend dep where dep.objid = p.oid and dep.deptype = 'e')`;
+
+// Every arm yields (r, via, caller, obj_key, body, path).
+const REACH_SRC: Record<ReachKind, string> = {
+  trigger: `
+    select ro.r, 'trigger on ' || tn.nspname || '.' || tc.relname as via, ${REACH_FN_SIG} as caller,
+           'fn:' || p.oid as obj_key, p.prosrc as body, ${REACH_FN_PATH} as path
+      from roles ro
+      cross join pg_catalog.pg_trigger t
+      join pg_catalog.pg_proc p on p.oid = t.tgfoid
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      join pg_catalog.pg_class tc on tc.oid = t.tgrelid
+      join pg_catalog.pg_namespace tn on tn.oid = tc.relnamespace
+     where ${REACH_INVOKER_FN}
+       and not t.tgisinternal and t.tgenabled <> 'D'
+       and (has_table_privilege(ro.r, t.tgrelid, 'INSERT')
+         or has_table_privilege(ro.r, t.tgrelid, 'UPDATE')
+         or has_table_privilege(ro.r, t.tgrelid, 'DELETE'))`,
+  invoker: `
+    select ro.r, 'client-executable invoker function' as via, ${REACH_FN_SIG} as caller,
+           'fn:' || p.oid as obj_key, p.prosrc as body, ${REACH_FN_PATH} as path
+      from roles ro
+      cross join pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where ${REACH_INVOKER_FN}
+       and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+       and has_function_privilege(ro.r, p.oid, 'EXECUTE')
+       and (ro.r = 'authenticated' or exists (
+             select 1 from platform.client_callable_door d
+              where d.schema_name = n.nspname and d.function_name = p.proname
+                and d.identity_argtypes = platform.door_argtypes(p.proargtypes) and d.anonymous_callers))`,
+  policy: `
+    select ro.r, 'policy ' || pol.policyname || ' on ' || pol.schemaname || '.' || pol.tablename as via,
+           '' as caller, 'policy:' || pol.schemaname || '.' || pol.tablename || '.' || pol.policyname as obj_key,
+           coalesce(pol.qual, '') || ' ' || coalesce(pol.with_check, '') as body, array['public'] as path
+      from roles ro cross join pg_catalog.pg_policies pol
+     where pol.roles && array[ro.r::name, 'public'::name]
+       and has_any_column_privilege(ro.r, format('%I.%I', pol.schemaname, pol.tablename)::regclass,
+                                    'SELECT,INSERT,UPDATE')`,
+  view: `
+    select ro.r, 'view ' || vn.nspname || '.' || vc.relname as via, '' as caller,
+           'view:' || vc.oid as obj_key, pg_get_viewdef(vc.oid) as body, array['public'] as path
+      from roles ro
+      cross join pg_catalog.pg_class vc
+      join pg_catalog.pg_namespace vn on vn.oid = vc.relnamespace
+     where vc.relkind in ('v', 'm')
+       and vn.nspname not like 'pg\\_%' and vn.nspname <> 'information_schema'
+       and has_table_privilege(ro.r, vc.oid, 'SELECT')`,
+  default: `
+    select ro.r, 'column default on ' || dn.nspname || '.' || dc.relname as via, '' as caller,
+           'default:' || ad.oid as obj_key, pg_get_expr(ad.adbin, ad.adrelid) as body, array['public'] as path
+      from roles ro
+      cross join pg_catalog.pg_attrdef ad
+      join pg_catalog.pg_class dc on dc.oid = ad.adrelid
+      join pg_catalog.pg_namespace dn on dn.oid = dc.relnamespace
+     where has_table_privilege(ro.r, ad.adrelid, 'INSERT')`,
+};
+
+function closedHelperReachQuery(kind: ReachKind): string {
+  return `
+  with roles(r) as (values ('authenticated'), ('anon')),
+  fns as (
+    select p.oid, n.nspname as sch, p.proname as nm
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where p.prokind = 'f'
+       and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+       and n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema'
+  ),
+  reach as (
+    select ro.r, f.sch, f.nm, bool_or(has_function_privilege(ro.r, f.oid, 'EXECUTE')) as can
+      from roles ro cross join fns f
+     group by ro.r, f.sch, f.nm
+  ),
+  closed as materialized (select r, sch, nm from reach where not can),
+  open_by_name as materialized (
+    select r, nm, array_agg(sch::text) as schs from reach where can group by r, nm
+  ),
+  src as materialized (${REACH_SRC[kind]}),
+  bodies as (select distinct on (obj_key) obj_key, body from src),
+  toks as (
+    select distinct b.obj_key, lower(m[1]) as sch, lower(m[2]) as nm
+      from bodies b
+      cross join lateral regexp_matches(
+        regexp_replace(regexp_replace(regexp_replace(b.body,
+          '--[^\\n]*', '', 'g'),
+          '/\\*([^*]|\\*+[^*/])*\\*+/', '', 'g'),
+          '''([^'']|'''')*''', '''''', 'g'),
+        '(([A-Za-z_][A-Za-z0-9_]*)"?\\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?\\s*\\(', 'g') as mm(m0)
+      cross join lateral (select array[mm.m0[2], mm.m0[3]] as m) x
+  ),
+  -- Tokens meet their source BEFORE the closed set: joined the other way the
+  -- planner pairs every closed function with every source row on role alone
+  -- (2M rows, a 500 MB on-disk sort, 6.6 s measured).
+  src_toks as materialized (
+    select s.r, s.via, s.caller, s.path, t.sch as tsch, t.nm as tnm
+      from src s join toks t on t.obj_key = s.obj_key
+  )
+  select distinct st.r as role, st.via, coalesce(st.caller, '') as caller, c.sch || '.' || c.nm as callee
+    from src_toks st
+    join closed c on c.r = st.r and c.nm = st.tnm
+    left join open_by_name o on o.r = st.r and o.nm = st.tnm
+   where (st.tsch is not null and c.sch = st.tsch)
+      or (st.tsch is null and c.sch = any (st.path)
+          and not coalesce(o.schs && (st.path || array['pg_catalog']), false))
+   order by 1, 4, 2, 3
+`;
+}
+
+interface ClosedHelperReachRow {
+  role: string;
+  via: string;
+  caller: string;
+  callee: string;
+}
+
+interface ClosedHelperReachBaseline {
+  entries: { key: string; reason: string }[];
+}
+
+function closedHelperReachKey(r: ClosedHelperReachRow): string {
+  return `${r.role} | ${r.via} | ${r.caller} | ${r.callee}`;
+}
+
+function loadClosedHelperReachBaseline(): ClosedHelperReachBaseline | null {
+  const p = resolve(ROOT, "scripts/impl-doors/closed-helper-reach-baseline.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as ClosedHelperReachBaseline;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -1370,6 +1546,7 @@ async function main(): Promise<number> {
   let staleDoorRows: StaleDoorRow[];
   let doorGrantMismatches: DoorGrantRow[];
   let undeclaredClientDefiners: UndeclaredClientDefinerRow[];
+  let closedHelperReach: ClosedHelperReachRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -1444,6 +1621,15 @@ async function main(): Promise<number> {
       UNDECLARED_CLIENT_DEFINER_QUERY,
       "D16b client-executable SECURITY DEFINER functions with no door row",
     );
+    closedHelperReach = [];
+    for (const kind of REACH_KINDS) {
+      closedHelperReach.push(
+        ...(await q<ClosedHelperReachRow>(
+          closedHelperReachQuery(kind),
+          `D18 closed helpers reached by a client path (${kind})`,
+        )),
+      );
+    }
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
     return 2;
@@ -2276,6 +2462,57 @@ async function main(): Promise<number> {
       console.log(
         `${C.dim}       far — so the next reader can tell a widened door from the one that was excused.${C.reset}`,
       );
+    }
+  }
+
+  // ── D18 ───────────────────────────────────────────────────────────────────
+  {
+    const baseline = loadClosedHelperReachBaseline();
+    if (!baseline) {
+      console.log(
+        `${TAG.warn}D18 scripts/impl-doors/closed-helper-reach-baseline.json is missing or unreadable — every hit below counts as new`,
+      );
+    }
+    const known = new Map((baseline?.entries ?? []).map((e) => [e.key, e.reason]));
+    const liveKeys = new Set(closedHelperReach.map(closedHelperReachKey));
+    const fresh = closedHelperReach.filter((r) => !known.has(closedHelperReachKey(r)));
+    const stale = (baseline?.entries ?? []).filter((e) => !liveKeys.has(e.key));
+    const unreasoned = (baseline?.entries ?? []).filter((e) => (e.reason ?? "").trim().length < 60);
+    if (fresh.length === 0 && stale.length === 0 && unreasoned.length === 0) {
+      console.log(
+        `${TAG.ok}D18 no client path reaches a closed helper ${C.dim}(${known.size} reasoned pre-existing hit(s) in the baseline; DD-169 reach fix)${C.reset}`,
+      );
+    } else {
+      findings += fresh.length + stale.length + unreasoned.length;
+      if (fresh.length > 0) {
+        console.log(
+          `${TAG.fail}D18 ${fresh.length} client path(s) call a function the calling role cannot execute — each is a 42501 inside a working user path:`,
+        );
+        for (const r of fresh) {
+          console.log(
+            `  ${C.white}- ${r.callee}${C.reset} ${C.dim}← ${r.via}${r.caller ? ` → ${r.caller}` : ""} (as ${r.role})${C.reset}`,
+          );
+        }
+        console.log(
+          `${C.dim}       Keep the helper closed and repair the path: make the trigger function SECURITY DEFINER${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       (fixed search_path), call an auth.uid()-bound door instead, or declare the helper a door${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       with a reason and a gate in the SAME migration as the grant. Never re-grant it blind.${C.reset}`,
+        );
+      }
+      for (const e of stale) {
+        console.log(
+          `${TAG.fail}D18 stale baseline entry (no longer live — delete it): ${C.white}${e.key}${C.reset}`,
+        );
+      }
+      for (const e of unreasoned) {
+        console.log(
+          `${TAG.fail}D18 baseline entry without a reason (>= 60 chars): ${C.white}${e.key}${C.reset}`,
+        );
+      }
     }
   }
 
