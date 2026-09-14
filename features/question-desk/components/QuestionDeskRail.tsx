@@ -30,6 +30,13 @@ export interface QuestionDeskRailProps {
   /** Review-mode rows, which live in the table rather than this queue. */
   reviewTotal: number;
   reviewReviewed: number;
+  /**
+   * Answers the server has turned into work that no agent has picked up yet.
+   * The row's `status_note` says "recording…", which reads as work in flight;
+   * ten such items sat untouched for seven hours and nothing on the screen
+   * said so (V2 finding 6, 2026-09-14). Waiting is now visible.
+   */
+  awaitingAgent: number;
   /** Rendered under the legend — the live/failed state of this surface. */
   footer?: React.ReactNode;
 }
@@ -43,6 +50,7 @@ export function QuestionDeskRail({
   totalCount,
   reviewTotal,
   reviewReviewed,
+  awaitingAgent,
   footer,
 }: QuestionDeskRailProps) {
   const percent = totalCount === 0 ? 0 : (answeredCount / totalCount) * 100;
@@ -73,6 +81,13 @@ export function QuestionDeskRail({
         {reviewTotal > 0 ? (
           <b className="font-mono text-[11px] font-medium tracking-wide text-muted-foreground">
             {reviewReviewed} of {reviewTotal} decisions reviewed
+          </b>
+        ) : null}
+        {awaitingAgent > 0 ? (
+          <b className="font-mono text-[11px] font-medium tracking-wide text-warning">
+            {awaitingAgent}{" "}
+            {awaitingAgent === 1 ? "answer is" : "answers are"} waiting for an
+            agent to record {awaitingAgent === 1 ? "it" : "them"}
           </b>
         ) : null}
       </div>
@@ -110,11 +125,20 @@ export function QuestionDeskRail({
         })}
       </ul>
 
-      {/* The app shell parks fixed chrome (the error chip, the schedules pill)
-          in the bottom-left corner, which sat directly on top of the "J / K"
-          line in both themes (verifier finding 6, 2026-09-12). The legend keeps
-          its own clearance rather than hoping the chip moves. */}
-      <div className="mt-auto space-y-2 border-t border-border pt-3.5 lg:pb-14">
+      {/* The app shell parks fixed chrome (the error chip) in the bottom-left
+          corner, on top of this legend (verifier finding 6, 2026-09-12; the
+          guessed `pb-14` only moved the collision one line up, so at 1440x900
+          the chip still covered the rail's last line — V2 finding 7). The
+          clearance is now the band that chrome ACTUALLY occupies, published by
+          the chrome itself as `--shell-fixed-corner-clearance` and therefore
+          right at every viewport and in every shape it takes. Nothing floating
+          there means 0, and no reserved gap. */}
+      <div
+        className="mt-auto space-y-2 border-t border-border pt-3.5"
+        style={{
+          paddingBottom: "var(--shell-fixed-corner-clearance, 0px)",
+        }}
+      >
         {/* A phone has no keyboard, so a key legend there is an affordance
             that cannot be used. It is not dimmed or disabled — it is absent. */}
         <dl className="hidden grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground lg:grid">

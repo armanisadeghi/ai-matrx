@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NO_WORDS_MESSAGE, hasWords } from "../answerWords";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { cn } from "@/lib/utils";
 import { questionRecordingOrigin } from "../hooks/useDictationAudio";
@@ -182,6 +183,11 @@ export function AskTable({
                           value={words}
                           onChange={(event) => setWords(event.target.value)}
                           onTranscriptionComplete={() => setSpoken(true)}
+                          // A microphone the browser denies fails AFTER
+                          // `startDictation()` has returned; its sentence lands
+                          // in this box's own refusal slot rather than only in
+                          // a toast (V2 finding 3, 2026-09-14).
+                          onTranscriptionError={(message) => setWordsError(message)}
                           placeholder="Typed or spoken. Recorded exactly as you give it."
                           autoGrow
                           minHeight={70}
@@ -193,10 +199,11 @@ export function AskTable({
                         <Mini
                           busy={busyId === question.id}
                           onClick={() => {
-                            if (words.length === 0) {
-                              setWordsError(
-                                "Write something first, or use one of the buttons.",
-                              );
+                            // ONE PREDICATE (../answerWords) — this inline box
+                            // saved three spaces as a ruling before the class
+                            // fix (V2 finding 2, 2026-09-14).
+                            if (!hasWords(words)) {
+                              setWordsError(NO_WORDS_MESSAGE);
                               return;
                             }
                             setWordsError(null);

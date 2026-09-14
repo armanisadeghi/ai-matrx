@@ -5,14 +5,17 @@
 // 🚨 THE ANSWER IS SACRED. `answer_text` is written EXACTLY as it was given:
 // no trim, no collapse, no "helpful" normalisation. A leading space, a trailing
 // newline and a run of blank lines are part of what he said. The DB backs this
-// up (`decision_question_answer_words_ck` refuses an empty own-words answer),
-// and this module never calls `.trim()` on anything it stores.
+// up (`decision_question_answer_words_ck` refuses an own-words or overturn
+// answer with no non-whitespace character — `qd_005`), and this module never
+// calls `.trim()` on anything it stores. Whether an answer HAS WORDS is asked
+// in exactly one place, `../answerWords.ts`, by every box on this surface.
 //
 // Every write is a `guardedUpdate` compare-and-swap on the canonical `version`
 // column, so an answer typed against a stale row reports a conflict instead of
 // silently overwriting whatever an agent wrote through MCP in the meantime.
 
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { NO_WORDS_MESSAGE, hasWords } from "../answerWords";
 import type {
   AnswerSource,
   DecisionQuestionRow,
@@ -108,14 +111,12 @@ export interface SaveAnswerArgs {
  */
 export async function saveAnswer(args: SaveAnswerArgs): Promise<SaveOutcome> {
   const { question, verdict, answerText, source, answeredBy, audioFileId } = args;
-  if (
-    (verdict === "own_words" || verdict === "overturn") &&
-    (answerText === null || answerText.length === 0)
-  ) {
-    return {
-      status: "failed",
-      message: "Write something first, or use one of the buttons.",
-    };
+  // ONE PREDICATE, and this is its last line of defence: whatever box the
+  // words came from, an own-words or overturn answer that carries no
+  // non-whitespace character never reaches Postgres (which refuses it too
+  // since `qd_005` — the CHECK and this guard say the same thing).
+  if ((verdict === "own_words" || verdict === "overturn") && !hasWords(answerText)) {
+    return { status: "failed", message: NO_WORDS_MESSAGE };
   }
 
   const patch: DecisionQuestionUpdate = {

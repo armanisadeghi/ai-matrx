@@ -190,15 +190,34 @@ question" — a real `mode=ask` question (`<slug>--overturned`, his words verbat
 into the same interview and a Work Loop item `qd:overturn:<id>` waits in the campaign
 `question-desk`; an own-words / recommendation / skip answer reads "recording…" with a Work Loop
 item `qd:record:<id>` carrying the verbatim ruling and the node, and flips to "recorded" when that
-item succeeds; a hand-back reads "handed back — the desk decides" with `qd:decide:<id>`. So the
-desk's run STARTS by draining that campaign: `work_loop(action='status', campaign_id=…)` (find it
-under `campaigns`, slug `question-desk`), claim each item, do it — research the refiled question to
-`asked`, write the ruling into the owning node's DECISIONS.md, decide the handed-back one — and
-complete it with evidence. `mark_delivered` on a "recording…" row is the item's closing step, not a
-separate pass; the sweep turns the note to "recorded" on its own once the item is complete.
+item succeeds; a hand-back reads "handed back — the desk decides" with `qd:decide:<id>`.
+
+🚨 **THE CAMPAIGN IS THIS STEP'S WORK, AND NOBODY ELSE DRAINS IT.** No schedule exists for it and
+none may be created ([no unapproved schedules](/policies/no-unapproved-schedules.md)); if this run
+does not empty it, nothing does — measured 2026-09-14: ten `qd:*` items `pending`, `attempts = 0`,
+the oldest seven hours old, while every one of those rows told its person "recording…". Drain it
+BEFORE round 1 and again before you close, with the `work_loop` MCP tool, item by item:
+
+1. `work_loop(action='status')` → find the campaign under `campaigns`, slug `question-desk`; note
+   its `campaign_id` and how many items are claimable.
+2. `work_loop(action='claim', campaign_id=…)` → one item. The item carries everything it needs:
+   the verbatim ruling, the node, the question id, the target URL.
+3. Do it, for real: research the refiled question to `asked` (`question_desk(action='update_question')`
+   then `mark_asked`); write the ruling into the owning node's DECISIONS.md and commit it; decide
+   the handed-back one under the ask-the-boss law.
+4. `question_desk(action='mark_delivered')` on the question with `recorded_in` = the file path or
+   the new question id — this is the item's closing step, never a separate pass.
+5. `work_loop(action='complete', item_id=…)` with the evidence (the commit SHA and path, or the
+   `get_interview` output showing the researched row). The server's next sweep turns that row's
+   note from "recording…" to "recorded" on its own.
+6. Repeat until `status` shows no claimable item. An item you cannot finish is `fail`ed with the
+   reason, never left `pending` — a pending item is a person's answer sitting in a queue nobody
+   is watching, and the interview screen now SAYS so ("N answers are waiting for an agent to
+   record them"), so silence is not an option.
 
 Completion: every answered row is delivered or has a named hand-off line for Arman; the ledger
-holds only genuinely open rows; the `question-desk` campaign holds no claimable item.
+holds only genuinely open rows; **`work_loop(action='status')` on `question-desk` shows zero
+claimable items and the interview screen shows no "waiting for an agent" line.**
 
 ## Step 6 — close the session
 

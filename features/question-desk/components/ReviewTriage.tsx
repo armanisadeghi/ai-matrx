@@ -39,6 +39,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NO_WORDS_OVERTURN_MESSAGE, hasWords } from "../answerWords";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -111,7 +112,6 @@ export function ReviewTriage({
       .slice(0, size)
       .map((q) => q.id),
   );
-  const [batchesDone, setBatchesDone] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(() => batchIds[0] ?? null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [overturning, setOverturning] = useState<string | null>(null);
@@ -142,8 +142,17 @@ export function ReviewTriage({
   // says "all reviewed" rather than showing a blank list.
   const batchAllAnswered = batch.every(isAnswered);
   const remainingOpen = total - answeredCount;
-  const batchNumber = batchesDone + 1;
+  // 🚨 "k BATCHES DONE" IS DERIVED FROM THE ROWS, NEVER LATCHED IN STATE
+  // (V2 finding 5, 2026-09-14). It was component state that nothing ever
+  // incremented, so a person working 117 decisions across sittings always read
+  // "0 batches done" beside honest numbers — a figure on a dashboard that was
+  // not true. A batch is done when a batch's worth of decisions has been
+  // answered, so the count is the answered rows divided by the batch size: it
+  // survives a reload, a new tab and a new day without storing anything,
+  // because the rows already know.
+  const batchesDone = Math.floor(answeredCount / size);
   const batchCount = Math.max(1, Math.ceil(total / size));
+  const batchNumber = Math.min(batchCount, batchesDone + 1);
 
   // THE ROW ADVANCES ON ANSWER — derived, never latched. The chosen row is
   // state; the EFFECTIVE focus is the chosen row while it is open, else the
@@ -182,8 +191,11 @@ export function ReviewTriage({
   const sendBack = useCallback(() => {
     const row = overturning ? byId.get(overturning) : undefined;
     if (!row) return;
-    if (words.length === 0) {
-      setWordsError("Write what should happen instead, or press Y to confirm.");
+    // ONE PREDICATE (../answerWords). Three spaces overturned a real decision
+    // on production and the server refiled a question whose premise was blank
+    // (V2 finding 2, 2026-09-14).
+    if (!hasWords(words)) {
+      setWordsError(NO_WORDS_OVERTURN_MESSAGE);
       return;
     }
     setWordsError(null);
@@ -249,7 +261,6 @@ export function ReviewTriage({
         case "enter":
           event.preventDefault();
           if (batchAllAnswered && remainingOpen > 0) {
-            setBatchesDone((n) => n + 1);
             openNextBatch();
             return;
           }
@@ -481,6 +492,9 @@ export function ReviewTriage({
                       value={words}
                       onChange={(event) => setWords(event.target.value)}
                       onTranscriptionComplete={() => setSpoken(true)}
+                      // The denied-microphone sentence reaches the slot this
+                      // box already shows refusals in (V2 finding 3).
+                      onTranscriptionError={(message) => setWordsError(message)}
                       placeholder="What should happen instead? Typed or spoken, recorded exactly as you give it."
                       autoGrow
                       minHeight={64}
@@ -521,7 +535,6 @@ export function ReviewTriage({
               variant="primary"
               size="sm"
               onClick={() => {
-                setBatchesDone((n) => n + 1);
                 openNextBatch();
               }}
             >

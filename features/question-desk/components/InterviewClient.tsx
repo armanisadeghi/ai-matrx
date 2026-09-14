@@ -48,6 +48,8 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
+import { NO_WORDS_MESSAGE, hasWords } from "../answerWords";
+import { awaitingAgentCount } from "../followThrough";
 import { loadInterview, markInterviewOpened } from "../data/interviews";
 import { reopenAnswer, saveAnswer, type SaveOutcome } from "../data/questions";
 import { userEmails } from "../data/interviews";
@@ -347,13 +349,40 @@ export function InterviewClient({
   }, [undoTarget, knobs]);
 
   // ---- the write box -----------------------------------------------------
-  const openWrite = useCallback((options?: { dictate?: boolean }) => {
-    if (options?.dictate) {
-      pendingDictationRef.current = true;
-      setVoiceError(null);
-    }
-    setWriting(true);
+  /**
+   * Ask the PLATFORM field to start its microphone and print its refusal if it
+   * will not. One place, so a V from a closed box and a V from an open one are
+   * the same code path.
+   */
+  const startDictationNow = useCallback(async () => {
+    const box = textareaRef.current;
+    const outcome = await box?.startDictation?.();
+    if (outcome && !outcome.started) setVoiceError(outcome.message);
   }, []);
+
+  /**
+   * 🚨 `V` WORKS IN BOTH STATES (V2 finding 4, 2026-09-14). This used to set a
+   * pending flag and call `setWriting(true)`, which is a NO-OP when the box is
+   * already open — so the effect that consumes the flag never re-ran and
+   * "Answer by voice" did nothing at all in the state a person is most likely
+   * to press it in. With the box open the microphone starts HERE and now; with
+   * it closed the flag survives until the box has actually committed, because
+   * `startDictation()` needs the field to exist first.
+   */
+  const openWrite = useCallback(
+    (options?: { dictate?: boolean }) => {
+      if (options?.dictate) {
+        setVoiceError(null);
+        if (writing) {
+          void startDictationNow();
+        } else {
+          pendingDictationRef.current = true;
+        }
+      }
+      setWriting(true);
+    },
+    [writing, startDictationNow],
+  );
 
   // Focus AFTER the box has actually mounted. A `requestAnimationFrame` from
   // inside the key handler fires before React has committed the textarea, so
@@ -372,19 +401,16 @@ export function InterviewClient({
     pendingDictationRef.current = false;
     // The platform field owns the recorder; this only asks it to start, and
     // prints its refusal verbatim when it will not.
-    void (async () => {
-      const outcome = await box?.startDictation?.();
-      if (outcome && !outcome.started) setVoiceError(outcome.message);
-    })();
-  }, [writing]);
+    void startDictationNow();
+  }, [writing, startDictationNow]);
 
   const saveOwnWords = useCallback(() => {
     if (!current) return;
-    if (draft.text.length === 0) {
-      setSaveLine({
-        tone: "warn",
-        text: "Write something first, or use one of the buttons.",
-      });
+    // ONE PREDICATE for "has words" (../answerWords). Three spaces used to
+    // save as a ruling and the server refiled a question about nothing
+    // (V2 finding 2, 2026-09-14).
+    if (!hasWords(draft.text)) {
+      setSaveLine({ tone: "warn", text: NO_WORDS_MESSAGE });
       return;
     }
     // VERBATIM, whether it was typed or spoken. `draft.text` goes to the row
@@ -402,12 +428,18 @@ export function InterviewClient({
   const discardDraft = useCallback(() => {
     // Only a DESTRUCTIVE discard asks. Closing the box with Esc keeps every
     // word (the draft is persisted), so it has nothing to confirm.
-    if (draft.text.length === 0) {
+    //
+    // This asks whether ANYTHING was typed, not whether the words are an
+    // answer — deliberately a different question from `hasWords`, and spelled
+    // differently so it can never be read as the save gate that used to live
+    // here (V2 finding 2). Three spaces the person typed are still theirs to
+    // lose, so discarding them still asks.
+    if (draft.text === "") {
       setWriting(false);
       return;
     }
     setConfirmDiscard(true);
-  }, [draft.text.length]);
+  }, [draft.text]);
 
   // ---- keys --------------------------------------------------------------
   useEffect(() => {
@@ -594,6 +626,7 @@ export function InterviewClient({
         totalCount={queue.length}
         reviewTotal={reviewQuestions.length}
         reviewReviewed={reviewQuestions.filter(isAnswered).length}
+        awaitingAgent={awaitingAgentCount(questions)}
         footer={
           <div className="space-y-1 font-mono text-[10px] text-muted-foreground">
             {queue.length === 0 && reviewQuestions.length > 0 ? (
@@ -753,6 +786,7 @@ export function InterviewClient({
               draftFromVoice={draftFromVoice}
               textareaRef={textareaRef}
               onTranscriptionComplete={() => setDraftFromVoice(true)}
+              onTranscriptionError={(message) => setVoiceError(message)}
               audio={audio}
               onOpenWrite={() => openWrite()}
               onAnswerByVoice={() => openWrite({ dictate: true })}
