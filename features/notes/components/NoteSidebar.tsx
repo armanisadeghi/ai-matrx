@@ -1235,7 +1235,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       allFolders={folderReferences}
                       openKnowledge={openKnowledge}
                       formatTime={formatTime}
-                      showFolderTag
                       onSelectNote={selectNote}
                       selectionMode={selectionMode}
                       isSelected={selectedIds.has(note.id)}
@@ -1372,7 +1371,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   allFolders={folderReferences}
                   openKnowledge={openKnowledge}
                   formatTime={formatTime}
-                  showFolderTag
                   onSelectNote={selectNote}
                   selectionMode={selectionMode}
                   isSelected={selectedIds.has(note.id)}
