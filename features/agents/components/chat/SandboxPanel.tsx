@@ -5,10 +5,12 @@
  * SandboxAttachControl so it can be embedded in the Smart Input's consolidated
  * controls menu (Sandbox tab) instead of being its own popover button.
  *
- * Product model: a user has ONE shared "active agent sandbox" that every
- * conversation binds to by default. Picking/claiming a box here sets that
- * shared default (persisted in user preferences). "Use only for this
- * conversation" writes a per-conversation override that wins for this thread.
+ * Product model (owner, 2026-09-14): picking/claiming a box here binds THIS
+ * CONVERSATION — the scope the server actually persists
+ * (`chat.conversation.sandbox_instance_id`). Making the box the shared default
+ * for every new chat on this surface is an explicit OPT-IN checkbox. The
+ * decision lives in `lib/sandbox/binding-scope.ts`; this panel only dispatches
+ * what that plan says.
  *
  * The actual binding (token mint + routing) is resolved at turn-assembly time
  * by `lib/sandbox/active-binding.ts`; this panel only records WHICH box is bound.
@@ -60,6 +62,7 @@ import {
   ACTIVE_EFFECTIVE_STATUSES,
 } from "@/lib/sandbox/status";
 import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
+import { resolveBindingScope } from "@/lib/sandbox/binding-scope";
 import type { SandboxInstance } from "@/types/sandbox";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
@@ -92,9 +95,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const [nameError, setNameError] = useState<string | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  // When true, picking a box pins it to THIS conversation instead of setting
-  // the shared default. Only meaningful inside a (non-ephemeral) conversation.
-  const [overrideMode, setOverrideMode] = useState(false);
+  // OPT-IN: when true, picking a box ALSO makes it the default for every new
+  // chat on this surface. Default false — a pick binds THIS conversation only.
+  const [shareAcrossSurface, setShareAcrossSurface] = useState(false);
 
   // The surface this conversation belongs to — Level 2 is keyed by it, so a box
   // bound here only affects conversations on THIS surface (never transcription,
@@ -219,8 +222,11 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     ACTIVE_EFFECTIVE_STATUSES.includes(getEffectiveStatus(i)),
   );
 
-  const canOverride = !!conversationId && !sandboxBlocked;
-  const effectiveOverrideMode = overrideMode && canOverride;
+  // The surface opt-in is only offerable when there IS a surface to seed and
+  // binding is possible at all (`sandboxBlocked` = ephemeral / incognito chat).
+  const canShareAcrossSurface = !!sourceFeature && !sandboxBlocked;
+  const effectiveShareAcrossSurface =
+    shareAcrossSurface && canShareAcrossSurface;
 
   if (sandboxBlocked) {
     return (
@@ -238,23 +244,21 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     // out the dead-box cooldown. This is the manual-recovery path that
     // complements the automatic TTL self-heal.
     if (ref?.rowId) clearSandboxBindingCache(ref.rowId);
-    if (effectiveOverrideMode && conversationId) {
-      // Binds THIS conversation only (and writes cx_conversation.sandbox_instance_id).
-      void dispatch(setConversationSandbox({ conversationId, ref }));
-      toast.success(
-        ref
-          ? "Sandbox attached to this conversation"
-          : "Sandbox detached from this conversation",
-      );
-    } else {
-      if (!sourceFeature) {
-        toast.error(
-          "This conversation has no surface yet — try again in a moment.",
-        );
-        return;
-      }
+
+    // THE SCOPE DECISION lives in one pure place, shared with the `+` menu.
+    const plan = resolveBindingScope({
+      conversationId,
+      sourceFeature,
+      shareAcrossSurface: effectiveShareAcrossSurface,
+    });
+    if (plan.blockedReason) {
+      toast.error(plan.blockedReason);
+      return;
+    }
+
+    if (plan.writeSurfaceSeed && sourceFeature) {
       // Read-modify-write the per-surface map so we only touch THIS surface.
-      // This is the SEED for future conversations on the surface…
+      // This is the SEED future conversations on the surface inherit.
       const next = { ...bySurface };
       if (ref) next[sourceFeature] = ref;
       else delete next[sourceFeature];
@@ -265,19 +269,15 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           value: next,
         }),
       );
-      // …and the conversation you're standing in gets bound right now, on the
-      // record (and in the DB the server reads). A seed alone would leave this
-      // conversation "unbound" until its next turn promoted it — which is
-      // exactly the client/server disagreement this system exists to prevent.
-      if (conversationId) {
-        void dispatch(setConversationSandbox({ conversationId, ref }));
-      }
-      toast.success(
-        ref
-          ? "Sandbox bound for this surface (every chat here)"
-          : "Sandbox detached from this surface",
-      );
     }
+
+    // The conversation you're standing in gets bound right now, on the record
+    // (and in the DB the server reads: chat.conversation.sandbox_instance_id).
+    if (plan.bindConversation && conversationId) {
+      void dispatch(setConversationSandbox({ conversationId, ref }));
+    }
+
+    toast.success(ref ? plan.attachMessage : plan.detachMessage);
   };
 
   const handleClaimNew = async () => {
@@ -595,13 +595,13 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
             {creating ? "Creating sandbox…" : "New sandbox"}
           </button>
 
-          {canOverride && (
+          {canShareAcrossSurface && (
             <label className="flex cursor-pointer items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground">
               <Checkbox
-                checked={overrideMode}
-                onCheckedChange={(v) => setOverrideMode(v === true)}
+                checked={shareAcrossSurface}
+                onCheckedChange={(v) => setShareAcrossSurface(v === true)}
               />
-              Only this conversation
+              Also use for every new chat here
             </label>
           )}
         </div>

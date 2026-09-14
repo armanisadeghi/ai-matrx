@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-14`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -870,6 +870,8 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 ---
 
 ## Change log
+
+- `2026-09-14` — claude: **the smart-input `+` compute picker binds THIS CONVERSATION only.** `use-compute-target-actions.ts#applyBinding` used to write the `activeAgentSandboxBySurface` seed on every selection (moving every future chat on the surface onto the box) as well as the conversation. It now dispatches `setConversationSandbox` alone, through the shared pure decision in `lib/sandbox/binding-scope.ts`; the surface-wide default is an explicit opt-in offered only in the chat Sandbox panel. See `features/agents/components/chat/FEATURE.md` 2026-09-14.
 
 - `2026-09-13` — **MCP availability belongs to one explicit organization.** `fetchAvailability` takes `organizationId`, the service sends that exact header, and every consumer waits for an active organization before dispatching. The slice clears availability on an organization change and rejects late completions for the prior organization; selectors expose no prior-workspace truth while the replacement request is pending. Guard: `redux/mcp/__tests__/mcp-availability-organization.test.ts`.
 - `2026-09-13` — **MCP connection indicators tell the truth, per server and per run.** Every indicator here (`RunToolPicker`'s services section and the agent's own MCP list, `AgentToolsManager`'s `connectionBadge` on both cards) decided from `tool.mcp_user_conn.status` alone, so a row still saying `connected` with a `token_expires_at` days in the past — and GitHub, whose bearer comes from the first-party GitHub App connection, not an MCP grant — all rendered Connected (Arman: "the ui lies as well since I see a checkmark for git but don't actually have the mcp connected according to the agent"). They now share ONE derivation, `features/connectors/connection-state.ts`, which prefers aidream's `GET /api/mcp-connections/availability` (`describe_mcp_availability` — only the server sees whether a stored refresh token makes an expired token renewable) and otherwise derives pessimistically from the catalog row. Three states: Connected / Needs re-auth (carrying the one-click reconnect via `useConnectMcpServer`) / Not connected, each with a plain-English reason. The Check icon means "attached to this chat AND connected" and nothing else (`mcpChipPresentation`, guarded). Per-run: the run's `mcp_attachments` info event and `mcp_server_unavailable` warnings turn an attached server that failed THIS run red with the server's own error text (`features/connectors/run-attachments.ts`). Full story + guards: `features/connectors/FEATURE.md`.
