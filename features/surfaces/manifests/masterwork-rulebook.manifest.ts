@@ -353,8 +353,17 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "rule_draft",
     label: "Rule draft",
     description:
-      "Stages a complete or partial proposed rule in the page's Add/Edit Rule dialog; the user sees the populated form and still decides whether to save it. The value is an object and the field mode is REQUIRED: mode=\"new\" proposes a new rule, mode=\"edit\" requires rule_id identifying a rule already present in this Rulebook. A value without mode is refused before anything is staged. The remaining fields are optional text: name, statement, rationale, detection, quote; severity must be critical, major, or minor; section must be one of this Rulebook's section codes. A DECISION rule (expert judgment under uncertainty) sets isPolicy=true and carries precondition (what is known at that point), nextAction (the ONE next move), actionKind (ask, test, treat, refer, wait, or commit), and cost and risk (low, medium, or high — of the ACTION, not of the situation).",
+      "Stages a complete or partial proposed rule in the page's Add/Edit Rule dialog; the user sees the populated form and still decides whether to save it. The value is a `masterwork_rule_draft` payload and the kind's schema is the contract: `__kind` must be \"masterwork_rule_draft\" and mode is REQUIRED (those two are the only required fields) — mode=\"new\" proposes a new rule, mode=\"edit\" requires rule_id identifying a rule already present in this Rulebook. A value without mode is refused before anything is staged. Every other field is optional: name, statement, rationale, detection and quote are text; severity is critical, major, or minor; section must be one of THIS Rulebook's section codes (the page checks that, the schema cannot). A DECISION rule (expert judgment under uncertainty) sets isPolicy=true and carries precondition (what is known at that point), nextAction (the ONE next move), actionKind (ask, examine, test, image, treat, observe, refer, wait, or commit), and cost and risk (low, medium, or high — of the ACTION, not of the situation).",
     valueType: "object",
+    // THE VALUE CONTRACT. `masterwork_rule_draft` is registered from the ONE
+    // shared validator this target already runs
+    // (agent-context/ruleDraftInput.ts) — same required field, same optional
+    // fields, same enums — so naming it here does not add a second contract,
+    // it publishes the one that was already being enforced. The wire now
+    // TEACHES it ([kind=masterwork_rule_draft {...}] in the
+    // apply_surface_write spec) and the seam ENFORCES it before the Expert is
+    // ever asked to approve. Schema source: features/content-ir/kinds/masterwork-rule-draft.ts.
+    valueKind: "masterwork_rule_draft",
     updatesValue: "active_rule_draft",
     mode: "draft",
     applyPolicy: "ask",

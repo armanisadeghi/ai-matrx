@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 517 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 519 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "52e915894e60";
+export const KIND_REGISTRY_FINGERPRINT = "c44978a35fdd";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -881,6 +881,7 @@ export interface CanonRule {
   id: string;
   cost?: string;
   kind?: string;
+  move?: Move | null;
   name?: string;
   risk?: string;
   section?: string;
@@ -3172,6 +3173,118 @@ export interface Money {
    */
   __kind?: string;
   currency?: string;
+}
+
+/**
+ * THE MOVE — the machine-readable body of a rule that is a STEP rather
+ * than a standing statement: an elicitation move, or one moment of a case
+ * that unfolds in time.
+ *
+ * The move gap (W70, 2026-09-12): distilled through any text lane, a manual
+ * that teaches an ordered asking protocol yields dispositions ("use
+ * open-ended questions", "express empathy") — no firing condition, no
+ * verbatim question, no statement of what each answer buys, and, the loss the
+ * gate proved is SHAPE, no ORDER: 94 rules came out of one chapter teaching
+ * an ordered protocol, all in a single section with nothing saying which came
+ * first.
+ *
+ * OPTIONAL, everywhere. A rule without ``move`` is exactly the rule every
+ * lane has always produced; the key is simply absent from the stored row.
+ *
+ * 🚨 THE ANTI-MISLEADING LAW still governs: ``statement`` must say the whole
+ * rule in prose, firing condition included. These fields make the move
+ * MACHINE-READABLE and ORDERABLE; they never replace saying it.
+ *  *
+ *  * From kind `masterwork_canon`.
+ */
+export interface Move {
+  ask?: string;
+  next?: MoveNext | null;
+  when?: MoveWhen | null;
+  frame?: string;
+  order?: number | null;
+  rules_in?: MoveOutcome[];
+  rules_out?: MoveOutcome[];
+  information_value?: string;
+}
+
+/**
+ * WHAT to do next, what it buys, and what it costs — the structured half.
+ *
+ * Beside the flat ``next_action`` string (which is what the 592 live rules
+ * carry and what the Decision half renders), this is the MACHINE-COMPARABLE
+ * form: ``cost`` and ``risk`` are 1-5 integers so two candidate next steps are
+ * comparable at all (a free-text "moderate" is not); ``urgency`` is when it
+ * has to happen. An out-of-vocabulary ``kind`` or ``urgency``, or an
+ * out-of-range cost/risk, is DROPPED rather than invented — the same
+ * discipline ``relates_to`` follows.
+ *
+ * 🚨 Named ``MoveNext`` and carried at ``move.next``, never ``next_action``:
+ * the top-level key belongs to the flat shape (see THE KEY-NAME CONVERGENCE
+ * above). The flat ``cost``/``risk`` beside it speak ``POLICY_LEVELS``
+ * (low/medium/high); these two speak the 1-5 ladder. Two ladders, two paths,
+ * never the same key.
+ *  *
+ *  * From kind `masterwork_canon`.
+ */
+export interface MoveNext {
+  buys?: string;
+  cost?: number | null;
+  kind?: string;
+  risk?: number | null;
+  target?: string;
+  urgency?: string;
+}
+
+/**
+ * One answer class and what that answer SETTLES.
+ *
+ * The information half of a move: without it, ``ask`` is a script line. With
+ * it, the desk knows why it is asking and can stop asking once the question
+ * is settled.
+ *  *
+ *  * From kind `masterwork_canon`.
+ */
+export interface MoveOutcome {
+  settles?: string;
+  answer_class?: string;
+}
+
+/**
+ * WHEN this step fires — the state of knowledge, and of the counterparty,
+ * it applies to.
+ *
+ * The static-rule gap (W57, 2026-09-12): distilled through any text lane, a
+ * rule becomes a standing statement ("cases like X get Y") with no notion of
+ * what was ALREADY KNOWN at the moment it applies, and — the half nothing
+ * else on a rule can express — what was still UNKNOWN. Expertise that lives
+ * in a timeline is mostly the second one: the practitioner's skill is knowing
+ * which unknown to close next. The move gap (W70) adds the third half: an
+ * elicitation move fires on a state of knowledge PLUS a state of the
+ * counterparty (guarded, ambivalent, angry, ready), which is what the asking
+ * schools teach.
+ *
+ * ONE shape for both (2026-09-13): this used to be two classes, ``Precondition``
+ * (summary/known/unknown) and ``MoveWhen`` (summary/known/counterparty_state).
+ * They were two thirds identical and a second implementation of something we
+ * own is a defect, so they are one — a strict superset of both. An unfolding
+ * case leaves ``counterparty_state`` empty; an elicitation protocol leaves
+ * ``unknown`` empty. Neither is a gap.
+ *
+ * OPTIONAL, everywhere. A rule without ``move`` is a static rule, exactly as
+ * before; the key is simply absent from the stored row.
+ *
+ * 🚨 THE ANTI-MISLEADING LAW still governs: ``statement`` must say the whole
+ * rule in prose, firing condition included. These fields make the condition
+ * MACHINE-READABLE; they never replace saying it.
+ *  *
+ *  * From kind `masterwork_canon`.
+ */
+export interface MoveWhen {
+  known?: string[];
+  summary?: string;
+  unknown?: string[];
+  counterparty_state?: string[];
 }
 
 /**
@@ -6024,6 +6137,17 @@ export interface TieredFlashcard_StudyPackSet {
 }
 
 /**
+ * What the practitioner did next at this step, and why.
+ *  *
+ *  * From kind `serial_observation_timeline`.
+ */
+export interface TimelineAction {
+  why?: string;
+  kind?: string;
+  target?: string;
+}
+
+/**
  * * From kind `timeline`.
  */
 export interface TimelineEvent {
@@ -6040,6 +6164,16 @@ export interface TimelineEvent {
 }
 
 /**
+ * What was known before anything was done — the state the practitioner
+ * walks into.
+ *  *
+ *  * From kind `serial_observation_timeline`.
+ */
+export interface TimelineOpening {
+  facts?: string[];
+}
+
+/**
  * * From kind `timeline`.
  */
 export interface TimelinePeriod {
@@ -6049,6 +6183,31 @@ export interface TimelinePeriod {
   __kind: "timeline_period";
   events: TimelineEvent[];
   period: string;
+}
+
+/**
+ * How it actually turned out — the answer, as the source printed it.
+ *  *
+ *  * From kind `serial_observation_timeline`.
+ */
+export interface TimelineResolution {
+  step?: number;
+  excerpt?: string;
+  outcome?: string;
+}
+
+/**
+ * One moment: what became known, what was done, what was still unknown.
+ *  *
+ *  * From kind `serial_observation_timeline`.
+ */
+export interface TimelineStep {
+  at?: string;
+  step?: number;
+  action?: TimelineAction | null;
+  excerpt?: string;
+  newly_known?: string[];
+  not_yet_known?: string[];
 }
 
 /**
@@ -8698,23 +8857,20 @@ export interface FileReadResult {
 }
 
 /**
- * Kind `file_search_match` (registry v7).
+ * Kind `file_search_match` (registry v9).
  */
 export interface FileSearchMatch {
   path?: string;
   size?: number | null;
-  lines?: unknown;
   /**
    * The registered kind this payload is an instance of.
    */
   __kind?: "file_search_match";
   matches?: string[];
-  submatches?: unknown[];
-  line_number?: number | null;
 }
 
 /**
- * Kind `file_search_results` (registry v7).
+ * Kind `file_search_results` (registry v9).
  */
 export interface FileSearchResults {
   path?: string | null;
@@ -10694,7 +10850,7 @@ export interface Markdown {
 /**
  * A Masterwork's Rulebook as it stands RIGHT NOW, for one run.
  *  *
- *  * Kind `masterwork_canon` (registry v4).
+ *  * Kind `masterwork_canon` (registry v6).
  */
 export interface MasterworkCanon {
   /**
@@ -10815,6 +10971,76 @@ export interface MasterworkResult {
   ruling?: string;
   approach?: string | null;
   deliverable?: string | null;
+}
+
+/**
+ * Kind `masterwork_rule_draft` (registry v2).
+ */
+export interface MasterworkRuleDraft {
+  /**
+   * DECISION rules: the cost OF THE ACTION, not of the situation.
+   */
+  cost?: "low" | "medium" | "high";
+  /**
+   * REQUIRED. "new" proposes a rule that does not exist yet; "edit" revises one that does and must carry rule_id.
+   */
+  mode: "new" | "edit";
+  /**
+   * The rule's short name, as it will read in the Rulebook.
+   */
+  name?: string;
+  /**
+   * DECISION rules: the risk OF THE ACTION, not of the situation.
+   */
+  risk?: "low" | "medium" | "high";
+  /**
+   * The Expert's own verbatim words this rule came from, when there are any.
+   */
+  quote?: string;
+  /**
+   * Block discriminator for render pipeline.
+   */
+  __kind: "masterwork_rule_draft";
+  /**
+   * With mode "edit": the id of a rule that already exists in the open Rulebook. Ignored in mode "new".
+   */
+  rule_id?: string;
+  /**
+   * One of the section codes of the Rulebook that is open right now. The page refuses a code it does not have.
+   */
+  section?: string;
+  /**
+   * true for a DECISION rule — expert judgment under uncertainty, which carries precondition, nextAction, actionKind, cost and risk. false (or absent) for an ordinary rule.
+   */
+  isPolicy?: boolean;
+  /**
+   * How bad breaking this rule is.
+   */
+  severity?: "critical" | "major" | "minor";
+  /**
+   * How you would catch someone breaking it.
+   */
+  detection?: string;
+  /**
+   * Why the rule matters.
+   */
+  rationale?: string;
+  /**
+   * The rule itself, in one or two sentences.
+   */
+  statement?: string;
+  /**
+   * DECISION rules: what kind of move the next action is.
+   */
+  actionKind?: "ask" | "examine" | "test" | "image" | "treat" | "observe" | "refer" | "wait" | "commit";
+  /**
+   * DECISION rules: the ONE next move to make.
+   */
+  nextAction?: string;
+  /**
+   * DECISION rules: what is already known at the moment this rule applies.
+   */
+  precondition?: string;
 }
 
 /**
@@ -16180,6 +16406,25 @@ export interface SeoWebAnalyticsReadResult {
 }
 
 /**
+ * A narrative re-read as WHAT WAS KNOWN WHEN — the source shape the
+ * unfolding-case lane distils by time instead of by paragraph.
+ *  *
+ *  * Kind `serial_observation_timeline` (registry v3).
+ */
+export interface SerialObservationTimeline {
+  steps?: TimelineStep[];
+  title?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "serial_observation_timeline";
+  domain?: string;
+  sealed?: boolean;
+  opening?: TimelineOpening | null;
+  resolution?: TimelineResolution | null;
+}
+
+/**
  * Kind `serp_analysis` (registry v5).
  */
 export interface SerpAnalysis {
@@ -21526,6 +21771,7 @@ export type GeneratedKindSlug =
   | "masterwork_canon"
   | "masterwork_checkup_finding"
   | "masterwork_result"
+  | "masterwork_rule_draft"
   | "math_problem"
   | "med_spa_review_response_kit"
   | "media_asset"
@@ -21717,6 +21963,7 @@ export type GeneratedKindSlug =
   | "seo_spend_summary"
   | "seo_structured_data_validation_result"
   | "seo_web_analytics_read_result"
+  | "serial_observation_timeline"
   | "serp_analysis"
   | "serp_placement"
   | "shifted_datetime"
@@ -22046,6 +22293,7 @@ export interface KindPayloadBySlug {
   "masterwork_canon": MasterworkCanon;
   "masterwork_checkup_finding": MasterworkCheckupFinding;
   "masterwork_result": MasterworkResult;
+  "masterwork_rule_draft": MasterworkRuleDraft;
   "math_problem": MathProblem;
   "med_spa_review_response_kit": MedSpaReviewResponseKit;
   "media_asset": MediaAsset;
@@ -22237,6 +22485,7 @@ export interface KindPayloadBySlug {
   "seo_spend_summary": SeoSpendSummary;
   "seo_structured_data_validation_result": SeoStructuredDataValidationResult;
   "seo_web_analytics_read_result": SeoWebAnalyticsReadResult;
+  "serial_observation_timeline": SerialObservationTimeline;
   "serp_analysis": SerpAnalysis;
   "serp_placement": SerpPlacement;
   "shifted_datetime": ShiftedDatetime;
@@ -22570,6 +22819,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "masterwork_canon",
   "masterwork_checkup_finding",
   "masterwork_result",
+  "masterwork_rule_draft",
   "math_problem",
   "med_spa_review_response_kit",
   "media_asset",
@@ -22761,6 +23011,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "seo_spend_summary",
   "seo_structured_data_validation_result",
   "seo_web_analytics_read_result",
+  "serial_observation_timeline",
   "serp_analysis",
   "serp_placement",
   "shifted_datetime",

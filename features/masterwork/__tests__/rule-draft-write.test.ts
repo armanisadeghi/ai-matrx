@@ -202,7 +202,13 @@ describe("rule_draft → the Rulebook", () => {
     expect(target!.description).toMatch(/isPolicy=true/);
     expect(target!.description).toMatch(/precondition/);
     expect(target!.description).toMatch(/nextAction/);
-    expect(target!.description).toMatch(/actionKind \(ask, test, treat, refer, wait, or commit\)/);
+    // The FULL live enum (`RULE_ACTION_KINDS`), not a subset: the description
+    // used to name six of the nine, which is a contract that lies to the model
+    // about three legal values. Registering `masterwork_rule_draft` made the
+    // drift visible — the kind's schema carries all nine.
+    expect(target!.description).toMatch(
+      /actionKind \(ask, examine, test, image, treat, observe, refer, wait, or commit\)/,
+    );
   });
 
   it("refuses a rule draft with NO mode, naming the field as required", () => {
@@ -240,5 +246,12 @@ describe("rule_draft → the Rulebook", () => {
     expect(target!.description).toMatch(/mode is REQUIRED/);
     expect(target!.description).toMatch(/mode="new"/);
     expect(target!.description).toMatch(/mode="edit"/);
+    // THE VALUE CONTRACT is advertised too: the target names the registered
+    // kind, and the kind's schema requires the `__kind` marker, so the
+    // description has to say so or every write it teaches would be refused at
+    // the seam.
+    expect(target!.valueKind).toBe("masterwork_rule_draft");
+    expect(target!.description).toMatch(/masterwork_rule_draft/);
+    expect(target!.description).toMatch(/__kind/);
   });
 });

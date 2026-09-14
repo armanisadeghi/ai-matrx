@@ -260,6 +260,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-14` — **The `rule_draft` write target has a REGISTERED value contract.** `masterwork_rule_draft`
+  (`content_ir.kind_definition` `fc6eba46-709b-4cfd-bde2-a264420f18a8`, v1, active) is registered from the
+  ONE shared validator `agent-context/ruleDraftInput.ts` — same single required field (`mode`), same
+  optional fields, same `RULE_ACTION_KINDS` / `RULE_POLICY_LEVELS` enums — and the manifest target now
+  names it (`valueKind`). Nothing about what the page accepts changed; what changed is that the contract
+  is now PUBLISHED (the `apply_surface_write` spec prints `[kind=masterwork_rule_draft {…}]`) and
+  ENFORCED at the seam before the Expert is asked to approve, instead of living only in the handler's
+  throw. Two consequences to know: an agent's value must now carry `__kind: "masterwork_rule_draft"`
+  (the schema requires the marker, as `media_chapters` does — the target description says so), and the
+  description's `actionKind` list was wrong, naming six of the nine legal values; it now names all nine.
+  `rule_id`-must-exist and `section`-must-be-a-code stay with the validator: they are facts about the
+  OPEN Rulebook, not about the shape. Schema source: `features/content-ir/kinds/masterwork-rule-draft.ts`.
+  This closes the last residue of wall W49; its handoff is deleted and its census now lives in
+  `features/agents/FEATURE.md` § Invariants & gotchas.
+
 - `2026-09-13` — **The frontend half of the convergence landed: BOTH decision halves render, from
   ONE form.** Merging `main` (trial 8) into this branch, the ruling already applied on the server
   was applied here: the FLAT policy shape keeps the contested key names (`kind`, `precondition`,
