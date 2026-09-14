@@ -17,6 +17,7 @@
 // `platform.knob_scope_kind`'s own `scope_schema`/`scope_table`, so a new rung
 // needs no new code here — only the noun a person reads.
 
+import { unreachableRungsFor } from "./knobDatabaseConsumers.generated";
 import { createClient } from "@/utils/supabase/client";
 import type { KnobScopeKindName } from "@/lib/scoped-config/types";
 
@@ -67,12 +68,32 @@ export function isSubOrgScopeKind(kind: string): kind is SubOrgScopeKind {
  * `organization`, `user` and `device` are excluded because they are not
  * picked: the screen already knows which organization, which person and which
  * browser it is standing in.
+ *
+ * 🚨 DD-211 — AND narrowed again to the rungs the DATABASE CAN ANSWER WITH.
+ * `overridable_by` is what the registry OFFERS; a rung other than
+ * `organization` or `user` only changes an answer if some reader names it in
+ * `p_scopes`. `records.confirmation.agent_write_born_confirmed` offered an
+ * `agent` rung, the door saved it (`{"ok":true,"origin":"agent_override"}`),
+ * this panel listed it back — and its one reader named a `table` rung and
+ * nothing else, so not a single row ever changed (V-64, 2026-09-13). A control
+ * is ABSENT or HONEST, never a box that accepts a value nothing honours, so a
+ * rung nothing can answer is not offered at all.
+ *
+ * The census is measured live from `pg_proc` and committed by
+ * `pnpm generate:knob-database-consumers`; `pnpm check:knob-database-consumers`
+ * fails when it drifts, and fails when a knob GAINS such a rung — so hiding it
+ * here can never become how the gap is quietly lived with.
+ *
+ * `fullKey` is optional only so the function keeps working for a caller that
+ * does not have it; without it nothing is hidden (never guess).
  */
 export function pickableRungsFor(
   overridableBy: readonly string[],
+  fullKey?: string,
 ): SubOrgScopeKind[] {
-  return SUB_ORG_SCOPE_SOURCES.map((source) => source.kind).filter((kind) =>
-    overridableBy.includes(kind),
+  const unreachable = fullKey ? unreachableRungsFor(fullKey, overridableBy) : [];
+  return SUB_ORG_SCOPE_SOURCES.map((source) => source.kind).filter(
+    (kind) => overridableBy.includes(kind) && !unreachable.includes(kind),
   );
 }
 

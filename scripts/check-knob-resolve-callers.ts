@@ -59,66 +59,16 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, dirname, relative, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-
-const require_ = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pg: any = require_("pg");
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKSPACE = resolve(ROOT, "..");
 const SELF_TEST = process.argv.includes("--self-test");
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
 
-const DB_VARS = [
-  "SUPABASE_MATRIX_USER",
-  "SUPABASE_MATRIX_PASSWORD",
-  "SUPABASE_MATRIX_HOST",
-  "SUPABASE_MATRIX_PORT",
-  "SUPABASE_MATRIX_DATABASE_NAME",
-] as const;
-
-function parseEnvFile(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of readFileSync(path, "utf8").split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 1) continue;
-    let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    out[line.slice(0, eq).trim()] = v;
-  }
-  return out;
-}
-
-interface DbEnv { user: string; password: string; host: string; port: number; database: string; from: string }
-
-function loadDbEnv(): DbEnv | { missing: readonly string[]; looked: string[] } {
-  const looked: string[] = [];
-  const tryBag = (bag: Record<string, string | undefined>, from: string): DbEnv | null => {
-    if (DB_VARS.some((k) => !bag[k])) return null;
-    return {
-      user: bag.SUPABASE_MATRIX_USER!, password: bag.SUPABASE_MATRIX_PASSWORD!,
-      host: bag.SUPABASE_MATRIX_HOST!, port: Number(bag.SUPABASE_MATRIX_PORT!),
-      database: bag.SUPABASE_MATRIX_DATABASE_NAME!, from,
-    };
-  };
-  const fromProcess = tryBag(process.env, "the environment");
-  if (fromProcess) return fromProcess;
-  for (const path of [
-    resolve(ROOT, ".env.local"), resolve(ROOT, ".env.production.local"),
-    resolve(ROOT, ".env.production"), resolve(ROOT, ".env"),
-    resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"), ".env"),
-  ]) {
-    if (!existsSync(path)) continue;
-    looked.push(relative(ROOT, path));
-    const hit = tryBag(parseEnvFile(path), relative(ROOT, path));
-    if (hit) return hit;
-  }
-  return { missing: DB_VARS, looked };
-}
-
+// ONE credential loader and ONE catalog query, shared with
+// check:knob-database-consumers (DD-211) so the two guards can never disagree
+// about where the database is or which bodies count as callers.
+import { CATALOG_SQL, DB_VARS, client as dbClient, loadDbEnv } from "./knob-resolve-callers/db";
 import { classify, knobResolveCalls, scopesArgumentOf } from "./knob-resolve-callers/core";
 import type { Verdict } from "./knob-resolve-callers/core";
 
@@ -229,12 +179,7 @@ function scanRepos(): Finding[] {
   return findings;
 }
 
-const CATALOG_SQL = `
-  select n.nspname || '.' || p.proname as fn, p.prosrc as body
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where strpos(lower(p.prosrc), 'knob_resolve') > 0
-     and not (n.nspname = 'platform' and p.proname = 'knob_resolve')
-   order by 1`;
+
 
 /** A function the self-test plants, to prove the rule can say no. */
 const PLANT_SQL = `
@@ -256,11 +201,7 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const client = new pg.Client({
-    host: env.host, port: env.port, user: env.user, password: env.password, database: env.database,
-    ssl: { rejectUnauthorized: false }, application_name: "check:knob-resolve-callers",
-    connectionTimeoutMillis: 20_000,
-  });
+  const client = dbClient(env, "check:knob-resolve-callers");
   await client.connect();
   console.log(`${C.d}${env.user}@${env.host}:${env.port}/${env.database} (credentials from ${env.from})${C.x}`);
 

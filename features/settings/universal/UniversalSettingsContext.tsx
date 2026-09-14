@@ -346,7 +346,7 @@ export function UniversalSettingsProvider({
   const readRungOverrides = useCallback(
     (knob: ScopedKnob, force: boolean) => {
       if (!organizationId) return;
-      const kinds = pickableRungsFor(knob.overridable_by);
+      const kinds = pickableRungsFor(knob.overridable_by, knob.full_key);
       if (kinds.length === 0) return;
       if (!force && requested.current.has(knob.full_key)) return;
       requested.current.add(knob.full_key);

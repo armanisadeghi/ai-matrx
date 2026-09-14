@@ -3,7 +3,9 @@
 // Every `platform.feature_knob` key that is read from INSIDE the database (a
 // function body or a view), with the function(s) that read it. Regenerate with
 // `pnpm generate:knob-database-consumers`; the census itself is measured live
-// from `pg_proc`/`pg_views` by `check:settings-orphans`'s IN-DB tier.
+// from `pg_proc`/`pg_views` by `check:settings-orphans`'s IN-DB tier, and
+// `pnpm check:knob-database-consumers` FAILS when this file no longer matches
+// the live database.
 //
 // WHY the settings UI needs it: a knob resolved by a trigger has no call site
 // any source grep can find, so the hand-kept audit in `disposition.ts` would
@@ -131,6 +133,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "seo.multi_location.max_attribution_km": ["seo.gsc_keyword_locations"],
   "seo.multi_location.single_location_fallback": ["seo.gsc_keyword_locations"],
   "seo.situational_stamps.stale_after_hours": ["seo.fn_situational_sites_owing", "seo.situational_refresh_status"],
+  "tables.density.mode": ["hr.leave_case_open", "hr.leave_wf_validate", "hr.punch_record", "hr.resolve_rules", "hr.sync_membership_to_employment", "hr.validate_org_config", "seo.ai_autonomy_scope", "seo.fn_ai_autonomy", "seo.fn_autonomy_apply_timed_out", "seo.fn_backfill_keyword_places", "seo.set_ai_autonomy"],
 };
 
 /** The database function(s) that read this key, or `null` when none do. */
@@ -138,3 +141,39 @@ export function databaseConsumersOf(fullKey: string): readonly string[] | null {
   const readers = KNOB_DATABASE_CONSUMERS[fullKey];
   return readers && readers.length > 0 ? readers : null;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// DD-211 — WHICH RUNGS the database can actually answer a key with.
+//
+// `overridable_by` says which rungs the PICKER offers. This says which rungs a
+// reader NAMES in `p_scopes` — the only way a rung other than `organization`
+// or `user` can change an answer. A key offered at a rung nobody names is a
+// control that saves a value nothing honours (law 4 from the other side), which
+// is what `records.confirmation.agent_write_born_confirmed`'s `agent` rung was
+// until DD-211.
+//
+// Only keys with a call site whose feature and key are WRITTEN OUT appear here:
+// a body that resolves them from variables tells us nothing, and guessing would
+// be worse than saying nothing.
+// ───────────────────────────────────────────────────────────────────────────
+
+export const KNOB_RUNG_CONSUMERS: Readonly<Record<string, readonly string[]>> = {
+  "records.confirmation.agent_write_born_confirmed": ["agent", "table"],
+  "records.confirmation.confirm_on_human_edit": ["table"],
+  "records.confirmation.table_allows_born_confirmed": ["agent", "table"],
+};
+
+/** The rungs in `overridable_by` this key's database readers CANNOT answer with. */
+export function unreachableRungsFor(
+  fullKey: string,
+  overridableBy: readonly string[],
+): readonly string[] {
+  const named = KNOB_RUNG_CONSUMERS[fullKey];
+  if (!named) return [];  // nothing readable to measure against — never guess
+  return overridableBy.filter(
+    (kind) => !RUNGS_ALWAYS_REACHABLE.includes(kind) && !named.includes(kind),
+  );
+}
+
+/** `organization` and `user` are knob_resolve's own parameters: always reachable. */
+export const RUNGS_ALWAYS_REACHABLE: readonly string[] = ["organization", "user"];

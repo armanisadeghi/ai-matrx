@@ -350,7 +350,7 @@ export function KnobRungOverrides({
       });
   };
 
-  const kinds = pickableRungsFor(knob.overridable_by);
+  const kinds = pickableRungsFor(knob.overridable_by, knob.full_key);
 
   // 🚨 F5 (V-57). The list is read when this panel MOUNTS, not when it is
   // opened. The header's whole job while collapsed is to say whether anything
