@@ -797,12 +797,29 @@ async function resolveRecipeRow(
       const orgCol = ["organization_id", "org_id"].find((c) => meta.cols.includes(c));
       const ownerCol = ["user_id", "created_by", "owner_id", "actor_user_id"].find((c) => meta.cols.includes(c));
       const who = own ? cast.a : cast.b;
-      const orgs = own ? cast.a.orgIds : catalog.victimOrgIds;
       let where: string;
       let params: unknown[];
-      if (orgCol && orgs.length) {
+      if (orgCol && own && cast.a.orgIds.length) {
         where = `${qi(orgCol)} = any($1::uuid[])`;
-        params = [orgs];
+        params = [cast.a.orgIds];
+      } else if (orgCol && !own) {
+        // 🚨 DD-209 (V-102 F2). ACROSS THE BOUNDARY IS NOT "ONE OF THE VICTIM'S
+        // ORGANIZATIONS". This used to look only in the 12 organizations
+        // admin@admin.com belongs to, so a table whose rows live in OTHER tenants
+        // looked empty and six doors were shipped with a declared note saying
+        // "0 rows across the boundary" that was simply false: `canvas.canvas_items`
+        // holds 872, `workbench.udt_datasets` 144, `seo.starter_pack` 7,
+        // `rag.data_stores` 6 (counted 2026-09-14, excluding both callers' and the
+        // system organization). A row in a third tenant is exactly as far across
+        // the boundary as one of the victim's, and the callers have no standing
+        // there by construction.
+        //
+        // The victim's own organizations still come FIRST, so a recipe written
+        // against the old behaviour keeps the row it had; the system organization
+        // is excluded because it is shared content, not a tenant (see
+        // Catalog.systemOrgIds).
+        where = `${qi(orgCol)} is not null and ${qi(orgCol)} <> all($1::uuid[])`;
+        params = [[...cast.a.orgIds, ...cast.c.orgIds, ...catalog.systemOrgIds]];
       } else if (ownerCol) {
         where = `${qi(ownerCol)} = $1::uuid`;
         params = [who.id];
@@ -811,8 +828,15 @@ async function resolveRecipeRow(
           `${table} carries neither an organization column nor an owning-user column, so no row of it can be placed on one side of the boundary`,
         );
       }
+      const preferVictim =
+        orgCol && !own && catalog.victimOrgIds.length
+          ? `, (${qi(orgCol)} = any($2::uuid[])) desc`
+          : "";
+      if (preferVictim) params = [...(params as unknown[]), catalog.victimOrgIds];
       const r = await q<{ id: string }>(
-        `select id::text from ${qi(sch)}.${qi(tab)} where ${where}${live} limit 1`,
+        `select id::text from ${qi(sch)}.${qi(tab)} where ${where}${
+          live ? live + preferVictim : preferVictim ? ` order by 1 = 1${preferVictim}` : ""
+        } limit 1`,
         params,
       );
       id = r[0]?.id ?? null;
@@ -1624,6 +1648,159 @@ function isEmptyAnswer(rows: unknown[]): boolean {
   });
 }
 
+
+// ─── DD-209 (V-102 F1): the DISCLOSURE oracle ────────────────────────────────
+//
+// The row oracle is UUID-ONLY: it harvests row identities out of an answer and
+// asks whether the caller can SELECT them. A NAME, a title, an email address or
+// a phone number belonging to a row the caller cannot read is invisible to it.
+// `public.agx_get_access_level` sat PASS in the blocking lane while telling any
+// signed-in caller the name of an agent they cannot SELECT and the email address
+// of its owner, in the same answer that said `access_level: "none"` (V-102 F1,
+// proven live). The platform already treats this shape as dangerous —
+// `public.access_denied_context` is in the by-design allowlist PRECISELY because
+// it returns "a DISPLAY NAME of a row the caller cannot SELECT" — so the gate
+// that could not see it was the problem.
+//
+// THE ORACLE. Any descriptive value in the answer that is EQUAL to a field of a
+// row this caller cannot SELECT is a FAIL, named with the field and the row. The
+// rows examined are the ones the door was handed (the injected ids — a door given
+// an id it may not read and answering with that row's name is the whole shape)
+// plus every row id that came back.
+//
+// Deliberately narrow, because a gate that cries wolf gets switched off:
+//   * only DESCRIPTIVE keys in the answer (name / title / label / email / slug /
+//     handle / display_name / subject / phrase / headline / first_name / last_name),
+//   * only values of 3 characters or more, never a value this harness injected,
+//   * exact match only — no substring, no fuzziness,
+//   * and only against rows PROVEN unreadable by this caller under RLS, in this
+//     transaction, one `select 1 … where id = $1` at a time.
+const DESCRIPTIVE_KEY =
+  /(^|_)(name|title|label|email|slug|handle|display_name|subject|phrase|headline|first_name|last_name)$/i;
+
+const DESCRIPTIVE_COLS = [
+  "name",
+  "title",
+  "label",
+  "slug",
+  "display_name",
+  "handle",
+  "email",
+  "subject",
+  "phrase",
+  "headline",
+  "first_name",
+  "last_name",
+];
+
+/** Every descriptive string the answer carries, by the key it arrived under. */
+function harvestDescriptive(value: unknown, key: string | null, out: Map<string, string>): void {
+  if (value == null) return;
+  if (typeof value === "string") {
+    const parsed = safeJson(value);
+    if (parsed && typeof parsed === "object") {
+      harvestDescriptive(parsed, null, out);
+      return;
+    }
+    if (!key || !DESCRIPTIVE_KEY.test(key)) return;
+    const v = value.trim();
+    if (v.length < 3 || UUID_RE.test(v)) return;
+    out.set(`${key}=${v}`, v);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) harvestDescriptive(v, key, out);
+    return;
+  }
+  if (typeof value === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) harvestDescriptive(v, k, out);
+  }
+}
+
+/**
+ * The descriptive values a row carries, read as `postgres`: its own descriptive
+ * columns, plus the email address of whoever owns it — because "the owner's
+ * email" is a disclosure ABOUT that row even though it lives in `auth.users`,
+ * and that is exactly what `agx_get_access_level` handed over.
+ */
+async function descriptiveValuesOf(
+  db: pg.Client,
+  catalog: Catalog,
+  table: string,
+  id: string,
+): Promise<{ field: string; value: string }[]> {
+  const meta = catalog.columnsOf[table];
+  if (!meta) return [];
+  const [sch, tab] = table.split(".");
+  const cols = DESCRIPTIVE_COLS.filter((c) => meta.cols.includes(c));
+  const ownerCol = ["created_by", "user_id", "owner_id", "actor_user_id"].find((c) => meta.cols.includes(c));
+  if (!cols.length && !ownerCol) return [];
+  const selects = [
+    ...cols.map((c) => `${qi(c)}::text as ${qi(c)}`),
+    ...(ownerCol
+      ? [`(select u.email::text from auth.users u where u.id = t.${qi(ownerCol)}) as "owner_email"`]
+      : []),
+  ];
+  try {
+    const r = await db.query(
+      `select ${selects.join(", ")} from ${qi(sch)}.${qi(tab)} t where t.id = $1::uuid limit 1`,
+      [id],
+    );
+    const row = (r.rows[0] ?? {}) as Record<string, string | null>;
+    return Object.entries(row)
+      .filter(([, v]) => typeof v === "string" && v.trim().length >= 3)
+      .map(([field, v]) => ({ field, value: (v as string).trim() }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Compare what the answer said against what the rows the caller cannot read
+ * actually hold. Runs with the connection in the CALLER's transaction; it flips
+ * roles itself and always puts the role back.
+ */
+async function disclosureFindings(
+  db: pg.Client,
+  catalog: Catalog,
+  caller: Principal,
+  rows: Record<string, unknown>[],
+  candidateIds: string[],
+  doorName: string,
+): Promise<string[]> {
+  const said = new Map<string, string>();
+  for (const r of rows) harvestDescriptive(r, null, said);
+  if (!said.size || !candidateIds.length) return [];
+
+  await db.query("reset role");
+  const resolved = await resolveIds(db, catalog, candidateIds);
+  const findings: string[] = [];
+  await db.query("set local role authenticated");
+  for (const r of resolved) {
+    const [sch, tab] = r.table.split(".");
+    let visible = 0;
+    try {
+      visible =
+        (await db.query(`select 1 from ${qi(sch)}.${qi(tab)} where id = $1::uuid limit 1`, [r.id])).rowCount ?? 0;
+    } catch {
+      continue; // a table the caller holds no grant on at all: nothing to compare
+    }
+    if (visible) continue; // the caller can read this row; naming it discloses nothing
+    await db.query("reset role");
+    const values = await descriptiveValuesOf(db, catalog, r.table, r.id);
+    await db.query("set local role authenticated");
+    for (const v of values) {
+      for (const [saidKey, saidValue] of said) {
+        if (saidValue !== v.value) continue;
+        findings.push(
+          `${doorName} answered ${saidKey.split("=")[0]} = ${JSON.stringify(saidValue)}, which is ${r.table} ${r.id}'s ${v.field} — a row this caller cannot SELECT under RLS`,
+        );
+      }
+    }
+  }
+  return findings;
+}
+
 async function measureDoor(
   db: pg.Client,
   q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
@@ -1865,6 +2042,55 @@ async function runProbeCore(
       const control = await controlProbe(db, call, filled.values, cast.b);
       const sameShape = control.code === errCode && ERROR_SHAPE(control.message) === ERROR_SHAPE(errMsg);
       await db.query(TX_ROLLBACK());
+      // 🚨 DD-209 (V-102 F3). "THE VICTIM GOT FURTHER" IS NOT ENOUGH ON ITS OWN.
+      //
+      // The first cut of this rule read: if the victim's identical call gets
+      // further, the stranger's error WAS the authorization decision. That is
+      // sound for a not-found — the door declined to see a row it may not see —
+      // and false for a CRASH. `public.hr_pay_group_upsert('{}')` fails for a
+      // stranger with `23502 null value in column "organization_id" of relation
+      // "access_audit"`: the door ran on, reached the point of writing an audit
+      // row for somebody with no organization context, and a NOT NULL constraint
+      // stopped it. The victim gets further because the victim HAS an
+      // organization, not because the stranger was refused. Scoring that PASS
+      // converts an unmeasured door into a claimed measurement, which is the one
+      // error this whole gate exists to prevent.
+      //
+      // So the SQLSTATE decides. A not-found (`P0002` / `02000`) can be a refusal
+      // by invisibility; everything else — a constraint violation, a type error,
+      // a missing relation, a raise with no authorization text — is UNMEASURED
+      // with the error named, whatever the victim's call did.
+      const NOT_FOUND_STATE = /^(P0002|02000)$/;
+      const authzShaped = errCode === "42501" || (errCode === "P0001" && AUTHZ_MESSAGE.test(errMsg));
+      if (!sameShape && !authzShaped && !NOT_FOUND_STATE.test(errCode)) {
+        return {
+          verdict: "UNMEASURED",
+          why:
+            `the call failed for a reason that is not an authorization decision: ${errCode} ${errMsg.slice(0, 140)}. ` +
+            `The victim's identical call gets further (${control.outcome}), but ${errCode} is not a refusal — a constraint violation or a crash is not a decision about this caller.`,
+          leaked: [],
+          probe: { caller: caller.label, args: filled.sql, outcome: "ERROR (not a decision)", detail: `${errCode} ${errMsg.slice(0, 160)}` },
+        };
+      }
+      // A not-found from a door no argument of which crossed the boundary is not
+      // "you may not see that row" — it is "you have no row of your own". The two
+      // `creator_*` doors are exactly that: self-scoped, acting on the caller's
+      // own profile. The verdict is the same; the SENTENCE has to be true.
+      if (!sameShape && !filled.crossed) {
+        return {
+          verdict: "PASS",
+          why:
+            `no row of your own: ${errCode} ${errMsg.slice(0, 120)} — no argument of this call named a row across the boundary, so the door is self-scoped and this caller simply has none. ` +
+            `It returned nothing and wrote nothing. (The victim's identical call ${control.outcome}.)`,
+          leaked: [],
+          probe: {
+            caller: caller.label,
+            args: filled.sql,
+            outcome: "EMPTY (no row of your own)",
+            detail: `${errCode} ${errMsg.slice(0, 120)} | victim: ${control.outcome}`,
+          },
+        };
+      }
       if (sameShape) {
         return {
           verdict: "UNMEASURED",
@@ -1980,6 +2206,35 @@ async function runProbeCore(
     const identityIds = [...harvested.identity].filter(keep);
     const referenceIds = [...harvested.reference].filter(keep);
     const ids = [...new Set([...identityIds, ...referenceIds])];
+
+    // 🚨 DD-209 (V-102 F1). THE DISCLOSURE ORACLE, BEFORE THE UUID DIFF — because
+    // the shape it catches leaves NO foreign uuid behind. The ids examined include
+    // the ones this harness INJECTED: a door handed an id it may not read, which
+    // answers with that row's name, is the whole defect, and those ids are dropped
+    // from the identity diff by design.
+    const disclosureIds = [...new Set([...ids, ...filled.injectedIds.map((u) => u.toLowerCase())])];
+    const disclosed = await disclosureFindings(
+      db,
+      catalog,
+      caller,
+      rows,
+      disclosureIds,
+      `${door.schema}.${door.fn}`,
+    );
+    if (disclosed.length) {
+      await db.query(TX_ROLLBACK());
+      return {
+        verdict: "FAIL",
+        why: "disclosed a field of a row the caller cannot read",
+        leaked: disclosed,
+        probe: {
+          caller: caller.label,
+          args: filled.sql,
+          outcome: "DISCLOSURE",
+          detail: disclosed.join(" · ").slice(0, 400),
+        },
+      };
+    }
 
     if (ids.length === 0) {
       await db.query(TX_ROLLBACK());
@@ -2779,6 +3034,77 @@ async function replayDd213c(
   return red && green && bound;
 }
 
+/**
+ * DD-209 (V-102 F1), RED then GREEN, on a REAL door and the REAL defect.
+ *
+ * The plants above all leak a ROW. This one leaks a NAME and an EMAIL ADDRESS
+ * and no foreign row id at all — the shape the uuid oracle cannot see, and the
+ * reason `public.agx_get_access_level` sat PASS in the blocking lane while
+ * telling any signed-in caller the name of an agent they cannot SELECT and its
+ * owner's email. The pre-fix body is restored from its shipped bytes inside a
+ * rolled-back transaction; the disclosure oracle must call it a FAIL, and the
+ * live body must be PASS.
+ */
+async function replayDd209Disclosure(
+  db: pg.Client,
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  cast: Cast,
+  catalog: Catalog,
+  doors: Door[],
+): Promise<boolean> {
+  const door = doors.find((d) => d.schema === "public" && d.fn === "agx_get_access_level");
+  if (!door) {
+    console.log(
+      `${TAG.warn}DD-209 DISCLOSURE ARM: public.agx_get_access_level is not in this population (--population=${POPULATION}) — the disclosure oracle was NOT proven on this run`,
+    );
+    return true;
+  }
+  const fixture = resolve(ROOT, "scripts/door-rows/dd209-pre-fix-agx-get-access-level.sql");
+  if (!existsSync(fixture)) {
+    console.log(`${TAG.fail}DD-209 DISCLOSURE ARM: the pre-fix fixture is missing at ${fixture} — nothing was proven`);
+    return false;
+  }
+  const preFix = readFileSync(fixture, "utf8");
+
+  let red = false;
+  let green = false;
+  await db.query("begin");
+  OUTER_TX = true;
+  try {
+    const after = await measureDoor(db, q, cast, catalog, door);
+    green = after.verdict === "PASS";
+    console.log(
+      green
+        ? `${TAG.ok}DD-209 DISCLOSURE ARM (live body): public.agx_get_access_level is PASS — ${after.why}`
+        : `${TAG.fail}DD-209 DISCLOSURE ARM (live body): public.agx_get_access_level came back ${after.verdict} (${after.why})`,
+    );
+
+    await db.query(preFix);
+    const before = await measureDoor(db, q, cast, catalog, door);
+    red = before.verdict === "FAIL";
+    console.log(
+      red
+        ? `${TAG.ok}DD-209 DISCLOSURE RED proven: with the pre-fix body restored, public.agx_get_access_level is ${before.verdict} — ${before.leaked.slice(0, 1).join(", ")}`
+        : `${TAG.fail}DD-209 DISCLOSURE RED: the pre-fix body came back ${before.verdict} (${before.why}) — a door that hands over a foreign row's NAME or EMAIL is still invisible to this gate`,
+    );
+  } finally {
+    OUTER_TX = false;
+    await db.query("rollback");
+  }
+
+  const live = await q<{ src: string }>(
+    `select prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'agx_get_access_level'`,
+  );
+  const guarded = live.every((r) => /v_may_read/.test(r.src));
+  console.log(
+    guarded
+      ? `${TAG.info}after rollback, public.agx_get_access_level still gates its descriptive fields on v_may_read (the live body is intact)`
+      : `${TAG.fail}after rollback, public.agx_get_access_level NO LONGER gates its descriptive fields — the fixture was left behind`,
+  );
+  return red && green && guarded;
+}
+
 async function selfTest(
   db: pg.Client,
   q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
@@ -2899,12 +3225,18 @@ async function selfTest(
   // pre-fix recorder from ITS shipped bytes, then probes `iam.emergency_door_open`.
   const writeArmIam = await replayDd213c(db, q, cast, catalog, _doors);
 
+  // THE DISCLOSURE ARM (DD-209 / V-102 F1). Not a leaked row — a leaked NAME and
+  // EMAIL, with no foreign row id anywhere in the answer.
+  const disclosureArm = await replayDd209Disclosure(db, q, cast, catalog, _doors);
+
   const planted = await q<{ n: string }>(
     `select count(*)::text n from pg_proc where proname like 'dd192_selftest%' or proname like 'dd209_selftest%'`,
   );
   console.log(`${TAG.info}after rollback, planted functions remaining: ${planted[0].n} (must be 0)`);
   const clean = planted[0].n === "0";
-  return failedTheLeak && passedTheBounded && clean && replay && benignArm && writeArm && writeArmIam ? 0 : 1;
+  return failedTheLeak && passedTheBounded && clean && replay && benignArm && writeArm && writeArmIam && disclosureArm
+    ? 0
+    : 1;
 }
 
 // ─── the by-design allowlist (DD-208) ────────────────────────────────────────
