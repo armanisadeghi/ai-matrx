@@ -349,3 +349,42 @@ describe("the retry — one replay after a refusal that carried no identity", ()
     expect(h.executions()).toBe(2);
   });
 });
+
+describe("the marker reaches EVERY capture, not just this wrapper's", () => {
+  it("stamps a capture that arrived from another adapter entirely", async () => {
+    setAuthCookie(true);
+    const h = makeHarness([SERVED]);
+    h.report(true);
+    // Installing the client is what registers the probe.
+    await h.read("kind_component");
+
+    // A Redux-middleware / Python-client / identity capture: no call context,
+    // so it carries no sessionState of its own. On production 2026-09-14 every
+    // one of the first 61 rows after the barrier shipped was one of these.
+    const { captureError } = await import("@/lib/diagnostics/errorCaptureStore");
+    captureError({
+      source: "runtime-exception",
+      message: "identity.requireUserId() threw",
+    });
+
+    const entry = getSnapshot().find((e) => e.source === "runtime-exception");
+    expect(entry?.sessionState).toBe("attached");
+  });
+
+  it("lets a capture keep a sessionState it set itself", async () => {
+    setAuthCookie(true);
+    const h = makeHarness([SERVED]);
+    h.report(true);
+    await h.read("kind_component");
+
+    const { captureError } = await import("@/lib/diagnostics/errorCaptureStore");
+    captureError({
+      source: "api-http",
+      message: "the caller knows better",
+      sessionState: "signed_out",
+    });
+
+    const entry = getSnapshot().find((e) => e.source === "api-http");
+    expect(entry?.sessionState).toBe("signed_out");
+  });
+});

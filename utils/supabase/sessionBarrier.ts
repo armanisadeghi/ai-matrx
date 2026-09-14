@@ -91,7 +91,10 @@
  * `pnpm check:session-first-reads` keeps it that way.
  */
 
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  captureError,
+  setSessionStateProbe,
+} from "@/lib/diagnostics/errorCaptureStore";
 import {
   bypassesSessionWait,
   isAnonymousByDesign,
@@ -201,6 +204,10 @@ export function installSessionBarrier(client: unknown): void {
   if (!isAuthLike(auth)) return;
   boundAuth = auth;
   storageKey = readStorageKey(auth);
+  // Every capture in the app — not just this wrapper's — now says what the
+  // client knew about its session. A probe rather than an import, because the
+  // store is what `captureError` above comes from.
+  setSessionStateProbe(() => sessionStateMarker());
   try {
     // INITIAL_SESSION fires as soon as the client has read its storage, with
     // whatever it found — so a session that attached before this call still
@@ -217,6 +224,7 @@ export function installSessionBarrier(client: unknown): void {
 
 /** Test seam — forget the binding and every waiter. */
 export function resetSessionBarrierForTests(): void {
+  setSessionStateProbe(null);
   waiting.clear();
   boundAuth = null;
   storageKey = null;

@@ -534,6 +534,39 @@ function currentRoute(): { route: string; url: string } {
  * instead of flooding the buffer — essential during a cutover where one broken
  * query fires on a loop.
  */
+/**
+ * DD-237 — what the client knew about its own Supabase session, for captures
+ * that do not carry it themselves.
+ *
+ * The Supabase wrapper stamps `sessionState` on its own captures because it
+ * holds the call context. Every OTHER adapter — the Redux middleware, the
+ * Python-backend client, `identity_unavailable`, a thunk's rejection — reaches
+ * this store without it, and those are exactly the rows where "was there a
+ * session at all?" is the first question anyone asks. Measured on production
+ * 2026-09-14, in the first three hours after the barrier shipped: 61 client
+ * rows, every one from an adapter that could not answer it.
+ *
+ * A PROBE, not an import: `sessionBarrier` imports `captureError` from this
+ * module, so a static edge back would be a cycle. The barrier registers this at
+ * install time; until then, and on the server, it is simply absent.
+ */
+type SessionStateProbe = () => string | undefined;
+let sessionStateProbe: SessionStateProbe | null = null;
+
+export function setSessionStateProbe(probe: SessionStateProbe | null): void {
+  sessionStateProbe = probe;
+}
+
+function currentSessionState(): string | undefined {
+  if (!sessionStateProbe) return undefined;
+  try {
+    return sessionStateProbe();
+  } catch {
+    // A probe that throws must never cost us the capture it was describing.
+    return undefined;
+  }
+}
+
 /** Bump the unseen counters for a given entry/tier (once per occurrence). */
 function bumpUnseen(id: string, tier: ErrorTier): void {
   unseen += 1;
@@ -601,7 +634,7 @@ export function captureError(input: CaptureInput): string {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
-    sessionState: input.sessionState,
+    sessionState: input.sessionState ?? currentSessionState(),
     durable: input.durable ?? true,
     dedupeKey: sig,
     // Classified below; seeded to the default so the object is well-typed.
