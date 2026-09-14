@@ -11,7 +11,11 @@ jest.mock("@/lib/knobs/featureKnobs", () => ({
 }));
 
 import {
+  IMPACT_RULE_SENTENCES,
+  GRADE_META,
   batchTierOf,
+  newestLabelOf,
+  pinnedLabelOf,
   countBatchTiers,
   describeAdvance,
   describeBatch,
@@ -159,29 +163,117 @@ describe("countBatchTiers / describeBatch — the headline sentence", () => {
   });
 });
 
-describe("mergeImpactReports — what the read withheld is summed, never dropped (R31)", () => {
-  it("sums withheld counts, keeps the server's sentences once, and lists unknown ids", () => {
-    const page = (n: number): ImpactReport => ({
-      verdicts: [verdict({ row_id: `row-${n}` })],
-      withheld: { total: n, sentence: "personal pins, theirs to advance" },
-      agents_examined: 1,
-      unknown_agent_ids: n === 2 ? ["ghost"] : [],
-      unknown_sentence: n === 2 ? "1 id is not an agent you can read." : null,
-      dry_run: true,
-      computed_at: `2026-09-14T00:0${n}:00Z`,
-    });
+describe("mergeImpactReports — what the read withheld is summed BY REASON into one sentence (R31, D1, D4)", () => {
+  const page = (n: number): ImpactReport => ({
+    verdicts: [verdict({ row_id: `row-${n}` })],
+    withheld: {
+      total: n === 1 ? 1 : 2,
+      by_principal_kind:
+        n === 1
+          ? [{ principal_kind: "global", count: 1, explanation: "global rungs you are not entitled to read" }]
+          : [
+              { principal_kind: "system", count: 1, explanation: "platform default rungs in organizations you do not belong to" },
+              { principal_kind: "user", count: 1, explanation: "personal pins owned by other people — theirs to advance" },
+            ],
+      sentence: n === 1 ? "1 rung withheld: 1 global rungs you are not entitled to read" : "2 rungs withheld: 1 platform default rungs in organizations you do not belong to; 1 personal pins owned by other people — theirs to advance",
+    },
+    agents_examined: 1,
+    unknown_agent_ids: n === 2 ? ["ghost"] : [],
+    unknown_sentence: n === 2 ? "1 of the agent ids you sent is not an agent you can see — …: ghost" : null,
+    dry_run: true,
+    computed_at: `2026-09-14T00:0${n}:00Z`,
+  });
+
+  it("renders ONE sentence whose count equals the summed total, never the pages' own sentences", () => {
     const merged = mergeImpactReports([page(1), page(2)]);
-    expect(merged.verdicts).toHaveLength(2);
     expect(merged.withheldTotal).toBe(3);
-    expect(merged.withheldSentences).toEqual(["personal pins, theirs to advance"]);
+    expect(merged.withheldGroups.map((g) => [g.principalKind, g.count])).toEqual([
+      ["global", 1],
+      ["system", 1],
+      ["user", 1],
+    ]);
+    expect(merged.withheldSentences).toEqual([
+      "3 rungs withheld: 1 global rungs you are not entitled to read; 1 platform default rungs in organizations you do not belong to; 1 personal pins owned by other people — theirs to advance",
+    ]);
     expect(merged.unknownAgentIds).toEqual(["ghost"]);
-    expect(merged.unknownSentences).toEqual(["1 id is not an agent you can read."]);
+    expect(merged.unknownSentences).toHaveLength(1);
+    expect(merged.unknownSentences[0]).toMatch(/^1 of the agent ids you sent is not an agent you can see — .*: ghost$/);
     expect(merged.dryRun).toBe(true);
     expect(merged.computedAt).toBe("2026-09-14T00:02:00Z");
-    // A second merge (one dry run per replaced model) sums again.
-    const twice = mergeStandingImpacts([merged, merged]);
-    expect(twice.withheldTotal).toBe(6);
+  });
+
+  it("a second merge (one dry run per replaced model) sums the same kind together and lists each unknown id once", () => {
+    const one = mergeImpactReports([page(2)]);
+    const twice = mergeStandingImpacts([one, one]);
+    expect(twice.withheldTotal).toBe(4);
+    expect(twice.withheldGroups.map((g) => [g.principalKind, g.count])).toEqual([
+      ["system", 2],
+      ["user", 2],
+    ]);
+    expect(twice.withheldSentences).toEqual([
+      "4 rungs withheld: 2 platform default rungs in organizations you do not belong to; 2 personal pins owned by other people — theirs to advance",
+    ]);
     expect(twice.unknownAgentIds).toEqual(["ghost"]);
+    expect(twice.unknownSentences).toHaveLength(1);
+    // The id appears exactly once in the one sentence (D4 printed it twice).
+    expect(twice.unknownSentences[0].split("ghost").length - 1).toBe(1);
+  });
+});
+
+describe("version labels never lie about a pin (D3)", () => {
+  it("a set-aside rung with null numbers but a pin id says 'pinned (version unknown)', never 'latest'", () => {
+    const v = verdict({
+      blocker: "set_aside",
+      pinned_version_number: null,
+      latest_version_number: null,
+      pinned_version_id: "v1",
+      latest_version_id: null,
+    });
+    expect(pinnedLabelOf(v)).toBe("pinned (version unknown)");
+    expect(newestLabelOf(v)).toBe("unknown");
+  });
+
+  it("'latest' only when the rung tracks latest; 'no saved version' when unreachable", () => {
+    const tracks = verdict({
+      blocker: "tracks_latest",
+      pinned_version_number: null,
+      pinned_version_id: null,
+      apply_token: { holder_kind: "mandate_default", row_id: "row-1", expected_pinned_version_id: null, target_version_id: null },
+    });
+    expect(pinnedLabelOf(tracks)).toBe("latest");
+    const unreachable = verdict({ blocker: "unreachable", latest_version_number: null, latest_version_id: null });
+    expect(newestLabelOf(unreachable)).toBe("no saved version");
+    expect(pinnedLabelOf(verdict())).toBe("v1");
+    expect(newestLabelOf(verdict())).toBe("v15");
+  });
+});
+
+describe("the legend is derived from the rules (D8)", () => {
+  it("names every red rule, including the action-policy change the hand summary missed", () => {
+    expect(IMPACT_RULE_SENTENCES.red.map((r) => r.ruleId)).toContain("actions.apply_policy_changed");
+    expect(GRADE_META.red.meaning).toContain("the actions apply policy changed");
+    expect(GRADE_META.orange.meaning).toContain("the model moved to a different provider");
+    expect(GRADE_META.green.meaning).toContain("the model changed on the same provider");
+  });
+
+  it("lists every rule id the server emits exactly once across the grades", () => {
+    const all = (["red", "orange", "green", "identical"] as const).flatMap((g) =>
+      IMPACT_RULE_SENTENCES[g].map((r) => r.ruleId),
+    );
+    expect(new Set(all).size).toBe(all.length);
+    for (const id of [
+      "var.added", "var.removed", "var.renamed", "var.required_flipped", "var.required_default_changed",
+      "slot.added", "slot.removed", "slot.config_changed",
+      "actions.apply_policy_changed", "actions.allowlist_grew", "actions.allowlist_shrank",
+      "schema.root_shape_changed", "schema.key_removed", "schema.key_newly_required", "schema.key_redefined",
+      "schema.additive_only", "schema.output_kind_changed",
+      "contract.required_output_keys_unsatisfied", "contract.required_context_policies_unsatisfied",
+      "input_kind.changed", "input_kind.stamped", "model.changed_same_provider", "model.provider_changed",
+      "tools.changed", "mcp_servers.changed", "custom_tools.changed", "tool_config.changed", "skill_config.changed",
+      "prompt.changed", "metadata.changed", "is_active.changed",
+    ]) {
+      expect(all).toContain(id);
+    }
   });
 });
 
@@ -228,11 +320,35 @@ describe("the write's results", () => {
     expect(revertableRows(report).map((row) => row.mandate_key)).toEqual(["probe.alpha"]);
   });
 
-  it("the revert dialog names the versions it moves between", () => {
-    const byRung = new Map([["mandate_default:row-1", verdict()]]);
-    const { title, moves } = describeRevert(revertableRows(report), "batch", byRung);
-    expect(title).toBe("Put 1 pin back?");
-    expect(moves).toEqual(["probe.alpha: v15 → v1"]);
+  it("a row a later revert already put back is not offered again (D5)", () => {
+    const later: AdvanceReport = {
+      batch_id: "batch-2",
+      action: "revert",
+      reverts_batch_id: "batch-1",
+      results: [{ token: report.results![0].token, mandate_key: "probe.alpha", status: "reverted" }],
+      counts: { total: 1, reverted: 1 },
+      computed_at: "2026-09-14T00:01:00Z",
+    };
+    expect(revertableRows(report, [later])).toEqual([]);
+    // A revert of ANOTHER batch does not count.
+    expect(revertableRows(report, [{ ...later, reverts_batch_id: "batch-9" }])).toHaveLength(1);
+  });
+
+  it("the revert dialog names the versions AND the rung kind (D6)", () => {
+    const bindingReport: AdvanceReport = {
+      ...report,
+      results: [
+        report.results![0],
+        { token: { holder_kind: "binding", row_id: "row-2", expected_pinned_version_id: "v1", target_version_id: "v15" }, mandate_key: "probe.alpha", status: "advanced" },
+      ],
+    };
+    const byRung = new Map([
+      ["mandate_default:row-1", verdict()],
+      ["binding:row-2", verdict({ holder_kind: "binding", row_id: "row-2", apply_token: { holder_kind: "binding", row_id: "row-2", expected_pinned_version_id: "v1", target_version_id: "v15" } })],
+    ]);
+    const { title, moves } = describeRevert(revertableRows(bindingReport), "batch", byRung);
+    expect(title).toBe("Put 2 pins back?");
+    expect(moves).toEqual(["probe.alpha: v15 → v1", "probe.alpha (org binding): v15 → v1"]);
   });
 });
 
@@ -247,8 +363,26 @@ describe("describeAdvance — consequence before the click", () => {
       "probe.alpha: Quick Test Agent v1 → v15 · Green",
       "probe.beta: Quick Test Agent v1 → v15 · Red",
     ]);
+    expect(description).toContain("1 is green or identical with a clean settings check");
     expect(description).toContain("1 is orange or red and you are choosing to advance it anyway");
     expect(description).toContain("put back for 72 hours");
+  });
+
+  it("a green row whose settings check found something is its own line, never 'green or identical' (D7)", () => {
+    const warned = verdict({
+      row_id: "row-3",
+      mandate_key: "probe.gamma",
+      settings_drift: { keys: [], capability: [], capability_checked: false },
+    });
+    const { description, moves } = describeAdvance([warned], { state: "known", hours: 72 });
+    expect(description).not.toContain("green or identical");
+    expect(description).toContain("1 is low-risk but the settings check found something (or could not run) and you are choosing to advance it anyway");
+    expect(moves[0]).toContain("· settings unmeasured");
+  });
+
+  it("speaks in the singular for one pin (D9)", () => {
+    const { description } = describeAdvance([verdict()], { state: "known", hours: 72 });
+    expect(description).toMatch(/^This moves 1 mandate pin from the version it runs now to the newest saved version of its agent — every run of that job/);
   });
 
   it("is honest when the window could not be read", () => {

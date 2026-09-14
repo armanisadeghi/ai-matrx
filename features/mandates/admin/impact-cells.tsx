@@ -41,9 +41,11 @@ import {
   revertableRows,
   rungIdentityOf,
   setAsideReasonOf,
+  newestLabelOf,
+  pinnedLabelOf,
+  rungSuffixOf,
   settingsSignalOf,
   summarizeAdvanceReport,
-  versionLabel,
   type AdvanceReport,
   type AdvanceRowResult,
   type ImpactBlocker,
@@ -81,9 +83,9 @@ export function VerdictDetail({ verdict }: { verdict: ImpactVerdict }) {
             : "mandate default"}
         </span>
         <span className="inline-flex items-center gap-1 tabular-nums">
-          {versionLabel(verdict.pinned_version_number)}
+          {pinnedLabelOf(verdict)}
           <ArrowRight className="h-3 w-3 text-muted-foreground" />
-          {versionLabel(verdict.latest_version_number)}
+          {newestLabelOf(verdict)}
         </span>
       </div>
       {verdict.findings && verdict.findings.length > 0 ? (
@@ -305,6 +307,8 @@ export function ImpactBlockerCell({
 
 /** The one-glance legend: every grade and every blocker, in words. */
 export function ImpactLegend() {
+  // The legend is DERIVED from the rule table (D8) — every rule id's plain
+  // sentence, per grade — never a hand summary that can drift from the grader.
   return (
     <HoverCard openDelay={100} closeDelay={80}>
       <HoverCardTrigger asChild>
@@ -443,15 +447,17 @@ export function StandingImpactStrip({
           <span className="text-muted-foreground">
             behind latest · {blockedBehind} blocked
           </span>
-          {impact.withheldTotal > 0 ? (
-            <span className="basis-full text-amber-700 dark:text-amber-400 sm:basis-auto">
-              {impact.withheldTotal} rung{impact.withheldTotal === 1 ? "" : "s"}{" "}
-              withheld
-              {impact.withheldSentences.length > 0
-                ? ` — ${impact.withheldSentences.join(" ")}`
-                : ""}
+          {/* ONE merged sentence (D1) — the counts are summed by reason across pages. */}
+          {impact.withheldSentences.map((sentence) => (
+            <span key={sentence} className="basis-full text-amber-700 dark:text-amber-400 sm:basis-auto">
+              {sentence}
             </span>
-          ) : null}
+          ))}
+          {impact.unknownSentences.map((sentence) => (
+            <span key={sentence} className="basis-full text-amber-700 dark:text-amber-400 sm:basis-auto">
+              {sentence}
+            </span>
+          ))}
           <Button
             size="sm"
             variant="outline"
@@ -525,6 +531,10 @@ export function AdvanceResultsCard({
 }) {
   if (batches.length === 0) return null;
   const [latest, ...earlier] = batches;
+  // Rows a later revert already put back never count again (D5): `batches`
+  // is newest first, so everything BEFORE a batch in the list is later.
+  const stillRevertable = (batch: AdvanceReport) =>
+    revertableRows(batch, batches.slice(0, batches.indexOf(batch)));
   return (
     <div className="space-y-2 rounded-md border border-border bg-card px-3 py-2 text-xs">
       <div className="flex flex-wrap items-center gap-2">
@@ -533,7 +543,7 @@ export function AdvanceResultsCard({
           {latest.batch_label ? `“${latest.batch_label}”` : ""} — {summarizeAdvanceReport(latest)}
         </span>
         <span className="font-mono text-[10px] text-muted-foreground">{latest.batch_id}</span>
-        {latest.action === "advance" && revertableRows(latest).length > 0 ? (
+        {latest.action === "advance" && stillRevertable(latest).length > 0 ? (
           <Button
             size="sm"
             variant="outline"
@@ -547,13 +557,13 @@ export function AdvanceResultsCard({
             ) : (
               <Undo2 className="h-3 w-3" />
             )}
-            Revert whole batch ({revertableRows(latest).length})
+            Revert whole batch ({stillRevertable(latest).length})
           </Button>
         ) : null}
         <Button
           size="sm"
           variant="ghost"
-          className={`h-7 w-7 p-0 ${latest.action === "advance" && revertableRows(latest).length > 0 ? "" : "ml-auto"}`}
+          className={`h-7 w-7 p-0 ${latest.action === "advance" && stillRevertable(latest).length > 0 ? "" : "ml-auto"}`}
           aria-label="Dismiss batch results"
           title="Hide these results (the server ledger keeps them)."
           onClick={onDismiss}
@@ -565,8 +575,12 @@ export function AdvanceResultsCard({
         {(latest.results ?? []).map((row) => {
           const verdict = verdictsOf(latest).get(rungIdentityOf(row.token));
           // A revert moves the other way: newest → the pin it restores.
-          const from = latest.action === "revert" ? verdict?.latest_version_number : verdict?.pinned_version_number;
-          const to = latest.action === "revert" ? verdict?.pinned_version_number : verdict?.latest_version_number;
+          const from = verdict
+            ? latest.action === "revert" ? newestLabelOf(verdict) : pinnedLabelOf(verdict)
+            : null;
+          const to = verdict
+            ? latest.action === "revert" ? pinnedLabelOf(verdict) : newestLabelOf(verdict)
+            : null;
           return (
             <li
               key={rungIdentityOf(row.token)}
@@ -574,13 +588,13 @@ export function AdvanceResultsCard({
             >
               <span className="font-mono text-[11px]">
                 {row.mandate_key ?? row.token.row_id}
-                {row.token.holder_kind === "binding" ? " (binding)" : ""}
+                {verdict ? rungSuffixOf(verdict) : row.token.holder_kind === "binding" ? " (binding)" : ""}
               </span>
-              {verdict ? (
+              {from && to ? (
                 <span className="inline-flex items-center gap-1 tabular-nums text-muted-foreground">
-                  {versionLabel(from)}
+                  {from}
                   <ArrowRight className="h-3 w-3" />
-                  {versionLabel(to)}
+                  {to}
                 </span>
               ) : null}
               <AdvanceResultBadge result={row} />
@@ -614,7 +628,7 @@ export function AdvanceResultsCard({
                   {batch.batch_label ? `“${batch.batch_label}”` : ""} — {summarizeAdvanceReport(batch)}
                 </span>
                 <span className="font-mono text-[10px]">{batch.batch_id}</span>
-                {batch.action === "advance" && revertableRows(batch).length > 0 ? (
+                {batch.action === "advance" && stillRevertable(batch).length > 0 ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -623,7 +637,7 @@ export function AdvanceResultsCard({
                     onClick={() => onRevert(batch, null)}
                   >
                     <Undo2 className="h-3 w-3" />
-                    Revert ({revertableRows(batch).length})
+                    Revert ({stillRevertable(batch).length})
                   </Button>
                 ) : null}
               </li>

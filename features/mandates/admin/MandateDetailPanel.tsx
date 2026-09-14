@@ -235,14 +235,11 @@ function DriftPanel({
   }, [agentId]);
 
   const pinnedNumber = row.pinnedVersionNumber;
-  // Newest SAVED snapshot — what an explicit rebind can actually point at.
-  // NOT the same fact as the master counter (row.latestVersion): the counter
-  // bumps on every save while snapshots exist only for saved versions, so the
-  // live definition can be AHEAD of every snapshot (the v8/v8-while-v9-exists
-  // bug — see resolveDriftRemedy).
+  // Newest SAVED snapshot — what "latest" means, and the only thing an
+  // explicit pin can point at. `row.liveCounter` is deliberately NOT read
+  // here: it is an optimistic-concurrency counter, not a version (D10).
   const latestSaved = versions?.[0] ?? null;
   const remedy = resolveDriftRemedy(
-    row.latestVersion,
     latestSaved?.versionNumber ?? null,
     pinnedNumber,
   );
@@ -408,24 +405,13 @@ function DriftPanel({
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             <span className="text-lg font-semibold leading-none">
-              v{remedy.newestNumber ?? "?"}
+              {remedy.newestNumber != null ? `v${remedy.newestNumber}` : "loading…"}
             </span>
-            {remedy.liveAheadOfSaved ? (
-              <Badge variant="outline" className="h-4 px-1 text-[9px]">
-                live, unsnapshotted
-              </Badge>
-            ) : null}
           </div>
-          {remedy.liveAheadOfSaved ? (
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Not saved as a snapshot — only &quot;Track latest&quot; runs it.
+          {latestSaved?.name && (
+            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+              {latestSaved.name}
             </div>
-          ) : (
-            latestSaved?.name && (
-              <div className="mt-1 truncate text-[11px] text-muted-foreground">
-                {latestSaved.name}
-              </div>
-            )
           )}
         </div>
       </div>
@@ -1389,20 +1375,22 @@ function FactsPanel({
                 {isFloatingMandate(row.mandate) ? (
                   <span>
                     latest
-                    {row.latestVersion != null && (
+                    {/* The newest SAVED snapshot, when known — never the
+                        `agent.definition.version` counter (D10). */}
+                    {row.newestSnapshotVersion != null && (
                       <span className="text-muted-foreground">
                         {" "}
-                        (v{row.latestVersion})
+                        (newest saved is v{row.newestSnapshotVersion})
                       </span>
                     )}
                   </span>
                 ) : row.pinnedVersionNumber != null ? (
                   <span className={cn(drifted && "font-medium text-amber-600")}>
                     v{row.pinnedVersionNumber}
-                    {drifted && (
+                    {drifted && row.newestSnapshotVersion != null && (
                       <span className="text-muted-foreground">
                         {" "}
-                        — latest is v{row.latestVersion}
+                        — newest saved is v{row.newestSnapshotVersion}
                       </span>
                     )}
                   </span>

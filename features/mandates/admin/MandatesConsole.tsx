@@ -581,6 +581,17 @@ export function MandatesConsole() {
     () => (impact ? groupImpactByMandate(impact.verdicts) : null),
     [impact],
   );
+  // The newest SAVED snapshot per agent, from the read — the only "latest"
+  // a row may print (D10). Unknown agents stay absent, never "current".
+  const newestSnapshotByAgent = useMemo(() => {
+    const out: Record<string, number | null> = {};
+    for (const verdict of impact?.verdicts ?? []) {
+      if (verdict.latest_version_number != null) {
+        out[verdict.agent_id] = verdict.latest_version_number;
+      }
+    }
+    return out;
+  }, [impact]);
 
   const allRows = useMemo((): ConsoleRow[] => {
     if (!data) return [];
@@ -590,6 +601,8 @@ export function MandatesConsole() {
           mandate,
           data,
           codeTruthByMandateKey[mandate.mandate_key],
+          undefined,
+          newestSnapshotByAgent,
         );
         const entry = coverageIndex[base.mandateKey];
         const grouped = impactByMandate?.get(base.mandateKey);
@@ -656,6 +669,7 @@ export function MandatesConsole() {
     data,
     impactByMandate,
     impactError,
+    newestSnapshotByAgent,
   ]);
 
   // 🚨 THE BOARD COUNTS THIS CONSOLE'S OWN ROWS. `GET /mandates/coverage`

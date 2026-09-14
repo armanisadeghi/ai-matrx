@@ -101,9 +101,23 @@ export interface MandateRow {
   agentName: string;
   agentType: string | null;
   pinnedVersionNumber: number | null;
-  latestVersion: number | null;
+  /**
+   * `agent.definition.version` — an optimistic-concurrency COUNTER that every
+   * write bumps, snapshot or not (R36 / CONTRACT Amendment 3b: it read 33 with
+   * newest snapshot 30 on Quick Test Agent, content-identical). It is NOT a
+   * version and is never printed as one; "latest" everywhere is the newest
+   * SNAPSHOT's `version_number` (R7).
+   */
+  liveCounter: number | null;
+  /**
+   * The newest SAVED snapshot's version number, when the caller knows it
+   * (the console hands it over from the impact read's `latest_version_number`;
+   * the detail panel reads the version list itself). Null = unknown, never
+   * "current".
+   */
+  newestSnapshotVersion: number | null;
   pinLabel: string;
-  /** e.g. "v7 is latest" when the pin trails the agent's master version. */
+  /** "v7 → v9" when the pin trails the newest SAVED snapshot; null when unknown. */
   drift: string | null;
   health: MandateHealth;
   /** Live source/agent/DB comparison from aidream; null means this mandate has no
@@ -216,12 +230,19 @@ export function buildRow(
    * single-mandate page called the same holder broken.
    */
   outputSchemas?: Record<string, unknown>,
+  /**
+   * The newest SAVED snapshot number per agent id, when the caller has read
+   * it (the console: from the impact verdicts). Absent = unknown: no drift
+   * sentence is composed, because the counter is not a version (D10).
+   */
+  newestSnapshotByAgent?: Record<string, number | null>,
 ): MandateRow {
   let agentId: string | null = null;
   let agentName = "(unknown agent)";
   let agentType: string | null = null;
   let pinnedVersionNumber: number | null = null;
-  let latestVersion: number | null = null;
+  let liveCounter: number | null = null;
+  let newestSnapshotVersion: number | null = null;
   let pinLabel = "latest";
   let drift: string | null = null;
   let nonSystem = false;
@@ -233,17 +254,19 @@ export function buildRow(
     const agent = version?.agentId
       ? data.agentsById[version.agentId]
       : undefined;
-    const latest = agent?.version ?? null;
     const pinned = version?.versionNumber ?? null;
     agentId = agent?.id ?? version?.agentId ?? null;
     agentName = agent?.name ?? version?.name ?? "(unknown agent)";
     agentType = agent?.agentType ?? null;
     pinnedVersionNumber = pinned;
-    latestVersion = latest;
+    liveCounter = agent?.version ?? null;
+    newestSnapshotVersion = agentId ? (newestSnapshotByAgent?.[agentId] ?? null) : null;
     // The column header already says "Pin" — the value is just the version.
     pinLabel = pinned != null ? `v${pinned}` : "unknown version";
-    if (pinned != null && latest != null && latest > pinned)
-      drift = `v${pinned} → v${latest}`;
+    // Drift is judged against the newest SAVED snapshot only — never the
+    // counter (D10). Unknown newest = no claim.
+    if (pinned != null && newestSnapshotVersion != null && newestSnapshotVersion > pinned)
+      drift = `v${pinned} → v${newestSnapshotVersion}`;
     nonSystem = agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   } else {
@@ -253,7 +276,8 @@ export function buildRow(
     agentId = agent?.id ?? holder.holderId ?? null;
     agentName = agent?.name ?? "(unknown agent)";
     agentType = agent?.agentType ?? null;
-    latestVersion = agent?.version ?? null;
+    liveCounter = agent?.version ?? null;
+    newestSnapshotVersion = agentId ? (newestSnapshotByAgent?.[agentId] ?? null) : null;
     nonSystem = agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   }
@@ -348,7 +372,8 @@ export function buildRow(
     agentName,
     agentType,
     pinnedVersionNumber,
-    latestVersion,
+    liveCounter,
+    newestSnapshotVersion,
     pinLabel,
     drift,
     health,
@@ -430,41 +455,31 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
 /**
  * What the drift panel may honestly offer.
  *
- * THE BUG THIS EXISTS TO KILL (2026-08-29, live case
- * `agent_factory.structure_builder`): the agent master counter said v9 while
- * the newest SAVED snapshot row was v8 — every save bumps the master, but a
- * snapshot row is only written for versions that were explicitly saved. The
- * panel took "newest" from the saved list and reported "current v8 / newest
- * v8" under a banner claiming a newer version exists. Newest is
- * max(master counter, newest saved); when the master is ahead, no pin can
- * reach it — only tracking latest runs the live definition.
+ * "Newest" is the newest SAVED snapshot and nothing else (R7; CONTRACT
+ * Amendment 3b). This used to fold in `agent.definition.version` as
+ * "max(master counter, newest saved)" and claim "live, unsnapshotted" whenever
+ * the counter was ahead — but that counter bumps on every write, snapshot or
+ * not, and R36 measured the claim false on all four live rows it made
+ * (content key-for-key identical to the newest snapshot). Whether the live
+ * definition is really ahead of every snapshot is the SERVER's content-based
+ * `unreachable` blocker; a screen never derives it from the counter.
  */
 export interface DriftRemedy {
-  /** The real newest version number — max(master counter, newest saved). */
+  /** The newest SAVED snapshot — what "latest" means everywhere. */
   newestNumber: number | null;
-  /** The newest SAVED snapshot — the only thing an explicit pin can target. */
+  /** Same fact under its explicit name; kept so callers read as they did. */
   newestSavedNumber: number | null;
-  /** The live definition is ahead of every saved snapshot. */
-  liveAheadOfSaved: boolean;
   /** A pin update actually moves the mandate (a newer snapshot than the pin exists). */
   pinUpdateHelps: boolean;
 }
 
 export function resolveDriftRemedy(
-  masterVersion: number | null,
   newestSavedNumber: number | null,
   pinnedNumber: number | null,
 ): DriftRemedy {
-  const newestNumber =
-    masterVersion === null && newestSavedNumber === null
-      ? null
-      : Math.max(masterVersion ?? 0, newestSavedNumber ?? 0);
-  const liveAheadOfSaved =
-    masterVersion !== null &&
-    (newestSavedNumber === null || masterVersion > newestSavedNumber);
   const pinUpdateHelps =
     newestSavedNumber !== null &&
     pinnedNumber !== null &&
     newestSavedNumber > pinnedNumber;
-  return { newestNumber, newestSavedNumber, liveAheadOfSaved, pinUpdateHelps };
+  return { newestNumber: newestSavedNumber, newestSavedNumber, pinUpdateHelps };
 }
