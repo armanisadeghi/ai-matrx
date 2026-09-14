@@ -132,5 +132,15 @@ export function useGenerateStrategy(
       label: scope === "brand" ? "Brand strategy" : "Site brief",
     },
   });
-  return command;
+  // The command path carries a `{brand_id}` / `{site_id}` placeholder; every
+  // launch (and every retry) must fill it — a literal placeholder reaches the
+  // server as the id and dies as a uuid cast error.
+  const pathParams: Record<string, string> =
+    scope === "brand" ? { brand_id: id ?? "" } : { site_id: id ?? "" };
+  const launch = (body: Record<string, unknown> = {}) =>
+    command.launch(body, undefined, {
+      pathParams,
+      ...(organizationId ? { scopeOverrides: { organization_id: organizationId } } : {}),
+    });
+  return { ...command, launch };
 }
