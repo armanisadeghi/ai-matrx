@@ -1755,6 +1755,93 @@ async function descriptiveValuesOf(
   }
 }
 
+
+
+/**
+ * Does any row the caller CAN read, returned in this same answer, point at this
+ * row by id? Runs as `postgres` (the readable set was already established under
+ * the caller's own RLS above), one narrow lookup per candidate row.
+ */
+async function referencedByAReadableRow(
+  db: pg.Client,
+  catalog: Catalog,
+  readableHere: { table: string; id: string }[],
+  id: string,
+): Promise<boolean> {
+  for (const src of readableHere) {
+    if (src.id.toLowerCase() === id.toLowerCase()) continue;
+    const meta = catalog.columnsOf[src.table];
+    if (!meta) continue;
+    const uuidCols = meta.cols.filter((c) => meta.types[c] === "uuid" && c !== "id");
+    if (!uuidCols.length) continue;
+    const [sch, tab] = src.table.split(".");
+    try {
+      const r = await db.query(
+        `select 1 from ${qi(sch)}.${qi(tab)} where id = $1::uuid and $2::uuid in (${uuidCols
+          .map((c) => qi(c))
+          .join(", ")}) limit 1`,
+        [src.id, id],
+      );
+      if ((r.rowCount ?? 0) > 0) return true;
+    } catch {
+      /* a column shape we cannot compare tells us nothing */
+    }
+  }
+  return false;
+}
+
+/**
+ * Under the CALLER's own RLS: is there any row of this table they can read that
+ * already carries this value in this field? If so, the door named something they
+ * could have learned legitimately and there is nothing to report. `owner_email`
+ * is synthesised from `auth.users` rather than being a column, so it is asked
+ * through the owning-user column instead.
+ */
+async function callerAlreadyKnows(
+  db: pg.Client,
+  catalog: Catalog,
+  table: string,
+  field: string,
+  value: string,
+): Promise<boolean> {
+  const meta = catalog.columnsOf[table];
+  if (!meta) return false;
+  const [sch, tab] = table.split(".");
+  await db.query("savepoint already_knows");
+  try {
+    if (field === "owner_email") {
+      const ownerCol = ["created_by", "user_id", "owner_id", "actor_user_id"].find((c) => meta.cols.includes(c));
+      if (!ownerCol) return false;
+      const r = await db.query(
+        `select 1 from ${qi(sch)}.${qi(tab)} t
+          where (select u.email::text from auth.users u where u.id = t.${qi(ownerCol)}) = $1 limit 1`,
+        [value],
+      );
+      return (r.rowCount ?? 0) > 0;
+    }
+    if (!meta.cols.includes(field)) return false;
+    const r = await db.query(
+      `select 1 from ${qi(sch)}.${qi(tab)} where ${qi(field)}::text = $1 limit 1`,
+      [value],
+    );
+    return (r.rowCount ?? 0) > 0;
+  } catch {
+    // A read the caller cannot take at all proves nothing either way; the safe
+    // answer for a GATE is "they did not already know it", so the finding stands.
+    return false;
+  } finally {
+    try {
+      await db.query("release savepoint already_knows");
+    } catch {
+      try {
+        await db.query("rollback to savepoint already_knows");
+      } catch {
+        /* the probe rollback ends the transaction anyway */
+      }
+    }
+  }
+}
+
 /**
  * Compare what the answer said against what the rows the caller cannot read
  * actually hold. Runs with the connection in the CALLER's transaction; it flips
@@ -1776,6 +1863,28 @@ async function disclosureFindings(
   const resolved = await resolveIds(db, catalog, candidateIds);
   const findings: string[] = [];
   await db.query("set local role authenticated");
+
+  // 🚨 WHICH OF THE ROWS IN THIS ANSWER CAN THE CALLER ACTUALLY READ? A row they
+  // CAN read, returned in the same answer, is allowed to name what it points at:
+  // `public.agx_get_shortcuts_initial` returns a shortcut in the caller's OWN
+  // organization together with `agent_name`, the name of the agent that shortcut
+  // runs. The caller holds the shortcut and can execute it; a control that cannot
+  // name what it runs is a dead control, and the harness's own uuid rule already
+  // says a foreign key inside the caller's own row is not a leak. So the text axis
+  // follows the same rule: a descriptive value is a disclosure unless some row the
+  // caller can read, in this very answer, REFERENCES the row it belongs to.
+  const readableHere: { table: string; id: string }[] = [];
+  for (const r of resolved) {
+    try {
+      const [sch, tab] = r.table.split(".");
+      const seen =
+        (await db.query(`select 1 from ${qi(sch)}.${qi(tab)} where id = $1::uuid limit 1`, [r.id])).rowCount ?? 0;
+      if (seen) readableHere.push(r);
+    } catch {
+      /* a table the caller holds no grant on is not a row they can read */
+    }
+  }
+
   for (const r of resolved) {
     const [sch, tab] = r.table.split(".");
     let visible = 0;
@@ -1787,13 +1896,26 @@ async function disclosureFindings(
     }
     if (visible) continue; // the caller can read this row; naming it discloses nothing
     await db.query("reset role");
+    if (await referencedByAReadableRow(db, catalog, readableHere, r.id)) {
+      await db.query("set local role authenticated");
+      continue;
+    }
     const values = await descriptiveValuesOf(db, catalog, r.table, r.id);
     await db.query("set local role authenticated");
     for (const v of values) {
       for (const [saidKey, saidValue] of said) {
         if (saidValue !== v.value) continue;
+        // 🚨 A VALUE THE CALLER COULD HAVE LEARNED LEGITIMATELY IS NOT A DISCLOSURE.
+        // Two `agent.definition` rows are named "NER Scope Slot Filler" and the
+        // caller can SELECT one of them, so `public.agx_get_list_full` naming it
+        // tells them nothing they did not already have — and an oracle that
+        // reports that is an oracle somebody switches off. Before a finding is
+        // made, the caller is asked, under their own RLS, whether ANY row of that
+        // table carries this value in this field. Only a value that exists ONLY
+        // behind the boundary is a disclosure.
+        if (await callerAlreadyKnows(db, catalog, r.table, v.field, saidValue)) continue;
         findings.push(
-          `${doorName} answered ${saidKey.split("=")[0]} = ${JSON.stringify(saidValue)}, which is ${r.table} ${r.id}'s ${v.field} — a row this caller cannot SELECT under RLS`,
+          `${doorName} answered ${saidKey.split("=")[0]} = ${JSON.stringify(saidValue)}, which is ${r.table} ${r.id}'s ${v.field} — a row this caller cannot SELECT under RLS, and no row of ${r.table} they CAN read carries that value`,
         );
       }
     }
