@@ -300,6 +300,12 @@ interface GrandfatherRow {
 //
 // D2b closes it as an ABSOLUTE: no grandfather row may duplicate a declared
 // door. B-64 deleted the 33 that existed, so the only correct number is zero.
+//
+// 🚨 DD-223 (B-118, 2026-09-14): this used to join `d.identity_args = g.identity_args`
+// — two renderings of the same signature, each written by whoever happened to be
+// connected. The grandfather table has keyed on `proargtypes` since hr_l3_109 and
+// the register does now too, so the join is the catalog's key on both sides and a
+// duplicate can no longer hide behind a different spelling of the same types.
 const DUPE_DOOR_GRANDFATHER_QUERY = `
   select g.schema_name || '.' || g.function_name as fn,
          g.identity_args as args
@@ -308,7 +314,7 @@ const DUPE_DOOR_GRANDFATHER_QUERY = `
     select 1 from platform.client_callable_door d
     where d.schema_name = g.schema_name
       and d.function_name = g.function_name
-      and d.identity_args = g.identity_args
+      and array_to_string(d.identity_argtypes, ' ') = g.argtypes
   )
   order by 1, 2
 `;
@@ -1108,7 +1114,11 @@ const DOOR_FLAG_VS_GRANT_QUERY = `
     join pg_catalog.pg_proc p
       on p.pronamespace = n.oid
      and p.proname = d.function_name
-     and pg_get_function_identity_arguments(p.oid) = d.identity_args
+     -- 🚨 DD-223: the catalog's key, not the rendered signature. An exact string
+     -- join here dropped web.create_site out of D13's population entirely,
+     -- because its row is spelled the way the 6d-4 guard renders it and this
+     -- gate reads over PostgREST under a different search_path.
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
    where d.anonymous_callers <> has_function_privilege('anon', p.oid, 'EXECUTE')
    order by 1, 2
 `;
@@ -1159,8 +1169,17 @@ interface DoorFlagRow {
 // register on `proargtypes` the way `platform.definer_client_grant_grandfather`
 // already does (hr_l3_109) — that is a change to the §6d-4 guard, reported to the
 // Data Doctrine chair rather than made here.
-const DOOR_NORM = `regexp_replace(d.identity_args, '\\m[a-z_][a-z0-9_]*\\.', '', 'g')`;
-const FN_NORM = `regexp_replace(pg_get_function_identity_arguments(p.oid), '\\m[a-z_][a-z0-9_]*\\.', '', 'g')`;
+//
+// 🚨 DD-223 (B-118, 2026-09-14) CLOSED THE CLASS THE PARAGRAPH ABOVE DESCRIBES.
+// Stripping schema qualifiers from both sides made two renderings comparable; it
+// did not make either of them an identity, and two different functions in the same
+// schema could still normalise to the same string. `platform.client_callable_door`
+// now carries `identity_argtypes` — `pg_proc.proargtypes` through
+// `platform.door_argtypes` — and every arm below joins on THAT. `identity_args` is
+// a display column from today; nothing matches on it anywhere in this file, in
+// either DDL guard, or in the database.
+const DOOR_KEY = `d.identity_argtypes`;
+const FN_KEY = `platform.door_argtypes(p.proargtypes)`;
 
 const STALE_DOOR_ROW_QUERY = `
   select d.schema_name || '.' || d.function_name as fn,
@@ -1173,7 +1192,7 @@ const STALE_DOOR_ROW_QUERY = `
    where (select count(*) from pg_catalog.pg_proc p
             join pg_catalog.pg_namespace n on n.oid = p.pronamespace
            where n.nspname = d.schema_name and p.proname = d.function_name
-             and ${FN_NORM} = ${DOOR_NORM}) <> 1
+             and ${FN_KEY} = ${DOOR_KEY}) <> 1
    order by 1, 2
 `;
 
@@ -1196,7 +1215,7 @@ const DOOR_GRANT_VS_DECLARATION_QUERY = `
     join pg_catalog.pg_proc p
       on p.pronamespace = n.oid
      and p.proname = d.function_name
-     and ${FN_NORM} = ${DOOR_NORM}
+     and ${FN_KEY} = ${DOOR_KEY}
    where d.signed_in_callers <> has_function_privilege('authenticated', p.oid, 'EXECUTE')
       or d.anonymous_callers <> has_function_privilege('anon', p.oid, 'EXECUTE')
    order by 1, 2
@@ -1235,7 +1254,7 @@ const UNDECLARED_CLIENT_DEFINER_QUERY = `
                         and g.argtypes = p.proargtypes::text)
      and not exists (select 1 from platform.client_callable_door d
                       where d.schema_name = n.nspname and d.function_name = p.proname
-                        and ${DOOR_NORM} = ${FN_NORM})
+                        and ${DOOR_KEY} = ${FN_KEY})
    order by 1, 2
 `;
 
