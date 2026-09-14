@@ -27,6 +27,7 @@
  * Prove it can fail:  pnpm check:kind-sandbox-protocol:self-test
  */
 
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
@@ -138,11 +139,130 @@ function selfTest(): void {
     if (!redCaught || green.length > 0) process.exit(1);
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * THE GATE PLACES A BODY, IT NEVER PICKS ONE (DD-215)
+ *
+ * B-95 reported the sandbox gate changing WHICH component an instance
+ * rendered, not only where it drew. B-105 proved the resolver never sees the
+ * gate — `custom.sandbox_org_components` is read at exactly ONE place, the
+ * react-flavor mount, and only chooses between the frame and the in-page
+ * compile. That property is the whole reason the rollout is reversible: OFF
+ * must be byte-identical to the pre-sandbox path.
+ *
+ * Nothing in the build enforces it. One `useKindSandboxSettings()` inside the
+ * route, the registry, the resolver adapter, or the compile cache would make
+ * the gate a SELECTOR — a different component for the same row depending on a
+ * setting — and it would look like a reasonable line of code. This guard is
+ * what keeps the property true tomorrow.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+const GATE_MODULE = "features/content-ir/react/db-component/useKindSandboxKnob";
+
+/** Everything the gate may legitimately appear in. */
+const GATE_READERS_ALLOWED = [
+    // THE one mount. The gate chooses the frame or the in-page compile here,
+    // AFTER `resolveComponent` has already answered.
+    "features/content-ir/react/db-component/DbKindComponentImpl.tsx",
+    // The gate itself, and the frame that consumes the ceilings it resolved.
+    "features/content-ir/react/db-component/useKindSandboxKnob.ts",
+    "features/content-ir/react/db-component/KindSandboxFrame.tsx",
+    // This guard, which has to name the symbols it looks for.
+    "scripts/check-kind-sandbox-protocol.ts",
+] as const;
+
+/** Modules that decide WHICH component renders — the gate must never reach them. */
+const SELECTION_PATH_MARKERS = [
+    "features/content-ir/registry/",
+    "features/content-ir/react/kind-route",
+    "features/content-ir/react/partial-kind-route",
+    "features/content-ir/react/ensure-kind-renderable",
+    "features/content-ir/host/route-env",
+    "features/content-ir/react/db-component/dbKindComponentCache",
+];
+
+export interface GateLeak {
+    file: string;
+    why: string;
+}
+
+/**
+ * PURE, so the self-test can feed it a fabricated offender: which of these
+ * files read the sandbox gate without being allowed to?
+ */
+export function findGateLeaks(files: readonly string[]): GateLeak[] {
+    const leaks: GateLeak[] = [];
+    for (const file of files) {
+        const normalized = file.replace(/\\/g, "/");
+        if (normalized.includes("__tests__/") || normalized.endsWith(".test.ts") || normalized.endsWith(".test.tsx")) {
+            continue;
+        }
+        if ((GATE_READERS_ALLOWED as readonly string[]).includes(normalized)) continue;
+        const onSelectionPath = SELECTION_PATH_MARKERS.some((m) =>
+            normalized.includes(m),
+        );
+        leaks.push({
+            file: normalized,
+            why: onSelectionPath
+                ? "this module decides WHICH component renders — a gate read here makes the gate a selector"
+                : "the gate is read at exactly one mount; a second reader is a second answer",
+        });
+    }
+    return leaks;
+}
+
+/** Every tracked file that imports the gate module. */
+function gateReaders(): string[] {
+    const out = execFileSync(
+        "git",
+        ["grep", "-l", "-e", "useKindSandboxSettings", "-e", "useKindSandboxEnabled", "-e", "KIND_SANDBOX_KNOB", "--", "*.ts", "*.tsx"],
+        { cwd: ROOT, encoding: "utf8" },
+    );
+    return out.split("\n").filter(Boolean);
+}
+
+function gateSelfTest(): void {
+    const real = findGateLeaks(gateReaders());
+    const fabricated = findGateLeaks([
+        ...gateReaders(),
+        "features/content-ir/registry/component-registry.ts",
+    ]);
+    const redCaught = fabricated.some(
+        (l) => l.file === "features/content-ir/registry/component-registry.ts",
+    );
+    console.log(
+        `  ${redCaught ? "PASS" : "FAIL"}  RED: a gate read inside the resolver adapter is caught by name`,
+    );
+    console.log(
+        `  ${real.length === 0 ? "PASS" : "FAIL"}  GREEN: the shipped tree reads the gate only at the one mount (${real.length} leaks)`,
+    );
+    if (!redCaught || real.length > 0) process.exit(1);
+}
+
 function main(): void {
     if (process.argv.includes("--self-test")) {
         selfTest();
+        gateSelfTest();
         return;
     }
+
+    const leaks = findGateLeaks(gateReaders());
+    if (leaks.length > 0) {
+        console.error("\n🚨 THE SHAPE SANDBOX GATE IS BEING READ OUTSIDE ITS ONE MOUNT\n");
+        for (const l of leaks) console.error(`  ✗ ${l.file}\n      ${l.why}`);
+        console.error(
+            `\nThe gate (\`custom.sandbox_org_components\`) decides WHERE an organization's\n` +
+                `component draws — never WHICH component draws. The resolver answers first and\n` +
+                `answers the same with the gate on or off; only ${GATE_READERS_ALLOWED[0]}\n` +
+                `then places that answer in the frame or in the page (DD-215). Move the read\n` +
+                `back to that mount, or the same row renders as two different components\n` +
+                `depending on a setting — which is the defect B-95 found live.\n` +
+                `(The gate module is ${GATE_MODULE}.)\n`,
+        );
+        process.exit(1);
+    }
+    console.log(
+        `✅ The Shape sandbox gate is read only at the one react-flavor mount (DD-215).`,
+    );
 
     const source = readFileSync(path.join(ROOT, PROTOCOL), "utf8");
     const corpus = testCorpus(path.join(ROOT, TEST_DIR));

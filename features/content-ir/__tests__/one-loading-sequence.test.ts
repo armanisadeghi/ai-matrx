@@ -230,7 +230,26 @@ describe("fetch-from-render — ensureKindRenderable is the transport-independen
     }
   });
 
-  it("requests NOTHING for a kind that already answers (compiled quiz_set)", () => {
+  /**
+   * DD-215 CORRECTED THE COMPONENT HALF OF THIS RULE (2026-09-13).
+   *
+   * A compiled SCHEMA is authoritative — the bundled definition IS the kind —
+   * so a compiled kind still asks for no schema. A compiled COMPONENT is not:
+   * it is the FLOOR, and an organization's `source='db'` row overrides it. The
+   * old `if (!componentRegistry.resolve(...))` guard therefore skipped the
+   * demand for exactly the kinds an organization can override, and which
+   * component a reader saw came down to whether the warm list won a race —
+   * three identical `keyword_relationship_research` instances rendered as two
+   * different components on production, silently, for as long as the tab
+   * stayed open (B-95, reproduced by B-105).
+   *
+   * The demand is now unconditional and `requestComponent` is the ONE place
+   * that decides whether a fetch is actually needed (it dedupes in flight,
+   * remembers misses, and treats a compiled answer as provisional only while
+   * the db tier is unsettled). "Requests nothing" did not disappear — it moved
+   * one layer down, where the resolver can see the whole picture.
+   */
+  it("asks for no SCHEMA but still DEMANDS the component for a compiled kind (quiz_set)", () => {
     const schemaSpy = jest
       .spyOn(kindRegistry, "requestSchema")
       .mockImplementation(() => {});
@@ -240,7 +259,7 @@ describe("fetch-from-render — ensureKindRenderable is the transport-independen
     try {
       ensureKindRenderable("quiz_set");
       expect(schemaSpy).not.toHaveBeenCalled();
-      expect(componentSpy).not.toHaveBeenCalled();
+      expect(componentSpy).toHaveBeenCalledWith("quiz_set", "web", "output");
     } finally {
       schemaSpy.mockRestore();
       componentSpy.mockRestore();

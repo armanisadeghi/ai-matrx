@@ -29,18 +29,24 @@ import { MATRX_CONTENT_IR_PLATFORM } from "../host/route-env";
 /**
  * Fire-and-forget: make sure this kind's schema and web output component are
  * fetched (or known-missing). Safe to call redundantly — every layer dedupes.
+ *
+ * DD-215: the demand is UNCONDITIONAL for the component. See the comment in
+ * the body — a resolution that exists is not the same as a resolution that is
+ * settled, and the difference is which component a reader sees.
  */
 export function ensureKindRenderable(kind: string): void {
   if (!kindRegistry.getSchema(kind)) {
     kindRegistry.requestSchema(kind);
   }
-  if (!componentRegistry.resolve(kind, MATRX_CONTENT_IR_PLATFORM, "output")) {
-    componentRegistry.requestComponent(
-      kind,
-      MATRX_CONTENT_IR_PLATFORM,
-      "output",
-    );
-  }
+  // 🚨 NO `if (!resolve(...))` GUARD (DD-215). A compiled floor answers for
+  // every kind that ships a `legacyBlockType`, so that guard silently skipped
+  // the demand for exactly the kinds an organization can override — the
+  // organization's component was then left to whether the warm list happened
+  // to land before the block routed. `requestComponent` is the ONE place that
+  // decides whether a fetch is needed (it dedupes in flight, remembers misses,
+  // and treats a compiled answer as provisional until the db tier settles), so
+  // the render path always DEMANDS and never pre-judges.
+  componentRegistry.requestComponent(kind, MATRX_CONTENT_IR_PLATFORM, "output");
 }
 
 /**

@@ -178,12 +178,6 @@ export class ComponentRegistry extends ComponentResolver {
     super.ingestDbRows(dispatchableRows(rows));
   }
 
-  override replaceDbRows(
-    rows: readonly (KindComponentProjection | KindComponentRow)[],
-  ): void {
-    super.replaceDbRows(dispatchableRows(rows));
-  }
-
   /** Historical name for the package's `refresh` — kept so call sites read the same. */
   refreshKindComponents(maxAgeMs?: number): Promise<void> {
     return this.refresh(maxAgeMs);
@@ -211,6 +205,84 @@ export class ComponentRegistry extends ComponentResolver {
   ): void {
     this.demanded = true;
     super.requestComponent(kind, platform, role);
+    // DD-215. The package's own cold-fetch test asks "is the answer missing or
+    // body-less?" — and a COMPILED answer is neither, so every kind that ships
+    // a `legacyBlockType` was exempt from the eager per-kind fetch. Those are
+    // exactly the kinds an organization can override, so which component a
+    // reader saw came down to whether the warm list won a network race
+    // (reproduced on production 2026-09-13: delay the warm list twelve seconds
+    // and three identical `keyword_relationship_research` instances keep the
+    // platform block instead of the organization's board, silently, forever).
+    // A compiled answer is PROVISIONAL until the db tier has settled, so the
+    // registry demands the kind's own rows here instead of pre-judging.
+    void this.demandDbTier(kind, platform, role);
+  }
+
+  /** In-flight / known-miss dedupe for {@link demandDbTier}. */
+  private provisionalInFlight = new Set<string>();
+  private provisionalMisses = new Set<string>();
+
+  /** Test seam — re-arms the provisional demand. */
+  resetProvisionalDemand(): void {
+    this.provisionalInFlight.clear();
+    this.provisionalMisses.clear();
+  }
+
+  override replaceDbRows(
+    rows: readonly (KindComponentProjection | KindComponentRow)[],
+  ): void {
+    // A wholesale replacement re-opens every verdict, the same way the package
+    // clears its own cold misses.
+    this.provisionalMisses.clear();
+    super.replaceDbRows(dispatchableRows(rows));
+  }
+
+  /**
+   * Pull ONE kind's resolver rows — bodies included — while the db tier is
+   * still unsettled and the only answer is the compiled floor. The cold
+   * projection is the authoritative heavy form, so ingesting it lands the
+   * component AND its body in one step and repaints the kind.
+   *
+   * Never silent: a failure is a real sentence in the Error Inspector naming
+   * the kind and what the reader will see until it is fixed.
+   */
+  private async demandDbTier(
+    kind: string,
+    platform: string,
+    role: ComponentRole,
+  ): Promise<void> {
+    if (this.hasSettled()) return;
+    const resolution = this.resolve(kind, platform, role);
+    if (resolution?.resolvedBy !== "compiled") return;
+    const key = `${kind} ${platform}`;
+    if (this.provisionalInFlight.has(key)) return;
+    if (this.provisionalMisses.has(`${key} ${role}`)) return;
+    this.provisionalInFlight.add(key);
+    try {
+      const rows = await getKindComponentBySlug(kind, platform);
+      // First-row-per-key wins and nothing is overwritten: if the warm list
+      // beat us to this key, its row stands and this is a no-op.
+      this.ingestDbRows(rows);
+      if (this.resolve(kind, platform, role)?.resolvedBy !== "db") {
+        this.provisionalMisses.add(`${key} ${role}`);
+      }
+    } catch (error) {
+      captureError({
+        source: "content-ir",
+        message:
+          `[content-ir] could not fetch the component rows for kind "${kind}" ` +
+          `(${platform}/${role}): ${error instanceof Error ? error.message : String(error)}. ` +
+          `Until this read succeeds, an organization-authored component for this ` +
+          `kind cannot render and readers see the platform's bundled component ` +
+          `instead — retry the read or check this organization's access to ` +
+          `content_ir.kind_component.`,
+        relation: kind,
+        callSite: "ComponentRegistry.demandDbTier",
+        raw: { kind, platform, role },
+      });
+    } finally {
+      this.provisionalInFlight.delete(key);
+    }
   }
 }
 
