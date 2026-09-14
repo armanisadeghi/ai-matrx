@@ -61,7 +61,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { MessageTimestamp } from "../MessageTimestamp";
-import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { MessageSquareShare } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { selectReservedConversationId } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -128,15 +128,6 @@ const MessageOptionsMenu = lazy(() =>
 );
 
 const conversationHrefFor = getEntityInfo("conversation").hrefFor;
-
-function ContinueInChatIcon() {
-  return (
-    <span className="relative inline-flex h-4 w-4" aria-hidden="true">
-      <MessageCircle className="h-4 w-4" />
-      <ArrowUpRight className="absolute right-px top-px h-2.5 w-2.5 stroke-[2.5]" />
-    </span>
-  );
-}
 
 export interface AssistantActionBarProps {
   /** Server `cx_message.id`. */
@@ -509,7 +500,7 @@ export function AssistantActionBar({
                 prefetch={false}
                 ariaLabel="Continue in chat mode"
                 tooltip="Continue in chat mode"
-                icon={<ContinueInChatIcon />}
+                icon={<MessageSquareShare className="h-4 w-4" />}
                 className="text-muted-foreground"
               />
             )}
