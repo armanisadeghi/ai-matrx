@@ -7,10 +7,21 @@
  * site discovery window — the same component in both, never a copy. It takes
  * its site binding as props so a window can render it outside the route's
  * marketing-site context.
+ *
+ * The proposals discovery produces (step 6's Offerings, the guidelines draft)
+ * are ruled right here through the ONE approval queue (KI-045), narrowed to
+ * those kinds — never a second list.
  */
 
+import { ApprovalQueue } from "../approvals/ApprovalQueue";
 import { ValueDoors } from "../ValueDoors";
 import { DiscoveryLadder } from "./DiscoveryLadder";
+
+/** The proposal kinds the Business Discovery Ladder emits. */
+const DISCOVERY_PROPOSAL_KINDS = [
+  "keyword_meaning:offering",
+  "keyword_meaning:guideline_edit",
+] as const;
 
 export interface DiscoveryWorkspaceProps {
   siteId: string;
@@ -38,6 +49,12 @@ export function DiscoveryWorkspace({
         {/* Discovery is what this surface IS — its own door is omitted. */}
         <ValueDoors brandId={brandId} siteId={siteId} showDiscovery={false} />
       </div>
+      <ApprovalQueue
+        scope={{ siteId, brandId, organizationId, siteLabel }}
+        kinds={DISCOVERY_PROPOSAL_KINDS}
+        title="Discovery proposals waiting on you"
+        defaultExpanded
+      />
       <DiscoveryLadder
         siteId={siteId}
         brandId={brandId}
