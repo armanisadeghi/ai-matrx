@@ -155,6 +155,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   warnings, so an attached server that failed THIS run wears its own error
   text in red instead of a checkmark. Guards (each proven failing-then-passing):
   `connection-state.test.ts`, `run-attachments.test.ts`.
+- `2026-09-14` — The column wall that makes those vault references unreadable is now GUARDED, not just documented: `pnpm check:client-reads-granted` reads the LIVE grants, finds every relation this repo's client code reads where `authenticated` holds no table-level SELECT (five today, `users.integration_connections` among them), and fails any call site that says `select("*")`, names a withheld column, or has a select list it cannot resolve. Its self-test replays the pre-3918449ce7 Google select list against the real file and proves the guard fails on it (DD-238).
 - `2026-09-12` — Replaced the Google inventory's forbidden vault-reference
   projection with database-generated boolean health facts, and stopped the
   shared query policy from replaying deterministic PostgreSQL `42501` denials.

@@ -47,6 +47,8 @@
     "test:workflow-runtime": "jest features/workflow-runtime features/workflow-emit --no-coverage",
     "check:org-header-lanes": "tsx scripts/check-org-header-lanes.ts",
     "check:session-first-reads": "tsx scripts/check-session-first-reads.ts",
+    "check:client-reads-granted": "tsx scripts/check-client-reads-are-granted.ts",
+    "check:client-reads-granted:self-test": "tsx scripts/check-client-reads-are-granted.ts --self-test",
     "check:session-first-reads:self-test": "tsx scripts/check-session-first-reads.ts --self-test",
     "check:org-refusal-honesty": "tsx scripts/check-org-refusal-honesty.ts",
     "check:org-refusal-honesty:self-test": "tsx scripts/check-org-refusal-honesty.ts --self-test",
