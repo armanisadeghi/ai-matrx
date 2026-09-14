@@ -55,7 +55,10 @@ export type RunStatus =
   | "success"
   | "failed"
   | "cancelled"
-  | "skipped";
+  | "skipped"
+  // The server running it was restarted mid-run; the run is closed and a
+  // continuation picks the work back up (aidream matrx-scheduler continuation.py).
+  | "interrupted";
 
 export type AuthMode = "ask" | "auto";
 
