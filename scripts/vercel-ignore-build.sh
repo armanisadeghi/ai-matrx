@@ -33,11 +33,12 @@
 # commit Vercel actually deployed for THIS project and branch, so a release
 # that already built is outside the range and never builds twice.
 #
-# Vercel clones shallow, so the previous SHA is usually absent; we deepen the
-# clone until it resolves. If it cannot be resolved (first ever deployment,
-# force-push, rewritten history) we fall back to the commits this push
-# introduced relative to the merge base of HEAD's parents — which still catches
-# the merge-head class — and otherwise to HEAD's own subject.
+# Vercel clones shallow, so that commit is usually not in the clone; we deepen
+# until it resolves. If no source answers (first ever deployment, an offline
+# site, a production build older than the clone can reach, force-push) we fall
+# back to the commits this push introduced relative to the merge base of HEAD's
+# parents — which still catches the merge-head class — and otherwise to HEAD's
+# own subject. Every path prints which range it judged and why.
 #
 # MATRX_BUILD_TARGET is a per-project Vercel env var. Missing → "main" so the
 # original project keeps its exact pre-split behavior.
@@ -87,12 +88,42 @@ have_commit "$head_sha" || head_sha="$(git rev-parse HEAD 2>/dev/null || echo ""
 subjects=""
 range_desc=""
 
-prev="${VERCEL_GIT_PREVIOUS_SHA:-}"
-if [[ -n "$prev" && -n "$head_sha" && "$prev" != "$head_sha" ]] \
-  && resolve_commit "$prev" \
-  && git merge-base --is-ancestor "$prev" "$head_sha" 2>/dev/null; then
+# What is THIS project actually running right now?
+live_deployed_sha() {
+  local url="${MATRX_DEPLOYED_SHA_URL:-}"
+  if [[ -z "$url" ]]; then
+    [[ -n "${VERCEL_PROJECT_PRODUCTION_URL:-}" ]] || return 1
+    url="https://${VERCEL_PROJECT_PRODUCTION_URL}/api/version"
+  fi
+  local body
+  body="$(curl -fsSL --max-time 10 "$url" 2>/dev/null || true)"
+  [[ -n "$body" ]] || return 1
+  local sha
+  sha="$(printf '%s' "$body" | sed -n 's/.*"commit"[[:space:]]*:[[:space:]]*"\([0-9a-f]\{7,40\}\)".*/\1/p')"
+  [[ -n "$sha" ]] || return 1
+  printf '%s' "$sha"
+}
+
+try_range_from() {
+  local prev="$1" source="$2"
+  [[ -n "$prev" && -n "$head_sha" && "$prev" != "$head_sha" ]] || return 1
+  resolve_commit "$prev" || return 1
+  git merge-base --is-ancestor "$prev" "$head_sha" 2>/dev/null || return 1
   subjects="$(git log --format=%s "${prev}..${head_sha}" 2>/dev/null || true)"
-  range_desc="${prev:0:9}..${head_sha:0:9} (since the last deployment of this project)"
+  range_desc="${prev:0:9}..${head_sha:0:9} (${source})"
+  return 0
+}
+
+try_range_from "${VERCEL_GIT_PREVIOUS_SHA:-}" "VERCEL_GIT_PREVIOUS_SHA — the last deployment of this project" || true
+
+if [[ -z "$range_desc" ]]; then
+  live_sha="$(live_deployed_sha || true)"
+  if [[ -n "$live_sha" ]]; then
+    try_range_from "$live_sha" "the commit this project's production domain reports serving" || \
+      echo "[vercel-ignore] The live site reports ${live_sha:0:9}, which this clone cannot place — falling back."
+  else
+    echo "[vercel-ignore] No previous deployed SHA: VERCEL_GIT_PREVIOUS_SHA is empty and the live /api/version did not answer one."
+  fi
 fi
 
 if [[ -z "$range_desc" && -n "$head_sha" ]]; then

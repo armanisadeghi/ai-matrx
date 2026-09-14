@@ -186,3 +186,73 @@ test("(f) release-all: behind a merge head builds every project", () => {
         assert.equal(build, true, `target=${t} missed release-all behind a merge:\n${output}`);
     }
 });
+
+// --- the live-site source of "what did this project last deploy" ------------
+// VERCEL_GIT_PREVIOUS_SHA arrives EMPTY in these projects (measured live in
+// dpl_5QW9DC83bEsmx9nwTBvk1EkJYBnX, which reported "HEAD only"), so the step
+// asks the project's own production domain what commit it is serving. The seam
+// is the URL: these cases point it at a real file:// document that answers the
+// same JSON shape app/api/version/route.ts returns.
+
+function versionDoc(dir, commit) {
+    const path = join(dir, "version.json");
+    writeFileSync(path, JSON.stringify({ deploymentId: "dpl_test", commit }));
+    return `file://${path}`;
+}
+
+test("(g) with no previous SHA, a release after the LIVE commit builds", () => {
+    const { dir, base, local, head } = mergeHeadRepo("release: the stranded one");
+    track(dir);
+    const { build, output } = runIgnore(dir, {
+        MATRX_BUILD_TARGET: "main",
+        VERCEL_GIT_COMMIT_SHA: head,
+        VERCEL_GIT_COMMIT_MESSAGE: "Merge branch 'main' of github.com:armanisadeghi/ai-matrx",
+        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, base),
+    });
+    assert.equal(build, true, `the live-site range missed release ${local}:\n${output}`);
+    assert.match(output, /production domain reports serving/, `it did not use the live answer:\n${output}`);
+});
+
+test("(h) with no previous SHA, a release the LIVE site already carries does not rebuild", () => {
+    const dir = track(newRepo());
+    commit(dir, "chore: baseline");
+    const released = commit(dir, "release: already live");
+    const head = commit(dir, "chore(docs): a note after the release");
+    const { build, output } = runIgnore(dir, {
+        MATRX_BUILD_TARGET: "main",
+        VERCEL_GIT_COMMIT_SHA: head,
+        VERCEL_GIT_COMMIT_MESSAGE: "chore(docs): a note after the release",
+        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, released),
+    });
+    assert.equal(build, false, `a release already serving on the live site rebuilt:\n${output}`);
+});
+
+test("(i) a live answer the clone cannot place says so and falls back", () => {
+    const dir = track(newRepo());
+    commit(dir, "chore: baseline");
+    const head = commit(dir, "chore: nothing to ship");
+    const { build, output } = runIgnore(dir, {
+        MATRX_BUILD_TARGET: "main",
+        VERCEL_GIT_COMMIT_SHA: head,
+        VERCEL_GIT_COMMIT_MESSAGE: "chore: nothing to ship",
+        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, "0123456789abcdef0123456789abcdef01234567"),
+    });
+    assert.equal(build, false);
+    assert.match(output, /which this clone cannot place/, `the fallback was silent:\n${output}`);
+});
+
+test("(j) an older deployment of the version route (no commit field) is not fatal", () => {
+    const dir = track(newRepo());
+    commit(dir, "chore: baseline");
+    const head = commit(dir, "release: ships even when the live answer is old");
+    const path = join(dir, "old-version.json");
+    writeFileSync(path, JSON.stringify({ deploymentId: "dpl_old" }));
+    const { build, output } = runIgnore(dir, {
+        MATRX_BUILD_TARGET: "main",
+        VERCEL_GIT_COMMIT_SHA: head,
+        VERCEL_GIT_COMMIT_MESSAGE: "release: ships even when the live answer is old",
+        MATRX_DEPLOYED_SHA_URL: `file://${path}`,
+    });
+    assert.equal(build, true, `a release as HEAD must still build:\n${output}`);
+    assert.match(output, /did not answer one/, `the missing commit field was silent:\n${output}`);
+});
