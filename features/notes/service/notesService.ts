@@ -6,6 +6,7 @@ import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { noteEditedFieldsEqual, type NoteEditBase } from "../utils/saveVerification";
 import type {
   Note,
   NoteRow,
@@ -528,6 +529,17 @@ export async function persistNoteUpdate(
             .eq("organization_id", organizationId)
             .is("deleted_at", null)
             .maybeSingle(),
+        // THE PHANTOM CONFLICT: `version` moves on every row update. A CAS
+        // miss on a row whose EDITED fields still equal this client's base is
+        // a number we never learned, not a conflict — retry once on it.
+        ...(options?.acknowledgedBase !== undefined
+          ? {
+              rebase: {
+                isPhantom: (currentRow: NoteRow) =>
+                  noteEditedFieldsEqual(currentRow, options.acknowledgedBase as NoteEditBase),
+              },
+            }
+          : {}),
       });
       if (result.status === "conflict") {
         throw new NoteUpdateConflictError({

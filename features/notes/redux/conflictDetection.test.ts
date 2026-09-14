@@ -125,3 +125,108 @@ describe("serverMatchesAttempt", () => {
     expect(serverMatchesAttempt({ content: "Chip" }, {})).toBe(false);
   });
 });
+
+// ── THE PHANTOM CONFLICT (2026-09-13) ────────────────────────────────────────
+// `version` moves on EVERY update of the row. The live case: matrx-local wrote
+// `file_path` + `last_device_id` back onto a web-created note 0.9s after its
+// INSERT. Nothing the user edits changed, but the browser never adopted
+// version 2, so its next save CAS'd on 1 and opened a conflict dialog against a
+// row whose text equalled its own base.
+import { NOTE_ROW_KEYS } from "./notes.types";
+import { noteEditedFieldsEqual } from "../utils/saveVerification";
+import type { Note } from "../types";
+
+function fullRow(overrides: Partial<Note> = {}): Note {
+  const row: Note = {
+    id: NOTE_ID, organization_id: ORG_ID, version: 1, content: "the recipe",
+    label: "The Best Chicken Alfredo", folder_name: "Draft", folder_id: null, tags: [],
+    metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null,
+    created_at: "2026-09-14T05:55:17.534Z", created_by: "user-1",
+    updated_at: "2026-09-14T05:55:17.534Z", updated_by: "user-1", deleted_at: null,
+    content_hash: null, file_path: null, last_device_id: null, sync_version: 1,
+    ...overrides,
+  };
+  for (const key of NOTE_ROW_KEYS) if (!(key in row)) throw new Error(`fixture lacks ${key}`);
+  return row;
+}
+
+describe("phantom version bump while editing", () => {
+  it("fast-forwards the base to a newer version whose edited fields equal the base, keeping the draft", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
+    expect(state.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.version).toBe(1);
+    // The user deletes a line — dirty on version 1.
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "the recipe, shorter" }));
+    // The desktop sync stamps file_path: version 2, identical edited fields.
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: fullRow({ version: 2, file_path: "/Notes/Draft/alfredo.md", last_device_id: "921d9676-75d", updated_at: "2026-09-14T05:55:18.435Z" }),
+        fetchStatus: "full",
+      }),
+    );
+    const record = state.notes[NOTE_ID];
+    expect(record.version).toBe(2);
+    expect(record.updated_at).toBe("2026-09-14T05:55:18.435Z");
+    expect(record.file_path).toBe("/Notes/Draft/alfredo.md");
+    expect(record.content).toBe("the recipe, shorter");
+    expect(record._dirty).toBe(true);
+    expect(record._remoteObservation).toBeNull();
+    expect(record._conflictDecision).toBeNull();
+    expect(record._error).toBeNull();
+    // The base itself advanced: the next edit compares against version 2.
+    expect(record._acknowledgedPhysicalSnapshot?.version).toBe(2);
+    expect(record._acknowledgedPhysicalSnapshot?.content).toBe("the recipe");
+  });
+
+  it("does NOT fast-forward when an edited field really changed on the server (a real collaborator write)", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "the recipe, shorter" }));
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: fullRow({ version: 2, content: "a colleague rewrote it", updated_at: "2026-09-14T05:55:18.435Z" }),
+        fetchStatus: "full",
+      }),
+    );
+    const record = state.notes[NOTE_ID];
+    expect(record.version).toBe(1);
+    expect(record.content).toBe("the recipe, shorter");
+    expect(record._remoteObservation?.version).toBe(2);
+    expect(record._acknowledgedPhysicalSnapshot?.version).toBe(1);
+  });
+
+  it("does NOT fast-forward from a partial (list) payload — only a complete row can move the base", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "the recipe, shorter" }));
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: { id: NOTE_ID, organization_id: ORG_ID, version: 2, label: "The Best Chicken Alfredo", updated_at: "2026-09-14T05:55:18.435Z" },
+        fetchStatus: "list",
+      }),
+    );
+    expect(state.notes[NOTE_ID].version).toBe(1);
+    expect(state.notes[NOTE_ID]._remoteObservation?.version).toBe(2);
+  });
+});
+
+describe("noteEditedFieldsEqual", () => {
+  const base = { content: "c", label: "l", folder_id: null, folder_name: "Draft", tags: ["a"], visibility: "personal" as const };
+  it("ignores bookkeeping columns", () => {
+    expect(noteEditedFieldsEqual({ ...base, file_path: "/x.md", version: 9 } as never, base)).toBe(true);
+  });
+  it("compares tags by value", () => {
+    expect(noteEditedFieldsEqual({ ...base, tags: ["a"] }, base)).toBe(true);
+    expect(noteEditedFieldsEqual({ ...base, tags: ["b"] }, base)).toBe(false);
+  });
+  it("treats an absent edited field as a difference, never as a match", () => {
+    const { folder_id: _omit, ...missing } = base;
+    void _omit;
+    expect(noteEditedFieldsEqual(missing, { ...base, folder_id: "f1" })).toBe(false);
+  });
+  it("catches every edited field", () => {
+    for (const field of ["content", "label", "folder_id", "folder_name", "visibility"] as const) {
+      expect(noteEditedFieldsEqual({ ...base, [field]: "changed" }, base)).toBe(false);
+    }
+  });
+});

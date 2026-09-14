@@ -2,6 +2,7 @@
 // Redux slice for notes — follows the agent-definition pattern with
 // per-note undo/redo, two-stage fetch, and dirty tracking.
 
+import { noteEditBaseOf, noteEditedFieldsEqual } from "../utils/saveVerification";
 import { mayRunNoteConflictCommand } from "./conflictCommandLock";
 import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import { createReviewSession, materializeReviewSession, reduceReviewSession, type ReviewSessionAction } from "@ai-matrx/diff";
@@ -423,7 +424,30 @@ function applyServerNoteUpsert(
   const hasDirtyPhysicalField = Array.from(existing._dirtyFields).some(
     (field) => field !== "project_id" && field !== "task_id",
   );
-  if (existing._dirty && hasDirtyPhysicalField) {
+  // THE FAST-FORWARD. A complete newer row whose user-edited fields still
+  // equal this record's acknowledged base is a version bump for a column
+  // nobody edits (the desktop sync stamping `file_path`, an ingest job writing
+  // metadata). Nothing the user is editing moved, so there is nothing to
+  // observe and nothing to review: adopt the number now, so the next save
+  // CAS's on the version the row actually holds. The merge loop below skips
+  // every dirty field, so the draft is untouched. Root cause of the recurring
+  // Note Conflict dialog, 2026-09-13.
+  const fastForwardable =
+    existing._dirty &&
+    hasDirtyPhysicalField &&
+    fetchStatus === "full" &&
+    !existing._conflictDecision &&
+    existing._acknowledgedPhysicalSnapshot !== null &&
+    incomingVersion !== null &&
+    heldVersion !== null &&
+    incomingVersion > heldVersion &&
+    noteEditedFieldsEqual(note, noteEditBaseOf(existing._acknowledgedPhysicalSnapshot));
+  if (fastForwardable) {
+    const observed = existing._remoteObservation;
+    if (observed && (observed.version === null || observed.version <= incomingVersion)) {
+      existing._remoteObservation = null;
+    }
+  } else if (existing._dirty && hasDirtyPhysicalField) {
     const heldObservationVersion = existing._remoteObservation?.version ?? null;
     if (heldObservationVersion !== null && !isCanonicalNoteRevision(heldObservationVersion)) {
       return;

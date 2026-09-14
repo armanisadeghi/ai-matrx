@@ -16,6 +16,7 @@ import { mayRunNoteConflictCommand } from "./conflictCommandLock";
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
+import { noteEditBaseOf } from "../utils/saveVerification";
 import { createAsyncThunk, unwrapResult, type ThunkAction, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -669,6 +670,12 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
       }, {
         expectedVersion: record.version,
         expectedOrganizationId: record.organization_id,
+        // The edit base: a CAS miss on a row whose edited fields still equal
+        // it is a phantom (the version moved for a column nobody edits) and
+        // is retried inside the service, never shown as a conflict.
+        ...(record._acknowledgedPhysicalSnapshot
+          ? { acknowledgedBase: noteEditBaseOf(record._acknowledgedPhysicalSnapshot) }
+          : {}),
       });
       retainAttemptReceipt(attempt, receipt);
       if (receipt.failedFields.length > 0) throw new NoteContextPartialSaveError(receipt);

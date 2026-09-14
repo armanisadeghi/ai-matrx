@@ -444,19 +444,25 @@ export function cloneAcknowledgedNote(note: Note): Note {
   };
 }
 
+/**
+ * Every column of a `workbench.notes` row as the client models it. ONE list:
+ * the edit-base check, the realtime payload projection and the completeness
+ * test all read it, so a column added to the row is added here once.
+ */
+export const NOTE_ROW_KEYS = [
+  "id", "organization_id", "version", "content", "label", "folder_name",
+  "folder_id", "tags", "metadata", "visibility", "position", "project_id",
+  "task_id", "created_at", "created_by", "updated_at", "updated_by",
+  "deleted_at", "content_hash", "file_path", "last_device_id", "sync_version",
+] as const satisfies readonly (keyof Note)[];
+
 /** Only an actual complete server row may become an edit base. */
 export function acknowledgedSnapshotFromFullRead(
   note: Partial<Note>,
   status: NoteFetchStatus,
 ): Note | null {
   if (status !== "full") return null;
-  const required: (keyof Note)[] = [
-    "id", "organization_id", "version", "content", "label", "folder_name",
-    "folder_id", "tags", "metadata", "visibility", "position", "project_id",
-    "task_id", "created_at", "created_by", "updated_at", "updated_by",
-    "deleted_at", "content_hash", "file_path", "last_device_id", "sync_version",
-  ];
-  if (required.some((key) => !(key in note))) return null;
+  if (NOTE_ROW_KEYS.some((key) => !(key in note))) return null;
   return cloneAcknowledgedNote(note as Note);
 }
 

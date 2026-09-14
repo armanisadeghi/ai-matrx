@@ -284,6 +284,51 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
   });
 
+  it("retries a CAS miss once when the server's edited fields still equal the base, and never opens a conflict (the phantom conflict)", async () => {
+    // The live case: the desktop sync wrote file_path onto the row (version 8)
+    // while the browser still held version 7. The user's edit is against a base
+    // whose edited fields the server still holds byte-for-byte.
+    const existing = query({ data: note(), error: null });
+    const missedCas = query({ data: null, error: null });
+    const bumpedByDesktop = query({ data: note({ version: 8, file_path: "/Notes/x.md", last_device_id: "dev-1", updated_at: "2026-09-12T00:00:01.000Z" }), error: null });
+    const landed = query({ data: note({ content: "local draft", version: 9, file_path: "/Notes/x.md", last_device_id: "dev-1", updated_at: "2026-09-12T00:00:02.000Z" }), error: null });
+    const from = jest.fn()
+      .mockReturnValueOnce(existing)
+      .mockReturnValueOnce(missedCas)
+      .mockReturnValueOnce(bumpedByDesktop)
+      .mockReturnValueOnce(landed);
+    schema.mockReturnValue({ from });
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
+
+    const action = await store.dispatch(saveNote(NOTE_ID));
+
+    expect(saveNote.fulfilled.match(action)).toBe(true);
+    // The retry CAS'd on the number the row actually held.
+    expect(landed.eq).toHaveBeenCalledWith("version", 8);
+    const record = store.getState().notes.notes[NOTE_ID];
+    expect(record._conflictDecision).toBeNull();
+    expect(record._error).toBeNull();
+    expect(record._dirty).toBe(false);
+    expect(record.version).toBe(9);
+    expect(record.content).toBe("local draft");
+    expect(record._acknowledgedPhysicalSnapshot?.version).toBe(9);
+  });
+
+  it("still reports a real conflict when the server's edited fields moved, with no retry", async () => {
+    const existing = query({ data: note(), error: null });
+    const missedCas = query({ data: null, error: null });
+    const winner = query({ data: note({ content: "remote winner", version: 8 }), error: null });
+    const from = jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(missedCas).mockReturnValueOnce(winner);
+    schema.mockReturnValue({ from });
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
+    const action = await store.dispatch(saveNote(NOTE_ID));
+    expect(saveNote.rejected.match(action)).toBe(true);
+    expect(from).toHaveBeenCalledTimes(3);
+    expect(store.getState().notes.notes[NOTE_ID]._conflictDecision?.currentVersion).toBe(8);
+  });
+
   it("does not advance a context-only readback over a physical edit typed while edges settle", async () => {
     const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
     const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
