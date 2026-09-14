@@ -657,6 +657,13 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
 export interface DurableRunLaunchOptions {
   /** Exact request context for this target; persisted with the run receipt. */
   scopeOverrides?: Record<string, string>;
+  /**
+   * Values for the `{param}` placeholders in `path` (e.g. `{brand_id}`).
+   * Without this a parameterised command path was sent LITERALLY — the
+   * server received "/seo/brands/{brand_id}/…" and answered with a uuid cast
+   * error (2026-09-14). Persisted with the launch so `retry` replays it.
+   */
+  pathParams?: Record<string, string>;
 }
 
 function initialState<TResult>(): DurableRunState<TResult> {
@@ -1208,6 +1215,9 @@ export function useDurableRun<TResult>(
             path,
             method: "POST",
             body: body as never,
+            ...(launchOptions?.pathParams
+              ? { pathParams: launchOptions.pathParams }
+              : {}),
             ...(scopeOverrides ? { scopeOverrides } : {}),
             stream: true,
             ...streamOptions((event) => handleEvent(event, { rejoin: false })),
