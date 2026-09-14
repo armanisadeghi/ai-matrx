@@ -63,8 +63,14 @@ export const noteAdapter: NotesContentSourceAdapter = {
     // Lazy import — NotesAPI pulls in service utilities and Supabase
     // client glue that we don't want in the chat bundle.
     const { persistNoteUpdate } = await import("@/features/notes/service/notesService");
+    const { noteEditBaseOf } = await import("@/features/notes/utils/saveVerification");
     return persistNoteUpdate(source.noteId, { content: newContent }, {
       expectedVersion: source.editBase.version,
+      // THE PHANTOM CONFLICT: `version` moves on every row update. The
+      // prepared source carries the acknowledged edit base; a CAS miss whose
+      // server row still equals it is retried inside the service, never
+      // surfaced as "This note changed elsewhere" (review, 2026-09-13).
+      acknowledgedBase: noteEditBaseOf(source.acknowledgedPhysicalSnapshot),
       expectedOrganizationId: source.editBase.organizationId,
       expectedActorId: source.editBase.actorId,
       expectedSourceId: source.sourceId,

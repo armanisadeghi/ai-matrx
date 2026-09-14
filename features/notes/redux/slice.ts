@@ -1041,10 +1041,20 @@ const notesSlice = createSlice({
       }
       if (action.payload.version !== undefined) {
         record.version = action.payload.version;
-        // Remote evidence at or below the number we now hold is spent.
+        // Remote evidence at or below the number we now hold is spent. A
+        // version-less observation is judged by its timestamp against the
+        // acknowledged one, never retired blindly.
         const observed = record._remoteObservation;
-        if (observed && (observed.version === null || observed.version <= action.payload.version)) {
-          record._remoteObservation = null;
+        if (observed) {
+          const spentByVersion = observed.version !== null && observed.version <= action.payload.version;
+          const observedAt = Date.parse(observed.updatedAt ?? "");
+          const acknowledgedAt = Date.parse(action.payload.updatedAt ?? "");
+          const spentByTime =
+            observed.version === null &&
+            Number.isFinite(observedAt) &&
+            Number.isFinite(acknowledgedAt) &&
+            observedAt <= acknowledgedAt;
+          if (spentByVersion || spentByTime) record._remoteObservation = null;
         }
       }
       if (action.payload.acknowledgedPhysicalSnapshot) {
