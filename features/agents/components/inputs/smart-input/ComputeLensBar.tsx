@@ -6,7 +6,16 @@
  * chips, overflow + chevron opens the full Sandbox panel in run-controls window.
  */
 
-import { Box, Check, ChevronDown, Loader2, Monitor, Plus } from "lucide-react";
+import {
+  Box,
+  Check,
+  ChevronDown,
+  Loader2,
+  Monitor,
+  Moon,
+  Plus,
+  TriangleAlert,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +28,10 @@ import {
   computeTargetKindLabel,
   useComputeTargetActions,
 } from "./use-compute-target-actions";
+import {
+  describeBoundTargetState,
+  type BoundTargetView,
+} from "@/lib/sandbox/bound-target-view";
 
 export interface ComputeLensBarProps {
   conversationId: string;
@@ -97,6 +110,75 @@ function TargetChip({
   );
 }
 
+/**
+ * The chat's OWN box. Always rendered when the conversation is bound — while
+ * the liveness check is still out, and while the box is asleep or gone. The
+ * control's job is to answer "which box is this chat on?", and the record
+ * always has that answer (`lib/sandbox/bound-target-view.ts`).
+ */
+function BoundChip({
+  view,
+  onOpenPanel,
+}: {
+  view: BoundTargetView;
+  onOpenPanel: () => void;
+}) {
+  const { label, remedy } = describeBoundTargetState(view);
+  const kindLabel = computeTargetKindLabel(view.kind);
+  const healthy = view.state === "online";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onOpenPanel}
+          className={cn(
+            "inline-flex h-5 max-w-[10rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
+            view.state === "gone"
+              ? "bg-amber-500/10 hover:bg-amber-500/20"
+              : "bg-muted/80 hover:bg-muted",
+          )}
+          aria-label={`${kindLabel} for this chat: ${view.name} — ${label}. Open compute settings.`}
+        >
+          {view.state === "checking" ? (
+            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
+          ) : view.state === "online" ? (
+            <Check className="h-3 w-3 shrink-0 text-emerald-500" />
+          ) : view.state === "asleep" ? (
+            <Moon className="h-3 w-3 shrink-0 text-muted-foreground" />
+          ) : (
+            <TriangleAlert className="h-3 w-3 shrink-0 text-amber-500" />
+          )}
+          <TargetGlyph
+            kind={view.kind}
+            className={cn(
+              "h-3 w-3 shrink-0",
+              healthy
+                ? view.kind === "local-pc"
+                  ? "text-blue-500"
+                  : "text-emerald-500"
+                : "text-muted-foreground",
+            )}
+          />
+          <span
+            className={cn(
+              "truncate text-[11px] font-medium",
+              healthy ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {view.name}
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        {`This chat's ${kindLabel.toLowerCase()}: ${view.name} — ${label}.`}
+        {remedy ? ` ${remedy}` : " Click to manage."}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function ComputeLensBar({
   conversationId,
   onOpenPanel,
@@ -104,7 +186,7 @@ export function ComputeLensBar({
 }: ComputeLensBarProps) {
   const {
     loading,
-    boundTarget,
+    boundView,
     hasBinding,
     visibleTargets,
     overflowCount,
@@ -113,12 +195,9 @@ export function ComputeLensBar({
     disabled,
   } = useComputeTargetActions(conversationId);
 
+  // `visibleTargets` never contains the bound box — it is rendered by
+  // `BoundChip` from the conversation's record.
   const handleChipClick = (target: ComputeTarget) => {
-    const isBound = boundTarget?.id === target.id;
-    if (isBound) {
-      onOpenPanel();
-      return;
-    }
     applyBinding(target);
   };
 
@@ -159,11 +238,16 @@ export function ComputeLensBar({
         </TooltipContent>
       </Tooltip>
 
-      {visibleTargets.length > 0 || (!loading && !hasBinding) ? (
+      {boundView || visibleTargets.length > 0 || (!loading && !hasBinding) ? (
         <span className="mx-0.5 h-4 w-px shrink-0 bg-border/80" aria-hidden />
       ) : null}
 
       <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden rounded-full transition-colors group-hover:bg-secondary/[0.04]">
+        {/* The chat's own box comes FIRST and is always named. */}
+        {boundView ? (
+          <BoundChip view={boundView} onOpenPanel={onOpenPanel} />
+        ) : null}
+
         {/* Compact empty-state — "None" keeps the pill one row; tooltip carries
             the full meaning (Arman 2026-08-11: kill the padded "Not attached"). */}
         {!loading && !hasBinding && visibleTargets.length > 0 ? (
@@ -179,12 +263,12 @@ export function ComputeLensBar({
           <TargetChip
             key={target.id}
             target={target}
-            isBound={boundTarget?.id === target.id}
+            isBound={false}
             onSelect={() => handleChipClick(target)}
           />
         ))}
 
-        {visibleTargets.length === 0 && !loading ? (
+        {!boundView && visibleTargets.length === 0 && !loading ? (
           <button
             type="button"
             onClick={onOpenPanel}
@@ -203,7 +287,7 @@ export function ComputeLensBar({
           type="button"
           onClick={() => applyBinding(null)}
           className="inline-flex h-5 shrink-0 items-center rounded-full px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-          title={`Detach ${boundTarget?.name ?? "connected compute"}`}
+          title={`Detach ${boundView?.name ?? "connected compute"} from this chat`}
         >
           Detach
         </button>

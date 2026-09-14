@@ -41,6 +41,8 @@ import { loadConversation } from "@/features/agents/redux/execution-system/thunk
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
 
 export interface UseConversationResumeOptions {
   /** The conversation to reopen. `null` disables the hook entirely. */
@@ -58,6 +60,18 @@ export interface UseConversationResumeOptions {
   messageLimit?: number;
   /** Fires once the hydrate settles (success or failure). */
   onSettled?: (ok: boolean) => void;
+  /**
+   * The conversation's compute binding as the SERVER already knows it, read at
+   * SSR straight off `chat.conversation` (`sandbox_instance_id` /
+   * `app_instance_id`). Applied to the record the moment the instance exists —
+   * BEFORE the bundle RPC — so a chat that was on a sandbox comes back up on
+   * that sandbox instead of appearing unbound (or, worse, appearing to be on
+   * the user's shared default) for the first seconds of the session.
+   *
+   * The bundle re-derives the same value from the same columns through the same
+   * function, so this is an earlier read of one truth, never a second one.
+   */
+  sandboxSeed?: ConversationSandboxBinding | null;
 }
 
 export interface UseConversationResumeResult {
@@ -74,6 +88,7 @@ export function useConversationResume({
   enabled = true,
   messageLimit = 12,
   onSettled,
+  sandboxSeed = null,
 }: UseConversationResumeOptions): UseConversationResumeResult {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -85,7 +100,16 @@ export function useConversationResume({
   const abortRef = useRef<AbortController | null>(null);
   const loadedKeyRef = useRef<string | null>(null);
   const onSettledRef = useRef(onSettled);
-  onSettledRef.current = onSettled;
+  // Held in refs, NEVER in the dependency array: a fresh identity every render
+  // would re-run the resume effect, and that effect's cleanup aborts the load in
+  // flight — the room would sit on its skeleton forever. Written in an effect
+  // (never during render) so React's ref rule holds; this effect is declared
+  // ABOVE the resume effect, so both refs are current before it runs.
+  const sandboxSeedRef = useRef(sandboxSeed);
+  useEffect(() => {
+    onSettledRef.current = onSettled;
+    sandboxSeedRef.current = sandboxSeed;
+  }, [onSettled, sandboxSeed]);
 
   useEffect(() => {
     if (!enabled || !conversationId || !agentId) return undefined;
@@ -106,9 +130,29 @@ export function useConversationResume({
           state.messages?.byConversationId?.[conversationId]?.orderedIds
             ?.length ?? 0;
 
+        // The server's binding, applied as early as the record allows.
+        const applySandboxSeed = () => {
+          const seed = sandboxSeedRef.current;
+          if (!seed) return;
+          const record =
+            store.getState().conversations?.byConversationId?.[conversationId];
+          if (!record || record.sandboxBinding?.rowId === seed.rowId) {
+            return;
+          }
+          dispatch(
+            patchConversation({
+              conversationId,
+              sandboxBinding: seed,
+              // It came FROM the row, so it is by definition already written.
+              sandboxBindingPersisted: true,
+            }),
+          );
+        };
+
         // (1) Live in memory with messages — a re-fetch would clobber an
         // in-flight stream. Re-point focus and stop.
         if (exists && liveMessageCount > 0) {
+          applySandboxSeed();
           setIsResuming(false);
           if (ctrl.signal.aborted) return;
           dispatch(setFocus({ surfaceKey, conversationId }));
@@ -128,6 +172,7 @@ export function useConversationResume({
             }),
           ).unwrap();
         }
+        applySandboxSeed();
 
         // (3) Hydrate everything from the DB.
         if (ctrl.signal.aborted) return;

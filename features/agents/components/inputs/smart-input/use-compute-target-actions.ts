@@ -13,6 +13,7 @@ import {
 } from "@/hooks/sandbox/use-compute-targets";
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
+import { resolveBoundTargetView } from "@/lib/sandbox/bound-target-view";
 
 const MAX_LENS_TARGETS = 2;
 
@@ -23,47 +24,37 @@ function isAvailable(target: ComputeTarget) {
   );
 }
 
-function targetKindRank(target: ComputeTarget, boundId: string | null) {
-  if (boundId === target.id) return 0;
-  if (target.kind === "local-pc") return 1;
-  return 2;
+function targetKindRank(target: ComputeTarget) {
+  return target.kind === "local-pc" ? 0 : 1;
 }
 
-/** Pick up to two inline targets — prefer bound, then local PC + sandbox. */
+/**
+ * The OTHER targets to offer inline, beside the bound one.
+ *
+ * The bound box is never one of these: it is rendered from the conversation's
+ * record (see `resolveBoundTargetView`) so it is named on first paint and stays
+ * named while it is asleep — it must not depend on being present and online in
+ * this list. `boundRowId` is excluded here so it can never appear twice.
+ */
 export function pickComputeLensTargets(
   targets: ComputeTarget[],
-  boundTarget: ComputeTarget | null,
+  boundRowId: string | null,
   maxVisible = MAX_LENS_TARGETS,
 ) {
-  const byId = new Map<string, ComputeTarget>();
-  if (boundTarget) byId.set(boundTarget.id, boundTarget);
-  for (const target of targets.filter(isAvailable)) {
-    byId.set(target.id, target);
-  }
+  const others = targets
+    .filter((target) => isAvailable(target) && target.id !== boundRowId)
+    .sort((a, b) => {
+      const rank = targetKindRank(a) - targetKindRank(b);
+      if (rank !== 0) return rank;
+      return a.name.localeCompare(b.name);
+    });
 
-  const all = [...byId.values()].sort((a, b) => {
-    const rank =
-      targetKindRank(a, boundTarget?.id ?? null) -
-      targetKindRank(b, boundTarget?.id ?? null);
-    if (rank !== 0) return rank;
-    return a.name.localeCompare(b.name);
-  });
-
-  const visible: ComputeTarget[] = [];
-  const push = (target: ComputeTarget | undefined) => {
-    if (!target || visible.some((v) => v.id === target.id)) return;
-    if (visible.length < maxVisible) visible.push(target);
-  };
-
-  push(boundTarget ?? undefined);
-  push(all.find((t) => t.kind === "local-pc"));
-  push(all.find((t) => t.kind !== "local-pc"));
-  for (const target of all) push(target);
-
+  const visible = others.slice(0, Math.max(0, maxVisible));
   return {
-    visible: visible.slice(0, maxVisible),
-    overflowCount: Math.max(0, all.length - visible.length),
-    totalCount: all.length,
+    visible,
+    overflowCount: Math.max(0, others.length - visible.length),
+    /** Everything bindable right now, the bound box included. */
+    totalCount: others.length + (boundRowId ? 1 : 0),
   };
 }
 
@@ -96,28 +87,34 @@ export function useComputeTargetActions(conversationId: string) {
     (state) => state.userPreferences.coding.activeAgentSandboxBySurface,
   );
 
-  const boundTarget =
-    binding.status === "verified"
-      ? (data?.targets.find((target) => target.id === binding.target?.id) ??
-        binding.target)
-      : null;
+  // THE bound box, straight off the conversation's record — named on first
+  // paint, and still named while it is asleep or gone. Liveness only decorates
+  // it (`state`); it never removes it. See `lib/sandbox/bound-target-view.ts`.
+  const boundView = resolveBoundTargetView({
+    ref: binding.ref,
+    status: binding.status,
+    targets: data?.targets ?? null,
+  });
+  /** The LIVE row for the bound box — present only when it is actually online. */
+  const boundTarget = boundView?.state === "online" ? boundView.target : null;
   const hasBinding = !!binding.ref;
   const availableTargets = useMemo(
     () =>
       (data?.targets ?? []).filter(
-        (target) => isAvailable(target) && target.id !== boundTarget?.id,
+        (target) => isAvailable(target) && target.id !== binding.ref?.rowId,
       ),
-    [data?.targets, boundTarget?.id],
+    [data?.targets, binding.ref?.rowId],
   );
 
+  const boundSlots = boundView ? 1 : 0;
   const { visible, overflowCount, totalCount } = useMemo(
     () =>
       pickComputeLensTargets(
         data?.targets ?? [],
-        boundTarget,
-        MAX_LENS_TARGETS,
+        binding.ref?.rowId ?? null,
+        MAX_LENS_TARGETS - boundSlots,
       ),
-    [data?.targets, boundTarget],
+    [data?.targets, binding.ref?.rowId, boundSlots],
   );
 
   const applyBinding = (target: ComputeTarget | null) => {
@@ -164,6 +161,8 @@ export function useComputeTargetActions(conversationId: string) {
     loading: loading || binding.isChecking,
     sandboxBlocked,
     boundTarget,
+    /** The bound box as the UI renders it — present whenever a box is bound. */
+    boundView,
     hasBinding,
     bindingStatus: binding.status,
     availableTargets,

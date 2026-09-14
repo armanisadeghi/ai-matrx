@@ -31,6 +31,7 @@ import {
 } from "../conversations/conversations.slice";
 import { hydrateMessages } from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
+import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import { hydrateInbox } from "../inbox/inbox.thunks";
@@ -233,29 +234,10 @@ export const loadConversation = createAsyncThunk<
         // proxyUrl / tier / name come off the metadata cache when present — but
         // are NEVER required: a binding written by aidream's own bind endpoint
         // sets only the column, and must still resolve (the turn-time resolver
-        // fetches what it's missing).
-        sandboxBinding: (() => {
-          const sandboxRowId = conv.sandbox_instance_id;
-          const localPcRowId = conv.app_instance_id;
-          const rowId = sandboxRowId ?? localPcRowId;
-          if (!rowId) return null;
-          const meta =
-            typeof conv.metadata === "object" && conv.metadata !== null
-              ? (conv.metadata as Record<string, unknown>)
-              : {};
-          const str = (key: string): string | undefined => {
-            const value = meta[key];
-            return typeof value === "string" && value ? value : undefined;
-          };
-          const tier = str("sandbox_override_tier");
-          return {
-            rowId,
-            proxyUrl: str("sandbox_override_proxy_url") ?? "",
-            tier: tier === "ec2" || tier === "hosted" ? tier : undefined,
-            kind: localPcRowId ? ("local-pc" as const) : undefined,
-            name: str("sandbox_override_name"),
-          };
-        })(),
+        // fetches what it's missing). ONE derivation, shared with the SSR seed
+        // and the mid-session refresh (`conversationSandboxBindingFromRow`), so
+        // no two readers of the same row can disagree.
+        sandboxBinding: conversationSandboxBindingFromRow(conv),
         // It came FROM the DB, so it is by definition already written to it.
         sandboxBindingPersisted: !!(
           conv.sandbox_instance_id ?? conv.app_instance_id

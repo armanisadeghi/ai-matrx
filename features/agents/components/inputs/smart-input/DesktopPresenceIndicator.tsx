@@ -2,11 +2,15 @@
 
 /**
  * DesktopPresenceIndicator — bound-compute affordance in the smart-input toolbar.
- * Renders ONLY when a sandbox or local PC is verified and bound; unbound state
- * is managed via the `+` menu's ComputeLensBar row.
+ * Renders whenever the CONVERSATION is bound to a box — including while the
+ * liveness check is still out and while the box is asleep or gone, because the
+ * one question this control answers ("which box is this chat on?") always has
+ * an answer once the row names one. Liveness only changes how it reads
+ * (`lib/sandbox/bound-target-view.ts`). Unbound state is managed via the `+`
+ * menu's ComputeLensBar row.
  */
 
-import { Box, Loader2, Monitor, Unplug } from "lucide-react";
+import { Box, Loader2, Monitor, Moon, TriangleAlert, Unplug } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -18,6 +22,7 @@ import {
   computeTargetKindLabel,
   useComputeTargetActions,
 } from "./use-compute-target-actions";
+import { describeBoundTargetState } from "@/lib/sandbox/bound-target-view";
 
 interface DesktopPresenceIndicatorProps {
   conversationId: string;
@@ -42,19 +47,27 @@ export function DesktopPresenceIndicator({
 }: DesktopPresenceIndicatorProps) {
   const {
     loading,
-    boundTarget,
+    boundView,
     availableTargets,
     applyBinding,
     disabled,
     sandboxBlocked,
   } = useComputeTargetActions(conversationId);
 
-  if (sandboxBlocked || !boundTarget) return null;
+  if (sandboxBlocked || !boundView) return null;
 
-  const Icon = boundTarget.kind === "local-pc" ? Monitor : Box;
-  const iconColor = computeTargetIconColor(boundTarget, true);
-  const kindLabel = computeTargetKindLabel(boundTarget.kind);
-  const tooltip = `${kindLabel} connected: ${boundTarget.name}`;
+  const healthy = boundView.state === "online";
+  const Icon = boundView.kind === "local-pc" ? Monitor : Box;
+  const iconColor = healthy
+    ? boundView.kind === "local-pc"
+      ? "text-blue-500"
+      : "text-emerald-500"
+    : "text-muted-foreground";
+  const kindLabel = computeTargetKindLabel(boundView.kind);
+  const { label: stateLabel, remedy } = describeBoundTargetState(boundView);
+  const tooltip = `${kindLabel} for this chat: ${boundView.name} — ${stateLabel}.${
+    remedy ? ` ${remedy}` : ""
+  }`;
 
   return (
     <Popover>
@@ -66,8 +79,12 @@ export function DesktopPresenceIndicator({
           aria-label={tooltip}
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${iconColor} bg-muted/60 hover:bg-muted disabled:cursor-not-allowed disabled:text-muted-foreground/30 disabled:hover:bg-transparent`}
         >
-          {loading ? (
+          {boundView.state === "checking" || loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
+          ) : boundView.state === "asleep" ? (
+            <Moon className="h-4 w-4" />
+          ) : boundView.state === "gone" ? (
+            <TriangleAlert className="h-4 w-4 text-amber-500" />
           ) : (
             <Icon className="h-4 w-4" />
           )}
@@ -81,15 +98,15 @@ export function DesktopPresenceIndicator({
       >
         <div className="mb-1 border-b px-1.5 pb-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Connected
+            {healthy ? "Connected" : `This chat's ${kindLabel.toLowerCase()} — ${stateLabel}`}
           </p>
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium">
               <TargetIcon
-                kind={boundTarget.kind}
+                kind={boundView.kind}
                 className={`h-3.5 w-3.5 shrink-0 ${iconColor}`}
               />
-              <span className="truncate">{boundTarget.name}</span>
+              <span className="truncate">{boundView.name}</span>
             </span>
             <button
               type="button"
@@ -101,6 +118,11 @@ export function DesktopPresenceIndicator({
             </button>
           </div>
         </div>
+        {remedy ? (
+          <p className="px-1.5 pb-1 text-[11px] text-muted-foreground">
+            {remedy}
+          </p>
+        ) : null}
         {availableTargets.length > 0 ? (
           <>
             <p className="px-1.5 pb-1 pt-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

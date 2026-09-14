@@ -46,6 +46,10 @@ import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-inc
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
+import {
+  describeBoundTargetState,
+  resolveBoundTargetView,
+} from "@/lib/sandbox/bound-target-view";
 import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
 import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
@@ -128,13 +132,13 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
       ? "surface"
       : null;
 
-  // Liveness layer: a rehydrated binding is only shown as "attached" once it's
-  // confirmed reachable. While verifying we show nothing definitive; if the box
-  // is gone we surface a re-attach hint instead of a fake "bound" chip.
+  // Liveness layer: it DECORATES the binding, it never removes it. The strip
+  // always names the box this chat is on — while the check is out, and while
+  // the box is asleep or gone — because the record always has that answer.
+  // (Arman, 2026-09-14: opening a chat that was on a sandbox must put you back
+  // on that sandbox in the UI, immediately.)
   const verified = useVerifiedSandboxBinding(conversationId);
-  const bindingConfirmed = verified.status === "verified";
-  const bindingVerifying = verified.status === "verifying";
-  const bindingUnavailable = verified.status === "unavailable";
+
 
   // Sandbox defaults the user configured in Settings → Sandbox. The "New
   // sandbox" button passes these to the orchestrator so every box the user
@@ -159,6 +163,12 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   // sandbox rendering still uses `useSandboxInstances` so all existing
   // status / pill / clone behaviour keeps working unchanged.
   const { data: computeTargets } = useComputeTargets();
+  const boundView = resolveBoundTargetView({
+    ref: verified.ref,
+    status: verified.status,
+    targets: computeTargets?.targets ?? null,
+  });
+  const boundState = boundView ? describeBoundTargetState(boundView) : null;
   // Quickset and the full Sandbox tab share this picker. Only present targets
   // the user can actually bind — offline local computers are status, not
   // available execution targets.
@@ -329,42 +339,41 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               No sandbox bound
             </span>
           </div>
-        ) : bindingVerifying ? (
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-            Checking bound sandbox…
-          </div>
-        ) : bindingUnavailable ? (
-          <div className="flex items-center justify-between gap-2 border-b border-border bg-amber-500/10 px-3 py-2">
+        ) : boundView ? (
+          <div
+            className={`flex items-center justify-between gap-2 border-b border-border px-3 py-2 ${
+              boundView.state === "gone" ? "bg-amber-500/10" : "bg-muted/40"
+            }`}
+          >
             <span className="flex min-w-0 items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-              <span className="truncate text-xs text-amber-700 dark:text-amber-300">
-                Bound sandbox is gone — pick another
-              </span>
-            </span>
-            <button
-              onClick={() => applyRef(null)}
-              className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-              title="Clear the stale binding"
-            >
-              <X className="h-3 w-3" />
-              Clear
-            </button>
-          </div>
-        ) : bindingConfirmed ? (
-          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              {boundView.state === "checking" ? (
+                <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
+              ) : boundView.state === "gone" ? (
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              ) : (
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    boundView.state === "online"
+                      ? "bg-emerald-500"
+                      : "bg-muted-foreground/50"
+                  }`}
+                />
+              )}
               <span className="truncate text-xs font-medium text-foreground">
-                {(boundInstance
-                  ? sandboxDisplayName(boundInstance)
-                  : resolved.name) ??
-                  resolved.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
-                  resolved.rowId.slice(0, 8)}
+                {boundInstance ? sandboxDisplayName(boundInstance) : boundView.name}
               </span>
               <span className="shrink-0 rounded bg-muted px-1 py-px text-[9px] uppercase tracking-wide text-muted-foreground">
                 {resolvedSource === "override" ? "this chat" : "this surface"}
               </span>
+              {boundState && boundView.state !== "online" ? (
+                <span
+                  className="shrink-0 text-[10px] text-muted-foreground"
+                  title={boundState.remedy ?? undefined}
+                >
+                  {boundState.label}
+                  {boundState.remedy ? ` — ${boundState.remedy}` : ""}
+                </span>
+              ) : null}
             </span>
             <div className="flex shrink-0 items-center gap-2">
               <button

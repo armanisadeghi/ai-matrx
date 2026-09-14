@@ -1,10 +1,6 @@
 "use client";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { toast } from "@/lib/toast";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
@@ -22,7 +18,9 @@ import {
   setFocus,
   clearFocus,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { consumeChatDraftTransfer } from "./chat-draft-transfer";
+import {
+  consumeChatDraftTransfer,
+} from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
@@ -36,8 +34,11 @@ import {
   clearPendingNavigation,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { CanvasDock } from "@/features/canvas/core/CanvasDock";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
+import { useConversationSandboxBindingSync } from "@/features/agents/hooks/useConversationSandboxBindingSync";
+import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
@@ -68,6 +69,10 @@ import { selectIsStreaming } from "@/features/agents/redux/execution-system/sele
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   selectActiveScratchpadId,
@@ -127,6 +132,14 @@ interface ChatRoomClientProps {
   mandateKey?: string;
   /** Surface-owned presentation for variables bound outside the composer. */
   variablesPanelStyle?: VariablesPanelStyle;
+  /**
+   * The compute binding the ROW already carries, read at SSR by
+   * `/chat/[conversationId]`. Applied to the record as soon as the instance
+   * exists — before the bundle RPC — so a chat that was on a sandbox opens back
+   * on that sandbox instead of looking unbound (or looking like it is on the
+   * user's shared default) while two round-trips land.
+   */
+  sandboxBinding?: ConversationSandboxBinding | null;
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -157,6 +170,7 @@ export function ChatRoomClient({
   buildConversationHref = defaultConversationHref,
   mandateKey,
   variablesPanelStyle,
+  sandboxBinding = null,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -167,6 +181,8 @@ export function ChatRoomClient({
   // agent switch, `/chat/new`, `beginFreshChat` — must derive the same key.
   const surfaceKey = chatRouteSurfaceKey(agentId);
   const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
   const isIncognito = useAppSelector(selectChatIncognitoActive);
   const freshSessionKey = useAppSelector(selectChatFreshSessionNonce);
   const isFreshRoute = !conversationIdProp;
@@ -285,7 +301,14 @@ export function ChatRoomClient({
     surfaceKey,
     enabled: !isInitializing && authReady,
     messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
+    sandboxSeed: sandboxBinding,
   });
+
+  // The other direction: a run can bind a box SERVER-side (aidream's
+  // `persist_conversation_binding`) — from an MCP run, the extension, the
+  // desktop app or a second tab. Re-read the one column when a turn finishes
+  // and when the tab comes back, so the control learns it with no reload.
+  useConversationSandboxBindingSync(conversationIdProp ?? null);
 
   // ── Pending navigation → router.replace ─────────────────────────────────
   // Fork / retry / delete actions set pendingNavigation with the target
@@ -317,14 +340,17 @@ export function ChatRoomClient({
       ? selectUserInputEntryExists(liveConversationId)(state)
       : false,
   );
-  const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectOrganizationId);
-  const resourcesEntryReady = useAppSelector((state) => liveConversationId
-    ? Object.prototype.hasOwnProperty.call(state.instanceResources.byConversationId, liveConversationId)
-    : false);
+  const resourcesEntryReady = useAppSelector((state) =>
+    liveConversationId
+      ? Object.prototype.hasOwnProperty.call(
+          state.instanceResources.byConversationId,
+          liveConversationId,
+        )
+      : false,
+  );
   const attachResource = useAttachResource(liveConversationId ?? "");
-  const [pendingTransfer, setPendingTransfer] = useState<(NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & { conversationId: string }) | null>(null);
   const draftAppliedRef = useRef<string | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<(NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & { conversationId: string }) | null>(null);
   useEffect(() => {
     if (conversationIdProp) return; // existing conversation, not a chip target
     if (!liveConversationId || !draftInputEntryReady) return;
@@ -342,7 +368,7 @@ export function ChatRoomClient({
       return;
     }
     draftAppliedRef.current = liveConversationId;
-    // Consuming an external navigation handoff must wake the resource-readiness hook.
+    // Session storage is an external navigation handoff; publishing its consumed value wakes the resource-readiness hook.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingTransfer({ ...transfer, conversationId: liveConversationId });
     dispatch(
@@ -361,7 +387,7 @@ export function ChatRoomClient({
     organizationId,
   ]);
 
-  // Recheck capture identity when attachment becomes ready, not only at storage consumption.
+  // Recheck capture identity at attachment readiness, not only at storage consumption.
   usePreparedResourceSeed({
     conversationId: !conversationIdProp && pendingTransfer?.conversationId === liveConversationId ? liveConversationId : null,
     ready: resourcesEntryReady,
@@ -682,7 +708,14 @@ export function ChatRoomClient({
       isEditable
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">
-        <div className="flex-1 min-h-0 overflow-hidden flex">
+        {/* The Canvas is a RESIZABLE COLUMN here, never an overlay: opening it
+            shrinks the thread instead of covering the composer, the mic and
+            the send button (owner, 2026-09-13 — "a nice adjustable sidebar
+            that can be folded out and in"). `CanvasDock` folds itself away
+            when the canvas is closed and stands down entirely on a phone,
+            where the full-bleed sheet is still the right answer. */}
+        <CanvasDock groupId="chat-canvas-dock" className="flex-1 min-h-0">
+          <div className="h-full min-h-0 overflow-hidden flex">
           <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
           <AgentConversationColumn
             conversationId={conversationId}
@@ -708,7 +741,8 @@ export function ChatRoomClient({
             }
           />
           </div>
-        </div>
+          </div>
+        </CanvasDock>
       </div>
       {/* The bound sandbox reaches the CANVAS, not a panel of its own: this
           headless watcher opens the Sandbox pane the first time the agent

@@ -8,6 +8,10 @@ import { resolveMandateServer } from "@/features/mandates/service.server";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import {
+  conversationSandboxBindingFromRow,
+  type ConversationSandboxBinding,
+} from "@/lib/sandbox/conversation-binding-row";
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -54,7 +58,20 @@ export async function generateMetadata({
  * a redirect to `/chat/new` was the silent dead end this replaced.
  */
 type ConversationSeed =
-  | { kind: "ok"; agentId: string | null; agentName: string | null }
+  | {
+      kind: "ok";
+      agentId: string | null;
+      agentName: string | null;
+      /**
+       * The box this conversation is bound to, read in the SAME round-trip that
+       * resolves the agent. It reaches Redux before the bundle RPC does, so the
+       * Sandbox / Compute control names the chat's own box from the first
+       * render instead of showing nothing (or the user's shared default) until
+       * two more round-trips land. Arman, 2026-09-14: "it didn't instantly make
+       * sure to put me on the same sandbox in the UI."
+       */
+      sandboxBinding: ConversationSandboxBinding | null;
+    }
   | { kind: "unavailable"; error: PostgrestError | null };
 
 async function resolveConversationSeed(
@@ -64,7 +81,9 @@ async function resolveConversationSeed(
   const { data, error } = await supabase
     .schema("chat")
     .from("conversation")
-    .select("initial_agent_id")
+    .select(
+      "initial_agent_id, sandbox_instance_id, app_instance_id, metadata",
+    )
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -79,13 +98,15 @@ async function resolveConversationSeed(
   }
   if (!data) return { kind: "unavailable", error: null };
 
+  const sandboxBinding = conversationSandboxBindingFromRow(data);
   const agentId = (data.initial_agent_id as string | null) ?? null;
-  if (!agentId) return { kind: "ok", agentId: null, agentName: null };
+  if (!agentId)
+    return { kind: "ok", agentId: null, agentName: null, sandboxBinding };
   // `chat.conversation` has no FK on `initial_agent_id`, so the agent name
   // cannot be a PostgREST embed — resolve it with a separate lookup against
   // the canonical `agent.definition` table.
   const agentName = await resolveAgentName(supabase, agentId);
-  return { kind: "ok", agentId, agentName };
+  return { kind: "ok", agentId, agentName, sandboxBinding };
 }
 
 async function resolveAgentName(
@@ -166,6 +187,7 @@ export default async function ChatConversationPage({
         conversationId={conversationId}
         agentId={display?.agentId ?? null}
         ownedByMandate={ownedByMandate}
+        sandboxBinding={seed.sandboxBinding}
       />
     </>
   );
