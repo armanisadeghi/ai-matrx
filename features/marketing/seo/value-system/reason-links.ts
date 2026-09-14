@@ -178,6 +178,14 @@ export function reasonEditorLink(
         }),
         label: "Change or clear your ruling",
       };
+    case "offering":
+      // The Offerings screen still focuses nodes by legacy topic id until it
+      // moves to brand offerings (brand-offerings cutover step 4c), so this door
+      // opens the screen where the offering's worth is edited, without a focus.
+      return {
+        href: topicNodeHref(ctx, null),
+        label: `Change what “${reason.offering}” is worth`,
+      };
     case "topic":
       return {
         href: topicNodeHref(ctx, reason.topic_id, true),

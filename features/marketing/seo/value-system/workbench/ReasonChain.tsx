@@ -158,13 +158,22 @@ function reasonView(reason: ValueReason): ReasonView {
         tone: disagrees ? "text-warning" : "text-primary",
       };
     }
+    case "offering":
+      return {
+        icon: TreePine,
+        text: `${reason.offering} ${reason.points >= 0 ? "+" : ""}${reason.points}`,
+        detail: reason.negative_guard
+          ? `Your offering "${reason.offering}" is marked not offered, actively avoided, or bringing leads you do not want, so this keyword is Negative regardless of arithmetic.`
+          : `This keyword maps to your offering "${reason.offering}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} you sell)` : ""}, which adds ${reason.points} points.`,
+        tone: reason.negative_guard ? "text-destructive" : undefined,
+      };
     case "topic":
       return {
         icon: TreePine,
-        text: `${reason.topic} · worth ${reason.weight}`,
+        text: `${reason.topic} ${reason.weight >= 0 ? "+" : ""}${reason.weight}`,
         detail: reason.negative_guard
-          ? `The offering branch "${reason.topic}" carries a negative guard (not offered / actively avoided), so this keyword is Negative regardless of arithmetic.`
-          : `Starts from the offering branch "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} root)` : ""}, which you weighted ${reason.weight} out of 100.`,
+          ? `"${reason.topic}" carries a negative guard (not offered / actively avoided), so this keyword is Negative regardless of arithmetic.`
+          : `This keyword is about "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} branch)` : ""}, which adds ${reason.weight} points.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
     case "baseline":
