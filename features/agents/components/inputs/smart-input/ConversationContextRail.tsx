@@ -69,6 +69,7 @@ import {
   selectCanvasIsOpen,
   selectCurrentCanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
@@ -287,7 +288,16 @@ export function ConversationContextRail({
    */
   const toggleDocInCanvas = (kind: "working" | "scratch") => {
     const scope = kind === "scratch" ? scratchScope : conversationId;
-    if (kind === "scratch" && !activeScratchId) return;
+    if (kind === "scratch" && !activeScratchId) {
+      // The pill is on screen, so the click must produce something. There is
+      // no scratchpad bound to this conversation yet — say so with the fix.
+      reportCanvasOpenDrop({
+        reason: "nothing-to-show",
+        requested: scratchTitle?.trim() || "Scratchpad",
+        detail: "no scratchpad is attached to this conversation yet",
+      });
+      return;
+    }
     const stableId = `wd:${scope}:${kind}`;
     if (canvasOpen && currentCanvasSourceId === stableId) {
       dispatch(closeCanvas());

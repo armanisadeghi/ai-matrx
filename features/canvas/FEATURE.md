@@ -41,6 +41,21 @@ the rules an agent editing THIS directory must obey.
   register on a phone, where the full-bleed sheet is still right. Owner
   standard, 2026-09-13: *"we have an entire Canvas system that gives us a nice
   adjustable sidebar that can be folded out and in."*
+- **AN OPEN-IN-CANVAS REQUEST NEVER SILENTLY DOES NOTHING.** Every place a
+  request to show something in the canvas can be dropped — no type, no data,
+  an unknown type, an artifact that would not persist, a route with no canvas
+  surface — ends in `reportCanvasOpenDrop` (`openRequest.ts`), which names what
+  was asked for and what to do instead. A bare `return` there is the defect:
+  live on 2026-09-14 an agent announced it had opened a document artifact, the
+  canvas kept showing what it was showing, and nothing anywhere said otherwise.
+  `useCanvas().open` returns a boolean for the same reason. Availability is
+  checked with `useCanvasOpenGuard` BEFORE dispatching, because the slice
+  happily accepts an open for a route that mounts nothing.
+- **A mounted `CanvasDock` IS a canvas surface.** `selectCanvasIsAvailable` is
+  `isAvailable || dockHosts > 0` — the flag alone is raised only by the
+  idle-deferred `CanvasSideSheet`, so a docked route reported "no canvas here"
+  until that island hydrated.
+
 - **Never fork the canvas body per presentation.** Card, vertical split and
   pane chrome live once in `core/CanvasSurface.tsx`; a presentation owns only
   placement.
@@ -108,6 +123,13 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-14` — **an open-in-canvas request can no longer silently do nothing.**
+  New `openRequest.ts` (`reportCanvasOpenDrop` + copy) and
+  `hooks/useCanvasOpenGuard.ts`; every drop point in the open path announces
+  itself with a remedy instead of returning; `selectCanvasIsAvailable` now
+  counts a mounted dock. Guard:
+  `features/canvas/__tests__/open-in-canvas-never-silent.test.tsx`.
 
 - `2026-09-14` — **the canvas DOCKS instead of covering.** `CanvasDock` +
   `CanvasDockBody` give any route a resizable canvas column; `CanvasSurface`

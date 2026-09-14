@@ -21,6 +21,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import IconButton from "@/components/official/IconButton";
 import { toast } from "@/lib/toast";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 
 export interface ContentBlockAction {
     icon: LucideIcon;
@@ -124,7 +125,17 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
     }, [isFullScreen, closeOnEscape]);
     
     const handleCanvasOpen = () => {
-        if (!canvasType || !canvasData) return;
+        // Never a bare return: the Canvas button was clicked, so something has
+        // to happen. Missing type/data means the block was rendered without the
+        // payload the canvas needs — say that instead of eating the click.
+        if (!canvasType || !canvasData) {
+            reportCanvasOpenDrop({
+                reason: "no-content",
+                requested: title ?? null,
+                detail: !canvasType ? "no canvas type on this block" : "no canvas data on this block",
+            });
+            return;
+        }
         const artifactId = canvasMetadata?.artifactId;
         const def = getArtifactDef(canvasType);
 

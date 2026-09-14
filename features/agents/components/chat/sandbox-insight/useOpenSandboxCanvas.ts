@@ -29,6 +29,7 @@ import {
   openCanvas,
   type CanvasContent,
 } from "@/features/canvas/redux/canvasSlice";
+import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 
 export interface OpenSandboxCanvasOptions {
   /** The box to show — `sandbox_instances.id`. */
@@ -71,12 +72,17 @@ export function buildSandboxCanvasContent({
 
 export function useOpenSandboxCanvas() {
   const dispatch = useAppDispatch();
+  const { ensureCanvasReachable } = useCanvasOpenGuard();
 
   const open = useCallback(
-    (opts: OpenSandboxCanvasOptions) => {
+    (opts: OpenSandboxCanvasOptions): boolean => {
+      // A route with no canvas surface would swallow this open entirely — the
+      // sandbox pane would simply never appear and nothing would say so.
+      if (!ensureCanvasReachable("Sandbox")) return false;
       dispatch(openCanvas(buildSandboxCanvasContent(opts)));
+      return true;
     },
-    [dispatch],
+    [dispatch, ensureCanvasReachable],
   );
 
   const offer = useCallback(

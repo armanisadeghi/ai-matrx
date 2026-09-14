@@ -602,8 +602,20 @@ export const selectCanvasItems = (state: WithCanvas) =>
   state.canvas?.items ?? [];
 export const selectCurrentItemId = (state: WithCanvas) =>
   state.canvas?.currentItemId ?? null;
+/**
+ * Is a canvas surface actually on screen for this route?
+ *
+ * TWO surfaces answer yes, not one. `isAvailable` is raised by the global
+ * `CanvasSideSheet` front door — which mounts behind `useIdleReady` in
+ * `DeferredIslands` — while a route that DOCKS the canvas (`CanvasDock`, the
+ * default presentation since 2026-09-14) raises `dockHosts` instead and never
+ * touched this flag. A docked route therefore reported "no canvas here" until
+ * the idle island happened to hydrate: every affordance gated on availability
+ * stayed hidden, and an open dispatched in that window went nowhere with
+ * nothing said. A mounted dock IS a canvas surface, so it counts.
+ */
 export const selectCanvasIsAvailable = (state: WithCanvas) =>
-  state.canvas?.isAvailable ?? false;
+  (state.canvas?.isAvailable ?? false) || (state.canvas?.dockHosts ?? 0) > 0;
 
 // Get the currently active canvas item
 export const selectCurrentCanvasItem = (

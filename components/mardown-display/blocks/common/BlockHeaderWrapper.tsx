@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
@@ -124,7 +125,16 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
 
   // ── Canvas ────────────────────────────────────────────────────────────────
   const handleCanvasOpen = () => {
-    if (!canvasType || !canvasData) return;
+    if (!canvasType || !canvasData) {
+      reportCanvasOpenDrop({
+        reason: "no-content",
+        requested: title,
+        detail: !canvasType
+          ? "no canvas type on this block"
+          : "no canvas data on this block",
+      });
+      return;
+    }
     const artifactId =
       typeof canvasMetadata?.artifactId === "string"
         ? canvasMetadata.artifactId

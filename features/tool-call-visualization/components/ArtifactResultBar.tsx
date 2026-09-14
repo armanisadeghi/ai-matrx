@@ -43,6 +43,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
 import { cn } from "@/lib/utils";
@@ -104,19 +105,29 @@ export function ArtifactResultBar({
       : artifact.title;
 
   function openCanvas() {
-    if (artifact.kind === "working_document" && conversationId) {
-      // Park the final version in the Canvas — the unified live workspace.
-      // Deduped so reopening reuses the same item.
-      canvas.open({
-        type: "working_document",
-        data: { conversationId, kind: "working" },
-        metadata: {
-          title: "Documents",
-          conversationId,
-          sourceMessageId: `wd:${conversationId}:working`,
-        },
+    if (artifact.kind !== "working_document" || !conversationId) {
+      // The menu item only renders for a working document with a conversation,
+      // but a click that reaches here anyway must not be swallowed.
+      reportCanvasOpenDrop({
+        reason: "no-content",
+        requested: title,
+        detail: conversationId
+          ? `${artifact.kind} has no canvas surface`
+          : "no conversation bound to this artifact",
       });
+      return;
     }
+    // Park the final version in the Canvas — the unified live workspace.
+    // Deduped so reopening reuses the same item.
+    canvas.open({
+      type: "working_document",
+      data: { conversationId, kind: "working" },
+      metadata: {
+        title: "Documents",
+        conversationId,
+        sourceMessageId: `wd:${conversationId}:working`,
+      },
+    });
   }
 
   function openEdit() {
