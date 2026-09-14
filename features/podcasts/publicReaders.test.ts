@@ -89,10 +89,19 @@ function refusal(table: string, select: string): { code: string; message: string
 /** A chainable, thenable query builder over one table. */
 function builder(table: string) {
   let select = "*";
+  // `eq` / `is` are APPLIED, not swallowed (DD-234 residue, V-103). A double
+  // that accepts a filter and ignores it can never fail on a MISSING filter,
+  // which is exactly the defect this file now has to catch: chapters.json
+  // served a public-but-unpublished episode because it never asked for
+  // `is_published`. The other operators below stay no-ops — no reader here
+  // depends on one, and modelling them badly would be worse than not at all.
+  const filters: { column: string; value: unknown }[] = [];
+  const matches = (row: Record<string, unknown>) =>
+    filters.every((f) => row[f.column] === f.value);
   const settle = () => {
     const error = refusal(table, select);
     if (error) return { data: null, error };
-    return { data: rows[table] ?? [], error: null };
+    return { data: (rows[table] ?? []).filter(matches), error: null };
   };
   const one = () => {
     const r = settle();
@@ -111,7 +120,13 @@ function builder(table: string) {
     single: () => Promise.resolve(one()),
     maybeSingle: () => Promise.resolve(one()),
   };
-  for (const chain of ["is", "eq", "order", "limit", "not", "or", "gte", "lte", "in"]) {
+  for (const chain of ["eq", "is"]) {
+    api[chain] = (column: string, value: unknown) => {
+      filters.push({ column, value });
+      return api;
+    };
+  }
+  for (const chain of ["order", "limit", "not", "or", "gte", "lte", "in"]) {
     api[chain] = () => api;
   }
   return api;
@@ -278,6 +293,39 @@ describe("the public podcast readers survive a column grant", () => {
     expect(xml).toContain('type="application/json+chapters"');
     expect(xml).toContain("/podcast/episode-one/chapters.json");
     expectEverySelectWithinItsBound();
+  });
+
+  it("chapters.json refuses a PUBLIC but UNPUBLISHED episode, exactly as the feed does", async () => {
+    // 🚨 THE V-103 RESIDUE. `pub_read` on podcast.pc_episodes is
+    // `deleted_at IS NULL AND visibility = 'public'` — it carries NO
+    // `is_published` term, so RLS alone does not close this. feed.xml has always
+    // filtered `is_published`; chapters.json did not, so a draft episode's
+    // chapter titles were served to anyone who guessed the slug out of a route
+    // nobody thought of as a publishing surface. V-103 proved the row is
+    // anon-readable by inserting one live inside a rolled-back transaction.
+    //
+    // Both routes now apply ONE predicate, `publiclyServableEpisodes`.
+    rows.pc_episodes = [{ ...EPISODE, is_published: false }];
+
+    const { GET } = await import("@/app/(core)/podcast/[slug]/chapters.json/route");
+    const res = await GET(new Request("https://aimatrx.com/podcast/episode-one/chapters.json"), {
+      params: Promise.resolve({ slug: "episode-one" }),
+    });
+
+    const body = await res.text();
+    expect({ status: res.status, body }).toEqual({ status: 404, body: "Episode not found" });
+    // Not a word of the unpublished episode's content leaves.
+    expect(body).not.toContain("Cold open");
+    expect(body).not.toContain("The main thread");
+
+    // And the feed agrees — it always did, which is what made them disagree.
+    const feed = await import("@/app/(core)/podcast/[slug]/feed.xml/route");
+    const feedRes = await feed.GET(new Request("https://aimatrx.com/podcast/us-history/feed.xml"), {
+      params: Promise.resolve({ slug: "us-history" }),
+    });
+    const xml = await feedRes.text();
+    expect(xml).not.toContain("Episode One");
+    expect(xml).not.toContain("<podcast:chapters");
   });
 
   it("the podcast index renders its shows and never asks for a column anon lacks", async () => {

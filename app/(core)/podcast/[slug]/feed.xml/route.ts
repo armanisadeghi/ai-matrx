@@ -25,6 +25,7 @@ import {
     chaptersJsonUrl,
     CHAPTERS_JSON_MIME,
 } from '@/features/podcasts/chapters-json';
+import { publiclyServableEpisodes } from '@/features/podcasts/publicGate';
 
 export const revalidate = 3600;
 
@@ -125,12 +126,15 @@ export async function GET(
     const show = mapPcShowRow(showRow);
 
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
-    const { data: episodeRows, error: episodeError } = await supabase
-        .schema('podcast').from('pc_episodes')
-        .select(PC_EPISODE_PUBLIC_SELECT)
-        .is('deleted_at', null)
-        .eq('show_id', show.id)
-        .eq('is_published', true)
+    // THE ONE ROW GATE (features/podcasts/publicGate.ts). The `deleted_at IS NULL`
+    // + `is_published` pair used to be written out here, and chapters.json carried
+    // only half of it — see that file's header for what that served.
+    const { data: episodeRows, error: episodeError } = await publiclyServableEpisodes(
+        supabase
+            .schema('podcast').from('pc_episodes')
+            .select(PC_EPISODE_PUBLIC_SELECT)
+            .eq('show_id', show.id),
+    )
         .order('episode_number', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 

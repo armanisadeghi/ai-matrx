@@ -12,6 +12,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { PC_EPISODE_PUBLIC_SELECT } from "@/features/podcasts/publicColumns";
+import { publiclyServableEpisodes } from "@/features/podcasts/publicGate";
 import { mapPcEpisodeRow } from "@/features/podcasts/types";
 import {
   buildChaptersJson,
@@ -33,12 +34,13 @@ export async function GET(
   const { slug } = await params;
   const supabase = await createClient();
 
-  const episodeQuery = supabase
-    .schema("podcast")
-    .from("pc_episodes")
-    // Fetched with no account: `anon` holds a COLUMN grant, so `*` is 42501 (DD-230).
-    .select(PC_EPISODE_PUBLIC_SELECT)
-    .is("deleted_at", null);
+  const episodeQuery = publiclyServableEpisodes(
+    supabase
+      .schema("podcast")
+      .from("pc_episodes")
+      // Fetched with no account: `anon` holds a COLUMN grant, so `*` is 42501 (DD-230).
+      .select(PC_EPISODE_PUBLIC_SELECT),
+  );
 
   const { data: episodeRow, error: episodeError } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
