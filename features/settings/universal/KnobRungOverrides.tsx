@@ -81,6 +81,35 @@ function plural(kind: SubOrgScopeKind): string {
 }
 
 /**
+ * "a table" / "an employer profile". DD-203 is what made this visible: until HR
+ * mounted this panel every rung on screen began with a consonant, so the
+ * hard-coded "a" was invisibly wrong and became "a employer profile" on the
+ * first HR key.
+ */
+function article(word: string): string {
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+function withArticle(word: string): string {
+  return `${article(word)} ${word}`;
+}
+
+/**
+ * The rungs of one panel as a SINGULAR list a sentence can use — "employer
+ * profile, pay group or location".
+ *
+ * The previous spelling was `heading.replace(/s$/, "")`, which un-pluralises the
+ * LAST word of a joined plural heading and leaves the rest: with HR's three
+ * rungs "employer profiles, pay groups, locations" became "employer profiles,
+ * pay groups, location". One rung reads the same as before.
+ */
+function singularList(kinds: readonly SubOrgScopeKind[]): string {
+  const words = kinds.map((kind) => nounWord(kind));
+  if (words.length <= 1) return words[0] ?? "";
+  return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
+}
+
+/**
  * The ladder for ONE picked scope row.
  *
  * `resolveKnobLadder` answers for a RUNG — the chain, the parent a clear falls
@@ -194,7 +223,7 @@ function ScopeRowPicker({
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="h-7 text-xs">
           <Plus className="mr-1 h-3.5 w-3.5" />
-          {`Add override for a ${nounWord(kind)}…`}
+          {`Add override for ${withArticle(nounWord(kind))}…`}
           <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
         </Button>
       </PopoverTrigger>
@@ -467,6 +496,7 @@ export function KnobRungOverrides({
         canAdd={canAdd}
         stateOnlyReason={stateOnly?.reason ?? null}
         heading={heading}
+        singular={singularList(kinds)}
         empty={rows.length === 0 && drafts.length === 0}
       >
         {rows.map((row) => {
@@ -525,6 +555,7 @@ function ExceptionsBody({
   canAdd,
   stateOnlyReason,
   heading,
+  singular,
   empty,
   children,
 }: {
@@ -534,6 +565,8 @@ function ExceptionsBody({
   canAdd: boolean;
   stateOnlyReason: string | null;
   heading: string;
+  /** The panel's rungs in the singular — "employer profile, pay group or location". */
+  singular: string;
   empty: boolean;
   children: React.ReactNode;
 }) {
@@ -561,9 +594,9 @@ function ExceptionsBody({
     return (
       <p className="px-4 py-2 text-xs text-muted-foreground">
         {stateOnlyReason
-          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for a ${heading.replace(/s$/, "")} to differ from.`
+          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for ${withArticle(singular)} to differ from.`
           : canAdd
-            ? `Nothing overrides the value above. Add one for a specific ${heading.replace(/s$/, "")} when it needs to differ.`
+            ? `Nothing overrides the value above. Add one for a specific ${singular} when it needs to differ.`
             : `Nothing overrides the value above. An owner or admin sets exceptions by ${heading}.`}
       </p>
     );

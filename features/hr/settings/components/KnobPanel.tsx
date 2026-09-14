@@ -51,6 +51,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { clearHrKnob, setHrKnob } from "../../service";
+import { HrKnobExceptions } from "./HrKnobExceptions";
 import { isHrDenied } from "../../types";
 import type { HrPresentedKnob } from "../types";
 import { Textarea } from "@/components/ui/textarea";
@@ -382,38 +383,19 @@ export function KnobRow({
         )}
       </div>
 
-      {/* 4. the scope rung, where the key has one */}
-      {presentation.scopes?.length ? (
-        <div className="space-y-1 rounded-md border border-dashed border-border p-3">
-          <p className="text-xs font-medium text-foreground">
-            This key can also be set per{" "}
-            {presentation.scopes[0].kind === "pay_group"
-              ? "pay group"
-              : presentation.scopes[0].kind === "location"
-                ? "location"
-                : "employer profile"}
-            , and the nearest rung wins.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            A scope override is stored on the scope row itself, so it is set where that
-            row is edited. `hr_knob_set` takes an organization and no scope, so this
-            panel cannot write one.
-          </p>
-          <ul className="flex flex-wrap gap-2 pt-1">
-            {presentation.scopes.map((scope) => (
-              <li key={`${scope.kind}:${scope.id}`}>
-                <Link
-                  href={scope.href}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border px-2 text-xs text-foreground hover:bg-accent"
-                >
-                  {scope.label}
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      {/* 4. THE SCOPE RUNG — the exceptions this key carries below the employer.
+          🚨 DD-203. This used to be a dashed box saying "a scope override is
+          stored on the scope row itself, so it is set where that row is edited"
+          and linking to the pay group / location pages — which do not set one.
+          It was a dead end wearing a sentence, and it was the reason 582 hr.*
+          key-rung pairs were offered by the registry and reachable nowhere.
+          It is now THE picker — the same `<KnobRungOverrides>` the organization
+          configuration page mounts, with the same doors, the same removal
+          confirm and the same read-only behaviour. It renders a rung only when
+          a measured database reader can answer it, so a key whose only reader
+          is the `hr._knob` dispatcher shows no picker at all rather than
+          selling an exception nothing honours. */}
+      <HrKnobExceptions fullKey={knob.full_key} />
 
       {why ? (
         <p role="alert" className="text-sm text-destructive">

@@ -133,7 +133,6 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "seo.multi_location.max_attribution_km": ["seo.gsc_keyword_locations"],
   "seo.multi_location.single_location_fallback": ["seo.gsc_keyword_locations"],
   "seo.situational_stamps.stale_after_hours": ["seo.fn_situational_sites_owing", "seo.situational_refresh_status"],
-  "tables.density.mode": ["hr.leave_case_open", "hr.leave_wf_validate", "hr.punch_record", "hr.resolve_rules", "hr.sync_membership_to_employment", "hr.validate_org_config", "seo.ai_autonomy_scope", "seo.fn_ai_autonomy", "seo.fn_autonomy_apply_timed_out", "seo.fn_backfill_keyword_places", "seo.set_ai_autonomy"],
 };
 
 /** The database function(s) that read this key, or `null` when none do. */
@@ -158,6 +157,8 @@ export function databaseConsumersOf(fullKey: string): readonly string[] | null {
 // ───────────────────────────────────────────────────────────────────────────
 
 export const KNOB_RUNG_CONSUMERS: Readonly<Record<string, readonly string[]>> = {
+  "hr.employees.adjusted_service_date_rule": ["employer_profile", "location", "pay_group"],
+  "hr.onboarding.access_shutoff_mode": ["employer_profile", "location", "pay_group"],
   "records.confirmation.agent_write_born_confirmed": ["agent", "table"],
   "records.confirmation.confirm_on_human_edit": ["table"],
   "records.confirmation.table_allows_born_confirmed": ["agent", "table"],

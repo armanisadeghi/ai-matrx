@@ -303,22 +303,22 @@ export type HrKnobFloor = {
   href?: string;
 };
 
-/** A scope rung a key can be overridden at, below the org (§10's ladder). */
-export type HrKnobScopeRung = {
-  kind: "employer_profile" | "pay_group" | "location";
-  id: string;
-  label: string;
-  /** Where that scope row is edited — the rung's override lives on the row itself. */
-  href: string;
-};
-
 /** Everything one `<KnobRow>` needs beyond the knob itself. */
 export type HrKnobPresentation = {
   /** One line of WHY this key exists — never a restatement of the label. */
   explain?: string;
   floor?: HrKnobFloor;
-  /** Present → the row renders the scope selector (§3.11's "scope rung"). */
-  scopes?: HrKnobScopeRung[];
+  /**
+   * 🚨 THE `scopes` FIELD IS GONE (DD-203, 2026-09-14), and it never worked.
+   * It was an optional list of scope rungs a panel could supply, which `<KnobRow>`
+   * rendered as a dashed box linking to the pay group / location pages. NOTHING
+   * EVER SUPPLIED IT — no call site in this repo has ever passed `presentation`
+   * to `useHrKnobs` — so the box never rendered and an HR key said nothing at all
+   * about its three sub-org rungs. The rungs are now real and reachable:
+   * `<HrKnobExceptions>` mounts the platform's one per-rung override picker,
+   * reading `platform.knob_scope_rows` for the rows and writing through
+   * `knob_override_set`. A panel supplies nothing; there is nothing to supply.
+   */
   /** Enumerated values, when the key has a fixed range the RPC does not carry. */
   options?: Array<{ value: string; label: string }>;
 };
