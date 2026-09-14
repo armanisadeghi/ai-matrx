@@ -44,6 +44,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 
 ## Change Log
 
+- 2026-09-13 — Camera-flip capability now requires a successful forced browser enumeration after the active lease. All ordinary and forced browser reads are serialized, so pre-grant reads, failed reads retaining stale state, and out-of-order completion cannot momentarily offer Flip on a one-camera host.
+
 - 2026-09-01 — Q28 video-contract repair: the injected host now finalizes app-recorder output through the package-owned emitted-MIME/duration primitive before any feature callback receives it; exact host coverage pins MIME authority, extension, and positive integer duration.
 
 - 2026-08-30 — Q28 repair: the deterministic image-stream seam is explicitly QR-only (`qaQrOnly`); hosts disable photo/video capture and label the constraint instead of presenting a lease-less shutter.
