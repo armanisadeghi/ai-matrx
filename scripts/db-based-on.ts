@@ -21,7 +21,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import {
-  findReplacedFunctions,
+  findReplaceOccurrences,
   liveOverloads,
   parseBasedOnLines,
   resolveReplaced,
@@ -79,11 +79,18 @@ async function main(): Promise<number> {
       }
       const sql = readFileSync(path, "utf8");
       const already = new Set(parseBasedOnLines(sql).lines.map((l) => l.signature.replace(/\s+/g, "")));
-      const replaced = findReplacedFunctions(sql);
+      const replaced = findReplaceOccurrences(sql);
       const wanted: LiveFunction[] = [];
       for (const fn of replaced) {
         const r = await resolveReplaced(q, fn);
         if (r.kind === "resolved") wanted.push(r.live);
+        else if (r.kind === "name-only") wanted.push(...r.overloads);
+        else if (r.kind === "computed")
+          console.error(
+            `${C.red}[FAIL]${C.reset} line ${fn.line} builds a function NAME at runtime ` +
+              `(\`${fn.snippet}…\`). Write the replace statically, or add a \`-- based-on:\` line by hand ` +
+              `for the name it will produce.`,
+          );
         else if (r.kind === "unresolvable")
           console.error(
             `${C.red}[FAIL]${C.reset} ${fn.name}(…) at line ${fn.line}: ${r.reason}. ` +

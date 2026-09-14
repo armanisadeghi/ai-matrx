@@ -73,65 +73,138 @@ export function sha256(s: string): string {
 
 export const BASED_ON_SHA_RE = /^[0-9a-f]{64}$/;
 
-/**
- * Comments, dollar-quoted bodies and single-quoted literals removed.
- *
- * Dollar bodies matter in both directions: a `CREATE OR REPLACE FUNCTION` that
- * appears INSIDE a function body (dynamic DDL built with `format()`) is not a
- * statement this file executes, and the real statement's own header and
- * parameter list sit BEFORE its `$$`, so stripping bodies keeps every genuine
- * one and drops every quoted one.
- */
-export function stripForFunctionDetection(sql: string): string {
-  let s = sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
-  s = s.replace(/\$([A-Za-z_]\w*)?\$[\s\S]*?\$\1?\$/g, " '' ");
-  s = s.replace(/'(?:[^']|'')*'/g, " '' ");
-  return s;
-}
-
 const IDENT = `(?:"[^"]*"|[A-Za-z_][A-Za-z0-9_$]*)`;
-const QUALIFIED = new RegExp(
-  `\\bCREATE\\s+OR\\s+REPLACE\\s+(FUNCTION|PROCEDURE)\\s+(${IDENT}(?:\\.${IDENT})*)\\s*\\(`,
-  "gi",
-);
+/**
+ * Every occurrence of the keyword, ANYWHERE in the file — the name is captured
+ * separately and may well fail to parse, because half the point of this scan is
+ * to find the ones that are built at runtime.
+ */
+const REPLACE_KEYWORD = /\bCREATE\s+OR\s+REPLACE\s+(FUNCTION|PROCEDURE)\s+/gi;
+const NAME_AT = new RegExp(`^(${IDENT}(?:\\.${IDENT})*)\\s*\\(`);
 
 export interface ReplacedFunction {
-  /** As written in the file, e.g. `billing.plan_status`. */
-  readonly name: string;
+  /** As written in the file, e.g. `billing.plan_status`; null when computed. */
+  readonly name: string | null;
   /** FUNCTION or PROCEDURE, as written. */
   readonly kind: string;
-  /** Raw parameter-list text between the parentheses. */
-  readonly args: string;
-  /** 1-based line of the CREATE statement in the ORIGINAL file. */
+  /** Parameter-list text, literal-continuations joined; null when computed. */
+  readonly args: string | null;
+  /** 1-based line in the ORIGINAL file. */
   readonly line: number;
+  /**
+   * The keyword sits inside a dollar-quoted body or a string literal, i.e. this
+   * is DDL built at runtime and handed to `EXECUTE` / `format()`.
+   *
+   * 🚨 V-84 item 6: the first cut of this guard STRIPPED those regions and
+   * justified it as "a CREATE OR REPLACE inside a function body is not a
+   * statement this file executes". That is false of `DO $$ … EXECUTE '…' … $$;`,
+   * which executes it — and it is a live pattern in this very repo:
+   * `ddl_guard_org_backstop_oid_comparison.sql` replaces `platform._ddl_guard()`
+   * that way (the guard saw 0 of 1) and `iam_component_lanes_are_the_parents_dd137b10.sql`
+   * replaces four more (the guard saw 1 of 5). A silent bypass, invisible to
+   * every refusal proof, because it produces no refusal at all. The scan is now
+   * conservative: it reads the WHOLE file and asks the same question of a
+   * dynamic replace as of a static one.
+   */
+  readonly dynamic: boolean;
+  /** The raw text right after the keyword, for a message about an unparseable one. */
+  readonly snippet: string;
 }
 
-/** Character offset -> 1-based line number in `original`. */
-function lineOf(original: string, stripped: string, index: number): number {
-  // The strippers preserve length only approximately, so locate by the name
-  // text instead: good enough for a human-facing message, never load-bearing.
-  const head = stripped.slice(0, index);
-  return head.split("\n").length;
+/** Comments only — the regions that matter are deliberately left in place. */
+export function stripComments(sql: string): string {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+            .replace(/--[^\n]*/g, (m) => " ".repeat(m.length));
 }
 
-/** Every `CREATE OR REPLACE FUNCTION|PROCEDURE` this file actually executes. */
-export function findReplacedFunctions(sql: string): ReplacedFunction[] {
-  const stripped = stripForFunctionDetection(sql);
+/** [start, end) spans of dollar-quoted bodies and single-quoted literals. */
+function quotedSpans(s: string): Array<[number, number]> {
+  const spans: Array<[number, number]> = [];
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i]!;
+    if (ch === "$") {
+      const tag = /^\$([A-Za-z_]\w*)?\$/.exec(s.slice(i));
+      if (tag) {
+        const close = s.indexOf(tag[0], i + tag[0].length);
+        const end = close === -1 ? s.length : close + tag[0].length;
+        spans.push([i + tag[0].length, close === -1 ? s.length : close]);
+        i = end - 1;
+        continue;
+      }
+    }
+    if (ch === "'") {
+      let j = i + 1;
+      while (j < s.length) {
+        if (s[j] === "'") {
+          if (s[j + 1] === "'") j += 2;
+          else break;
+        } else j += 1;
+      }
+      spans.push([i + 1, Math.min(j, s.length)]);
+      i = Math.min(j, s.length - 1);
+    }
+  }
+  return spans;
+}
+
+function inSpan(spans: Array<[number, number]>, i: number): boolean {
+  return spans.some(([a, b]) => i >= a && i < b);
+}
+
+/**
+ * Undo the two things dynamic SQL does to a signature that is otherwise written
+ * out in full: adjacent-literal continuation (`'… p_id uuid, '\n'p_next text)…'`,
+ * which SQL concatenates) and doubled quotes inside a literal.
+ */
+function joinLiteralText(t: string): string {
+  return t.replace(/'[ \t\r\n]+'/g, "").replace(/''/g, "'");
+}
+
+/** True when a fragment was clearly assembled at runtime rather than written. */
+function isComputed(t: string): boolean {
+  return /\|\||%[IsL]|\bquote_ident\b|\bformat\s*\(/i.test(t);
+}
+
+/**
+ * EVERY `CREATE OR REPLACE FUNCTION|PROCEDURE` in the file — statements and
+ * runtime-built DDL alike. Conservative by design: a false demand for a header
+ * costs one `pnpm db:based-on` call, a missed one costs a peer's function body.
+ */
+export function findReplaceOccurrences(sql: string): ReplacedFunction[] {
+  const text = stripComments(sql);
+  const spans = quotedSpans(text);
   const out: ReplacedFunction[] = [];
-  QUALIFIED.lastIndex = 0;
+  REPLACE_KEYWORD.lastIndex = 0;
   let m: RegExpExecArray | null;
-  while ((m = QUALIFIED.exec(stripped)) !== null) {
-    const open = m.index + m[0].length - 1;
-    const args = balanced(stripped, open);
-    if (args === null) continue;
+  while ((m = REPLACE_KEYWORD.exec(text)) !== null) {
+    const after = m.index + m[0].length;
+    const line = text.slice(0, m.index).split("\n").length;
+    const dynamic = inSpan(spans, m.index);
+    const window = joinLiteralText(text.slice(after, after + 4000));
+    const nm = NAME_AT.exec(window);
+    const snippet = text.slice(after, after + 90).replace(/\s+/g, " ").trim();
+    if (!nm || isComputed(nm[1]!)) {
+      out.push({ name: null, kind: m[1]!.toUpperCase(), args: null, line, dynamic, snippet });
+      continue;
+    }
+    const open = window.indexOf("(", nm[1]!.length - 1);
+    const args = open === -1 ? null : balanced(window, open);
+    const argsOk = args !== null && !isComputed(args);
     out.push({
-      name: m[2]!,
+      name: nm[1]!,
       kind: m[1]!.toUpperCase(),
-      args,
-      line: lineOf(sql, stripped, m.index),
+      args: argsOk ? args : null,
+      line,
+      dynamic,
+      snippet,
     });
   }
   return out;
+}
+
+/** The statements written out in the file itself (no runtime-built DDL). */
+export function findReplacedFunctions(sql: string): ReplacedFunction[] {
+  return findReplaceOccurrences(sql).filter((o) => !o.dynamic);
 }
 
 /** Text inside the parentheses starting at `open`, or null when unbalanced. */
@@ -332,10 +405,20 @@ export async function resolveReplaced(
 ): Promise<
   | { kind: "new" }
   | { kind: "resolved"; live: LiveFunction }
+  | { kind: "name-only"; overloads: LiveFunction[] }
+  | { kind: "computed" }
   | { kind: "unresolvable"; reason: string; overloads: LiveFunction[] }
 > {
+  // A name built at runtime: there is nothing to look up, and a whole-body write
+  // at a name we cannot even read is the worst case this guard has.
+  if (fn.name === null) return { kind: "computed" };
+
   const overloads = await liveOverloads(q, fn.name);
   if (overloads.length === 0) return { kind: "new" };
+
+  // The name is written out but the argument list is assembled at runtime. We
+  // cannot say WHICH overload it lands on, so every live one must be declared.
+  if (fn.args === null) return { kind: "name-only", overloads };
 
   const types: string[] = [];
   for (const param of splitParams(fn.args)) {
@@ -385,8 +468,16 @@ export async function resolveProcOid(q: Query, signature: string): Promise<numbe
 export interface BasedOnFinding {
   /** Human sentence, already carrying the remedy. */
   readonly message: string;
-  /** `missing` | `stale` | `unresolvable` | `phantom` | `malformed` */
-  readonly kind: "missing" | "stale" | "unresolvable" | "phantom" | "malformed";
+  readonly kind:
+    | "missing"
+    | "stale"
+    | "unresolvable"
+    | "phantom"
+    | "malformed"
+    /** runtime-built DDL whose argument list could not be read statically */
+    | "dynamic-name-only"
+    /** runtime-built DDL whose FUNCTION NAME could not be read statically */
+    | "dynamic-computed";
   readonly signature: string;
 }
 
@@ -403,7 +494,7 @@ export interface BasedOnResult {
 export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult> {
   const findings: BasedOnFinding[] = [];
   const verified: string[] = [];
-  const replaced = findReplacedFunctions(sql);
+  const replaced = findReplaceOccurrences(sql);
   const { lines, malformed } = parseBasedOnLines(sql);
 
   for (const bad of malformed)
@@ -437,15 +528,81 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     declared.set(oid, { hash: l.hash, line: l });
   }
 
+  const where = (fn: ReplacedFunction) =>
+    `line ${fn.line}${fn.dynamic ? " (inside runtime-built DDL — a DO block or EXECUTE/format string)" : ""}`;
+
   for (const fn of replaced) {
     const r = await resolveReplaced(q, fn);
     if (r.kind === "new") continue;
+
+    // A name assembled at runtime. Nothing can be looked up, so the file must at
+    // least carry a declaration the author stands behind — and every line it
+    // carries has already been checked against the live body above.
+    if (r.kind === "computed") {
+      if (lines.length > 0 && findings.length === 0) {
+        console.warn(
+          `      NOTE ${where(fn)} builds a function NAME at runtime (\`${fn.snippet}…\`).\n` +
+            `      This runner cannot check what that overwrites; it is trusting the ` +
+            `${lines.length} verified \`-- based-on:\` line(s) in this file.`,
+        );
+        continue;
+      }
+      findings.push({
+        kind: "dynamic-computed",
+        signature: fn.snippet,
+        message:
+          `${where(fn)} replaces a function whose NAME is built at runtime:\n` +
+          `        ${fn.snippet}…\n` +
+          `    A whole-body write at a name this runner cannot even read is the worst case of the\n` +
+          `    DD-220 class: it clobbers whatever is there, and no proof in this repo would see it.\n` +
+          `    Write the replace STATICALLY (a plain \`create or replace function <schema>.<name>(…)\`\n` +
+          `    statement, which is also what makes the file reviewable), or carry an explicit\n` +
+          `    \`-- based-on:\` line for the name it will produce:\n` +
+          `        pnpm db:based-on <schema>.<the name this builds>`,
+      });
+      continue;
+    }
+
+    // The name is written out but the arguments are assembled at runtime: we
+    // cannot say which overload it lands on, so ALL of them must be declared.
+    if (r.kind === "name-only") {
+      const undeclared = r.overloads.filter((o) => !declared.has(Number(o.oid)));
+      if (undeclared.length === 0) {
+        for (const o of r.overloads) {
+          const decl = declared.get(Number(o.oid))!;
+          if (decl.hash !== o.hash)
+            findings.push({
+              kind: "stale",
+              signature: o.signature,
+              message:
+                `line ${decl.line.line} declares \`${o.signature}\` based on sha256 ${decl.hash},\n` +
+                `    but the body live on this database RIGHT NOW is sha256 ${o.hash}. Somebody replaced\n` +
+                `    that function after you read it (DD-220). Regenerate: pnpm db:based-on ${o.signature.replace(/\(.*$/, "")}`,
+            });
+          else verified.push(o.signature);
+        }
+        continue;
+      }
+      findings.push({
+        kind: "dynamic-name-only",
+        signature: fn.name ?? "",
+        message:
+          `${where(fn)} replaces \`${fn.name}\` with an argument list built at runtime, so this runner\n` +
+          `    cannot tell WHICH of the ${r.overloads.length} live overload(s) it lands on. Every one of them\n` +
+          `    must therefore be declared; ${undeclared.length} ${undeclared.length === 1 ? "is" : "are"} not:\n` +
+          undeclared.map((o) => `        ${o.signature}  (live sha256 ${o.hash})`).join("\n") +
+          `\n    Write the parameter list out in full so the target is unambiguous, or declare them all:\n` +
+          `        pnpm db:based-on ${fn.name}`,
+      });
+      continue;
+    }
+
     if (r.kind === "unresolvable") {
       findings.push({
         kind: "unresolvable",
-        signature: fn.name,
+        signature: fn.name ?? "",
         message:
-          `line ${fn.line} replaces \`${fn.name}(…)\` and ${r.overloads.length} function(s) of that name\n` +
+          `${where(fn)} replaces \`${fn.name}(…)\` and ${r.overloads.length} function(s) of that name\n` +
           `    already exist live, but this runner could not work out WHICH one it targets:\n` +
           `    ${r.reason}.\n` +
           `    It will not execute a whole-body overwrite it cannot identify. Schema-qualify the name and\n` +
@@ -461,7 +618,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
         kind: "missing",
         signature: live.signature,
         message:
-          `line ${fn.line} replaces \`${live.signature}\`, which ALREADY EXISTS on this database, and the\n` +
+          `${where(fn)} replaces \`${live.signature}\`, which ALREADY EXISTS on this database, and the\n` +
           `    file never says which body it was written against.\n` +
           `    \`CREATE OR REPLACE FUNCTION\` is a whole-body write with no concurrency check: it silently\n` +
           `    discards every change another migration made to that function since you read it. That is how\n` +

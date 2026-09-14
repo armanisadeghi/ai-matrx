@@ -108,7 +108,11 @@
  *     `pnpm db:based-on migrations/<file>.sql`) and re-verified against the live
  *     catalogue immediately before the file executes. A NEW function needs no
  *     line, and an already-ledgered file is never re-judged — its bytes are
- *     frozen history, so `--reapply` still works. See scripts/migration-based-on.ts.
+ *     frozen history, so `--reapply` still works. The scan reads the WHOLE file,
+ *     so a `DO $$ … EXECUTE 'create or replace function …' … $$;` is judged the
+ *     same as a written-out statement (V-84: stripping dollar bodies made that
+ *     shape invisible, and it is live in this repo's own migrations).
+ *     See scripts/migration-based-on.ts.
  *
  * Exit codes: 0 applied (or already applied, byte-identical) · 1 refusal or SQL
  * failure · 2 unexpected error / creds absent.
@@ -120,7 +124,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { connectDirect, DB_VARS, loadDbEnv, type DbEnv } from "./lib/direct-db";
-import { basedOnCheck, findReplacedFunctions, type Query } from "./migration-based-on";
+import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
@@ -552,7 +556,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
             `${based.verified.length === 1 ? "one" : "ones"} this file declares it saw ` +
             `${C.dim}(${based.verified.join(", ")})${C.reset}`,
         );
-    } else if (findReplacedFunctions(sql).length) {
+    } else if (findReplaceOccurrences(sql).length) {
       console.log(
         `${TAG.warn}DD-220 based-on check skipped: ${filename} is already ledgered (applied ` +
           `${existing.applied_at}), and ledgered bytes are frozen history — never re-judged.`,
@@ -663,6 +667,8 @@ const SELFTEST_SCHEMA = "zz_db_apply_selftest";
 /** DD-220 arm: a real function, created then replaced, on the live database. */
 const SELFTEST_FN_FILE = "zz_db_apply_selftest_dd220_fn.sql";
 const SELFTEST_REPLACE_FILE = "zz_db_apply_selftest_dd220_replace.sql";
+/** V-84 residue: the same rule applied to DDL built at runtime. */
+const SELFTEST_DYNAMIC_FILE = "zz_db_apply_selftest_dd220_dynamic.sql";
 
 async function selfTest(statementTimeout: string): Promise<number> {
   const env = loadDbEnv();
@@ -676,6 +682,7 @@ async function selfTest(statementTimeout: string): Promise<number> {
   const path = resolve(MIGRATIONS_DIR, SELFTEST_FILE);
   const fnPath = resolve(MIGRATIONS_DIR, SELFTEST_FN_FILE);
   const replacePath = resolve(MIGRATIONS_DIR, SELFTEST_REPLACE_FILE);
+  const dynamicPath = resolve(MIGRATIONS_DIR, SELFTEST_DYNAMIC_FILE);
   const body =
     `create schema if not exists ${SELFTEST_SCHEMA};\n` +
     // Deliberately inside the file executed through applyFile, after its
@@ -807,17 +814,68 @@ async function selfTest(statementTimeout: string): Promise<number> {
     ).rows[0]?.v;
     if (nowSays !== "replaced:x")
       fail(`the declared replace did not land — probe('x') returned ${JSON.stringify(nowSays)}`);
+
+    // ── Proof 5 (V-84 residue): the SAME rule for DDL built at runtime ───────
+    // The first cut of this guard stripped dollar-quoted bodies, so a
+    // `DO $$ … EXECUTE 'create or replace function …' … $$;` was invisible — and
+    // that is a live pattern in this repo's own migrations
+    // (`ddl_guard_org_backstop_oid_comparison.sql` replaces platform._ddl_guard()
+    // exactly that way). A silent bypass produces no refusal, so none of the four
+    // proofs above could ever have caught it. This one can.
+    const dynBody = (note: string) =>
+      `do $do$\nbegin\n  execute 'create or replace function ${SELFTEST_SCHEMA}.probe(p_in text) ` +
+      `returns text language sql immutable as $f$ select ''${note}'' || p_in $f$';\nend\n$do$;\n`;
+
+    writeFileSync(dynamicPath, dynBody("dyn:"), "utf8");
+    const dynNoHeader = await applyFile(dynamicPath, opts);
+    if (dynNoHeader !== 1)
+      fail(`a DYNAMIC replace with no based-on line exited ${dynNoHeader}, expected 1`);
+
+    // A name assembled at runtime cannot be looked up at all: refused by name.
+    writeFileSync(
+      dynamicPath,
+      `do $do$\nbegin\n  execute format('create or replace function %I.probe(p_in text) returns text ` +
+        `language sql immutable as $f$ select ''c:'' || p_in $f$', '${SELFTEST_SCHEMA}');\nend\n$do$;\n`,
+      "utf8",
+    );
+    const computed = await applyFile(dynamicPath, opts);
+    if (computed !== 1) fail(`a COMPUTED function name exited ${computed}, expected 1`);
+
+    const hashNow = String(
+      (
+        await client.query<{ h: string }>(
+          `select encode(sha256(convert_to(pg_get_functiondef(
+             to_regprocedure('${SELFTEST_SCHEMA}.probe(text)')), 'utf8')), 'hex') as h`,
+        )
+      ).rows[0]?.h ?? "",
+    );
+    writeFileSync(
+      dynamicPath,
+      `-- based-on: ${SELFTEST_SCHEMA}.probe(text) ${hashNow}\n${dynBody("dyn:")}`,
+      "utf8",
+    );
+    const dynGood = await applyFile(dynamicPath, opts);
+    if (dynGood !== 0) fail(`a DECLARED dynamic replace exited ${dynGood}, expected 0`);
+    const dynSays = (
+      await client.query<{ v: string }>(`select ${SELFTEST_SCHEMA}.probe('x') as v`)
+    ).rows[0]?.v;
+    if (dynSays !== "dyn:x")
+      fail(`the declared dynamic replace did not land — probe('x') returned ${JSON.stringify(dynSays)}`);
+
     if (failures === 0)
       console.log(
         `${TAG.ok}DD-220 proven: new function applies unguarded; replacing an existing one is ` +
-          `REFUSED with no header and REFUSED on a stale hash; the declared hash applies and lands`,
+          `REFUSED with no header and REFUSED on a stale hash; the declared hash applies and lands; ` +
+          `and a DO-block/EXECUTE replace is judged the same — refused bare, refused on a computed ` +
+          `name, applied when declared (V-84 residue)`,
       );
   } finally {
     await client
       .query(
         `drop schema if exists ${SELFTEST_SCHEMA} cascade;
          delete from public._schema_migrations where source = ${lit(SOURCE)}
-            and filename in (${lit(SELFTEST_FILE)}, ${lit(SELFTEST_FN_FILE)}, ${lit(SELFTEST_REPLACE_FILE)});`,
+            and filename in (${lit(SELFTEST_FILE)}, ${lit(SELFTEST_FN_FILE)},
+                             ${lit(SELFTEST_REPLACE_FILE)}, ${lit(SELFTEST_DYNAMIC_FILE)});`,
       )
       .catch((err: unknown) =>
         console.error(
@@ -826,7 +884,7 @@ async function selfTest(statementTimeout: string): Promise<number> {
         ),
       );
     await client.end().catch(() => undefined);
-    for (const p of [path, fnPath, replacePath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [path, fnPath, replacePath, dynamicPath]) if (existsSync(p)) unlinkSync(p);
   }
 
   if (failures) {

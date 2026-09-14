@@ -74,7 +74,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
-import { basedOnCheck, findReplacedFunctions, type Query } from "./migration-based-on";
+import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
@@ -497,7 +497,7 @@ interface BasedOnGap {
 
 async function basedOnArm(pending: string[]): Promise<{ gaps: BasedOnGap[]; skipped: string | null }> {
   const candidates = pending.filter(
-    (f) => findReplacedFunctions(readFileSync(resolve(MIGRATIONS_DIR, f), "utf8")).length > 0,
+    (f) => findReplaceOccurrences(readFileSync(resolve(MIGRATIONS_DIR, f), "utf8")).length > 0,
   );
   if (candidates.length === 0) return { gaps: [], skipped: null };
 
