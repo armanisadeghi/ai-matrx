@@ -524,10 +524,10 @@ function ProposedSetupView({ a }: { a: Record<string, unknown> }) {
         </div>
       ) : null}
       <p className="text-[11px] text-muted-foreground">
-        Nothing was set. Each proposal waits in your approval queue: reject any
-        that are wrong for this business now. Approving an offering adds it to
-        your brand, makes it available on this site and sets its worth — that
-        step lands with the brand-offering model.{" "}
+        Nothing was set. Each proposal waits in the queue above: approving an
+        offering adds it to your brand, makes it available on this site and
+        sets its worth; rejecting one records why and it is never proposed
+        again. Every site you manage:{" "}
         <AppLink
           href={marketingRoutes.approvals()}
           className="text-primary underline-offset-2 hover:underline"
