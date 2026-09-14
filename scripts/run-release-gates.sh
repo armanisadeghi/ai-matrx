@@ -202,6 +202,18 @@ if $STRICT; then
         # be the exact failure this gate exists to end. Proven failing then
         # passing on DD-191's own shape: `pnpm check:door-rows:self-test`.
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
+        # DD-208 — the WIDE lane (all 892 declared signed-in doors, not just the
+        # 477 of b75). It could not block until two things were true, and on
+        # 2026-09-13 both became true: its three row-boundedness leaks are closed
+        # (`billing.entitlement_consume`, `public.agx_get_list_full`,
+        # `public.dict_resolve`, plus three sibling agent doors and the unchecked
+        # `p_org` on the four-argument consume overload), and the four doors that
+        # cross the organization boundary ON PURPOSE now carry a written reason and
+        # a named owner in `scripts/door-rows/by-design-allowlist.json`. Those four
+        # print on every run as ALLOWED BY DESIGN — never silent, never a PASS — and
+        # the list can only shrink: an entry whose door has stopped failing FAILS
+        # this gate by itself, so an excuse can never outlive the thing it excused.
+        "Door rows, wide: every declared signed-in door (DD-208)|pnpm check:door-rows:wide:strict"
         # A policy that reads its own relation raises 42P17 and the table is
         # unreadable by everyone — platform.rulebook and seo.starter_pack, live,
         # 2026-09-12, from the moment a routine iam.apply_rls sweep first emitted

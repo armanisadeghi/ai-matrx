@@ -63,10 +63,19 @@
  *               missing required payload, a timeout). Named, with the reason.
  *               NEVER counted as a pass.
  *
- *   pnpm check:door-rows           # loud, non-blocking (exit 0)
- *   pnpm check:door-rows:strict    # exit 1 on any FAIL or on UNMEASURED
- *                                  #   credentials (never a silent green)
- *   pnpm check:door-rows:self-test # proves the harness FAILS a known leak
+ *   pnpm check:door-rows            # loud, non-blocking (exit 0)
+ *   pnpm check:door-rows:strict     # the b75 lane (477 doors). exit 1 on any
+ *                                   #   FAIL or on UNMEASURED credentials. NO
+ *                                   #   allowlist, ever.
+ *   pnpm check:door-rows:wide:strict # DD-208: all 892 declared signed-in doors,
+ *                                   #   BLOCKING. The handful of doors that cross
+ *                                   #   the organization boundary ON PURPOSE carry
+ *                                   #   a written reason and a named owner in
+ *                                   #   `scripts/door-rows/by-design-allowlist.json`
+ *                                   #   and print as ALLOWED BY DESIGN — never
+ *                                   #   silent, never a PASS. An entry whose door
+ *                                   #   has stopped failing is STALE and fails.
+ *   pnpm check:door-rows:self-test  # proves the harness FAILS a known leak
  *
  * Flags: `--population=b75|signed-in|all` (default `b75`, the 477 doors
  * DD-169 batch 3 declared) · `--only=schema.fn` · `--limit=N` ·
@@ -1281,6 +1290,44 @@ const HARNESS_OWN_TABLES = new Set(["platform.client_callable_door", "platform.d
 
 const OWNER_COLS = ["user_id", "created_by", "actor_user_id", "owner_id", "updated_by"];
 
+/**
+ * 🚨 DD-208. The caller's standing is a SNAPSHOT taken before the probe, and one
+ * legitimate door class moves it: a door that calls
+ * `public.ensure_personal_organization(auth.uid())` creates the caller's OWN
+ * personal organization inside the probe transaction, then writes the caller's
+ * own row into it. Against the stale snapshot that reads as "an organization the
+ * caller has no standing in" — and `billing.entitlement_consume` was FAILED for
+ * exactly that, on an organization id that never existed outside a rolled-back
+ * transaction. Measured live 2026-09-13: the ledger row it writes carries the
+ * caller's `user_id`, the organization was `created_by` the caller with the
+ * caller as its `owner`, and the caller CAN `select` the row under
+ * `billing.usage_ledger.std_select` (`user_id = auth.uid()`).
+ *
+ * So an organization also counts as the caller's when this very call MINTED it
+ * WITH the caller as its creator and owner. That is the personal-org shape and
+ * nothing else: a door writing into a pre-existing victim organization cannot
+ * reach this arm, because the victim's organization row was not written by this
+ * call. Re-reading membership alone would NOT be safe — a door that enrolled the
+ * caller into the victim's organization and then wrote there would go green.
+ */
+async function orgsMintedForTheCallerByThisCall(db: pg.Client, caller: Principal): Promise<string[]> {
+  try {
+    const r = await db.query(
+      `select o.id::text as id
+         from iam.organizations o
+         join iam.organization_member m
+           on m.organization_id = o.id and m.user_id = $1 and m.role = 'owner'
+        where o.created_by = $1
+          and ${WRITTEN_BY_THIS_CALL.replace(/xmin/g, "o.xmin")}`,
+      [caller.id],
+    );
+    return (r.rows as { id: string }[]).map((x) => x.id);
+  } catch {
+    // A failure here must never manufacture standing the caller does not have.
+    return [];
+  }
+}
+
 async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Promise<WriteVerdict> {
   const touched = (
     await db.query(`
@@ -1326,7 +1373,8 @@ async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Prom
       continue;
     }
 
-    const mine = orgCol || isOrgTable ? caller.orgIds : [caller.id];
+    const mine =
+      orgCol || isOrgTable ? [...caller.orgIds, ...(await orgsMintedForTheCallerByThisCall(db, caller))] : [caller.id];
     const rows = (
       await db.query(
         `select ${qi(placeCol)}::text as v, count(*)::int as n from ${qi(t.sch)}.${qi(t.tab)}
@@ -1609,10 +1657,60 @@ async function selfTest(
   return failedTheLeak && passedTheBounded && clean && replay ? 0 : 1;
 }
 
+// ─── the by-design allowlist (DD-208) ────────────────────────────────────────
+//
+// The b75 lane (477 doors) has NO allowlist and never will: it blocks at FAIL = 0.
+// The wider `--population=signed-in` lane could not block at all, because a
+// handful of doors cross the organization boundary ON PURPOSE — a whistleblower
+// report into an organization you are not in, an access request that has to write
+// into the owner's organization, the AccessGate whose job is to NAME the thing you
+// were denied. No fix makes this harness read those as anything but a leak, so
+// without a way to say so the wide lane stays advisory forever and every real leak
+// in the other 888 doors goes unblocked.
+//
+// An allowlisted door that FAILs is reported as ALLOWED BY DESIGN, printed by name
+// on every run, and does not block. It is never silent and never a PASS.
+//
+// The list can only SHRINK. An entry whose door is no longer failing is STALE and
+// FAILS the gate by itself — so tightening a door forces the excuse to be removed,
+// and an excuse can never outlive the thing it excused.
+
+interface ByDesignEntry {
+  door: string;
+  owner: string;
+  reason: string;
+}
+
+const BY_DESIGN_PATH = resolve(ROOT, "scripts/door-rows/by-design-allowlist.json");
+
+function loadByDesign(): ByDesignEntry[] {
+  if (!existsSync(BY_DESIGN_PATH)) return [];
+  const parsed = JSON.parse(readFileSync(BY_DESIGN_PATH, "utf8")) as { entries?: ByDesignEntry[] };
+  const entries = parsed.entries ?? [];
+  for (const e of entries) {
+    // A reason nobody wrote is not a reason. An owner nobody named is not an owner.
+    if (!e.door || !e.owner || (e.reason ?? "").trim().length < 60) {
+      throw new Error(
+        `by-design allowlist: the entry for ${e.door ?? "(unnamed door)"} is missing an owner or a reason of at least 60 characters. ` +
+          `A door that crosses a tenant boundary on purpose is the most dangerous shape on this platform; it does not get a one-word excuse.`,
+      );
+    }
+  }
+  return entries;
+}
+
 // ─── the report ──────────────────────────────────────────────────────────────
 
 function report(results: DoorResult[], structural: Structural): number {
-  const fails = results.filter((r) => r.verdict === "FAIL");
+  // Only the WIDE lane consults the allowlist. b75 blocks at FAIL = 0, always.
+  const byDesign = POPULATION === "b75" ? [] : loadByDesign();
+  const byDesignFor = (r: DoorResult) =>
+    byDesign.find((e) => e.door === `${r.door.schema}.${r.door.fn}(${r.door.identityArgs})`);
+  const allowed = results.filter((r) => r.verdict === "FAIL" && byDesignFor(r));
+  const stale = byDesign.filter(
+    (e) => !results.some((r) => r.verdict === "FAIL" && `${r.door.schema}.${r.door.fn}(${r.door.identityArgs})` === e.door),
+  );
+  const fails = results.filter((r) => r.verdict === "FAIL" && !byDesignFor(r));
   const unmeasured = results.filter((r) => r.verdict === "UNMEASURED");
   const passes = results.filter((r) => r.verdict === "PASS");
 
@@ -1636,9 +1734,28 @@ function report(results: DoorResult[], structural: Structural): number {
       console.log(`       ${r.fn}(${r.args}) — no client holds EXECUTE; the row declares a door that is not one [${r.declaredBy ?? "no declared_by"}]`);
   }
 
+  if (allowed.length) {
+    console.log("");
+    console.log(
+      `${TAG.warn}ALLOWED BY DESIGN (${allowed.length}) — these doors DO cross the boundary and a person said so in writing:`,
+    );
+    for (const r of allowed) {
+      const e = byDesignFor(r)!;
+      console.log(`       ${r.door.schema}.${r.door.fn} — owner: ${e.owner}`);
+      console.log(`         ${e.reason}`);
+    }
+  }
+  if (stale.length) {
+    console.log("");
+    console.log(
+      `${TAG.fail}STALE BY-DESIGN ENTRIES (${stale.length}) — the door is no longer failing, so the excuse must go. Delete it from scripts/door-rows/by-design-allowlist.json:`,
+    );
+    for (const e of stale) console.log(`       ${e.door} — owner: ${e.owner}`);
+  }
+
   console.log("");
   console.log(
-    `${fails.length ? TAG.fail : TAG.ok}${passes.length} PASS · ${fails.length} FAIL · ${unmeasured.length} UNMEASURED (of ${results.length} declared signed-in doors)`,
+    `${fails.length || stale.length ? TAG.fail : TAG.ok}${passes.length} PASS · ${fails.length} FAIL · ${allowed.length} ALLOWED BY DESIGN · ${unmeasured.length} UNMEASURED (of ${results.length} declared signed-in doors)`,
   );
 
   if (TABLE_OUT) {
@@ -1684,6 +1801,7 @@ function report(results: DoorResult[], structural: Structural): number {
     );
     return STRICT ? 1 : 0;
   }
+  if (stale.length) return STRICT ? 1 : 0;
   return 0;
 }
 
