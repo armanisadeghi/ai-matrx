@@ -81348,13 +81348,28 @@ export type Database = {
         Args: { p_overdue_grace_minutes?: number }
         Returns: {
           alarm: string
+          approval: string
           consecutive_failures: number
+          description: string
           detail: string
           enabled: boolean
+          failed_streak: number
+          impact: Json
+          kind: string
           last_run_at: string
+          last_run_error: string
+          last_run_finished_at: string
+          last_run_id: string
+          last_run_status: string
+          mute_at: string
+          mute_by: string
+          mute_reason: string
+          muted_until: string
           next_due_at: string
           severity: string
+          succeeded_since_suspension: boolean
           suspended_at: string
+          tags: string[]
           task_id: string
           title: string
         }[]
