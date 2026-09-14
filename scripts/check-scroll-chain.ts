@@ -44,6 +44,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components", "lib"] as const;
@@ -90,7 +91,7 @@ interface RouteLayoutViolation {
 function parseArgs(): { strict: boolean } {
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
     console.log("Usage: check-scroll-chain [--strict]");
-    process.exit(0);
+    exitAfterDrain(0);
   }
   return { strict: process.argv.includes("--strict") };
 }
@@ -630,7 +631,7 @@ function main(): void {
     );
   }
 
-  if (strict) process.exit(1);
+  if (strict) exitAfterDrain(1);
 }
 
 main();

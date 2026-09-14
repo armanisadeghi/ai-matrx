@@ -71,6 +71,7 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
 import { CATALOG_SQL, DB_VARS, client as dbClient, loadDbEnv } from "./knob-resolve-callers/db";
 import { classify, knobResolveCalls, scopesArgumentOf } from "./knob-resolve-callers/core";
 import type { Verdict } from "./knob-resolve-callers/core";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 interface Finding { where: string; arg: string; verdict: Verdict }
 
@@ -265,8 +266,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${C.r}[FAIL]${C.x} check:knob-resolve-callers errored, so it measured NOTHING:\n  ${String(err?.message ?? err)}`);
-    process.exit(1);
+    exitAfterDrain(1);
   });

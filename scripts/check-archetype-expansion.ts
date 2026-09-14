@@ -24,6 +24,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 import {
   expandArchetype,
@@ -128,7 +129,7 @@ try {
     "The archetype twin is UNPINNED without it. Copy it verbatim from " +
       "aidream/aidream/services/content_plan/archetype-expansion-cases.json.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 let total = 0;
@@ -331,7 +332,7 @@ if (existsSync(canonicalFixture)) {
 
 if (total === 0) {
   console.error("FAIL: fixture parsed but contained zero cases — inspect its shape.");
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 console.log(`archetype-expansion twin: ${total - failures}/${total} fixture cases passed`);
@@ -340,5 +341,5 @@ if (failures > 0) {
     `FAIL: ${failures} case(s) diverge from the canonical expander — fix ` +
       "features/marketing/content-plan/setup/archetypes.ts (never the fixture).",
   );
-  process.exit(strict ? 1 : 1);
+  exitAfterDrain(strict ? 1 : 1);
 }

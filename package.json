@@ -322,6 +322,8 @@
     "check:door-rows:wide": "tsx scripts/check-door-rows.ts --population=signed-in",
     "check:door-rows:wide:strict": "tsx scripts/check-door-rows.ts --population=signed-in --strict",
     "check:db-guards": "tsx scripts/check-db-guards.ts",
+    "check:guards-drain": "tsx scripts/check-guards-drain.ts",
+    "check:guards-drain:self-test": "tsx scripts/check-guards-drain.ts --self-test",
     "check:db-guards:strict": "tsx scripts/check-db-guards.ts --strict",
     "check:rls-on": "tsx scripts/check-rls-on.ts",
     "check:policy-of-record": "tsx scripts/check-policy-of-record.ts",

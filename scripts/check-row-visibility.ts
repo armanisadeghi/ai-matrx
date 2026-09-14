@@ -60,6 +60,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -613,7 +614,7 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+main().then((code) => exitAfterDrain(code)).catch((e) => {
   console.error(`${C.r}✗${C.x} check:row-visibility crashed: ${String(e)}`);
-  process.exit(1);
+  exitAfterDrain(1);
 });

@@ -38,6 +38,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RPC = "__ddl_guard_unacked";
@@ -149,13 +150,13 @@ async function main(): Promise<void> {
       `  ${C.dim}This gate needs the live DB; it cannot tell you the backlog from disk.${C.reset}`,
     );
     console.log("");
-    process.exit(STRICT ? 1 : 0);
+    exitAfterDrain(STRICT ? 1 : 0);
   }
 
   const findings = (rows ?? []).filter((r) => (r.unacked_rows ?? 0) > 0);
   if (findings.length === 0) {
     console.log(`${TAG.info}DDL guard log: ${C.green}every firing acknowledged with a reason${C.reset}.`);
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const totalRows = findings.reduce((n, r) => n + r.unacked_rows, 0);
@@ -184,10 +185,10 @@ async function main(): Promise<void> {
   console.log(`           ${C.dim}the reason is mandatory — CHECK ddl_guard_log_ack_needs_reason${C.reset}`);
   console.log("");
 
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 main().catch((err) => {
   console.error(`${TAG.fail}check-ddl-guard-log crashed: ${err instanceof Error ? err.message : String(err)}`);
-  process.exit(2);
+  exitAfterDrain(2);
 });

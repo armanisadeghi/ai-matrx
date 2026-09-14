@@ -33,6 +33,7 @@
 import { existsSync, readdirSync, renameSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const APP_DIR = resolve(process.cwd(), "app");
 
@@ -114,4 +115,4 @@ function main(): number {
   return strict ? 2 : 0;
 }
 
-process.exit(main());
+exitAfterDrain(main());

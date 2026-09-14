@@ -27,6 +27,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -710,7 +711,7 @@ if (failures.length > 0) {
     `\n  ${DIM}Resolve by changing the CONFIG or the DOC — never by leaving them`,
   );
   console.error(`  disagreeing. See scripts/check-doc-claims.ts.${RESET}\n`);
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 console.log(

@@ -17,6 +17,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, "app");
@@ -55,7 +56,7 @@ function parseArgs(): { strict: boolean; coreOnly: boolean } {
   const coreOnly = process.argv.includes("--core-only");
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
     console.log("Usage: check-page-headers [--strict] [--core-only]");
-    process.exit(0);
+    exitAfterDrain(0);
   }
   return { strict, coreOnly };
 }
@@ -200,7 +201,7 @@ function main() {
 
   if (violations.length === 0) {
     console.log("✓ No page-header or compact route-nav violations.");
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   console.log(
@@ -217,7 +218,7 @@ function main() {
       "     See features/shell/components/header/variants/USAGE.md\n",
   );
 
-  process.exit(strict ? 1 : 0);
+  exitAfterDrain(strict ? 1 : 0);
 }
 
 main();

@@ -68,6 +68,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   EXPECTED_FUNCTION_BIRTH_SCHEMAS,
   FUNCTION_BIRTH_GUARD_QUERY,
@@ -792,9 +793,9 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(`${TAG.fail}DB guards: unexpected error — ${String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

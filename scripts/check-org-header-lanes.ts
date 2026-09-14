@@ -39,6 +39,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 
@@ -144,7 +145,7 @@ function loadAllowlist(): Map<string, string> {
       console.error(
         `[check-org-header-lanes] allowlist entry for ${entry.file ?? "(missing file)"} needs a real reason (>= 10 chars).`,
       );
-      process.exit(2);
+      exitAfterDrain(2);
     }
     map.set(entry.file, entry.reason);
   }
@@ -228,8 +229,8 @@ function main(): number {
 }
 
 try {
-  process.exit(main());
+  exitAfterDrain(main());
 } catch (err) {
   console.error("[check-org-header-lanes] unexpected error:", err);
-  process.exit(2);
+  exitAfterDrain(2);
 }

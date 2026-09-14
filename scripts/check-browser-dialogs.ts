@@ -79,6 +79,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const SCANNED_DIRS = ["features", "app"] as const;
@@ -342,4 +343,4 @@ function main(): number {
   return strict ? 1 : 0;
 }
 
-process.exit(main());
+exitAfterDrain(main());

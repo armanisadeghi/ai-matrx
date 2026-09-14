@@ -36,6 +36,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 const SKIP = new Set([
@@ -88,12 +89,12 @@ walk(ROOT);
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify({ findings }, null, 2));
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 if (findings.length === 0) {
   console.log("✅ check:url-state — every URL write goes through lib/url-state.");
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const files = new Set(findings.map((f) => f.file));
@@ -118,4 +119,4 @@ for (const file of [...files].sort()) {
 }
 console.log();
 // Advisory by design. Never block a build.
-process.exit(0);
+exitAfterDrain(0);

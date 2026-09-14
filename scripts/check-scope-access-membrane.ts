@@ -60,6 +60,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RPC = "__scope_access_membrane_conformance";
@@ -233,7 +234,7 @@ function unmeasured(reason: string): never {
   console.log(`  ${C.dim}${reason}${C.reset}`);
   console.log(`  ${C.dim}Unmeasured is not passed: this gate says nothing about the database right now.${C.reset}`);
   console.log("");
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 async function main(): Promise<number> {
@@ -294,9 +295,9 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(`${TAG.fail}check-scope-access-membrane crashed:`, err);
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

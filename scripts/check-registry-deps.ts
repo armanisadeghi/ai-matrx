@@ -27,6 +27,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 
@@ -65,7 +66,7 @@ interface Bridge {
 function parseArgs(): { strict: boolean } {
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
     console.log("Usage: check-registry-deps [--strict]");
-    process.exit(0);
+    exitAfterDrain(0);
   }
   return { strict: process.argv.includes("--strict") };
 }
@@ -150,7 +151,7 @@ function main(): void {
   }
   console.error("\nFix: use the registry version, or vendor the code (see hooks/usehooks/).");
 
-  if (strict) process.exit(1);
+  if (strict) exitAfterDrain(1);
 }
 
 main();

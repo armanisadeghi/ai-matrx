@@ -17,6 +17,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SELF_TEST = process.argv.includes("--self-test");
@@ -68,7 +69,7 @@ function selfTest(): void {
     console.error(
       "check:static-loader self-test FAILED — the check no longer distinguishes a resting spinner from a spinning one.",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     "check:static-loader self-test PASSED — the check can fail on a planted resting Loader2 and stays quiet on spinning uses.",
@@ -101,7 +102,7 @@ function main(): void {
   console.error(
     "Use RefreshCw / RefreshControlIcon at rest. Loader2 is an incomplete arc and may only render while it actually spins.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

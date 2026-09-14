@@ -35,6 +35,7 @@
 import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -66,10 +67,10 @@ if (!existsSync(join(AIDREAM_DIR, "docs", "protocol"))) {
     `       was NOT verified this run.`;
   if (STRICT || FIX) {
     console.error(`${RED}${BOLD}[UNMEASURED]${RESET} ${line}`);
-    process.exit(2);
+    exitAfterDrain(2);
   }
   console.log(`${YELLOW}[WARN]${RESET} ${line}`);
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const diverged: string[] = [];
@@ -133,10 +134,10 @@ if (diverged.length === 0) {
         `             mirror set has been renamed on the aidream side; MIRROR_FILES in this\n` +
         `             script is the list to fix.`,
     );
-    process.exit(2);
+    exitAfterDrain(2);
   }
   console.log(`${GREEN}[OK]${RESET} Protocol mirror set matches every available aidream source (${compared}/${MIRROR_FILES.length} files compared).`);
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.error("");
@@ -150,4 +151,4 @@ console.error(`       (registry JSON: edit the registry in code, re-run aidream'
 console.error(`       scripts/generate_envelope_registry.py — never the JSON by hand).`);
 console.error(`    2. pnpm check:protocol-sync:fix   (copies aidream → here)`);
 console.error("");
-process.exit(STRICT ? 1 : 0);
+exitAfterDrain(STRICT ? 1 : 0);

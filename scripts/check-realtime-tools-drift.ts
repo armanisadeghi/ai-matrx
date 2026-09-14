@@ -30,6 +30,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -261,7 +262,7 @@ async function main(): Promise<void> {
     console.log(
       `${GREEN}✓ No drift — ResolvedRealtimeTool matches the contract.${RESET}`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const bar = "█".repeat(68);
@@ -281,11 +282,11 @@ async function main(): Promise<void> {
       `(or update the contract if it changed).${RESET}`,
   );
   // Non-blocking by default (pre-commit), exit non-zero only with --strict (CI).
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 main().catch((err) => {
   console.error("realtime-tools drift-check: unexpected error");
   console.error(err);
-  process.exit(2);
+  exitAfterDrain(2);
 });

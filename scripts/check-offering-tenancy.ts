@@ -41,6 +41,7 @@
  */
 import process from "node:process";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 type Client = Awaited<ReturnType<typeof connectDirect>>;
 
@@ -70,7 +71,7 @@ async function connect(): Promise<Client> {
     console.error(
       `${C.r}LIVE PULL FAILED${C.x} offering tenancy could not be MEASURED. Wanted ${env.missing.join(", ")} in: ${env.looked.join(", ") || "(no env file)"}`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const client = await connectDirect(env, "check-offering-tenancy");
   await client.query("set role none");
@@ -333,7 +334,7 @@ async function main() {
     const green = await run(false);
     if (!red || !green) {
       console.error(`${C.r}UNMEASURED${C.x}: fewer than two organizations with a branded site.`);
-      process.exit(1);
+      exitAfterDrain(1);
     }
     print("SELF-TEST RED (writer guards removed, placement triggers disabled)", red);
     print("SELF-TEST GREEN (live objects)", green);
@@ -344,12 +345,12 @@ async function main() {
     await client.end();
     const ok = redFailed && greenPassed && left === 0;
     console.log(ok ? `\n${C.g}SELF-TEST PASSED${C.x} (residue ${left})` : `\n${C.r}SELF-TEST FAILED${C.x} red_failed=${redFailed} green_passed=${greenPassed} residue=${left}`);
-    process.exit(ok ? 0 : 1);
+    exitAfterDrain(ok ? 0 : 1);
   }
   const checks = await run(false);
   if (!checks) {
     console.error(`${C.r}UNMEASURED${C.x}: fewer than two organizations with a branded site.`);
-    process.exit(STRICT ? 1 : 0);
+    exitAfterDrain(STRICT ? 1 : 0);
   }
   const client = await connect();
   const left = await residue(client);
@@ -357,10 +358,10 @@ async function main() {
   checks.push({ key: "probe_left_no_residue", ok: left === 0, detail: `${left} probe rows remain` });
   print("OFFERING TENANCY", checks);
   const failed = checks.filter((c) => !c.ok);
-  if (failed.length && STRICT) process.exit(1);
+  if (failed.length && STRICT) exitAfterDrain(1);
 }
 
 main().catch((error) => {
   console.error(`${C.r}crashed:${C.x}`, error instanceof Error ? error.message : error);
-  process.exit(2);
+  exitAfterDrain(2);
 });

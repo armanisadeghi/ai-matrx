@@ -34,6 +34,7 @@
  */
 import process from "node:process";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const STRICT = process.argv.includes("--strict");
 const MIDNIGHT = "date_trunc('day', now() at time zone 'utc') at time zone 'utc'";
@@ -41,15 +42,15 @@ const MIDNIGHT = "date_trunc('day', now() at time zone 'utc') at time zone 'utc'
 function finish(findings: string[], unmeasured: string | null): never {
   if (unmeasured) {
     console.error(`\nLIVE PULL FAILED — UNMEASURED: ${unmeasured}`);
-    process.exit(STRICT ? 1 : 0);
+    exitAfterDrain(STRICT ? 1 : 0);
   }
   if (findings.length) {
     console.error(`\nFAIL — ${findings.length} finding(s):`);
     for (const f of findings) console.error(`  - ${f}`);
-    process.exit(STRICT ? 1 : 0);
+    exitAfterDrain(STRICT ? 1 : 0);
   }
   console.log("\nOK — the placement ceiling counts placements made today, and a refresh spends none of it.");
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 async function main(): Promise<void> {
@@ -127,5 +128,5 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error(err);
-  process.exit(2);
+  exitAfterDrain(2);
 });

@@ -53,6 +53,7 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "hardcoded-agents-allowlist.json");
@@ -322,7 +323,7 @@ function main(): void {
         2,
       ),
     );
-    process.exit(newSites.length > 0 ? 1 : 0);
+    exitAfterDrain(newSites.length > 0 ? 1 : 0);
   }
 
   console.log(
@@ -382,7 +383,7 @@ function main(): void {
   }
 
   console.log("");
-  process.exit(newSites.length > 0 ? 1 : 0);
+  exitAfterDrain(newSites.length > 0 ? 1 : 0);
 }
 
 main();

@@ -33,6 +33,7 @@
 
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** Files allowed to build an agent path from parts — the rule itself. */
 const OWNERS = [
@@ -127,7 +128,7 @@ function main(): void {
         ? "[agent-links] self-test PASSED — the detector still catches a hand-built agent path."
         : "[agent-links] self-test FAILED — the detector no longer catches the original defect.",
     );
-    process.exit(ok ? 0 : 3);
+    exitAfterDrain(ok ? 0 : 3);
   }
 
   const offences = repoFiles().flatMap((file) => {
@@ -142,7 +143,7 @@ function main(): void {
     console.log(
       "[agent-links] OK — every agent address goes through features/agents/addressing.",
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   console.error(
@@ -155,7 +156,7 @@ function main(): void {
       `    // agent-link-ok: <reason>\n`,
   );
   for (const o of offences) console.error(`  ${o.file}:${o.line}  ${o.text}`);
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 if (require.main === module) main();

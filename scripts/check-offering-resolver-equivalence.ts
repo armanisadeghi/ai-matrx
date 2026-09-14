@@ -63,6 +63,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 type Client = Awaited<ReturnType<typeof connectDirect>>;
 
@@ -83,7 +84,7 @@ async function connect(): Promise<Client> {
       `${C.r}LIVE PULL FAILED${C.x} offering resolver equivalence could not be MEASURED. ` +
         `Wanted ${env.missing.join(", ")} in: ${env.looked.join(", ") || "(no env file)"}`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const client = await connectDirect(env, "check-offering-resolver-equivalence");
   await client.query("set role none");
@@ -320,7 +321,7 @@ async function snapshot(out: string) {
     const rows = await readTable(client, "_eq_snap");
     writeFileSync(out, JSON.stringify({ taken_at: new Date().toISOString(), rows }));
     console.log(`snapshot: ${rows.length} rows over ${new Set(rows.map((r) => r.site_id)).size} sites -> ${out}`);
-    if (rows.length === 0) process.exit(1);
+    if (rows.length === 0) exitAfterDrain(1);
   } finally {
     await client.query("rollback").catch(() => undefined);
     await client.end();
@@ -383,7 +384,7 @@ async function selfTest() {
     await client.end();
   }
   console.log(ok ? `\n${C.g}SELF-TEST PASSED${C.x}` : `\n${C.r}SELF-TEST FAILED${C.x}`);
-  process.exit(ok ? 0 : 1);
+  exitAfterDrain(ok ? 0 : 1);
 }
 
 async function main() {
@@ -397,16 +398,16 @@ async function main() {
   else if (cmp) v = await compareLive(cmp);
   else {
     console.error("usage: --dry-run <migration.sql> | --snapshot <out.json> | --compare <in.json> | --self-test [--strict]");
-    process.exit(2);
+    exitAfterDrain(2);
   }
   if (!v || unmeasured(v)) {
     console.error(`${C.r}UNMEASURED${C.x}: no sites or no keywords were compared.`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
-  if (v.unexplained > 0 && STRICT) process.exit(1);
+  if (v.unexplained > 0 && STRICT) exitAfterDrain(1);
 }
 
 main().catch((error) => {
   console.error(`${C.r}crashed:${C.x}`, error instanceof Error ? `${error.message}\n${(error as { where?: string }).where ?? ""}` : error);
-  process.exit(2);
+  exitAfterDrain(2);
 });

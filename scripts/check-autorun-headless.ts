@@ -48,6 +48,7 @@
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -165,7 +166,7 @@ function main(): void {
       "The launch thunk already ignores this at runtime and logs loudly; this check exists\n" +
       "so the config is caught where it is written.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

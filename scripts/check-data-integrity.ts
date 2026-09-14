@@ -26,6 +26,7 @@ import { createClient } from "@supabase/supabase-js";
 import { runIntegrityChecks } from "../lib/integrity/runner";
 import { unwrapRows } from "../lib/integrity/unwrap";
 import type { FileProbe, IntegrityFinding } from "../lib/integrity/types";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -229,12 +230,12 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(
       `${C.red}check:data-integrity — unexpected error:${C.reset}`,
       err,
     );
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

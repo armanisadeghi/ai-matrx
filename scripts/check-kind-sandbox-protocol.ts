@@ -30,6 +30,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 const PROTOCOL = "features/content-ir/sandbox/protocol.ts";
@@ -121,7 +122,7 @@ function selfTest(): void {
         console.error(
             "  FAIL  the self-test could not widen HOST_MESSAGE_TYPES — its shape changed.",
         );
-        process.exit(1);
+        exitAfterDrain(1);
     }
 
     const red = findUntested(widened, corpus);
@@ -136,7 +137,7 @@ function selfTest(): void {
             green.length
         } untested)`,
     );
-    if (!redCaught || green.length > 0) process.exit(1);
+    if (!redCaught || green.length > 0) exitAfterDrain(1);
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -235,7 +236,7 @@ function gateSelfTest(): void {
     console.log(
         `  ${real.length === 0 ? "PASS" : "FAIL"}  GREEN: the shipped tree reads the gate only at the one mount (${real.length} leaks)`,
     );
-    if (!redCaught || real.length > 0) process.exit(1);
+    if (!redCaught || real.length > 0) exitAfterDrain(1);
 }
 
 function main(): void {
@@ -258,7 +259,7 @@ function main(): void {
                 `depending on a setting — which is the defect B-95 found live.\n` +
                 `(The gate module is ${GATE_MODULE}.)\n`,
         );
-        process.exit(1);
+        exitAfterDrain(1);
     }
     console.log(
         `✅ The Shape sandbox gate is read only at the one react-flavor mount (DD-215).`,
@@ -289,7 +290,7 @@ function main(): void {
             `validator): prove it is accepted where it should be AND refused where it should\n` +
             `not — the wrong instance, over the cap, from the wrong direction.\n`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
 }
 
 main();

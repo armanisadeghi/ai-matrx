@@ -85,6 +85,7 @@ import {
 // key; asking it here is the difference between measuring what renders and
 // re-implementing it (V-57's whole finding).
 import { pickableRungsFor } from "../features/settings/universal/rungRules";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const GUARD = "check:settings-ladder-ui";
 const UNIVERSAL_DIR = join(ROOT, "features", "settings", "universal");
@@ -338,7 +339,7 @@ async function main(): Promise<void> {
           `is reachable=${withHr} with the HR destination and reachable=${withoutHr} without it. ` +
           `It must be true then false, or this guard is not measuring the HR surface at all.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(
       "Self-test: the HR destination is measured — hr.employees.adjusted_service_date_rule at 'location' " +
@@ -449,7 +450,7 @@ async function main(): Promise<void> {
     console.log(
       `${unaddressedBaseline === null ? "Seeded" : "Ratcheted"} ${relative(ROOT, UNADDRESSED_BASELINE_FILE)}: ${total} known unreachable key-rung pair(s) across ${Object.keys(rungs).length} rung(s).`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
   findings = findings.filter((f) => !(f.problem === "UNADDRESSED_RUNG" && knownUnaddressed.has(unaddressedKey(f))));
 
@@ -473,7 +474,7 @@ async function main(): Promise<void> {
         2,
       ),
     );
-    process.exit(findings.length > 0 ? 1 : 0);
+    exitAfterDrain(findings.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}SETTINGS LADDER UI REACHABILITY${C.reset} ${C.dim}(${GUARD})${C.reset}`);
@@ -555,7 +556,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  process.exit(findings.length > 0 ? 1 : 0);
+  exitAfterDrain(findings.length > 0 ? 1 : 0);
 }
 
 main();

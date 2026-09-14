@@ -109,6 +109,7 @@
 import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const ARGV = process.argv.slice(2);
@@ -1169,7 +1170,7 @@ function selfTest(): never {
       ? `\nLIVE-ITEM LAW self-test: ${cases.length}/${cases.length} — the guard can still fail.\n`
       : `\nLIVE-ITEM LAW self-test: ${failed} of ${cases.length} verdicts flipped. The law is broken.\n`,
   );
-  process.exit(failed === 0 ? 0 : 1);
+  exitAfterDrain(failed === 0 ? 0 : 1);
 }
 
 function main() {
@@ -1316,11 +1317,11 @@ function main() {
         2,
       ),
     );
-    process.exit(STRICT && selected.length > 0 ? 1 : 0);
+    exitAfterDrain(STRICT && selected.length > 0 ? 1 : 0);
   }
 
   report(selected, covered);
-  process.exit(STRICT && selected.length > 0 ? 1 : 0);
+  exitAfterDrain(STRICT && selected.length > 0 ? 1 : 0);
 }
 
 function countBy(rows: Finding[]): Record<string, number> {

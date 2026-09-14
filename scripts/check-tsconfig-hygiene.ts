@@ -29,6 +29,7 @@
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -219,7 +220,7 @@ if (problems.length > 0) {
   console.error(
     `\n  Fix: restore the ".next*/**" guard. See scripts/check-tsconfig-hygiene.ts.\n`,
   );
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 console.log(

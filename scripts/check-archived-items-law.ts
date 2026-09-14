@@ -133,6 +133,8 @@
  * Prove the detector: pnpm check:archived-items-law:self-test
  */
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -1060,7 +1062,7 @@ function selfTest(): void {
     console.error(
       "\nFix scripts/check-archived-items-law.ts before trusting a green run.\n",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
 
   console.log(
@@ -1128,7 +1130,7 @@ function main(): void {
       "An internal reader that is genuinely not a user-facing list declares it at the\n" +
       "query: `// archived-items-law-exempt: <reason>` (12+ characters of reason).\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 // Importing this file (the self-test harness, ad-hoc census scripts) must not

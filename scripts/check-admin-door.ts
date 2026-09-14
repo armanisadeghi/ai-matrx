@@ -62,6 +62,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -298,7 +299,7 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((err) => {
+main().then((code) => exitAfterDrain(code)).catch((err) => {
   console.error(`${FAIL}unexpected: ${String(err)}`);
-  process.exit(2);
+  exitAfterDrain(2);
 });

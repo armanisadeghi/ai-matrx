@@ -57,6 +57,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -258,4 +259,4 @@ async function main(): Promise<number> {
 // --self-test) can exercise them without the live census firing as an import side effect.
 const INVOKED_DIRECTLY = process.argv[1] !== undefined
   && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
-if (INVOKED_DIRECTLY) main().then((c) => process.exit(c));
+if (INVOKED_DIRECTLY) main().then((c) => exitAfterDrain(c));

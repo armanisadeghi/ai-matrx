@@ -78,6 +78,21 @@ if $STRICT; then
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # EVERY GUARD BELOW IS READ THROUGH A PIPE by this very script, so this
+        # runs second: a guard that abandons its own stdout makes every finding
+        # below it unreliable. `process.exit(code)` tears Node down with whatever
+        # is still in the stdout pipe buffer. Measured three times on this repo:
+        # `check:anon-write-surface | grep FAIL` delivered ONE of THREE (B-110),
+        # `check:staff-door | sed` delivered 10 residue rows and a file got all of
+        # them (B-120), and a 4,000-finding guard shape delivered 810 lines through
+        # a pipe whose reader stalled for one second while a file got 4,000 (B-122)
+        # — exit code correct every time, so nothing looked wrong. Every
+        # scripts/check-*.ts now exits through scripts/lib/exit-after-drain.ts and
+        # this gate fails on a bare process.exit( in any of them. Zero findings at
+        # introduction and no lawful exception, so it exits 1 in both lanes.
+        # `pnpm check:guards-drain:self-test` proves the guard can still fail
+        # (3 planted REDs, all in a throwaway temp dir). (DD-232)
+        "Guards drain before they exit (no truncated findings)|pnpm check:guards-drain"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
@@ -543,6 +558,10 @@ else
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # Guards are read through a pipe by this script; one that abandons its
+        # own stdout makes every finding below it unreliable. Full story and the
+        # three measurements at the strict copy of this entry. (DD-232)
+        "Guards drain before they exit (no truncated findings)|pnpm check:guards-drain"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).

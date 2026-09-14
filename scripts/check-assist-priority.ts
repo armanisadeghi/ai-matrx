@@ -23,6 +23,7 @@
 
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const RED = "\x1b[31m";
 const YELLOW = "\x1b[33m";
@@ -67,7 +68,7 @@ if (findings.length === 0) {
   console.log(
     `${GREEN}[OK]${NC}    Every assist producer builds priority with assistPriority().`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.log(
@@ -92,4 +93,4 @@ console.log(
   `\n${DIM}  Contract: features/assists/FEATURE.md § "Urgency is a BAND over priority".${NC}`,
 );
 // Advisory by design — never blocks a release.
-process.exit(0);
+exitAfterDrain(0);

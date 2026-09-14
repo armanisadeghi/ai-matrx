@@ -75,6 +75,7 @@ import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
@@ -799,12 +800,12 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(
       `${C.red}check:migrations — unexpected error:${C.reset}`,
       err,
     );
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

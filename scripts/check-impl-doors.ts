@@ -204,6 +204,8 @@
  * with --strict · 2 script error.
  */
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -2527,8 +2529,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${TAG.fail}check-impl-doors crashed — ${String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   });

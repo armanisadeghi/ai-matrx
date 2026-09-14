@@ -52,6 +52,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scanRepo, scanSource, type Registry, type RegistryFact } from "./list-scope-client-scan";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -362,9 +363,10 @@ async function main(): Promise<number> {
  * 🚨 `process.exit()` DISCARDS ANYTHING STILL IN THE STDOUT PIPE. When this guard grew a findings
  * list longer than one pipe buffer, the last nine lines of a twenty-line list simply vanished into
  * a redirect — the count said 20 and the reader could see 11. A guard that cannot be trusted to
- * print what it found is worse than no guard. `exitCode` lets Node drain and leave on its own.
+ * print what it found is worse than no guard. `exitAfterDrain` — the ONE helper, DD-232 — makes
+ * stdout blocking and flushes both streams before it exits.
  */
-main().then((code) => { process.exitCode = code; }).catch((e) => {
+main().then(exitAfterDrain).catch((e) => {
   console.error(`${C.r}✗${C.x} check:list-scope crashed: ${String(e)}`);
-  process.exitCode = 1;
+  exitAfterDrain(1);
 });

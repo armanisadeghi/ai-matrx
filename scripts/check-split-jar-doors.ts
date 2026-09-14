@@ -41,6 +41,7 @@ import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import process from "node:process";
 import { execFileSync } from "node:child_process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const STRICT = process.argv.includes("--strict");
@@ -122,7 +123,7 @@ if (SELF_TEST) {
       `SELF-TEST FAILED: a door with no cookieHeader and no parseCookieHeader ` +
         `was not reported (found ${found.length}).`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const clean = planted.replace(
     "host: h.get(\"host\"),",
@@ -130,10 +131,10 @@ if (SELF_TEST) {
   );
   if (blindDoors("planted.ts", clean).length !== 0) {
     console.error("SELF-TEST FAILED: a door WITH cookieHeader was reported.");
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("check:split-jar-doors self-test PASSED (it can fail).");
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const findings: Finding[] = [];
@@ -150,7 +151,7 @@ if (findings.length === 0) {
     `check:split-jar-doors OK — ${doorCount} auth door(s), every one reading a ` +
       `duplicate-preserving cookie view.`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.error(
@@ -164,4 +165,4 @@ for (const f of findings) {
       `cookie view from \`parseCookieHeader\` (@ai-matrx/data/db).`,
   );
 }
-process.exit(STRICT ? 1 : 0);
+exitAfterDrain(STRICT ? 1 : 0);

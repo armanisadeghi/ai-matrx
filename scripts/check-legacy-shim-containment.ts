@@ -29,6 +29,7 @@
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const RED = "\x1b[31m";
 const GREEN = "\x1b[32m";
@@ -96,7 +97,7 @@ if (recreated.length > 0 || importers.length > 0) {
       `current two-key shell (\`buildKindDirective\`), never the retired one.\n` +
       `Rule: common-docs/projects/kind-directives/PLAN.md § THE STRICTNESS LAW clause 4.`,
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 console.log(

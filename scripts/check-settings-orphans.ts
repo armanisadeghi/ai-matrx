@@ -66,6 +66,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   AIDREAM_SCAN_DIRS,
   C,
@@ -282,7 +283,7 @@ async function main(): Promise<void> {
     console.log(
       `${seeding ? "Seeded" : "Ratcheted"} ${relative(ROOT, BASELINE_FILE)}: ${total} known orphan(s) in ${Object.keys(namespaces).length} namespace(s)${seeding ? "" : ` (removed ${stale.length}${fresh.length ? `; ${fresh.length} NEW orphan(s) NOT recorded` : ""})`}.`,
     );
-    process.exit(fresh.length > 0 && !seeding ? 1 : 0);
+    exitAfterDrain(fresh.length > 0 && !seeding ? 1 : 0);
   }
 
   const scanned = `matrx-frontend + aidream${sb.files ? " + matrx-sandbox" : ""}`;
@@ -304,7 +305,7 @@ async function main(): Promise<void> {
         2,
       ),
     );
-    process.exit(fresh.length > 0 ? 1 : 0);
+    exitAfterDrain(fresh.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}ORPHANED SETTINGS${C.reset} ${C.dim}(${GUARD})${C.reset}`);
@@ -367,7 +368,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  process.exit(fresh.length > 0 ? 1 : 0);
+  exitAfterDrain(fresh.length > 0 ? 1 : 0);
 }
 
 main();

@@ -10,6 +10,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 interface Finding {
   id: string;
@@ -279,7 +280,7 @@ if (pending.length === 0 && staleApprovals.length === 0) {
   console.log(
     `check:backend-boundaries — OK. ${findings.length} explicitly approved exception(s), none pending.`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 if (pending.length > 0) {
@@ -304,4 +305,4 @@ if (staleApprovals.length > 0) {
   );
 }
 
-process.exit(strict ? 1 : 0);
+exitAfterDrain(strict ? 1 : 0);

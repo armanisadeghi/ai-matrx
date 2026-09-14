@@ -24,6 +24,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const LOCAL_FIXTURE = path.join(
@@ -113,7 +114,7 @@ if (problems.length > 0) {
       "  the copy here, _FIXTURE_SHA256 in the Python suite, FIXTURE_SHA256 in the TS\n" +
       "  suite. Never loosen a pin to make this pass.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 console.log("  URL identity guard: TS and Python run byte-identical rules.");

@@ -42,6 +42,7 @@
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 const ALLOWLIST_PATH = join(ROOT, "scripts", "org-refusal-honesty.allowlist.json");
@@ -218,8 +219,8 @@ function main(): number {
 }
 
 try {
-  process.exit(main());
+  exitAfterDrain(main());
 } catch (error) {
   console.error("check-org-refusal-honesty: unexpected error", error);
-  process.exit(2);
+  exitAfterDrain(2);
 }

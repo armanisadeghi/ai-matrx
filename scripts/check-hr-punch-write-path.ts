@@ -62,6 +62,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RPC = "__hr_punch_write_path_conformance";
@@ -436,7 +437,7 @@ function unmeasured(reason: string, hint: string): never {
     `  ${C.dim}This gate needs the live DB. Nothing here was checked — that is NOT a pass.${C.reset}`,
   );
   console.log("");
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 async function main(): Promise<void> {
@@ -469,7 +470,7 @@ async function main(): Promise<void> {
       `${TAG.info}HR punch write path: ${C.green}${returned.length}/${EXPECTED_CHECKS.length} conformance checks passed${C.reset} ` +
         `${C.dim}(no client-direct insert path into hr.punch)${C.reset}`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   console.log("");
@@ -517,12 +518,12 @@ async function main(): Promise<void> {
   );
   console.log("");
 
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 main().catch((err) => {
   console.error(
     `${TAG.fail}check-hr-punch-write-path crashed: ${err instanceof Error ? err.message : String(err)}`,
   );
-  process.exit(2);
+  exitAfterDrain(2);
 });

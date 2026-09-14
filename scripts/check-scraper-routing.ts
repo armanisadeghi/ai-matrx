@@ -8,6 +8,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(import.meta.dirname, "..");
 const SCAN_DIRS = ["app", "components", "features", "hooks", "lib"];
@@ -75,7 +76,7 @@ if (violations.length > 0) {
   console.error(
     "\nAll browser callers must use features/scraper/hooks/useScraperApi.ts.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 console.log(

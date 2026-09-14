@@ -67,6 +67,7 @@ import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -164,7 +165,7 @@ function unmeasured(why: string, remedy: string): never {
   console.log(
     `${TAG.info}Unmeasured is not passed: this run proved nothing about the live trigger.`,
   );
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -492,7 +493,7 @@ async function main(): Promise<void> {
   console.log("");
   if (failed.length === 0) {
     console.log(`${TAG.ok}${checks.length}/${checks.length} checks green.`);
-    process.exit(0);
+    exitAfterDrain(0);
   }
   console.log(
     `${TAG.fail}${failed.length} of ${checks.length} checks FAILED: ${failed.map((f) => f.key).join(", ")}.`,
@@ -509,10 +510,10 @@ async function main(): Promise<void> {
       `${TAG.warn}Remove the leftover probe row by hand: delete from mandate.definition where mandate_key = '${PROBE_KEY}';`,
     );
   }
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 main().catch((e) => {
   console.error(`${TAG.fail}check:mandate-fallback-pin crashed: ${e instanceof Error ? e.stack : e}`);
-  process.exit(2);
+  exitAfterDrain(2);
 });

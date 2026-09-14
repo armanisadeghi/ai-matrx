@@ -76,6 +76,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -708,8 +709,9 @@ async function main(): Promise<number> {
 }
 
 // `process.exit()` discards anything still in the stdout pipe; a guard that cannot be
-// trusted to print what it found is worse than no guard.
-main().then((code) => { process.exitCode = code; }).catch((e) => {
+// trusted to print what it found is worse than no guard. The ONE remedy is
+// `scripts/lib/exit-after-drain.ts` (DD-232) — never a local copy, never a bare `process.exit(`.
+main().then(exitAfterDrain).catch((e) => {
   console.error(`${C.r}✗${C.x} check:rls-on crashed: ${String(e)}`);
-  process.exitCode = 1;
+  exitAfterDrain(1);
 });

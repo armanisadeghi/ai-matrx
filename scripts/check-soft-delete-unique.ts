@@ -50,6 +50,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE = resolve(ROOT, "scripts/soft-delete-unique-baseline.json");
@@ -157,7 +158,7 @@ function unmeasured(reason: string): never {
     `  ${C.dim}Needs NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY. Nothing was checked — that is NOT a pass.${C.reset}`,
   );
   console.log("");
-  process.exit(STRICT ? 1 : 0);
+  exitAfterDrain(STRICT ? 1 : 0);
 }
 
 async function main(): Promise<number> {
@@ -279,9 +280,9 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(`${TAG.fail}check-soft-delete-unique crashed:`, err);
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

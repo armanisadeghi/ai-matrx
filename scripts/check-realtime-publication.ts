@@ -67,6 +67,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AIDREAM_DIR = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
@@ -1483,7 +1484,7 @@ function unmeasured(reason: string): never {
   console.log(`  ${C.dim}${reason}${C.reset}`);
   console.log(`  ${C.dim}Nothing was compared against pg_publication_tables. That is NOT a pass.${C.reset}`);
   console.log("");
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 /* ──────────────────────────────── self-test ──────────────────────────────── */
@@ -1785,9 +1786,9 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(`${TAG.fail} check-realtime-publication crashed:`, err);
-    process.exit(3);
+    exitAfterDrain(3);
   },
 );

@@ -38,6 +38,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { ALL_MANIFESTS } from "@/features/surfaces/manifests/registry";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   SURFACE_ROUTE_MAPPINGS,
   surfaceFromPathname,
@@ -265,7 +266,7 @@ function main(): void {
     }
   }
 
-  process.exit(phantoms.length > 0 || deadPatterns.length > 0 ? 1 : 0);
+  exitAfterDrain(phantoms.length > 0 || deadPatterns.length > 0 ? 1 : 0);
 }
 
 /**
@@ -312,10 +313,10 @@ function selfTest(): void {
     console.error(
       `\nSELF-TEST FAILED: the dead-urlPattern detector no longer distinguishes a retired address from a live one.`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("\nSelf-test passed: dead-urlPattern detection is live.");
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 if (process.argv.includes("--self-test")) selfTest();

@@ -50,6 +50,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -416,15 +417,15 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-// 🚨 `process.exitCode`, never `process.exit(code)` (DD-229, 2026-09-14). `process.exit` tears the
-// process down without draining stdout, and stdout to a PIPE is asynchronous in Node — so under
-// `| tee`, `| grep`, or any CI log collector this guard printed the first ~10 residue rows and
-// dropped the rest, silently, while exiting with the right code. That is fatal to a guard whose
-// whole design is "a NAMED set rather than a budget number": the names were the output being lost.
-// Setting the code and letting the event loop end flushes everything and exits identically.
-// (The same shape is live in ~26 other `scripts/check-*.ts` files — reported to the chair as a
-// class, not fixed one file at a time from here.)
-main().then((code) => { process.exitCode = code; }).catch((e) => {
+// 🚨 Exit through `exitAfterDrain`, never `process.exit(code)` (DD-229 found it here, DD-232 made
+// it the class remedy). `process.exit` tears the process down without draining stdout, and stdout
+// to a PIPE is asynchronous in Node — so under `| tee`, `| grep`, or any CI log collector this
+// guard printed the first ~10 residue rows and dropped the rest, silently, while exiting with the
+// right code. That is fatal to a guard whose whole design is "a NAMED set rather than a budget
+// number": the names were the output being lost. The class the DD-229 note reported to the chair
+// is swept: every `scripts/check-*.ts` exits through `scripts/lib/exit-after-drain.ts`, and
+// `pnpm check:guards-drain` fails the release gates on a bare `process.exit(` in any of them.
+main().then(exitAfterDrain).catch((e) => {
   console.error(`${C.r}✗${C.x} check:staff-door crashed: ${String(e)}`);
-  process.exitCode = 1;
+  exitAfterDrain(1);
 });

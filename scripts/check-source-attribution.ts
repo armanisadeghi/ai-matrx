@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   SOURCE_APPS,
   SOURCE_FEATURES,
@@ -182,7 +183,7 @@ if (invalid.length || duplicateApps.length || duplicateFeatures.length) {
   if (duplicateFeatures.length) {
     console.error(`  duplicate SOURCE_FEATURES: ${duplicateFeatures.join(", ")}`);
   }
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 const apps = new Set(findings.filter((item) => item.field === "source_app").map((item) => item.value));

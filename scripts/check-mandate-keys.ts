@@ -63,6 +63,7 @@ import { join, resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 // `process.cwd()`, not `import.meta.url`: the jest self-test imports this
 // module, and jest transpiles it to CommonJS where `import.meta` is a syntax
@@ -314,7 +315,7 @@ function main(): void {
 
   if (asJson) {
     console.log(JSON.stringify({ scanned, violations, allowlisted, staleAllow }, null, 2));
-    process.exit(violations.length > 0 ? 1 : 0);
+    exitAfterDrain(violations.length > 0 ? 1 : 0);
   }
 
   console.log(
@@ -357,7 +358,7 @@ function main(): void {
   }
 
   console.log("");
-  process.exit(violations.length > 0 ? 1 : 0);
+  exitAfterDrain(violations.length > 0 ? 1 : 0);
 }
 
 if (require.main === module) main();

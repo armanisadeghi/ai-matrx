@@ -12,6 +12,7 @@
  */
 
 import { checkAdminRouteCatalog } from "../features/admin/utils/admin-route-catalog-server";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";
@@ -23,7 +24,7 @@ const RESET = "\x1b[0m";
 function parseArgs(): { strict: boolean } {
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
     console.log("Usage: check-admin-catalog [--strict]");
-    process.exit(0);
+    exitAfterDrain(0);
   }
   return { strict: process.argv.includes("--strict") };
 }
@@ -96,7 +97,7 @@ function main() {
   if (issueCount === 0) {
     console.log(`${GREEN}${BOLD}✓ Admin catalog is complete.${RESET}`);
     console.log("");
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   if (strict) {
@@ -107,7 +108,7 @@ function main() {
       `${DIM}  Fix admin-navigation.ts, then re-run: pnpm check:admin-catalog${RESET}`,
     );
     console.log("");
-    process.exit(1);
+    exitAfterDrain(1);
   }
 
   console.log(
@@ -120,7 +121,7 @@ function main() {
     `${DIM}  Use --strict only for an intentional manual/CI hard-fail.${RESET}`,
   );
   console.log("");
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 main();

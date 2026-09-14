@@ -24,6 +24,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -113,7 +114,7 @@ function selfTest(): void {
   if (before.length > 0) {
     console.error("self-test: the tree is already failing; fix that first.");
     report(before);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const probe = path.join(ROOT, "lib", "__agent_list_read_probe__.ts");
   writeFileSync(
@@ -130,7 +131,7 @@ function selfTest(): void {
         "🚨 self-test FAILED: the guard did not catch a reintroduced " +
           "`agx_get_list_full` read. This guard proves nothing.",
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(
       "self-test: RED with a reintroduced read (" +
@@ -143,7 +144,7 @@ function selfTest(): void {
   if (after.length > 0) {
     console.error("🚨 self-test FAILED: still red after removing the probe.");
     report(after);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("self-test: GREEN once the read is gone. ✅ The guard works.");
 }
@@ -162,7 +163,7 @@ function main(): void {
     return;
   }
   report(findings);
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

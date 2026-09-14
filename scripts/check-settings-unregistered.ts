@@ -44,6 +44,7 @@
  * Exit: 0 clean · 1 unregistered key(s) · 2 UNMEASURED.
  */
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   AIDREAM_SCAN_DIRS,
   C,
@@ -94,7 +95,7 @@ async function main(): Promise<void> {
       JSON.stringify(
         { registered: registered.size, sites: sites.length, unregistered: bad, dynamic }, null, 2),
     );
-    process.exit(bad.length > 0 ? 1 : 0);
+    exitAfterDrain(bad.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}UNREGISTERED SETTING READS${C.reset} ${C.dim}(${GUARD})${C.reset}`);
@@ -135,7 +136,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  process.exit(bad.length > 0 ? 1 : 0);
+  exitAfterDrain(bad.length > 0 ? 1 : 0);
 }
 
 main();

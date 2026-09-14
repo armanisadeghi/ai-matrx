@@ -38,6 +38,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components"];
@@ -215,7 +216,7 @@ function main(): void {
         "   only in the top Agents menu via agentRoles or useDeclaredSurfaceMandates.\n",
     );
     for (const file of forbiddenInline) console.error(`  ${file}`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
 
   if (crossSurfaceExpansion.length > 0) {
@@ -225,7 +226,7 @@ function main(): void {
         "   family, catalog, suggested, default, public, organization, or user-agent rosters.\n",
     );
     for (const rx of crossSurfaceExpansion) console.error(`  ${rx.source}`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
 
   if (findings.length > 0) {
@@ -239,7 +240,7 @@ function main(): void {
       console.log(`  ${finding.file}`);
       console.log(`      runs: ${finding.signals.join(", ")}`);
     }
-    if (strict) process.exit(1);
+    if (strict) exitAfterDrain(1);
   }
 }
 

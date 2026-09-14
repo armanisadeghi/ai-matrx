@@ -8,6 +8,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { faviconRouteData } from "../constants/favicon-route-data";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const strict = process.argv.includes("--strict");
 const root = process.cwd();
@@ -174,7 +175,7 @@ if (findings.length === 0) {
   console.log(
     "check-route-metadata: OK — every active module root has canonical metadata and favicon identity.",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.error("ROUTE METADATA GAPS");
@@ -186,4 +187,4 @@ for (const finding of findings) {
 console.error(
   "Fix with createRouteMetadata/createDynamicRouteMetadata and the shared favicon registry.",
 );
-process.exit(strict ? 1 : 0);
+exitAfterDrain(strict ? 1 : 0);

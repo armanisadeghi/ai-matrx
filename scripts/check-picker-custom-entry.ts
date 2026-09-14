@@ -48,6 +48,7 @@
 import { readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -159,7 +160,7 @@ if (findings.length === 0) {
   console.log(
     "✓ check:picker-add — every data-driven picker in the scanned surfaces offers a way to add a new option (P23).",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.log("");
@@ -203,4 +204,4 @@ console.log(
 );
 console.log("");
 
-process.exit(STRICT ? 1 : 0);
+exitAfterDrain(STRICT ? 1 : 0);

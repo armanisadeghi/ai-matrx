@@ -72,6 +72,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "hardcoded-prompts-allowlist.json");
@@ -391,7 +392,7 @@ function main(): void {
   }
 
   console.log("");
-  process.exit(strict && unallowed.length > 0 ? 1 : 0);
+  exitAfterDrain(strict && unallowed.length > 0 ? 1 : 0);
 }
 
 main();

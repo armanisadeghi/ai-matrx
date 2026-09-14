@@ -27,6 +27,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(import.meta.dirname, "..");
 const BASELINE = join(ROOT, "scripts", "api-contracts-baseline.json");
@@ -202,4 +203,4 @@ function run(): number {
   return 0;
 }
 
-process.exit(run());
+exitAfterDrain(run());
