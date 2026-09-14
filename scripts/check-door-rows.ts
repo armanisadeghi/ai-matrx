@@ -1675,6 +1675,12 @@ function isEmptyAnswer(rows: unknown[]): boolean {
 //   * exact match only — no substring, no fuzziness,
 //   * and only against rows PROVEN unreadable by this caller under RLS, in this
 //     transaction, one `select 1 … where id = $1` at a time.
+/**
+ * How many candidate rows one door's answer may be examined against for a
+ * disclosure. A list door can name hundreds and each costs a round trip.
+ */
+const DISCLOSURE_ROW_CAP = 40;
+
 const DESCRIPTIVE_KEY =
   /(^|_)(name|title|label|email|slug|handle|display_name|subject|phrase|headline|first_name|last_name)$/i;
 
@@ -1860,7 +1866,15 @@ async function disclosureFindings(
   if (!said.size || !candidateIds.length) return [];
 
   await db.query("reset role");
-  const resolved = await resolveIds(db, catalog, candidateIds);
+  const resolvedAll = await resolveIds(db, catalog, candidateIds);
+  // 🚨 A BOUND, AND IT ANNOUNCES ITSELF. This oracle asks the database one
+  // question per candidate row, and a list door can answer with hundreds:
+  // `public.agx_get_list_full` returns 500+ rows, which turned a four-minute
+  // slice into one that never finished. The examination is capped, and when the
+  // cap bites the run SAYS the rest was not examined — an oracle that silently
+  // stops looking is the silent-green shape this gate exists to close.
+  const resolved = resolvedAll.slice(0, DISCLOSURE_ROW_CAP);
+  const notExamined = resolvedAll.length - resolved.length;
   const findings: string[] = [];
   await db.query("set local role authenticated");
 
@@ -1919,6 +1933,11 @@ async function disclosureFindings(
         );
       }
     }
+  }
+  if (notExamined > 0) {
+    console.log(
+      `${TAG.warn}${doorName}: disclosure oracle examined the first ${DISCLOSURE_ROW_CAP} of ${resolvedAll.length} candidate row(s) (cap DISCLOSURE_ROW_CAP); ${notExamined} were NOT compared against the answer's descriptive values.`,
+    );
   }
   return findings;
 }
