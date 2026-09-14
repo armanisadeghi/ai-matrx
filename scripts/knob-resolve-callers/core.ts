@@ -30,7 +30,14 @@ export function knobResolveCalls(body: string): { args: string[]; at: number }[]
     const isRpc = body[i] === ",";
     if (isRpc) {
       while (i < body.length && body[i] !== "{" && body[i] !== "\n") i++;
-      if (body[i] !== "{") continue;
+      if (body[i] !== "{") {
+        // `knob_resolve` named as a STRING but not followed by an options object: a generic
+        // dispatcher such as aidream's `call_function(db, "platform", "knob_resolve", *args)`,
+        // where p_scopes is a positional argument of the HELPER, not of a call we can read.
+        // Reported as unreadable rather than dropped — a silent skip is how DD-198 survived.
+        out.push({ args: ["", "", "", "", "<called through a dispatcher — read it>"], at: m.index });
+        continue;
+      }
     }
     const open = body[i];
     const close = open === "{" ? "}" : ")";
