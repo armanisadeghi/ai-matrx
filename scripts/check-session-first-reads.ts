@@ -599,6 +599,21 @@ function selfTest(): number {
       localThing({ userId: someone });
     `).length === 0,
   ]);
+  // The obvious evasion, and the obvious false positive — both pinned.
+  checks.push([
+    "an ALIASED import of the factory is still seen",
+    unverifiedIdentityHandoffs(`
+      import { createMessagingRepository as mk } from "@ai-matrx/messaging";
+      mk({ identity: { userId: stale } });
+    `).length === 1,
+  ]);
+  checks.push([
+    "a method call on an imported object is not a hand-off to the symbol",
+    unverifiedIdentityHandoffs(`
+      import { pkg } from "@ai-matrx/whatever";
+      pkg.build({ userId: someone });
+    `).length === 0,
+  ]);
   checks.push([
     "an identity inside a CALLBACK's body is not this rule's business",
     unverifiedIdentityHandoffs(`
