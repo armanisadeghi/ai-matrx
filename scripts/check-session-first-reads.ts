@@ -29,6 +29,23 @@
  *      `supabaseNext.browserClient()` — gets an UNWRAPPED client: no barrier,
  *      and no error capture either.
  *
+   3. THE PACKAGES INHERIT IT TOO. An `@ai-matrx/*` package is handed the host's
+ *      client; only ONE of them may build a browser client of its own —
+ *      `@ai-matrx/data`, which is the very thing `authCookie.ts` binds the
+ *      wrapper into. Any other published package that reaches for
+ *      `@supabase/ssr` at run time would be issuing reads through a client this
+ *      app never wrapped, from inside `node_modules`, where no source scan in
+ *      this repo would ever see them.
+ *   4. AND NO HOST TELLS A PACKAGE WHO THE USER IS (DD-240). A user id handed
+ *      across a package boundary is a COPY, and a copy goes stale the moment the
+ *      domain-wide auth cookie rotates: `<MeetProvider userId={selectUserId}>`
+ *      kept naming an account its tab could no longer prove it was, and
+ *      `communication.meet_pending_call_invites` refused those reads at 403
+ *      ("the acting user … is not the authenticated user") in tabs 8.8 h and
+ *      32.9 h old. A package derives identity from the session of the client it
+ *      was given, or — where a prop still exists — the host proves the id
+ *      against the live session in the same file before passing it. Nothing else.
+ *
  * Plus the declaration rule: the only way a door opts OUT of the wait is by
  * name, in `utils/supabase/anonymousByDesignDoors.ts`, WITH the purpose that
  * says which caller with no account reaches it. That list mirrors the database's
@@ -66,6 +83,26 @@ const SANCTIONED_CONSTRUCTORS = new Set([
 ]);
 
 const SCAN_DIRS = ["app", "features", "components", "providers", "hooks", "lib", "utils"];
+
+/**
+ * The ONE published package allowed to construct a browser Supabase client: it
+ * is the implementation `utils/supabase/authCookie.ts` binds `wrapClientForCapture`
+ * into, so its client IS the wrapped one.
+ */
+const PACKAGE_ALLOWED_TO_BUILD_A_CLIENT = "@ai-matrx/data";
+
+/**
+ * Props that hand an identity across a package boundary and END UP AS A
+ * DATABASE ARGUMENT (DD-240) — the shape the database compares against
+ * `auth.uid()` and refuses at 403 when the copy has gone stale.
+ *
+ * `actorId` is deliberately NOT here. `@ai-matrx/realtime` uses it for write-
+ * ledger echo suppression (`input.updatedBy === actorId`) and never sends it to
+ * the database, so a stale one mis-attributes an echo — a different, smaller
+ * defect with a different owner, and calling it this one would make this rule
+ * mean less, not more.
+ */
+const IDENTITY_PROPS = ["userId", "currentUserId", "authUserId"] as const;
 const SKIP_DIR = new Set(["node_modules", ".next", "dist", "build"]);
 
 /** Ways to obtain a browser Supabase client that does NOT go through the door. */
@@ -129,6 +166,101 @@ export function undeclaredDoors(rawDoorsSource: string): string[] {
   return bad;
 }
 
+/**
+ * A host file that hands an identity to an `@ai-matrx/*` component without
+ * proving it against the live session in the same file (DD-240). Returns
+ * `Component.prop` for every such hand-off.
+ *
+ * "Proving it" means what `providers/MessagingHost.tsx` does: read
+ * `auth.getSession()`, subscribe to `auth.onAuthStateChange`, and pass the id
+ * only while the two sources agree. A file that does neither is passing a copy
+ * of client state, which is the defect.
+ */
+export function unverifiedIdentityHandoffs(rawSource: string): string[] {
+  const source = stripComments(rawSource);
+  const imported = new Set<string>();
+  const importFrom = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']@ai-matrx\/[^"']+["']/g;
+  let match: RegExpExecArray | null;
+  while ((match = importFrom.exec(source)) !== null) {
+    for (const piece of match[1].split(",")) {
+      const name = piece.split(/\s+as\s+/).pop()?.trim().replace(/^type\s+/, "");
+      if (name !== undefined && /^[A-Z]/.test(name)) imported.add(name);
+    }
+  }
+  if (imported.size === 0) return [];
+
+  const provesAgainstTheSession =
+    /auth\.onAuthStateChange\s*\(/.test(source) && /auth\.getSession\s*\(/.test(source);
+
+  const found: string[] = [];
+  for (const component of imported) {
+    const tag = new RegExp(`<${component}\\b([^>]*)>`, "g");
+    let opening: RegExpExecArray | null;
+    while ((opening = tag.exec(source)) !== null) {
+      for (const prop of IDENTITY_PROPS) {
+        if (!new RegExp(`\\b${prop}\\s*=`).test(opening[1])) continue;
+        if (provesAgainstTheSession) continue;
+        found.push(`${component}.${prop}`);
+      }
+    }
+  }
+  return [...new Set(found)].sort();
+}
+
+/** Does this published package build a browser Supabase client of its own? */
+export function packageBuildsItsOwnClient(rawSource: string): boolean {
+  return (
+    /createBrowserClient\s*\(/.test(rawSource) ||
+    /(?:from|require\()\s*["']@supabase\/(?:ssr|supabase-js)["']/.test(rawSource)
+  );
+}
+
+function* walkDist(dir: string): Generator<string> {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const full = join(dir, entry);
+    let stats;
+    try {
+      stats = statSync(full);
+    } catch {
+      continue;
+    }
+    if (stats.isDirectory()) yield* walkDist(full);
+    else if (/\.(js|cjs|mjs)$/.test(entry)) yield full;
+  }
+}
+
+/**
+ * Every `@ai-matrx/*` package installed here, checked in its PUBLISHED bytes —
+ * the ones this app actually runs. Reading the source in another repo would
+ * prove nothing about what is in `node_modules`.
+ */
+export function packagesBuildingTheirOwnClient(root: string): string[] {
+  const scope = join(root, "node_modules", "@ai-matrx");
+  let packages: string[];
+  try {
+    packages = readdirSync(scope);
+  } catch {
+    return [];
+  }
+  const offenders: string[] = [];
+  for (const name of packages) {
+    if (`@ai-matrx/${name}` === PACKAGE_ALLOWED_TO_BUILD_A_CLIENT) continue;
+    for (const file of walkDist(join(scope, name, "dist"))) {
+      if (packageBuildsItsOwnClient(readFileSync(file, "utf8"))) {
+        offenders.push(`@ai-matrx/${name} (${relative(scope, file)})`);
+        break;
+      }
+    }
+  }
+  return offenders.sort();
+}
+
 function* walk(dir: string): Generator<string> {
   let entries: string[];
   try {
@@ -157,6 +289,8 @@ interface Findings {
   seams: string[];
   bindingBroken: boolean;
   rogueClients: string[];
+  roguePackages: string[];
+  identityHandoffs: string[];
   namelessDoors: string[];
   missingFiles: string[];
 }
@@ -166,6 +300,8 @@ function scan(): Findings {
     seams: [],
     bindingBroken: false,
     rogueClients: [],
+    roguePackages: [],
+    identityHandoffs: [],
     namelessDoors: [],
     missingFiles: [],
   };
@@ -186,13 +322,19 @@ function scan(): Findings {
   for (const dir of SCAN_DIRS) {
     for (const file of walk(join(ROOT, dir))) {
       const rel = relative(ROOT, file);
+      const source = readFileSync(file, "utf8");
+      for (const handoff of unverifiedIdentityHandoffs(source)) {
+        findings.identityHandoffs.push(`${rel}: <${handoff.replace(".", " ")}={…}>`);
+      }
       if (SANCTIONED_CONSTRUCTORS.has(rel)) continue;
-      if (constructsBrowserClient(readFileSync(file, "utf8"))) {
+      if (constructsBrowserClient(source)) {
         findings.rogueClients.push(rel);
       }
     }
   }
   findings.rogueClients.sort();
+  findings.identityHandoffs.sort();
+  findings.roguePackages = packagesBuildingTheirOwnClient(ROOT);
   return findings;
 }
 
@@ -249,6 +391,51 @@ function selfTest(): number {
       import { supabase } from "@/utils/supabase/client";
       export const rows = () => supabase.from("kind_component").select("*");
     `),
+  ]);
+
+  // 5. A host tells a package who the user is, with nothing checking it.
+  checks.push([
+    "an unverified identity hand-off to a package is flagged",
+    unverifiedIdentityHandoffs(`
+      import { MeetProvider } from "@ai-matrx/meet/react";
+      import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+      export function Host({ children }) {
+        const userId = useAppSelector(selectUserId);
+        return <MeetProvider client={supabase} userId={userId}>{children}</MeetProvider>;
+      }
+    `).length === 1,
+  ]);
+  checks.push([
+    "an identity proven against the live session in the same file passes",
+    unverifiedIdentityHandoffs(`
+      import { MessagingProvider } from "@ai-matrx/messaging/react";
+      export function Host({ children }) {
+        useEffect(() => {
+          void supabase.auth.getSession().then(({ data }) => setSessionUserId(data.session?.user.id ?? null));
+          const { data } = supabase.auth.onAuthStateChange((_e, s) => setSessionUserId(s?.user.id ?? null));
+          return () => data.subscription.unsubscribe();
+        }, []);
+        return <MessagingProvider userId={verified}>{children}</MessagingProvider>;
+      }
+    `).length === 0,
+  ]);
+  checks.push([
+    "the live tree hands no unverified identity to any package",
+    scan().identityHandoffs.length === 0,
+  ]);
+
+  // 6. A published package builds a browser client of its own.
+  checks.push([
+    "a package reaching for @supabase/ssr is flagged",
+    packageBuildsItsOwnClient(`import { createBrowserClient } from "@supabase/ssr";`),
+  ]);
+  checks.push([
+    "a package that only accepts the host's client passes",
+    !packageBuildsItsOwnClient(`export function createMeetRepository({ client }) { return client; }`),
+  ]);
+  checks.push([
+    "the installed packages build no client of their own",
+    packagesBuildingTheirOwnClient(ROOT).length === 0,
   ]);
 
   // 4. A door opts out of the wait without saying who reaches it.
@@ -309,6 +496,24 @@ function main(): number {
         `\n  Import { supabase } from "@/utils/supabase/client" instead.`,
     );
   }
+  if (f.identityHandoffs.length > 0) {
+    problems.push(
+      `${f.identityHandoffs.length} hand-off(s) tell an @ai-matrx package who the user is, with nothing\n` +
+        `  proving that id against the live session in the same file (DD-240):\n` +
+        f.identityHandoffs.map((line) => `    ${line}`).join("\n") +
+        `\n  A package derives identity from the session of the client it was given. Delete the prop,\n` +
+        `  or prove it the way providers/MessagingHost.tsx does before passing it.`,
+    );
+  }
+  if (f.roguePackages.length > 0) {
+    problems.push(
+      `${f.roguePackages.length} installed @ai-matrx package(s) build a browser Supabase client of their own,\n` +
+        `  so their reads inherit no barrier and no error capture — from inside node_modules, where no\n` +
+        `  source scan in this repo would ever see them:\n` +
+        f.roguePackages.map((name) => `    ${name}`).join("\n") +
+        `\n  Only ${PACKAGE_ALLOWED_TO_BUILD_A_CLIENT} may, because utils/supabase/authCookie.ts binds the wrapper into it.`,
+    );
+  }
   if (f.namelessDoors.length > 0) {
     problems.push(
       `${f.namelessDoors.length} anonymous-by-design door(s) opt out of the wait without saying which\n` +
@@ -320,7 +525,8 @@ function main(): number {
   if (problems.length === 0) {
     console.log(
       "check-session-first-reads: OK — the barrier is wired into the one client wrapper, " +
-        "no module routes around it, and every anonymous door is declared by name.",
+        "no module or package routes around it, no host tells a package who the user is, " +
+        "and every anonymous door is declared by name.",
     );
     return 0;
   }

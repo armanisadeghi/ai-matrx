@@ -42,6 +42,28 @@ if (
 }
 
 /**
+ * ── TextEncoder / TextDecoder ────────────────────────────────────────────────
+ *
+ * Node has had both as globals since 11; jsdom's test-local `globalThis` does
+ * not, exactly as with `structuredClone` above. Any module that reaches for one
+ * at IMPORT time therefore dies before a single test runs — `@ai-matrx/meet`'s
+ * published bundle does (its base64/crypto helpers), which took down the whole
+ * suite that renders `<MeetHost>` over the real package. Node's own
+ * implementations are the honest answer; nothing here is a stub.
+ */
+if (typeof (globalThis as { TextEncoder?: unknown }).TextEncoder === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const util = require("node:util") as {
+    TextEncoder: typeof globalThis.TextEncoder;
+    TextDecoder: typeof globalThis.TextDecoder;
+  };
+  Object.assign(globalThis, {
+    TextEncoder: util.TextEncoder,
+    TextDecoder: util.TextDecoder,
+  });
+}
+
+/**
  * ── THE TOP-LAYER PSEUDO-CLASSES ARE ANSWERED HERE, NOT BY nwsapi ────────────
  *
  * MEASURED, not guessed: opening ONE Radix popover (`ColumnHeaderCell`'s
