@@ -131,9 +131,9 @@ export default function SystemScheduleAlarmBanner() {
   const accessToken = useAppSelector(selectAccessToken);
   const pathname = usePathname();
   const [state, setState] = useState<ReadState>({ kind: "idle" });
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const [loading, setLoading] = useState(false);
-  const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null);
+  const [snoozedUntil, setSnoozedUntil] = useState(readSnoozedUntil);
   const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -164,11 +164,6 @@ export default function SystemScheduleAlarmBanner() {
     }
   }, []);
 
-  useEffect(() => {
-    setCollapsed(readCollapsed());
-    setSnoozedUntil(readSnoozedUntil());
-  }, []);
-
   /** A snooze ALWAYS ends by itself — in this tab, without a reload. */
   useEffect(() => {
     if (wakeTimer.current) clearTimeout(wakeTimer.current);
@@ -185,7 +180,10 @@ export default function SystemScheduleAlarmBanner() {
   // window focus (the fix may have happened in another tab).
   useEffect(() => {
     if (!canRead) return;
-    void load();
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [canRead, load, pathname]);
 
   useEffect(() => {

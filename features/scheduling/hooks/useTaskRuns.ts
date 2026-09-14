@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectRunsFetchError,
@@ -25,6 +25,7 @@ export function useTaskRuns(taskId: string | null | undefined, limit = 20) {
   const error = useAppSelector((s) =>
     taskId ? selectRunsFetchError(s, taskId) : null,
   );
+  const [requestAttempt, setRequestAttempt] = useState(0);
 
   useEffect(() => {
     if (!taskId) return;
@@ -35,7 +36,12 @@ export function useTaskRuns(taskId: string | null | undefined, limit = 20) {
     dispatch(fetchRunsForTaskThunk(taskId, limit)).catch(() => {
       /* error already in slice */
     });
-  }, [dispatch, taskId, limit, status]);
+  }, [dispatch, taskId, limit, requestAttempt]);
 
-  return { runs, status, error };
+  const retry = useCallback(() => {
+    if (!taskId) return;
+    setRequestAttempt((attempt) => attempt + 1);
+  }, [taskId]);
+
+  return { runs, status, error, retry };
 }

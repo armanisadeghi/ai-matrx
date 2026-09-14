@@ -22,13 +22,17 @@ describe("useTaskDetail", () => {
 
   it("derives idle and loaded states without effect-driven state repair", async () => {
     const idle = await renderHook(() => useTaskDetail(null));
-    expect(idle.current).toEqual({ task: null, status: "idle", error: null });
+    expect(idle.current).toMatchObject({
+      task: null,
+      status: "idle",
+      error: null,
+    });
     expect(dispatchMock).not.toHaveBeenCalled();
     await idle.unmount();
 
     selectedTask = { id: "task-1" };
     const loaded = await renderHook(() => useTaskDetail("task-1"));
-    expect(loaded.current).toEqual({
+    expect(loaded.current).toMatchObject({
       task: selectedTask,
       status: "success",
       error: null,
@@ -53,6 +57,22 @@ describe("useTaskDetail", () => {
 
     await settle(hook, (value) => value.status === "error", "fetch failure");
     expect(hook.current.error).toBe("scheduler unavailable");
+    await hook.unmount();
+  });
+
+  it("restarts a terminal error only when the user retries", async () => {
+    dispatchMock.mockRejectedValue(new Error("scheduler unavailable"));
+    const hook = await renderHook(() => useTaskDetail("task-3"));
+
+    await settle(hook, (value) => value.status === "error", "fetch failure");
+    expect(dispatchMock).toHaveBeenCalledTimes(1);
+
+    hook.current.retry();
+    await settle(
+      hook,
+      () => dispatchMock.mock.calls.length === 2,
+      "manual retry dispatch",
+    );
     await hook.unmount();
   });
 });
