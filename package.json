@@ -309,6 +309,8 @@
     "check:offering-topic-refs:self-test": "tsx scripts/check-offering-topic-refs.ts --self-test",
     "check:mandate-fallback-pin": "tsx scripts/check-mandate-fallback-pin.ts",
     "check:mandate-fallback-pin:strict": "tsx scripts/check-mandate-fallback-pin.ts --strict",
+    "check:mandate-pin-names-agent": "tsx scripts/check-mandate-pin-names-agent.ts",
+    "check:mandate-pin-names-agent:strict": "tsx scripts/check-mandate-pin-names-agent.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
     "check:migration-slot-guard:strict": "tsx scripts/check-migration-slot-guard.ts --strict",
     "check:topic-placement-ceiling": "tsx scripts/check-topic-placement-ceiling-counter.ts",
