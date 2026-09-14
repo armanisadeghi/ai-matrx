@@ -77,7 +77,10 @@ resolve_commit() {
     git fetch --quiet --no-tags --depth="$d" origin "$ref" 2>/dev/null || true
     have_commit "$sha" && return 0
   done
-  git fetch --quiet --no-tags --unshallow origin "$ref" 2>/dev/null || true
+  # Deliberately no --unshallow: an unbounded fetch of this repository would
+  # run on EVERY skipped push (dozens a day) to answer a question three bounded
+  # deepenings already answer whenever the previous deployment is recent. If it
+  # is older than 1000 commits, the caller says so and falls back.
   have_commit "$sha"
 }
 
