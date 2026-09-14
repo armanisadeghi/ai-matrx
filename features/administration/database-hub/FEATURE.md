@@ -45,6 +45,9 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-09-14 — The database frame's sole terminal scroll owner now carries
+  `scroll-page-end-space`, keeping the final meaningful result clear of fixed
+  bottom chrome at every viewport width.
 - 2026-09-13 — Database navigation now reserves trailing horizontal scroll room, so the terminal tab clears the fixed fade on narrow viewports.
 - 2026-08-31 — The SQL workbench gained its missing canonical editable context menu, including live scope and controlled-buffer editing.
 - 2026-08-31 — Result provenance now distinguishes a query that exists in the cache from an execution actually served by that cache; uncached reruns never display the false `From Cache` badge.
