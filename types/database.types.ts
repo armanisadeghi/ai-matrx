@@ -4412,6 +4412,7 @@ export type Database = {
           est_live_cost_usd: number
           id: string
           last_polled_at: string | null
+          live_equivalent_cost_usd: number | null
           metadata: Json
           model: string | null
           next_poll_at: string
@@ -4447,6 +4448,7 @@ export type Database = {
           est_live_cost_usd?: number
           id?: string
           last_polled_at?: string | null
+          live_equivalent_cost_usd?: number | null
           metadata?: Json
           model?: string | null
           next_poll_at?: string
@@ -4482,6 +4484,7 @@ export type Database = {
           est_live_cost_usd?: number
           id?: string
           last_polled_at?: string | null
+          live_equivalent_cost_usd?: number | null
           metadata?: Json
           model?: string | null
           next_poll_at?: string
@@ -4527,6 +4530,7 @@ export type Database = {
           lease_expires_at: string | null
           link_id: string | null
           link_kind: string | null
+          live_equivalent_cost_usd: number | null
           metadata: Json
           model: string
           organization_id: string
@@ -4571,6 +4575,7 @@ export type Database = {
           lease_expires_at?: string | null
           link_id?: string | null
           link_kind?: string | null
+          live_equivalent_cost_usd?: number | null
           metadata?: Json
           model: string
           organization_id: string
@@ -4615,6 +4620,7 @@ export type Database = {
           lease_expires_at?: string | null
           link_id?: string | null
           link_kind?: string | null
+          live_equivalent_cost_usd?: number | null
           metadata?: Json
           model?: string
           organization_id?: string
@@ -4649,7 +4655,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      savings_summary: {
+        Args: { p_from?: string; p_organization_id?: string; p_to?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -59384,6 +59393,7 @@ export type Database = {
           identity_args: string
           identity_argtypes: unknown[]
           non_client_lane: string | null
+          probe_args: Json | null
           reason: string
           schema_name: string
           signed_in_callers: boolean
@@ -59399,6 +59409,7 @@ export type Database = {
           identity_args: string
           identity_argtypes: unknown[]
           non_client_lane?: string | null
+          probe_args?: Json | null
           reason: string
           schema_name: string
           signed_in_callers?: boolean
@@ -59414,6 +59425,7 @@ export type Database = {
           identity_args?: string
           identity_argtypes?: unknown[]
           non_client_lane?: string | null
+          probe_args?: Json | null
           reason?: string
           schema_name?: string
           signed_in_callers?: boolean
@@ -65128,6 +65140,7 @@ export type Database = {
         }[]
       }
       door_argtypes: { Args: { p_argtypes: unknown }; Returns: unknown[] }
+      door_probe_args_ok: { Args: { p_recipe: Json }; Returns: boolean }
       enforce_definer_client_grants_impl: {
         Args: { p_grant: boolean; p_objids: unknown[]; p_tag: string }
         Returns: undefined
@@ -87159,7 +87172,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
-          weight: number | null
+          worth_points: number
         }
         Insert: {
           audience_fit?: string | null
@@ -87179,7 +87192,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          weight?: number | null
+          worth_points: number
         }
         Update: {
           audience_fit?: string | null
@@ -87199,7 +87212,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          weight?: number | null
+          worth_points?: number
         }
         Relationships: []
       }
@@ -88791,6 +88804,19 @@ export type Database = {
       }
       fn_merge_monthly: { Args: { p_new: Json; p_old: Json }; Returns: Json }
       fn_normalize_phrase: { Args: { p: string }; Returns: string }
+      fn_reconcile_site_offering_facts: {
+        Args: { p_site_id: string }
+        Returns: {
+          availability_created: number
+          offerings_created: number
+          placements_demoted: number
+          placements_skipped_unavailable: number
+          placements_written: number
+          site_id: string
+          worth_cleared: number
+          worth_written: number
+        }[]
+      }
       fn_refresh_keyword_classification_queue: {
         Args: { p_target_version: string; p_window_days: number }
         Returns: {
@@ -90651,14 +90677,17 @@ export type Database = {
       }
       set_site_offering_value: {
         Args: {
+          p_audience_fit?: string
+          p_brand_fit?: string
           p_brand_offering_id: string
+          p_capacity_appetite?: string
           p_clear?: boolean
           p_lead_quality?: string
           p_notes?: string
           p_offering_match?: string
           p_organization_id: string
           p_site_id: string
-          p_weight?: number
+          p_worth_points?: number
         }
         Returns: string
       }
