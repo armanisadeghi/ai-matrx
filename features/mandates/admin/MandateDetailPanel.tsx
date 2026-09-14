@@ -117,6 +117,13 @@ import {
   type MandateVersionInfo,
 } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import {
+  GRADE_META,
+  fetchStandingImpact,
+  settingsSignalOf,
+  type ImpactVerdict,
+} from "./impact";
+import { VerdictDetail } from "./impact-cells";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -201,11 +208,14 @@ function DriftPanel({
   } | null>(null);
   const [diffError, setDiffError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"pin" | "latest" | null>(null);
-  // Set when a version bump would drop variables — the write waits for an
-  // explicit confirmation instead of silently changing what reaches the prompt.
+  // Set when the SERVER grades the bump orange or red, or cannot measure its
+  // settings — the write waits for an explicit confirmation (R2: warn, never
+  // block). `verdict` is the one grader (R12); `impact` is only the client
+  // renderer of the variable list and the fix brief, never a second verdict.
   const [versionImpact, setVersionImpact] = useState<{
     mode: "pin" | "latest";
-    impact: RebindImpact;
+    verdict: ImpactVerdict;
+    impact: RebindImpact | null;
   } | null>(null);
 
   useEffect(() => {
@@ -301,28 +311,48 @@ function DriftPanel({
   const updateToLatest = async (mode: "pin" | "latest") => {
     setBusy(mode);
     try {
-      // A VERSION bump changes variables too — "updating an agent can break
-      // things" is the first failure Arman named. Compare the two snapshots'
-      // declarations before writing; loud, never blocking.
+      // A VERSION bump can break a job — "updating an agent can break things"
+      // is the first failure Arman named. ONE GRADER (R12): the pre-flight is
+      // the server's impact read for this mandate's own default rung, the
+      // same verdict the standing table shows. Loud, never blocking.
       if (pinnedNumber != null && latestSaved) {
-        const [oldSnap, nextSnap] = await Promise.all([
-          fetchVersionSnapshotDefinition(agentId, pinnedNumber),
-          fetchVersionSnapshotDefinition(agentId, latestSaved.versionNumber),
-        ]);
-        if (oldSnap && nextSnap) {
-          const impact = computeRebindImpact({
-            currentVariables: oldSnap.variableDefinitions ?? [],
-            candidateVariables: nextSnap.variableDefinitions ?? [],
-            contractRequired: parseMandateContract(
-              contractOfMandate(row.mandate),
-            ).requiredVariables,
-            codeSuppliedVariables: row.codeTruth?.code_variables,
-          });
-          if (impact.breaking.length > 0) {
-            setVersionImpact({ mode, impact });
-            setBusy(null);
-            return;
-          }
+        const report = await fetchStandingImpact(dispatch, [agentId]);
+        const verdict =
+          report.verdicts.find(
+            (v) =>
+              v.holder_kind === "mandate_default" && v.row_id === row.mandate.id,
+          ) ?? null;
+        if (!verdict) {
+          throw new Error(
+            "the impact read returned no verdict for this mandate's default pin, so the change is ungraded",
+          );
+        }
+        const settings = settingsSignalOf(verdict);
+        if (
+          verdict.grade === "orange" ||
+          verdict.grade === "red" ||
+          settings.state !== "clean"
+        ) {
+          // The variable list + fix brief are rendered from the snapshots —
+          // a renderer of the server's RED findings, not a second verdict.
+          const [oldSnap, nextSnap] = await Promise.all([
+            fetchVersionSnapshotDefinition(agentId, pinnedNumber),
+            fetchVersionSnapshotDefinition(agentId, latestSaved.versionNumber),
+          ]);
+          const impact =
+            oldSnap && nextSnap
+              ? computeRebindImpact({
+                  currentVariables: oldSnap.variableDefinitions ?? [],
+                  candidateVariables: nextSnap.variableDefinitions ?? [],
+                  contractRequired: parseMandateContract(
+                    contractOfMandate(row.mandate),
+                  ).requiredVariables,
+                  codeSuppliedVariables: row.codeTruth?.code_variables,
+                })
+              : null;
+          setVersionImpact({ mode, verdict, impact });
+          setBusy(null);
+          return;
         }
       }
     } catch (error: unknown) {
@@ -456,10 +486,15 @@ function DriftPanel({
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setVersionImpact(null)}
-          title="This version drops variables the mandate supplies"
-          description={`v${latestSaved?.versionNumber} does not declare everything v${pinnedNumber} did. Updating changes what actually reaches the prompt.`}
+          title={`This update is graded ${GRADE_META[versionImpact.verdict.grade].label.toLowerCase()}`}
+          description={`Moving from v${pinnedNumber} to v${latestSaved?.versionNumber} changes what every run of ${row.mandateKey} uses. ${GRADE_META[versionImpact.verdict.grade].meaning}`}
           content={
             <div className="space-y-2 text-xs">
+              <VerdictDetail verdict={versionImpact.verdict} />
+              {versionImpact.impact &&
+              versionImpact.impact.variables.some(
+                (item) => item.verdict !== "ok",
+              ) ? (
               <ul className="rounded border border-border bg-muted/30 p-2">
                 {versionImpact.impact.variables
                   .filter((item) => item.verdict !== "ok")
@@ -491,6 +526,8 @@ function DriftPanel({
                     </li>
                   ))}
               </ul>
+              ) : null}
+              {versionImpact.impact ? (
               <CopyButton
                 content={buildRebindFixBrief({
                   mandateKey: row.mandateKey,
@@ -502,6 +539,7 @@ function DriftPanel({
                 tooltip="A paste-ready brief naming the mismatch and every call site to update"
                 size="sm"
               />
+              ) : null}
             </div>
           }
           confirmLabel="Update anyway"
