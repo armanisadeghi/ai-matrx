@@ -270,6 +270,23 @@ describe("the retry — one replay after a refusal that carried no identity", ()
     expect(announcement?.message).toContain("sign in again");
   });
 
+  it("fails fast on later refusals once the cooldown says waiting cannot help", async () => {
+    setAuthCookie(true);
+    const h = makeHarness([REFUSED_NO_IDENTITY]);
+    h.report(true);
+    h.setSession(false);
+
+    const first = h.read("kind_component");
+    await jest.advanceTimersByTimeAsync(SESSION_RECOVERY_BUDGET_MS + 10);
+    await first;
+
+    // A page fires dozens of reads. Paying the full recovery budget on each of
+    // them would turn one lapsed session into a minute of dead screen.
+    const second = h.read("kind_component");
+    await jest.advanceTimersByTimeAsync(20);
+    await expect(second).resolves.toEqual(REFUSED_NO_IDENTITY);
+  });
+
   it("leaves a REAL grant gap alone — 42501 at 403 is not a session problem", async () => {
     setAuthCookie(true);
     const h = makeHarness([REFUSED_REAL_GRANT_GAP]);

@@ -447,7 +447,14 @@ export async function recoverSessionForRetry(
   // than the `attached` a long-lived tab has been claiming for hours.
   if (sessionPresent === true) markSession(false);
   let recovered = await probeSession();
-  if (!recovered) recovered = await waitForAttach(SESSION_RECOVERY_BUDGET_MS);
+  // The same cooldown the pre-send wait obeys, for the same reason: once one
+  // wait has expired, this tab is holding a cookie it cannot redeem, and every
+  // later refusal must fail fast rather than add the full recovery budget to
+  // each of a page's reads.
+  if (!recovered && Date.now() >= waitSuppressedUntil) {
+    recovered = await waitForAttach(SESSION_RECOVERY_BUDGET_MS);
+    if (!recovered) waitSuppressedUntil = Date.now() + WAIT_COOLDOWN_MS;
+  }
   announceBarrierFired(ctx, recovered);
   return recovered;
 }
