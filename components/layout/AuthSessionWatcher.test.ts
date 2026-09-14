@@ -40,3 +40,14 @@ describe("AuthSessionWatcher blocked-tab recovery", () => {
     expect(guard).toBeLessThan(snapshot);
   });
 });
+
+describe("AuthSessionWatcher cross-tab sign-out", () => {
+  it("treats a confirmed empty cookie as a sign-out (no auth event reaches another tab)", () => {
+    const checkStart = source.indexOf("const checkIdentity = useCallback");
+    expect(source.indexOf("EMPTY_COOKIE_CONFIRM_MS", checkStart)).toBeGreaterThan(checkStart);
+    expect(source.indexOf("onSignedOut();", checkStart)).toBeGreaterThan(checkStart);
+    // One teardown for both entry points — the in-tab event and the cookie read.
+    expect(source).toContain("if (lostBootedSession) onSignedOut();");
+    expect((source.match(/dispatch\(clearUserAuth\(\)\);/g) ?? []).length).toBe(1);
+  });
+});
