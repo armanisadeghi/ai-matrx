@@ -52,5 +52,5 @@ export function usePreparedResourceSeed({ conversationId, ready, resources, expe
       () => reportError("Prepared content could not be attached. Reopen Alchemy and try again."),
     );
   }, [conversationId, ready, resources, expectedIdentity, currentIdentity.userId, currentIdentity.organizationId, attach, reportError]);
-  return attachedConversationId === conversationId && isPreparedResourceIdentity(expectedIdentity) && expectedIdentity.userId === currentIdentity.userId && expectedIdentity.organizationId === currentIdentity.organizationId;
+  return Boolean(conversationId) && attachedConversationId === conversationId && isPreparedResourceIdentity(expectedIdentity) && expectedIdentity.userId === currentIdentity.userId && expectedIdentity.organizationId === currentIdentity.organizationId;
 }
