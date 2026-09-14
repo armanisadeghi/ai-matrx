@@ -37,6 +37,7 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
+#   ./scripts/release.sh --async-gates # enqueue advisory gates after push; do not wait
 #   ./scripts/release.sh --no-watch   # do not wait for the Vercel rollout
 #       → prints UNWATCHED (never green); the outcome stays unknown
 #   ./scripts/release.sh --target admin --message "new admin panel"
@@ -203,6 +204,7 @@ CUSTOM_MESSAGE=""
 DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
+ASYNC_GATES=false
 NO_WATCH=false
 SHIP_MODE=false
 # --ship: the ONLY content the release commit may carry besides the version
@@ -229,6 +231,7 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
+        --async-gates) ASYNC_GATES=true; shift ;;
         --no-watch) NO_WATCH=true; shift ;;
         --target)
             [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
@@ -245,7 +248,7 @@ while [[ $# -gt 0 ]]; do
             shift
             SHIP_PATHS=("$@")
             break ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --no-watch, or -- <paths you own>." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --async-gates, --no-watch, or -- <paths you own>." ;;
     esac
 done
 
@@ -765,6 +768,16 @@ fi
 # already sailed.
 if $NO_GATES; then
     warn "Skipping advisory quality gates (--no-gates)."
+elif $ASYNC_GATES; then
+    echo ""
+    info "Enqueueing advisory release quality gates (post-push, detached)..."
+    if ASYNC_GATE_JOB="$(node "$SCRIPT_DIR/release-async-gates.mjs" enqueue)"; then
+        ok "Advisory gates queued; release delivery lease is independent of this quality work."
+        echo "  $ASYNC_GATE_JOB"
+        echo "  Status: node $SCRIPT_DIR/release-async-gates.mjs status"
+    else
+        warn "Advisory gates were NOT queued. The pushed release needs manual quality follow-up; no gate result was recorded."
+    fi
 else
     echo ""
     info "Running advisory release quality gates (post-push, non-blocking)..."

@@ -31,10 +31,20 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
 
 STRICT=false
+REPORT_FILE=""
+LIST=false
+ONLY_LABELS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --strict) STRICT=true; shift ;;
         --advisory) STRICT=false; shift ;;
+        --report-file)
+            [[ -n "${2:-}" ]] || { echo "--report-file requires a path" >&2; exit 2; }
+            REPORT_FILE="$2"; shift 2 ;;
+        --list) LIST=true; shift ;;
+        --only)
+            [[ -n "${2:-}" ]] || { echo "--only requires an exact gate label" >&2; exit 2; }
+            ONLY_LABELS+=("$2"); shift 2 ;;
         -h|--help)
             grep '^#' "$0" | head -16 | sed 's/^# \?//'
             exit 0
@@ -42,6 +52,11 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown flag: $1" >&2; exit 2 ;;
     esac
 done
+
+if [[ -n "$REPORT_FILE" ]]; then
+    : > "$REPORT_FILE"
+    mkdir -p "${REPORT_FILE}.outputs"
+fi
 
 if $STRICT; then
     declare -a GATES=(
@@ -807,6 +822,23 @@ else
     )
 fi
 
+if [[ ${#ONLY_LABELS[@]} -gt 0 ]]; then
+    selected=()
+    for entry in "${GATES[@]}"; do
+        IFS='|' read -r label _ <<< "$entry"
+        for wanted in "${ONLY_LABELS[@]}"; do
+            [[ "$label" == "$wanted" ]] && selected+=("$entry")
+        done
+    done
+    [[ ${#selected[@]} -eq ${#ONLY_LABELS[@]} ]] || { echo "--only did not select every exact gate label" >&2; exit 2; }
+    GATES=("${selected[@]}")
+fi
+
+if $LIST; then
+    printf '%s\n' "${GATES[@]}"
+    exit 0
+fi
+
 echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
 echo -e "  ${DIM}${#GATES[@]} checks — each prints its name before it starts${NC}"
@@ -874,6 +906,13 @@ run_gate() {
     # mode exits 0 with a loud red box; hiding that would defeat the point.
     local has_output=false
     [[ -s "$tmp" ]] && has_output=true
+    # The terminal stays concise for healthy checks, but async receipts retain
+    # every check's complete stream, including healthy chatter, by step.
+    GATE_OUTPUT_FILE=""
+    if [[ -n "$REPORT_FILE" ]]; then
+        GATE_OUTPUT_FILE="${REPORT_FILE}.outputs/${step}.log"
+        cp "$tmp" "$GATE_OUTPUT_FILE" || { echo "Could not retain gate output: $GATE_OUTPUT_FILE" >&2; rm -f "$tmp"; return 1; }
+    fi
 
     if [[ $exit_code -ne 0 ]]; then
         echo -e "${RED}[FAIL]${NC}  [$step/$total] ${label} (${elapsed}s)"
@@ -941,6 +980,18 @@ run_gate() {
     return 0
 }
 
+record_gate_result() {
+    local step="$1"
+    local label="$2"
+    local cmd="$3"
+    local result="$4"
+    local elapsed="$5"
+    [[ -n "$REPORT_FILE" ]] || return 0
+    STEP="$step" LABEL="$label" COMMAND="$cmd" RESULT="$result" ELAPSED_SECONDS="$elapsed" OUTPUT_FILE="${GATE_OUTPUT_FILE:-}" \
+        node -e 'process.stdout.write(JSON.stringify({step:Number(process.env.STEP),label:process.env.LABEL,command:process.env.COMMAND,result:process.env.RESULT,elapsedSeconds:Number(process.env.ELAPSED_SECONDS),outputFile:process.env.OUTPUT_FILE,recordedAt:new Date().toISOString()})+"\n")' \
+        >> "$REPORT_FILE"
+}
+
 failed=0
 warned=0
 step=1
@@ -948,16 +999,22 @@ total=${#GATES[@]}
 
 for entry in "${GATES[@]}"; do
     IFS='|' read -r label cmd <<< "$entry"
+    gate_started=$SECONDS
     set +e
     run_gate "$step" "$total" "$label" "$cmd"
     rc=$?
     set -e
+    gate_elapsed=$(( SECONDS - gate_started ))
     if [[ $rc -eq 1 ]]; then
+        record_gate_result "$step" "$label" "$cmd" "fail" "$gate_elapsed"
         failed=1
         # Strict: stop early. Advisory: keep going so every gate screams.
         $STRICT && break
     elif [[ $rc -eq 2 ]]; then
+        record_gate_result "$step" "$label" "$cmd" "warn" "$gate_elapsed"
         warned=1
+    else
+        record_gate_result "$step" "$label" "$cmd" "ok" "$gate_elapsed"
     fi
     step=$(( step + 1 ))
 done
