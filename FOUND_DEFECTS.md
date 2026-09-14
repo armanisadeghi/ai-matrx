@@ -15,6 +15,43 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D322 — the whole SEO topical-map client surface 403s: 14 `seo.*` DEFINER functions have no door and no grant (2026-09-14)
+
+Same class as **D319** (HR doors), a different family. Found by the docs-steward daily
+`platform.ddl_guard_log` read (skill step 7c): 14 `definer_client_grant_revoked` rows whose
+objects are all called from the browser.
+
+`features/marketing/seo/topical-map/data.ts` builds a client `supabase.schema("seo")` (line 30,
+after `requireAuthenticatedSupabaseSession`) and `.rpc()`s all 14 of these. Every one is
+`prosecdef = true`, has **no `platform.client_callable_door` row**, and gives `authenticated`
+**no** EXECUTE — so the DB-wide guard revoked the grant exactly as designed and every call
+returns 42501 / HTTP 403. `anon` has no execute either, so this is availability, not exposure.
+
+The 14 (`seo` schema): `create_map_facet_values`, `map_facet_value_ref`, `map_graph`,
+`map_outline`, `map_topic_facets`, `merge_map_topics`, `move_map_topic`, `set_map_topic_facet`,
+`set_page_map_facet`, `set_page_map_topics`, `set_site_map`, `site_map_id`, `split_map_topic`,
+`upsert_map_topics` — i.e. read, write, restructure and facet, the entire feature.
+
+Measured live on Matrx Main 2026-09-14:
+
+```sql
+select n.nspname||'.'||p.proname, p.prosecdef,
+       has_function_privilege('authenticated', p.oid,'EXECUTE') as authed,
+       exists(select 1 from platform.client_callable_door d
+              where d.schema_name=n.nspname and d.function_name=p.proname) as door
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='seo' and p.proname in ('map_outline','set_site_map','upsert_map_topics');
+-- all: prosecdef t, authed f, door f
+```
+
+**Fix:** one migration that INSERTs the 14 `platform.client_callable_door` rows
+(`anonymous_callers = false`, real `reason`, `identity_args` matching the live signature) and
+then re-issues `GRANT EXECUTE ... TO authenticated` — door row BEFORE the grant, same migration,
+or the guard takes it back again (db-rules §6d-4). Needs an access-layer owner, same as D319;
+`docs/official/db-rules.md` §6 forbids changing a security layer on your own authority.
+
+Guard rows acked 2026-09-14 citing this entry.
+
 ### D321 — Client paths that call a function the caller cannot execute: 16 pre-existing hits outside DD-169 (2026-09-14)
 
 Found by the DD-169 reach census (`pnpm check:impl-doors`, gate **D18**). A call inside a
