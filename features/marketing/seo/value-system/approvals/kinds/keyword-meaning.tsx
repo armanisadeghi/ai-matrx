@@ -19,14 +19,10 @@
  * confirm and reject-with-reason all live in `ApprovalQueue` now.
  */
 
-import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLink from "@/components/navigation/AppLink";
-import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import {
-  fetchMyAssists,
-  selectAssistsForSurface,
-  selectAssistsLoaded,
-} from "@/features/assists/redux/assistsSlice";
+import { AssistCard } from "@/features/assists/components/AssistCard";
+import { queryAssists } from "@/features/assists/service";
 import { getAssistActionTextEditor } from "@/features/assists/runtime/action-editing";
 import { useAssistRunner } from "@/features/assists/runtime/useAssistRunner";
 import type { Assist } from "@/features/assists/types";
@@ -37,9 +33,8 @@ import {
   describeKeywordMeaningProposal,
   type KeywordMeaningProposal,
 } from "@/features/marketing/seo/value-system/suggestions/proposal";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import type { RootState } from "@/lib/redux/store";
 import { KeywordDoor } from "../doors";
 import type {
   ApprovalDecisions,
@@ -115,6 +110,29 @@ function ProposalDoors({
   );
 }
 
+/**
+ * A proposal that must be read (and may be edited) on its own renders THE
+ * canonical assist card for exactly that row — never a chip strip, whose
+ * throttled read may not include it and would leave the row with no way to
+ * decide. Closing the card (after approve, reject or edit) refreshes the queue.
+ */
+function MeaningCardReview({ assist }: { assist: Assist }) {
+  const queryClient = useQueryClient();
+  const userId = useAppSelector(selectUserId);
+  return (
+    <div className="rounded-md border border-border bg-background">
+      <AssistCard
+        assist={assist}
+        onClose={() =>
+          void queryClient.invalidateQueries({
+            queryKey: meaningQueryKey(userId),
+          })
+        }
+      />
+    </div>
+  );
+}
+
 function toItem(scope: ApprovalScope, assist: Assist): MeaningItem | null {
   if (assist.action.kind !== "apply_keyword_meaning") return null;
   const { proposal, provenance } = assist.action;
@@ -147,29 +165,51 @@ function toItem(scope: ApprovalScope, assist: Assist): MeaningItem | null {
           again.
         </p>
       ) : editable ? (
-      <AssistStrip
-        surfaceName={KEYWORD_MEANING_SURFACE}
-        filter={(candidate: Assist) => candidate.id === assist.id}
-      />
-    ) : undefined,
+        <MeaningCardReview assist={assist} />
+      ) : undefined,
   };
 }
 
+/**
+ * The queue's read is the COMPLETE pending set addressed to the reader — the
+ * manager read (`queryAssists`), never the chip read. The chip read
+ * (`list_my_presentable_assists`) is throttled by the presentation policy and
+ * capped at 50: measured 2026-09-14 it returned 0 of admin@admin.com's 214
+ * pending rows, so a queue built on it silently hid work.
+ */
+const MEANING_PAGE = 1000;
+
+const meaningQueryKey = (userId: string | null) =>
+  ["assists", "keyword-meaning-queue", userId] as const;
+
 function useSource(scope: ApprovalScope): ApprovalSource {
-  const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
-  const loaded = useAppSelector(selectAssistsLoaded);
-  const surfaceAssists = useAppSelector((state: RootState) =>
-    selectAssistsForSurface(state, KEYWORD_MEANING_SURFACE),
-  );
+  const query = useQuery({
+    queryKey: meaningQueryKey(userId),
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+    queryFn: () =>
+      queryAssists(userId as string, {
+        statuses: ["pending"],
+        sourceKey: null,
+        sourceKind: null,
+        surfaceName: KEYWORD_MEANING_SURFACE,
+        search: "",
+        maxConfidence: null,
+        minConfidence: null,
+        minPriority: null,
+        maxPriority: null,
+        includeSnoozed: false,
+        starredOnly: false,
+        unseenOnly: false,
+        sortField: "created_at",
+        sortAscending: false,
+        page: 1,
+        pageSize: MEANING_PAGE,
+      }),
+  });
 
-  // Hydrate the shared slice here: the queue renders nothing while empty, so
-  // waiting for a chip strip to load it would mean it never loads.
-  useEffect(() => {
-    if (userId && !loaded) void dispatch(fetchMyAssists({ userId }));
-  }, [dispatch, userId, loaded]);
-
-  const items = surfaceAssists
+  const items = (query.data?.rows ?? [])
     .filter(
       (assist) =>
         assist.action.kind === "apply_keyword_meaning" &&
@@ -180,19 +220,29 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       return item ? [item] : [];
     });
 
+  if ((query.data?.total ?? 0) > MEANING_PAGE) {
+    // Honest about the page: a reader with more than a thousand pending
+    // meaning proposals sees the newest thousand, and this says so.
+    console.warn(
+      `[approvals] keyword-meaning queue holds ${query.data?.total} pending rows; showing the newest ${MEANING_PAGE}.`,
+    );
+  }
+
   return {
     items,
     total: items.length,
-    loading: !loaded,
-    error: null,
-    refetch: () => {
-      if (userId) void dispatch(fetchMyAssists({ userId }));
-    },
+    loading: query.isLoading || !userId,
+    error: query.error,
+    refetch: () => void query.refetch(),
   };
 }
 
 function useDecisions(): ApprovalDecisions {
   const { acceptAssist, dismissAssist } = useAssistRunner();
+  const queryClient = useQueryClient();
+  const userId = useAppSelector(selectUserId);
+  const settle = () =>
+    void queryClient.invalidateQueries({ queryKey: meaningQueryKey(userId) });
   return {
     acceptItems: async (items, reason) => {
       const outcome: ApprovalOutcome = { applied: 0, failures: [] };
@@ -203,6 +253,7 @@ function useDecisions(): ApprovalDecisions {
         if (result.ok) outcome.applied += 1;
         else outcome.failures.push({ key: item.key, message: result.error });
       }
+      settle();
       return outcome;
     },
     rejectItems: async (items, reason) => {
@@ -211,6 +262,7 @@ function useDecisions(): ApprovalDecisions {
         await dismissAssist(item.assist, reason ?? undefined);
         outcome.applied += 1;
       }
+      settle();
       return outcome;
     },
   };
