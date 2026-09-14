@@ -209,7 +209,7 @@ export interface MenuModel {
 export interface MenuRoles {
   copy: MenuItemNode;
   speak: MenuItemNode;
-  /** ONE slot: "Listen" submenu — Summarize for listening / Summarize & listen. */
+  /** ONE slot: "Listen" submenu — Summarize without playing / Summarize & listen. */
   listen: MenuSubmenuNode;
   copyAs: MenuSubmenuNode | null;
   json: MenuSubmenuNode | null;
@@ -535,7 +535,7 @@ export function buildMenuModel(
   const spokenSummary: MenuItemNode = {
     kind: "item",
     id: "spoken-summary",
-    label: "Summarize for listening",
+    label: "Summarize without playing",
     icon: Headphones,
     iconClassName: "text-violet-500",
     disabled: listenDisabled,

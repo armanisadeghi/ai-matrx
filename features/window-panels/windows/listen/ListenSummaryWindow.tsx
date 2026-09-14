@@ -4,7 +4,7 @@
  * ListenSummaryWindow — the floating "summarize this for listening" player.
  *
  * ONE panel, two entry moods (the context menu + the assistant action bar):
- *   - "Summarize for listening" — the summary streams into the panel as text;
+ *   - "Summarize without playing" — the summary streams into the panel as text;
  *     the user presses Play when it's ready.
  *   - "Summarize & listen" (`initialAutoPlay`) — stream-to-stream: the summary
  *     agent's tokens are spoken as they arrive, via the app-root streaming
@@ -283,6 +283,17 @@ function ListenSummaryWindowInner({
   const playDisabled =
     failed || (!audioLive && !summaryReady) || (!session && isAudioLoading);
   const showReplayIcon = !audioLive && summaryReady && hasPlayed;
+  // The accessible name must be the action the icon actually performs — it
+  // said "Listen" while showing the replay icon, which is the one state where
+  // the footer already says "listen again". Apple Podcasts/Books name the
+  // morphing primary control by its current action in every state.
+  const transportLabel = isSpeaking
+    ? "Pause"
+    : isPaused
+      ? "Resume"
+      : showReplayIcon
+        ? "Listen again"
+        : "Listen";
   const primaryBusy = isAudioLoading || (autoPlay && isActive && !audioLive);
 
   const title = statusText && isActive ? `Listen — ${statusText}` : "Listen";
@@ -360,10 +371,8 @@ function ListenSummaryWindowInner({
               type="button"
               onClick={handleTransport}
               disabled={playDisabled}
-              aria-label={
-                isSpeaking ? "Pause" : isPaused ? "Resume" : "Listen"
-              }
-              title={isSpeaking ? "Pause" : isPaused ? "Resume" : "Listen"}
+              aria-label={transportLabel}
+              title={transportLabel}
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-primary-foreground shadow-sm transition-all",
                 "bg-primary hover:opacity-90 active:scale-95",
