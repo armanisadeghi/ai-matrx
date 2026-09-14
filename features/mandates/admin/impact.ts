@@ -293,8 +293,11 @@ export async function fetchStandingImpact(
   for (let i = 0; i < unique.length; i += IMPACT_AGENT_PAGE_SIZE) {
     pages.push(unique.slice(i, i + IMPACT_AGENT_PAGE_SIZE));
   }
-  const reports = await Promise.all(
-    pages.map(async (page) => {
+  // 🚨 BOUNDED FAN-OUT (R20). Measured 2026-09-14 on live f687a4e97: one page
+  // of 30 agents took 23.6 s of server CPU, and the console holds ~383 holder
+  // agents. Firing every page at once would pin the serving loop; two at a
+  // time keeps the read honest without starving everyone else.
+  const readPage = async (page: string[]): Promise<ImpactReport> => {
       const response = await dispatch(
         callApi({
           path: "/mandates/impact",
@@ -309,7 +312,22 @@ export async function fetchStandingImpact(
         );
       }
       return response.data;
-    }),
+  };
+  const IMPACT_PAGE_CONCURRENCY = 2;
+  const reports: ImpactReport[] = new Array<ImpactReport>(pages.length);
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < pages.length) {
+      const index = cursor;
+      cursor += 1;
+      reports[index] = await readPage(pages[index]);
+    }
+  };
+  await Promise.all(
+    Array.from(
+      { length: Math.min(IMPACT_PAGE_CONCURRENCY, pages.length) },
+      () => worker(),
+    ),
   );
   const sentences = new Set<string>();
   let withheldTotal = 0;
