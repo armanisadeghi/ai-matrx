@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "../redux/tasks/selectors";
 import { fetchScheduledTask } from "../redux/tasks/thunks";
@@ -19,6 +19,7 @@ export function useTaskDetail(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
   const task = useAppSelector((s) => selectTaskById(s, taskId ?? null));
   const [requestState, setRequestState] = useState<RequestState | null>(null);
+  const [requestAttempt, setRequestAttempt] = useState(0);
 
   const alreadyLoaded = !!task && task.id === taskId;
   const status: LoadStatus = !taskId
@@ -54,7 +55,13 @@ export function useTaskDetail(taskId: string | null | undefined) {
           error: err instanceof Error ? err.message : String(err),
         });
       });
-  }, [dispatch, taskId, alreadyLoaded]);
+  }, [dispatch, taskId, alreadyLoaded, requestAttempt]);
 
-  return { task, status, error };
+  const retry = useCallback(() => {
+    if (!taskId) return;
+    setRequestState(null);
+    setRequestAttempt((attempt) => attempt + 1);
+  }, [taskId]);
+
+  return { task, status, error, retry };
 }

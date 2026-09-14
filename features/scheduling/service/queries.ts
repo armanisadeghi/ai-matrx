@@ -26,8 +26,11 @@ import type {
   SchTriggerRow,
 } from "../types";
 import {
+  createScheduleLoadTimeout,
   createScheduleRosterLoadTimeout,
+  SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE,
   SCHEDULE_ROSTER_LOAD_TIMEOUT_MESSAGE,
+  SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE,
 } from "./schedule-roster-timeout";
 
 // ── The reusable select string (per spec §8) ───────────────────────────────
@@ -298,14 +301,30 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // The rule this leaves behind: a read that backs a RECORD page narrows by
   // the id and nothing else. Anything else it excludes gets reported to a
   // person as an access failure it is not.
-  const { data, error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_task")
-    .select(SELECT_TASK_RECORD)
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle()
-    .returns<JoinedAgentTaskRow | null>();
+  const { controller, dispose } = createScheduleLoadTimeout();
+  let data: JoinedAgentTaskRow | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await schedulerDb(supabase)
+      .schema("scheduler").from("sch_task")
+      .select(SELECT_TASK_RECORD)
+      .eq("id", id)
+      .is("deleted_at", null)
+      .abortSignal(controller.signal)
+      .maybeSingle()
+      .returns<JoinedAgentTaskRow | null>());
+  } catch (cause) {
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE, { cause });
+    }
+    throw cause;
+  } finally {
+    dispose();
+  }
 
+  if (controller.signal.aborted) {
+    throw new Error(SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE, { cause: error });
+  }
   if (error) throw pgErrorToError(error);
   if (!data) return null;
   return rowToAgendaTask(data);
@@ -348,13 +367,30 @@ export async function listRunsForTask(
   taskId: string,
   limit = 20,
 ): Promise<SchRunRow[]> {
-  const { data, error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_run")
-    .select("*")
-    .eq("task_id", taskId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { controller, dispose } = createScheduleLoadTimeout();
+  let data: SchRunRow[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await schedulerDb(supabase)
+      .schema("scheduler").from("sch_run")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .abortSignal(controller.signal)
+      .returns<SchRunRow[]>());
+  } catch (cause) {
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause });
+    }
+    throw cause;
+  } finally {
+    dispose();
+  }
 
+  if (controller.signal.aborted) {
+    throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause: error });
+  }
   if (error) throw pgErrorToError(error);
   return (data ?? []) as SchRunRow[];
 }

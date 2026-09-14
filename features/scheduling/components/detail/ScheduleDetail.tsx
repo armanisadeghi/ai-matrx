@@ -8,6 +8,7 @@ import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -141,7 +142,7 @@ export function ScheduleDetail({ taskId }: Props) {
 function ScheduleDetailBody({ taskId }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { task, status, error } = useTaskDetail(taskId);
+  const { task, status, error, retry } = useTaskDetail(taskId);
   const { tasks } = useScheduledTasks();
   // Same hook RunHistoryCard mounts — it no-ops when the runs are already
   // loaded, so reading them here for the record payload adds no fetch.
@@ -179,7 +180,12 @@ function ScheduleDetailBody({ taskId }: Props) {
     return (
       <Alert variant="destructive">
         <AlertTitle>Couldn&apos;t load schedule</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription className="space-y-3">
+          <p>{error}</p>
+          <Button type="button" variant="outline" size="sm" onClick={retry}>
+            Retry
+          </Button>
+        </AlertDescription>
       </Alert>
     );
   }

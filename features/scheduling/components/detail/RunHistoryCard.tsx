@@ -5,6 +5,7 @@
 import { History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export function RunHistoryCard({ taskId, task = null }: Props) {
-  const { runs, status, error } = useTaskRuns(taskId);
+  const { runs, status, error, retry } = useTaskRuns(taskId);
   useRunStream(taskId);
 
   return (
@@ -72,7 +73,12 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
           </div>
         ) : status === "error" ? (
           <Alert variant="destructive">
-            <AlertDescription>{error ?? "Couldn't load runs"}</AlertDescription>
+            <AlertDescription className="space-y-3">
+              <p>{error ?? "Couldn't load runs"}</p>
+              <Button type="button" variant="outline" size="sm" onClick={retry}>
+                Retry
+              </Button>
+            </AlertDescription>
           </Alert>
         ) : runs.length === 0 ? (
           <div className="text-xs text-muted-foreground py-4">

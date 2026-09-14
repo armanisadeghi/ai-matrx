@@ -220,6 +220,11 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-14** — Record and run-history reads now share the roster's
+  20-second abort boundary. Detail, edit, and run-history error states expose
+  manual Retry actions, so an unhealthy scheduler read always terminates in a
+  visible, recoverable state rather than an indefinite loading shell.
+
 - **2026-09-13** — Every user schedule route now reserves responsive bottom
   clearance on its actual vertical scroll owner for the global fixed schedule
   alarm. List, detail, edit, and new content can all scroll fully above the
