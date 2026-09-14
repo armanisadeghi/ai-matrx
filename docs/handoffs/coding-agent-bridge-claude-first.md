@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-09-08
+updated: 2026-09-14
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -39,22 +39,30 @@ individually "works". Verified ground truth below is from a three-way full-featu
   the parts but the parts aren't talking to each other yet and we're missing the main layer on
   top… someone needs to be aware of that." That someone is the owner of THIS document.
 
-## The global map — every component and its state (RE-VERIFIED LIVE 2026-09-08)
+## The global map — every component and its state (RE-VERIFIED LIVE 2026-09-14)
 
-Nothing below is carried forward on trust — every row was re-checked against the live engine
-(v1.4.74 installed / v1.4.75 released), the live DB, the machine ledger, and git history today.
+Nothing below is carried forward on trust. The 2026-09-14 pass re-measured the DB, the local
+outbox, the shipped frontend routes, and adapter repo visibility; rows not re-touched that day
+carry their 2026-09-08 verification date inline.
 
-| Component | State (2026-09-08) | Proof |
+**The bridge's headline numbers, measured 2026-09-14:** `chat.coding_session` holds **2,808 Codex**
+sessions (all `origin = independent_hook`, newest 03:59 UTC) and **1,822 Claude Code** sessions
+(957 `matrx_local` + 865 `independent_hook`, newest 18:52 UTC); **1,329 Codex / 152 Claude in the
+last 7 days**. `chat.coding_session_entry` holds **1,534,926 rows** (Claude 1,133,366 · Codex
+401,650), **28** in `projection_status = error`. Both mirrors are live and busy.
+
+| Component | State | Proof |
 |---|---|---|
-| Capture: Claude hooks → cloud | LIVE | newest `chat.coding_session_entry` seconds old |
-| **Outbox delivery (importer/codex lanes)** | **BLOCKED since 08-30 — 118,492 rows, growing.** Server (correctly, per the no-assigned-org law) refuses org-scoped deliveries: "You belong to more than one organization and haven't set a default." Arman's `users.user_preferences → organization.defaultOrganizationId` is NULL (verified). Engine-side half fixed in `9c3026d61` (owner-scoped routes no longer demand an org; 116,803 wrongly-deferred rows auto-requeued) — the remaining unlock is Arman picking a default org in desktop Settings. Nothing lost: rows are durable locally. | outbox sqlite + fresh 17:28 error + prefs query |
-| Projection ledger | CLEAN (8 errors total; was 449k on 08-24) | live count |
+| Capture: Claude hooks → cloud | LIVE | newest `chat.coding_session_entry` 2026-09-14 19:34 UTC |
+| **Outbox delivery (importer/codex lanes)** | **UNBLOCKED — backlog is 0 (2026-09-14).** The 118,492-row August/September block (server correctly refused org-scoped deliveries while Arman's `defaultOrganizationId` was NULL; engine half fixed in `9c3026d61`) has fully drained. Nothing was lost. | `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"` → `0` |
+| Projection ledger | CLEAN (28 errors total across 1.53M entries; was 449k on 08-24) | live count 2026-09-14 |
 | Titles / pins / categories pipeline | LIVE end-to-end; ledger fresh today (1,456 entries, 227 pinned, 39 categorized); **pin mirror rewritten `378aa5f9f`**: favorites now upsert `platform.user_entity_state` (the star UI's real path — the old `chat.conversation.is_favorite` column is frozen; 171 favorites live). Labels UNMASKED to full email per Arman's 2026-09-07 ruling (`c5c9558e3` local + aidream). Sidebar ledger now wins over auto titles in the index reader. | ledger mtime 09:21 today; DB counts |
 | Local runtime trigger (browser → Mac) | **Transport PROVEN 2026-08-26** over the real Broadcast channel (launch → execute → status → cancel), and **22 `origin=matrx_local` sessions created since** — the lane is in use. Identity-probe fallback (Claude ≥2.1.228 `auth status` misreports signed-out; desktop OAuth record fallback, key byte-stable) shipped v1.4.55. **Still missing: one clean browser-UI end-to-end proof WITH mirror, run by/with Arman** — never demonstrated to him. | proof script `scratchpad` (gone) → re-derive from `features/ai-work/lib/matrxLocalRuntime.ts`; runtime_runs + DB |
 | Desktop auth self-heal | SHIPPED v1.4.54 (engine never wipes stored session on a bad posted one; UI refresh-then-signout loudly) | token valid to 09-15; no 401 storms |
 | AI Work UI | Reorganized into three buckets (AI chats / External app runs / Internal Matrx runs) via `public.cvx_audience` (`7257690791`); live updates through the realtime manager (`650325ea7`); canonical favorites read (`415c592922`); add-to-projects action; Category column | git + live UI |
 | Desktop `/claude-code` screen | REBUILT 08-30 (`f835747a4`): one list, one sync button, real per-session cloud status from the server (`9c3026d61`), every count clickable into evidence | git |
-| Codex / Cursor / VS Code | UNCHANGED since 08-24: codex plugin `alpha-4` released but hooks untrusted on real hosts (mirrors nothing); Cursor/VS Code distribution Arman-gated | git (no commits) |
+| **Codex mirror** | **LIVE and the busiest provider on the bridge** (2026-09-14). Plugin `0.2.0-alpha.10`; the August "hooks untrusted on real hosts, mirrors nothing" state is OVER. 2,808 sessions / 401,650 raw entries, 1,329 sessions in the last 7 days, real `~/.codex/sessions/*.jsonl` transcript paths + workspace names in session metadata. Still open for Codex: a trust detector (so a future untrusted host reads "untrusted", not "nothing happened"), public publication, managed runtime | live DB counts + session metadata |
+| Cursor / VS Code | UNCHANGED since 08-24; distribution Arman-gated. All four adapter repos (`matrx-claude-plugin`, `matrx-codex-plugin`, `matrx-cursor-plugin`, `matrx-vscode`) are still PRIVATE | `gh repo view` 2026-09-14 |
 | Hosted (sandbox) lane | UNCHANGED: ruled BUILD 08-20, blocked on EC2-tier isolation review; endpoints unre-certified since AWS migration | git (no commits) |
 
 ## Resources
@@ -78,11 +86,15 @@ Nothing below is carried forward on trust — every row was re-checked against t
 
 ## Remaining work (priority order)
 
-1. **Unblock the 118K-row outbox (ARMAN, ~30 seconds): set a default organization in the AI
-   Matrx desktop app → Settings → organization.** His preference is verifiably NULL and the
-   server (correctly) refuses org-scoped deliveries without it. Then WATCH the drain (probe
-   above), expect residual failure classes to surface (MXL-D-079 large-envelope TLS is still
-   latent beneath), and verify 08-30→09-08 sessions appear in `/work/conversations`.
+🚨 **This list is the ONE queue for the whole coding-integration feature.** The common-docs project
+plan and the node FEATURE.md point here rather than restating it; keep it current and do not fork a
+second list elsewhere.
+
+1. ~~**Unblock the 118K-row outbox**~~ — **CLOSED 2026-09-14.** The backlog drained to 0. If it ever
+   regrows, the cause is the same one: the server (correctly, per the no-assigned-org law) refuses
+   org-scoped deliveries when `users.user_preferences → organization.defaultOrganizationId` is NULL,
+   and the fix is Arman picking a default org in desktop Settings. MXL-D-079 (large-envelope TLS)
+   remains latent beneath.
 2. **Finish the trigger proof FOR Arman (his #1 ask, 2026-08-26: "prove that it works, then
    make it better").** Transport is proven and 22 runtime sessions exist, but he has never
    seen the clean loop himself: /work/new → "Claude Code on my Mac" → watch it stream →
@@ -94,8 +106,11 @@ Nothing below is carried forward on trust — every row was re-checked against t
 4. **Hosted lane** (ruled BUILD): EC2-tier isolation review on the dev sandbox image →
    re-certify hosted endpoints → wire `/claude/stream`+`/cancel` into `/work/new`. LOUD
    unavailability copy until then.
-5. **Codex to LIVE:** Arman runs `/hooks` trust once per machine; trust detector + honest
-   `/work/connections` status; verify real codex sessions land.
+5. ~~**Codex to LIVE**~~ — **CLOSED 2026-09-14: Codex mirrors 1,329 sessions in the last 7 days.**
+   What is still owed from that lane is the **trust detector + honest `/work/connections` status**,
+   so that a host whose hooks are untrusted reads as "untrusted" instead of "nothing happened".
+   That silent-failure hole is what made this look dead for three weeks; it is a Law-4 defect and
+   should not wait for the next incident.
 6. **Docs debt:** BEHAVIOR.md 12-MUST conformance pass (never executed; baseline v1.4.33 is
    now ancient vs v1.4.75 — several MUSTs likely drifted, e.g. masked labels are now
    deliberately UNMASKED by Arman's 09-07 ruling → BEHAVIOR.md needs that ruling folded in);
@@ -111,6 +126,11 @@ Nothing below is carried forward on trust — every row was re-checked against t
   hardening (flip-detection, explicit category observation, etc.).
 - 08-26: browser→Mac trigger transport proven live; auth self-heal (v1.4.54); identity-probe
   fallback (v1.4.55).
+- 09-14: doc-truth repair. Three live docs were telling the next agent that Codex mirroring was
+  dead and that `/work/new` did not exist; all three were corrected against re-measured live state
+  (this handoff, `common-docs/projects/coding-agent-bridge/PLAN.md`, and
+  `common-docs/systems/coding/coding-session-bridge/FEATURE.md`). The open-work queue now lives
+  only here.
 - 08-27→09-07 (other sessions): favorites → `user_entity_state` (`378aa5f9f`); unmasked labels
   ruling executed; three-bucket conversation list + realtime manager; `/claude-code` screen
   rebuild with server-truth sync status; engine org fix + 116,803-row requeue (`9c3026d61`);
