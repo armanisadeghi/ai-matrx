@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import {
+  EMPTY_INVENTORY,
   githubRepositoryFromRow,
   loadGitHubConnectionInventory,
 } from "./service";
@@ -42,10 +43,9 @@ describe("GitHub repository inventory", () => {
       schema: jest.fn(() => ({ from })),
     } as never);
 
-    await expect(loadGitHubConnectionInventory()).resolves.toEqual({
-      connection: null,
-      repositories: [],
-    });
+    await expect(loadGitHubConnectionInventory()).resolves.toEqual(
+      EMPTY_INVENTORY,
+    );
     expect(from).not.toHaveBeenCalled();
   });
 
@@ -77,10 +77,9 @@ describe("GitHub repository inventory", () => {
       schema: jest.fn(() => ({ from })),
     } as never);
 
-    await expect(loadGitHubConnectionInventory()).resolves.toEqual({
-      connection: null,
-      repositories: [],
-    });
+    await expect(loadGitHubConnectionInventory()).resolves.toEqual(
+      EMPTY_INVENTORY,
+    );
 
     const projection = select.mock.calls[0]?.[0] as string;
     expect(projection).not.toContain("credential_item_id");

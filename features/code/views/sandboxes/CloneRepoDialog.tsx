@@ -11,7 +11,7 @@
  */
 
 import { useRef, useState } from "react";
-import { ExternalLink, GitBranch, Loader2 } from "lucide-react";
+import { GitBranch, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
+import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
+import { GitHubRepositoryPicker } from "@/features/github-integration/GitHubRepositoryPicker";
 
 interface CloneRepoDialogProps {
   /** sandbox_instances.id to clone into. */
@@ -148,7 +150,7 @@ export function CloneRepoDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitBranch className="h-4 w-4" />
@@ -163,62 +165,20 @@ export function CloneRepoDialog({
 
         <div className="space-y-3 py-2">
           {github.inventory.connection?.status === "connected" ? (
-            <div className="space-y-1.5 rounded-md border bg-muted/20 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <label htmlFor="github-repository" className="flex items-center gap-1.5 text-xs font-medium">
-                  <GitBranch className="h-3.5 w-3.5" /> Your GitHub repositories
-                </label>
-                <span className="text-[11px] text-muted-foreground">
-                  {github.inventory.repositories.length} available
-                </span>
-              </div>
-              <select
-                id="github-repository"
-                value={selectedRepository?.cloneUrl ?? ""}
-                onChange={(event) => {
-                  const repository = github.inventory.repositories.find(
-                    (candidate) => candidate.cloneUrl === event.target.value,
-                  );
-                  if (!repository) return;
-                  setUrl(repository.cloneUrl);
-                  setBranch(repository.defaultBranch);
-                  setDest(repository.fullName.split("/").pop() ?? "repo");
-                }}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                disabled={cloning || github.loading}
-              >
-                <option value="">Choose a repository…</option>
-                {github.inventory.repositories.map((repository) => (
-                  <option key={repository.id} value={repository.cloneUrl} disabled={repository.archived}>
-                    {repository.fullName}{repository.private ? " · private" : ""}{repository.archived ? " · archived" : ""}
-                  </option>
-                ))}
-              </select>
-              {selectedRepository && (
-                <a
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  href={selectedRepository.htmlUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open {selectedRepository.fullName} on GitHub <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </div>
+            <GitHubRepositoryPicker
+              repositories={github.inventory.repositories}
+              selectedId={selectedRepository?.id ?? null}
+              onSelect={(repository) => {
+                setUrl(repository.cloneUrl);
+                setBranch(repository.defaultBranch);
+                setDest(repository.fullName.split("/").pop() ?? "repo");
+              }}
+              disabled={cloning || github.loading}
+            />
           ) : (
-            <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 p-3">
-              <div>
-                <p className="flex items-center gap-1.5 text-xs font-medium">
-                  <GitBranch className="h-3.5 w-3.5" /> Connect GitHub
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Choose private or public repositories without copying URLs or tokens.
-                </p>
-              </div>
-              <Button size="sm" onClick={() => github.connect("/code")} disabled={github.loading}>
-                Connect
-              </Button>
-            </div>
+            /* Not connected: the SAME card, which carries the connect button
+               and the same explanation of what connecting does. */
+            <GitHubConnectionCard compact />
           )}
           {github.error && <p role="alert" className="text-xs text-destructive">GitHub: {github.error}</p>}
           {cloneError && <p role="alert" className="text-xs text-destructive">{cloneError}</p>}

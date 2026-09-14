@@ -2,25 +2,20 @@
 
 import { useEffect, useState } from "react";
 import {
+  EMPTY_INVENTORY,
   disconnectGitHubConnection,
   loadGitHubConnectionInventory,
   startGitHubConnection,
   syncGitHubConnection,
 } from "./service";
-import type { GitHubConnectionInventory } from "./types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 
-const EMPTY: GitHubConnectionInventory = {
-  connection: null,
-  repositories: [],
-};
-
 export function useGitHubConnection() {
   const organizationId = useAppSelector(selectOrganizationId);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const [inventory, setInventory] = useState(EMPTY);
+  const [inventory, setInventory] = useState(EMPTY_INVENTORY);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +104,7 @@ export function useGitHubConnection() {
   };
 
   return {
-    inventory: isAuthenticated ? inventory : EMPTY,
+    inventory: isAuthenticated ? inventory : EMPTY_INVENTORY,
     loading: isAuthenticated && loading,
     busy,
     error,
