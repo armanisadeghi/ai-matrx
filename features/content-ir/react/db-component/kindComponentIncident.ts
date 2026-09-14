@@ -58,7 +58,22 @@ export type KindComponentIncidentType =
   */
   | "kind_escaped_render"
   /** A sandbox CSP blocked a resource requested by a stored component. */
-  | "blocked_resource";
+  | "blocked_resource"
+  /**
+   * The reader was shown the PLATFORM's compiled component while this kind's
+   * organization-authored row could not be READ — the resolver's db read came
+   * back `42501 permission denied` (a signed-in door answered before the
+   * session attached), or an active `source='db'` row is bound but declares no
+   * body so the route refuses it. Either way the render is WRONG and the
+   * reader is told nothing: the block looks plausible, nothing errors, and
+   * before this incident existed nobody who could fix it ever found out
+   * (DD-215b, reproduced on production 2026-09-14).
+   *
+   * Not `generic_floor_render`: there the kind has no component at all and the
+   * reader gets the key/value viewer. Here a component IS bound and a
+   * different, wrong one rendered.
+   */
+  | "component_read_refused";
 
 export interface KindComponentIncidentInput {
   kind: string;
@@ -113,13 +128,33 @@ function browserInfo(): Record<string, unknown> | null {
   };
 }
 
+/** Test seam — lets a suite exercise the real filing path outside production. */
+let enabledForTests = false;
+export function setKindComponentIncidentsEnabledForTests(on: boolean): void {
+  enabledForTests = on;
+}
+
 /**
  * File (or re-observe) one kind-component render incident. Fire-and-forget.
+ *
+ * 🚨 THE SCREAM MUST NOT DEPEND ON THE SESSION THAT FAILED (DD-215b). The
+ * incident door `public.log_kind_component_incident` is signed-in only —
+ * `anon`'s EXECUTE was revoked by DD-169 — and the loudest failure this queue
+ * exists to hear about (`component_read_refused`) happens precisely BECAUSE
+ * there is no session yet. Filed eagerly, that incident would be refused by
+ * the same missing session and dropped, so the failures least visible on
+ * screen would also be the ones never recorded. That is not hypothetical: on
+ * 2026-09-14 the equivalent Error-Inspector captures were dropped for exactly
+ * this reason (`persistCapturedErrors` needs an authenticated session too), so
+ * V-99's eighteen failing production reads left no server-side trace at all.
+ *
+ * So: when no session is known yet, the incident WAITS for one and is filed
+ * then. It is never dropped, and it is never awaited by a render path.
  */
 export function reportKindComponentIncident(
   input: KindComponentIncidentInput,
 ): void {
-  if (process.env.NODE_ENV !== "production") return;
+  if (process.env.NODE_ENV !== "production" && !enabledForTests) return;
   if (typeof window === "undefined") return;
 
   const platform = input.platform ?? "web";
@@ -129,6 +164,17 @@ export function reportKindComponentIncident(
   reported.add(key);
 
   void (async () => {
+    // Hold the incident until a session exists. `whenSessionReady` runs the
+    // callback immediately when auth has already confirmed one, so the common
+    // case costs nothing.
+    const { hasSession, whenSessionReady } = await import(
+      "../../registry/session-ready"
+    );
+    if (!hasSession()) {
+      await new Promise<void>((resolve) => {
+        whenSessionReady(resolve);
+      });
+    }
     try {
       const { supabase } = await import("@/utils/supabase/client");
       await supabase.rpc("log_kind_component_incident", {

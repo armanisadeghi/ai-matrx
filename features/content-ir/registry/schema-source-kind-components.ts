@@ -22,11 +22,47 @@ async function getSupabase() {
   return supabase;
 }
 
+/**
+ * PostgREST's `insufficient_privilege`. Both tables this module reads are
+ * SIGNED-IN doors — `anon` holds no grant on `content_ir.kind_component` or
+ * `content_ir.kind_definition` — so a read issued BEFORE the session attaches
+ * comes back 42501. That is a REFUSAL, not an answer: it says nothing about
+ * whether the rows exist, and treating it as "no rows" is what silently hands
+ * a reader the platform's component instead of their organization's (DD-215b).
+ * An RLS denial, by contrast, returns an empty list and is a real answer.
+ */
+export const ACCESS_REFUSED_CODE = "42501";
+
 export class KindComponentTablesError extends Error {
-  constructor(message: string) {
+  /** PostgREST's code when we still had it — see {@link isAccessRefusalError}. */
+  readonly code: string | null;
+  /** True when the read was REFUSED rather than answered. */
+  readonly refused: boolean;
+  constructor(message: string, code?: string | null) {
     super(message);
     this.name = "KindComponentTablesError";
+    this.code = code ?? null;
+    this.refused =
+      code === ACCESS_REFUSED_CODE || /permission denied/i.test(message);
   }
+}
+
+/**
+ * Was this read REFUSED (rather than answered)?
+ *
+ * 🚨 The message test is not belt-and-braces, it is the only test available on
+ * the warm path: `readAllRows` (`@ai-matrx/data`) wraps a PostgrestError as
+ * `readAllRows(label): query failed — ${error.message}` and drops `.code`, so
+ * by the time the warm list's failure reaches us the code is gone and the
+ * sentence is all that is left. The cold single-kind fetch keeps the code, and
+ * this checks it first.
+ */
+export function isAccessRefusalError(error: unknown): boolean {
+  if (error instanceof KindComponentTablesError) return error.refused;
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === ACCESS_REFUSED_CODE) return true;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /permission denied/i.test(message);
 }
 
 /** One resolver row, kind_definition_id already resolved to the kind slug. */
@@ -160,8 +196,7 @@ function asConfigRecord(value: Json, kind: string): JsonObject {
  * whatever it is handed — an unselected flag reads as `false`/`0` there and
  * silently re-sorts the entire tier by `created_at` (DD-236). Every column
  * the order-by names must also be selected. Component and transform BODIES
- * never ride this list; a parallel id-only projection derives body presence
- * without
+ * never ride this list; a parallel id-only projection derives body presence without
  * transferring the text. The fallback cannot win here either:
  * `content_ir.kind_component`'s `zzz_demote_generic_fallback` trigger pins
  * every `generic_structured` row to is_default=false / sort_order=1000, and
@@ -269,6 +304,7 @@ export async function getKindComponentBySlug(
   if (defErr) {
     throw new KindComponentTablesError(
       `Failed to resolve kind "${kind}" for component fetch: ${defErr.message}`,
+      defErr.code,
     );
   }
   if (!def) return [];
@@ -292,6 +328,7 @@ export async function getKindComponentBySlug(
   if (error) {
     throw new KindComponentTablesError(
       `Failed to fetch kind_component for "${kind}": ${error.message}`,
+      error.code,
     );
   }
   if (!rows || rows.length === 0) return [];

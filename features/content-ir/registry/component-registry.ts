@@ -39,9 +39,11 @@ import {
 } from "@/lib/invalidation/invalidation-registry";
 import {
   getKindComponentBySlug,
+  isAccessRefusalError,
   listKindComponentsFromTables,
   type KindComponentProjection,
 } from "./schema-source-kind-components";
+import { hasSession, whenSessionReady } from "./session-ready";
 import {
   getSystemComponentEntries,
   type SystemComponentEntry,
@@ -160,7 +162,20 @@ export class ComponentRegistry extends ComponentResolver {
       // take, so a guard that only sat on the ingest overrides never saw a
       // `loading` row at all.
       loadAll: async () => {
-        const rows = dispatchableRows(await listKindComponentsFromTables());
+        let raw: KindComponentProjection[];
+        try {
+          raw = await listKindComponentsFromTables();
+        } catch (error) {
+          // DD-215b: a REFUSED warm load is not an answer. Both the package's
+          // `ensureWarm` and its `refresh` swallow their own failure (one
+          // retries on a timer, the other does not), and NEITHER re-opens the
+          // per-kind demand — so a 42501 here used to leave every kind on the
+          // page holding the compiled floor for the rest of the session. This
+          // is the one seam both paths share, so the re-arm lives here.
+          if (isAccessRefusalError(error)) this.rearmAfterRefusal(null);
+          throw error;
+        }
+        const rows = dispatchableRows(raw);
         // DD-215: the ONE honest "the db tier is complete" signal. The
         // package's `hasSettled()` also answers true the moment the map holds
         // ANY row — which the per-kind demand below would itself make true,
@@ -233,10 +248,31 @@ export class ComponentRegistry extends ComponentResolver {
   private provisionalInFlight = new Set<string>();
   private provisionalMisses = new Set<string>();
 
-  /** Test seam — re-arms the provisional demand. */
+  /** Test seam — re-arms the provisional demand AND every refusal verdict. */
   resetProvisionalDemand(): void {
     this.provisionalInFlight.clear();
     this.provisionalMisses.clear();
+    this.refusedKinds.clear();
+    this.refusalRetries.clear();
+    this.warmRefused = false;
+  }
+
+  /**
+   * Test seam — an empty db tier with the per-kind demand window RE-OPENED.
+   *
+   * `replaceDbRows([])` alone is not enough and `ensureWarm` must not be used:
+   * the window these suites exercise is governed by `warmListLanded`, which
+   * only `loadAll` sets, and the package's warm load is one-shot per session.
+   */
+  resetForTests(): void {
+    this.replaceDbRows([]);
+    this.resetProvisionalDemand();
+    this.warmListLanded = false;
+  }
+
+  /** Whether a miss is recorded for this key — the forcing tests read it. */
+  hasProvisionalMiss(kind: string, platform: string, role: ComponentRole): boolean {
+    return this.provisionalMisses.has(`${kind} ${platform} ${role}`);
   }
 
   override replaceDbRows(
@@ -274,26 +310,150 @@ export class ComponentRegistry extends ComponentResolver {
       // First-row-per-key wins and nothing is overwritten: if the warm list
       // beat us to this key, its row stands and this is a no-op.
       this.ingestDbRows(rows);
+      // 🚨 A MISS IS ONLY EVER RECORDED FROM AN ANSWER (DD-215b). This line is
+      // inside the `try`, after a read that actually returned, on purpose: a
+      // refusal goes to the `catch` and must NEVER land here, because a miss
+      // closes this (kind, platform, role) for the whole session and is only
+      // cleared by a wholesale `replaceDbRows`.
       if (this.resolve(kind, platform, role)?.resolvedBy !== "db") {
         this.provisionalMisses.add(`${key} ${role}`);
       }
     } catch (error) {
+      const refused = isAccessRefusalError(error);
       captureError({
         source: "content-ir",
         message:
           `[content-ir] could not fetch the component rows for kind "${kind}" ` +
           `(${platform}/${role}): ${error instanceof Error ? error.message : String(error)}. ` +
-          `Until this read succeeds, an organization-authored component for this ` +
-          `kind cannot render and readers see the platform's bundled component ` +
-          `instead — retry the read or check this organization's access to ` +
-          `content_ir.kind_component.`,
+          (refused
+            ? `The read was REFUSED, not answered — this is a signed-in door and ` +
+              `the request carried no session, so it says nothing about whether ` +
+              `the rows exist. Readers see the platform's bundled component until ` +
+              `a session attaches; this demand is queued to retry then (DD-215b), ` +
+              `and the boot race itself is DD-237.`
+            : `Until this read succeeds, an organization-authored component for this ` +
+              `kind cannot render and readers see the platform's bundled component ` +
+              `instead — retry the read or check this organization's access to ` +
+              `content_ir.kind_component.`),
         relation: kind,
         callSite: "ComponentRegistry.demandDbTier",
-        raw: { kind, platform, role },
+        raw: { kind, platform, role, refused },
       });
+      if (refused) {
+        // Defensive: a miss must not survive a refusal even if one was
+        // recorded by an earlier, genuinely-answered read.
+        this.provisionalMisses.delete(`${key} ${role}`);
+        this.reportRefusedRender(kind, platform, role, error);
+        this.rearmAfterRefusal({ kind, platform, role });
+      }
     } finally {
       this.provisionalInFlight.delete(key);
     }
+  }
+
+  /** Kinds whose db read was REFUSED and not yet answered. Read by the render seam. */
+  private refusedKinds = new Map<string, number>();
+
+  /**
+   * Bounded so a door that is genuinely closed to this reader cannot become a
+   * poll: three attempts is enough to cover a session that attaches late, a
+   * token refresh, and one recovery after a transient outage.
+   */
+  private static readonly MAX_REFUSAL_RETRIES = 3;
+
+  /** Set when the WARM list itself was refused — every kind is then unanswered. */
+  private warmRefused = false;
+
+  /**
+   * True while this kind's component read stands REFUSED rather than answered —
+   * either its own cold read was refused, or the warm list was and this kind
+   * still has nothing but the compiled floor to show for it.
+   */
+  wasRefused(kind: string): boolean {
+    if ((this.refusedKinds.get(kind) ?? 0) > 0) return true;
+    if (!this.warmRefused) return false;
+    return this.resolve(kind, "web", "output")?.resolvedBy !== "db";
+  }
+
+  /**
+   * Re-run a refused read once a session exists. `target` null means the WARM
+   * list was refused, so the whole db tier is re-fetched; otherwise just the
+   * one kind's rows are demanded again.
+   */
+  private rearmAfterRefusal(
+    target: { kind: string; platform: string; role: ComponentRole } | null,
+  ): void {
+    const key = target ? `${target.kind} ${target.platform}` : "*warm*";
+    const attempts = this.refusalRetries.get(key) ?? 0;
+    if (attempts >= ComponentRegistry.MAX_REFUSAL_RETRIES) return;
+    this.refusalRetries.set(key, attempts + 1);
+    if (target) {
+      this.refusedKinds.set(target.kind, attempts + 1);
+    } else {
+      this.warmRefused = true;
+    }
+    // Already signed in? Then the refusal was not the boot race and an
+    // immediate re-demand would just fail again — wait for the NEXT session
+    // event (a refresh), which `whenSessionReady` gives us for free because it
+    // only fires on a transition into "session present".
+    const retry = () => {
+      if (target) {
+        this.provisionalMisses.delete(`${target.kind} ${target.platform} ${target.role}`);
+        this.refusedKinds.delete(target.kind);
+        void this.demandDbTier(target.kind, target.platform, target.role);
+      } else {
+        this.warmRefused = false;
+        // 0 = ignore the rate limit; the previous attempt landed no rows.
+        void this.refresh(0);
+      }
+    };
+    if (hasSession()) {
+      // A session exists and the read was still refused — give the client one
+      // bounded tick to finish attaching the token to its PostgREST headers
+      // rather than spinning.
+      setTimeout(retry, 1_000);
+      return;
+    }
+    whenSessionReady(retry);
+  }
+
+  private refusalRetries = new Map<string, number>();
+
+  /**
+   * A WRONG RENDER IS NEVER SILENT (DD-215b). The reader is about to be shown
+   * the platform's compiled component although this kind has an
+   * organization-authored one — we simply could not read it. File that on the
+   * authoring queue, where someone who can fix it will see it.
+   *
+   * Lazy import on purpose: this module is the cycle entry for the registry
+   * cluster (see the header), and the incident filer lives in the react layer.
+   */
+  private reportRefusedRender(
+    kind: string,
+    platform: string,
+    role: ComponentRole,
+    error: unknown,
+  ): void {
+    void (async () => {
+      try {
+        const { reportKindComponentIncident } = await import(
+          "../react/db-component/kindComponentIncident"
+        );
+        reportKindComponentIncident({
+          kind,
+          errorType: "component_read_refused",
+          platform,
+          role,
+          message:
+            `The reader was shown the platform's bundled component for "${kind}" ` +
+            `because this organization's component row could not be READ: ` +
+            `${error instanceof Error ? error.message : String(error)}. ` +
+            `This is a refusal, not a missing component — the row may well exist.`,
+        });
+      } catch {
+        /* an alarm that throws is worse than one that misses */
+      }
+    })();
   }
 }
 
