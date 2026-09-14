@@ -43,6 +43,7 @@ import {
   listKindComponentsFromTables,
   type KindComponentProjection,
 } from "./schema-source-kind-components";
+import { installKindRegistryDebug } from "./registry-debug";
 import { hasSession, whenSessionReady } from "./session-ready";
 import {
   getSystemComponentEntries,
@@ -420,6 +421,52 @@ export class ComponentRegistry extends ComponentResolver {
   private refusalRetries = new Map<string, number>();
 
   /**
+   * THE INSTRUMENT (DD-215c) — what this resolver holds RIGHT NOW, for the
+   * snapshot global installed by `registry-debug.ts`.
+   *
+   * READ-ONLY and total: it resolves, counts and copies. It never fetches,
+   * ingests, clears a verdict or mutates anything, so reading it can never
+   * change what a reader sees — the one property a debugging instrument on a
+   * live surface must have. Component BODIES are reported as lengths; no body
+   * text and no kind instance value ever leaves through here.
+   */
+  debugSnapshot(kind: string | null): Record<string, unknown> {
+    const describe = (role: ComponentRole) => {
+      if (!kind) return null;
+      const resolution = this.resolve(kind, "web", role);
+      if (!resolution) return null;
+      return {
+        componentKey: resolution.componentKey,
+        resolvedBy: resolution.resolvedBy,
+        source: resolution.source,
+        isActive: resolution.isActive,
+        hasComponentSource: resolution.hasComponentSource,
+        bodyLength: resolution.componentSource?.length ?? 0,
+        updatedAt: resolution.updatedAt,
+      };
+    };
+    return {
+      kind,
+      at: new Date().toISOString(),
+      output: describe("output"),
+      input: describe("input"),
+      loading: describe("loading"),
+      compiledFloor: kind ? this.hasCompiled(kind, "web", "output") : null,
+      version: this.getVersion(),
+      kindVersion: kind ? this.getKindVersion(kind) : null,
+      hasSettled: this.hasSettled(),
+      warmListLanded: this.warmListLanded,
+      hasBeenDemanded: this.hasBeenDemanded(),
+      warmRefused: this.warmRefused,
+      wasRefused: kind ? this.wasRefused(kind) : null,
+      refusedKinds: [...this.refusedKinds.entries()],
+      refusalRetries: [...this.refusalRetries.entries()],
+      provisionalMisses: [...this.provisionalMisses],
+      provisionalInFlight: [...this.provisionalInFlight],
+    };
+  }
+
+  /**
    * A WRONG RENDER IS NEVER SILENT (DD-215b). The reader is about to be shown
    * the platform's compiled component although this kind has an
    * organization-authored one — we simply could not read it. File that on the
@@ -460,6 +507,10 @@ export class ComponentRegistry extends ComponentResolver {
 export const componentRegistry = new ComponentRegistry(
   getSystemComponentEntries,
 );
+
+// THE INSTRUMENT (DD-215c). Off unless the tab asked for it with
+// `?matrxKindDebug=1`; see registry-debug.ts for why this exists at all.
+installKindRegistryDebug(componentRegistry);
 
 /**
  * The seam-facing resolver (ruling R1): which component renders `kind` on
