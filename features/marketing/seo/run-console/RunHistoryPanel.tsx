@@ -83,10 +83,23 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+/** The inline marker matrx-ai's snapshot redactor leaves where it cut a string.
+ * Before 2026-09-14 it cut AI answers over 64 KB too, keeping only 128
+ * characters at each end — those answers are gone and must never be shown as
+ * if they were complete. */
+const SNAPSHOT_REDACTION_MARKER = "<<<MATRX_SNAPSHOT_REDACTION";
+
+function isFailedCall(call: RunAiCall): boolean {
+  const s = (call.status ?? "").toLowerCase();
+  return ["failed", "error", "cancelled"].includes(s) || call.error != null;
+}
+
 /** One AI call's full record — the generated content is the point, so its
  * output owns the body; everything else is a compact metrics strip. */
 function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const failed = isFailedCall(call);
+  const truncated = !!call.output_text?.includes(SNAPSHOT_REDACTION_MARKER);
   return (
     <li className="rounded-md border border-border bg-background/60">
       <button
@@ -133,13 +146,31 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
               What it generated
             </p>
             {call.output_text ? (
-              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded bg-muted/40 p-2 text-[11px] text-foreground">
-                {call.output_text}
-              </pre>
+              <>
+                {truncated ? (
+                  <p className="mb-1 flex items-start gap-1 rounded border border-border bg-muted/30 px-2 py-1 text-[11px] text-foreground">
+                    <AlertTriangle className="mt-px h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span>
+                      Only part of this answer was kept. It was recorded before
+                      September 14, 2026, when answers over 64 KB were shortened
+                      to their first and last lines. The rest cannot be
+                      recovered; answers recorded since then are kept in full.
+                    </span>
+                  </p>
+                ) : null}
+                <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded bg-muted/40 p-2 text-[11px] text-foreground">
+                  {call.output_text}
+                </pre>
+              </>
+            ) : failed ? (
+              <p className="text-[11px] text-destructive">
+                This call failed before the model returned an answer, so there
+                is nothing it generated. The reason is below.
+              </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                No output text was captured for this call (a tool-only
-                iteration, or the snapshot was not retained).
+                This call returned no text (a tool-only step, or its record was
+                not kept).
               </p>
             )}
           </div>
