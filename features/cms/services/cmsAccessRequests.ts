@@ -103,7 +103,6 @@ export async function createCmsAccessRequest(args: {
     const results = await Promise.allSettled(
       recipients.map((recipient) =>
         sendDirectActionMessage({
-          currentUserId,
           recipientId: recipient.userId,
           content,
           actionData: {

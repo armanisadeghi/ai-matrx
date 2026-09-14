@@ -36,15 +36,32 @@
  *      `@supabase/ssr` at run time would be issuing reads through a client this
  *      app never wrapped, from inside `node_modules`, where no source scan in
  *      this repo would ever see them.
- *   4. AND NO HOST TELLS A PACKAGE WHO THE USER IS (DD-240). A user id handed
- *      across a package boundary is a COPY, and a copy goes stale the moment the
- *      domain-wide auth cookie rotates: `<MeetProvider userId={selectUserId}>`
- *      kept naming an account its tab could no longer prove it was, and
- *      `communication.meet_pending_call_invites` refused those reads at 403
- *      ("the acting user … is not the authenticated user") in tabs 8.8 h and
+ *   4. AND NO HOST TELLS A PACKAGE WHO THE USER IS (DD-240, DD-241). A user id
+ *      handed across a package boundary is a COPY, and a copy goes stale the
+ *      moment the domain-wide auth cookie rotates: `<MeetProvider userId=
+ *      {selectUserId}>` kept naming an account its tab could no longer prove it
+ *      was, and `communication.meet_pending_call_invites` refused those reads at
+ *      403 ("the acting user … is not the authenticated user") in tabs 8.8 h and
  *      32.9 h old. A package derives identity from the session of the client it
- *      was given, or — where a prop still exists — the host proves the id
- *      against the live session in the same file before passing it. Nothing else.
+ *      was given. Nothing else.
+ *
+ *      🚨 IT IS NOT ONLY A JSX PROP, AND THE FIRST VERSION OF THIS RULE SAW ONLY
+ *      JSX PROPS. `features/messaging/service/sendDirectActionMessage.ts` handed
+ *      the same Redux copy to the same class of package through a plain function
+ *      call — `createMessagingRepository({ identity: { userId } })` — and the
+ *      rule was structurally blind to it while it sat in the tree and put that
+ *      copy on the wire as `p_user1_id`, `sender_id` and `created_by` (V-110's
+ *      finding F1/F2). So the rule now reads BOTH shapes: an identity-shaped
+ *      PROP on an imported component, and an identity-shaped KEY inside the
+ *      arguments of a call to any imported `@ai-matrx` symbol, at any nesting.
+ *
+ *      🚨 AND THERE IS NO LONGER A PROVE-IT-YOURSELF EXEMPTION. Through DD-240
+ *      a host could keep the prop by proving the id against the live session in
+ *      the same file, which `providers/MessagingHost.tsx` genuinely did. That
+ *      is a safe path BESIDE an unsafe one, which is not a closed class: the
+ *      proof lived beside the prop, so the next host or one refactor away it
+ *      would not. Both packages now read the session themselves, no site in this
+ *      tree needs the exemption, and the door is removed rather than guarded.
  *
  * Plus the declaration rule: the only way a door opts OUT of the wait is by
  * name, in `utils/supabase/anonymousByDesignDoors.ts`, WITH the purpose that
@@ -102,7 +119,13 @@ const PACKAGE_ALLOWED_TO_BUILD_A_CLIENT = "@ai-matrx/data";
  * defect with a different owner, and calling it this one would make this rule
  * mean less, not more.
  */
-const IDENTITY_PROPS = ["userId", "currentUserId", "authUserId"] as const;
+const IDENTITY_PROPS = [
+  "userId",
+  "currentUserId",
+  "authUserId",
+  "actingUserId",
+  "senderId",
+] as const;
 const SKIP_DIR = new Set(["node_modules", ".next", "dist", "build"]);
 
 /** Ways to obtain a browser Supabase client that does NOT go through the door. */
@@ -166,41 +189,141 @@ export function undeclaredDoors(rawDoorsSource: string): string[] {
   return bad;
 }
 
-/**
- * A host file that hands an identity to an `@ai-matrx/*` component without
- * proving it against the live session in the same file (DD-240). Returns
- * `Component.prop` for every such hand-off.
- *
- * "Proving it" means what `providers/MessagingHost.tsx` does: read
- * `auth.getSession()`, subscribe to `auth.onAuthStateChange`, and pass the id
- * only while the two sources agree. A file that does neither is passing a copy
- * of client state, which is the defect.
- */
-export function unverifiedIdentityHandoffs(rawSource: string): string[] {
-  const source = stripComments(rawSource);
+/** The value symbols a file imports from `@ai-matrx/*`, by name. */
+function aiMatrxImports(source: string): Set<string> {
   const imported = new Set<string>();
   const importFrom = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']@ai-matrx\/[^"']+["']/g;
   let match: RegExpExecArray | null;
   while ((match = importFrom.exec(source)) !== null) {
+    // A `import type {...}` clause imports no value, so nothing can be handed
+    // to it; a per-specifier `type` prefix is skipped for the same reason.
+    if (/^import\s+type\b/.test(match[0])) continue;
     for (const piece of match[1].split(",")) {
-      const name = piece.split(/\s+as\s+/).pop()?.trim().replace(/^type\s+/, "");
-      if (name !== undefined && /^[A-Z]/.test(name)) imported.add(name);
+      const raw = piece.trim();
+      if (raw.length === 0 || /^type\s/.test(raw)) continue;
+      const name = raw.split(/\s+as\s+/).pop()?.trim();
+      if (name !== undefined && name.length > 0) imported.add(name);
     }
   }
+  return imported;
+}
+
+/**
+ * The text between the parentheses of `name(` starting at `from`, balanced —
+ * so a nested object or call inside the arguments is included and the scan does
+ * not stop at the first `)`. Returns null when the parens never close.
+ */
+function argumentText(source: string, openParen: number): string | null {
+  let depth = 0;
+  for (let i = openParen; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === "(" || char === "{" || char === "[") depth += 1;
+    else if (char === ")" || char === "}" || char === "]") {
+      depth -= 1;
+      if (depth === 0) return source.slice(openParen + 1, i);
+    }
+  }
+  return null;
+}
+
+/**
+ * The call's OWN arguments, with the bodies of any callbacks passed to it
+ * removed.
+ *
+ * The distinction is not cosmetic. `createMessagingRepository({ identity: {
+ * userId } })` hands a value ACROSS the boundary — the package takes it and puts
+ * it on the wire. A callback's body is the host's own code, which the package
+ * merely calls back into later; `subscribeToRealtimeManager(() => ({ topic:
+ * channel.topic({ userId }) }))` is this app naming its own realtime topic, and
+ * reading that as an identity hand-off would make the rule cry wolf on ~every
+ * middleware in the repo — which is how a guard gets switched off.
+ *
+ * The known limit, said out loud: an identity returned FROM a callback
+ * (`createThing(() => ({ userId }))`) is not seen. No consumer writes that
+ * shape, and the alternative is a rule that flags everything.
+ */
+export function directArguments(args: string): string {
+  let out = "";
+  let i = 0;
+  while (i < args.length) {
+    const arrow = args.indexOf("=>", i);
+    const fn = args.indexOf("function", i);
+    const next =
+      arrow === -1 ? fn : fn === -1 ? arrow : Math.min(arrow, fn);
+    if (next === -1) {
+      out += args.slice(i);
+      break;
+    }
+    out += args.slice(i, next);
+    // Skip past the callback's body: a balanced block/expression if one opens,
+    // otherwise to the end of this argument.
+    let j = next + (next === arrow ? 2 : "function".length);
+    while (j < args.length && /\s/.test(args[j])) j += 1;
+    if (args[j] === "{" || args[j] === "(") {
+      let depth = 0;
+      for (; j < args.length; j += 1) {
+        const char = args[j];
+        if (char === "{" || char === "(" || char === "[") depth += 1;
+        else if (char === "}" || char === ")" || char === "]") {
+          depth -= 1;
+          if (depth === 0) {
+            j += 1;
+            break;
+          }
+        }
+      }
+    } else {
+      let depth = 0;
+      for (; j < args.length; j += 1) {
+        const char = args[j];
+        if (char === "{" || char === "(" || char === "[") depth += 1;
+        else if (char === "}" || char === ")" || char === "]") depth -= 1;
+        else if (char === "," && depth === 0) break;
+      }
+    }
+    i = j;
+  }
+  return out;
+}
+
+/**
+ * A host file that hands an identity to an `@ai-matrx/*` package (DD-240,
+ * DD-241). Returns `Symbol.key` for every such hand-off, in BOTH shapes:
+ *
+ *   `<SomeProvider userId={…}>`            — a prop on an imported component
+ *   `createSomething({ identity: { userId } })` — a key in a call's arguments
+ *
+ * There is no exemption. A package reads the acting user from the session of
+ * the client it was given; a host that has an id to hand over is holding a copy,
+ * and the only safe number of copies is zero.
+ */
+export function unverifiedIdentityHandoffs(rawSource: string): string[] {
+  const source = stripComments(rawSource);
+  const imported = aiMatrxImports(source);
   if (imported.size === 0) return [];
 
-  const provesAgainstTheSession =
-    /auth\.onAuthStateChange\s*\(/.test(source) && /auth\.getSession\s*\(/.test(source);
-
   const found: string[] = [];
-  for (const component of imported) {
-    const tag = new RegExp(`<${component}\\b([^>]*)>`, "g");
-    let opening: RegExpExecArray | null;
-    while ((opening = tag.exec(source)) !== null) {
-      for (const prop of IDENTITY_PROPS) {
-        if (!new RegExp(`\\b${prop}\\s*=`).test(opening[1])) continue;
-        if (provesAgainstTheSession) continue;
-        found.push(`${component}.${prop}`);
+  for (const symbol of imported) {
+    // 1. The JSX prop.
+    if (/^[A-Z]/.test(symbol)) {
+      const tag = new RegExp(`<${symbol}\\b([^>]*)>`, "g");
+      let opening: RegExpExecArray | null;
+      while ((opening = tag.exec(source)) !== null) {
+        for (const prop of IDENTITY_PROPS) {
+          if (new RegExp(`\\b${prop}\\s*=`).test(opening[1])) found.push(`${symbol}.${prop}`);
+        }
+      }
+    }
+    // 2. The call argument — the half the first version of this rule could not
+    //    see, and the half `sendDirectActionMessage.ts` used.
+    const call = new RegExp(`(?:^|[^.\\w$])${symbol}\\s*\\(`, "g");
+    let invocation: RegExpExecArray | null;
+    while ((invocation = call.exec(source)) !== null) {
+      const raw = argumentText(source, invocation.index + invocation[0].length - 1);
+      if (raw === null) continue;
+      const args = directArguments(raw);
+      for (const key of IDENTITY_PROPS) {
+        if (new RegExp(`\\b${key}\\s*:`).test(args)) found.push(`${symbol}({ ${key} })`);
       }
     }
   }
@@ -324,7 +447,11 @@ function scan(): Findings {
       const rel = relative(ROOT, file);
       const source = readFileSync(file, "utf8");
       for (const handoff of unverifiedIdentityHandoffs(source)) {
-        findings.identityHandoffs.push(`${rel}: <${handoff.replace(".", " ")}={…}>`);
+        findings.identityHandoffs.push(
+          handoff.includes("(")
+            ? `${rel}: ${handoff}`
+            : `${rel}: <${handoff.replace(".", " ")}={…}>`,
+        );
       }
       if (SANCTIONED_CONSTRUCTORS.has(rel)) continue;
       if (constructsBrowserClient(source)) {
@@ -393,9 +520,9 @@ function selfTest(): number {
     `),
   ]);
 
-  // 5. A host tells a package who the user is, with nothing checking it.
+  // 5. A host tells a package who the user is — in either shape.
   checks.push([
-    "an unverified identity hand-off to a package is flagged",
+    "an identity PROP handed to a package component is flagged (DD-240)",
     unverifiedIdentityHandoffs(`
       import { MeetProvider } from "@ai-matrx/meet/react";
       import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -405,8 +532,33 @@ function selfTest(): number {
       }
     `).length === 1,
   ]);
+  // 🚨 THE REAL PRE-FIX FILE, near enough to quote: this is what
+  // `features/messaging/service/sendDirectActionMessage.ts` looked like while
+  // the JSX-only version of this rule reported OK on the whole tree (V-110 F1).
   checks.push([
-    "an identity proven against the live session in the same file passes",
+    "an identity handed to a package FACTORY CALL is flagged (DD-241)",
+    unverifiedIdentityHandoffs(`
+      import { createMessagingRepository, asUserId, asOrganizationId } from "@ai-matrx/messaging/react";
+      async function repositoryFor(currentUserId: string) {
+        const client = createClient();
+        return createMessagingRepository({
+          client,
+          identity: {
+            userId: asUserId(currentUserId),
+            organizationId: asOrganizationId(organizationId),
+          },
+          resolveSession: async () => {
+            const { data } = await client.auth.getSession();
+            return data.session !== null;
+          },
+        });
+      }
+    `).length === 1,
+  ]);
+  // …AND the same file is still flagged when it reads the session itself. The
+  // exemption is gone: a safe path beside an unsafe one is not a closed class.
+  checks.push([
+    "proving the id against the live session no longer excuses the hand-off",
     unverifiedIdentityHandoffs(`
       import { MessagingProvider } from "@ai-matrx/messaging/react";
       export function Host({ children }) {
@@ -417,10 +569,62 @@ function selfTest(): number {
         }, []);
         return <MessagingProvider userId={verified}>{children}</MessagingProvider>;
       }
+    `).length === 1,
+  ]);
+  checks.push([
+    "a host that hands over only the client passes",
+    unverifiedIdentityHandoffs(`
+      import { MessagingProvider } from "@ai-matrx/messaging/react";
+      import { createMessagingRepository } from "@ai-matrx/messaging/react";
+      export function Host({ children }) {
+        void createMessagingRepository({ client: supabase, organizationId: orgId });
+        return <MessagingProvider client={supabase} organizationId={orgId}>{children}</MessagingProvider>;
+      }
+    `).length === 0,
+  ]);
+  // A nested key still counts: the defect wore `identity: { userId }`, not `userId`.
+  checks.push([
+    "an identity key NESTED inside a call's options is still seen",
+    unverifiedIdentityHandoffs(`
+      import { createThing } from "@ai-matrx/whatever";
+      createThing({ client, options: { deeper: { userId: stale } } });
+    `).length === 1,
+  ]);
+  // …and a lookalike that is NOT an @ai-matrx symbol is not this rule's business.
+  checks.push([
+    "a local function taking a userId is not flagged",
+    unverifiedIdentityHandoffs(`
+      import { asUserId } from "@ai-matrx/messaging";
+      function localThing(opts) { return opts; }
+      localThing({ userId: someone });
     `).length === 0,
   ]);
   checks.push([
-    "the live tree hands no unverified identity to any package",
+    "an identity inside a CALLBACK's body is not this rule's business",
+    unverifiedIdentityHandoffs(`
+      import { subscribeToRealtimeManager } from "@ai-matrx/realtime";
+      subscribeToRealtimeManager(() => ({
+        topic: cloudFilesChannel.topic({ userId }),
+        postgresChanges: [],
+      }));
+    `).length === 0,
+  ]);
+  checks.push([
+    "an identity option beside a callback is STILL seen — the real pre-fix shape",
+    unverifiedIdentityHandoffs(`
+      import { createMessagingRepository } from "@ai-matrx/messaging/react";
+      createMessagingRepository({
+        client,
+        identity: { userId: asUserId(currentUserId) },
+        resolveSession: async () => {
+          const { data } = await client.auth.getSession();
+          return data.session !== null;
+        },
+      });
+    `).length === 1,
+  ]);
+  checks.push([
+    "the live tree hands no identity to any package",
     scan().identityHandoffs.length === 0,
   ]);
 
@@ -498,11 +702,13 @@ function main(): number {
   }
   if (f.identityHandoffs.length > 0) {
     problems.push(
-      `${f.identityHandoffs.length} hand-off(s) tell an @ai-matrx package who the user is, with nothing\n` +
-        `  proving that id against the live session in the same file (DD-240):\n` +
+      `${f.identityHandoffs.length} hand-off(s) tell an @ai-matrx package who the user is\n` +
+        `  (DD-240, DD-241) — as a prop, or as a key in a call's options:\n` +
         f.identityHandoffs.map((line) => `    ${line}`).join("\n") +
-        `\n  A package derives identity from the session of the client it was given. Delete the prop,\n` +
-        `  or prove it the way providers/MessagingHost.tsx does before passing it.`,
+        `\n  A package derives identity from the SESSION of the client it was given, so there is\n` +
+        `  nothing to hand over: delete the prop or the option. Proving the id against the live\n` +
+        `  session in the same file is no longer an excuse — that is a safe path beside an unsafe\n` +
+        `  one, and it is exactly how sendDirectActionMessage.ts stayed invisible to this rule.`,
     );
   }
   if (f.roguePackages.length > 0) {

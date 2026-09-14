@@ -14,9 +14,9 @@
 // creation, and the backfill door on every reconnect. This file injects
 // IDENTITY and APP CHROME (C22) and nothing else:
 //
-//   identity — the Supabase browser singleton, the signed-in user, the active
-//              org, the API transport, and WHO fulfils each of the package's
-//              four conversation intelligences
+//   identity — the Supabase browser singleton (which IS who you are, see below),
+//              the active org, the API transport, and WHO fulfils each of the
+//              package's four conversation intelligences
 //   chrome   — reference opening, the notification sound/desktop sink, action
 //              surfaces, and a diagnostic sink that screams with a remedy
 //
@@ -29,18 +29,27 @@
 // absent from the map, and the package then renders no chip for it: an absent
 // affordance, never a dead button, never a fallback agent.
 //
+// 🚨 THIS FILE DOES NOT TELL THE PACKAGE WHO THE USER IS (DD-241). It used to,
+// and it proved the id against `auth.getSession()` + `auth.onAuthStateChange`
+// in this very file to make that safe. Correct — and still a door: the proof
+// lived beside the prop, so the next host, the next file, or one refactor away
+// it would not. Since `@ai-matrx/messaging` 0.12.0 the package reads the acting
+// user from the session of the `client` below — the same session that mints the
+// JWT on every request — so the id in `sender_id` and the id in the token
+// cannot disagree. The prop is gone from the type; there is nothing to prove.
+//
 // It is mounted app-wide, not on /messages, because the unread badge in the
 // header, the messages window panel, and the "Message" buttons in member panels
 // all need it — the same reason the deleted `MessagingInitializer` was mounted
 // globally. A signed-out visitor gets no engine at all: the provider stays inert
-// until userId and organizationId are both real.
+// until the session names somebody and organizationId is real.
 //
 // Doctrine: the package's README (twelve rules) + `common-docs`
 // /systems/communications/messaging/HANDOFF.md.
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   MessagingProvider,
@@ -84,7 +93,6 @@ import {
 import { useIncomingMessageNotifier } from "@/features/messaging/lib/useIncomingMessageNotifier";
 import { unlockAudio } from "@/features/messaging/utils/notificationSound";
 import { toast } from "@/lib/toast";
-import { verifiedMessagingUserId } from "./messagingIdentity";
 
 export interface MessagingHostProps {
   children: ReactNode;
@@ -92,7 +100,12 @@ export interface MessagingHostProps {
 
 export function MessagingHost({ children }: MessagingHostProps) {
   const router = useRouter();
-  const userId = useAppSelector(selectUserId);
+  // NOT the messaging identity — messaging reads that from the session (see the
+  // header). This is the SETTINGS SCOPE for the transcript-cap knob below: which
+  // person's override to layer on top of the org's. A stale one would read the
+  // wrong person's preference, which the knob system's own reads answer for; it
+  // never reaches a messaging table or RPC.
+  const settingsScopeUserId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   // THE ARCHIVED-ITEMS LAW clause 6 (`common-docs/policies/archived-items.md`):
   // the archive filter's starting state is the PERSON's setting, never this
@@ -101,30 +114,9 @@ export function MessagingHost({ children }: MessagingHostProps) {
   const archiveKnob = toMessagingArchiveFilter(
     useAppSelector(selectArchivedDefault),
   );
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const notifyIncoming = useIncomingMessageNotifier();
   const store = useAppStore();
 
-  // Redux and the Supabase session hydrate independently and can briefly name
-  // different accounts during sign-in, sign-out, or an account switch. The DM
-  // RPCs intentionally require p_user_id = auth.uid(); do not call them until
-  // both identity sources agree. RLS remains the authority and the provider
-  // simply stays inert during the transition.
-  useEffect(() => {
-    let mounted = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setSessionUserId(data.session?.user.id ?? null);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setSessionUserId(session?.user.id ?? null);
-    });
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
-  }, []);
-
-  const authenticatedUserId = verifiedMessagingUserId(userId, sessionUserId);
 
   // The app's ONE production transport for `@ai-matrx/agents` calls — the same
   // pipeline `useRunAgent` and the execution system ride, so a token refresh,
@@ -155,7 +147,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
   const aiDemand = useMessagingAiDemandCounter();
   const { agents, maxTranscriptMessages } = useMessagingIntelligences({
     organizationId,
-    userId,
+    userId: settingsScopeUserId,
     enabled: aiDemand.demanded,
   });
 
@@ -262,8 +254,9 @@ export function MessagingHost({ children }: MessagingHostProps) {
   return (
     <MessagingAiDemandProvider acquire={aiDemand.acquire}>
       <MessagingProvider
+        // The client IS the identity: messaging reads the acting user from its
+        // session (DD-241). There is no userId prop to pass, on purpose.
         client={supabase}
-        userId={authenticatedUserId}
         organizationId={organizationId}
         // The AI seam: the transport, WHO fulfils each job (from Mandates, both
         // halves), how much history an organization is willing to send, and the
@@ -290,13 +283,11 @@ export function MessagingHost({ children }: MessagingHostProps) {
         onOpenReference={onOpenReference}
         onIncomingMessage={onIncomingMessage}
         onDiagnostic={onDiagnostic}
-        // Redux identity and the browser's Supabase session hydrate in separate
-        // steps. Without this, a read that lands in between reports
-        // `session-unavailable` instead of retrying once and recovering — which
-        // is exactly the window that produced 909 captured errors in 0.6s.
+        // A read can still land between sign-in and token arrival. Without this,
+        // it reports `session-unavailable` instead of retrying once and
+        // recovering — the window that produced 909 captured errors in 0.6s.
         resolveSession={async () => {
           const { data } = await supabase.auth.getSession();
-          setSessionUserId(data.session?.user.id ?? null);
           return data.session !== null;
         }}
       >

@@ -343,7 +343,6 @@ export async function shareWithUser(
       import("@/features/messaging/service/sendDirectActionMessage")
         .then(({ sendDirectActionMessage }) =>
           sendDirectActionMessage({
-            currentUserId: user.id,
             recipientId: userId,
             content: `${user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Someone"} shared a ${resourceLabel} with you`,
             actionData: {

@@ -268,7 +268,6 @@ export async function createSettingAccessRequest(args: {
     const results = await Promise.allSettled(
       created.recipients.map((recipient) =>
         sendDirectActionMessage({
-          currentUserId,
           recipientId: recipient.userId,
           content: body,
           actionData: {
@@ -345,7 +344,6 @@ async function notifyRecipients(
   const results = await Promise.allSettled(
     created.recipients.map((recipient) =>
       sendDirectActionMessage({
-        currentUserId: args.currentUserId as string,
         recipientId: recipient.userId,
         content: body,
         actionData: {
@@ -405,7 +403,6 @@ export async function decideAccessRequest(args: {
       const completedAction =
         requestKind === "resource_action" && args.decision === "complete";
       await sendDirectActionMessage({
-        currentUserId: args.currentUserId,
         recipientId: requesterId,
         content: completedAction
           ? `${str(payload.entity_title) ?? "The item you asked about"} was deleted.`
