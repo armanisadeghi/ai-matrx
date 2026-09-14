@@ -266,6 +266,19 @@ do".
 
 ## Change log
 
+- `2026-09-14` — **Run history shows every AI answer in full, once, and says
+  plainly when it cannot (KI-049 follow-up).** Measured live: the empty
+  structured-output defect was already fixed on 2026-08-25 (3 empty calls in 30
+  days, all failures), but 78 of 415 outputs were 595-character fragments —
+  matrx-ai's snapshot redactor cut every string over 64 KB, including the
+  keyword classifier's ~73 KB answers. aidream `4572257f1` keeps assistant text
+  in full (knob `agents.request_snapshot.assistant_text_announce_bytes`).
+  `migrations/run_console_ai_calls_one_terminal_snapshot.sql`: one row per call
+  (terminal snapshot: response over error, latest attempt, `id` tie-break),
+  where a retried call used to render three times. `RunHistoryPanel.tsx`: a
+  failed call says it failed and points at its reason; an answer carrying the
+  redaction marker says the rest was not kept and cannot be recovered, instead
+  of passing a fragment off as the whole answer.
 - `2026-09-11` — **Manual runs carry the selected brand's organization through
   launch and rejoin.** Production reproduced `organization_forbidden` when the
   system console stamped Matrx System for a Data Destruction run even though
