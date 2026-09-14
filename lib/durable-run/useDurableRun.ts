@@ -532,6 +532,14 @@ export interface UseDurableRunOptions<TResult> {
   path: keyof paths;
   /** The event carrying the finished result, e.g. `seo.page_audit_result`. */
   finalEvent: string;
+  /**
+   * Keep the finished run's pointer so a return to this lane re-reads its
+   * answer (default). Pass `false` when the answer lives somewhere durable
+   * the surface already reads — then a finished run must NOT re-float its
+   * "Done" window on every later visit (the strategy brief: the document IS
+   * the answer, and the window covered it on a phone).
+   */
+  keepFinished?: boolean;
   /** Wire event name → the sentence a human reads. */
   stageLabels: Record<string, string>;
   /**
@@ -934,7 +942,11 @@ export function useDurableRun<TResult>(
         // Keep the pointer on success (see `RunPointer.settled`): the answer
         // must survive a refresh, not just the run that produced it.
         const pointer = readPointer(wire, key);
-        if (pointer) writePointer(wire, key, { ...pointer, settled: true });
+        if (pointer && optionsRef.current.keepFinished !== false) {
+          writePointer(wire, key, { ...pointer, settled: true });
+        } else {
+          clearPointer(wire, key);
+        }
         if (parsed === null || parsed === undefined) {
           clearPointer(wire, key);
           statusRef.current = "error";
