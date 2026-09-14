@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { connectGoogle } from "@/features/marketing/google/service";
-import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
-  consumeGoogleOAuthRedirectPending,
+  clearGoogleOAuthRedirectPending,
   assertGoogleOAuthRedirectInitiator,
+  readGoogleOAuthRedirectPending,
   returnPathWithGoogleOAuthResult,
   type GoogleOAuthRedirectPending,
 } from "./oauthRedirect";
@@ -44,11 +44,10 @@ export function GoogleOAuthRedirectCallback({
   const [organizationRequired, setOrganizationRequired] = useState(false);
   const [returnTo, setReturnTo] = useState("/");
   const started = useRef(false);
-  // The pending record is CONSUMED from sessionStorage on the first pass, so a
-  // retry after the person picks an organization cannot read it again. Hold it
-  // here: picking an organization must finish this authorization, never make
-  // them restart the Google flow (the `code` is single-use and already spent
-  // from Google's side of the handshake).
+  // Hold the validated record here after clearing sessionStorage: picking an
+  // organization must finish this authorization, never make them restart the
+  // Google flow (the `code` is single-use and already spent from Google's side
+  // of the handshake).
   const pendingRef = useRef<GoogleOAuthRedirectPending | null>(null);
 
   const exchange = useCallback(
@@ -101,7 +100,7 @@ export function GoogleOAuthRedirectCallback({
     if (started.current) return;
     started.current = true;
     const finish = async () => {
-      const pending = consumeGoogleOAuthRedirectPending(
+      const pending = readGoogleOAuthRedirectPending(
         window.sessionStorage,
         state,
         window.location.origin,
@@ -112,25 +111,59 @@ export function GoogleOAuthRedirectCallback({
       }
       pendingRef.current = pending;
       setReturnTo(pending.returnTo);
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      let validation: Response;
       try {
-        assertGoogleOAuthRedirectInitiator(pending, user?.id);
-      } catch (cause) {
-        setFailure(cause instanceof Error ? cause.message : "Google authorization could not be completed.");
+        validation = await fetch("/api/google/oauth/redirect-state", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state }),
+        });
+      } catch {
+        setFailure(
+          "Your AI Matrx session could not be verified yet. Refresh and try again.",
+        );
         return;
       }
-      const validation = await fetch("/api/google/oauth/redirect-state", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state }),
-      });
       if (!validation.ok) {
-        setFailure("Google authorization state could not be verified.");
+        const body = (await validation.json().catch(() => null)) as {
+          error?: unknown;
+        } | null;
+        if (validation.status === 400 || validation.status === 409) {
+          clearGoogleOAuthRedirectPending(window.sessionStorage, state);
+        }
+        setFailure(
+          typeof body?.error === "string"
+            ? body.error
+            : "Google authorization state could not be verified.",
+        );
         return;
       }
+      const body = (await validation.json().catch(() => null)) as {
+        userId?: unknown;
+      } | null;
+      if (typeof body?.userId !== "string") {
+        setFailure(
+          "Your AI Matrx session could not be verified yet. Refresh and try again.",
+        );
+        return;
+      }
+      try {
+        assertGoogleOAuthRedirectInitiator(pending, body.userId);
+      } catch (cause) {
+        clearGoogleOAuthRedirectPending(window.sessionStorage, state);
+        setFailure(
+          cause instanceof Error
+            ? cause.message
+            : "Google authorization could not be completed.",
+        );
+        return;
+      }
+      const verifiedPending = {
+        ...pending,
+        initiatingUserId: body.userId,
+      };
+      pendingRef.current = verifiedPending;
+      clearGoogleOAuthRedirectPending(window.sessionStorage, state);
       if (providerError || !code) {
         const message = providerMessage(
           providerError,
@@ -146,7 +179,7 @@ export function GoogleOAuthRedirectCallback({
         );
         return;
       }
-      await exchange(pending);
+      await exchange(verifiedPending);
     };
     void finish();
   }, [code, exchange, providerError, providerErrorDescription, state]);

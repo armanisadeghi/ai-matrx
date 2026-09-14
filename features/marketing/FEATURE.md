@@ -682,6 +682,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-13 — Codex: **Google same-tab OAuth requires server-verified identity before consent and exchange.** The start route mints no state or redirect when browser and server principals disagree or server Auth is unavailable. On callback, the continuation remains available across retryable Auth outages and confirmed signed-out responses; the server consumes it only after an authenticated same-user success or confirmed user mismatch, and the browser no longer performs a second transient `getUser` check before the canonical exchange.
+
 - **2026-09-12 — Organization Keyword Value routes resolve addresses before
   data access.** `/organizations/[orgId]/settings/keyword-value` accepts the
   canonical organization slug or a UUID, but both SEO settings RPCs accept
