@@ -40,7 +40,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage } from "@/utils/errors";
-import type { KeywordMeaningProposal } from "./proposal";
+import type { KeywordMeaningProposal, OfferingProposal } from "./proposal";
 
 /** The traffic-class dimension has its own ruling RPC (C3) — stamps route to it. */
 const TRAFFIC_CLASS_DIMENSION = "traffic_class";
@@ -72,6 +72,69 @@ async function stampFacet(
     });
   }
   return response.data?.length ?? 0;
+}
+
+function rpcError(error: unknown): Error {
+  return new Error(extractErrorMessage(error).split(" · ")[0], { cause: error });
+}
+
+/** The organization that owns the site — every offering write names it. */
+async function siteOrganizationId(siteId: string): Promise<string> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("web")
+    .from("site")
+    .select("organization_id")
+    .eq("id", siteId)
+    .single();
+  if (response.error) throw rpcError(response.error);
+  return response.data.organization_id;
+}
+
+async function findSiteOfferingByName(
+  siteId: string,
+  name: string,
+): Promise<string | null> {
+  const response = await supabase
+    .schema("web")
+    .rpc("site_offerings", { p_site_id: siteId });
+  if (response.error) throw rpcError(response.error);
+  const wanted = name.trim().toLowerCase();
+  const match = (response.data ?? []).find(
+    (row) => row.name.trim().toLowerCase() === wanted,
+  );
+  return match?.id ?? null;
+}
+
+async function saveSiteOffering(
+  organizationId: string,
+  siteId: string,
+  proposal: OfferingProposal,
+): Promise<string> {
+  const response = await supabase.schema("web").rpc("save_site_offering", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_name: proposal.name,
+    p_kind: proposal.offeringKind,
+    ...(proposal.description ? { p_description: proposal.description } : {}),
+  });
+  if (response.error) throw rpcError(response.error);
+  return response.data;
+}
+
+async function setSiteOfferingWorth(
+  organizationId: string,
+  siteId: string,
+  offeringId: string,
+  points: number,
+): Promise<void> {
+  const response = await supabase.schema("seo").rpc("set_site_offering_value", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_brand_offering_id: offeringId,
+    p_worth_points: points,
+  });
+  if (response.error) throw rpcError(response.error);
 }
 
 export async function applyKeywordMeaningProposal(
@@ -162,14 +225,43 @@ export async function applyKeywordMeaningProposal(
       };
     }
 
-    case "offering":
-      // KI-040 step 6. The ordinary human path for an Offering is the
-      // brand-offering writer family, which the brand-offerings cutover has
-      // not published yet. Per the rule at the top of this file, approval
-      // never opens a writer of its own — so it refuses, in words, and the
-      // queue never offers the button (approvals/kinds/keyword-meaning.tsx).
-      throw new Error(
-        `Offering setup lands with the brand-offering model, which is not live yet. "${proposal.name}" stays waiting here and nothing was written; reject it now if it is wrong for this business.`,
-      );
+    case "offering": {
+      // KI-040 step 6 — replayed through THE canonical offering writers
+      // (features/marketing/FEATURE.md § "Canonical offering writers — THE
+      // CONTRACT"): `web.save_site_offering` creates the brand offering and
+      // makes it available on this site; `seo.set_site_offering_value` sets
+      // its worth in POINTS (D9). Both carry the site's own organization id
+      // explicitly and refuse any other.
+      const organizationId = await siteOrganizationId(siteId);
+      // Idempotent on the name the site already offers: a retried approval
+      // (lost response, double click) must not mint a second offering.
+      const existing = await findSiteOfferingByName(siteId, proposal.name);
+      const offeringId =
+        existing ??
+        (await saveSiteOffering(organizationId, siteId, proposal));
+      if (proposal.valueAdd !== null) {
+        await setSiteOfferingWorth(
+          organizationId,
+          siteId,
+          offeringId,
+          proposal.valueAdd,
+        );
+      }
+      const points =
+        proposal.valueAdd === null
+          ? ""
+          : ` and set its worth to ${proposal.valueAdd >= 0 ? "+" : ""}${proposal.valueAdd} points`;
+      return {
+        receipt: existing
+          ? `"${proposal.name}" was already one of this site's offerings${points ? `; ${points.trim()}` : ""}.`
+          : `Added "${proposal.name}" to this brand's offerings, made it available on this site${points}.`,
+        detail: {
+          offering_id: offeringId,
+          organization_id: organizationId,
+          created: existing ? 0 : 1,
+          worth_points: proposal.valueAdd ?? "not valued",
+        },
+      };
+    }
   }
 }

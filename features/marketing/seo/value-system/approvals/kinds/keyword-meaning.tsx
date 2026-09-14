@@ -153,20 +153,11 @@ function toItem(scope: ApprovalScope, assist: Assist): MeaningItem | null {
     doors: <ProposalDoors scope={scope} proposal={proposal} />,
     // A full document is read (and may be edited) in its own card before it
     // is approved — never a blind batch approve.
-    // KI-040 step 6: an Offering's approval is the brand-offering writer,
-    // which has not landed. The row says so and keeps Reject — never a dead
-    // or disabled-looking Approve (`suggestions/apply.ts` refuses too).
-    individualReview:
-      proposal.proposal === "offering" ? (
-        <p className="text-xs text-muted-foreground">
-          Approving adds this offering to your brand and sets its worth — that
-          lands with the brand-offering model, so it waits here for now. If it
-          is wrong for this business, reject it and it will not be proposed
-          again.
-        </p>
-      ) : editable ? (
-        <MeaningCardReview assist={assist} />
-      ) : undefined,
+    // A KI-040 Offering is one-click: its approval replays the canonical
+    // offering writers, so it is selectable and batch-approvable like a worth.
+    individualReview: editable ? (
+      <MeaningCardReview assist={assist} />
+    ) : undefined,
   };
 }
 

@@ -349,7 +349,7 @@ export function describeKeywordMeaningProposal(
           : `${p.valueAdd >= 0 ? "+" : ""}${p.valueAdd} points`;
       return {
         headline: `Add the ${p.offeringKind} "${p.name}"${points ? `, worth ${points}` : ""}`,
-        writePath: `Adds "${p.name}" to this brand's offerings, makes it available on this site${points ? ` and sets its worth to ${points} from the 100 baseline` : ""}. This lands with the brand-offering model; until then it waits here and nothing is written.`,
+        writePath: `Adds "${p.name}" to this brand's offerings (or reuses it if the site already offers it), makes it available on this site${points ? ` and sets its worth to ${points} from the baseline` : ""}.`,
       };
     }
     case "guideline_edit":
