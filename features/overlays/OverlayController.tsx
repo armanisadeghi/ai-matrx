@@ -3210,6 +3210,10 @@ export default function OverlayController() {
                 ? data.surfaceName
                 : undefined
             }
+            posture={data?.posture === "mine" ? "mine" : "admin"}
+            focusAgentId={
+              typeof data?.focusAgentId === "string" ? data.focusAgentId : null
+            }
           />
         );
       })()}

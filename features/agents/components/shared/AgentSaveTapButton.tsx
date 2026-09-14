@@ -48,6 +48,7 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
     setShowModelWarning,
     readOnlySavePrompt,
     duplicateDialog,
+    reachBadge,
   } = useAgentSaveAction(agentId);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -85,6 +86,7 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
 
   return (
     <>
+      {reachBadge}
       <div className="relative shrink-0">
         <TapTargetButton
           icon={icon}

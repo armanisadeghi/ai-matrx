@@ -34,6 +34,8 @@ import {
   ExternalLink,
   FastForward,
   FlaskConical,
+  History,
+  ListChecks,
   Loader2,
   RefreshCw,
   UserRound,
@@ -72,9 +74,11 @@ import {
   type BatchTier,
   type ImpactDelta,
   type ImpactGrade,
+  type ImpactPosture,
   type ImpactVerdict,
   type StandingImpact,
 } from "./impact";
+import { ImpactAgentCompanion, type CompanionSection } from "./ImpactAgentCompanion";
 import { useImpactAdvance } from "./impact-advance";
 import {
   AdvanceResultBadge,
@@ -122,6 +126,15 @@ export interface ImpactBatchPanelProps {
   surfaceName?: string | null;
   /** Tighter chrome when embedded in a dialog rather than a window. */
   compact?: boolean;
+  /** Which door the read goes through (R31). Default: the console's super-admin door. */
+  posture?: ImpactPosture;
+  /**
+   * The single-agent case (I6): the agent a person just edited. The panel
+   * then carries two more sections beside the pins — the version history
+   * (pinned vs newest, `AgentDiffViewer`) and the quick test
+   * (`MandateTestBench`) — and names each descendant's lineage in full.
+   */
+  focusAgentId?: string | null;
 }
 
 interface BatchRow {
@@ -197,7 +210,10 @@ export function ImpactBatchPanel({
   includeDescendants,
   surfaceName = null,
   compact = false,
+  posture = "admin",
+  focusAgentId = null,
 }: ImpactBatchPanelProps) {
+  const [section, setSection] = useState<"pins" | CompanionSection>("pins");
   const dispatch = useAppDispatch();
   const openMandateWindow = useOpenMandateWindow();
   const walkDescendants = includeDescendants ?? mode === "post_batch";
@@ -232,6 +248,7 @@ export function ImpactBatchPanel({
         fetchImpact(dispatch, scope.agentIds, {
           delta: scope.delta,
           includeDescendants: walkDescendants,
+          posture,
         }),
       ),
     )
@@ -251,7 +268,7 @@ export function ImpactBatchPanel({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, epoch, scopeKey, walkDescendants]);
+  }, [dispatch, epoch, posture, scopeKey, walkDescendants]);
 
   // Owners of personal pins, by name (I12) — best effort, one lookup.
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(() => new Map());
@@ -416,8 +433,15 @@ export function ImpactBatchPanel({
               href={agentHref(r.verdict.agent_id, null)}
             />
             {r.verdict.lineage_path && r.verdict.lineage_path.length > 1 ? (
-              <span className="block text-[10px] text-muted-foreground">
-                via duplicate of {r.verdict.lineage_path[0]?.agent_name}
+              <span
+                className="block text-[10px] text-muted-foreground"
+                title={`Reached through lineage: ${r.verdict.lineage_path
+                  .map((step) => step.agent_name)
+                  .join(" → ")}`}
+              >
+                {focusAgentId
+                  ? r.verdict.lineage_path.map((step) => step.agent_name).join(" → ")
+                  : `via duplicate of ${r.verdict.lineage_path[0]?.agent_name}`}
               </span>
             ) : null}
           </div>
@@ -672,6 +696,32 @@ export function ImpactBatchPanel({
         ) : null}
       </div>
 
+      {focusAgentId && impact && !error ? (
+        <div className="flex flex-wrap items-center gap-1 text-xs" role="tablist" aria-label="This agent">
+          {(
+            [
+              { id: "pins", label: "Pins", icon: ListChecks, title: "Every job this change reaches, graded." },
+              { id: "history", label: "Version history", icon: History, title: "The pinned version beside the newest one — what you just changed." },
+              { id: "test", label: "Quick test", icon: FlaskConical, title: "Run a reached job on the pinned version and the newest one." },
+            ] as const
+          ).map((tab) => (
+            <Button
+              key={tab.id}
+              size="sm"
+              role="tab"
+              aria-selected={section === tab.id}
+              variant={section === tab.id ? "secondary" : "ghost"}
+              className="h-7 gap-1 px-2 text-xs"
+              title={tab.title}
+              onClick={() => setSection(tab.id)}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
       <AdvanceResultsCard
         batches={writes.batches}
         verdictsOf={writes.verdictsOf}
@@ -680,7 +730,17 @@ export function ImpactBatchPanel({
         onDismiss={writes.clear}
       />
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      {focusAgentId && impact && !error && section !== "pins" ? (
+        <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border bg-card">
+          <ImpactAgentCompanion
+            focusAgentId={focusAgentId}
+            verdicts={impact.verdicts}
+            section={section}
+          />
+        </div>
+      ) : null}
+
+      <div className={`min-h-0 flex-1 overflow-hidden ${section !== "pins" ? "hidden" : ""}`}>
         <MatrxDataTable
           tableId={`impact-batch-${mode}`}
           data={rowsWithResults}

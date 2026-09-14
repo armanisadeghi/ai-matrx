@@ -15,6 +15,7 @@ import { ImpactBatchPanel } from "@/features/mandates/admin/ImpactBatchPanel";
 import type {
   ImpactBatchWindowDelta,
   ImpactBatchWindowMode,
+  ImpactBatchWindowPosture,
 } from "@/features/overlays/openers/impactBatchWindow";
 
 export interface ImpactBatchWindowProps {
@@ -27,6 +28,8 @@ export interface ImpactBatchWindowProps {
   sourceSentence?: string;
   preselectedRungIds?: string[];
   surfaceName?: string;
+  posture?: ImpactBatchWindowPosture;
+  focusAgentId?: string | null;
 }
 
 export default function ImpactBatchWindow(props: ImpactBatchWindowProps) {
@@ -43,6 +46,8 @@ function ImpactBatchWindowInner({
   sourceSentence,
   preselectedRungIds,
   surfaceName,
+  posture = "admin",
+  focusAgentId = null,
 }: ImpactBatchWindowProps) {
   const label = batchLabel ?? (mode === "dry_run" ? "Preview" : "Batch");
   const collectData = (): Record<string, unknown> => ({
@@ -53,10 +58,18 @@ function ImpactBatchWindowInner({
     sourceSentence: sourceSentence ?? null,
     preselectedRungIds: preselectedRungIds ?? null,
     surfaceName: surfaceName ?? null,
+    posture,
+    focusAgentId,
   });
   return (
     <WindowPanel
-      title={mode === "dry_run" ? "Change impact — preview" : "Change impact"}
+      title={
+        focusAgentId
+          ? "Change impact — this agent"
+          : mode === "dry_run"
+            ? "Change impact — preview"
+            : "Change impact"
+      }
       id="impact-batch-window"
       minWidth={520}
       minHeight={360}
@@ -76,6 +89,8 @@ function ImpactBatchWindowInner({
         sourceSentence={sourceSentence ?? null}
         preselectedRungIds={preselectedRungIds}
         surfaceName={surfaceName ?? null}
+        posture={posture}
+        focusAgentId={focusAgentId}
       />
     </WindowPanel>
   );

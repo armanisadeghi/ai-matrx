@@ -23,6 +23,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
 import { knobInt } from "@/lib/knobs/featureKnobs";
+import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 export type ImpactReport = components["schemas"]["ImpactReport"];
 export type ImpactVerdict = components["schemas"]["ImpactVerdict"];
@@ -293,7 +294,22 @@ export interface StandingImpact {
   computedAt: string;
 }
 
+/**
+ * The two doors the read has (I1): the super-admin `router` for the console
+ * and the batch panel, and the `public_router` every signed-in person may
+ * call, which answers only about the mandates THEY can already see (R31).
+ * Both run the same grader; only the gate differs.
+ */
+export type ImpactPosture = "admin" | "mine";
+
+export const IMPACT_READ_PATH: Record<ImpactPosture, "/mandates/impact" | "/mandates/impact/mine"> = {
+  admin: "/mandates/impact",
+  mine: "/mandates/impact/mine",
+};
+
 export interface FetchImpactOptions {
+  /** Which door to read through. Default `admin` — the console and the batch panel. */
+  posture?: ImpactPosture;
   /**
    * A DRY RUN (R14, R23): grade every rung as if this patch had been applied
    * to the pinned version. Every verdict then carries a null target token, so
@@ -331,7 +347,7 @@ export async function fetchImpact(
   const readPage = async (page: string[]): Promise<ImpactReport> => {
     const response = await dispatch(
       callApi({
-        path: "/mandates/impact",
+        path: IMPACT_READ_PATH[options.posture ?? "admin"],
         method: "POST",
         body: {
           agent_ids: page,
@@ -343,7 +359,7 @@ export async function fetchImpact(
     if (response.error) throw new Error(response.error.message);
     if (!isImpactReport(response.data)) {
       throw new Error(
-        "POST /mandates/impact did not return an impact report — the grades are unknown, not clean.",
+        `POST ${IMPACT_READ_PATH[options.posture ?? "admin"]} did not return an impact report — the grades are unknown, not clean.`,
       );
     }
     return response.data;
@@ -724,6 +740,23 @@ export function describeBatch(counts: BatchTierCounts): string {
   return `${head}: ${piles.join(" / ")}`;
 }
 
+/**
+ * The post-edit badge's sentence (I6): "This change reaches N mandates:
+ * x safe / y to check / z red". Blocked and current piles are named too —
+ * a rung a person's edit reaches but a batch cannot move is still reached.
+ */
+export function describeReach(counts: BatchTierCounts): string {
+  const head = `This change reaches ${counts.mandates} mandate${counts.mandates === 1 ? "" : "s"}`;
+  const piles = [
+    `${counts.byTier.safe} safe`,
+    `${counts.byTier.drift} to check`,
+    `${counts.byTier.red} red`,
+  ];
+  if (counts.byTier.blocked > 0) piles.push(`${counts.byTier.blocked} not movable here`);
+  if (counts.byTier.current > 0) piles.push(`${counts.byTier.current} already current`);
+  return `${head}: ${piles.join(" / ")}`;
+}
+
 /** Verdicts grouped by mandate key: the mandate's own default rung, then its bindings. */
 export interface MandateImpact {
   defaultVerdict: ImpactVerdict | null;
@@ -817,6 +850,33 @@ export function revertWindowSentence(window: RevertWindow): string {
     return `Undo: each moved pin can be put back for ${window.hours} hours after the move (the platform default; an organization may set its own window, and the server applies the row's own).`;
   }
   return `Undo: each moved pin can be put back within the organization's revert window — this page could not read the platform default (${window.why}), so the server's answer on each revert is the one that counts.`;
+}
+
+/**
+ * Whether the post-edit badge (I6) also OPENS the panel by itself. An
+ * organization knob, default off — a save is the person's moment, and a
+ * window that jumps on every save is the interruption Arman said he does
+ * not want; the badge and the toast's "Review" door are always there. Read
+ * through THE settings ladder (organization → user → device), never a
+ * constant: `agent_impact.post_edit_auto_open`, seeded by
+ * `migrations/agent_change_impact_06_post_edit_auto_open_knob.sql`.
+ */
+export const POST_EDIT_AUTO_OPEN_KNOB = "agent_impact.post_edit_auto_open";
+
+export type PostEditAutoOpen =
+  | { state: "known"; value: boolean }
+  | { state: "unknown"; why: string };
+
+export async function readPostEditAutoOpen(): Promise<PostEditAutoOpen> {
+  try {
+    const value = await resolveSessionKnob(POST_EDIT_AUTO_OPEN_KNOB);
+    if (value === undefined) {
+      return { state: "unknown", why: "no organization is active in this session" };
+    }
+    return { state: "known", value: value === true || value === "true" };
+  } catch (error) {
+    return { state: "unknown", why: describeError(error) };
+  }
 }
 
 function describeError(error: unknown): string {
