@@ -70,9 +70,10 @@ function SettingsDesktopMenu({
         href={SETTINGS_BASE}
         className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "settings-route-menu-home", !activeTabId && "shell-active-pill")}
         aria-current={!activeTabId ? "page" : undefined}
+        title="Settings"
       >
         <span className="shell-nav-icon"><Settings size={ROUTE_MENU_ICON_SIZE} strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH} /></span>
-        <span className="settings-route-menu-label">Settings</span>
+        <span className="shell-nav-label settings-route-menu-label">Settings</span>
       </Link>
       <SettingsNavigationSearch value={query} onValueChange={setQuery} />
       <div className="settings-route-menu-tree">
@@ -115,10 +116,10 @@ function SettingsMobileMenu({
     <nav className="settings-route-menu settings-route-menu-mobile" aria-label="Settings">
       {parent ? (
         <button type="button" data-keep-mobile-menu-open className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "settings-route-menu-back")} onClick={() => setParentId(findParentId(nodes, parent.id))}>
-          <span className="shell-nav-icon"><ChevronLeft /></span><span className="settings-route-menu-label">Back</span>
+          <span className="shell-nav-icon"><ChevronLeft /></span><span className="shell-nav-label settings-route-menu-label">Back</span>
         </button>
       ) : (
-        <Link href={SETTINGS_BASE} className={ROUTE_MENU_NAV_ITEM_CLASS}><span className="shell-nav-icon"><Settings /></span><span className="settings-route-menu-label">Settings</span></Link>
+        <Link href={SETTINGS_BASE} className={ROUTE_MENU_NAV_ITEM_CLASS} title="Settings"><span className="shell-nav-icon"><Settings /></span><span className="shell-nav-label settings-route-menu-label">Settings</span></Link>
       )}
       <SettingsNavigationSearch value={query} onValueChange={setQuery} />
       {query ? (
@@ -130,7 +131,7 @@ function SettingsMobileMenu({
         const Icon = node.icon;
         if (node.children?.length) {
           return <button key={node.id} type="button" data-keep-mobile-menu-open className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "settings-route-menu-folder")} onClick={() => setParentId(node.id)}>
-            <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span><span className="settings-route-menu-label">{node.label}</span><ChevronRight className="ml-auto" aria-hidden />
+            <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span><span className="shell-nav-label settings-route-menu-label">{node.label}</span><ChevronRight className="ml-auto" aria-hidden />
           </button>;
         }
         return <SettingsMenuLink key={node.id} node={node} active={node.id === activeTabId} />;
@@ -140,7 +141,7 @@ function SettingsMobileMenu({
 }
 
 function SettingsMenuLink({ node, label = node.label, active }: { node: SettingsTreeNode; label?: string; active: boolean }) {
-  return <Link href={tabIdToHref(SETTINGS_BASE, node.id)} prefetch aria-current={active ? "page" : undefined} className={cn(ROUTE_MENU_NAV_ITEM_CLASS, active && "shell-active-pill")}>
+  return <Link href={tabIdToHref(SETTINGS_BASE, node.id)} prefetch aria-current={active ? "page" : undefined} title={label} className={cn(ROUTE_MENU_NAV_ITEM_CLASS, active && "shell-active-pill")}>
     <SettingsMenuLinkContent icon={node.icon} label={label} />
   </Link>;
 }
@@ -149,7 +150,7 @@ function SettingsMenuLinkContent({ icon: Icon, label, description, location }: {
   const { pending } = useLinkStatus();
   return <>
     <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span>
-    <span className="settings-route-menu-result-copy"><span className="settings-route-menu-label">{label}</span>{location ? <span className="settings-route-menu-location">{location}</span> : description ? <span className="settings-route-menu-description">{description}</span> : null}</span>
+    <span className="settings-route-menu-result-copy"><span className="shell-nav-label settings-route-menu-label">{label}</span>{location ? <span className="settings-route-menu-location">{location}</span> : description ? <span className="settings-route-menu-description">{description}</span> : null}</span>
     {pending ? <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin" aria-label={`Opening ${label}`} /> : null}
   </>;
 }

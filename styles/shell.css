@@ -1021,32 +1021,30 @@ button.shell-nav-flyout-item {
   flex: 1;
 }
 
-/* Settings is a route-owned navigation workspace. Its rail stays readable
-   while this family is active without changing the user's saved global-nav
-   collapsed preference; the normal width returns on exit. */
+/* Settings keeps its own readable expanded width, but the canonical shell
+   checkbox remains the only source of truth for whether this is a rail. */
 @media (min-width: 1024px) {
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) {
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) {
     grid-template-columns: 15rem 1fr;
   }
 
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) .shell-sidebar {
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) .shell-sidebar {
     width: 15rem;
     background: var(--shell-sidebar-bg-expanded);
     border-right-color: var(--shell-sidebar-border-expanded);
   }
 
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-item {
-    justify-content: flex-start;
-    min-height: 1.9rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.8125rem;
-  }
-
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon,
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon > svg {
-    width: 0.875rem;
-    height: 0.875rem;
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .settings-route-menu [role="search"],
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .settings-route-menu h2,
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .settings-route-menu-empty,
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .settings-route-menu-description,
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .settings-route-menu-location {
+    display: none;
   }
 
   .shell-root[data-settings-route] .shell-sidebar-footer {
