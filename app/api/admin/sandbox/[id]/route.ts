@@ -146,6 +146,16 @@ function failed(status: number) {
     { status: status >= 500 ? 502 : status },
   );
 }
+function outcomeUnknown(operation: "stop" | "delete") {
+  return NextResponse.json(
+    {
+      error: `Sandbox ${operation} outcome is unknown. The ${operation} was not retried; refresh this sandbox while its persisted state is checked.`,
+      status: "outcome_unknown",
+      operation,
+    },
+    { status: 502 },
+  );
+}
 function upstreamExpiry(payload: unknown): string | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload))
     return null;
@@ -183,23 +193,24 @@ export async function PUT(
   const item = await load(id);
   if (item.error) return item.error;
   if (body.action === "stop") {
+    const readPersistedStop = async () => {
+      const fresh = await load(id);
+      if (!fresh.error && fresh.data.status === "stopped") {
+        return NextResponse.json({ instance: fresh.data });
+      }
+      return null;
+    };
     const response = await call(
       `${item.target.url}/sandboxes/${item.data.sandbox_id}?graceful=true`,
       { method: "DELETE", headers: orchestratorJsonHeaders(item.target) },
     );
-    if (!response)
-      return NextResponse.json(
-        { error: "Sandbox orchestrator is not reachable" },
-        { status: 502 },
-      );
-    if (!response.ok) return failed(response.status);
-    const fresh = await load(id);
-    if (fresh.error || fresh.data.status !== "stopped")
-      return NextResponse.json(
-        { error: "Sandbox stopped but persisted state could not be verified" },
-        { status: 502 },
-      );
-    return NextResponse.json({ instance: fresh.data });
+    if (!response) return (await readPersistedStop()) ?? outcomeUnknown("stop");
+    if (!response.ok) {
+      if (response.status >= 500)
+        return (await readPersistedStop()) ?? outcomeUnknown("stop");
+      return failed(response.status);
+    }
+    return (await readPersistedStop()) ?? outcomeUnknown("stop");
   }
   if (item.data.expires_at == null)
     return NextResponse.json(
@@ -250,28 +261,28 @@ export async function DELETE(
   const id = (await params).id;
   const item = await load(id);
   if (item.error) return item.error;
+  const readPersistedDeletion = async () => {
+    const { data: stillLive, error } = await item.admin
+      .from("sandbox_instances")
+      .select("id")
+      .is("deleted_at", null)
+      .eq("id", id)
+      .maybeSingle();
+    if (!error && !stillLive) return new NextResponse(null, { status: 204 });
+    return null;
+  };
   const response = await call(
     `${item.target.url}/sandboxes/${item.data.sandbox_id}?graceful=true&purge=true`,
     { method: "DELETE", headers: orchestratorJsonHeaders(item.target) },
   );
   if (!response)
-    return NextResponse.json(
-      { error: "Sandbox orchestrator is not reachable" },
-      { status: 502 },
-    );
-  if (!response.ok) return failed(response.status);
-  const { data: stillLive, error } = await item.admin
-    .from("sandbox_instances")
-    .select("id")
-    .is("deleted_at", null)
-    .eq("id", id)
-    .maybeSingle();
-  if (error || stillLive)
-    return NextResponse.json(
-      { error: "Sandbox deleted but persisted deletion could not be verified" },
-      { status: 502 },
-    );
-  return new NextResponse(null, { status: 204 });
+    return (await readPersistedDeletion()) ?? outcomeUnknown("delete");
+  if (!response.ok) {
+    if (response.status >= 500)
+      return (await readPersistedDeletion()) ?? outcomeUnknown("delete");
+    return failed(response.status);
+  }
+  return (await readPersistedDeletion()) ?? outcomeUnknown("delete");
 }
 export async function POST(
   _request: NextRequest,
