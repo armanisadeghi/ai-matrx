@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-09-10
+updated: 2026-09-14
 repos: [matrx-frontend]
 scope: tail
 feature: Listening & Speech
@@ -58,9 +58,12 @@ On why it matters beyond this feature:
   row + 33 user rows; **zero org rows**).
 - **Admin editing (system default):** `/administration/ui/surfaces/matrx-user/assistant-message`
   → "Config namespaces" → `listening`. Raw JSON textarea, writes the global tier.
-- **Testing:** `pnpm preview:start` (port 3001), sign in via the nonce handshake —
-  `openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/chat`. Right-click any assistant reply → Listen,
-  or the ⋯ menu → Actions. Tests: `pnpm jest features/audio features/context-menu-v3/model`.
+- **Testing:** `pnpm preview:start` (it prints YOUR session hostname — open that, never
+  `localhost:3001`), then `pnpm dev-login /chat` and open the URL it prints. (The old
+  `openssl rand -hex 16 > .dev-login-nonce` recipe is dead — the nonce file is per hostname now
+  and no host reads the hand-written one; corrected 2026-09-14 after it cost a run.) Right-click
+  any assistant reply → Listen, or the ⋯ menu.
+  Tests: `pnpm jest features/audio features/context-menu-v3/model`.
 
 ## Remaining work
 
@@ -88,18 +91,27 @@ On why it matters beyond this feature:
    `system`), and hand-written policies are banned, so the fix belongs in the generator.
    **Awaiting Arman's scope call — see Decisions.**
 
-3. **Close out the agent-review row.** `agent.review_queue` id
-   `b464b22c-04f5-4fc2-83cc-602a901fec6b` has sat at `submitted` since 2026-08-31 and was never
-   picked up. Arman has since confirmed mobile audio works ("The audio tests passed",
-   2026-09-08), which was the row's last open question — so this is a review-and-archive, not a
-   repair. Invoke the `agent-review-queue` skill.
-
-4. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
+3. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
    Arman's words were "all of the system defaults should be customizable by me in a centralized
    place" — a JSON box technically satisfies it, a voice/speed/language form actually does.
    Small, and it is the same three controls the Listen panel already renders.
 
 ## Done
+
+- **The agent-review row is with Arman (2026-09-14).** `agent.review_queue`
+  `b464b22c-04f5-4fc2-83cc-602a901fec6b` sat at `submitted` from 2026-08-31 until an independent
+  agent review re-verified the whole row live on 2026-09-14 (desktop, signed in as
+  `admin@admin.com`, managed preview) and promoted it to `ready_for_human` —
+  https://manage.aimatrx.com/administration/users/agent-review/b464b22c-04f5-4fc2-83cc-602a901fec6b
+  It was NOT archived: the row's three design questions (submenu label/placement, panel look, the
+  collapsed "Thought process" rows) have never been answered by Arman, and `ready_for_human` is the
+  only status that reaches him. Verified in that pass: the one-slot Listen submenu on a `/chat`
+  assistant reply and on a `/notes` preview, the action-bar `…` menu carrying both options,
+  autoplay vs. no-autoplay, Pause/Resume/Stop and "listen again", stream-to-stream proven by
+  `[tts-stream] SEND(first) last=false` → `continue` → `last=true`, and voice+speed changes
+  persisting to the user tier (`ui.ui_surface_config` namespace `listening`, speed 1.05, version 6)
+  across a reload. iOS device audio was not re-verified — Arman's "The audio tests passed"
+  (2026-09-08) stands. No "Thought process" rows appeared in the panel in any run.
 
 - Listen actions universal via one context-menu submenu + the action-bar ⋯ menu — see `features/context-menu-v3/model/menu-model.ts` (`listen` role) and `messageActionRegistry.listeningItems`.
 - Listen panel with streaming summary + audio transport + in-place settings pane — see `features/window-panels/windows/listen/ListenSummaryWindow.tsx`.
