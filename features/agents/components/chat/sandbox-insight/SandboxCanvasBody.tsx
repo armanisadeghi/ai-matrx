@@ -170,9 +170,13 @@ export function SandboxCanvasBody({
   const status = instance ? getEffectiveStatus(instance) : null;
   const reachable =
     status !== null && ACTIVE_EFFECTIVE_STATUSES.includes(status);
+  // ONE IDENTITY. Before the row lands we know only the row id, so the label
+  // is built from the SAME canonical formatter with the same short id — the
+  // strip never swaps one identity ("Sandbox · 2c23df07") for a different one
+  // ("Unnamed · 7942bd") the moment a fetch resolves.
   const name = instance
-    ? sandboxDisplayName(instance)
-    : (fallbackName?.trim() || `Sandbox · ${sandboxRowId.slice(0, 8)}`);
+    ? sandboxDisplayName({ ...instance, id: instance.id ?? sandboxRowId })
+    : fallbackName?.trim() || sandboxDisplayName({ id: sandboxRowId });
   const tier = instance?.tier ?? instance?.config?.tier ?? null;
   const template = instance?.config?.template ?? null;
 
@@ -185,21 +189,41 @@ export function SandboxCanvasBody({
           chrome — the pane header above already says "Sandbox". */}
       <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
         <Box className="size-4 shrink-0 text-emerald-500" />
-        <p className="truncate text-xs font-medium text-foreground">{name}</p>
-        <p className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-          {status && (
-            <span
-              data-testid="sandbox-status-pill"
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                statusPillClasses(status),
-              )}
-            >
-              {STATUS_LABELS[status]}
-            </span>
-          )}
+        {/* The identifying part is never clipped: the derived name ends in the
+            short id, and a truncating span would cut exactly the characters
+            that say WHICH box this is. */}
+        <p
+          data-testid="sandbox-identity"
+          className="min-w-0 shrink-0 text-xs font-medium text-foreground"
+          title={name}
+        >
+          {name}
+        </p>
+        <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          {/* ONE STATUS SOURCE for the box: the row's effective lifecycle. It
+              is always stated — an absent pill read as "no status" beside a
+              dot that said "Idle", which is a different question entirely. */}
+          <span
+            data-testid="sandbox-status-pill"
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10px] font-medium",
+              status
+                ? statusPillClasses(status)
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {status
+              ? STATUS_LABELS[status]
+              : error
+                ? "Unreadable"
+                : "Checking…"}
+          </span>
           {tier && <span>{tier}</span>}
           {template && <span>{template}</span>}
+          {/* A DIFFERENT AXIS, said out loud. This is not the box's status —
+              it is whether the agent is running a sandbox tool in this chat
+              right now. Unlabelled, "Idle" beside "Running" read as two
+              status sources contradicting each other. */}
           <span className="flex items-center gap-1">
             <span
               className={cn(
@@ -209,7 +233,7 @@ export function SandboxCanvasBody({
                   : "bg-muted-foreground/40",
               )}
             />
-            {busy ? "Working" : "Idle"}
+            {busy ? "Agent working" : "Agent idle"}
           </span>
         </p>
       </div>

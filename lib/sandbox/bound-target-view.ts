@@ -26,6 +26,7 @@
 
 import type { ComputeTarget } from "@/app/api/compute-targets/route";
 import type { SandboxVerificationStatus } from "@/hooks/sandbox/use-verified-binding";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
 
 /**
  * How the bound box reads right now.
@@ -62,9 +63,14 @@ export interface BoundTargetInput {
   targets: ComputeTarget[] | null;
 }
 
-/** A readable last resort: never render a raw uuid at full length. */
+/**
+ * A readable last resort: never render a raw uuid at full length — and never
+ * a SECOND identity for a box that another surface already named. This routes
+ * through the canonical formatter so the short id here is the same short id
+ * the canvas pane, the picker and the `+` menu show for the same box.
+ */
 export function fallbackTargetName(rowId: string): string {
-  return `Sandbox ${rowId.slice(0, 8)}`;
+  return sandboxDisplayName({ id: rowId });
 }
 
 /**

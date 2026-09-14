@@ -146,7 +146,11 @@ if [[ -z "$range_desc" ]]; then
   [[ -n "$msg" ]] || msg="$(git log -1 --pretty=%B "${head_sha:-HEAD}" 2>/dev/null || true)"
   subjects="${msg%%$'\n'*}"
   subjects="${subjects%%$'\r'*}"
-  range_desc="HEAD only (no git history available)"
+  if [[ -n "$head_sha" ]]; then
+    range_desc="HEAD only (nothing could say what this project last deployed, and HEAD is not a merge)"
+  else
+    range_desc="HEAD only (no git history available)"
+  fi
 fi
 
 head_subject="${VERCEL_GIT_COMMIT_MESSAGE:-}"

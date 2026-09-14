@@ -20,11 +20,15 @@
  * guards drive — this component is only the wiring.
  */
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { getEffectiveSandboxRef } from "@/lib/sandbox/active-binding";
-import { selectCanvasItems } from "@/features/canvas/redux/canvasSlice";
+import {
+  selectCanvasIsOpen,
+  selectCanvasItems,
+  selectCurrentItemId,
+} from "@/features/canvas/redux/canvasSlice";
 import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { isSandboxTool } from "./sandbox-activity";
@@ -33,6 +37,11 @@ import {
   sandboxCanvasSourceId,
   useOpenSandboxCanvas,
 } from "./useOpenSandboxCanvas";
+import {
+  readSandboxCanvasMemory,
+  writeSandboxCanvasMemory,
+  type SandboxCanvasMemory,
+} from "./sandboxCanvasMemory";
 
 export function SandboxCanvasOpener({
   conversationId,
@@ -79,15 +88,44 @@ export function SandboxCanvasOpener({
     (item) => item.sourceMessageId !== sourceId,
   );
 
-  const autoOpenedFor = useRef<string | null>(null);
+  // The reveal decision SURVIVES RELOAD. It used to live only in a ref, and
+  // the canvas slice is deliberately not persisted — so every reload replayed
+  // the first-tool-call reveal and a pane the user had put away came back.
+  //
+  // Held in a ref, not state: this is a mirror of an external store
+  // (localStorage) that only the effects below read and write, and it only
+  // ever becomes MORE restrictive. Rendering nothing, there is nothing to
+  // re-render for — and setState inside an effect would cascade for free.
+  const memoryRef = useRef<{ key: string | null; value: SandboxCanvasMemory }>({
+    key: null,
+    value: { autoOpened: false, userClosed: false },
+  });
+
+  const readMemory = useCallback((key: string | null): SandboxCanvasMemory => {
+    if (memoryRef.current.key !== key) {
+      memoryRef.current = { key, value: readSandboxCanvasMemory(key) };
+    }
+    return memoryRef.current.value;
+  }, []);
+
+  const rememberMemory = useCallback(
+    (key: string | null, patch: Partial<SandboxCanvasMemory>) => {
+      const current = readMemory(key);
+      memoryRef.current = { key, value: { ...current, ...patch } };
+      writeSandboxCanvasMemory(key, patch);
+    },
+    [readMemory],
+  );
 
   useEffect(() => {
     if (!sandboxRowId) return;
+    const memory = readMemory(sourceId);
     const action = decideSandboxCanvasAction({
       bound: true,
       toolRan,
       autoOpen,
-      alreadyAutoOpened: autoOpenedFor.current === sourceId,
+      alreadyAutoOpened: memory.autoOpened,
+      userClosed: memory.userClosed,
       canvasHasOtherContent,
     });
     if (action === "none") return;
@@ -97,7 +135,7 @@ export function SandboxCanvasOpener({
       fallbackName: sandboxName,
     };
     if (action === "open") {
-      autoOpenedFor.current = sourceId;
+      rememberMemory(sourceId, { autoOpened: true });
       open(opts);
       return;
     }
@@ -110,9 +148,40 @@ export function SandboxCanvasOpener({
     toolRan,
     autoOpen,
     canvasHasOtherContent,
+    readMemory,
+    rememberMemory,
     open,
     offer,
   ]);
+
+  // "Put away canvas" while this sandbox pane was the one on screen is a
+  // DECISION, and it is remembered. Reopening it clears the decision, so the
+  // pane behaves normally again afterwards.
+  const canvasIsOpen = useAppSelector(selectCanvasIsOpen);
+  const currentItemId = useAppSelector(selectCurrentItemId);
+  const sandboxItemId =
+    items.find((item) => item.sourceMessageId === sourceId)?.id ?? null;
+  const sandboxIsCurrent = !!sandboxItemId && currentItemId === sandboxItemId;
+  const wasShowingSandbox = useRef(false);
+
+  useEffect(() => {
+    if (!sourceId) return;
+    if (canvasIsOpen && sandboxIsCurrent) {
+      wasShowingSandbox.current = true;
+      if (readMemory(sourceId).userClosed) {
+        rememberMemory(sourceId, { userClosed: false });
+      }
+      return;
+    }
+    // It was on screen a moment ago and now the canvas is closed: the user put
+    // it away. That choice outlives the reload that used to undo it.
+    if (wasShowingSandbox.current && !canvasIsOpen) {
+      wasShowingSandbox.current = false;
+      if (!readMemory(sourceId).userClosed) {
+        rememberMemory(sourceId, { userClosed: true });
+      }
+    }
+  }, [canvasIsOpen, sandboxIsCurrent, sourceId, readMemory, rememberMemory]);
 
   return null;
 }

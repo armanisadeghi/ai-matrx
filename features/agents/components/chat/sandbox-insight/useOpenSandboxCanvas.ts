@@ -100,8 +100,18 @@ export interface SandboxCanvasDecisionInput {
   toolRan: boolean;
   /** The user preference — on by default, off means never auto-open. */
   autoOpen: boolean;
-  /** Have we already auto-opened for this box in this conversation? */
+  /**
+   * Have we already auto-opened for this box in this conversation? Read from
+   * `sandboxCanvasMemory`, not from a ref: a ref is wiped by the reload the
+   * user is complaining about.
+   */
   alreadyAutoOpened: boolean;
+  /**
+   * Did the user PUT THIS PANE AWAY? Then it stays away — across reloads,
+   * across later tool calls, until they open it themselves. Remembered per
+   * conversation × box.
+   */
+  userClosed: boolean;
   /** Does the canvas hold anything OTHER than this sandbox pane? */
   canvasHasOtherContent: boolean;
 }
@@ -113,9 +123,11 @@ export interface SandboxCanvasDecisionInput {
  *  1. No bound box → nothing exists. Never a control with nothing behind it.
  *  2. Bound but nothing has run → AVAILABLE, not visible. The canvas stays
  *     closed; the pane is one click away in the switcher.
- *  3. First sandbox tool call, canvas showing nothing else → OPEN, the way
+ *  3. THE USER PUT IT AWAY → it stays away. Offered, never opened — including
+ *     after the reload that used to resurrect it.
+ *  4. First sandbox tool call, canvas showing nothing else → OPEN, the way
  *     Claude Code reveals its terminal the moment it runs a command.
- *  4. Canvas already showing a document / the browser, or the user turned
+ *  5. Canvas already showing a document / the browser, or the user turned
  *     auto-open off, or we already did it once → OFFER. Never hijack.
  */
 export function decideSandboxCanvasAction({
@@ -123,10 +135,14 @@ export function decideSandboxCanvasAction({
   toolRan,
   autoOpen,
   alreadyAutoOpened,
+  userClosed,
   canvasHasOtherContent,
 }: SandboxCanvasDecisionInput): SandboxCanvasAction {
   if (!bound) return "none";
   if (!toolRan) return "offer";
+  // Ahead of `alreadyAutoOpened`: a put-away pane must stay reachable in the
+  // switcher, so the answer is "offer", not "none".
+  if (userClosed) return "offer";
   if (alreadyAutoOpened) return "none";
   if (!autoOpen) return "offer";
   if (canvasHasOtherContent) return "offer";

@@ -41,6 +41,10 @@ import {
   sandboxCanvasSourceId,
 } from "../useOpenSandboxCanvas";
 import { isSandboxTool } from "../sandbox-activity";
+import {
+  readSandboxCanvasMemory,
+  writeSandboxCanvasMemory,
+} from "../sandboxCanvasMemory";
 
 // The two leaves that would open a pty / fetch a file tree. Their PRESENCE is
 // what is asserted here, not their internals.
@@ -190,6 +194,7 @@ describe("it opens on demand, and only when nothing else is on the canvas", () =
     toolRan: true,
     autoOpen: true,
     alreadyAutoOpened: false,
+    userClosed: false,
     canvasHasOtherContent: false,
   };
 
@@ -240,6 +245,110 @@ describe("it opens on demand, and only when nothing else is on the canvas", () =
     }
     for (const tool of ["web_search", "cloud_browser_navigate", "", null]) {
       expect(isSandboxTool(tool)).toBe(false);
+    }
+  });
+});
+
+describe("a put-away pane STAYS put away, across reloads", () => {
+  /**
+   * The defect (owner, seen live 2026-09-13): "Put away canvas" did not
+   * persist — a reload brought the sandbox pane straight back. The reveal
+   * decision lived in a React ref and the canvas slice is deliberately not
+   * persisted, so every load replayed the first-tool-call reveal.
+   *
+   * Proven failing before passing:
+   *   - dropped the `userClosed` branch from `decideSandboxCanvasAction`;
+   *     a put-away pane returned "open" on the next tool call → RED.
+   *   - made `writeSandboxCanvasMemory` a no-op; the decision did not survive
+   *     the simulated reload → RED.
+   */
+  const base = {
+    bound: true,
+    toolRan: true,
+    autoOpen: true,
+    alreadyAutoOpened: false,
+    userClosed: false,
+    canvasHasOtherContent: false,
+  };
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("never re-opens a pane the user closed, even on a later tool call", () => {
+    expect(decideSandboxCanvasAction({ ...base, userClosed: true })).toBe(
+      "offer",
+    );
+  });
+
+  it("keeps it reachable rather than removing it", () => {
+    // "offer", not "none": the box is still one click away in the switcher.
+    expect(
+      decideSandboxCanvasAction({
+        ...base,
+        userClosed: true,
+        alreadyAutoOpened: true,
+      }),
+    ).toBe("offer");
+  });
+
+  it("remembers the decision across a reload, per conversation AND per box", () => {
+    const sourceId = sandboxCanvasSourceId(CONVERSATION_ID, SANDBOX_ROW_ID);
+    const otherBox = sandboxCanvasSourceId(
+      CONVERSATION_ID,
+      "33333333-3333-3333-3333-333333333333",
+    );
+
+    writeSandboxCanvasMemory(sourceId, { userClosed: true });
+
+    // A reload is exactly this: nothing in memory, everything re-read.
+    expect(readSandboxCanvasMemory(sourceId).userClosed).toBe(true);
+    // Binding a DIFFERENT box to the same chat is a new thing to reveal.
+    expect(readSandboxCanvasMemory(otherBox).userClosed).toBe(false);
+    // And so is the same box in a different conversation.
+    expect(
+      readSandboxCanvasMemory(
+        sandboxCanvasSourceId("other-conversation", SANDBOX_ROW_ID),
+      ).userClosed,
+    ).toBe(false);
+  });
+
+  it("remembers that the reveal already happened, so a reload is not a first run", () => {
+    const sourceId = sandboxCanvasSourceId(CONVERSATION_ID, SANDBOX_ROW_ID);
+    writeSandboxCanvasMemory(sourceId, { autoOpened: true });
+    expect(readSandboxCanvasMemory(sourceId).autoOpened).toBe(true);
+    expect(
+      decideSandboxCanvasAction({ ...base, alreadyAutoOpened: true }),
+    ).toBe("none");
+  });
+
+  it("re-opening clears the decision, so the pane behaves normally again", () => {
+    const sourceId = sandboxCanvasSourceId(CONVERSATION_ID, SANDBOX_ROW_ID);
+    writeSandboxCanvasMemory(sourceId, { userClosed: true });
+    writeSandboxCanvasMemory(sourceId, { userClosed: false });
+    expect(readSandboxCanvasMemory(sourceId).userClosed).toBe(false);
+  });
+
+  it("survives a storage that refuses to answer", () => {
+    const original = Object.getOwnPropertyDescriptor(window, "localStorage");
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new Error("blocked");
+      },
+    });
+    try {
+      // A blocked store costs the memory and nothing else — never a throw
+      // that takes the chat down with it.
+      expect(() =>
+        writeSandboxCanvasMemory("sandbox:c:b", { userClosed: true }),
+      ).not.toThrow();
+      expect(readSandboxCanvasMemory("sandbox:c:b")).toEqual({
+        autoOpened: false,
+        userClosed: false,
+      });
+    } finally {
+      if (original) Object.defineProperty(window, "localStorage", original);
     }
   });
 });

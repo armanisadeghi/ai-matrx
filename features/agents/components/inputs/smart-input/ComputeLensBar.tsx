@@ -32,6 +32,7 @@ import {
   describeBoundTargetState,
   type BoundTargetView,
 } from "@/lib/sandbox/bound-target-view";
+import { splitIdentifyingName } from "@/lib/sandbox/format";
 
 export interface ComputeLensBarProps {
   conversationId: string;
@@ -54,6 +55,33 @@ function TargetGlyph({
   );
 }
 
+/**
+ * A chip label that never clips the part that identifies the box.
+ *
+ * Boxes without a user-chosen name are called `bare · hosted · 5515` —
+ * template, tier, short id. A plain `truncate` inside a `max-w` chip clipped
+ * that to `Unname…` / `bare · hoste…`, hiding the only characters that answer
+ * "which one?". The head truncates; the trailing id is `shrink-0`.
+ */
+function TargetChipName({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  const { head, tail } = splitIdentifyingName(name);
+  if (!tail) {
+    return <span className={cn("truncate", className)}>{head}</span>;
+  }
+  return (
+    <span className={cn("flex min-w-0 items-baseline", className)}>
+      <span className="truncate">{head}</span>
+      <span className="shrink-0">{tail}</span>
+    </span>
+  );
+}
+
 function TargetChip({
   target,
   isBound,
@@ -73,7 +101,7 @@ function TargetChip({
           type="button"
           onClick={onSelect}
           className={cn(
-            "inline-flex h-5 max-w-[10rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
+            "inline-flex h-5 max-w-[16rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
             isBound
               ? "bg-muted/80 hover:bg-muted"
               : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -95,11 +123,10 @@ function TargetChip({
             kind={target.kind}
             className={cn("h-3 w-3 shrink-0", color)}
           />
-          <span
-            className={cn("truncate text-[11px] font-medium", isBound && color)}
-          >
-            {target.name}
-          </span>
+          <TargetChipName
+            name={target.name}
+            className={cn("text-[11px] font-medium", isBound && color)}
+          />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top">
@@ -134,7 +161,7 @@ function BoundChip({
           type="button"
           onClick={onOpenPanel}
           className={cn(
-            "inline-flex h-5 max-w-[10rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
+            "inline-flex h-5 max-w-[16rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
             view.state === "gone"
               ? "bg-amber-500/10 hover:bg-amber-500/20"
               : "bg-muted/80 hover:bg-muted",
@@ -161,14 +188,13 @@ function BoundChip({
                 : "text-muted-foreground",
             )}
           />
-          <span
+          <TargetChipName
+            name={view.name}
             className={cn(
-              "truncate text-[11px] font-medium",
+              "text-[11px] font-medium",
               healthy ? "text-foreground" : "text-muted-foreground",
             )}
-          >
-            {view.name}
-          </span>
+          />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top">
