@@ -294,9 +294,9 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/marketing/[brandId]/identity/offerings",
-      label: "Offering tree",
+      label: "Offerings",
       description:
-        "TopicTreeWorkbench — the user-facing name for the shared seo.topic hierarchy.",
+        "OfferingsWorkbench — the brand's offerings (web.brand_offering) with the selected site's explicit availability, worth in points, and Add offering through platform suggestions.",
       filePath: "app/(core)/marketing/[brandId]/identity/offerings/page.tsx",
       status: "Live",
     },

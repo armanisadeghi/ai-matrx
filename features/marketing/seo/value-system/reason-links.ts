@@ -12,7 +12,9 @@
  * editor gains it here.
  *
  * Every target screen reads the query params this file writes:
- *   /value/offerings  ?topic=<id>[&worth=1]        (TopicTreeWorkbench)
+ *   /value/offerings  ?offering=<id>[&worth=1]     (OfferingsWorkbench; a legacy
+ *                      ?topic=<id> still lands on the brand's copy of that
+ *                      suggestion)
  *   /value/dimensions ?dimension=<slug>&value=<id>[&matcher=<id>]  (DimensionManager
  *                      — `matcher` opens THE MATCHER EDITOR, KI-008, straight
  *                      onto that value; any truthy value works, the matcher's

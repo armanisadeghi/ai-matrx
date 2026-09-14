@@ -653,50 +653,62 @@ above; `seo.fn_reconcile_site_offering_facts` and `seo.fn_site_offering_for_topi
 exist only for that bridge. Never call any of them from new code
 (`pnpm check:offering-topic-refs` fails a new caller).
 
-#### Current legacy surface (pending cutover)
+#### The Offerings screen (canonical, 2026-09-14)
 
-`[brandKey]/identity/offerings` is the customer-facing route and vocabulary —
-business-knowledge screens moved OUT of the site keyword-value ladder and onto
-the brand home in the agency restructure (`VALUE_TO_IDENTITY` in
+`[brandKey]/identity/offerings` is the customer-facing route —
+business-knowledge screens live on the brand home (`VALUE_TO_IDENTITY` in
 `lib/routes.ts`: old site `seo/[siteKey]/keywords/value/offerings` and
-`.../value/topics` both redirect here with `?site=` selection and any other
-query string intact, so saved links still open the same state). The stored
-catalog entity remains `seo.topic` because the hierarchy also contains
-non-offering roots such as authority and reputation; that database name is not
-customer copy.
+`.../value/topics` redirect here with `?site=` and every other query string
+intact). It renders `seo/value-system/offerings/OfferingsWorkbench.tsx`
+entirely on the canonical model (brand-offerings cutover D1–D9): the BRAND's
+offerings (`web.brand_offering_catalog`), with the selected site's explicit
+availability, this site's worth in points, and nothing from `seo.topic`.
 
-The surface is a true hierarchy powered by the canonical `MatrxDataTable`, not
-a hand-built grid. Its hierarchy processor honors the table's URL-backed
-search, per-column filters, layered filters, and sort while preserving matching
-lineage, collapsed branches, and sibling-only ordering. Each fact has its own
-sortable/filterable column: Offering, Type, Branch, Worth, Worth source,
-Offering match, Lead quality, Keywords here, Keywords in branch, Clicks,
-Impressions, and one column per value band. Name, type, worth, offering match,
-and lead quality edit directly in the row through the table's deferred Save
-contract. The compact traffic summary above the table does not repeat the
-catalog or consume the working viewport. Every number in that summary is a
-button: revenue/authority and placed-demand metrics apply the canonical table's
-URL-backed column filters, while unplaced and confirmation counts scroll to
-their already-filtered keyword tables. Back restores the prior lens and scroll
-target. Placement coverage lives in this single KPI band; the run strip below
-is one terse operational line and never advertises a count with no drill-in.
-The tree viewport is approximately 1.5x the former working height. Desktop row
-copy/menu actions use the canonical micro preset; phone/tablet targets remain
-44px.
-
-The whole tree pane mounts ONE delegated universal context menu. Every row
-resolves its own `seo_topic` entity and exposes the same actions as the
-ellipsis menu: see keywords, pin/make root/add child, set worth, edit, and
-delete. Keyword counts and “See keywords” open the existing multi-instance
-Search Console drill-down `WindowPanel` with the topic-subtree filter; no
-second keyword table or window system exists.
-
-Offerings are shared catalog rows, so deletion is global. The preview RPC reports
-associated keywords and organizations plus child offerings, site-worth rulings,
-and starter-pack references. The atomic delete RPC either merges every keyword
-association into an active replacement (preserving primary placement) or
-removes the links; children move up one level. Site-worth and starter-pack
-judgments are removed rather than silently transplanted to a different offering.
+- **One canonical table** (`OfferingCatalogTable`, `MatrxDataTable`) drawn as
+  the brand's catalog tree (D3). The pure tree math is
+  `offerings/catalog-tree.ts` (18 tests): lineage-keeping filters, sibling-only
+  sort, the exact move order `web.move_site_offering` expects, and worth that
+  mirrors `seo.keyword_value_map` — the nearest offering self-first carrying
+  this site's ruling adds its points and its negative ruling forces the branch.
+  Columns: Offering, Offered here, Kind, Worth here, Worth used (names the
+  offering a row takes its worth from), Do you do this?, Lead quality, Source
+  (From a suggestion / Changed from a suggestion / Your own), Other sites,
+  Keywords here, In branch, Clicks, Impressions, one per value band. Name,
+  kind, worth, match and lead quality edit in the row.
+- **Explicit availability (D2).** The Offered here switch offers an offering
+  immediately; switching it off, or "Stop offering here…" on any selection
+  (per row or select-all), opens `StopOfferingDialog`, which previews
+  `web.site_offering_availability_impact` (placements, how many a person made,
+  the worth ruling, keywords beneath that inherit it) and keeps the reason.
+  `web.set_site_offering_availability` removes this site's placements and
+  worth under one stamp and restores exactly those when offered again
+  (`pnpm check:offering-availability-round-trip:self-test`).
+- **Add offering is the only place suggestions appear (D6).** `AddOfferingDialog`
+  searches `web.offering_templates_for_site` as the person types; choosing one
+  copies it into the brand (`web.adopt_offering_template`), an offering the
+  brand already has is offered here instead, and anything else is created from
+  exactly what was typed (`web.save_site_offering`, P23). The reason is kept on
+  the site's availability row (P24).
+- **Worth (D9)** is `OfferingWorthDialog` over `seo.set_site_offering_value`:
+  signed, unbounded points, the inherited ruling named, the negative rulings
+  stated in words, and the why kept with the ruling. Only an offering this site
+  offers can be valued here.
+- **Doors.** Every strip number filters the table through its URL state or
+  scrolls to the unsure / unplaced keyword tables. "In branch" and "See
+  keywords" open the Search Console drill-down window filtered to the offering
+  (`filters.offering`). `?offering=<id>[&worth=1]` lands on the offering (value
+  receipts use `offeringNodeHref`); a pre-cutover `?topic=<id>` link resolves
+  to the brand's copy of that suggestion (`resolveOfferingLink`).
+- **Remove from this brand** is offered only when no other site offers it:
+  `RemoveOfferingDialog` previews `web.site_offering_delete_impact` and moves
+  the keywords to another offering or leaves them unplaced
+  (`web.remove_site_offering`); it states that this is not undone by offering
+  it again.
+- The pane mounts ONE delegated universal context menu per row (see keywords,
+  set worth, edit, add beneath). Below the table: the placement strip, the
+  `placement_drift` approval queue, and the canonical unsure/unplaced keyword
+  tables. The strip's status read (`seo.topic_placement_status`) is the one
+  legacy read still on this screen; it moves with the remaining readers.
 
 ## Related features
 
@@ -720,6 +732,8 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-14 — Claude (brand-offerings cutover, step 6): **The Offerings screen runs on the canonical model.** `OfferingsWorkbench` replaced `TopicTreeWorkbench` and its legacy tree, dialogs and data (deleted: `OfferingTreeTable`, `OfferingSplitHeadline`, `TopicEditDialog`, `TopicWorthDialog`, `TopicPickerDialog`, `TopicDeleteDialog`, `topics/lib.ts`, and every `seo.topic` / `seo.site_topic_value` read and write in `topics/data.ts`). The brand owns the catalog; the site chooses what it offers, one at a time or in bulk, with the consequence previewed and the reason kept; suggestions appear only inside Add offering and are copied on adopt; worth is points. New doors in the contract above (migrations `brand_offerings_step6h`, `6h1`, `6h2`, `6h3`). Verified on the local dev server as admin@admin.com for Data Destruction: 43 of 43 offerings, 8 with worth here, 2,373 keywords placed; Consumer Electronics Recycling shows "+5 · Set here · Negative" and its children "+5 · From Consumer Electronics Recycling · Negative". Legacy offering census 128 references / 38 files → 100 / 37.
 
 - 2026-09-14 — Claude (brand-offerings cutover, step 6): **The canonical offering writers are live; their contract is published above** ("Canonical offering writers — THE CONTRACT"). The value resolver reads `seo.site_keyword_offering` / `web.brand_offering` / `seo.site_offering_value` (lossless: 40,574 keywords, 0 unexplained); offering worth is points (D9); a brand sets a placement once natively, never through `seo.keyword_topic` rungs (D10); the placement and worth writers refuse unavailable offerings and foreign organizations; the legacy topic RPCs still used by the screens also write the canonical rows until the screens move. Migrations `brand_offerings_step6a`…`6e`; guards `check:offering-resolver-equivalence`, `check:offering-tenancy`, `check:offering-topic-refs`.
 
