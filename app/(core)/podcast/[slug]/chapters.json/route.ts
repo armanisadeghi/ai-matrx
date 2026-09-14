@@ -11,6 +11,7 @@
 // (feed.xml resolves a show) — the same public slug space the episode page uses.
 
 import { createClient } from "@/utils/supabase/server";
+import { PC_EPISODE_PUBLIC_SELECT } from "@/features/podcasts/publicColumns";
 import { mapPcEpisodeRow } from "@/features/podcasts/types";
 import {
   buildChaptersJson,
@@ -35,7 +36,8 @@ export async function GET(
   const episodeQuery = supabase
     .schema("podcast")
     .from("pc_episodes")
-    .select("*")
+    // Fetched with no account: `anon` holds a COLUMN grant, so `*` is 42501 (DD-230).
+    .select(PC_EPISODE_PUBLIC_SELECT)
     .is("deleted_at", null);
 
   const { data: episodeRow } = isUUID(slug)

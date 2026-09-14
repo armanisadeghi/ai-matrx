@@ -1,4 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
+import {
+  PC_ARTICLE_PUBLIC_SELECT,
+  PC_EPISODE_WITH_SHOW_PUBLIC_SELECT,
+} from "@/features/podcasts/publicColumns";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
@@ -25,9 +29,8 @@ const resolveBlog = cache(async (slug: string) => {
   const supabase = await createClient();
   const episodeQuery = supabase
     .schema("podcast").from("pc_episodes")
-    .select(
-      "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    )
+    // Signed-out visitors run as `anon`, a COLUMN grant: `*` is 42501 (DD-230).
+    .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT)
     .is("deleted_at", null);
   const { data: episode } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
@@ -38,7 +41,7 @@ const resolveBlog = cache(async (slug: string) => {
 
   const { data: article } = await supabase
     .schema("podcast").from("pc_articles")
-    .select("*")
+    .select(PC_ARTICLE_PUBLIC_SELECT)
     .is("deleted_at", null)
     .eq("episode_id", mappedEpisode.id)
     .eq("kind", "blog")

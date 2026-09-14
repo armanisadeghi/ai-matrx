@@ -14,6 +14,10 @@
 // Resolves the show by slug OR id. Returns 404 (plain Response) when missing.
 
 import { createClient } from '@/utils/supabase/server';
+import {
+    PC_EPISODE_PUBLIC_SELECT,
+    PC_SHOW_PUBLIC_SELECT,
+} from '@/features/podcasts/publicColumns';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { mapPcShowRow, mapPcEpisodeRow } from '@/features/podcasts/types';
 import {
@@ -83,7 +87,15 @@ export async function GET(
     const supabase = await createClient();
 
     // Resolve show by id (UUID) or slug.
-    const showQuery = supabase.schema('podcast').from('pc_shows').select('*').is('deleted_at', null);
+    // A podcast client fetches this feed with no account, so this read runs as
+    // `anon` — which holds a COLUMN grant here. `select('*')` asked for the
+    // five withheld columns too and the whole feed answered 404 'Podcast not
+    // found' on a 42501 nobody saw. Name them (DD-230).
+    const showQuery = supabase
+        .schema('podcast')
+        .from('pc_shows')
+        .select(PC_SHOW_PUBLIC_SELECT)
+        .is('deleted_at', null);
     const { data: showRow } = isUUID(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
@@ -100,7 +112,7 @@ export async function GET(
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
     const { data: episodeRows } = await supabase
         .schema('podcast').from('pc_episodes')
-        .select('*')
+        .select(PC_EPISODE_PUBLIC_SELECT)
         .is('deleted_at', null)
         .eq('show_id', show.id)
         .eq('is_published', true)

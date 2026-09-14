@@ -48,11 +48,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   ANON_COLUMN_SURFACE,
   ANON_COLUMN_SURFACE_QUERY,
   POSTGREST_EXPOSED_SCHEMAS,
   classifyAnonColumns,
+  classifyReasonExposure,
   type LiveAnonColumn,
 } from "../lib/security/public-exposure";
 
@@ -110,7 +112,7 @@ function resolveDbEnv(): Record<string, string> {
     `${C.r}FAIL${C.x} the anon column surface could not be MEASURED — unmeasured is a failure, never a pass.\n` +
       `     Wanted ${DB_VARS.join(", ")} in the environment or in: ${looked.join(", ") || "(no env file found)"}, ../aidream/.env`,
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 async function connect() {
@@ -189,26 +191,164 @@ function report(live: LiveAnonColumn[]): number {
 }
 
 /**
- * WHY THIS EXISTS (B-110, measured 2026-09-14)
- * -------------------------------------------
- * `process.exit()` ends the process with whatever is still sitting in the stdout
- * pipe buffer. Piped — which is how a release gate, a CI step and every `| tail`
- * read it — this guard printed THREE FAIL lines and only ONE arrived. A gate that
- * silently hides two thirds of its own findings is the failure it exists to
- * prevent. Drain stdout first, then exit.
+ * ARM 4 — REASON/EXPOSURE AGREEMENT (DD-230, 2026-09-14).
+ *
+ * The two lists in lib/security/public-exposure.ts describe the SAME signed-out
+ * visitor. Nothing compared them, so DD-186's copy-pasted "No signed-out reader
+ * was found for it in the four-repository census" sat on TWENTY relations whose
+ * own exposure row, a few hundred lines above in the same file, said the
+ * opposite — `billing.price` ("public pricing page renders prices before
+ * sign-in"), `iam.industries` ("the sign-up form, before an account exists"),
+ * `ui.ui_surface`, `tool.executor` — and on NINE more whose reader B-116 had
+ * itself named. Twenty-nine contradictions, three weeks, zero signal.
+ *
+ * This arm needs no database: it is a statement about the register's own prose,
+ * which is what the next lane reads before it decides whether to revoke a grant.
  */
-async function exitAfterFlush(code: number): Promise<never> {
-  await new Promise<void>((done) => {
-    process.stdout.write("", () => done());
-  });
-  process.exit(code);
+function reportReasonExposure(): number {
+  const conflicts = classifyReasonExposure();
+  if (!conflicts.length) {
+    console.log(
+      `${C.g}OK${C.x}   no bound claims "no signed-out reader" — every reason names what was measured.`,
+    );
+    return 0;
+  }
+  for (const c of conflicts) {
+    if (c.kind === "claims-no-reader-but-is-exposed") {
+      console.log(
+        `${C.r}FAIL${C.x} ${c.relation} contradicts itself inside one file.\n` +
+          `     ANON_COLUMN_SURFACE says:      ${c.why.replace(/\s+/g, " ").slice(0, 140)}\n` +
+          `     PUBLIC_EXPOSURE_ALLOWED says:  ${(c.exposureWhy ?? "").slice(0, 140)}\n` +
+          `     One of the two is false. MEASURE the reader (a signed-out browser on production, and\n` +
+          `     Supabase edge_logs grouped by path x role x status with the verbatim select=), then\n` +
+          `     write what you measured — or revoke the grant and delete the row.`,
+      );
+    } else {
+      console.log(
+        `${C.r}FAIL${C.x} ${c.relation} publishes columns to anon while its own reason says nobody\n` +
+          `     signed-out reads it: ${c.why.replace(/\s+/g, " ").slice(0, 140)}\n` +
+          `     DD-222 settled which half is wrong: the grant. Revoke it, or name the reader.`,
+      );
+    }
+  }
+  return conflicts.length;
 }
+
+/**
+ * ARM 5 — RLS-PREDICATE REACH (DD-230, 2026-09-14).
+ *
+ * A policy's references to its OWN table's columns are evaluated by the system
+ * and need no column privilege. A SUBQUERY inside a policy, against ANOTHER
+ * relation, runs with the CALLER's privileges. So a column no page renders can
+ * still be load-bearing, and revoking it kills a DIFFERENT table.
+ *
+ * That is not hypothetical: bounding `content_ir.kind_definition` to the ten
+ * columns its readers name dropped `visibility`, and `kind_component`,
+ * `kind_edge`, `kind_example` and `kind_surface` — whose pub_read policies each
+ * evaluate `SELECT p.id FROM content_ir.kind_definition p WHERE p.deleted_at IS
+ * NULL AND p.visibility = 'public'` — all began answering 42501 naming the
+ * PARENT table. A browser capture can never show you this column.
+ *
+ * The arm reads every anon-reachable policy's USING expression, finds the
+ * relations it names other than its own, and checks that `anon` holds SELECT on
+ * every column of those relations that the expression mentions.
+ */
+const RLS_REACH_QUERY = `
+  select n.nspname || '.' || cl.relname as relation,
+         p.polname                      as policy,
+         pg_get_expr(p.polqual, p.polrelid) as using_expr
+    from pg_policy p
+    join pg_class cl     on cl.oid = p.polrelid
+    join pg_namespace n  on n.oid  = cl.relnamespace
+   where n.nspname = any($1::text[])
+     and (p.polroles = '{0}'::oid[]
+          or 'anon' = any(select rolname from pg_roles where oid = any(p.polroles)))
+     and p.polqual is not null
+     and exists (
+       select 1 from pg_attribute a
+        where a.attrelid = cl.oid and a.attnum > 0 and not a.attisdropped
+          and has_column_privilege('anon', a.attrelid, a.attnum, 'SELECT'))
+`;
+
+/** `schema.table` → the columns `anon` may SELECT on it. */
+const ANON_COLS_QUERY = `
+  select n.nspname || '.' || cl.relname as relation, a.attname as column_name
+    from pg_class cl
+    join pg_namespace n on n.oid = cl.relnamespace
+    join pg_attribute a on a.attrelid = cl.oid and a.attnum > 0 and not a.attisdropped
+   where cl.relkind in ('r','v','m','p','f')
+     and has_column_privilege('anon', a.attrelid, a.attnum, 'SELECT')
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function reportRlsReach(client: any): Promise<number> {
+  const [{ rows: pols }, { rows: cols }] = await Promise.all([
+    client.query(RLS_REACH_QUERY, [[...POSTGREST_EXPOSED_SCHEMAS]]),
+    client.query(ANON_COLS_QUERY),
+  ]);
+  const anonCols = new Map<string, Set<string>>();
+  for (const c of cols as { relation: string; column_name: string }[]) {
+    if (!anonCols.has(c.relation)) anonCols.set(c.relation, new Set());
+    anonCols.get(c.relation)!.add(c.column_name);
+  }
+  // Only relations that actually APPEAR in a subquery matter, and only the
+  // columns qualified by that subquery's alias. Parse `FROM <rel> <alias>` and
+  // then every `<alias>.<column>`.
+  const gaps: string[] = [];
+  for (const p of pols as { relation: string; policy: string; using_expr: string }[]) {
+    const expr = p.using_expr ?? "";
+    for (const m of expr.matchAll(
+      /\bFROM\s+([a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)\s+([a-z_][a-z0-9_]*)/gi,
+    )) {
+      const rel = m[1]!.toLowerCase();
+      const alias = m[2]!;
+      if (rel === p.relation) continue;
+      const held = anonCols.get(rel);
+      const wanted = new Set<string>();
+      for (const c of expr.matchAll(new RegExp(`\\b${alias}\\.([a-z_][a-z0-9_]*)\\b`, "g"))) {
+        wanted.add(c[1]!);
+      }
+      for (const w of wanted) {
+        if (!held || !held.has(w)) {
+          gaps.push(
+            `${C.r}FAIL${C.x} ${p.relation} is unreadable by ${C.b}anon${C.x} — its policy ${p.policy} evaluates\n` +
+              `     ${rel}.${w} through a subquery, and anon may not SELECT that column. Every anonymous\n` +
+              `     read of ${p.relation} answers 42501 naming ${rel}, not ${p.relation}.\n` +
+              `     A column another table's RLS reads is part of this relation's bound, however little\n` +
+              `     any page renders it: grant select (${w}) on ${rel} to anon, and say so in its row.`,
+          );
+        }
+      }
+    }
+  }
+  if (!gaps.length) {
+    console.log(
+      `${C.g}OK${C.x}   every anon policy's cross-table subquery reads columns anon may select.`,
+    );
+    return 0;
+  }
+  for (const g of gaps) console.log(g);
+  return gaps.length;
+}
+
+/**
+ * B-110 measured this class here first (2026-09-14): piped, this guard printed
+ * THREE FAIL lines and only ONE arrived, because `process.exit()` ends the
+ * process with whatever is still in the stdout pipe buffer. The local copy of
+ * the remedy that lived here is gone — every `scripts/check-*.ts` now exits
+ * through the ONE helper, `scripts/lib/exit-after-drain.ts` (DD-232), which
+ * carries the measurements and both belts. Do not re-grow a local one.
+ */
 
 async function main() {
   const client = await connect();
   try {
     if (!SELF_TEST) {
-      await exitAfterFlush(report(await measure(client)) ? 1 : 0);
+      const bad =
+        report(await measure(client)) +
+        reportReasonExposure() +
+        (await reportRlsReach(client));
+      exitAfterDrain(bad ? 1 : 0);
     }
 
     // ── THE SELF-TEST: a guard nobody has seen fail is not a guard. ──────────
@@ -217,7 +357,7 @@ async function main() {
     const target = ANON_COLUMN_SURFACE[0];
     if (!target) {
       console.error(`${C.r}FAIL${C.x} ANON_COLUMN_SURFACE is empty — there is nothing to self-test against.`);
-      await exitAfterFlush(1);
+      exitAfterDrain(1);
     }
     console.log(`${C.b}--self-test${C.x} ${C.d}forcing both drift directions on ${target.relation}${C.x}\n`);
 
@@ -227,7 +367,7 @@ async function main() {
         `\n${C.r}FAIL${C.x} the self-test needs a GREEN starting point and the live surface already drifts (above).\n` +
           `     Fix the drift first; a RED proof on top of a RED baseline proves nothing.`,
       );
-      await exitAfterFlush(1);
+      exitAfterDrain(1);
     }
     console.log(`${C.g}GREEN${C.x} baseline: the live surface matches the register.\n`);
 
@@ -249,7 +389,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} granting anon SELECT on ${target.relation}.${extra} did NOT fail the guard. It cannot see a leak.`);
-        await exitAfterFlush(1);
+        exitAfterDrain(1);
       }
       reds++;
       console.log(`${C.g}RED 1 proven${C.x} ${C.d}(anon granted ${target.relation}.${extra} → ${n} finding(s))${C.x}\n`);
@@ -265,7 +405,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} revoking anon SELECT on ${target.relation}.${gone} did NOT fail the guard. It cannot see a broken client.`);
-        await exitAfterFlush(1);
+        exitAfterDrain(1);
       }
       reds++;
       console.log(`${C.g}RED 2 proven${C.x} ${C.d}(anon lost ${target.relation}.${gone} → ${n} finding(s))${C.x}\n`);
@@ -292,7 +432,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} granting anon SELECT on the undeclared ${victim} did NOT fail the guard. It cannot see a new door.`);
-        await exitAfterFlush(1);
+        exitAfterDrain(1);
       }
       reds++;
       console.log(`${C.g}RED 3 proven${C.x} ${C.d}(anon granted the undeclared ${victim} → ${n} finding(s))${C.x}\n`);
@@ -304,10 +444,10 @@ async function main() {
     const after = report(await measure(client));
     if (after !== 0) {
       console.error(`\n${C.r}FAIL${C.x} the self-test did not restore the live column grants. THIS IS A LIVE DEFECT — fix the grants by hand now.`);
-      await exitAfterFlush(1);
+      exitAfterDrain(1);
     }
     console.log(`${C.g}GREEN${C.x} teardown verified: ${reds} RED proof(s), live grants unchanged.`);
-    await exitAfterFlush(0);
+    exitAfterDrain(0);
   } finally {
     await client.end();
   }
@@ -315,5 +455,5 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
-  process.exit(1);
+  exitAfterDrain(1);
 });

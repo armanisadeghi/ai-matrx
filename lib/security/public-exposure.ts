@@ -73,33 +73,26 @@ export interface ClassifiedExposure extends LiveExposure {
   defect?: string;
 }
 
-const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
+/**
+ * Exported for `check:anon-column-surface`'s REASON/EXPOSURE AGREEMENT arm: the
+ * two lists in this file are two statements about the SAME signed-out visitor,
+ * and DD-186 let them contradict each other on 29 relations for three weeks
+ * because nothing compared them (V-94, 2026-09-14). Nothing else should consume
+ * it — the exposure classifier below is the read path.
+ */
+export const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   // — Pricing and plan catalogue, rendered on the public marketing pages —
-  { relation: "billing.product", policy: "product_read", cmd: "SELECT", why: "public pricing page renders products before sign-in" },
-  { relation: "billing.price", policy: "price_read", cmd: "SELECT", why: "public pricing page renders prices before sign-in" },
-  { relation: "billing.plan_limit", policy: "plan_limit_public_read", cmd: "SELECT", why: "plan comparison table on the public pricing page" },
-  { relation: "billing.capability", policy: "capability_read", cmd: "SELECT", why: "plan capability catalogue shown on the public pricing page" },
-  { relation: "billing.capability_limit", policy: "capability_limit_read", cmd: "SELECT", why: "plan capability limits shown on the public pricing page" },
+  { relation: "billing.product", policy: "product_read", cmd: "SELECT", why: "app/(public)/pricing renders the Premium product name + description; loadEducationPricing.ts reads it server-side with no cookie, so as `anon` (measured 2026-09-14, DD-230)" },
+  { relation: "billing.price", policy: "price_read", cmd: "SELECT", why: "the same loader's second query — the Premium amount, currency and interval on app/(public)/pricing (measured 2026-09-14, DD-230)" },
+  { relation: "billing.capability_limit", policy: "capability_limit_read", cmd: "SELECT", why: "the Free-tier headline caps on app/(public)/pricing — the one billing catalogue read a signed-out visitor really makes, measured live 2026-09-14 (DD-230)" },
 
   // — Reference/catalogue data with no personal content —
-  { relation: "iam.industries", policy: "industries_select_all", cmd: "SELECT", why: "industry picker must populate on the sign-up form, before an account exists" },
-  { relation: "platform.assurance_level", policy: "assurance_level_select_all", cmd: "SELECT", why: "static reference enum" },
-  { relation: "platform.source_authority", policy: "source_authority_select_all", cmd: "SELECT", why: "static reference enum" },
-  { relation: "platform.shareable_resource_registry", policy: "shareable_resource_registry_select", cmd: "SELECT", why: "entity-type registry — describes shapes, contains no user rows" },
-  { relation: "platform.feature_knob", policy: "feature_knob_read", cmd: "SELECT", why: "client feature gating has to resolve before sign-in" },
+  { relation: "platform.feature_knob", policy: "feature_knob_read", cmd: "SELECT", why: "client feature gating has to resolve before sign-in — TRUE, and measured: 194 anonymous 200s in 24 h, every one select=feature,key,value, which is now the whole bound (DD-230)" },
   { relation: "public.app_config", policy: "app_config_public_read", cmd: "SELECT", why: "client bootstrap config (min supported version); read before auth by design" },
 
   // — Public tool / UI catalogues the shell needs before auth —
-  { relation: "tool.executor", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.mcp_config", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.mcp_server", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.surface_defaults", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "ui.ui_client", policy: "ui_client_read_anon", cmd: "SELECT", why: "surface catalogue — the shell renders public routes before sign-in" },
-  { relation: "ui.ui_surface", policy: "ui_surface_read_anon", cmd: "SELECT", why: "surface catalogue — the shell renders public routes before sign-in" },
-  { relation: "ui.ui_surface_value", policy: "ui_surface_value_read_anon", cmd: "SELECT", why: "surface catalogue values for public routes" },
-  { relation: "ui.ui_surface_agent_role", policy: "ui_surface_agent_role_read", cmd: "SELECT", why: "surface catalogue agent roles for public routes" },
-  { relation: "ui.ui_surface_client_tool", policy: "ui_surface_client_tool_read_anon", cmd: "SELECT", why: "surface catalogue client tools for public routes" },
-  { relation: "ui.ui_surface_write_target", policy: "ui_surface_write_target_read_anon", cmd: "SELECT", why: "surface catalogue write targets for public routes" },
+  { relation: "tool.surface_defaults", policy: "ref_select", cmd: "SELECT", why: "read on the publishable key by the chrome-extension tool-drift guards in matrx-extend and matrx-local — four columns for two surface names (measured 2026-09-14, DD-230). Those guards should use the service key; when they do, this row goes too" },
+  { relation: "ui.ui_surface_agent_role", policy: "ui_surface_agent_role_read", cmd: "SELECT", why: "fetchSurfaceConfigBundle reads it deliberately as a guest — a genuine guest still receives the public surface config — bounded to the ten columns it selects plus surface_name (DD-230)" },
 
   // — Deliberately public product surfaces —
   { relation: "extend.wbx_recipe", policy: "pub_read", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted. DD-173 (B-103): the hand-written `wbx_recipe_read_all` (USING true) was superseded by the generated system-variant lane, which publishes only rows whose `visibility` is `public` — derived from `is_active`, so a retired recipe leaves the open web by the flag that already means that." },
@@ -110,6 +103,23 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   //   as the service role behind a per-IP rate limit — and the guest flow's real signed-out
   //   writer is `public.record_guest_execution`, a SECURITY DEFINER function owned by the
   //   tables' owner, which never consulted their RLS. A row returns here only with a caller. —
+
+  // — DD-230, 2026-09-14: FOURTEEN more rows left this list, because DD-230 revoked every `anon`
+  //   column grant on those relations and a policy that reaches `anon` grants nothing when the role
+  //   holds no column: billing.capability, billing.plan_limit, iam.industries,
+  //   platform.assurance_level, platform.shareable_resource_registry, platform.source_authority,
+  //   tool.executor, tool.mcp_config, tool.mcp_server, ui.ui_client, ui.ui_surface,
+  //   ui.ui_surface_client_tool, ui.ui_surface_value and ui.ui_surface_write_target. FIVE of their
+  //   reasons were measured FALSE rather than merely stale — `iam.industries` claimed the sign-up
+  //   form (/sign-up signed out issues ZERO database requests, and every caller of fetchIndustries()
+  //   is an admin or organization surface); `tool.executor` claimed the public tool catalogue (that
+  //   is tool.definition, served by app/api/tools through utils/supabase/server-tools-service.ts,
+  //   which names its columns and never touches executor); `billing.capability` and
+  //   `billing.plan_limit` claimed the public plan-comparison table (/pricing/compare and
+  //   /pricing/pledge issue no database read at all); `ui.ui_surface` claimed the shell before
+  //   sign-in (no signed-out route asks for it — its anon-shaped traffic is
+  //   scripts/check-surface-impact.ts on the SECRET key, which carries no JWT and therefore logs
+  //   with an empty role). ANON_COLUMN_SURFACE's header carries the method. —
 
   // — DD-226, 2026-09-14: four rows left this list because the exposures they described stopped
   //   existing. `crm.jurisdiction_policy`, `education.content_certification`,
@@ -362,97 +372,102 @@ export interface AnonColumnSurface {
 }
 
 export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
-  // ══ DD-226, 2026-09-14 — A DECLARED "NO SIGNED-OUT READER" MEANS ZERO ANON COLUMNS ═══════════
+  // ══ DD-230, 2026-09-14 — A SIGNED-OUT READER SEES EXACTLY WHAT THE PUBLIC SURFACES RENDER ════
   //
-  // DD-186 declared the whole signed-out surface and bounded each relation's columns. On 175 of
-  // those relations it wrote the reason "No signed-out reader was found for it in the four-
-  // repository census — the bound is what keeps a column added tomorrow from publishing itself",
-  // and then left the columns granted. DD-222 (B-113) settled what that reason implies: the bound
-  // of a signed-out surface is the set of columns that surface RENDERS, so where there is no
-  // signed-out surface the bound is the EMPTY list. A relation cannot simultaneously declare that
-  // nobody signed-out reads it and publish its columns to `anon`; the grant is the half that is
-  // wrong.
+  // DD-186 declared the signed-out surface. DD-222 settled what a bound MEANS: the columns the
+  // signed-out surface renders. DD-226 applied that to 121 relations and left 46 — the catalogue-
+  // shaped schemas `ai`, `billing`, `content_ir`, `extend`, `iam`, `platform`, `tool`, `ui` — open,
+  // because their readers were said to be "server-side shell catalogue reads that a browser capture
+  // cannot see". DD-230 measured those readers. THIRTY of the 46 had none and are gone from this
+  // list entirely; the other SIXTEEN are bounded to the columns their reader actually names.
+  // 65 relations / 997 readable columns → 35 relations / 475.
   //
-  // 121 relations across 23 schemas were revoked to ZERO on that test
-  // (migrations/dd226_<schema>_publishes_nothing_to_a_signed_out_reader.sql, one file per schema,
-  // each asserting anon reaches 0 columns and `authenticated`'s count is unchanged). They are gone
-  // from this list rather than left with an empty `columns` array — an absent relation is the
-  // guard's own RED for a re-grant: `check:anon-column-surface` fails on an UNDECLARED relation.
-  // Re-granting any of them is a publishing decision that needs its own register row.
+  // 🚨 NEVER READ A `why` HERE AS A MEASUREMENT UNLESS IT SAYS WHAT WAS MEASURED. DD-186 pasted one
+  // sentence — "No signed-out reader was found for it in the four-repository census" — onto 53
+  // relations, including nine whose reader had been NAMED in this very file and twenty whose
+  // PUBLIC_EXPOSURE_ALLOWED row a few hundred lines above says the opposite. That sentence is now
+  // gone from every row: each `why` below names its reader by route or file, or says nothing at all
+  // because the relation was removed. `check:anon-column-surface`'s fourth arm (REASON/EXPOSURE
+  // AGREEMENT) fails the build if a bound ever claims no reader while an exposure row exists, or
+  // the reverse.
   //
-  // 🚨 THE REASON TEXT WAS NOT EVIDENCE, AND THAT IS THE CLASS FINDING. DD-186 pasted the same
-  // "no signed-out reader was found" sentence onto relations whose PUBLIC_EXPOSURE_ALLOWED row a
-  // few hundred lines above says the opposite in the same file — `billing.price` ("public pricing
-  // page renders prices before sign-in"), `iam.industries` ("the sign-up form, before an account
-  // exists"), `ui.ui_surface` ("the shell renders public routes before sign-in"), `tool.executor`
-  // ("public tool catalogue"), `users.user_follows` ("public on creator profiles"). So this lane
-  // re-ran the census per relation instead of trusting the sentence, and the readers it found are
-  // NAMED on the rows that stayed. Never read a `why` here as a measurement.
+  // ═══ HOW A READER IS MEASURED — the method, so the next lane does not re-invent it ════════════
+  // 1. A REAL SIGNED-OUT BROWSER on production (localStorage holds no `sb-*` key): /, /pricing,
+  //    /sign-up, /files, /podcast, /canvas/discover, with every request to db.matrxserver.com read
+  //    out of the page's own PerformanceResourceTiming. Result: ONE route issues a database request
+  //    at all — /canvas/discover, for canvas.shared_canvas_items, naming exactly its 36 columns.
+  // 2. Supabase `edge_logs`, a full 24 h, grouped by `request.path` × `request.sb.jwt.authorization
+  //    .payload.role` × `response.status_code`, WITH the verbatim `select=` of every request. The
+  //    `request.headers.authorization` field is empty on every row and must never be used.
+  // 3. 🚨 THE TRAP IN (2): a caller holding the new-style `sb_secret_` SERVICE key sends NO JWT, so
+  //    its log rows carry an empty role and look exactly like an anonymous reader. `ui.ui_surface`,
+  //    `ui.ui_surface_value`, `ui.ui_surface_write_target` and `platform.shareable_resource_registry`
+  //    were "read anonymously" dozens of times a day by scripts/check-surface-impact.ts and
+  //    scripts/regen-shareable-registry-snapshot.ts, both on the secret key. Every candidate was
+  //    therefore RE-PROBED over HTTPS with the PUBLISHABLE key and no Authorization header. That
+  //    probe — never the log role — decided each row.
+  // 4. The code census: every `.from("<table>")` in matrx-frontend, matrx-extend, matrx-local and
+  //    aidream, judged against what a person with no account can cause to run. aidream reads this
+  //    database as the service role or through matrx-orm; its one publishable-key client always
+  //    carries the caller's JWT.
   //
-  // KEPT, with a real signed-out reader named and replayable:
-  //   workbench.heatmap_saves        /free/zip-code-heatmap/[id] — an app/(public) route that reads
-  //                                  the table directly with the SSR client.
-  //   canvas.shared_canvas_items     /canvas/discover and /canvas/shared/[token], both app/(public).
-  //   ai.model_definition, ai.provider   GET /api/ai-models — an UNAUTHENTICATED route that builds
-  //                                  its client with getScriptSupabaseClient() (publishable key), so
-  //                                  it runs as `anon`, and CDN-caches the answer.
-  //   education.learn_doc            the published learn-doc list, same publishable-key client.
-  //   platform.categories            lib/services/agent-apps-admin-service.ts, same client.
-  //   podcast.pc_shows / pc_episodes / pc_articles
-  //                                  /podcast/[slug]/feed.xml and chapters.json are podcast feeds —
-  //                                  a podcast client fetches them with no account — and
-  //                                  /podcast/[slug]/blog renders public articles.
-  //   agent.message_template         /p/e/message_template, bounded to the exact eight columns
-  //                                  PUBLIC_LANE_COLUMNS names (DD-226 revoked the ninth).
-  //   app.definition, tool.definition, public.app_config, public.catalog_entries, workbench.notes,
-  //   ai.model_public, ai.model_offering, billing.plan, canvas.canvas_items, extend.wbx_recipe —
-  //                                  DD-186's own named readers, unchanged.
+  // ═══ THE SECOND HALF OF A BOUND, WHICH NO NETWORK CAPTURE CAN SHOW YOU ════════════════════════
+  // A policy's references to its OWN table's columns need no column privilege. A SUBQUERY inside a
+  // policy, against ANOTHER relation, runs with the CALLER's privileges. `content_ir.kind_component`,
+  // `kind_edge`, `kind_example` and `kind_surface` are each gated by
+  //   USING (… kind_definition_id IN (SELECT p.id FROM content_ir.kind_definition p
+  //                                    WHERE p.deleted_at IS NULL AND p.visibility = 'public'))
+  // so `anon` must keep SELECT on `content_ir.kind_definition`'s id, deleted_at and visibility or
+  // ALL FOUR children answer 42501 — naming the PARENT table, which is what makes it hard to read.
+  // THE RULE: the bound is the columns the surface renders PLUS the columns any reachable RLS
+  // policy evaluates through a subquery on another relation. `check:anon-column-surface`'s fifth arm
+  // (RLS-PREDICATE REACH) proves it, and
+  // migrations/dd230_a_column_another_tables_rls_reads_is_part_of_the_bound.sql records the incident.
   //
-  // NAMED, NOT SWEPT — 46 relations in the catalogue-shaped schemas `ai`, `billing`, `content_ir`,
-  // `extend`, `iam`, `platform`, `tool`, `ui` still carry the same unevidenced reason. They are last
-  // on purpose (they hold reference rows, not people's content) AND they are the ones whose readers
-  // are hardest to name: app/(core) is NOT auth-gated — its layout renders a guest shell — so the
-  // shell's own catalogue reads (features/surfaces/services/*, lib/knobs/featureKnobs.ts,
-  // features/tool-registry/**) may genuinely execute as `anon` on a signed-out visit, and revoking
-  // them blind would 42501 a guest's first paint. Each needs its request replayed with no JWT before
-  // it is closed or bounded. That is DD-226's remaining half, not a decision already taken.
-  // (Schema `agent` held SEVEN declared anon bounds until 2026-09-14. FIVE of them —
-  //  `cmp_comparison_sets`, `cmp_response_feedback`, `definition`, `shortcut`, `template` — were
-  //  revoked to ZERO by DD-222's sibling sweep
-  //  (`migrations/dd222b_the_agent_schema_publishes_only_what_a_reader_renders.sql`), on the same
-  //  test the base table below was closed on: the bound of a signed-out surface is the columns that
-  //  surface renders, and two independent four-repository censuses find no signed-out surface for
-  //  any of the five. Two were not latent — measured over HTTPS with no JWT that morning,
-  //  `agent.template` served NINE public rows including a full `messages` system prompt ("You are a
-  //  high school AP World History Expert…") and `agent.shortcut` served THIRTY including
-  //  `pre_execution_message`; `definition` (`messages`), `cmp_response_feedback` (`comment`) and
-  //  `cmp_comparison_sets` had the grant open with zero public rows behind it. The anonymous share
-  //  link never depended on any of it: `/s/<token>` resolves through the SECURITY DEFINER
-  //  `public.resolve_share_token`, which returns the content itself. `agent.message_template` below
-  //  keeps its bound — it is the one relation in this schema with a real signed-out reader, and its
-  //  9 columns are exactly what `/p/e/message_template/<id>` renders.)
-  // (`agent.mandate_exemplar` — the rename alias over the table below — carried this same
-  //  22-column anon grant and its own declaration here until 2026-09-14. A "sync live share and
-  //  exposure registries" sweep (cced6b5893) DELETED the declaration and left the grant live, and
-  //  the guard sat red for a day because nothing ran it. DD-218 revoked anon on the view outright
-  //  (no signed-out reader in any of the four repositories, and a temporary alias is never a public
-  //  door) and wired this guard into scripts/run-release-gates.sh. Do not re-grant it.)
+  // ═══ THE OTHER CLASS DD-230 FOUND: `select("*")` AGAINST A BOUNDED RELATION ═══════════════════
+  // PostgREST expands `*` to EVERY column, so a `*` against a relation with a partial column grant
+  // is 42501 for the WHOLE request — never a narrowed row. Three live public surfaces were failing
+  // that way, silently, when this lane started:
+  //   /podcast              "No shows published yet. Be the first — create one in the Studio."
+  //                         with four published shows in the table (pc_shows `select=*`).
+  //   /podcast/<slug>/feed.xml   404 "Podcast not found" (pc_shows + pc_episodes `select=*`).
+  //   /pricing              Premium card "Coming soon / Not available yet" over a live active
+  //                         product, because the loader asked for `metadata` (billing.product).
+  // Each loader swallowed the error and rendered its empty state. The readers now NAME their
+  // columns — features/podcasts/publicColumns.ts, features/education/publishing/publicColumns.ts —
+  // and THROW instead of rendering a claim the data never supported. A public reader of a relation
+  // in this list must never use `*`.
   //
-  // (`agent.exemplar` — the base TABLE — carried a 22-column anon bound here until 2026-09-14,
-  //  `user_input`, `variables`, `reference_output` and `reference_artifact` among them: what a
-  //  human typed and what it produced. DD-222 revoked it to ZERO
-  //  (`migrations/dd222_exemplar_is_closed_to_the_signed_out_reader.sql`). The bound of a
-  //  signed-out surface is the columns that surface renders, and the four-repository census finds
-  //  no signed-out surface at all — every reader is the browser SESSION client behind the agent
-  //  builder (`features/agents/samples/service.ts`) or the mandate bench
-  //  (`features/mandates/admin/service.ts`), or the service role
-  //  (`scripts/backfill-agent-exemplar-input-content.ts`), and `PUBLIC_LANE_COLUMNS` in
-  //  `utils/permissions/publicLane.ts` declares no exemplar type, so `/p/e/exemplar/<id>` does not
-  //  exist. Measured before the revoke: an anonymous HTTPS read of `select=id,variables,user_input`
-  //  answered 200 (the empty array was the ROW gate — 0 of 876 exemplars are `public` — never the
-  //  column gate), and with ONE exemplar flipped to `public` inside a rolled-back transaction,
-  //  `anon` read its real `variables` payload. It answers 42501 now. A public exemplar surface is
-  //  a publishing decision with its own register row; do not re-grant anon without one.)
+  // ═══ THE THIRTY REMOVED, AND WHY AN ABSENT ROW IS THE GUARD'S OWN RED ═════════════════════════
+  //   ai.api, ai.endpoint, ai.model_alias, ai.offering, ai.setting, ai.voices,
+  //   billing.capability, billing.plan_limit,
+  //   extend.wbx_demo, wbx_guidance, wbx_highlight, wbx_pattern, wbx_screenshot, wbx_seo_audit,
+  //   iam.industries, iam.permissions,
+  //   platform.assurance_level, flexible_data, rulebook, shareable_resource_registry, source_authority,
+  //   tool.bundle, tool.executor, tool.mcp_config, tool.mcp_server,
+  //   ui.ui_client, ui_surface, ui_surface_client_tool, ui_surface_value, ui_surface_write_target
+  // They are ABSENT rather than present with an empty `columns` array: `check:anon-column-surface`
+  // fails on an UNDECLARED live relation, so a re-grant is caught by the guard itself. Re-granting
+  // any of them is a publishing decision and needs its own register row. Four of their
+  // PUBLIC_EXPOSURE_ALLOWED claims were measured FALSE and those rows are deleted above:
+  //   iam.industries "the sign-up form, before an account exists" — /sign-up signed out issues ZERO
+  //     database requests, and every caller of fetchIndustries() is an admin or org surface;
+  //   tool.executor "public tool catalogue" — the public tool catalogue is tool.definition, served
+  //     by app/api/tools through utils/supabase/server-tools-service.ts, which names its columns and
+  //     never touches executor;
+  //   billing.capability / billing.plan_limit "the public pricing comparison table" — /pricing/compare
+  //     and /pricing/pledge issue no database read at all;
+  //   ui.ui_surface "the shell renders public routes before sign-in" — no signed-out route asks for
+  //     it; its anon-shaped traffic is the secret-key guard of (3).
+  //
+  // Applied by migrations/dd230_<schema>_publishes_exactly_what_a_signed_out_reader_renders.sql
+  // (eight files, one per schema) plus the RLS-predicate file above. Every one rehearsed inside a
+  // rolled-back transaction first; every one asserts the surviving anon set EQUALS the bound below,
+  // that `anon` holds no table-level SELECT, and that `authenticated`'s column count is unchanged.
+  //
+  // (The DD-226 history for the 121 relations closed before this lane, and the DD-222/DD-218 notes
+  // on `agent.exemplar` and `agent.mandate_exemplar`, live in that commit's message and in
+  // common-docs/projects/data-doctrine-adoption/REGISTER.md — they are not repeated here.)
   {
     relation: "agent.message_template",
     columns: [
@@ -460,46 +475,12 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "tags", "visibility",
     ],
     why:
-      "The indexable public viewer /p/e/message_template reads a public template's display columns "
+"The indexable public viewer /p/e/message_template reads a public template's display columns "
       + "(utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS) — and this list is EXACTLY that one. "
       + "DD-226 (2026-09-14) revoked the ninth, `deleted_at`: the page does not render or filter it "
       + "(`pub_read` already excludes deleted rows), and under DD-222's rule a column the signed-out "
       + "surface does not render is an over-grant however harmless its values look. "
       + "migrations/dd226_agent_message_template_publishes_exactly_what_it_renders.sql",
-  },
-  {
-    relation: "ai.api",
-    columns: [
-      "id", "visibility", "created_at", "updated_at", "deleted_at", "name",
-      "display_name", "translator_key", "transport", "rules", "request_defaults", "description",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ai.endpoint",
-    columns: [
-      "id", "visibility", "created_at", "updated_at", "deleted_at", "vendor",
-      "internal_name", "display_name", "base_url", "auth_ref", "byok_secret_key", "priority",
-      "is_active", "notes", "doc_sources",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ai.model_alias",
-    columns: [
-      "id", "visibility", "created_at", "updated_at", "deleted_at", "alias",
-      "model_id", "kind", "notes",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
     relation: "ai.model_definition",
@@ -510,9 +491,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "cost_rating", "speed_rating", "retry_fallback_id", "retry_max_attempts", "retired_at", "successor_id",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "GET /api/ai-models — an UNAUTHENTICATED route whose client is getScriptSupabaseClient() "
+      + "(publishable key, so it runs as `anon`) and whose answer is CDN-cached to the open internet "
+      + "for 12 hours. Its .select() names EXACTLY these 24 columns. MEASURED 2026-09-14 (DD-230): "
+      + "replayed over HTTPS with no Authorization header — 200 with all 24; one column outside the "
+      + "list is 42501.",
   },
   {
     relation: "ai.model_offering",
@@ -522,7 +505,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "served_via", "served_via_endpoint_id", "model_is_deprecated",
     ],
     why:
-      "The routable-offering half of the anonymous model catalog, read beside ai.model_public by the same hook. security_invoker OFF; kept for the same reason.",
+"The routable-offering half of the anonymous model catalog, read beside ai.model_public by the same hook. security_invoker OFF; kept for the same reason.",
   },
   {
     relation: "ai.model_public",
@@ -533,56 +516,19 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "points_per_million_output", "is_deprecated", "retired_at", "successor_id",
     ],
     why:
-      "The anonymous model catalog — features/ai-models/hooks/useModelCatalog.ts: \"user → ai.model_public (anon + authenticated; masked, points pricing)\". A view with security_invoker OFF, so it does not consult RLS; kept because it is meant to be world-readable.",
-  },
-  {
-    relation: "ai.offering",
-    columns: [
-      "id", "model_id", "provider_model_id", "priority", "is_available", "pricing",
-      "usage_basis", "capabilities_override", "override", "notes", "visibility", "created_at",
-      "updated_at", "deleted_at", "token_billed", "endpoint_id", "api_id", "pricing_verified_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+"The anonymous model catalog — features/ai-models/hooks/useModelCatalog.ts: \"user → ai.model_public (anon + authenticated; masked, points pricing)\". A view with security_invoker OFF, so it does not consult RLS; kept because it is meant to be world-readable.",
   },
   {
     relation: "ai.provider",
     columns: [
-      "id", "name", "company_description", "documentation_link", "models_link", "provider_models_cache",
-      "visibility", "deleted_at", "created_at", "updated_at", "slug", "website_url",
-      "logo_url", "doc_sources", "sync_policy",
+      "id", "name",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ai.setting",
-    columns: [
-      "id", "key", "value_type", "canonical_min", "canonical_max", "canonical_values",
-      "default_value", "ui", "description", "visibility", "created_at", "updated_at",
-      "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ai.voices",
-    columns: [
-      "id", "provider", "provider_voice_id", "name", "voice_type", "gender",
-      "accent", "age", "language", "languages", "tags", "quality_score",
-      "description", "style", "sample_file_id", "sample_url", "preview_url", "enabled",
-      "is_verified", "sort_order", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same /api/ai-models route's second query: .select(\"id, name\"), which resolves a model's "
+      + "maker from the provider FK. DD-230 (2026-09-14) cut this bound from fifteen columns to those "
+      + "TWO: company_description, documentation_link, models_link, provider_models_cache, slug, "
+      + "website_url, logo_url, doc_sources, sync_policy, visibility, deleted_at, created_at and "
+      + "updated_at were published to the internet and rendered by nobody.",
   },
   {
     relation: "app.definition",
@@ -597,39 +543,27 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "slot_overrides", "slot_code", "visibility", "deleted_at", "mandate_id",
     ],
     why:
-      "The public app page /p/[slug] renders a signed-out visitor's app: name, tagline, description, preview_image_url, favicon_url.",
-  },
-  {
-    relation: "billing.capability",
-    columns: [
-      "capability", "enforced", "period", "min_tier", "updated_at", "usage_source",
-      "id", "created_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+"The public app page /p/[slug] renders a signed-out visitor's app: name, tagline, description, preview_image_url, favicon_url.",
   },
   {
     relation: "billing.capability_limit",
     columns: [
-      "capability", "tier", "limit_value", "period", "id", "created_at",
-      "updated_at", "visibility",
+      "capability", "tier", "limit_value", "period",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same loader's third query: .select(\"capability, limit_value, period, tier\") for the "
+      + "Free-tier headline caps on /pricing. MEASURED 2026-09-14: live anon 200s on production with "
+      + "exactly this select. DD-230 cut id, created_at, updated_at and visibility.",
   },
   {
     relation: "billing.plan",
     columns: [
-      "id", "plan_key", "name", "audience", "tagline", "rank", "tier",
+      "plan_key", "name", "audience", "tagline", "rank", "tier",
       "monthly_cents", "annual_cents", "per_seat", "min_seats", "badge", "is_public",
-      "is_default", "active", "created_at", "updated_at",
+      "is_default", "active", "created_at", "updated_at", "id",
     ],
     why:
-      "Anon-readable by the generated `pub_read` lane (rows whose `visibility` is public, derived "
+"Anon-readable by the generated `pub_read` lane (rows whose `visibility` is public, derived "
       + "from `active`); every identity, bookkeeping and secret column is revoked at the column "
       + "(DD-186). The guest price list itself renders through `billing.public_plans()`, a definer "
       + "door, not through this table read — the bound is what keeps a column added tomorrow from "
@@ -637,37 +571,29 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "the new uuid `id`, the column the access-delta probe reads to measure this door at all.",
   },
   {
-    relation: "billing.plan_limit",
-    columns: [
-      "plan_id", "capability", "period", "limit_value", "note", "updated_at",
-      "id", "created_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "billing.price",
     columns: [
-      "id", "stripe_price_id", "product_id", "unit_amount", "currency", "interval",
-      "interval_count", "trial_period_days", "active", "created_at", "updated_at", "visibility",
+      "id", "product_id", "unit_amount", "currency", "interval", "active",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same loader's second query: id, unit_amount, currency, interval, filtered on product_id "
+      + "+ active. DD-230 cut this bound from twelve columns to six — stripe_price_id, "
+      + "interval_count, trial_period_days, created_at, updated_at and visibility are not on the "
+      + "page.",
   },
   {
     relation: "billing.product",
     columns: [
-      "id", "stripe_product_id", "name", "description", "tier", "active",
-      "created_at", "updated_at", "visibility",
+      "id", "name", "description", "tier", "active", "created_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "app/(public)/pricing → features/pricing/education/loadEducationPricing.ts, a SERVER read on "
+      + "a public route: a signed-out visitor carries no cookie, so utils/supabase/server runs as "
+      + "`anon`. It renders name + description, filters on active and orders by created_at; tier "
+      + "names the plan. MEASURED 2026-09-14 (DD-230): that loader was asking for `metadata` too — a "
+      + "column DD-186 rightly withholds — so the whole query answered 42501 and the loader, which "
+      + "ignored `error`, rendered \"Coming soon\" over a live active product. Five such 401s on "
+      + "production in 24 h. The loader now names only these columns and throws on error.",
   },
   {
     relation: "canvas.canvas_items",
@@ -675,11 +601,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "id", "type", "content", "title", "description", "is_favorited",
       "is_archived", "tags", "session_id", "source_message_id", "task_id", "is_public",
       "created_at", "updated_at", "last_accessed_at", "content_hash", "project_id", "conversation_id",
-      "artifact_index", "parent_canvas_id", "source_type", "external_system", "external_id", "deleted_at",
-      "visibility", "source_system", "source_id", "version",
+      "artifact_index", "version", "parent_canvas_id", "source_type", "external_system", "external_id",
+      "deleted_at", "visibility", "source_system", "source_id",
     ],
     why:
-      "Anon-readable by the policy `pub_read`. `version` is deliberately IN this list and is the one "
+"Anon-readable by the policy `pub_read`. `version` is deliberately IN this list and is the one "
       + "exception on the whole surface: the canvas UI reads it on a SHARED artifact "
       + "(features/canvas/core/CanvasBody.tsx keys its render on row.version; "
       + "ensureArtifactPersisted.ts reports it), and canvasArtifactService.getById / .getBySource are "
@@ -689,7 +615,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "(migrations/dd186_canvas_item_version_is_public.sql). Still revoked here: user_id, "
       + "organization_id, created_by, updated_by, metadata.",
   },
-
   {
     relation: "canvas.shared_canvas_items",
     columns: [
@@ -701,67 +626,74 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "updated_at", "published_at", "last_played_at", "trending_score", "search_vector", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "/canvas/discover and /canvas/shared/[token], both app/(public). MEASURED 2026-09-14 (DD-230) "
+      + "in a real signed-out browser on production: /canvas/discover issues exactly ONE request to "
+      + "db.matrxserver.com, and it names exactly these 36 columns. This row carried DD-186's "
+      + "unevidenced census sentence until that measurement replaced it.",
   },
   {
     relation: "content_ir.kind_component",
     columns: [
       "id", "kind_definition_id", "platform", "role", "component_key", "source",
       "component_source", "props_transform", "config", "pinned_kind_version", "is_default", "is_active",
-      "sort_order", "created_at", "updated_at", "deleted_at", "semver", "notes",
+      "sort_order", "created_at", "updated_at", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "features/content-ir/registry/schema-source-kind-components.ts — the (kind, platform, role) → "
+      + "component_key resolver, read by the same anon-capable browser path. Columns are the union of "
+      + "the verbatim anon `select=` lists measured in edge_logs over 24 h; created_by, semver, notes "
+      + "and the identity columns left (DD-186, DD-230).",
   },
   {
     relation: "content_ir.kind_definition",
     columns: [
-      "id", "kind", "label", "authoring_owner", "data", "sample_data",
-      "emitted_block_schema", "emitted_json_schema", "emitted_fingerprint", "is_active", "created_at", "updated_at",
-      "deleted_at", "visibility", "capture_until", "capture_target", "is_contract_artifact", "variants",
+      "id", "kind", "label", "data", "sample_data", "emitted_json_schema",
+      "is_active", "created_at", "updated_at", "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The Shape System registry — features/content-ir/registry/schema-source-kind-tables.ts and "
+      + "the studio's public readers — whose browser client runs as `anon` on a guest surface and "
+      + "before a session hydrates. Columns taken from the verbatim anon `select=` lists in Supabase "
+      + "edge_logs over 24 h. PLUS `visibility` (and id, deleted_at), which NO surface renders: the "
+      + "pub_read policies of kind_component, kind_edge, kind_example and kind_surface each evaluate "
+      + "`SELECT p.id FROM content_ir.kind_definition p WHERE p.deleted_at IS NULL AND p.visibility = "
+      + "'public'` — a subquery on ANOTHER relation, which runs with the caller's privileges. "
+      + "Revoking it made all four children answer 42501 naming this table. See "
+      + "migrations/dd230_a_column_another_tables_rls_reads_is_part_of_the_bound.sql. DD-230 cut this "
+      + "bound from 18 to 11.",
   },
   {
     relation: "content_ir.kind_edge",
     columns: [
-      "id", "parent_definition_id", "field_name", "child_definition_id", "pinned_child_version", "position",
-      "created_at", "updated_at", "deleted_at",
+      "parent_definition_id", "field_name", "child_definition_id", "position", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The registry's ref graph (parent → child field edges), same reader. Measured anon selects: "
+      + "`parent_definition_id,field_name,child_definition_id,deleted_at` and "
+      + "`child_definition_id,field_name,position`. DD-230 cut id, pinned_child_version, created_at "
+      + "and updated_at.",
   },
   {
     relation: "content_ir.kind_example",
     columns: [
-      "id", "kind_definition_id", "kind_version", "data", "label", "description",
-      "source", "source_ref", "is_canonical", "validation_status", "validated_at", "captured_at",
-      "created_at", "updated_at", "deleted_at",
+      "id", "kind_definition_id", "data", "is_canonical", "updated_at", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "features/content-ir/studio/kind-examples.ts. Measured anon select: "
+      + "`id,kind_definition_id,is_canonical,data,updated_at`. DD-230 cut nine columns, including "
+      + "source, source_ref, validation_status, validated_at and captured_at.",
   },
   {
     relation: "content_ir.kind_surface",
     columns: [
-      "id", "kind_definition_id", "surface_type", "token", "parser_strategy", "parser_config",
-      "streaming", "priority", "is_active", "created_at", "updated_at", "deleted_at",
+      "id", "kind_definition_id", "surface_type", "token", "parser_strategy", "streaming",
+      "is_active", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "features/content-ir/registry/surface-registry.ts — the ONE enumerable input-surface list. "
+      + "Measured anon selects: `surface_type,token,parser_strategy,streaming,kind_definition(kind)` "
+      + "and `id,kind_definition_id,surface_type,token,is_active`. DD-230 cut parser_config, "
+      + "priority, created_at and updated_at.",
   },
   {
     relation: "education.learn_doc",
@@ -771,141 +703,37 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "related", "content_updated_at", "published_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The published learn-doc list — features/education/publishing/queries.ts, which builds its "
+      + "client with getScriptSupabaseClient() (publishable key ⇒ `anon`) and projects "
+      + "LEARN_DOC_PUBLIC_SELECT, pinned to this list by lib/security/public-exposure.test.ts. DD-230 "
+      + "(2026-09-14) replaced DD-186's unevidenced census sentence, which was false for this "
+      + "relation and for the eight below.",
   },
   {
     relation: "extend.wbx_capture",
     columns: [
-      "id", "url", "captured_at", "title", "description", "lang",
-      "soup", "markdown", "ld_json", "media_count", "pattern_id", "created_at",
-      "updated_at", "deleted_at", "visibility",
+      "id", "url", "captured_at", "title",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "extend.wbx_demo",
-    columns: [
-      "id", "demo_key", "name", "description", "start_url", "step_count", "parameter_names",
-      "body", "is_deleted", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Column-bounded (DD-186): every identity, bookkeeping and secret column is revoked at the "
-      + "column. No signed-out reader was found for it in the four-repository census — the bound is "
-      + "what keeps a column added tomorrow from publishing itself. DD-173 (B-103) moved the client "
-      + "`demo_<uuid>` pointer off `id` to `demo_key`, granted the new uuid `id` (the column the "
-      + "access-delta probe reads to measure this door at all), and replaced the hand-written owner "
-      + "policies with the generated entity set — which is what closed D257.",
-  },
-  {
-    relation: "extend.wbx_guidance",
-    columns: [
-      "id", "domain", "kind", "caption", "origin_url", "data",
-      "created_at", "updated_at", "is_deleted", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `wbx_guidance_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "extend.wbx_highlight",
-    columns: [
-      "id", "conversation_id", "mode", "url", "domain", "page_title",
-      "color", "text", "anchor", "is_deleted", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "extend.wbx_pattern",
-    columns: [
-      "id", "name", "domain", "route_pattern", "list_root_selector", "fields",
-      "last_used_at", "created_at", "kind", "config", "target_user_table_id", "last_run_at",
-      "last_status", "last_run_count", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The Chrome extension, which holds the publishable key and has no account until its user "
+      + "signs in. MEASURED 2026-09-14 on production: `select=id,url,captured_at,title` from a real "
+      + "browser with no JWT and no referer, looking a capture up by URL. DD-230 cut eleven columns — "
+      + "including `soup` and `markdown`, the captured page's own body.",
   },
   {
     relation: "extend.wbx_recipe",
     columns: [
-      "id", "recipe_key", "label", "description", "hosts", "routes", "kind",
+      "recipe_key", "label", "description", "hosts", "routes", "kind",
       "config", "yields_rows", "is_active", "last_verified_at", "created_at", "updated_at",
+      "id",
     ],
     why:
-      "Anon-readable by the generated `pub_read` lane; every identity, bookkeeping and secret column is "
+"Anon-readable by the generated `pub_read` lane; every identity, bookkeeping and secret column is "
       + "revoked at the column (DD-186). THERE IS A REAL SIGNED-OUT READER: matrx-extend's "
       + "`loadRecipes()` (src/lib/data-pattern/recipes.ts) fetches this catalogue with whatever "
       + "session the extension has, including none. DD-173 (B-103) moved the slug off `id` to "
       + "`recipe_key` and granted the new uuid `id` — an opaque surrogate, and the column the "
       + "access-delta probe reads to measure this door at all.",
-  },
-  {
-    relation: "extend.wbx_screenshot",
-    columns: [
-      "id", "page_url_canonical", "page_url_full", "page_title", "file_id", "file_url",
-      "width", "height", "mime_type", "byte_length", "source", "captured_at",
-      "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "extend.wbx_seo_audit",
-    columns: [
-      "id", "url", "audited_at", "signals", "recommendations", "flesch_reading_ease",
-      "word_count", "notes", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "iam.industries",
-    columns: [
-      "id", "slug", "name", "facet", "parent_id", "default_template_id",
-      "description", "is_active", "sort_order", "created_at", "updated_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "iam.permissions",
-    columns: [
-      "id", "resource_type", "resource_id", "granted_to_user_id", "granted_to_organization_id", "is_public",
-      "permission_level", "created_at", "status", "reviewed_by", "reviewed_at", "review_note",
-      "expires_at",
-    ],
-    why:
-      "Anon-readable by the policy `Users can view relevant permissions`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "platform.assurance_level",
-    columns: [
-      "slug", "label", "blurb", "rank", "is_active", "created_at",
-      "updated_at", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
     relation: "platform.categories",
@@ -915,69 +743,22 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "lib/services/agent-apps-admin-service.ts, which builds its client with "
+      + "getScriptSupabaseClient() (publishable key ⇒ `anon`). DD-230 (2026-09-14) replaced DD-186's "
+      + "unevidenced census sentence, which contradicted the reader B-116 itself had named.",
   },
   {
     relation: "platform.feature_knob",
     columns: [
-      "feature", "key", "value", "default_value", "value_type", "unit",
-      "min_value", "max_value", "allowed_values", "label", "description", "set_by",
-      "basis", "review_due", "created_at", "updated_at", "overridable_by", "override_direction",
-      "bound_value", "ui", "taxonomy_node_id", "propagation", "public_read",
+      "feature", "key", "value",
     ],
     why:
-      "Anon-readable by the policy `feature_knob_read_anon`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "platform.flexible_data",
-    columns: [
-      "id", "label", "slug", "data", "created_at", "updated_at",
-      "deleted_at", "visibility", "category_id",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "platform.rulebook",
-    columns: [
-      "id", "name", "slug", "description", "source", "sections",
-      "rules", "status", "visibility", "created_at", "updated_at", "deleted_at",
-      "industry_id", "source_rulebook_id", "source_version", "source_synced_at", "source_authority", "assurance_level",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "platform.shareable_resource_registry",
-    columns: [
-      "resource_type", "table_name", "id_column", "owner_column", "is_public_column", "display_label",
-      "url_path_template", "rls_uses_has_permission", "is_active", "notes", "created_at", "updated_at",
-      "content_role", "is_scopeable", "schema_name", "public_columns", "is_link_shareable", "id",
-      "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "platform.source_authority",
-    columns: [
-      "slug", "label", "blurb", "rank", "is_active", "created_at",
-      "updated_at", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "lib/knobs/featureKnobs.ts — client feature gating has to resolve before sign-in, which is "
+      + "what this relation's PUBLIC_EXPOSURE_ALLOWED row says and it is true. MEASURED 2026-09-14: "
+      + "194 anon 200s in 24 h and EVERY ONE of them `select=feature,key,value`. DD-230 cut the bound "
+      + "from twenty-three columns to those three; min/max, allowed_values, set_by, basis, "
+      + "review_due, bound_value, overridable_by, taxonomy_node_id and the rest are the knob's "
+      + "governance, not its value.",
   },
   {
     relation: "platform.v_feature_knob_overdue",
@@ -986,9 +767,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "basis", "review_due", "days_overdue",
     ],
     why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
+      "A view over platform.feature_knob with no RLS policy of its own. DD-230 (2026-09-14) cut its "
+      + "parent to three columns and re-measured this one: zero anonymous requests for it in 24 h of "
+      + "production edge_logs, no route in any of the four repositories reads it, and zero rows reach "
+      + "a signed-out visitor. Bounded here only because the view's own grant is what the guard sees; "
+      + "the next narrowing of it is a revoke to zero, not a re-declaration.",
   },
   {
     relation: "podcast.pc_articles",
@@ -998,9 +781,8 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "/podcast/[slug] and /podcast/[slug]/blog — the public show-notes and blog renderers; "
+      + "PC_ARTICLE_PUBLIC_SELECT. Same `select=*` trap, same fix (DD-230).",
   },
   {
     relation: "podcast.pc_episodes",
@@ -1011,9 +793,8 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "script", "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same public routes plus /podcast/[slug]/chapters.json; PC_EPISODE_PUBLIC_SELECT. Broken "
+      + "by the same `select=*` trap and fixed the same way (DD-230).",
   },
   {
     relation: "podcast.pc_shows",
@@ -1023,9 +804,14 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "/podcast, /podcast/[slug] and /podcast/[slug]/feed.xml — a podcast client fetches the feed "
+      + "with no account at all. The columns are mirrored in "
+      + "features/podcasts/publicColumns.ts#PC_SHOW_PUBLIC_SELECT. 🚨 MEASURED 2026-09-14 (DD-230): "
+      + "every one of those routes was asking for `select=*`, PostgREST expands `*` to ALL columns, "
+      + "and the five withheld ones made the whole read 42501 — so /podcast rendered \"No shows "
+      + "published yet. Be the first\" with four published shows in the table and feed.xml answered "
+      + "404 \"Podcast not found\". Named columns, and a thrown error instead of an empty state, are "
+      + "the fix.",
   },
   {
     relation: "public.app_config",
@@ -1034,7 +820,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "created_at", "visibility",
     ],
     why:
-      "matrx-local reads this pre-login for its remote config (app/services/app_config/client.py), naming these five columns; aidream's public /api/app-config/{app} is the fallback path.",
+"matrx-local reads this pre-login for its remote config (app/services/app_config/client.py), naming these five columns; aidream's public /api/app-config/{app} is the fallback path.",
   },
   {
     relation: "public.catalog_entries",
@@ -1044,22 +830,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "notes", "updated_at",
     ],
     why:
-      "The matrx-local desktop app fetches its remote catalogs pre-login with the publishable key "
+"The matrx-local desktop app fetches its remote catalogs pre-login with the publishable key "
       + "(matrx-local/app/services/catalogs/client.py), so the read itself is correct and must stay. "
       + "These fourteen columns are the feature's own declared public contract — the exact set "
       + "aidream's unauthenticated GET /api/catalogs/{app} publishes in services/catalogs/service.py. "
       + "Deliberately absent: updated_by, created_by, organization_id, metadata, version, visibility.",
-  },
-  {
-    relation: "tool.bundle",
-    columns: [
-      "id", "name", "description", "lister_tool_id", "is_active", "created_at",
-      "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
     relation: "tool.definition",
@@ -1071,150 +846,57 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "deleted_at", "updated_by_tier", "updated_by_system", "side_effect_class",
     ],
     why:
-      "matrx-extend asks for name+description before login to build its tool descriptions (src/lib/tools/descriptions.ts).",
-  },
-  {
-    relation: "tool.executor",
-    columns: [
-      "name", "description", "parent_executor_name", "mcp_server_id", "config", "is_active",
-      "created_at", "updated_at", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "tool.mcp_config",
-    columns: [
-      "id", "server_id", "label", "config_type", "is_default", "command",
-      "args", "env_schema", "requires_docker", "npm_package", "pip_package", "min_node_version",
-      "notes", "created_at", "updated_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "tool.mcp_server",
-    columns: [
-      "id", "slug", "name", "vendor", "description", "category",
-      "icon_url", "color", "website_url", "docs_url", "endpoint_url", "transport",
-      "auth_strategy", "oauth_scopes", "oauth_client_id", "is_official", "is_featured", "has_remote",
-      "has_local", "supports_mcp_apps", "status", "sort_order", "created_at", "updated_at",
-      "last_synced_at", "discovery_ttl_seconds", "last_sync_error", "last_tested_at", "last_test_ok", "last_test_status_code",
-      "last_test_latency_ms", "last_test_error", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+"matrx-extend asks for name+description before login to build its tool descriptions (src/lib/tools/descriptions.ts).",
   },
   {
     relation: "tool.surface_defaults",
     columns: [
-      "surface_name", "always_include_tools", "always_include_bundles", "never_include_tools", "never_include_bundles", "arg_defaults",
-      "arg_injection", "notes", "is_active", "created_at", "updated_at", "id",
-      "visibility",
+      "surface_name", "always_include_tools", "always_include_bundles", "never_include_tools",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ui.ui_client",
-    columns: [
-      "name", "description", "is_active", "sort_order", "created_at", "updated_at",
-      "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ui.ui_surface",
-    columns: [
-      "name", "client_name", "description", "is_active", "sort_order", "created_at",
-      "updated_at", "url_pattern", "executor_name", "parent_surface_name", "execution_mode", "supports_dictionary",
-      "id", "intro", "label", "value_groups", "readiness", "readiness_note",
-      "overlay_id", "last_checked_at", "last_check", "check_claimed_at",
-    ],
-    why:
-      "Anon-readable by the policy `ui_surface_read_anon`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The chrome-extension tool-drift guards, which read with the PUBLISHABLE key and therefore as "
+      + "`anon`: matrx-extend scripts/check-tool-db-drift.ts#fetchSurfaceDefaults and matrx-local "
+      + "scripts/check_tool_db_drift.py. MEASURED 2026-09-14: 18 anon 200s in 24 h, every one exactly "
+      + "these four columns for surface_name in (chrome-extension/assistant, chrome-extension/pilot). "
+      + "NOTE for the next lane: those two guards should read with the service key, and when they do "
+      + "this bound goes to zero — an anonymous door held open by our own tooling is still a door.",
   },
   {
     relation: "ui.ui_surface_agent_pref",
     columns: [
       "id", "surface_name", "role_name", "agent_id", "kind", "position",
-      "settings", "scope_id", "created_at", "updated_at", "deleted_at", "visibility",
+      "settings", "scope_id", "updated_at", "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same guest bundle's second query, plus its deleted_at / surface_name filters. 🚨 "
+      + "MEASURED 2026-09-14: that query was BROKEN for guests — it asked for user_id and "
+      + "organization_id, identity columns `anon` may not select, so the whole bundle answered 42501 "
+      + "and the guest surface config its own comment promises never arrived (ten such 401s on "
+      + "production in 24 h). The guest branch now omits both; a guest can only ever see rows where "
+      + "they are null. DD-230 also cut created_at and visibility.",
   },
   {
     relation: "ui.ui_surface_agent_role",
     columns: [
       "surface_name", "name", "label", "description", "kind", "default_agent_id",
-      "max_agents", "allow_custom", "auto_run", "sort_order", "created_at", "updated_at",
-      "mandate_key", "synced_from", "id", "visibility",
+      "max_agents", "allow_custom", "auto_run", "sort_order", "mandate_key",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ui.ui_surface_client_tool",
-    columns: [
-      "surface_name", "name", "label", "description", "input_schema", "mode",
-      "created_at", "updated_at", "synced_from", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "features/surfaces/services/surface-config.service.ts#fetchSurfaceConfigBundle, which awaits "
+      + "getUser() and then reads DELIBERATELY as a guest — its own comment: \"a genuine guest still "
+      + "receives the public surface config\". Its .select() names ten; `surface_name` is the eleventh "
+      + "because PostgREST cannot filter on a column the role may not select. DD-230 cut id, "
+      + "visibility, created_at, updated_at and synced_from.",
   },
   {
     relation: "ui.ui_surface_config",
     columns: [
-      "id", "surface_name", "namespace", "config", "scope_id", "created_at",
-      "updated_at", "deleted_at", "visibility",
+      "id", "surface_name", "namespace", "config", "scope_id", "updated_at",
+      "deleted_at",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ui.ui_surface_value",
-    columns: [
-      "surface_name", "name", "label", "description", "value_type", "always_available",
-      "typical_char_count", "sort_order", "created_at", "updated_at", "auto_context", "group_key",
-      "synced_from", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ui.ui_surface_write_target",
-    columns: [
-      "surface_name", "name", "label", "description", "value_type", "mode",
-      "updates_value", "group_key", "sort_order", "created_at", "updated_at", "apply_policy",
-      "synced_from", "kind_key", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "The same guest bundle's third query — broken for guests in exactly the same way (another ten "
+      + "401s in 24 h) and fixed the same way. DD-230 also cut created_at and visibility.",
   },
   {
     relation: "workbench.heatmap_saves",
@@ -1223,9 +905,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "updated_at", "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "/free/zip-code-heatmap/[id] — an app/(public) route that reads this table directly with the "
+      + "SSR client, which carries no cookie for a signed-out visitor. DD-230 (2026-09-14) replaced "
+      + "DD-186's unevidenced census sentence. Measured caveat: the grant answers 200 but no row "
+      + "currently sits on the public side of the gate, so the READER is named from code, not from a "
+      + "rendered page.",
   },
   {
     relation: "workbench.notes",
@@ -1235,7 +919,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "last_device_id", "project_id", "task_id", "visibility", "deleted_at",
     ],
     why:
-      "The indexable public viewer /p/e/note reads a public note's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
+"The indexable public viewer /p/e/note reads a public note's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
   },
 ];
 
@@ -1278,6 +962,64 @@ export const POSTGREST_EXPOSED_SCHEMAS = [
  * exists to catch — a grant standing on a relation whose policy is closed today
  * and reopens tomorrow, and an RLS-bypassing view, which has no policy at all.
  */
+/**
+ * THE SENTENCE THAT IS NEVER EVIDENCE. DD-186 pasted this claim onto 175 bounds
+ * without measuring one of them, and it survived into 53 rows that contradicted
+ * either their own PUBLIC_EXPOSURE_ALLOWED row or a reader named in this very
+ * file. Any rewording of it is caught here, so the class cannot come back under
+ * a new phrasing.
+ */
+const NO_READER_CLAIM =
+  /no\s+signed[- ]out\s+reader\s+(was\s+)?(found|exists)|nobody\s+signed[- ]out\s+reads/i;
+
+/** One bound whose reason and whose exposure row disagree about the same visitor. */
+export interface ReasonExposureConflict {
+  relation: string;
+  kind: "claims-no-reader-but-is-exposed" | "exposed-with-no-named-reader";
+  why: string;
+  exposureWhy?: string;
+}
+
+/**
+ * REASON/EXPOSURE AGREEMENT (DD-230, 2026-09-14). `ANON_COLUMN_SURFACE` says
+ * WHICH columns a signed-out visitor may read and WHY; `PUBLIC_EXPOSURE_ALLOWED`
+ * says which policies reach that same visitor and why. A bound that says no
+ * signed-out reader exists while an exposure row says "the public pricing page
+ * renders this before sign-in" is not a nuance — one of the two is false, and
+ * until DD-230 twenty relations carried exactly that pair, `billing.price`,
+ * `iam.industries`, `ui.ui_surface` and `tool.executor` among them.
+ *
+ * A `why` is evidence only when it says what was MEASURED. This is deliberately
+ * a TEXT check: the register is prose, the prose is what the next lane reads
+ * before it decides whether to revoke a grant, and prose that lies is the defect
+ * this arm exists to stop.
+ */
+export function classifyReasonExposure(): ReasonExposureConflict[] {
+  const exposed = new Map(
+    PUBLIC_EXPOSURE_ALLOWED.filter((e) => e.cmd === "SELECT" || e.cmd === "ALL").map(
+      (e) => [e.relation, e.why] as const,
+    ),
+  );
+  const out: ReasonExposureConflict[] = [];
+  for (const d of ANON_COLUMN_SURFACE) {
+    if (!NO_READER_CLAIM.test(d.why)) continue;
+    const exposureWhy = exposed.get(d.relation);
+    out.push(
+      exposureWhy !== undefined
+        ? {
+            relation: d.relation,
+            kind: "claims-no-reader-but-is-exposed" as const,
+            why: d.why,
+            exposureWhy,
+          }
+        : // A bound with columns granted and no reader is DD-222's contradiction:
+          // the grant is the half that is wrong. It never belongs in this list.
+          { relation: d.relation, kind: "exposed-with-no-named-reader" as const, why: d.why },
+    );
+  }
+  return out;
+}
+
 export const ANON_COLUMN_SURFACE_QUERY = `
   select n.nspname || '.' || c.relname as relation,
          a.attname as column

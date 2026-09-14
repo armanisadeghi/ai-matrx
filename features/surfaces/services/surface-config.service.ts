@@ -183,15 +183,25 @@ export async function fetchSurfaceConfigBundle(
       .order("sort_order"),
     client
       .schema("ui").from("ui_surface_agent_pref")
+      // DD-230: `user_id` and `organization_id` are identity columns `anon` may
+      // not read, so a GUEST asking for them got 42501 for the whole query and
+      // this bundle threw — the guest surface config the comment above promises
+      // never arrived (measured: ten such 401s on production in 24 h). A guest
+      // can only ever see global rows, where both are null, so the guest read
+      // omits them and fills them in as null.
       .select(
-        "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at",
+        uid
+          ? "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at"
+          : "id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at",
       )
       .is("deleted_at", null)
       .eq("surface_name", surfaceName),
     client
       .schema("ui").from("ui_surface_config")
       .select(
-        "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at",
+        uid
+          ? "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at"
+          : "id, surface_name, namespace, config, scope_id, updated_at",
       )
       .is("deleted_at", null)
       .eq("surface_name", surfaceName),
@@ -218,8 +228,15 @@ export async function fetchSurfaceConfigBundle(
   // blend of OTHER PEOPLE's choices (observed: another user's voice + a
   // third user's speed in the Listening settings, 2026-08-28). A missing
   // session keeps only tier rows with no user_id (global/org).
-  const isMineOrShared = (row: { user_id: string | null }) =>
-    row.user_id === null || row.user_id === uid;
+  // The guest read omits `user_id`/`organization_id` entirely (DD-230: they are
+  // identity columns `anon` may not select), so read them defensively — absent
+  // means "not mine, not any org's", which is exactly what a guest row is.
+  const ownerId = (row: object): string | null =>
+    ((row as { user_id?: string | null }).user_id ?? null);
+  const orgId = (row: object): string | null =>
+    ((row as { organization_id?: string | null }).organization_id ?? null);
+  const isMineOrShared = (row: object) =>
+    ownerId(row) === null || ownerId(row) === uid;
 
   return {
     surfaceName,
@@ -246,8 +263,8 @@ export async function fetchSurfaceConfigBundle(
       kind: p.kind as "selection" | "roster_item",
       position: p.position,
       settings: (p.settings ?? {}) as Record<string, unknown>,
-      userId: p.user_id,
-      organizationId: p.organization_id,
+      userId: ownerId(p),
+      organizationId: orgId(p),
       scopeId: p.scope_id,
       updatedAt: p.updated_at,
     })),
@@ -256,8 +273,8 @@ export async function fetchSurfaceConfigBundle(
       surfaceName: c.surface_name,
       namespace: c.namespace,
       config: c.config,
-      userId: c.user_id,
-      organizationId: c.organization_id,
+      userId: ownerId(c),
+      organizationId: orgId(c),
       scopeId: c.scope_id,
       updatedAt: c.updated_at,
     })),

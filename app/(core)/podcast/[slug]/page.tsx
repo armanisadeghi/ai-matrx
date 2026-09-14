@@ -1,4 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
+import {
+  PC_ARTICLE_PUBLIC_SELECT,
+  PC_EPISODE_PUBLIC_SELECT,
+  PC_EPISODE_WITH_SHOW_PUBLIC_SELECT,
+  PC_SHOW_PUBLIC_SELECT,
+} from "@/features/podcasts/publicColumns";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
@@ -41,9 +47,9 @@ const resolveSlug = cache(async (slug: string) => {
   // Try episode first — include all show fields needed for display and OG metadata
   const episodeQuery = supabase
     .schema("podcast").from("pc_episodes")
-    .select(
-      "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    )
+    // `anon` holds a COLUMN grant on these tables, so a `*` here is 42501 for
+    // every signed-out visitor — the columns are named (DD-230).
+    .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT)
     .is("deleted_at", null);
 
   const { data: episode } = isUUID(slug)
@@ -55,7 +61,11 @@ const resolveSlug = cache(async (slug: string) => {
   }
 
   // Try show (slug or UUID)
-  const showQuery = supabase.schema("podcast").from("pc_shows").select("*").is("deleted_at", null);
+  const showQuery = supabase
+    .schema("podcast")
+    .from("pc_shows")
+    .select(PC_SHOW_PUBLIC_SELECT)
+    .is("deleted_at", null);
 
   const { data: show } = isUUID(slug)
     ? await showQuery.eq("id", slug).single()
@@ -159,7 +169,7 @@ export default async function PodcastPage({
     const supabase = await createClient();
     const { data: articles } = await supabase
       .schema("podcast").from("pc_articles")
-      .select("*")
+      .select(PC_ARTICLE_PUBLIC_SELECT)
       .is("deleted_at", null)
       .eq("episode_id", result.data.id)
       .eq("status", "published");
@@ -195,7 +205,7 @@ export default async function PodcastPage({
   const supabase = await createClient();
   const { data: episodes } = await supabase
     .schema("podcast").from("pc_episodes")
-    .select("*")
+    .select(PC_EPISODE_PUBLIC_SELECT)
     .is("deleted_at", null)
     .eq("show_id", result.data.id)
     .eq("is_published", true)
