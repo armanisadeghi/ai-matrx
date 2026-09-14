@@ -771,10 +771,18 @@ async function main(): Promise<void> {
     );
     writeFileSync(`${OUT_DIR}/parity-report.md`, markdown(results, skipped));
 
-    const differs = results.filter((r) => r.verdict !== "match");
+    // Same rule as the --check reporter below: a body that never rendered was
+    // never compared, so it is counted as such and never as a difference.
+    // The old line said "8 differ · 0 not compared" for a run in which nothing
+    // was measured at all.
+    const neverRendered = results.filter((r) => r.verdict === "did-not-render");
+    const differs = results.filter((r) => r.verdict === "differs");
+    const matched = results.filter((r) => r.verdict === "match");
     // eslint-disable-next-line no-console
     console.log(
-        `\n${results.length} bodies compared · ${results.length - differs.length} match · ${differs.length} differ · ${skipped.length} not compared`,
+        `\n${results.length - neverRendered.length} bodies compared · ${matched.length} match · ${differs.length} differ · ${
+            skipped.length + neverRendered.length
+        } not compared${neverRendered.length ? ` (${neverRendered.length} never rendered)` : ""}`,
     );
     // eslint-disable-next-line no-console
     console.log(`report → ${OUT_DIR}/parity-report.md`);
@@ -811,7 +819,27 @@ async function main(): Promise<void> {
 
     if (isCheck) {
         const failures: string[] = [];
+        const nothingRendered =
+            results.length > 0 &&
+            results.every((r) => r.verdict === "did-not-render");
         for (const r of results) {
+            // A BODY THAT NEVER RENDERED IS NOT A PARITY RESULT. `runBatch`
+            // already refuses to let a page that never loaded look like a
+            // difference — but until 2026-09-13 this reporter undid that one
+            // line later: `?? 100` turned every did-not-render into
+            // "now renders 100.000 % different … something changed the frame's
+            // stylesheet", naming three causes that were all false. A whole
+            // run of eight came back that way with the real cause (no dev
+            // server for THIS checkout on the origin) printed nowhere. The
+            // run still fails — it proved nothing — but it says what happened.
+            if (r.verdict === "did-not-render") {
+                failures.push(
+                    `\`${r.componentKey}\` never rendered, so nothing was compared — this is NOT a parity difference. ${
+                        r.note ?? `The parity page never finished loading at ${ORIGIN}.`
+                    } Start this checkout's own dev server (pnpm preview:start) or point the sweep at it with PARITY_ORIGIN, then run the check again.`,
+                );
+                continue;
+            }
             const allowed = baseline!.results[r.componentKey];
             if (allowed === undefined) {
                 failures.push(
@@ -842,7 +870,17 @@ async function main(): Promise<void> {
         if (failures.length) {
             // eslint-disable-next-line no-console
             console.error(
-                `\n✗ Sandbox rendering parity regressed:\n  - ${failures.join("\n  - ")}\n\n  Look at ${OUT_DIR}/shots for the two pictures of each body.\n`,
+                // The banner has to match the failures under it. A run in which
+                // nothing rendered proved nothing about parity — calling that
+                // "parity regressed" sends the next reader hunting a stylesheet
+                // change that never happened.
+                nothingRendered
+                    ? `\n✗ The parity check could not run — nothing was rendered, so parity is UNKNOWN, not regressed:\n  - ${failures.join(
+                          "\n  - ",
+                      )}\n`
+                    : `\n✗ Sandbox rendering parity regressed:\n  - ${failures.join(
+                          "\n  - ",
+                      )}\n\n  Look at ${OUT_DIR}/shots for the two pictures of each body.\n`,
             );
             process.exit(1);
         }
