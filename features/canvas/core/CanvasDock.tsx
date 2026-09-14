@@ -128,10 +128,11 @@ export function CanvasDock({
     if (!panel) return;
     if (shouldShow) {
       if (panel.isCollapsed()) panel.expand();
-      // `expand()` restores the pre-collapse size, which is 0-ish on a fresh
-      // page; drive it to the remembered ratio explicitly.
-      const size = panel.getSize();
-      if (!size || size.asPercentage < 5) panel.resize(`${dockRatio}%`);
+      // ALWAYS resize to the remembered ratio, never trust `expand()` alone:
+      // it restores the PRE-COLLAPSE size, and on a freshly loaded page there
+      // is no pre-collapse size — the library falls back to `minSize`, so the
+      // width the user dragged to last week would be silently ignored.
+      panel.resize(`${dockRatio}%`);
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }

@@ -318,18 +318,16 @@ describe("the canvas docks beside the chat instead of covering it", () => {
     await act(async () => {});
     flushResizeObservers();
 
-    // A settled layout writes the ratio through; simulate the settle the way
-    // the library reports it.
-    expect(
-      Number.isFinite(store.getState().canvas.dockRatio),
-    ).toBe(true);
+    expect(Number.isFinite(store.getState().canvas.dockRatio)).toBe(true);
+    // What a settled drag leaves behind.
     window.localStorage.setItem("matrx.canvas.dock.ratio", "55");
 
+    // A reload: a brand-new store, nothing in memory.
     const reloaded = makeStore();
     await act(async () => {
       root.render(
         <Provider store={reloaded}>
-          <CanvasDock groupId="test-dock">
+          <CanvasDock groupId="test-dock-reloaded">
             <ThreadBody />
           </CanvasDock>
         </Provider>,
@@ -337,6 +335,20 @@ describe("the canvas docks beside the chat instead of covering it", () => {
     });
     flushResizeObservers();
     expect(reloaded.getState().canvas.dockRatio).toBe(55);
+
+    await act(async () => {
+      reloaded.dispatch(openCanvas(CONTENT));
+    });
+    flushResizeObservers();
+    await act(async () => {});
+    flushResizeObservers();
+
+    // THE GUARD: it opens at the width the user chose, not at minSize.
+    // `expand()` alone restores the PRE-COLLAPSE size, which does not exist on
+    // a freshly loaded page — the library would fall back to minSize (24%) and
+    // the remembered 55% would be silently lost.
+    const canvasPanel = panelEl(container, CANVAS_DOCK_PANEL_ID);
+    expect(Math.round(canvasPanel.offsetWidth)).toBe(550);
   });
 });
 
