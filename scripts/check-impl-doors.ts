@@ -163,6 +163,21 @@
  *       `scripts/impl-doors/closed-helper-reach-baseline.json`, each with a
  *       reason; the file may only shrink and a stale entry fails.
  *
+ *   D19 No `platform.client_callable_door` row's function body names a schema-
+ *       qualified relation the catalogue does not have. DD-235 (2026-09-14):
+ *       `communication.set_my_sms_assistant_enabled` and
+ *       `public.masterwork_improvement_summary` both named `agent.mandate`, which
+ *       the Phase 1W mandate detach retired on 2026-08-29 in favour of
+ *       `mandate.definition`. Both answered EVERY caller — the victim's own
+ *       identical call included — with `42P01 relation "agent.mandate" does not
+ *       exist`, proven live over HTTPS as test@test.com. A body is parsed, not
+ *       bound, at CREATE time and PostgreSQL records no dependency from it to the
+ *       relations it names, so a rename leaves the door syntactically valid and
+ *       broken forever; and in `check:door-rows` a permanently broken door reads
+ *       as UNMEASURED, i.e. as a coverage gap rather than a defect. Findings carry
+ *       the successor from `platform.deprecated_relations` when there is one.
+ *       ABSOLUTE: no baseline, no allowlist.
+ *
  *   D13 Every `platform.client_callable_door` row's `anonymous_callers` flag
  *       says the same thing as the live `anon` EXECUTE grant on its function.
  *       DD-212 (2026-09-14) made the FLAG the declaration — before it, D5/D9 and
@@ -1318,6 +1333,102 @@ function loadByDesignAllowlist(): ByDesignAllowlist | null {
   }
 }
 
+// ─── D19: a door never names a relation the catalog does not have ────────────
+//
+// DD-235 (B-125, 2026-09-14). Measured live over HTTPS as test@test.com, before
+// the fix:
+//
+//   rpc/set_my_sms_assistant_enabled   -> 42P01 relation "agent.mandate" does not exist
+//   rpc/masterwork_improvement_summary -> 42P01 relation "agent.mandate" does not exist
+//
+// Neither answer depends on the caller, so neither is an authorization decision:
+// the two SECURITY DEFINER bodies named a relation this database does not have,
+// and NO caller could open either door. `agent.mandate` was retired by the Phase
+// 1W mandate detach on 2026-08-29 and `platform.deprecated_relations` has named
+// its successor (`mandate.definition`) ever since — nothing re-read the bodies.
+//
+// WHY NOTHING ELSE CATCHES THIS. A plpgsql or sql body is parsed, not bound, at
+// CREATE time: PostgreSQL records no dependency from the body to the relations it
+// names, so renaming or dropping one leaves every body that names it syntactically
+// valid and permanently broken at run time. The door registry, the §6d-4 guard,
+// D13/D15/D16 and the by-design allowlist all ask WHO may open a door; none of
+// them asks whether the door opens onto anything. `check:door-rows` calls doors
+// for real, which is the only other place this could surface — and there it lands
+// in the UNMEASURED bucket as "the call failed for a non-authorization reason",
+// where a permanently broken door reads exactly like a probe with bad arguments.
+// A broken door must be a FINDING, not a coverage gap.
+//
+// WHAT IT READS. Every `platform.client_callable_door` row that resolves to a live
+// non-C function (joined on `identity_argtypes`, like every other arm here). The
+// body has its block comments, dollar-quoted inner blocks, line comments and
+// string literals stripped — in that order — so prose and dynamic SQL cannot make
+// a finding. From what is left it takes every schema-qualified name in RELATION
+// POSITION (`from` / `join` / `update` / `into`, with an optional `only`), which
+// is the one position where `a.b` can only be a relation or a set-returning
+// function, never `alias.column`. A name passes when its schema holds a relation
+// OR a function of that name; an unknown SCHEMA is not a finding, because that is
+// how a record variable's field (`preference.user_id`) reads to a regex. When the
+// missing name is a `platform.deprecated_relations` row, the finding carries its
+// SUCCESSOR, so the fix is in the failure message rather than in a follow-up hunt.
+//
+// ABSOLUTE: no baseline, no allowlist. A door the catalog cannot serve is broken
+// for every caller, so the population is zero and zero is the only correct number.
+const DOOR_NAMES_MISSING_RELATION_QUERY = `
+  with door_body as (
+    select d.schema_name || '.' || d.function_name as fn,
+           d.identity_args as args,
+           regexp_replace(
+             regexp_replace(
+               regexp_replace(
+                 regexp_replace(
+                   regexp_replace(p.prosrc, '/\\*.*?\\*/', ' ', 'gs'),
+                 '\\$[a-zA-Z_][a-zA-Z0-9_]*\\$.*?\\$[a-zA-Z_][a-zA-Z0-9_]*\\$', ' ', 'gs'),
+               '\\$\\$.*?\\$\\$', ' ', 'gs'),
+             '--[^' || chr(10) || ']*', ' ', 'g'),
+           '''(''''|[^''])*''', ' ', 'g') as body
+      from platform.client_callable_door d
+      join pg_catalog.pg_namespace n on n.nspname = d.schema_name
+      join pg_catalog.pg_proc p
+        on p.pronamespace = n.oid
+       and p.proname = d.function_name
+       and ${FN_KEY} = ${DOOR_KEY}
+     where p.prolang <> (select oid from pg_catalog.pg_language where lanname = 'c')
+  ),
+  named as (
+    select b.fn, b.args, lower(m[1]) as sch, lower(m[2]) as rel
+      from door_body b,
+           lateral regexp_matches(
+             b.body,
+             '\\m(?:from|join|update|into)\\s+(?:only\\s+)?([a-zA-Z_][a-zA-Z0-9_$]*)\\.([a-zA-Z_][a-zA-Z0-9_$]*)',
+             'gi') as m
+  )
+  select distinct
+         named.fn,
+         named.args,
+         named.sch || '.' || named.rel as missing_ref,
+         coalesce(dep.new_ref, '(no successor recorded)') as successor
+    from named
+    join pg_catalog.pg_namespace ns on ns.nspname = named.sch
+    left join platform.deprecated_relations dep
+      on lower(dep.old_ref) = named.sch || '.' || named.rel
+   where not exists (
+           select 1 from pg_catalog.pg_class c
+            where c.relnamespace = ns.oid and c.relname = named.rel
+         )
+     and not exists (
+           select 1 from pg_catalog.pg_proc pr
+            where pr.pronamespace = ns.oid and pr.proname = named.rel
+         )
+   order by 1, 2, 3
+`;
+
+interface DoorMissingRelationRow {
+  fn: string;
+  args: string;
+  missing_ref: string;
+  successor: string;
+}
+
 // ─── D18: no closed helper is reached by a client path ───────────────────────
 //
 // See the D18 header note. `closed` is (role, schema, name) where NO overload is
@@ -1549,6 +1660,7 @@ async function main(): Promise<number> {
   let doorGrantMismatches: DoorGrantRow[];
   let undeclaredClientDefiners: UndeclaredClientDefinerRow[];
   let closedHelperReach: ClosedHelperReachRow[];
+  let doorsNamingMissingRelations: DoorMissingRelationRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -1622,6 +1734,10 @@ async function main(): Promise<number> {
     undeclaredClientDefiners = await q<UndeclaredClientDefinerRow>(
       UNDECLARED_CLIENT_DEFINER_QUERY,
       "D16b client-executable SECURITY DEFINER functions with no door row",
+    );
+    doorsNamingMissingRelations = await q<DoorMissingRelationRow>(
+      DOOR_NAMES_MISSING_RELATION_QUERY,
+      "D19 doors naming a relation the catalog does not have",
     );
     closedHelperReach = [];
     for (const kind of REACH_KINDS) {
@@ -2516,6 +2632,32 @@ async function main(): Promise<number> {
         );
       }
     }
+  }
+
+  // ── D19 ───────────────────────────────────────────────────────────────────
+  if (doorsNamingMissingRelations.length === 0) {
+    console.log(
+      `${TAG.ok}D19 no client-callable door names a relation the catalog does not have ${C.dim}(DD-235)${C.reset}`,
+    );
+  } else {
+    findings += doorsNamingMissingRelations.length;
+    console.log(
+      `${TAG.fail}D19 ${doorsNamingMissingRelations.length} door body(ies) name a relation this database does not have — each is a 42P01 for EVERY caller:`,
+    );
+    for (const r of doorsNamingMissingRelations) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.missing_ref} (successor: ${r.successor})${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A body is parsed, not bound, at CREATE time, so a renamed or dropped relation leaves the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       door syntactically valid and broken for everyone. Replace the body against the live${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       catalogue in a migration (pnpm db:based-on, then pnpm db:apply) — never re-grant around it.${C.reset}`,
+    );
   }
 
   if (findings === 0) {
