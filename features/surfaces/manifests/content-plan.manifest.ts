@@ -305,6 +305,7 @@ const planViewNames: readonly PlanView[] = [
   "entities",
   "setup",
   "ai-runs",
+  "brief",
 ];
 
 /**
@@ -455,7 +456,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
  */
 export function createContentPlanScope(values: {
   // alwaysAvailable: true → required
-  view: "tree" | "table" | "map" | "entities" | "setup" | "ai-runs";
+  view: "tree" | "table" | "map" | "entities" | "setup" | "ai-runs" | "brief";
   site_research_lineage: Record<string, unknown>;
   // alwaysAvailable: false → optional
   site_id?: string;

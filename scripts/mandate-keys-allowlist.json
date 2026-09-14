@@ -17,6 +17,6 @@
   {
     "file": "features/surfaces/manifests/content-plan.manifest.ts",
     "key": "seo.strategy.site_brief.generate",
-    "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate \u2014 the site brief writer) and live; @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
+    "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate \u2014 the site brief writer); its mandate.definition row lands with that deploy + mandate sync, and @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
   }
 ]
