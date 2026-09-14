@@ -69,10 +69,19 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  *    admin reads 0 of 307. `credential_item` left the open set in the same edit: DD-137b11 had
  *    already closed its policies and left `suppress_platform_admin_lane` false, which was the only
  *    reason this guard kept reporting it;
- *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
- *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
- *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to
- *    inherit; it is a legal reference catalogue, and the REGISTRY defect is what wants fixing;
+ *  - ~~`wc_impairment_definition`~~ — REMOVED 2026-09-14 by DD-219 (lane B-112), and removed here in
+ *    the same commit because this list fails in both directions. It was a registered COMPONENT with
+ *    no composition parent, so it resolved `private` by the parentless fallback while a bespoke
+ *    `auth_read USING (true)` handed all 215 rows to every signed-in user. The registry defect this
+ *    entry pointed at is now fixed rather than tolerated: the California impairment schedule is
+ *    registered for what it is — `rls_variant = system`, `data_class = public`, the Matrx System
+ *    org, `visibility = 'public'` — so it no longer resolves `private` at all and has left this
+ *    guard's universe (component tokens 135 -> 134). Its counterpart entry in the APPLIED migration
+ *    `migrations/iam_component_regeneration_dd137b13_gate.sql` is deliberately NOT edited: that file
+ *    is ledgered in `public._schema_migrations` under the SHA-256 of its own bytes and is a one-shot
+ *    record of a 2026-09-12 run pinned to a DD-137b12a baseline. Editing it would make the ledger
+ *    disagree with the file and destroy the evidence of what actually ran, which is exactly what
+ *    `pnpm check:migrations` exists to catch. A historical record is not a live residue list;
  *  - `billing_stripe_event` — ADDED 2026-09-12 by DD-163 (lane B-57), and it is the one entry here
  *    that is a DECISION rather than a defect waiting for a lane. B-46 censused five tables carrying
  *    a RESTRICTIVE `FOR ALL platform_admin_only` wall over live permissive lanes; four of them were
@@ -87,7 +96,6 @@ const RESIDUE_TOKENS: ReadonlySet<string> = new Set([
   "access_request", "agent_surface_binding", "industry_curator", "invitation", "membership",
   "system_personal_org_failure",
   "user_analysis_preference", "user_form_profile", "user_preference", "wbx_guidance",
-  "wc_impairment_definition",
   "billing_stripe_event",
 ]);
 

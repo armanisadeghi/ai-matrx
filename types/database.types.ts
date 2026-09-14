@@ -54680,33 +54680,54 @@ export type Database = {
       wc_impairment_definition: {
         Row: {
           attributes: Json | null
+          created_at: string
+          created_by: string | null
           fec_rank: number | null
           finger_type: Database["legal"]["Enums"]["wc_finger_type"] | null
           id: string
           impairment_number: string | null
           metadata: Json
           name: string | null
+          organization_id: string
           search_aliases: string[]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           attributes?: Json | null
+          created_at?: string
+          created_by?: string | null
           fec_rank?: number | null
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
           metadata?: Json
           name?: string | null
+          organization_id: string
           search_aliases?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           attributes?: Json | null
+          created_at?: string
+          created_by?: string | null
           fec_rank?: number | null
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
           metadata?: Json
           name?: string | null
+          organization_id?: string
           search_aliases?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
