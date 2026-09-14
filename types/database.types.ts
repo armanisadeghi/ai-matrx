@@ -52891,6 +52891,7 @@ export type Database = {
         Args: { p_action: string; p_row_org?: string; p_token: string }
         Returns: boolean
       }
+      class_gate_class: { Args: { p_token: string }; Returns: string }
       class_lanes: {
         Args: { p_token: string }
         Returns: Database["platform"]["CompositeTypes"]["lane_set"]
@@ -59360,8 +59361,10 @@ export type Database = {
           gate_predicate: string | null
           id: string
           identity_args: string
+          non_client_lane: string | null
           reason: string
           schema_name: string
+          signed_in_callers: boolean
         }
         Insert: {
           anonymous_callers?: boolean
@@ -59372,8 +59375,10 @@ export type Database = {
           gate_predicate?: string | null
           id?: string
           identity_args: string
+          non_client_lane?: string | null
           reason: string
           schema_name: string
+          signed_in_callers?: boolean
         }
         Update: {
           anonymous_callers?: boolean
@@ -59384,8 +59389,52 @@ export type Database = {
           gate_predicate?: string | null
           id?: string
           identity_args?: string
+          non_client_lane?: string | null
           reason?: string
           schema_name?: string
+          signed_in_callers?: boolean
+        }
+        Relationships: []
+      }
+      client_callable_door_retirement: {
+        Row: {
+          function_name: string
+          id: string
+          identity_args: string
+          retired_at: string
+          retired_by: string
+          retired_reason: string
+          retirement_class: string
+          schema_name: string
+          successor: string
+          was_declared_by: string | null
+          was_reason: string
+        }
+        Insert: {
+          function_name: string
+          id?: string
+          identity_args: string
+          retired_at?: string
+          retired_by: string
+          retired_reason: string
+          retirement_class: string
+          schema_name: string
+          successor: string
+          was_declared_by?: string | null
+          was_reason: string
+        }
+        Update: {
+          function_name?: string
+          id?: string
+          identity_args?: string
+          retired_at?: string
+          retired_by?: string
+          retired_reason?: string
+          retirement_class?: string
+          schema_name?: string
+          successor?: string
+          was_declared_by?: string | null
+          was_reason?: string
         }
         Relationships: []
       }
