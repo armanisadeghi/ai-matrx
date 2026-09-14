@@ -74,13 +74,20 @@ function makeStore() {
   return configureStore({ reducer: { canvas: canvasSlice.reducer } });
 }
 
-/** Desktop by default — the dock deliberately stands down on a phone. */
-function mockViewport(isMobile: boolean) {
+/**
+ * A viewport of `widthPx`, answered the way the real matchMedia would. The
+ * dock asks `(min-width: 1024px)`; `useIsMobile` asks `(max-width: 767px)`.
+ */
+function mockViewport(widthPx: number) {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
     value: (query: string) => ({
-      matches: query.includes("max-width: 767px") ? isMobile : false,
+      matches: query.includes("min-width: 1024px")
+        ? widthPx >= 1024
+        : query.includes("max-width: 767px")
+          ? widthPx <= 767
+          : false,
       media: query,
       addEventListener: () => {},
       removeEventListener: () => {},
@@ -126,7 +133,7 @@ describe("the canvas docks beside the chat instead of covering it", () => {
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
-    mockViewport(false);
+    mockViewport(1440);
     setGroupPx(1000);
     restoreGeometry = installPanelGeometry();
     container = document.createElement("div");
@@ -352,13 +359,13 @@ describe("the canvas docks beside the chat instead of covering it", () => {
   });
 });
 
-describe("a phone has no room for two columns", () => {
+describe("a screen with no room for two columns keeps the sheet", () => {
   let restoreGeometry: () => void;
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
-    mockViewport(true);
+    mockViewport(390);
     setGroupPx(390);
     restoreGeometry = installPanelGeometry();
     container = document.createElement("div");
@@ -401,6 +408,35 @@ describe("a phone has no room for two columns", () => {
       container.querySelector('[data-testid="dock-canvas-body"]'),
     ).toBeNull();
     expect(panelEl(container, "canvas-dock-main").offsetWidth).toBe(390);
+  });
+
+  it("also stands down on a narrow tablet, where a 24% column is unusable", async () => {
+    // 900px: wide enough that `useIsMobile` says desktop, far too narrow for
+    // two readable columns. Gating the dock on the phone breakpoint alone
+    // would have produced a ~220px canvas nothing renders well in.
+    mockViewport(900);
+    setGroupPx(900);
+    const store = makeStore();
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <CanvasDock groupId="test-dock-tablet">
+            <ThreadBody />
+          </CanvasDock>
+        </Provider>,
+      );
+    });
+    flushResizeObservers();
+
+    await act(async () => {
+      store.dispatch(openCanvas(CONTENT));
+    });
+    flushResizeObservers();
+    await act(async () => {});
+    flushResizeObservers();
+
+    expect(selectCanvasIsDocked(store.getState())).toBe(false);
+    expect(panelEl(container, "canvas-dock-main").offsetWidth).toBe(900);
   });
 });
 

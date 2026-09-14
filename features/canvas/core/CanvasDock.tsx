@@ -21,8 +21,9 @@
  * THE OVERLAY IS THE FALLBACK, NOT THE DEFAULT. While a dock is mounted the
  * slice carries `dockHosts > 0` and `CanvasSideSheet` renders nothing, so the
  * two presentations can never both be on screen. A dock deliberately does NOT
- * register on a phone: there is no room for two columns at 390px, so the sheet
- * (full-bleed, modal) stays right there.
+ * register below `DOCK_MIN_VIEWPORT_PX`: there is no room for two readable
+ * columns on a phone or a narrow tablet, so the full-bleed sheet stays right
+ * there — and it follows a window resize live, in both directions.
  *
  * Structure notes that matter:
  *  - The `<Group>` is ALWAYS rendered, open or closed. Swapping between a bare
@@ -34,7 +35,7 @@
  *    actually exists.
  */
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -52,8 +53,32 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+
+/**
+ * A split needs room for TWO readable columns. Below this the canvas column
+ * would be a 250px slot nothing renders well in, and the thread beside it
+ * would be narrower than it is on a phone — so the full-bleed sheet is the
+ * honest answer there, exactly as it is at 390px. Claude.ai, Cursor and VS
+ * Code all draw the same line around a laptop width.
+ */
+const DOCK_MIN_VIEWPORT_PX = 1024;
+const DOCK_QUERY = `(min-width: ${DOCK_MIN_VIEWPORT_PX}px)`;
+
+function subscribeToDockQuery(onChange: () => void) {
+  const mq = window.matchMedia(DOCK_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+/** True only where there is room for two columns. False during SSR. */
+function useHasRoomToDock() {
+  return useSyncExternalStore(
+    subscribeToDockQuery,
+    () => window.matchMedia(DOCK_QUERY).matches,
+    () => false,
+  );
+}
 
 const CanvasDockBody = dynamic(
   () => import("./CanvasDockBody").then((m) => m.CanvasDockBody),
@@ -92,14 +117,14 @@ export function CanvasDock({
   className?: string;
 }) {
   const dispatch = useAppDispatch();
-  const isMobile = useIsMobile();
+  const hasRoomToDock = useHasRoomToDock();
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const currentItemId = useAppSelector(selectCurrentItemId);
   const dockRatio = useAppSelector(selectCanvasDockRatio);
   const panelRef = useRef<PanelImperativeHandle | null>(null);
 
-  // A phone has no room for two columns — leave the sheet in charge there.
-  const dockActive = !isMobile;
+  // No room for two columns → leave the overlay sheet in charge.
+  const dockActive = hasRoomToDock;
 
   useEffect(() => {
     if (!dockActive) return undefined;
