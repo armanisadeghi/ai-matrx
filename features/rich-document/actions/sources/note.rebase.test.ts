@@ -8,6 +8,7 @@ const persistNoteUpdate = jest.fn();
 jest.mock("@/features/notes/service/notesService", () => ({ persistNoteUpdate }));
 
 import { noteAdapter } from "./note";
+import { captureNoteEditSource } from "@/features/notes/richDocumentSource";
 
 describe("noteAdapter.edit", () => {
   it("passes the acknowledged edit base so the service can rebase a phantom CAS miss", async () => {
@@ -20,11 +21,13 @@ describe("noteAdapter.edit", () => {
       folder_name: "Draft", folder_id: "f1", tags: ["a"], metadata: {}, visibility: "personal",
       position: 0, project_id: null, task_id: null,
     };
-    const source = {
-      type: "note", mode: "editable", noteId: NOTE, sourceId: "source-1", snapshotId: "snapshot-1",
-      editBase: { noteId: NOTE, version: 4, organizationId: ORG, actorId: USER },
-      acknowledgedPhysicalSnapshot: snapshot, displayedPhysicalSnapshot: snapshot,
-    };
+    const source = captureNoteEditSource({
+      acknowledgedNote: snapshot as never,
+      displayedNote: snapshot as never,
+      actorId: USER,
+      sourceId: "source-1",
+      snapshotId: "snapshot-1",
+    });
     await noteAdapter.edit({ newContent: "edited", source } as never);
     expect(persistNoteUpdate).toHaveBeenCalledWith(NOTE, { content: "edited" }, expect.objectContaining({
       expectedVersion: 4,
