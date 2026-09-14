@@ -94,6 +94,9 @@ function snapshotUnsavedWork(bootedId: string, currentId: string): number {
 // visibility checks are the primary cross-tab signal; this is the backstop
 // for a tab the user never blurs (long editing sessions).
 const IDENTITY_RECHECK_INTERVAL_MS = 60_000;
+// An empty cookie is acted on only when a second read, this long later, is
+// still empty — @supabase/ssr rewrites the chunked cookie during a refresh.
+const EMPTY_COOKIE_CONFIRM_MS = 1_500;
 
 // Cross-tab "the auth cookie may have changed" nudge. Deliberately NOT the
 // `matrx-sync` channel: that one is identity-gated by design (a message from
@@ -198,6 +201,66 @@ export default function AuthSessionWatcher() {
     }
   }, [scheduleReload]);
 
+  /**
+   * The authority cutoff for a tab whose session is gone. Reached from the
+   * in-tab SIGNED_OUT event AND from a confirmed empty cookie read (a sign-out
+   * in another tab of this browser fires no event here — before 2026-09-13
+   * such a tab kept running on a dead session until someone else signed in).
+   */
+  const onSignedOut = useCallback(() => {
+    // Sign-out ends this tab's write path too — keep a copy of anything
+    // still unsaved before the overlay goes up.
+    captureDrafts("signed-out");
+    setSessionExpired(true);
+    // This is the authority cutoff, not merely overlay state. Global
+    // identity-scoped islands key their lifetimes off Redux; leaving the
+    // boot-time id/token there keeps them mounted after Supabase has
+    // become anon and fans one expiry into unrelated 42501 failures.
+    dispatch(clearUserAuth());
+    // The store is a module-level singleton that survives a same-tab
+    // sign-out → re-login. Reset the org/scope/context state so the
+    // previous user's active context and cached scope tree never bleed
+    // into the next session. (Legacy agent-context slices have no reset
+    // actions — they are torn down in Phase 5.)
+    //
+    // NOT A DUPLICATE of `sync/identityReset` (lib/sync/engine/identityReset.ts),
+    // and neither one covers the other: that reset is automatic over every
+    // slice registered with `definePolicy` and fires on ANY swap away from
+    // an authenticated identity (person → person included, which this
+    // SIGNED_OUT branch never sees); this hand-written list is the only
+    // thing that reaches `scopes` and `contextValues`, which are not sync
+    // policies and so have no record for the engine to key on. Deleting
+    // either one leaves a real hole — if you make those two slices
+    // policies, delete these lines rather than leaving both.
+    dispatch(clearContext());
+    // The shared active-organization cookie (Domain=.aimatrx.com) is
+    // identity-keyed, but a SIGNED_OUT is the one moment the next person
+    // may be about to sign in on this browser — forget it outright.
+    void import("@/lib/organizations/activeOrgCookie").then((m) =>
+      m.activeOrgCookie.clear(),
+    );
+    dispatch(scopesActions.scopesReset());
+    dispatch(contextValuesActions.contextValuesReset());
+    // Same conditional flush for the Content-IR registries: a session that
+    // loaded kinds while signed in holds the previous user's private
+    // schemas/components in memory. Reload as the now-anon identity so
+    // only public data survives; a session that never demanded a kind
+    // still fetches nothing (THE ZERO-PREFETCH LAW).
+    void import("@/features/content-ir/registry/kind-registry").then(
+      (m) => {
+        if (m.kindRegistry.hasBeenDemanded()) void m.kindRegistry.refresh(0);
+      },
+    );
+    void import("@/features/content-ir/registry/component-registry").then(
+      (m) => {
+        if (m.componentRegistry.hasBeenDemanded()) {
+          void m.componentRegistry.refresh(0);
+        }
+      },
+    );
+  
+  }, [dispatch]);
+
   const checkIdentity = useCallback(async () => {
     const booted = bootedIdRef.current;
     if (!booted) return;
@@ -207,7 +270,21 @@ export default function AuthSessionWatcher() {
     // getSession() re-reads the cookie store — cheap, no network round-trip.
     const { data } = await supabase.auth.getSession();
     const current = data.session?.user;
-    if (current && current.id !== booted) {
+    if (!current) {
+      // Empty cookie: a sign-out in another tab (no event reaches this one).
+      // Confirm on a second read so a cookie mid-rewrite during a token
+      // refresh never reads as a sign-out.
+      await new Promise((r) => setTimeout(r, EMPTY_COOKIE_CONFIRM_MS));
+      if (blockedRef.current) return;
+      const again = await supabase.auth.getSession();
+      if (again.data.session?.user) return;
+      console.warn(
+        "[AuthSessionWatcher] the auth cookie is empty on two reads — this tab's session ended elsewhere. Blocking as Session Expired.",
+      );
+      onSignedOut();
+      return;
+    }
+    if (current.id !== booted) {
       // SNAPSHOT BEFORE BLOCKING. The overlay forces a reload, which discards
       // every in-memory buffer — that is how the last edits of D132 died. The
       // drafts are stamped with the account that wrote them, so they are only
@@ -227,7 +304,7 @@ export default function AuthSessionWatcher() {
       );
       setDriftedToEmail(current.email ?? "another account");
     }
-  }, []);
+  }, [onSignedOut]);
 
   useEffect(() => {
     const broadcast = openAuthBroadcast();
@@ -255,58 +332,7 @@ export default function AuthSessionWatcher() {
           Boolean(bootedIdRef.current) &&
           !session);
 
-      if (lostBootedSession) {
-        // Sign-out ends this tab's write path too — keep a copy of anything
-        // still unsaved before the overlay goes up.
-        captureDrafts("signed-out");
-        setSessionExpired(true);
-        // This is the authority cutoff, not merely overlay state. Global
-        // identity-scoped islands key their lifetimes off Redux; leaving the
-        // boot-time id/token there keeps them mounted after Supabase has
-        // become anon and fans one expiry into unrelated 42501 failures.
-        dispatch(clearUserAuth());
-        // The store is a module-level singleton that survives a same-tab
-        // sign-out → re-login. Reset the org/scope/context state so the
-        // previous user's active context and cached scope tree never bleed
-        // into the next session. (Legacy agent-context slices have no reset
-        // actions — they are torn down in Phase 5.)
-        //
-        // NOT A DUPLICATE of `sync/identityReset` (lib/sync/engine/identityReset.ts),
-        // and neither one covers the other: that reset is automatic over every
-        // slice registered with `definePolicy` and fires on ANY swap away from
-        // an authenticated identity (person → person included, which this
-        // SIGNED_OUT branch never sees); this hand-written list is the only
-        // thing that reaches `scopes` and `contextValues`, which are not sync
-        // policies and so have no record for the engine to key on. Deleting
-        // either one leaves a real hole — if you make those two slices
-        // policies, delete these lines rather than leaving both.
-        dispatch(clearContext());
-        // The shared active-organization cookie (Domain=.aimatrx.com) is
-        // identity-keyed, but a SIGNED_OUT is the one moment the next person
-        // may be about to sign in on this browser — forget it outright.
-        void import("@/lib/organizations/activeOrgCookie").then((m) =>
-          m.activeOrgCookie.clear(),
-        );
-        dispatch(scopesActions.scopesReset());
-        dispatch(contextValuesActions.contextValuesReset());
-        // Same conditional flush for the Content-IR registries: a session that
-        // loaded kinds while signed in holds the previous user's private
-        // schemas/components in memory. Reload as the now-anon identity so
-        // only public data survives; a session that never demanded a kind
-        // still fetches nothing (THE ZERO-PREFETCH LAW).
-        void import("@/features/content-ir/registry/kind-registry").then(
-          (m) => {
-            if (m.kindRegistry.hasBeenDemanded()) void m.kindRegistry.refresh(0);
-          },
-        );
-        void import("@/features/content-ir/registry/component-registry").then(
-          (m) => {
-            if (m.componentRegistry.hasBeenDemanded()) {
-              void m.componentRegistry.refresh(0);
-            }
-          },
-        );
-      }
+      if (lostBootedSession) onSignedOut();
       if (
         event === "SIGNED_IN" ||
         event === "USER_UPDATED" ||
@@ -429,7 +455,7 @@ export default function AuthSessionWatcher() {
         reloadTimerRef.current = null;
       }
     };
-  }, [dispatch, checkIdentity, reconcileBlockedTab]);
+  }, [dispatch, checkIdentity, reconcileBlockedTab, onSignedOut]);
 
   if (driftedToEmail) {
     return (
