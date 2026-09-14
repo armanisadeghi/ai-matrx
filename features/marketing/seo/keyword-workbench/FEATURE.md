@@ -109,14 +109,12 @@ Two deliberate choices worth knowing:
 | `components/DimensionValuePicker.tsx` | The two-step dimension→value **composition** over the canonical `CreatablePicker`. |
 | `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". The UI is this surface's own; the CRUD underneath (`listSavedViews`/`saveView`/`deleteSavedView`) is the shared `keyword-table/savedViews.ts` (KI-021). |
 | `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
-| `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the name, its root, who placed it, the inherited-placement (i), and the picker behind it. |
-| `components/InheritedPlacementMarker.tsx` | The tiny (i) beside an INHERITED Offering: which rung ruled (brand / organization / platform), what that means, and "Make it this site's own" through the same one placement write. Renders nothing for a site's own ruling. |
-| `scope-tiers.ts` | THE PLACEMENT LADDER vocabulary for `seo.keyword_topic.scope_tier`, said once and shared by the marker, the keyword dossier and the opt-in diff queue. NOT `engine_schedule.scope_tier` — different table, different ladder. |
-| `components/OfferingPicker.tsx` | The tree-shaped, creatable offering picker shared by the cell, the bulk panel, and the filter. |
-| `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
-| `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (the shared bar cannot name a topic). |
-| `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
-| `data.ts` | The stamp/service RPC callers — `getKeywordServices` makes ONE read, `gsc_keyword_topics_for`, which answers what the placement is AND which rung decided it (`scope_tier`, `scope_organization_id`) over the same ≤2,000 ids. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
+| `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the offering's name, its root, whether a person or the AI placed it, and the picker behind it. Every placement shown is this site's own (brand-offerings cutover D4, D10), so there is no inherited rung to disclose. |
+| `components/OfferingPicker.tsx` | The tree-shaped, creatable offering picker shared by the cell, the bulk panel, the filter, the ruling session and the approval queue. Lists ONLY this site's offerings; platform suggestions appear only inside Add offering and adopt through `web.adopt_offering_template`; a typed name creates through `web.save_site_offering`. |
+| `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write (`setKeywordOffering`). |
+| `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (`offering` in the shared filter dialect, `of=` in the URL). |
+| `hooks/useSiteOfferings.ts` | This site's offerings (`web.site_offerings`) flattened parent → child, their keyword counts (`seo.gsc_offering_stats`), and the site's organization every offering write carries. `useSiteOrganizationId` and `requireOfferingOrganization` live here. |
+| `data.ts` | The stamp and placement RPC callers — `getKeywordOfferings` reads this site's placements (`seo.gsc_keyword_offerings_for`, ≤2,000 ids); `setKeywordOffering` is THE placement write (`seo.gsc_set_keyword_offering`); `confirmKeywordOfferings`, `listOfferingProposals` and `getOfferingPlacementDrift` serve the approval queue. Contract: `features/marketing/FEATURE.md` § Canonical offering writers. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
 
 > Deleted 2026-08-25 (dead since the 2026-08-24 grid extraction): this
 > folder's own `state.ts` and `components/ColumnChooser.tsx` — both were
@@ -255,6 +253,19 @@ placement case, reads it back through both RPCs, and rolls the plant back.
   root sits under it in the size of a footnote.
 
 ## Change log
+
+- **2026-09-14** — **The Offering column is this site's own offerings (brand-offerings cutover, step 4b).**
+  Placements are read from `seo.gsc_keyword_offerings_for` and written through
+  `seo.gsc_set_keyword_offering` on the brand offerings this site has selected,
+  carrying the site's organization explicitly; the picker no longer lists another
+  business's offerings, and platform suggestions appear only inside Add offering.
+  `useSiteServices`, `scope-tiers.ts` and `InheritedPlacementMarker` were deleted:
+  with a site-owned placement there is no inherited rung, so the (i) and "Make it
+  this site's own" have nothing to say (D10). The filter key is `offering` (`of=`)
+  and the server sort is `p_sort: 'offering'`; the column id stays `topic` so saved
+  views and shared links keep resolving (`OFFERING_COLUMN_ID`). Verified on the
+  local dev server for Data Destruction: 3,879 keywords with their offerings in the
+  column. Commit `e1dc2df2f8`.
 
 - **2026-09-12** — **ONE READ, ONE LADDER — the Offering column was cross-tenant.**
   `seo.gsc_keyword_topics_for` selected every primary `keyword_topic` row for the
