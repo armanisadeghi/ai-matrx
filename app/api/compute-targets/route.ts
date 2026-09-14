@@ -80,7 +80,7 @@ export async function GET() {
     supabase
       .from("sandbox_instances")
       .select(
-        "id, name, sandbox_id, status, tier, config, expires_at, updated_at",
+        "id, name, sandbox_id, status, tier, template, config, expires_at, updated_at",
       )
       .eq("user_id", user.id)
       .is("deleted_at", null)
@@ -98,6 +98,9 @@ export async function GET() {
   for (const row of sandboxResult.data ?? []) {
     if (!RENDERABLE_SANDBOX_STATUSES.has(row.status ?? "")) continue;
     const config = (row.config as { template?: string } | null) ?? {};
+    // `template` is canonical on current rows. Older rows may still carry it
+    // in config, so preserve that value only when the canonical column is null.
+    const template = row.template ?? config.template ?? null;
     if (row.tier !== "ec2" && row.tier !== "hosted") {
       console.error(
         `[GET /api/compute-targets] sandbox row ${row.id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +
@@ -116,7 +119,7 @@ export async function GET() {
       is_this_device: false,
       sandbox_id: row.sandbox_id ?? null,
       tier,
-      template: config.template ?? null,
+      template,
       expires_at: row.expires_at ?? null,
       instance_id: null,
       tunnel_url: null,
