@@ -52741,6 +52741,7 @@ export type Database = {
         Returns: {
           columns_gained: string[]
           columns_lost: string[]
+          columns_measured: boolean
           count_after: number
           count_before: number
           gained_sample: string[]
@@ -57539,6 +57540,7 @@ export type Database = {
           slug: string | null
           status_id: string | null
           technical_depth: string | null
+          topic_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -57570,6 +57572,7 @@ export type Database = {
           slug?: string | null
           status_id?: string | null
           technical_depth?: string | null
+          topic_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -57601,6 +57604,7 @@ export type Database = {
           slug?: string | null
           status_id?: string | null
           technical_depth?: string | null
+          topic_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -85672,6 +85676,229 @@ export type Database = {
         }
         Relationships: []
       }
+      map_facet: {
+        Row: {
+          applies_to: string
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          inherits: boolean
+          is_builtin: boolean
+          key: string
+          label: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applies_to: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          inherits?: boolean
+          is_builtin?: boolean
+          key: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applies_to?: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          inherits?: boolean
+          is_builtin?: boolean
+          key?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      map_facet_value: {
+        Row: {
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          facet_id: string
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_id: string | null
+          ref_id: string | null
+          ref_type: string | null
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          facet_id: string
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          facet_id?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_facet_value_facet_id_fkey"
+            columns: ["facet_id"]
+            isOneToOne: false
+            referencedRelation: "map_facet"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_facet_value_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "map_facet_value"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_topic: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          layout: Json | null
+          map_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          layout?: Json | null
+          map_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          layout?: Json | null
+          map_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_topic_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "topical_map"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_topic_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "map_topic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_topic_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "v_map_topic_stats"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       page_measurement_health: {
         Row: {
           consecutive_terminal_failures: number
@@ -87117,6 +87344,7 @@ export type Database = {
           priority_score: number | null
           site_id: string
           suppression_reason: string | null
+          topic_id: string | null
           traffic_class: string | null
           updated_at: string
           updated_by: string | null
@@ -87147,6 +87375,7 @@ export type Database = {
           priority_score?: number | null
           site_id: string
           suppression_reason?: string | null
+          topic_id?: string | null
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -87177,6 +87406,7 @@ export type Database = {
           priority_score?: number | null
           site_id?: string
           suppression_reason?: string | null
+          topic_id?: string | null
           traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -87194,6 +87424,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "keyword"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_keyword_value_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "map_topic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_keyword_value_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_map_topic_stats"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -88116,6 +88360,60 @@ export type Database = {
           },
         ]
       }
+      topical_map: {
+        Row: {
+          brand_id: string
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       web_analytics_daily: {
         Row: {
           campaign: string | null
@@ -88291,6 +88589,25 @@ export type Database = {
         }
         Relationships: []
       }
+      v_map_topic_stats: {
+        Row: {
+          keyword_count: number | null
+          map_id: string | null
+          page_count: number | null
+          planned_count: number | null
+          site_id: string | null
+          topic_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_topic_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "topical_map"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_site_keyword_performance: {
         Row: {
           average_position: number | null
@@ -88460,6 +88777,69 @@ export type Database = {
         }[]
       }
       _slugify: { Args: { p: string }; Returns: string }
+      _tm_cut: { Args: { p_max: number; p_text: string }; Returns: string }
+      _tm_knob: {
+        Args: {
+          p_brand: string
+          p_key: string
+          p_org: string
+          p_overrides?: Json
+          p_site: string
+        }
+        Returns: Json
+      }
+      _tm_knob_int: {
+        Args: {
+          p_brand: string
+          p_key: string
+          p_org: string
+          p_overrides?: Json
+          p_site: string
+        }
+        Returns: number
+      }
+      _tm_load_topics: {
+        Args: { p_map_id: string; p_site_id: string }
+        Returns: undefined
+      }
+      _tm_map: {
+        Args: {
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_map_id: string
+        }
+        Returns: Record<string, unknown>
+      }
+      _tm_topic_facets_all: {
+        Args: { p_map_id: string }
+        Returns: {
+          facet_key: string
+          inherited: boolean
+          topic_id: string
+          value_id: string
+          value_name: string
+          value_slug: string
+        }[]
+      }
+      _tm_topic_id: {
+        Args: { p_map_id: string; p_slug: string }
+        Returns: string
+      }
+      _tm_visible_facet_values: {
+        Args: { p_brand: string; p_org: string }
+        Returns: {
+          applies_to: string
+          brand_id: string
+          facet_id: string
+          facet_key: string
+          inherits: boolean
+          name: string
+          parent_id: string
+          ref_id: string
+          ref_type: string
+          slug: string
+          value_id: string
+        }[]
+      }
       adopt_starter_pack: {
         Args: {
           p_geo_place_ids?: Json
@@ -88490,6 +88870,10 @@ export type Database = {
       assert_safe_match_token: {
         Args: { p_token: string; p_what: string }
         Returns: undefined
+      }
+      create_map_facet_values: {
+        Args: { p_brand_id: string; p_facet_key: string; p_values: Json }
+        Returns: Json
       }
       detect_keyword_places: {
         Args: { p_keyword_ids: string[] }
@@ -90675,6 +91059,24 @@ export type Database = {
           value_source: string
         }[]
       }
+      map_facet_value_ref: { Args: { p_value_id: string }; Returns: Json }
+      map_graph: {
+        Args: { p_group_by?: string; p_map_id: string; p_site_id?: string }
+        Returns: Json
+      }
+      map_outline: {
+        Args: {
+          p_focus_slug?: string
+          p_map_id: string
+          p_overrides?: Json
+          p_site_id?: string
+        }
+        Returns: string
+      }
+      map_topic_facets: {
+        Args: { p_map_id: string; p_slug: string }
+        Returns: Json
+      }
       matcher_match_review: {
         Args: { p_limit?: number; p_matcher_id: string; p_site_id: string }
         Returns: {
@@ -90689,6 +91091,14 @@ export type Database = {
           rivals: string[]
           total_matches: number
         }[]
+      }
+      merge_map_topics: {
+        Args: { p_from_slugs: string[]; p_into_slug: string; p_map_id: string }
+        Returns: Json
+      }
+      move_map_topic: {
+        Args: { p_map_id: string; p_new_parent_slug: string; p_slug: string }
+        Returns: Json
       }
       multi_location_knob: {
         Args: { p_default: number; p_key: string }
@@ -90797,6 +91207,27 @@ export type Database = {
         }
         Returns: Json
       }
+      set_map_topic_facet: {
+        Args: {
+          p_facet_key: string
+          p_map_id: string
+          p_slug: string
+          p_value_slug: string
+        }
+        Returns: Json
+      }
+      set_page_map_facet: {
+        Args: { p_facet_key: string; p_page_id: string; p_value_slug: string }
+        Returns: Json
+      }
+      set_page_map_topics: {
+        Args: { p_page_id: string; p_source?: string; p_topics: Json }
+        Returns: Json
+      }
+      set_site_map: {
+        Args: { p_map_id: string; p_site_id: string }
+        Returns: Json
+      }
       set_site_offering_value: {
         Args: {
           p_audience_fit?: string
@@ -90903,6 +91334,7 @@ export type Database = {
         }
         Returns: Json
       }
+      site_map_id: { Args: { p_site_id: string }; Returns: string }
       site_meaning_copy: {
         Args: {
           p_dry_run?: boolean
@@ -90954,6 +91386,10 @@ export type Database = {
           stale_matchers: number
           stamps: number
         }[]
+      }
+      split_map_topic: {
+        Args: { p_children: Json; p_map_id: string; p_slug: string }
+        Returns: Json
       }
       stamp_keyword_places: {
         Args: { p_detector_version?: string; p_keyword_ids: string[] }
@@ -91344,6 +91780,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upsert_map_topics: {
+        Args: { p_map_id: string; p_tree: Json }
+        Returns: Json
       }
       value_settings_scope: {
         Args: { p_id?: string; p_scope: string }
