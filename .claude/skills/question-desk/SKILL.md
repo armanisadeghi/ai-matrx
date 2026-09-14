@@ -183,8 +183,22 @@ the answer through `question_desk(action='list_answers')` on resume, or the boun
 `wait_for_answers` when it has nothing else to do; these are how it learns without the desk's
 SendMessage/resume step reaching it.
 
+**The answer already moved before you got here (2026-09-14).** Within one dispatcher sweep of any
+answer, the server's follow-through has acted and stamped the row's `status_note`: a confirmed
+review row reads "confirmed — stands" and is delivered; an overturned one reads "coming back as a
+question" — a real `mode=ask` question (`<slug>--overturned`, his words verbatim) was refiled
+into the same interview and a Work Loop item `qd:overturn:<id>` waits in the campaign
+`question-desk`; an own-words / recommendation / skip answer reads "recording…" with a Work Loop
+item `qd:record:<id>` carrying the verbatim ruling and the node, and flips to "recorded" when that
+item succeeds; a hand-back reads "handed back — the desk decides" with `qd:decide:<id>`. So the
+desk's run STARTS by draining that campaign: `work_loop(action='status', campaign_id=…)` (find it
+under `campaigns`, slug `question-desk`), claim each item, do it — research the refiled question to
+`asked`, write the ruling into the owning node's DECISIONS.md, decide the handed-back one — and
+complete it with evidence. `mark_delivered` on a "recording…" row is the item's closing step, not a
+separate pass; the sweep turns the note to "recorded" on its own once the item is complete.
+
 Completion: every answered row is delivered or has a named hand-off line for Arman; the ledger
-holds only genuinely open rows.
+holds only genuinely open rows; the `question-desk` campaign holds no claimable item.
 
 ## Step 6 — close the session
 
@@ -206,6 +220,11 @@ the counts.
 - Create a schedule for this duty.
 
 ## Changelog
+
+- **2026-09-14 (answers become work)** — Step 5 opens with the server's follow-through: every
+  answer is acted on within one sweep and lands as a Work Loop item in the `question-desk`
+  campaign, which the desk's run drains first. The two HTML pages under
+  `operations/question-desk/` are deleted (live verification passed 2026-09-13; QD-016).
 
 - **2026-09-12 (in-app Question Desk)** — Step 3 now creates the interview and its questions over
   the `question_desk` MCP tool and sends Arman the admin URL instead of a built page. Step 4 notes
