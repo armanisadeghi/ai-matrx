@@ -76,7 +76,7 @@ importers:
         version: 0.7.13(react@19.3.0)
       '@ai-matrx/tap-target':
         specifier: latest
-        version: 0.2.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.2.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-sdk/google':
         specifier: ^4.0.68
         version: 4.0.69(zod@4.6.2)
@@ -1027,8 +1027,8 @@ packages:
       react-native:
         optional: true
 
-  '@ai-matrx/tap-target@0.2.8':
-    resolution: {integrity: sha512-wstZ8JMqxaaL2wFuHUG2AFRjgfAcPB1x6+5mUVJ2PdYGL0wcPOg8YVJFYVWv0+TMHoxsI0hYe7T+5xR/TMJbfQ==}
+  '@ai-matrx/tap-target@0.2.9':
+    resolution: {integrity: sha512-ZtpxWTmhNN9z9OBV4eDXQssb6t/9b1r1qxjDeJyyCeWv2yrRqZWuVozPHFfrBJgvAvI7ZJKneO5QmJv56mSG0w==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -13025,7 +13025,7 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
-  '@ai-matrx/tap-target@0.2.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/tap-target@0.2.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/design-system': 0.19.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-tooltip': 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

@@ -73,6 +73,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { usePreparedResourceSeed } from "@/features/agents/components/chat/usePreparedResourceSeed";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import type { Resource } from "@/features/agents/resources/types";
@@ -316,6 +317,7 @@ interface AgentRunBodyProps {
   initialVariableValues?: Record<string, string> | null;
   initialResources?: Resource[] | null;
   initialResourceIdentity?: { userId: string; organizationId: string } | null;
+  initialToolsOpen?: boolean;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
   mandateKey?: string | null;
@@ -331,6 +333,7 @@ function AgentRunBody({
   initialVariableValues,
   initialResources,
   initialResourceIdentity,
+  initialToolsOpen = false,
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
@@ -465,6 +468,15 @@ function AgentRunBody({
     attach: attachResource,
     reportError: toast.error,
   });
+  const openRunControls = useOpenRunControlsWindow();
+  const toolsOpenedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialToolsOpen || selectedConversationId || !conversationId || !resourcesEntryReady) return;
+    if (toolsOpenedRef.current === conversationId) return;
+    if (!initialResourceIdentity || initialResourceIdentity.userId !== resourceSeedUserId || initialResourceIdentity.organizationId !== resourceSeedOrganizationId) return;
+    toolsOpenedRef.current = conversationId;
+    openRunControls({ conversationId, initialTab: "tools" });
+  }, [initialToolsOpen, selectedConversationId, conversationId, resourcesEntryReady, initialResourceIdentity, resourceSeedUserId, resourceSeedOrganizationId, openRunControls]);
   const draftSeededRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedConversationId) return;
@@ -659,6 +671,7 @@ interface AgentRunWindowProps {
   initialVariableValues?: Record<string, string> | null;
   initialResources?: Resource[] | null;
   initialResourceIdentity?: { userId: string; organizationId: string } | null;
+  initialToolsOpen?: boolean;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
   mandateKey?: string | null;
@@ -687,6 +700,7 @@ export default function AgentRunWindow({
   initialVariableValues,
   initialResources,
   initialResourceIdentity = null,
+  initialToolsOpen = false,
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
@@ -704,6 +718,7 @@ export default function AgentRunWindow({
       initialVariableValues={initialVariableValues ?? null}
       initialResources={initialResources ?? null}
       initialResourceIdentity={initialResourceIdentity}
+      initialToolsOpen={initialToolsOpen}
       initialAutoRun={initialAutoRun}
       mandateKey={mandateKey}
       surfaceName={surfaceName}
@@ -725,6 +740,7 @@ function AgentRunWindowInner({
   initialVariableValues,
   initialResources,
   initialResourceIdentity,
+  initialToolsOpen = false,
   initialAutoRun,
   mandateKey,
   surfaceName,
@@ -739,6 +755,7 @@ function AgentRunWindowInner({
   initialVariableValues: Record<string, string> | null;
   initialResources: Resource[] | null;
   initialResourceIdentity: { userId: string; organizationId: string } | null;
+  initialToolsOpen: boolean;
   initialAutoRun: boolean;
   mandateKey: string | null;
   surfaceName: string | null;
@@ -907,6 +924,7 @@ function AgentRunWindowInner({
           initialVariableValues={liveVariableValues}
           initialResources={liveResources}
           initialResourceIdentity={liveResourceIdentity}
+          initialToolsOpen={seedApplies && initialToolsOpen}
           initialAutoRun={liveAutoRun}
           // The mandate door only applies to the job the window was opened
           // on. Picking a different agent from the title bar is a plain agent

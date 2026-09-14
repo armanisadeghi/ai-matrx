@@ -57,6 +57,8 @@ export interface OpenAgentRunWindowOptions {
    * an attachment chip and must never be folded into `initialDraftText`.
    */
   initialResources?: Resource[] | null;
+  /** Open the existing Tools picker after the prepared conversation is ready. */
+  initialToolsOpen?: boolean;
   initialResourceIdentity?: { userId: string; organizationId: string } | null;
   /** Start the seeded run immediately after the window opens. */
   initialAutoRun?: boolean;
@@ -110,6 +112,7 @@ export function useOpenAgentRunWindow() {
             initialDraftText: opts.initialDraftText,
             initialVariableValues: opts.initialVariableValues,
             initialResources: opts.initialResources,
+            initialToolsOpen: opts.initialToolsOpen ?? false,
             initialResourceIdentity: resourceIdentity,
             initialAutoRun: opts.initialAutoRun,
             mandateKey: opts.mandateKey ?? undefined,

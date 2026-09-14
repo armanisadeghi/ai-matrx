@@ -66,6 +66,17 @@ describe("Alchemy destination ports", () => {
     }));
   });
 
+  it("opens the existing tools picker for connected-tool transfers", async () => {
+    const currentHost = host();
+    await createAlchemyDestinationPorts(currentHost).tools(content);
+    expect(currentHost.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ data: expect.objectContaining({
+        initialToolsOpen: true, initialAutoRun: false,
+        initialResources: [expect.objectContaining({ type: "text" })],
+      }) }),
+    }));
+  });
+
   it("does not navigate when identity validation fails after mandate resolution", async () => {
     const currentHost = host();
     jest.mocked(resolveMandate).mockImplementation(async () => {
