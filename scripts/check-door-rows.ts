@@ -1234,7 +1234,25 @@ const DISCRIMINATOR = /^(target_type|container_type|resource_type|entity_type|ow
  * not invented: an id argument means nothing until its discriminator names the
  * table it points into.
  */
-const DISCRIMINATOR_VOCAB = ["organization", "org", "project", "scope", "site", "brand", "platform", "user"];
+const DISCRIMINATOR_VOCAB = [
+  "organization",
+  "org",
+  "project",
+  "scope",
+  "site",
+  "brand",
+  "platform",
+  "user",
+  // 🚨 DD-209. `file`, `folder` and `web_site` are the three words
+  // `iam.fn_list_resource_permissions` accepts and nothing else, and the
+  // AccessGate family speaks the same vocabulary. Leaving them out meant a
+  // resource-type door was probed only on the containers it does NOT share, so
+  // "it stopped failing" could mean "we stopped asking it the question it
+  // answers" — which is how a by-design excuse goes stale for the wrong reason.
+  "file",
+  "folder",
+  "web_site",
+];
 
 /**
  * The emergency-door argument shape, by SHAPE and not by name, so a fifth door
