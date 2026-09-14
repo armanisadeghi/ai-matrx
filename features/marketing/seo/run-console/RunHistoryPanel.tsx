@@ -594,30 +594,47 @@ function QuietGroups({
   onExpand: (taskId: string) => void;
   onShowAll: () => void;
 }) {
+  // Collapsed by default: ~80 task groups listed above the runs would bury the
+  // runs again (seen on the first live render, 2026-09-14). One line carries
+  // the whole count; expanding shows the largest groups first.
+  const [open, setOpen] = useState(false);
+  const [showAllGroups, setShowAllGroups] = useState(false);
   const groups = facets
     .filter((f) => f.execution_kind === "sch_run" && f.task_id && Number(f.quiet_count) > 0)
     .sort((a, b) => Number(b.quiet_count) - Number(a.quiet_count));
   if (groups.length === 0) return null;
   const total = groups.reduce((n, g) => n + Number(g.quiet_count), 0);
+  const TOP = 5;
+  const visible = showAllGroups ? groups : groups.slice(0, TOP);
   return (
     <div className="mb-2 rounded-md border border-dashed border-border bg-muted/20">
       <div className="flex items-center gap-2 px-2.5 py-1 text-[11px] text-muted-foreground">
-        <Layers className="h-3 w-3" />
-        <span>
-          {formatCount(total)} scheduled run{total === 1 ? "" : "s"} that made
-          no AI calls, grouped by task
-        </span>
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 items-center gap-1.5 text-left hover:text-foreground"
+        >
+          <ChevronRight className={cn("h-3 w-3 shrink-0 transition-transform", open && "rotate-90")} />
+          <Layers className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            {formatCount(total)} scheduled run{total === 1 ? "" : "s"} that made
+            no AI calls, grouped into {formatCount(groups.length)} task
+            {groups.length === 1 ? "" : "s"}
+          </span>
+        </button>
         <Button
           size="sm"
           variant="ghost"
-          className="ml-auto h-6 px-1.5 text-[11px]"
+          className="ml-auto h-6 shrink-0 px-1.5 text-[11px]"
           onClick={onShowAll}
         >
           Show every run
         </Button>
       </div>
+      {open ? (
       <ul className="flex flex-col border-t border-dashed border-border">
-        {groups.map((g) => (
+        {visible.map((g) => (
           <li key={g.task_id}>
             <button
               type="button"
@@ -640,7 +657,21 @@ function QuietGroups({
             </button>
           </li>
         ))}
+        {groups.length > TOP ? (
+          <li>
+            <button
+              type="button"
+              onClick={() => setShowAllGroups((v) => !v)}
+              className="w-full px-2.5 py-1 text-left text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              {showAllGroups
+                ? "Show only the largest groups"
+                : `${formatCount(groups.length - TOP)} more task${groups.length - TOP === 1 ? "" : "s"}`}
+            </button>
+          </li>
+        ) : null}
       </ul>
+      ) : null}
     </div>
   );
 }
