@@ -449,6 +449,7 @@
     "check:record-toasts:update": "tsx scripts/check-record-toasts.ts --update",
     "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",
     "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
+    "test:shell-layout": "playwright test -c playwright.shell-layout.config.ts",
     "check:kind-sandbox-protocol": "tsx scripts/check-kind-sandbox-protocol.ts",
     "check:kind-sandbox-protocol:self-test": "tsx scripts/check-kind-sandbox-protocol.ts --self-test",
     "test:kind-sandbox": "jest features/content-ir/sandbox/__tests__ --no-coverage",

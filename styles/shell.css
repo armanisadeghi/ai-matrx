@@ -1487,6 +1487,31 @@ button.shell-nav-flyout-item {
   pointer-events: none;
 }
 
+/* …BUT NEVER ON A ROUTE BODY THAT IS ITSELF THE VIEWPORT.
+   A full-height app surface (`h-full overflow-hidden` directly under the
+   scroll owner — the chat room, the studio, any surface that clips its own
+   content and owns its internal scrollers) has no scroll of its own, so this
+   runway is not clearance: it is pure SLACK. The shell scroll owner gains
+   72px (compact) to 14rem (expanded) of range, and one wheel tick over the
+   thread slides the WHOLE surface up under the floating shell header —
+   composer, and with it the docked canvas column's title bar and content
+   switcher.
+
+   Seen live on production 2026-09-14 (www.aimatrx.com, 1280x720, the schedule
+   alarm showing): the canvas Preview/Source pills measured y = +53.5 at rest
+   and y = -18.5 after the shell scrolled its 72px of slack — off the top of
+   the screen, with the canvas switcher the "offer, don't hijack" design
+   depends on. `window.scrollTo(0,0)` does nothing about it, because the
+   scroll owner is `.shell-main`, not the window.
+
+   A surface that clips at the viewport can never have content hidden under a
+   fixed notice in the first place — its own inner scrollers carry
+   `.scroll-page-end-space` for that. So this rule takes nothing away. */
+:root[data-schedule-alarm]
+  .shell-main:has(> .h-full.overflow-hidden)::after {
+  content: none;
+}
+
 /* Global fixed notices are route-independent. Their singleton publishes only
    a semantic compact/expanded state; CSS owns the responsive runway. This is
    intentionally not a measured height, so no observer can feed layout back

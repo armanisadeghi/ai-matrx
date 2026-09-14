@@ -56,6 +56,8 @@ import {
 import { toast } from "@/lib/toast";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
+import { CanvasSourceView } from "./CanvasSourceView";
+import { canvasTypeHasSource } from "./canvasSource";
 import { CanvasNavigation } from "./CanvasNavigation";
 import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
 import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
@@ -424,11 +426,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
         {viewMode === "preview" ? (
           <CanvasBody content={content} />
         ) : (
-          <div className="h-full p-2">
-            <pre className="h-full overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-xs text-foreground scrollbar-thin">
-              {JSON.stringify(content, null, 2)}
-            </pre>
-          </div>
+          <CanvasSourceView content={content} />
         )}
       </div>
 
@@ -477,16 +475,15 @@ const ViewToggleButton: React.FC<ViewToggleButtonProps> = ({
 );
 
 /**
- * Types where the JSON "source" view is meaningful. Image / iframe / html
- * are passthrough surfaces — toggling them to a JSON view is noise.
+ * Does this type get the Preview/Source switcher at all?
+ *
+ * ONE answer, in `canvasSource.ts`: a type is offered `Source` only when it HAS
+ * a source of its own (document markdown, artifact code, a structured
+ * artifact's markdown export). Live panes — sandbox, cloud browser, the
+ * document workspace, the ephemeral code editors — hold a running session, not
+ * a document, and used to print the redux envelope to the user when this
+ * function said "default: true".
  */
 function hasViewToggle(type: string): boolean {
-  switch (type) {
-    case "image":
-    case "iframe":
-    case "html":
-      return false;
-    default:
-      return true;
-  }
+  return canvasTypeHasSource(type);
 }
