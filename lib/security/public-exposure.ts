@@ -106,7 +106,7 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   { relation: "education.content_certification", policy: "cc_public_read", cmd: "SELECT", why: "certification badges shown on public education content" },
   { relation: "education.math_course_structure", policy: "Public can view course structure", cmd: "SELECT", why: "public curriculum outline" },
   { relation: "users.user_follows", policy: "Follows are viewable by everyone", cmd: "SELECT", why: "follow graph is public on creator profiles (/c/{handle})" },
-  { relation: "extend.wbx_recipe", policy: "wbx_recipe_read_all", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted" },
+  { relation: "extend.wbx_recipe", policy: "pub_read", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted. DD-173 (B-103): the hand-written `wbx_recipe_read_all` (USING true) was superseded by the generated system-variant lane, which publishes only rows whose `visibility` is `public` — derived from `is_active`, so a retired recipe leaves the open web by the flag that already means that." },
 
   // — Anonymous WRITES: none. All three are closed (DD-181a, 2026-09-13,
   //   migrations/dd181_dd182_recorded_doors_bounded_or_closed.sql). `communication.emails`
@@ -116,13 +116,12 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   //   tables' owner, which never consulted their RLS. A row returns here only with a caller. —
 
   // — KNOWN WRONG, tracked. These warn until fixed, then get deleted from here. —
-  {
-    relation: "extend.wbx_demo",
-    policy: "wbx_demo_svc",
-    cmd: "ALL",
-    why: "policy named for the service role but created TO PUBLIC — anon can read AND write. Table is empty so nothing has leaked. The `extend` schema IS PostgREST-exposed, so this one is internet-reachable. Needs the matrx-extend owner to confirm the extension does not write as anon, then scope it to service_role.",
-    defect: "D257",
-  },
+  // (Empty. D257 — `extend.wbx_demo`'s `wbx_demo_svc`, named for the service role but created
+  //  TO PUBLIC with USING (true) WITH CHECK (true) on a PostgREST-exposed schema — was closed on
+  //  2026-09-14 by migrations/extend_wbx_demo_uuid_identity_dd173.sql, which superseded it for the
+  //  generated entity set: `svc_all` TO service_role plus the generated owner lane. Proven in the
+  //  same transaction: the owner still writes and reads their own demo, a different non-admin
+  //  reads nothing, anonymous reads nothing.)
 ];
 
 /**
@@ -615,14 +614,17 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   {
     relation: "billing.plan",
     columns: [
-      "id", "name", "audience", "tagline", "rank", "tier",
+      "id", "plan_key", "name", "audience", "tagline", "rank", "tier",
       "monthly_cents", "annual_cents", "per_seat", "min_seats", "badge", "is_public",
       "is_default", "active", "created_at", "updated_at",
     ],
     why:
-      "Anon-readable by the policy `plan_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "Anon-readable by the generated `pub_read` lane (rows whose `visibility` is public, derived "
+      + "from `active`); every identity, bookkeeping and secret column is revoked at the column "
+      + "(DD-186). The guest price list itself renders through `billing.public_plans()`, a definer "
+      + "door, not through this table read — the bound is what keeps a column added tomorrow from "
+      + "publishing itself. DD-173 (B-103) moved the plan slug off `id` to `plan_key` and granted "
+      + "the new uuid `id`, the column the access-delta probe reads to measure this door at all.",
   },
   {
     relation: "billing.plan_limit",
@@ -1297,13 +1299,16 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   {
     relation: "extend.wbx_demo",
     columns: [
-      "id", "name", "description", "start_url", "step_count", "parameter_names",
+      "id", "demo_key", "name", "description", "start_url", "step_count", "parameter_names",
       "body", "is_deleted", "created_at", "updated_at", "deleted_at", "visibility",
     ],
     why:
-      "Anon-readable by the policy `wbx_demo_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "Column-bounded (DD-186): every identity, bookkeeping and secret column is revoked at the "
+      + "column. No signed-out reader was found for it in the four-repository census — the bound is "
+      + "what keeps a column added tomorrow from publishing itself. DD-173 (B-103) moved the client "
+      + "`demo_<uuid>` pointer off `id` to `demo_key`, granted the new uuid `id` (the column the "
+      + "access-delta probe reads to measure this door at all), and replaced the hand-written owner "
+      + "policies with the generated entity set — which is what closed D257.",
   },
   {
     relation: "extend.wbx_guidance",
@@ -1343,13 +1348,16 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   {
     relation: "extend.wbx_recipe",
     columns: [
-      "id", "label", "description", "hosts", "routes", "kind",
+      "id", "recipe_key", "label", "description", "hosts", "routes", "kind",
       "config", "yields_rows", "is_active", "last_verified_at", "created_at", "updated_at",
     ],
     why:
-      "Anon-readable by the policy `wbx_recipe_read_all`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "Anon-readable by the generated `pub_read` lane; every identity, bookkeeping and secret column is "
+      + "revoked at the column (DD-186). THERE IS A REAL SIGNED-OUT READER: matrx-extend's "
+      + "`loadRecipes()` (src/lib/data-pattern/recipes.ts) fetches this catalogue with whatever "
+      + "session the extension has, including none. DD-173 (B-103) moved the slug off `id` to "
+      + "`recipe_key` and granted the new uuid `id` — an opaque surrogate, and the column the "
+      + "access-delta probe reads to measure this door at all.",
   },
   {
     relation: "extend.wbx_screenshot",
@@ -2821,14 +2829,14 @@ export interface PublicWritePolicyOfRecord {
  * who it is for and why a null `auth.uid()` cannot satisfy it, or scope it to a role.
  */
 export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfRecord> = [
+  // (`extend.wbx_demo`'s three `wbx_demo_owner_*` TO-PUBLIC write policies were here until
+  //  2026-09-14: DD-173 B-103 superseded them for the generated entity set, whose write lanes are
+  //  all TO authenticated. A stale entry here is as much a lie as a missing one.)
   { relation: "admin.admin_markdown_samples", policy: "admin_markdown_samples_super_admin_all", cmd: "*", reason: "A platform-admin-only sample store. Predicate: is_platform_admin() or is_super_admin() - both null-uid false." },
   { relation: "communication.sms_rate_limits", policy: "Service role only", cmd: "*", reason: "Service-role bookkeeping. Predicate: is_platform_admin() or auth.role() = service_role." },
   { relation: "communication.sms_webhook_logs", policy: "Service role only for webhook logs", cmd: "*", reason: "Service-role webhook log. Predicate: is_platform_admin() or auth.role() = service_role." },
   { relation: "docproc.page_extraction_results", policy: "page_extraction_results_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
   { relation: "docproc.page_extraction_runs", policy: "page_extraction_runs_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
-  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_delete", cmd: "d", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
-  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_insert", cmd: "a", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
-  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_update", cmd: "w", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
   { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_delete", cmd: "d", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
   { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_insert", cmd: "a", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
   { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_update", cmd: "w", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },

@@ -105,7 +105,11 @@ export async function fetchPlans(): Promise<Plan[]> {
   const { data, error } = await supabase
     .schema("billing")
     .from("plan")
-    .select("id, name, audience, rank, tier, active")
+    // DD-173 (B-103): the plan slug moved off `id` to `plan_key` when `billing.plan`
+    // gained its canonical uuid identity. `billing.plan_limit.plan_id` still holds the
+    // SLUG, and `plan_limit_set(p_plan_id)` still takes it, so this panel keys on
+    // `plan_key` — never the uuid.
+    .select("plan_key, name, audience, rank, tier, active")
     .order("rank");
   if (error) throw error;
   return (data ?? []) as Plan[];

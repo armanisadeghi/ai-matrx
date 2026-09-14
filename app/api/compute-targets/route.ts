@@ -197,7 +197,10 @@ async function resolveMaxSandboxes(
   const { data: tier } = await filesDb(supabase)
     .from("account_tiers")
     .select("features")
-    .eq("id", tierId)
+    // DD-173 (B-103): the tier slug moved off `id` to `tier_key` when
+    // `files.account_tiers` gained its canonical uuid identity. `user_account.tier_id`
+    // still holds the SLUG, so this lookup keys on `tier_key`, not the uuid.
+    .eq("tier_key", tierId)
     .maybeSingle();
   const features =
     (tier?.features as { max_sandboxes?: number } | null) ?? null;

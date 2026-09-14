@@ -214,7 +214,7 @@ export function PlanAllowancesPanel() {
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {plans.map((plan) => {
                 const period = cap.period ?? "lifetime";
-                const id = cellId(plan.id, cap.capability, period);
+                const id = cellId(plan.plan_key, cap.capability, period);
                 const existing = limitIndex.get(id);
                 const draft = drafts[id] ?? "";
                 const savedValue = existing?.limit_value ?? null;
@@ -266,7 +266,7 @@ export function PlanAllowancesPanel() {
                         variant={dirty ? "default" : "ghost"}
                         disabled={!dirty || saving === id}
                         aria-label="Save allowance"
-                        onClick={() => void save(plan.id, cap.capability, period)}
+                        onClick={() => void save(plan.plan_key, cap.capability, period)}
                       >
                         <Save className="h-3.5 w-3.5" />
                       </Button>

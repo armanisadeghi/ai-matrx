@@ -1743,11 +1743,11 @@ async function replayDd213(
     `select prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'hr' and p.proname = '_record_access_audit'`,
   );
-  const guarded = live.every((r) => /_has_any_standing/.test(r.src));
+  const guarded = live.every((r) => /_has_audit_standing/.test(r.src));
   console.log(
     guarded
-      ? `${TAG.info}after rollback, hr._record_access_audit still consults hr._has_any_standing (the live body is intact)`
-      : `${TAG.fail}after rollback, hr._record_access_audit NO LONGER consults hr._has_any_standing — the fixture was left behind`,
+      ? `${TAG.info}after rollback, hr._record_access_audit still consults hr._has_audit_standing (the live body is intact)`
+      : `${TAG.fail}after rollback, hr._record_access_audit NO LONGER consults hr._has_audit_standing — the fixture was left behind`,
   );
   return red && green && guarded;
 }
