@@ -924,6 +924,11 @@ export function ContentPlanWorkbench({
               siteId={siteId}
               organizationId={site.organization_id}
             />
+          ) : view === "brief" && site && !brand ? (
+            // Honest, never a silently wrong screen: the brief needs the brand.
+            <p className="p-4 text-sm text-muted-foreground">
+              This plan is not under a brand yet, so it has no site brief. Open it from the brand&apos;s content section.
+            </p>
           ) : view === "brief" && site && brand ? (
             // What this website is for, reading the brand strategy — the
             // reference the plan generator, brief writer and page writer read.

@@ -66,6 +66,7 @@ const FACT_ROWS: Record<StrategyScope, Array<{ key: string; label: string }>> = 
     { key: "site_purpose", label: "What this site is for" },
     { key: "audience_slice", label: "Who this site is for" },
     { key: "what_it_must_win", label: "What it must win" },
+    { key: "service_lines_served", label: "Service lines this site carries" },
     { key: "shape_notes", label: "Its shape" },
   ],
 };
@@ -82,7 +83,7 @@ function asList(value: unknown): string[] {
 }
 
 /** "Built from a crawl of 983 pages and 28 days of Search Console" — from provenance, never inferred. */
-function builtFrom(inputs: Record<string, unknown>): string[] {
+function builtFrom(scope: StrategyScope, inputs: Record<string, unknown>): string[] {
   const parts: string[] = [];
   const crawl = inputs.crawl as Record<string, unknown> | undefined;
   if (crawl && typeof crawl.pages === "number") {
@@ -95,7 +96,7 @@ function builtFrom(inputs: Record<string, unknown>): string[] {
         ? `Search Console (${gsc.window})`
         : "Search Console",
     );
-  } else if (gsc === null) {
+  } else if (gsc === null && scope === "site") {
     parts.push("no Search Console data (the site has none connected)");
   }
   if (inputs.research_document_id) parts.push("the research report");
@@ -103,7 +104,9 @@ function builtFrom(inputs: Record<string, unknown>): string[] {
     parts.push(`the content plan (${inputs.plan_nodes} planned pages)`);
   }
   if (inputs.brand_strategy_id) parts.push("the brand strategy");
-  if (typeof inputs.sites === "number") parts.push(`${inputs.sites} website${inputs.sites === 1 ? "" : "s"}`);
+  if (Array.isArray(inputs.sites)) {
+    parts.push(`${inputs.sites.length} website${inputs.sites.length === 1 ? "" : "s"}`);
+  }
   return parts;
 }
 
@@ -210,9 +213,9 @@ export function StrategyBriefWorkspace({
               No {noun} yet. Nothing downstream can refer back to it until one exists.
             </p>
           )}
-          {current && builtFrom(current.inputs).length > 0 ? (
+          {current && builtFrom(scope, current.inputs).length > 0 ? (
             <p className="text-xs text-muted-foreground">
-              Built {formatDate(current.generatedAt)} from {builtFrom(current.inputs).join(", ")}.
+              Built {formatDate(current.generatedAt)} from {builtFrom(scope, current.inputs).join(", ")}.
             </p>
           ) : null}
         </div>
@@ -383,16 +386,28 @@ export function StrategyBriefWorkspace({
         <SectionCard title="Earlier versions" collapsible defaultOpen={false}>
           <ul className="divide-y divide-border">
             {(history.data ?? []).map((version) => (
-              <li key={version.id} className="flex flex-wrap items-center gap-2 py-2 text-xs">
-                <History className="size-3.5 text-muted-foreground" aria-hidden />
-                <span className="font-medium text-foreground">v{version.versionNo}</span>
-                <span className="text-muted-foreground">{formatDate(version.generatedAt)}</span>
-                {version.agentConfidence != null ? (
-                  <Badge variant="outline">confidence {version.agentConfidence}/5</Badge>
-                ) : null}
-                {version.reviewedAt ? (
-                  <span className="text-muted-foreground">confirmed {formatDate(version.reviewedAt)}</span>
-                ) : null}
+              <li key={version.id} className="py-2">
+                <details>
+                  <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-xs">
+                    <History className="size-3.5 text-muted-foreground" aria-hidden />
+                    <span className="font-medium text-foreground">v{version.versionNo}</span>
+                    <span className="text-muted-foreground">{formatDate(version.generatedAt)}</span>
+                    {version.agentConfidence != null ? (
+                      <Badge variant="outline">confidence {version.agentConfidence}/5</Badge>
+                    ) : null}
+                    {version.reviewedAt ? (
+                      <span className="text-muted-foreground">confirmed {formatDate(version.reviewedAt)}</span>
+                    ) : null}
+                  </summary>
+                  <div className="mt-2 rounded-md border border-border bg-muted/20 p-3">
+                    <MarkdownRenderer content={version.briefMarkdown} fontSize={13} />
+                    {version.guidance ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Your words at the time: {version.guidance}
+                      </p>
+                    ) : null}
+                  </div>
+                </details>
               </li>
             ))}
           </ul>
