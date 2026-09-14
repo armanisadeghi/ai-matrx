@@ -385,8 +385,10 @@ function chunk<T>(items: T[], size: number): T[][] {
  *     FEATURE.md already documents for exactly this shape of read).
  *   - Search visibility: `seo.rank_target` (tracked) or `seo.serp_snapshot`
  *     (observed) for the keyword.
- * Classification is NOT read here — it lives on the keyword row itself
- * (`intent_class` etc.), already in hand wherever this is called from.
+ * Classification is NOT read here — the 13 facts come from
+ * `seo.keyword_universal_facet` (merged by `attachUniversalFacets`), already in
+ * hand wherever this is called from. The legacy mirror columns on `seo.keyword`
+ * were dropped 2026-09-14 (KI-035).
  */
 export async function getKeywordDossierCompleteness(
   rows: { id: string; phrase: string }[],

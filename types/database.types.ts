@@ -59382,6 +59382,7 @@ export type Database = {
           gate_predicate: string | null
           id: string
           identity_args: string
+          identity_argtypes: unknown[]
           non_client_lane: string | null
           reason: string
           schema_name: string
@@ -59396,6 +59397,7 @@ export type Database = {
           gate_predicate?: string | null
           id?: string
           identity_args: string
+          identity_argtypes: unknown[]
           non_client_lane?: string | null
           reason: string
           schema_name: string
@@ -59410,6 +59412,7 @@ export type Database = {
           gate_predicate?: string | null
           id?: string
           identity_args?: string
+          identity_argtypes?: unknown[]
           non_client_lane?: string | null
           reason?: string
           schema_name?: string
@@ -65124,6 +65127,7 @@ export type Database = {
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
       }
+      door_argtypes: { Args: { p_argtypes: unknown }; Returns: unknown[] }
       enforce_definer_client_grants_impl: {
         Args: { p_grant: boolean; p_objids: unknown[]; p_tag: string }
         Returns: undefined
@@ -84475,98 +84479,59 @@ export type Database = {
       }
       keyword: {
         Row: {
-          audience_type: string | null
-          brand_presence: string | null
           classification_confidence: number | null
           classification_detail: Json
           classified_at: string | null
           classifier_version: string | null
-          comparison_intent: string | null
-          compliance_framing: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
-          fulfillment_mode: string | null
-          funnel_stage: string | null
           id: string
-          intent_class: string | null
           language: string
-          local_intent: string | null
           metadata: Json
           normalized_phrase: string
           organization_id: string
           phrase: string
-          price_sensitivity: string | null
-          query_form: string | null
-          specificity: string | null
-          transaction_direction: string | null
           updated_at: string
           updated_by: string | null
-          urgency: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          audience_type?: string | null
-          brand_presence?: string | null
           classification_confidence?: number | null
           classification_detail?: Json
           classified_at?: string | null
           classifier_version?: string | null
-          comparison_intent?: string | null
-          compliance_framing?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          fulfillment_mode?: string | null
-          funnel_stage?: string | null
           id?: string
-          intent_class?: string | null
           language?: string
-          local_intent?: string | null
           metadata?: Json
           normalized_phrase: string
           organization_id?: string
           phrase: string
-          price_sensitivity?: string | null
-          query_form?: string | null
-          specificity?: string | null
-          transaction_direction?: string | null
           updated_at?: string
           updated_by?: string | null
-          urgency?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          audience_type?: string | null
-          brand_presence?: string | null
           classification_confidence?: number | null
           classification_detail?: Json
           classified_at?: string | null
           classifier_version?: string | null
-          comparison_intent?: string | null
-          compliance_framing?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          fulfillment_mode?: string | null
-          funnel_stage?: string | null
           id?: string
-          intent_class?: string | null
           language?: string
-          local_intent?: string | null
           metadata?: Json
           normalized_phrase?: string
           organization_id?: string
           phrase?: string
-          price_sensitivity?: string | null
-          query_form?: string | null
-          specificity?: string | null
-          transaction_direction?: string | null
           updated_at?: string
           updated_by?: string | null
-          urgency?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
