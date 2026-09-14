@@ -26,8 +26,6 @@ export function FastFireClient({ setId }: { setId?: string | null }) {
 
   useEffect(() => {
     let disposed = false;
-    setSurface(null);
-    setLoadError(null);
     void loadFastFireSurface(() =>
       import("./FastFireSurface").then((module) => module.FastFireSurface),
     ).then(
@@ -49,13 +47,21 @@ export function FastFireClient({ setId }: { setId?: string | null }) {
     };
   }, [attempt]);
 
+  const retry = () => {
+    // Retry is a user event, so reset the visible terminal state before the
+    // next request begins rather than synchronously cascading from the effect.
+    setSurface(null);
+    setLoadError(null);
+    setAttempt((value) => value + 1);
+  };
+
   if (loadError) {
     return (
       <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 bg-textured p-6 text-center">
         <p role="alert" className="max-w-sm text-sm text-muted-foreground">
           {loadError}
         </p>
-        <Button type="button" variant="outline" onClick={() => setAttempt((value) => value + 1)}>
+        <Button type="button" variant="outline" onClick={retry}>
           Retry loading FastFire
         </Button>
       </div>

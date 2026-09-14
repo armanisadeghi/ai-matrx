@@ -168,6 +168,13 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-14` — **FastFire discloses every fixed mandate job in the shared
+  Agents menu.** The spoken answer grader, spoken-question TTS, and cached
+  instant-help TTS are registered as surface roles only; the drill page gains
+  no disclosure chrome. Its retry resets now happen in the learner's Retry
+  event instead of synchronously inside request effects, satisfying React's
+  effect contract without weakening the terminal loading boundary.
+
 - `2026-09-13` — **FastFire initial loading has an explicit terminal boundary.**
   The client chunk reaches a visible retry state after 20 seconds, while the
   setup deck read uses the same boundary to abort its direct Supabase request
