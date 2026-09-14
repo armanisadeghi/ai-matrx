@@ -1035,7 +1035,6 @@ export function PlanSitesList({
                 ? "Create a site in Marketing → Sites, assign it a brand, then plan its content here."
                 : "Adjust the search or clear the column filters.",
           }}
-          className="p-2"
         />
         </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
