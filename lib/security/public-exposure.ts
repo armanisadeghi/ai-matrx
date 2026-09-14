@@ -367,44 +367,21 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
-  {
-    relation: "agent.cmp_comparison_sets",
-    columns: [
-      "id", "name", "project_id", "task_id", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "agent.cmp_response_feedback",
-    columns: [
-      "id", "conversation_id", "request_id", "rating", "comment", "comparison_set_id",
-      "created_at", "updated_at", "overall", "rank", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "agent.definition",
-    columns: [
-      "id", "agent_type", "name", "description", "messages", "variable_definitions",
-      "model_id", "model_tiers", "settings", "output_schema", "tools", "custom_tools",
-      "context_policies", "category", "tags", "is_active", "is_archived", "is_favorite",
-      "task_id", "source_agent_id", "source_snapshot_at", "created_at", "updated_at", "mcp_servers",
-      "rag_awareness_mode", "rag_awareness_fragment", "rag_awareness_refreshed_at", "tool_config", "default_rag_boost", "skill_config",
-      "matrx_actions", "ui_gates", "visibility", "card_visibility", "deleted_at", "updated_by_tier",
-      "updated_by_system", "auto_context_disabled", "input_kind", "input_contract", "input_contract_hash", "output_contract_hash",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
+  // (Schema `agent` held SEVEN declared anon bounds until 2026-09-14. FIVE of them —
+  //  `cmp_comparison_sets`, `cmp_response_feedback`, `definition`, `shortcut`, `template` — were
+  //  revoked to ZERO by DD-222's sibling sweep
+  //  (`migrations/dd222b_the_agent_schema_publishes_only_what_a_reader_renders.sql`), on the same
+  //  test the base table below was closed on: the bound of a signed-out surface is the columns that
+  //  surface renders, and two independent four-repository censuses find no signed-out surface for
+  //  any of the five. Two were not latent — measured over HTTPS with no JWT that morning,
+  //  `agent.template` served NINE public rows including a full `messages` system prompt ("You are a
+  //  high school AP World History Expert…") and `agent.shortcut` served THIRTY including
+  //  `pre_execution_message`; `definition` (`messages`), `cmp_response_feedback` (`comment`) and
+  //  `cmp_comparison_sets` had the grant open with zero public rows behind it. The anonymous share
+  //  link never depended on any of it: `/s/<token>` resolves through the SECURITY DEFINER
+  //  `public.resolve_share_token`, which returns the content itself. `agent.message_template` below
+  //  keeps its bound — it is the one relation in this schema with a real signed-out reader, and its
+  //  9 columns are exactly what `/p/e/message_template/<id>` renders.)
   // (`agent.mandate_exemplar` — the rename alias over the table below — carried this same
   //  22-column anon grant and its own declaration here until 2026-09-14. A "sync live share and
   //  exposure registries" sweep (cced6b5893) DELETED the declaration and left the grant live, and
@@ -412,25 +389,21 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   //  (no signed-out reader in any of the four repositories, and a temporary alias is never a public
   //  door) and wired this guard into scripts/run-release-gates.sh. Do not re-grant it.)
   //
-  // 🚩 STILL OPEN, and named rather than left for rediscovery: the same four-repository census
-  //  finds NO signed-out reader for `agent.exemplar` either, so the bound below is a declared door
-  //  nobody uses — and it publishes `user_input` and `variables`. Proven live and rolled back
-  //  (B-110, 2026-09-14): flip ONE exemplar to visibility='public' and an anonymous visitor reads
-  //  that row's `variables` through this grant. Zero exemplars are public today. Revoking it is a
-  //  row-surface decision with its own register row.
-  {
-    relation: "agent.exemplar",
-    columns: [
-      "id", "mandate_id", "label", "variables", "user_input", "reference_output",
-      "reference_artifact", "source", "captured_agent_id", "captured_model_id", "position", "is_active",
-      "created_at", "updated_at", "deleted_at", "visibility", "agent_id", "status",
-      "agent_version", "input_contract_hash", "output_contract_hash", "source_conversation_id",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
+  // (`agent.exemplar` — the base TABLE — carried a 22-column anon bound here until 2026-09-14,
+  //  `user_input`, `variables`, `reference_output` and `reference_artifact` among them: what a
+  //  human typed and what it produced. DD-222 revoked it to ZERO
+  //  (`migrations/dd222_exemplar_is_closed_to_the_signed_out_reader.sql`). The bound of a
+  //  signed-out surface is the columns that surface renders, and the four-repository census finds
+  //  no signed-out surface at all — every reader is the browser SESSION client behind the agent
+  //  builder (`features/agents/samples/service.ts`) or the mandate bench
+  //  (`features/mandates/admin/service.ts`), or the service role
+  //  (`scripts/backfill-agent-exemplar-input-content.ts`), and `PUBLIC_LANE_COLUMNS` in
+  //  `utils/permissions/publicLane.ts` declares no exemplar type, so `/p/e/exemplar/<id>` does not
+  //  exist. Measured before the revoke: an anonymous HTTPS read of `select=id,variables,user_input`
+  //  answered 200 (the empty array was the ROW gate — 0 of 876 exemplars are `public` — never the
+  //  column gate), and with ONE exemplar flipped to `public` inside a rolled-back transaction,
+  //  `anon` read its real `variables` payload. It answers 42501 now. A public exemplar surface is
+  //  a publishing decision with its own register row; do not re-grant anon without one.)
   {
     relation: "agent.message_template",
     columns: [
@@ -439,36 +412,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     ],
     why:
       "The indexable public viewer /p/e/message_template reads a public template's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
-  },
-  {
-    relation: "agent.shortcut",
-    columns: [
-      "id", "category_id", "label", "description", "icon_name", "keyboard_shortcut",
-      "sort_order", "agent_id", "enabled_features", "scope_mappings", "display_mode", "allow_chat",
-      "auto_run", "show_pre_execution_gate", "is_active", "created_at", "updated_at", "agent_version_id",
-      "use_latest", "show_variable_panel", "variables_panel_style", "show_definition_messages", "show_definition_message_content", "hide_reasoning",
-      "hide_tool_results", "pre_execution_message", "bypass_gate_seconds", "default_user_input", "default_variables", "context_overrides",
-      "llm_overrides", "context_mappings", "response_density", "json_extraction", "surface_name", "value_mappings",
-      "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "agent.template",
-    columns: [
-      "id", "name", "description", "category", "tags", "is_featured",
-      "use_count", "messages", "variable_definitions", "model_id", "model_tiers", "settings",
-      "output_schema", "tools", "custom_tools", "context_policies", "mcp_servers", "is_archived",
-      "source_agent_id", "created_at", "updated_at", "tool_config", "visibility", "deleted_at",
-      "auto_context_disabled",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
     relation: "ai.api",
