@@ -324,6 +324,8 @@ const nextConfig = {
     // nonpersistent build mode; this does not disable runtime/data caching.
     // Re-enable only after a measured memory acceptance. Guard: build-lab test.
     turbopackFileSystemCacheForBuild: false,
+    // Avoid the dev snapshot-coordinator panic that drops active review pages.
+    turbopackFileSystemCacheForDev: false,
     // ON (2026-08-11): enables `forbidden()` / `unauthorized()` from
     // next/navigation and their `forbidden.tsx` / `unauthorized.tsx`
     // boundaries. Required by `requireAccess(..., { forbid: true })` —
