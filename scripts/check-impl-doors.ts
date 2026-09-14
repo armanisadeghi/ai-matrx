@@ -122,6 +122,19 @@
  *       a grant-name census cannot see one of those. ABSOLUTE: no baseline, no
  *       allowlist. The population is zero and zero is the only correct number.
  *
+ *  D12 In HR, a CAPABILITY is asked before a ROLE. A function that reads both
+ *       a capability (`hr.capability` / `hr._l1_capabilities`) and an
+ *       organization membership role (`hr._l1_org_role`, or `role into <var>`
+ *       off `iam.memberships` / `iam.organization_member`), and that RAISES or
+ *       RETURNS on the role before the capability is ever consulted, is a
+ *       finding. DD-206 (2026-09-14): `hr.capability`'s source of truth is an
+ *       EMPLOYMENT, never a membership row, so a capability holder who is not a
+ *       member is constructible — and `hr_structure_list`, `hr_directory_list`
+ *       and `hr_org_chart` refused exactly that person with "no standing in this
+ *       employer" while `hr_knob_index` served them the whole settings index.
+ *       Comments are stripped before the positions are compared, so prose about
+ *       a role helper is not a finding. ABSOLUTE: no baseline, no allowlist.
+ *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
  *
@@ -793,6 +806,92 @@ const NULL_UNSAFE_ROLE_HELPER_QUERY = `
   order by 1, 3
 `;
 
+// ─── D12: in HR a capability is asked before a role ─────────────────────────
+//
+// DD-206 (2026-09-14), the chair's ruling: a capability is an authority in its
+// own right everywhere in HR, and every HR door tests capability first, then
+// role, in that order.
+//
+// WHY THE ORDER IS THE WHOLE DEFECT. `hr.capability` resolves through
+// `hr.employments_of` → `hr.role_assignment` → `hr.access_role.capabilities`,
+// tenant-bounded by `ra.organization_id`. It never reads `iam.memberships`. So
+// an HR admin whose standing is an EMPLOYMENT and not a membership row is
+// constructible, and V-61/V-67/B-98 constructed one (rolled back) and measured
+// the same identity, same organization, same probe run:
+//
+//   hr_knob_index      -> ADMITTED, 215 keys
+//   hr_structure_list  -> 42501 "hr_structure_list: no standing in this employer"
+//   hr_directory_list  -> 42501 "hr_directory_list: no standing in this employer"
+//   hr_org_chart       -> 42501 "hr_org_chart: no standing in this employer"
+//
+// Each refusal fired on `role is null` BEFORE the body ever asked about a
+// capability — in `hr_structure_list` the capability call sits nine lines below
+// the raise it can never reach.
+//
+// THE RULE. In any function that reads both a capability and an organization
+// membership role, the FIRST capability reference must precede the FIRST
+// membership-role reference whenever a `raise` or a `return` sits between them.
+// A lenient role READ ahead of a capability is not a finding — `hr._l1_viewer`
+// resolves `v_org_role` first and then decides self → capability → manager →
+// role, which IS capability-first — because nothing refuses in between. What is
+// a finding is a REFUSAL decided from a role the body has not yet earned the
+// right to decide from.
+//
+// Comments are stripped first (`--` to end of line, and `/* … */`), so a
+// migration's prose about `hr._l1_org_role` cannot make a correct door look
+// wrong. `hr.capability`, `hr._l1_capabilities` and `hr._l1_org_role` are
+// excluded from the population: they ARE the readers.
+//
+// Proven failing-then-passing 2026-09-14 against the live database with a
+// rolled-back restore of the pre-fix `public.hr_structure_list` body — one row
+// while restored, zero rows after the rollback. No file on disk was weakened to
+// produce the RED. ABSOLUTE: no baseline, no allowlist.
+const ROLE_BEFORE_CAPABILITY_QUERY = `
+  with stripped as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           regexp_replace(
+             regexp_replace(p.prosrc, '/\\*.*?\\*/', ' ', 'gs'),
+             '--[^' || chr(10) || ']*', ' ', 'g') as src
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname not in ('pg_catalog','information_schema','pg_toast','extensions',
+                             'graphql','graphql_public','pgbouncer','vault','realtime','storage',
+                             'supabase_functions','net','cron','auth','pgsodium','pgsodium_masks')
+       and p.prokind in ('f','p')
+       and p.proname not in ('capability','_l1_capabilities','_l1_org_role')
+  ),
+  pos as (
+    select fn, args, src,
+           least(nullif(strpos(src, 'hr.capability('), 0),
+                 nullif(strpos(src, 'hr._l1_capabilities('), 0)) as cap_pos,
+           least(nullif(strpos(src, 'hr._l1_org_role('), 0),
+                 (select nullif(strpos(src, t.m), 0)
+                    from (select substring(src from
+                            '[^a-z_.]role[[:space:]]+into[[:space:]]+[a-z_]+') as m) t
+                   where t.m is not null)) as role_pos
+      from stripped
+     where (strpos(src, 'hr.capability(') > 0 or strpos(src, 'hr._l1_capabilities(') > 0)
+  )
+  select fn, args,
+         substring(btrim(regexp_replace(
+           substring(src from role_pos for (cap_pos - role_pos)),
+           '[[:space:]]+', ' ', 'g')) for 150) as between_text
+    from pos
+   where cap_pos is not null
+     and role_pos is not null
+     and role_pos < cap_pos
+     and substring(src from role_pos for (cap_pos - role_pos))
+           ~* '(raise[[:space:]]+exception|[^a-z_]return[^a-z_])'
+   order by 1, 2
+`;
+
+interface RoleBeforeCapabilityRow {
+  fn: string;
+  args: string;
+  between_text: string;
+}
+
 // ─── D11: a door's declared reason names the gate its body actually reaches ──
 //
 // DD-195 (2026-09-13). D5 asks whether an anon-callable definer DECLARED itself; D6 asks whether
@@ -945,6 +1044,7 @@ async function main(): Promise<number> {
   let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
   let anonInvokerWriters: AnonInvokerWriterRow[];
   let unreachedGateClaims: ReasonClaimRow[];
+  let roleBeforeCapability: RoleBeforeCapabilityRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -994,6 +1094,10 @@ async function main(): Promise<number> {
     unreachedGateClaims = await q<ReasonClaimRow>(
       REASON_CLAIMS_UNREACHED_GATE_QUERY,
       "D11 door reasons naming a gate the body never reaches",
+    );
+    roleBeforeCapability = await q<RoleBeforeCapabilityRow>(
+      ROLE_BEFORE_CAPABILITY_QUERY,
+      "D12 HR functions that refuse on a role before asking a capability",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1557,6 +1661,49 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       A helper counts: the closure is the door's body plus the bodies it names (1 hop).${C.reset}`,
+    );
+  }
+
+  // ── D12 ───────────────────────────────────────────────────────────────────
+  if (roleBeforeCapability.length === 0) {
+    console.log(
+      `${TAG.ok}D12 no HR function refuses on a role before asking a capability ${C.dim}(DD-206)${C.reset}`,
+    );
+  } else {
+    findings += roleBeforeCapability.length;
+    console.log(
+      `${TAG.fail}D12 ${roleBeforeCapability.length} HR function(s) decide a refusal from a membership role before any capability is consulted:`,
+    );
+    for (const r of roleBeforeCapability) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+      console.log(`    ${C.dim}between the role read and the first capability: ${r.between_text}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       DD-206: in HR a capability is an authority in its OWN RIGHT, and it is asked${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       first. hr.capability resolves through an EMPLOYMENT (hr.employments_of ->${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       hr.role_assignment -> hr.access_role), never through iam.memberships, so an HR${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       admin who holds no membership row is a real person. hr_structure_list,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       hr_directory_list and hr_org_chart told exactly that person "no standing in${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       this employer" while hr_knob_index served them its whole settings index.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Fix: two statements — \`if <capability> then null; elsif <role test> then${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       raise ...; end if;\` — never one boolean expression, whose operand order is a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       cost estimate rather than a rule.${C.reset}`,
     );
   }
 
