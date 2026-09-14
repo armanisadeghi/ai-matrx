@@ -336,7 +336,20 @@ function pickEntity(
   return null;
 }
 
-const ORG_ARG = /^p?_?(organization|org)_id$/;
+/**
+ * 🚨 DD-214. This used to require the `_id` suffix — `p_organization_id`, `org_id` —
+ * so the FOUR live billing doors that spell the argument `p_org` fell straight
+ * through it. Three went UNMEASURED BY NAME (which is at least honest, and is why
+ * DD-208 had to be found by hand), and the fourth was WORSE: `billing.plan_status`
+ * has no other argument, so derivation fell back to the function name, found an
+ * entity called `plan`, and handed the door a `billing.plan` id where an
+ * ORGANIZATION was wanted. The door answered "not found", the probe came back
+ * empty, and the gate printed PASS over a door that was disclosing any
+ * organization's plan to any signed-in stranger. A name the harness cannot read is
+ * not a door the harness may score. `p_org` is the same argument by a shorter
+ * name, so the suffix is optional here.
+ */
+const ORG_ARG = /^p?_?(organization|org)(_id)?$/;
 const USER_ARG = /^p?_?(user|actor|owner|member|target_user|created_by|user_id)(_id)?$/;
 
 /** `p_employment_id` → `employment`; `p_id` → null (needs the function name). */
