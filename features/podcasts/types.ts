@@ -223,10 +223,49 @@ function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
   return raw as PcShowRssSettings;
 }
 
+/**
+ * THE SIGNED-OUT ROW SHAPE (DD-230, 2026-09-14).
+ *
+ * `anon` holds a COLUMN grant on the podcast tables, and the five columns it
+ * never holds are always the same: `created_by`, `updated_by`,
+ * `organization_id`, `version`, `metadata` (DD-186 — identity, bookkeeping and
+ * metadata leave regardless). A public reader therefore hands the display
+ * mappers a row that genuinely does not carry them, and a type that REQUIRES
+ * them makes the only correct query un-typable — which is exactly the pressure
+ * that kept `select("*")` in these routes until /podcast was telling four
+ * published shows they did not exist.
+ *
+ * So the mappers take this shape: the table's row with those five optional.
+ * Present for a signed-in reader, absent for a guest, never silently wrong.
+ */
+type SignedOutReadable<T> = Omit<
+  T,
+  "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+> &
+  Partial<
+    Pick<
+      T,
+      Extract<
+        keyof T,
+        "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+      >
+    >
+  >;
+
+/** `podcast.pc_articles` as a signed-out reader sees it. */
+export type PcArticleDisplayRow = SignedOutReadable<PcArticle>;
+
 // Accepts the display-column subset (the embed `show:pc_shows(...)` selects a
 // partial pick; the canonical base columns added in the podcast-schema move are
 // not needed for display mapping).
-type PcShowDisplayRow = Pick<
+//
+// DD-230: `created_by` is OPTIONAL here, and that is the type system finally
+// stating the signed-out bound. `anon` may not read identity columns, so every
+// public reader (/podcast, /podcast/[slug], feed.xml, chapters.json, /blog)
+// hands this mapper a row that genuinely does not carry one. Requiring it made
+// the narrowed selects un-typable and was the last thing standing between the
+// public podcast surfaces and a working `select`.
+type PcShowDisplayRow = SignedOutReadable<Pick<
   PcShowRow,
   | "id"
   | "slug"
@@ -237,11 +276,11 @@ type PcShowDisplayRow = Pick<
   | "thumbnail_url"
   | "author"
   | "is_published"
-  | "created_by"
   | "rss_settings"
   | "created_at"
   | "updated_at"
->;
+  | "created_by"
+>>;
 
 export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
   return {
@@ -254,19 +293,29 @@ export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
     thumbnail_url: row.thumbnail_url,
     author: row.author,
     is_published: row.is_published,
-    created_by: row.created_by,
+    // Absent for a signed-out reader by design (DD-230), never a lost value.
+    created_by: row.created_by ?? null,
     rss_settings: parseRssSettings(row.rss_settings),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
 
-export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
+/**
+ * The episode columns the display mapper reads. `created_by` and `metadata` are
+ * OPTIONAL for the same reason as on the show above (DD-230): `anon` holds
+ * neither, so a public reader's row has neither, and `chapters` — which lives
+ * inside `metadata` — is therefore null for a signed-out visitor by
+ * construction. `chapters.json` documents that consequence at its 404.
+ */
+export type PcEpisodeDisplayRow = SignedOutReadable<PcEpisodeRow>;
+
+export function mapPcEpisodeRow(row: PcEpisodeDisplayRow): PcEpisode {
   return {
     id: row.id,
     slug: row.slug,
     show_id: row.show_id,
-    created_by: row.created_by,
+    created_by: row.created_by ?? null,
     title: row.title,
     description: row.description,
     audio_url: row.audio_url,
@@ -282,7 +331,7 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
     host_count: row.host_count,
     speakers: parseSpeakers(row.speakers),
     script: row.script,
-    chapters: parseChapters(row.metadata),
+    chapters: parseChapters(row.metadata ?? null),
     is_published: row.is_published,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -290,7 +339,7 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
 }
 
 /** Supabase join row — `show` may be required with a partial column pick. */
-export type PcEpisodeWithShowRowInput = PcEpisodeRow & {
+export type PcEpisodeWithShowRowInput = PcEpisodeDisplayRow & {
   show?: Partial<PcShowRow> | null;
 };
 

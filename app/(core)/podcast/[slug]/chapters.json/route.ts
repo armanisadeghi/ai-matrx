@@ -40,9 +40,20 @@ export async function GET(
     .select(PC_EPISODE_PUBLIC_SELECT)
     .is("deleted_at", null);
 
-  const { data: episodeRow } = isUUID(slug)
+  const { data: episodeRow, error: episodeError } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
+
+  // "Episode not found" is a claim about the catalogue; a refused read cannot
+  // support it (DD-230). `PGRST116` is a genuine no-row `.single()`; anything
+  // else means we were refused and must say so instead of denying the episode.
+  if (episodeError && episodeError.code !== "PGRST116") {
+    throw new Error(
+      `The chapters document could not read podcast.pc_episodes: ${episodeError.message}` +
+        (episodeError.code ? ` (${episodeError.code})` : "") +
+        ". See lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.",
+    );
+  }
 
   if (!episodeRow) {
     return new Response("Episode not found", {
@@ -57,6 +68,16 @@ export async function GET(
   // No chapters is a 404, not an empty document: the feed only links this URL
   // for episodes that have them, so an empty body here would only ever be a
   // stale link — and apps handle a 404 by hiding the chapter UI, which is right.
+  //
+  // DD-230 note, measured: chapters live in `pc_episodes.metadata.chapters`, and
+  // `metadata` is NOT in this table's signed-out column bound (identity and
+  // metadata leave regardless, DD-186). So for a caller with no account this
+  // branch is ALWAYS taken. That is not a dead link — feed.xml derives its
+  // `<podcast:chapters>` element from the same withheld field, so it never
+  // advertises a URL it cannot serve — but the route is, today, reachable with
+  // content only by a signed-in reader. Serving chapters publicly is a
+  // publishing decision (a granted column, not a metadata grant) with its own
+  // register row.
   if (document.chapters.length === 0) {
     return new Response("No chapters for this episode", {
       status: 404,

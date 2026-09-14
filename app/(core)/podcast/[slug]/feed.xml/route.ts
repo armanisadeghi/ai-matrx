@@ -96,9 +96,24 @@ export async function GET(
         .from('pc_shows')
         .select(PC_SHOW_PUBLIC_SELECT)
         .is('deleted_at', null);
-    const { data: showRow } = isUUID(slug)
+    const { data: showRow, error: showError } = isUUID(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
+
+    // 🚨 "Podcast not found" is a claim about the CATALOGUE, and a refused query
+    // cannot support it. PostgREST answers `PGRST116` for a genuine no-row
+    // `.single()`; anything else — 42501 above all — means we were REFUSED, and
+    // telling the open web the show does not exist would be the same silent lie
+    // DD-230 found this route already telling (the `select('*')` era). Throw.
+    if (showError && showError.code !== 'PGRST116') {
+        throw new Error(
+            `The podcast feed could not read podcast.pc_shows: ${showError.message}` +
+                (showError.code ? ` (${showError.code})` : '') +
+                '. The signed-out column bound for this table is declared in ' +
+                'lib/security/public-exposure.ts#ANON_COLUMN_SURFACE and mirrored in ' +
+                'features/podcasts/publicColumns.ts.',
+        );
+    }
 
     if (!showRow) {
         return new Response('Podcast not found', {
@@ -110,7 +125,7 @@ export async function GET(
     const show = mapPcShowRow(showRow);
 
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
-    const { data: episodeRows } = await supabase
+    const { data: episodeRows, error: episodeError } = await supabase
         .schema('podcast').from('pc_episodes')
         .select(PC_EPISODE_PUBLIC_SELECT)
         .is('deleted_at', null)
@@ -118,6 +133,16 @@ export async function GET(
         .eq('is_published', true)
         .order('episode_number', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
+
+    // A feed with no items is a real state; a feed with no items BECAUSE the read
+    // was refused is a broken feed that directories will happily ingest as empty.
+    if (episodeError) {
+        throw new Error(
+            `The podcast feed could not read podcast.pc_episodes: ${episodeError.message}` +
+                (episodeError.code ? ` (${episodeError.code})` : '') +
+                '. See lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.',
+        );
+    }
 
     const episodes = (episodeRows ?? []).map(mapPcEpisodeRow);
 

@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { PodcastBlogPage } from "@/features/podcasts/components/player/PodcastBlogPage";
-import type { PcArticle, PcEpisodeWithShow } from "@/features/podcasts/types";
+import type { PcArticleDisplayRow, PcEpisodeWithShow } from "@/features/podcasts/types";
 import { mapPcEpisodeWithShowRow } from "@/features/podcasts/types";
 
 export const revalidate = 3600;
@@ -49,7 +49,7 @@ const resolveBlog = cache(async (slug: string) => {
     .maybeSingle();
   if (!article) return null;
 
-  return { episode: mappedEpisode, article: article as PcArticle };
+  return { episode: mappedEpisode, article: article as PcArticleDisplayRow };
 });
 
 export async function generateMetadata({

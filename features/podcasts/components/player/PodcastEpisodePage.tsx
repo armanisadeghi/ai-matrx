@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } from 'lucide-react';
-import type { PcArticle, PcEpisodeWithShow } from '../../types';
+import type { PcArticleDisplayRow, PcEpisodeWithShow } from '../../types';
 import MediaChaptersBlock from '@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock';
 import type { PodcastAudioPlayerHandle } from './PodcastAudioPlayer';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
@@ -15,7 +15,8 @@ import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 interface PodcastEpisodePageProps {
     episode: PcEpisodeWithShow;
     /** Published companion articles for this episode (from the route). */
-    articles?: PcArticle[];
+    /** A signed-out reader's rows have no identity columns (DD-230). */
+    articles?: PcArticleDisplayRow[];
 }
 
 /**

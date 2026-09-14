@@ -13,7 +13,7 @@ import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastSh
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
-  PcArticle,
+  PcArticleDisplayRow,
   PcEpisode,
   PcEpisodeWithShow,
   PcShow,
@@ -195,7 +195,7 @@ export default async function PodcastPage({
         />
         <PodcastEpisodePage
           episode={result.data}
-          articles={(articles ?? []) as PcArticle[]}
+          articles={(articles ?? []) as PcArticleDisplayRow[]}
         />
       </>
     );

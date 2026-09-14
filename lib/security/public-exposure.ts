@@ -91,7 +91,6 @@ export const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   { relation: "public.app_config", policy: "app_config_public_read", cmd: "SELECT", why: "client bootstrap config (min supported version); read before auth by design" },
 
   // — Public tool / UI catalogues the shell needs before auth —
-  { relation: "tool.surface_defaults", policy: "ref_select", cmd: "SELECT", why: "read on the publishable key by the chrome-extension tool-drift guards in matrx-extend and matrx-local — four columns for two surface names (measured 2026-09-14, DD-230). Those guards should use the service key; when they do, this row goes too" },
   { relation: "ui.ui_surface_agent_role", policy: "ui_surface_agent_role_read", cmd: "SELECT", why: "fetchSurfaceConfigBundle reads it deliberately as a guest — a genuine guest still receives the public surface config — bounded to the ten columns it selects plus surface_name (DD-230)" },
 
   // — Deliberately public product surfaces —
@@ -378,9 +377,22 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   // signed-out surface renders. DD-226 applied that to 121 relations and left 46 — the catalogue-
   // shaped schemas `ai`, `billing`, `content_ir`, `extend`, `iam`, `platform`, `tool`, `ui` — open,
   // because their readers were said to be "server-side shell catalogue reads that a browser capture
-  // cannot see". DD-230 measured those readers. THIRTY of the 46 had none and are gone from this
-  // list entirely; the other SIXTEEN are bounded to the columns their reader actually names.
-  // 65 relations / 997 readable columns → 35 relations / 475.
+  // cannot see". DD-230 measured those readers. THIRTY-ONE of the 46 had none and are gone from
+  // this list entirely; the other FIFTEEN are bounded to the columns their reader actually names.
+  // 65 relations / 997 readable columns → 34 relations / 471.
+  //
+  // 🚨 THE LAST ONE TOOK A VERIFIER TO CLOSE, AND THE LESSON IS WORTH MORE THAN THE COLUMNS.
+  // `tool.surface_defaults` was bounded at four rather than closed, on a reader this lane had READ
+  // but not RUN: the chrome-extension tool-drift guards in matrx-extend and matrx-local, which do
+  // ask for those columns on the publishable key, and whose 18 anonymous 200s a day are real. V-100
+  // ran them. matrx-local's read asks for `is_active`, which was never in the bound, and its FIRST
+  // read (`tool.binding`, with raise_for_status() and no fallback) 401s anyway; matrx-extend's read
+  // sits in the same `Promise.all` as that same 401ing `tool.binding`, so its `try` throws and it
+  // falls through to the Management API every time. Eighteen successful anonymous reads a day whose
+  // own caller throws the answer away. A relation is not "read by" a caller that cannot use what it
+  // gets — so the door closed with no change needed in either peer repo
+  // (migrations/dd230_surface_defaults_has_no_signed_out_reader_after_all.sql). When a `why` names a
+  // reader, RUN it.
   //
   // 🚨 NEVER READ A `why` HERE AS A MEASUREMENT UNLESS IT SAYS WHAT WAS MEASURED. DD-186 pasted one
   // sentence — "No signed-out reader was found for it in the four-repository census" — onto 53
@@ -444,7 +456,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
   //   extend.wbx_demo, wbx_guidance, wbx_highlight, wbx_pattern, wbx_screenshot, wbx_seo_audit,
   //   iam.industries, iam.permissions,
   //   platform.assurance_level, flexible_data, rulebook, shareable_resource_registry, source_authority,
-  //   tool.bundle, tool.executor, tool.mcp_config, tool.mcp_server,
+  //   tool.bundle, tool.executor, tool.mcp_config, tool.mcp_server, tool.surface_defaults,
   //   ui.ui_client, ui_surface, ui_surface_client_tool, ui_surface_value, ui_surface_write_target
   // They are ABSENT rather than present with an empty `columns` array: `check:anon-column-surface`
   // fails on an UNDECLARED live relation, so a re-grant is caught by the guard itself. Re-granting
@@ -847,19 +859,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     ],
     why:
 "matrx-extend asks for name+description before login to build its tool descriptions (src/lib/tools/descriptions.ts).",
-  },
-  {
-    relation: "tool.surface_defaults",
-    columns: [
-      "surface_name", "always_include_tools", "always_include_bundles", "never_include_tools",
-    ],
-    why:
-      "The chrome-extension tool-drift guards, which read with the PUBLISHABLE key and therefore as "
-      + "`anon`: matrx-extend scripts/check-tool-db-drift.ts#fetchSurfaceDefaults and matrx-local "
-      + "scripts/check_tool_db_drift.py. MEASURED 2026-09-14: 18 anon 200s in 24 h, every one exactly "
-      + "these four columns for surface_name in (chrome-extension/assistant, chrome-extension/pilot). "
-      + "NOTE for the next lane: those two guards should read with the service key, and when they do "
-      + "this bound goes to zero — an anonymous door held open by our own tooling is still a door.",
   },
   {
     relation: "ui.ui_surface_agent_pref",
