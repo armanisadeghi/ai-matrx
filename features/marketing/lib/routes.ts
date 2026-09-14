@@ -139,7 +139,8 @@ function mapLegacySiteSub(brandSeg: string, siteSeg: string, sub: string): strin
   const suffix = query ? `?${query}` : "";
   if (!home) {
     // Unknown section: keep it under the inventory branch so nothing 404s.
-    return `/marketing/${brandSeg}/websites/${siteSeg}${path ? `/${path}` : ""}${suffix}`;
+    const normalizedPath = segments.join("/");
+    return `/marketing/${brandSeg}/websites/${siteSeg}${normalizedPath ? `/${normalizedPath}` : ""}${suffix}`;
   }
   const mapped = [home.slug, rest].filter(Boolean).join("/");
   const base = `/marketing/${brandSeg}/${home.branch}/${siteSeg}`;
