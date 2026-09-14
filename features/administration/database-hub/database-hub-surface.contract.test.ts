@@ -67,11 +67,14 @@ describe("database admin surface contract", () => {
     );
 
     // The database frame owns the scrollable content under its tool rows.
+    // Its terminal content must reserve the shared page-end clearance; putting
+    // that space on an outer wrapper would leave the final result obscured.
     // The surrounding admin frame must clip that route instead of adding a
     // second competing vertical scroll region.
     expect(databaseFrame).toContain(
-      'className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"',
+      'className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto overflow-x-hidden"',
     );
+    expect(databaseFrame.match(/scroll-page-end-space/g)).toHaveLength(1);
     expect(adminFrame).toContain(
       'pathname.startsWith("/administration/database")',
     );
