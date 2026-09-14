@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectConversationIsEphemeral } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -14,6 +13,7 @@ import {
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
 import { resolveBoundTargetView } from "@/lib/sandbox/bound-target-view";
+import { resolveBindingScope } from "@/lib/sandbox/binding-scope";
 
 const MAX_LENS_TARGETS = 2;
 
@@ -83,10 +83,6 @@ export function useComputeTargetActions(conversationId: string) {
   );
   const sandboxBlocked = useSandboxBindingBlocked(conversationId);
 
-  const bySurface = useAppSelector(
-    (state) => state.userPreferences.coding.activeAgentSandboxBySurface,
-  );
-
   // THE bound box, straight off the conversation's record — named on first
   // paint, and still named while it is asleep or gone. Liveness only decorates
   // it (`state`); it never removes it. See `lib/sandbox/bound-target-view.ts`.
@@ -129,25 +125,28 @@ export function useComputeTargetActions(conversationId: string) {
       : null;
 
     if (ref) clearSandboxBindingCache(ref.rowId);
-    if (!sourceFeature) {
-      toast.error("This conversation is not ready to bind a computer yet.");
+
+    // Connecting a computer from the `+` menu binds THIS CONVERSATION and
+    // nothing else (owner, 2026-09-14). It used to ALSO rewrite the user's
+    // per-surface seed, silently moving every future chat on the surface onto
+    // the box. This menu only ever renders inside a conversation, so there is
+    // no seed-only path here — the surface-wide default is opt-in, and it is
+    // offered in the Sandbox panel alone.
+    const plan = resolveBindingScope({
+      conversationId: conversationId || null,
+      sourceFeature,
+      shareAcrossSurface: false,
+    });
+    if (plan.blockedReason) {
+      toast.error(plan.blockedReason);
       return;
     }
 
-    const next = { ...bySurface };
-    if (ref) next[sourceFeature] = ref;
-    else delete next[sourceFeature];
-
-    dispatch(
-      setPreference({
-        module: "coding",
-        preference: "activeAgentSandboxBySurface",
-        value: next,
-      }),
-    );
     void dispatch(setConversationSandbox({ conversationId, ref }));
     toast.success(
-      ref ? `${target?.name} connected` : "Computer connection removed",
+      ref
+        ? `${target?.name} connected to this conversation`
+        : "Computer disconnected from this conversation",
     );
   };
 

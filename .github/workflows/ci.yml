@@ -130,6 +130,16 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Measured production build-cache contract
         run: node --test scripts/build-lab/config-contract.test.mjs
+      - name: The Ignored Build Step sees releases that arrive behind a merge commit
+        # 2026-09-14: the step read the HEAD commit message only, so the shared
+        # checkout's mandatory commit → `git pull --no-rebase` → push routine
+        # stranded every release it pushed under a merge head — f2386f68f0
+        # (`release: a chat that was on a sandbox opens back on that sandbox`)
+        # rode in under 12ef018999 and Vercel CANCELED the deployment. The
+        # guard drives the real script over real throwaway repos; case (b) is
+        # red against the old script, (c)/(d) hold the other half of the law:
+        # a push with no NEW release commit never starts a production build.
+        run: pnpm test:vercel-ignore
       - name: Matrx-owned packages are declared and installed at npm latest
         run: pnpm check:matrx-packages
       - name: EVERY TYPESCRIPT FILE PARSES

@@ -232,6 +232,7 @@
     "check:agent-list-reads:self-test": "tsx scripts/check-agent-list-reads.ts --self-test",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
     "test:release-outcome": "node --test scripts/release-outcome.test.mjs",
+    "test:vercel-ignore": "node --test scripts/vercel-ignore-build.test.mjs",
     "test:preview-install-guard": "node --test scripts/preview-install-guard.test.mjs",
     "check:agent-links": "tsx scripts/check-agent-links.ts",
     "check:agent-links:self-test": "tsx scripts/check-agent-links.ts --self-test",

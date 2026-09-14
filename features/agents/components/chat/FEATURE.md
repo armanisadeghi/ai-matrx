@@ -6,7 +6,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-14`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -297,6 +297,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-09-14` — claude: **binding a sandbox from a chat control binds THIS CONVERSATION; surface-wide is an opt-in.** The Sandbox tab's checkbox was "Only this conversation", UNCHECKED by default, so every pick rewrote `activeAgentSandboxBySurface` and moved every future chat on the surface onto that box; the `+` menu (`use-compute-target-actions.ts#applyBinding`) had no per-conversation option at all and always wrote the seed. Both now route through the pure `lib/sandbox/binding-scope.ts#resolveBindingScope`: the default writes only `chat.conversation.sandbox_instance_id` (the column the server reads, via the unchanged `setConversationSandbox` thunk), and the panel's new "Also use for every new chat here" checkbox is the explicit opt-in that ALSO seeds the surface. The `+` menu binds the conversation only — it never renders outside one, so it has no seed-only path. Guards: `lib/sandbox/__tests__/binding-scope.test.ts` + `features/agents/components/chat/SandboxPanel.test.tsx`, both proven RED against the old default.
 
 - `2026-09-13` — codex: **prepared text opens as a visible first-turn resource, never as user input.** `chat-draft-transfer` accepts an identity-bound `resources` handoff alongside an ordinary draft; `ChatRoomClient` accepts only the canonical text-resource shape, waits for the fresh instance resource map, and attaches it through `useAttachResource` while `/chat/new` remains provisional. Invalid or cross-account/org handoffs are discarded with a visible error; existing text-only handoffs retain their prior behavior.
 
