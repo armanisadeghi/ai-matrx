@@ -16,7 +16,10 @@ import {
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  normalizeSnapshotAppendState,
+  useMarketingTableState,
+} from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
 import {
   humanLines,
@@ -34,18 +37,14 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
   });
-  const allowedPageSizes = new Set([10, 25, 50, 100, 250]);
-  const appendState = {
-    ...table.state,
-    page: 1,
-    pageSize: allowedPageSizes.has(table.state.pageSize) ? table.state.pageSize : 25,
-  };
+  const appendState = normalizeSnapshotAppendState(table.state);
+  const queryAppendState = normalizeSnapshotAppendState(table.queryState);
   useEffect(() => {
     if (table.state.page !== 1 || table.state.pageSize !== appendState.pageSize) {
       table.replaceState(appendState);
     }
   }, [appendState, table]);
-  const snapshots = useSnapshots(site.id, pageId, appendState);
+  const snapshots = useSnapshots(site.id, pageId, queryAppendState);
   // Compare mode — pick any two snapshots; a third pick replaces the oldest
   // selection. The diff panel renders above the table on demand.
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -236,11 +235,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
           state: appendState,
           onStateChange: (nextState) =>
             table.onStateChange({
-              ...nextState,
-              page: 1,
-              pageSize: allowedPageSizes.has(nextState.pageSize)
-                ? nextState.pageSize
-                : 25,
+              ...normalizeSnapshotAppendState(nextState),
             }),
           sourceProcessing: {
             search: "source",

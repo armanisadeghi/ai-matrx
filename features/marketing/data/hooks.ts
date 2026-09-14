@@ -534,10 +534,11 @@ export function useSnapshots(
         const page = await listSnapshotReceiptPage({ siteId, pageId, state, watermark, signal });
         seen.current.total = page.total;
         for (const row of page.rows) seen.current.ids.add(row.id);
-        if (page.nextCursor === null && page.rows.length !== page.total) {
+        const nextCursor = page.rows.length >= page.total ? null : page.nextCursor;
+        if (nextCursor === null && page.rows.length !== page.total) {
           throw new SnapshotReceiptError("the first page ended before the frozen total");
         }
-        return { rows: page.rows, nextCursor: page.nextCursor, totalItems: page.total };
+        return { rows: page.rows, nextCursor, totalItems: page.total };
       }
       const decoded = decodeSnapshotReceiptCursor(cursor);
       const page = await listSnapshotReceiptPage({
@@ -547,11 +548,12 @@ export function useSnapshots(
       const duplicates = page.rows.some((row) => seen.current.ids.has(row.id));
       if (duplicates) throw new SnapshotReceiptError("a page repeated a snapshot");
       const nextSize = seen.current.ids.size + page.rows.length;
-      if (nextSize > page.total || (page.nextCursor === null && nextSize !== page.total)) {
+      const nextCursor = nextSize >= page.total ? null : page.nextCursor;
+      if (nextSize > page.total || (nextCursor === null && nextSize !== page.total)) {
         throw new SnapshotReceiptError("the received rows do not match the frozen total");
       }
       for (const row of page.rows) seen.current.ids.add(row.id);
-      return { rows: page.rows, nextCursor: page.nextCursor, totalItems: page.total };
+      return { rows: page.rows, nextCursor, totalItems: page.total };
     },
   });
   const error = receipt.error ?? pagination.error;
