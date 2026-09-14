@@ -1059,7 +1059,7 @@ button.shell-nav-flyout-item {
   flex-direction: column;
   gap: 0.125rem;
   overflow-y: auto;
-  padding: 0.25rem;
+  padding: 0.25rem 0;
 }
 
 .settings-route-menu .shell-active-pill {
