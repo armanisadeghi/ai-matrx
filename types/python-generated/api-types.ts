@@ -27679,6 +27679,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crm/parties/kind-resolution/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Queue Party Kind Resolution
+         * @description Send parties waiting in the possible_person review queue to the AI judge
+         *     through the half-price Batch lane. Platform admin only: the queue spans
+         *     organizations. Verdicts land hours later through the ``crm.party_kind``
+         *     handler, which never overrides a human's decision. The YouTube channel fold
+         *     triggers the same submission at the end of every pass; this is the operator's
+         *     door for draining the backlog in deliberate slices.
+         */
+        post: operations["queue_party_kind_resolution_crm_parties_kind_resolution_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-processing/{cld_file_id}": {
         parameters: {
             query?: never;
@@ -30212,6 +30237,59 @@ export interface paths {
          *     A short list is never shown as if it were the whole answer.
          */
         post: operations["agent_impact_mandates_impact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Advance
+         * @description Move every advanceable token's pin to its target, through the sanctioned
+         *     pin writers, one transaction per row. Every token comes back with a status
+         *     (advanced / refused / excluded) and a sentence, and every one is ledgered so
+         *     the batch can be reverted by ``batch_id``. A stale pin is REFUSED, never
+         *     clobbered (R9); personal pins, tracks-latest rungs and non-agent holders are
+         *     EXCLUDED by name (R17/R35); a dry-run token is refused (R23). The server
+         *     re-judges every token with the impact read AS the caller: a rung the read
+         *     marks blocked is excluded with its sentence, a target not newer than the pin
+         *     is refused, and a rung the caller cannot read is refused without naming it
+         *     (R31). The body's injected ``organization_id`` grants nothing.
+         */
+        post: operations["agent_impact_advance_mandates_impact_advance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Revert
+         * @description Undo a batch (or one row of it): each advanced ledger row's pin goes back
+         *     to ``prior_pinned_version_id`` through the same writers, as a new batch that
+         *     points at the one it undid. Refused per row when the pin moved again, when
+         *     the row was already reverted, or when the organization's revert window
+         *     (``agent_impact.revert_window_hours``) has passed.
+         */
+        post: operations["agent_impact_revert_mandates_impact_revert_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -38933,6 +39011,99 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** AdvanceCounts */
+        AdvanceCounts: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Advanced
+             * @default 0
+             */
+            advanced?: number;
+            /**
+             * Reverted
+             * @default 0
+             */
+            reverted?: number;
+            /**
+             * Refused
+             * @default 0
+             */
+            refused?: number;
+            /**
+             * Excluded
+             * @default 0
+             */
+            excluded?: number;
+        };
+        /** AdvanceReport */
+        AdvanceReport: {
+            /** Batch Id */
+            batch_id: string;
+            /** Batch Label */
+            batch_label?: string | null;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "advance" | "revert";
+            /** Reverts Batch Id */
+            reverts_batch_id?: string | null;
+            /** Results */
+            results?: components["schemas"]["AdvanceRowResult"][];
+            counts?: components["schemas"]["AdvanceCounts"];
+            /** Computed At */
+            computed_at: string;
+        };
+        /**
+         * AdvanceRequest
+         * @description ``organization_id`` is injected by callApi's scope resolution and grants
+         *     NOTHING here: which rungs may be written is decided per row by what the
+         *     acting user can read.
+         */
+        AdvanceRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Batch Label */
+            batch_label?: string | null;
+            /** Tokens */
+            tokens: components["schemas"]["ApplyToken"][];
+        };
+        /** AdvanceRowResult */
+        AdvanceRowResult: {
+            token: components["schemas"]["ApplyToken"];
+            /** Mandate Key */
+            mandate_key?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "advanced" | "excluded" | "refused" | "reverted";
+            /** Reason */
+            reason?: string | null;
+            /** Prior Pinned Version Id */
+            prior_pinned_version_id?: string | null;
+            /** New Pinned Version Id */
+            new_pinned_version_id?: string | null;
+            /** Ledger Row Id */
+            ledger_row_id?: string | null;
+        };
         /** AdviceSlipRecord */
         AdviceSlipRecord: {
             /**
@@ -44048,6 +44219,11 @@ export interface components {
             skipped_no_content?: number;
             /** Errors */
             errors?: string[];
+            /**
+             * More Pages Waiting
+             * @default false
+             */
+            more_pages_waiting?: boolean;
         };
         /** BboxInput */
         BboxInput: {
@@ -69788,6 +69964,10 @@ export interface components {
              * @default 0
              */
             agents_examined?: number;
+            /** Unknown Agent Ids */
+            unknown_agent_ids?: string[];
+            /** Unknown Sentence */
+            unknown_sentence?: string | null;
             /**
              * Dry Run
              * @default false
@@ -69801,8 +69981,30 @@ export interface components {
          * @description There is no batch id on ``agent.definition_version`` — a batch writer
          *     passes the ids it touched. A time window is NOT accepted: it sweeps
          *     unrelated concurrent saves.
+         *
+         *     Inherits ``AcceptsInjectedScope`` (aidream/api/FEATURE.md § extra="forbid"
+         *     bodies MUST accept injected org scope): the frontend ``callApi`` merges
+         *     ``organization_id`` / ``project_id`` / ``task_id`` onto every POST body, and
+         *     without them every call from the app 422'd with ``extra_forbidden``. The read
+         *     does not use them — it is scoped per CALLER through ``agent_mandate_rungs``,
+         *     never by the active organization (db-rules §6: access never depends on it).
          */
         ImpactRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Agent Ids */
             agent_ids: string[];
             delta?: components["schemas"]["ImpactDelta"] | null;
@@ -85152,6 +85354,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * PartyKindBatchRequest
+         * @description ``organization_id`` is the caller's injected app context, never the target;
+         *     the review queue is platform data, so the target org is its own field.
+         */
+        PartyKindBatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Queue Organization Id
+             * @description Only this organization's queue; omit for every organization.
+             */
+            queue_organization_id?: string | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+        };
         /** PatchFolderRequest */
         PatchFolderRequest: {
             /**
@@ -95269,6 +95503,33 @@ export interface components {
             /** Queue Item Id */
             queue_item_id: string;
         };
+        /**
+         * RevertRequest
+         * @description Same injected scope, same rule: it is never an authority for the write.
+         */
+        RevertRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Batch Id */
+            batch_id: string;
+            /** Row Id */
+            row_id?: string | null;
+            /** Batch Label */
+            batch_label?: string | null;
+        };
         /** ReviewDetailOut */
         ReviewDetailOut: {
             review: components["schemas"]["ReviewOut"];
@@ -96542,7 +96803,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "cancelled" | "claimed" | "failed" | "queued" | "running" | "skipped" | "success";
+            status: "cancelled" | "claimed" | "failed" | "interrupted" | "queued" | "running" | "skipped" | "success";
             /** Surface */
             surface?: string | null;
             /** Queue */
@@ -160322,6 +160583,41 @@ export interface operations {
             };
         };
     };
+    queue_party_kind_resolution_crm_parties_kind_resolution_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyKindBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     process_file_content_processing__cld_file_id__post: {
         parameters: {
             query?: never;
@@ -165078,6 +165374,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_advance_mandates_impact_advance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_revert_mandates_impact_revert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
                 };
             };
             /** @description Validation Error */

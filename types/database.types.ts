@@ -51381,6 +51381,7 @@ export type Database = {
           principal_id: string
           principal_label: string
           probed_at: string
+          readable_columns: string[] | null
           readable_count: number | null
           run_id: string
           sampled: boolean
@@ -51395,6 +51396,7 @@ export type Database = {
           principal_id: string
           principal_label: string
           probed_at?: string
+          readable_columns?: string[] | null
           readable_count?: number | null
           run_id: string
           sampled?: boolean
@@ -51409,6 +51411,7 @@ export type Database = {
           principal_id?: string
           principal_label?: string
           probed_at?: string
+          readable_columns?: string[] | null
           readable_count?: number | null
           run_id?: string
           sampled?: boolean
@@ -52736,6 +52739,8 @@ export type Database = {
       access_delta_compare: {
         Args: { p_after: string; p_before: string }
         Returns: {
+          columns_gained: string[]
+          columns_lost: string[]
           count_after: number
           count_before: number
           gained_sample: string[]
@@ -60213,21 +60218,21 @@ export type Database = {
       }
       definer_client_grant_grandfather: {
         Row: {
-          argtypes: string | null
+          argtypes: string
           function_name: string
           identity_args: string
           schema_name: string
           snapshotted_at: string
         }
         Insert: {
-          argtypes?: string | null
+          argtypes: string
           function_name: string
           identity_args: string
           schema_name: string
           snapshotted_at?: string
         }
         Update: {
-          argtypes?: string | null
+          argtypes?: string
           function_name?: string
           identity_args?: string
           schema_name?: string
@@ -88841,6 +88846,10 @@ export type Database = {
         Args: { p_keyword_ids: string[] }
         Returns: number
       }
+      fn_site_offering_for_topic: {
+        Args: { p_site_id: string; p_topic_id: string }
+        Returns: string
+      }
       fn_situational_sites_owing: {
         Args: { p_limit?: number }
         Returns: {
@@ -89452,6 +89461,12 @@ export type Database = {
           p_value_id?: string
         }
         Returns: Json
+      }
+      gsc_offering_keyword_set: {
+        Args: { p_offering_id: string; p_site_id: string }
+        Returns: {
+          kw_id: string
+        }[]
       }
       gsc_offering_stats: {
         Args: { p_end: string; p_site_id: string; p_start: string }
@@ -91253,6 +91268,40 @@ export type Database = {
           name: string
           slug: string
         }[]
+      }
+      write_site_keyword_offering: {
+        Args: {
+          p_assigned_by?: string
+          p_confidence?: number
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_offering_id?: string
+          p_organization_id: string
+          p_placement?: Json
+          p_site_id: string
+        }
+        Returns: {
+          human_protected: number
+          removed: number
+          written: number
+        }[]
+      }
+      write_site_offering_value: {
+        Args: {
+          p_audience_fit?: string
+          p_brand_fit?: string
+          p_brand_offering_id: string
+          p_capacity_appetite?: string
+          p_clear?: boolean
+          p_lead_quality?: string
+          p_metadata?: Json
+          p_notes?: string
+          p_offering_match?: string
+          p_organization_id: string
+          p_site_id: string
+          p_worth_points?: number
+        }
+        Returns: string
       }
     }
     Enums: {

@@ -57956,6 +57956,50 @@
         }
       }
     },
+    "/crm/parties/kind-resolution/batch": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Queue Party Kind Resolution",
+        "description": "Send parties waiting in the possible_person review queue to the AI judge\nthrough the half-price Batch lane. Platform admin only: the queue spans\norganizations. Verdicts land hours later through the ``crm.party_kind``\nhandler, which never overrides a human's decision. The YouTube channel fold\ntriggers the same submission at the end of every pass; this is the operator's\ndoor for draining the backlog in deliberate slices.",
+        "operationId": "queue_party_kind_resolution_crm_parties_kind_resolution_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartyKindBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Queue Party Kind Resolution Crm Parties Kind Resolution Batch Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-processing/{cld_file_id}": {
       "post": {
         "tags": [
@@ -65195,6 +65239,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ImpactReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/advance": {
+      "post": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Agent Impact Advance",
+        "description": "Move every advanceable token's pin to its target, through the sanctioned\npin writers, one transaction per row. Every token comes back with a status\n(advanced / refused / excluded) and a sentence, and every one is ledgered so\nthe batch can be reverted by ``batch_id``. A stale pin is REFUSED, never\nclobbered (R9); personal pins, tracks-latest rungs and non-agent holders are\nEXCLUDED by name (R17/R35); a dry-run token is refused (R23). The server\nre-judges every token with the impact read AS the caller: a rung the read\nmarks blocked is excluded with its sentence, a target not newer than the pin\nis refused, and a rung the caller cannot read is refused without naming it\n(R31). The body's injected ``organization_id`` grants nothing.",
+        "operationId": "agent_impact_advance_mandates_impact_advance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/revert": {
+      "post": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Agent Impact Revert",
+        "description": "Undo a batch (or one row of it): each advanced ledger row's pin goes back\nto ``prior_pinned_version_id`` through the same writers, as a new batch that\npoints at the one it undid. Refused per row when the pin moved again, when\nthe row was already reverted, or when the organization's revert window\n(``agent_impact.revert_window_hours``) has passed.",
+        "operationId": "agent_impact_revert_mandates_impact_revert_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
                 }
               }
             }
@@ -88001,6 +88129,242 @@
         ],
         "title": "AdoptIntentResponse"
       },
+      "AdvanceCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "advanced": {
+            "type": "integer",
+            "title": "Advanced",
+            "default": 0
+          },
+          "reverted": {
+            "type": "integer",
+            "title": "Reverted",
+            "default": 0
+          },
+          "refused": {
+            "type": "integer",
+            "title": "Refused",
+            "default": 0
+          },
+          "excluded": {
+            "type": "integer",
+            "title": "Excluded",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AdvanceCounts"
+      },
+      "AdvanceReport": {
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "title": "Batch Id"
+          },
+          "batch_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Label"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "advance",
+              "revert"
+            ],
+            "title": "Action"
+          },
+          "reverts_batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reverts Batch Id"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/AdvanceRowResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AdvanceCounts"
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "batch_id",
+          "action",
+          "computed_at"
+        ],
+        "title": "AdvanceReport"
+      },
+      "AdvanceRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "batch_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Label"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/ApplyToken"
+            },
+            "type": "array",
+            "title": "Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tokens"
+        ],
+        "title": "AdvanceRequest",
+        "description": "``organization_id`` is injected by callApi's scope resolution and grants\nNOTHING here: which rungs may be written is decided per row by what the\nacting user can read."
+      },
+      "AdvanceRowResult": {
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/ApplyToken"
+          },
+          "mandate_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Key"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "advanced",
+              "excluded",
+              "refused",
+              "reverted"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "prior_pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Pinned Version Id"
+          },
+          "new_pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Pinned Version Id"
+          },
+          "ledger_row_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Row Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token",
+          "status"
+        ],
+        "title": "AdvanceRowResult"
+      },
       "AdviceSlipRecord": {
         "properties": {
           "__kind": {
@@ -98954,6 +99318,11 @@
             },
             "type": "array",
             "title": "Errors"
+          },
+          "more_pages_waiting": {
+            "type": "boolean",
+            "title": "More Pages Waiting",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -157497,6 +157866,24 @@
             "title": "Agents Examined",
             "default": 0
           },
+          "unknown_agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unknown Agent Ids"
+          },
+          "unknown_sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unknown Sentence"
+          },
           "dry_run": {
             "type": "boolean",
             "title": "Dry Run",
@@ -157517,6 +157904,42 @@
       },
       "ImpactRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
           "agent_ids": {
             "items": {
               "type": "string",
@@ -157547,7 +157970,7 @@
           "agent_ids"
         ],
         "title": "ImpactRequest",
-        "description": "There is no batch id on ``agent.definition_version`` — a batch writer\npasses the ids it touched. A time window is NOT accepted: it sweeps\nunrelated concurrent saves."
+        "description": "There is no batch id on ``agent.definition_version`` — a batch writer\npasses the ids it touched. A time window is NOT accepted: it sweeps\nunrelated concurrent saves.\n\nInherits ``AcceptsInjectedScope`` (aidream/api/FEATURE.md § extra=\"forbid\"\nbodies MUST accept injected org scope): the frontend ``callApi`` merges\n``organization_id`` / ``project_id`` / ``task_id`` onto every POST body, and\nwithout them every call from the app 422'd with ``extra_forbidden``. The read\ndoes not use them — it is scoped per CALLER through ``agent_mandate_rungs``,\nnever by the active organization (db-rules §6: access never depends on it)."
       },
       "ImpactVerdict": {
         "properties": {
@@ -191440,6 +191863,68 @@
         ],
         "title": "ParadoxServiceStatus"
       },
+      "PartyKindBatchRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "queue_organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Organization Id",
+            "description": "Only this organization's queue; omit for every organization."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 400,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 25
+          }
+        },
+        "type": "object",
+        "title": "PartyKindBatchRequest",
+        "description": "``organization_id`` is the caller's injected app context, never the target;\nthe review queue is platform data, so the target org is its own field."
+      },
       "PatchFolderRequest": {
         "properties": {
           "folder_path": {
@@ -213946,6 +214431,79 @@
         ],
         "title": "RetrySubmitRequest"
       },
+      "RevertRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "batch_id": {
+            "type": "string",
+            "title": "Batch Id"
+          },
+          "row_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Id"
+          },
+          "batch_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "batch_id"
+        ],
+        "title": "RevertRequest",
+        "description": "Same injected scope, same rule: it is never an authority for the write."
+      },
       "ReviewDetailOut": {
         "properties": {
           "review": {
@@ -216803,6 +217361,7 @@
               "cancelled",
               "claimed",
               "failed",
+              "interrupted",
               "queued",
               "running",
               "skipped",
