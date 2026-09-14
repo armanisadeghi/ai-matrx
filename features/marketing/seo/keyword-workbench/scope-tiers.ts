@@ -40,7 +40,8 @@ export function isPlacementScopeTier(
 
 /**
  * A rung named as a thing a sentence can point at: "… moved in the platform
- * default". Lifted out of `PlacementDiffQueue` on 2026-09-12, unchanged.
+ * default". Lifted out of `PlacementDiffQueue` on 2026-09-12, unchanged; that
+ * screen is now the approval queue's `placement_drift` kind (KI-045).
  */
 export const SCOPE_TIER_LABEL: Record<string, string> = {
   site: "this site's own ruling",

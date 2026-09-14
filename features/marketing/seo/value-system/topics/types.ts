@@ -104,6 +104,10 @@ export interface KeywordTopicResult {
 export type TopicPlacementDiffRow =
   Database["seo"]["Functions"]["gsc_topic_placement_diff"]["Returns"][number];
 
+/** One unconfirmed agent placement, highest demand first (`gsc_topic_proposed_keywords`). */
+export type TopicProposalRow =
+  Database["seo"]["Functions"]["gsc_topic_proposed_keywords"]["Returns"][number];
+
 /** Exact generated contract for the global impact preview shown before delete. */
 export type TopicDeleteImpact =
   Database["seo"]["Functions"]["gsc_topic_delete_impact"]["Returns"][number];

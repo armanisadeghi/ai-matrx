@@ -36,6 +36,7 @@ import type {
   TopicDeleteImpact,
   TopicDeleteResult,
   TopicPlacementDiffRow,
+  TopicProposalRow,
 } from "./types";
 
 async function seoDb() {
@@ -329,6 +330,32 @@ export async function getTopicPlacementDiff(
     .abortSignal(signal ?? new AbortController().signal);
   return (
     assertData(response.data, response.error, "read the placement diff") ?? []
+  );
+}
+
+/**
+ * The assigner's unconfirmed placements for this site, highest demand first,
+ * each row carrying `total_count` for the whole set. The approval queue's
+ * reader (KI-045); the full sortable set is the canonical keyword table.
+ */
+export async function listTopicProposals(
+  siteId: string,
+  start: string,
+  end: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<TopicProposalRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_topic_proposed_keywords", {
+      p_site_id: siteId,
+      p_start: start,
+      p_end: end,
+      p_limit: limit,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return (
+    assertData(response.data, response.error, "read the placements waiting on you") ??
+    []
   );
 }
 

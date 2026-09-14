@@ -169,7 +169,7 @@ import {
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
-import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
+import { ApprovalQueue } from "@/features/marketing/seo/value-system/approvals/ApprovalQueue";
 import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -1188,7 +1188,15 @@ export function ValueWorkbench() {
           exactly this queue, so a session that hid it would tell a person to
           "approve it below" and then show them nothing. */}
         {sessionOpen ? (
-          <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+          <ApprovalQueue
+            scope={{
+              siteId,
+              brandId,
+              organizationId: site.organization_id,
+              siteLabel: site.domain,
+            }}
+            className="shrink-0"
+          />
         ) : null}
 
         {sessionOpen ? (
@@ -1310,7 +1318,15 @@ export function ValueWorkbench() {
           is P12. It used to sit above every number, which put a suggestion
           ahead of the site's own facts; it is one chip row, below them, and
           it renders nothing at all when the queue is empty. */}
-            <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+            <ApprovalQueue
+              scope={{
+                siteId,
+                brandId,
+                organizationId: site.organization_id,
+                siteLabel: site.domain,
+              }}
+              className="shrink-0"
+            />
 
             {/* ONE assignment surface, borrowed whole from the shared keyword
           actions — never a second implementation of "assign with a reason".

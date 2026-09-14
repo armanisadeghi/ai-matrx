@@ -43,8 +43,11 @@ import "./handlers/server-action";
 import "./handlers/surface-write";
 
 export interface AssistRunnerApi {
-  /** Execute the assist's action; on success, mark it accepted. */
-  acceptAssist: (assist: Assist) => Promise<AssistActionResult>;
+  /**
+   * Execute the assist's action; on success, mark it accepted. An optional
+   * `note` records WHY the person approved it (P24), written only when given.
+   */
+  acceptAssist: (assist: Assist, note?: string) => Promise<AssistActionResult>;
   /**
    * Dismiss without running — durable (the producer will not re-emit).
    * An optional `note` records WHY in the user's own words; it is written only
@@ -194,7 +197,7 @@ export function useAssistRunner(): AssistRunnerApi {
   );
 
   const acceptAssist = useCallback(
-    async (assist: Assist): Promise<AssistActionResult> => {
+    async (assist: Assist, note?: string): Promise<AssistActionResult> => {
       const def = getAssistAction(assist.action.kind);
       if (!def) {
         const message = `Assist action "${assist.action.kind}" is not registered`;
@@ -229,6 +232,7 @@ export function useAssistRunner(): AssistRunnerApi {
             assist.id,
             "accepted",
             (outcome.result ?? null) as Json,
+            note,
           );
           dispatch(assistDecided(assist.id));
         } catch (error) {

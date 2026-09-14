@@ -72,7 +72,7 @@ import {
   OfferingSplitHeadline,
   type OfferingKpiTarget,
 } from "./OfferingSplitHeadline";
-import { PlacementDiffQueue } from "./PlacementDiffQueue";
+import { ApprovalQueue } from "../approvals/ApprovalQueue";
 import { ProposedQueue } from "./ProposedQueue";
 import { TopicPlacementStrip } from "./TopicPlacementStrip";
 import {
@@ -817,8 +817,20 @@ export function TopicTreeWorkbench() {
 
       {/* P30a THE DIFF LAW — a higher tier's opinion moved while this site was
           inheriting it; nothing here re-applies over the site's own state
-          without an explicit Take it / Keep mine. */}
-      <PlacementDiffQueue siteId={siteId} onChanged={refreshTree} />
+          without an explicit Take it / Keep mine. It is THE ONE approval
+          queue (KI-045) narrowed to that kind; the kind's writer refreshes
+          the tree through the shared ["seo","topics"] query root. */}
+      <ApprovalQueue
+        scope={{
+          siteId,
+          brandId,
+          organizationId: site.organization_id,
+          siteLabel: site.domain,
+        }}
+        kinds={["placement_drift"]}
+        title="Inherited offerings that moved"
+        defaultExpanded
+      />
 
       {/* P26 — ONE TABLE. The tree above is legitimately a TREE; these two
           keyword lists are TABLES, and they are the canonical one. */}
