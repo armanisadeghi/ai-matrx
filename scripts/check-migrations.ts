@@ -66,12 +66,15 @@
  * that were applied via MCP is exempt via `migrations/DB_TRANSITION_DRIFT_OK.txt`
  * (delete that file when the transition completes and ledger checksums reconcile).
  */
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { basedOnCheck, findReplacedFunctions, type Query } from "./migration-based-on";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
@@ -450,6 +453,87 @@ function loadDriftOkSet(): Set<string> {
   return ok;
 }
 
+
+/**
+ * ── DD-220: an UNAPPLIED file that would overwrite a live function body ───────
+ *
+ * `pnpm db:apply` refuses these at the door. This is the cheap pre-apply
+ * companion — the half that can see a file still sitting on someone's disk, the
+ * same division of labour as the slot-collision arm above.
+ *
+ * THE CUT. This law shipped 2026-09-14. A migration file that was authored
+ * BEFORE that date was written under no such rule, and a repo check that turned
+ * every one of them into a blocking failure would be punishing history — so
+ * those are ADVISORY. A file first committed on or after the cut, or not yet
+ * committed at all, is BLOCKING under `--strict`: it is being written now, and
+ * `pnpm db:apply` will refuse it anyway, so the only thing a green check here
+ * would buy is a later surprise.
+ *
+ * The date comes from the file's first commit (`git log --diff-filter=A`), never
+ * from its mtime: in a shared checkout a `git checkout` resets every mtime, so
+ * an mtime cut would silently reclassify the whole backlog.
+ */
+const BASED_ON_LAW_CUT = "2026-09-14";
+
+function firstCommitDate(filename: string): string | null {
+  try {
+    const out = execFileSync(
+      "git",
+      ["log", "--diff-filter=A", "--follow", "--format=%cs", "-1", "--", `migrations/${filename}`],
+      { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 20_000 },
+    ).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+interface BasedOnGap {
+  readonly filename: string;
+  readonly blocking: boolean;
+  readonly authored: string;
+  readonly messages: string[];
+}
+
+async function basedOnArm(pending: string[]): Promise<{ gaps: BasedOnGap[]; skipped: string | null }> {
+  const candidates = pending.filter(
+    (f) => findReplacedFunctions(readFileSync(resolve(MIGRATIONS_DIR, f), "utf8")).length > 0,
+  );
+  if (candidates.length === 0) return { gaps: [], skipped: null };
+
+  const env = loadDbEnv();
+  if ("missing" in env)
+    return {
+      gaps: [],
+      skipped:
+        `${candidates.length} unapplied file(s) replace a function body, but the five ` +
+        `SUPABASE_MATRIX_* variables are absent, so what they would OVERWRITE could not be read. ` +
+        `Not a pass — an unmeasured check.`,
+    };
+
+  const client = await connectDirect(env, "matrx-frontend check:migrations (DD-220)");
+  const q: Query = async (sql, params) =>
+    (await client.query(sql, (params ?? []) as never[])).rows as Record<string, unknown>[];
+  const gaps: BasedOnGap[] = [];
+  try {
+    for (const f of candidates) {
+      const sql = readFileSync(resolve(MIGRATIONS_DIR, f), "utf8");
+      const { findings } = await basedOnCheck(q, sql);
+      if (findings.length === 0) continue;
+      const authored = firstCommitDate(f);
+      gaps.push({
+        filename: f,
+        authored: authored ?? "not committed yet",
+        blocking: authored === null || authored >= BASED_ON_LAW_CUT,
+        messages: findings.map((x) => x.message),
+      });
+    }
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+  return { gaps, skipped: null };
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
@@ -528,6 +612,42 @@ async function main(): Promise<number> {
     else if (recorded !== sum && !driftOk.has(f)) drifted.push(f);
   }
 
+  // ── DD-220: unapplied files that would overwrite a live function body ──────
+  let basedOnBlocking = 0;
+  {
+    const { gaps, skipped } = await basedOnArm(pending).catch((err: unknown) => {
+      console.log(
+        `${TAG.warn}MIGRATION BASED-ON UNMEASURED — could not read the live function catalogue: ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+      return { gaps: [] as BasedOnGap[], skipped: null };
+    });
+    if (skipped) console.log(`${TAG.warn}MIGRATION BASED-ON UNMEASURED — ${skipped}`);
+    if (gaps.length) {
+      basedOnBlocking = gaps.filter((g) => g.blocking).length;
+      console.log();
+      console.log(
+        `${TAG.fail}MIGRATION BASED-ON MISSING — ${gaps.length} unapplied file(s) would overwrite a ` +
+          `function body they never say they read (DD-220). ` +
+          `${basedOnBlocking} blocking${strict ? "" : " (non-blocking in this mode)"}, ` +
+          `${gaps.length - basedOnBlocking} advisory (authored before the ${BASED_ON_LAW_CUT} cut).`,
+      );
+      for (const g of gaps) {
+        console.log(
+          `  ${C.white}- ${g.filename}${C.reset} ` +
+            `${g.blocking ? `${C.red}[BLOCKING]${C.reset}` : `${C.yellow}[ADVISORY]${C.reset}`} ` +
+            `${C.dim}(authored ${g.authored})${C.reset}`,
+        );
+        for (const m of g.messages) console.log(`      ${C.dim}${m.split("\n")[0]}${C.reset}`);
+      }
+      console.log(
+        `  ${C.white}Fix: pnpm db:based-on migrations/<file>.sql${C.reset} ` +
+          `${C.dim}— it prints the header line(s) that file is missing, read from the live catalogue. ` +
+          `pnpm db:apply refuses every one of these at the door regardless of the cut.${C.reset}`,
+      );
+    }
+  }
+
   // ── Numeric-slot collisions ────────────────────────────────────────────────
   // A collision only MATTERS while at least one of the two files is still
   // unapplied — that is the window in which renumbering is free. Once both are
@@ -595,7 +715,10 @@ async function main(): Promise<number> {
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return (actionable.length || selfLedgering.length || dd137b13Errors.length) && strict ? 1 : 0;
+    return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking) &&
+      strict
+      ? 1
+      : 0;
 
   // ONE fix for BOTH states below. White, not dim — it's an instruction the user
   // acts on, not a footnote. Never suggest hand-applying and self-ledgering: that
@@ -666,7 +789,11 @@ async function main(): Promise<number> {
     );
   }
 
-  return (pending.length || actionable.length || selfLedgering.length || dd137b13Errors.length) && strict
+  return (pending.length ||
+    actionable.length ||
+    selfLedgering.length ||
+    dd137b13Errors.length ||
+    basedOnBlocking) && strict
     ? 1
     : 0;
 }
