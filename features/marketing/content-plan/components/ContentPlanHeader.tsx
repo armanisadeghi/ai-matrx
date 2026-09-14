@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Table2,
   Users,
+  Compass,
 } from "lucide-react";
 
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -57,6 +58,8 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: LucideIcon }[] = [
   { view: "entities", label: "Entities", icon: Users },
   // Every paid AI run this site has ever had, openable in full.
   { view: "ai-runs", label: "AI runs", icon: History },
+  // What this website is FOR — the reference every planned page refers to.
+  { view: "brief", label: "Brief", icon: Compass },
 ];
 
 /**

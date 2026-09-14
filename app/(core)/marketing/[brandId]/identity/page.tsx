@@ -7,6 +7,7 @@ import {
   ScrollText,
   Users,
   type LucideIcon,
+  Compass,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -44,6 +45,13 @@ export default async function BrandIdentityPage({
         "Everything this brand owns or can draw on — its library, research captures, stock sources, and generated imagery.",
       href: marketingRoutes.brandAssets(seg),
       icon: Images,
+    },
+    {
+      name: "Strategy",
+      description:
+        "The business facts every website of this brand reads — what it does, who it serves, each service line and where it competes. Written by AI, corrected by you, inherited by every agent.",
+      href: `${identity}/strategy`,
+      icon: Compass,
     },
     {
       name: "Knowledge",

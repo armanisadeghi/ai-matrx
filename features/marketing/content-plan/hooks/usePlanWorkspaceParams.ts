@@ -34,7 +34,7 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 export type PlanView =
-  "tree" | "table" | "map" | "entities" | "setup" | "ai-runs";
+  "tree" | "table" | "map" | "entities" | "setup" | "ai-runs" | "brief";
 
 /**
  * THE view vocabulary. Exported so runtime validators — the surface
@@ -48,6 +48,7 @@ export const PLAN_VIEWS: readonly PlanView[] = [
   "entities",
   "setup",
   "ai-runs",
+  "brief",
 ];
 
 /**

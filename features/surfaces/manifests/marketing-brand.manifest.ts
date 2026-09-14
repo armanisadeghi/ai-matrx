@@ -22,6 +22,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -198,8 +199,12 @@ All values except brand_id populate only after the workspace loads — treat emp
       name: "brand_strategist",
       label: "Brand strategist",
       description:
-        "Advises on the brand's overall marketing posture across its sites and properties, grounded in confirmed facts and the editorial profile.",
+        "Writes the brand strategy — what the business does, who it serves, each service line with its own footprint — from the brand, every site's crawl and the research; the owner corrects it in one sentence and every later agent inherits it (Brand Home → Strategy).",
       kind: "single",
+      // The brand-strategy Mandate (the staged-confidence brief; the DB
+      // decides the Holder). Re-pinned 2026-09-14 from a competitor-only
+      // pre-step to THE brand strategy every site brief reads.
+      mandateKey: MANDATE_KEYS.seo__landscape_brief,
       defaultAgentId: null,
       sortOrder: 100,
     },

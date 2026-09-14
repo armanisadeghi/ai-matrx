@@ -13,5 +13,10 @@
     "file": "features/mandates/authoring/constants.ts",
     "key": "mandates.kind_converter",
     "reason": "DELIBERATELY UNASSIGNED \u2014 no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete \u2014 the refusal is the feature."
+  },
+  {
+    "file": "features/surfaces/manifests/content-plan.manifest.ts",
+    "key": "seo.strategy.site_brief.generate",
+    "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate \u2014 the site brief writer) and live; @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
   }
 ]

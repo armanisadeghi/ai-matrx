@@ -19480,7 +19480,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief": {
+    "/seo/brands/{brand_id}/strategy": {
         parameters: {
             query?: never;
             header?: never;
@@ -19488,10 +19488,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Site Landscape Brief
-         * @description The brief as it stands, whatever its review state.
+         * Get Brand Strategy
+         * @description The brand's strategy as it stands, whatever its review state.
          */
-        get: operations["get_site_landscape_brief_seo_sites__site_id__landscape_brief_get"];
+        get: operations["get_brand_strategy_seo_brands__brand_id__strategy_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19500,7 +19500,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/generate": {
+    "/seo/brands/{brand_id}/strategy/generate": {
         parameters: {
             query?: never;
             header?: never;
@@ -19510,20 +19510,22 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Generate Site Landscape Brief
-         * @description Stage 1 of the staged-confidence pattern: establish the ground facts.
+         * Generate Brand Strategy
+         * @description Establish the brand's ground facts as a DURABLE streamed command.
          *
-         *     Leaves the brief `awaiting_review` with a 24-hour deadline — after which
-         *     downstream work proceeds on these assumptions rather than stalling.
+         *     It reads every site the brand owns, each site's crawl, and the current
+         *     research document before it writes — minutes of work, so it claims its
+         *     `seo.collection_run` row first and streams a named stage per input. Rejoin
+         *     with `POST /seo/collections/{run_id}/rejoin`.
          */
-        post: operations["generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post"];
+        post: operations["generate_brand_strategy_seo_brands__brand_id__strategy_generate_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/ruling": {
+    "/seo/brands/{brand_id}/strategy/ruling": {
         parameters: {
             query?: never;
             header?: never;
@@ -19533,11 +19535,116 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rule On Site Landscape Brief
+         * Rule On Brand Strategy
          * @description The owner's correction, in their own words — the guidance every later
-         *     agent inherits.
+         *     agent inherits, for every website this brand owns.
          */
-        post: operations["rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post"];
+        post: operations["rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/brands/{brand_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Brand Strategy History
+         * @description Superseded brand strategies, newest first.
+         */
+        get: operations["get_brand_strategy_history_seo_brands__brand_id__strategy_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy
+         * @description What this website is FOR, as it stands, whatever its review state.
+         */
+        get: operations["get_site_strategy_seo_sites__site_id__strategy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Site Strategy
+         * @description Establish what this website is FOR as a DURABLE streamed command.
+         *
+         *     It reads the established brand strategy, this site's crawl, its Search
+         *     Console performance, its keyword library, its content plan and its research
+         *     document before it writes. Rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         */
+        post: operations["generate_site_strategy_seo_sites__site_id__strategy_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rule On Site Strategy
+         * @description The owner's correction on what this website is for.
+         */
+        post: operations["rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy History
+         * @description Superseded site strategies, newest first.
+         */
+        get: operations["get_site_strategy_history_seo_sites__site_id__strategy_history_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -74206,69 +74313,6 @@ export interface components {
              */
             status_page?: "https://status.landr.com";
         };
-        /** LandscapeBrief */
-        LandscapeBrief: {
-            /** Id */
-            id: string;
-            /** Site Id */
-            site_id: string;
-            /** Status */
-            status: string;
-            /** Brief Markdown */
-            brief_markdown: string;
-            /** Facts */
-            facts?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][];
-            /** Agent Confidence */
-            agent_confidence?: number | null;
-            /**
-             * Confidence Reason
-             * @default
-             */
-            confidence_reason?: string;
-            /**
-             * Guidance
-             * @default
-             */
-            guidance?: string;
-            /** Auto Accept At */
-            auto_accept_at?: string | null;
-            /** Reviewed At */
-            reviewed_at?: string | null;
-            /** Generated At */
-            generated_at?: string | null;
-        };
-        /** LandscapeBriefResponse */
-        LandscapeBriefResponse: {
-            brief?: components["schemas"]["LandscapeBrief"] | null;
-        };
-        /** LandscapeBriefRulingBody */
-        LandscapeBriefRulingBody: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Guidance */
-            guidance: string;
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][] | null;
-            /** Brief Markdown */
-            brief_markdown?: string | null;
-        };
         /** LaserficheServiceStatus */
         LaserficheServiceStatus: {
             /**
@@ -99294,6 +99338,9 @@ export interface components {
          *     disposition and Southern-California-only for small-business e-waste pickup,
          *     so a national ITAD rival is not a competitor for local pickup. Market
          *     overlap is a property of (service line x geography) — never of a company.
+         *
+         *     It is a BRAND fact. A site brief names which of these lines it carries by
+         *     name; it never re-describes them.
          */
         ServiceLine: {
             /** Name */
@@ -104122,6 +104169,96 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.strapi.io/";
+        };
+        /**
+         * StrategyBrief
+         * @description One strategy document — brand or site — exactly as the row holds it.
+         */
+        StrategyBrief: {
+            /** Id */
+            id: string;
+            /** Scope */
+            scope: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Status */
+            status: string;
+            /** Brief Markdown */
+            brief_markdown: string;
+            /** Facts */
+            facts?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][];
+            /** Inputs */
+            inputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Version No
+             * @default 1
+             */
+            version_no?: number;
+            /** Agent Confidence */
+            agent_confidence?: number | null;
+            /**
+             * Confidence Reason
+             * @default
+             */
+            confidence_reason?: string;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /** Auto Accept At */
+            auto_accept_at?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Generated At */
+            generated_at?: string | null;
+        };
+        /**
+         * StrategyBriefHistoryResponse
+         * @description Every SUPERSEDED version, newest first. Regeneration INSERTS, so the
+         *     strategy document has a history instead of an overwrite.
+         */
+        StrategyBriefHistoryResponse: {
+            /** Briefs */
+            briefs?: components["schemas"]["StrategyBrief"][];
+        };
+        /** StrategyBriefResponse */
+        StrategyBriefResponse: {
+            brief?: components["schemas"]["StrategyBrief"] | null;
+        };
+        /** StrategyRulingBody */
+        StrategyRulingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Guidance */
+            guidance: string;
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][] | null;
+            /** Service Lines Served */
+            service_lines_served?: string[] | null;
+            /** Brief Markdown */
+            brief_markdown?: string | null;
         };
         /** StreamServiceStatus */
         StreamServiceStatus: {
@@ -147035,7 +147172,139 @@ export interface operations {
             };
         };
     };
-    get_site_landscape_brief_seo_sites__site_id__landscape_brief_get: {
+    get_brand_strategy_seo_brands__brand_id__strategy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_brand_strategy_seo_brands__brand_id__strategy_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptsInjectedScope"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrategyRulingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_brand_strategy_history_seo_brands__brand_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_seo_sites__site_id__strategy_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -147052,7 +147321,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
                 };
             };
             /** @description Validation Error */
@@ -147066,7 +147335,7 @@ export interface operations {
             };
         };
     };
-    generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post: {
+    generate_site_strategy_seo_sites__site_id__strategy_generate_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -147087,7 +147356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -147101,7 +147370,7 @@ export interface operations {
             };
         };
     };
-    rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post: {
+    rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -147112,7 +147381,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LandscapeBriefRulingBody"];
+                "application/json": components["schemas"]["StrategyRulingBody"];
             };
         };
         responses: {
@@ -147122,7 +147391,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_history_seo_sites__site_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
                 };
             };
             /** @description Validation Error */

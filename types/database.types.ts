@@ -85369,6 +85369,7 @@ export type Database = {
           agent_confidence: number | null
           agent_run_id: string | null
           auto_accept_at: string | null
+          brand_id: string
           brief_markdown: string
           confidence_reason: string | null
           created_at: string
@@ -85379,12 +85380,14 @@ export type Database = {
           guidance: string
           human_corrections: Json
           id: string
+          inputs: Json
           metadata: Json
           organization_id: string
           reviewed_at: string | null
           reviewed_by: string | null
+          scope: string
           service_lines: Json
-          site_id: string
+          site_id: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -85394,6 +85397,7 @@ export type Database = {
           agent_confidence?: number | null
           agent_run_id?: string | null
           auto_accept_at?: string | null
+          brand_id: string
           brief_markdown?: string
           confidence_reason?: string | null
           created_at?: string
@@ -85404,12 +85408,14 @@ export type Database = {
           guidance?: string
           human_corrections?: Json
           id?: string
+          inputs?: Json
           metadata?: Json
           organization_id: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          scope?: string
           service_lines?: Json
-          site_id: string
+          site_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -85419,6 +85425,7 @@ export type Database = {
           agent_confidence?: number | null
           agent_run_id?: string | null
           auto_accept_at?: string | null
+          brand_id?: string
           brief_markdown?: string
           confidence_reason?: string | null
           created_at?: string
@@ -85429,12 +85436,14 @@ export type Database = {
           guidance?: string
           human_corrections?: Json
           id?: string
+          inputs?: Json
           metadata?: Json
           organization_id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          scope?: string
           service_lines?: Json
-          site_id?: string
+          site_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null

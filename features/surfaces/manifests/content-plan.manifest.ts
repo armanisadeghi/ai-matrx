@@ -431,6 +431,18 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       defaultAgentId: null,
       sortOrder: 120,
     },
+    {
+      name: "site_brief_writer",
+      label: "Site brief writer",
+      description:
+        "Writes the site brief — what THIS website is for, which of the brand's service lines it carries, who it is for, what it must win, its shape — from the crawl, Search Console, the keyword library, the plan and the research, reading the brand strategy. The reference the plan generator, brief writer and page writer all receive (Brief view).",
+      kind: "single",
+      // Declared server-side 2026-09-14 (aidream 97a8b3223); published to
+      // @ai-matrx/agents on its next release — allowlisted until then.
+      mandateKey: "seo.strategy.site_brief.generate",
+      defaultAgentId: null,
+      sortOrder: 130,
+    },
   ],
 };
 

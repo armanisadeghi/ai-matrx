@@ -37427,22 +37427,22 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief": {
+    "/seo/brands/{brand_id}/strategy": {
       "get": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Get Site Landscape Brief",
-        "description": "The brief as it stands, whatever its review state.",
-        "operationId": "get_site_landscape_brief_seo_sites__site_id__landscape_brief_get",
+        "summary": "Get Brand Strategy",
+        "description": "The brand's strategy as it stands, whatever its review state.",
+        "operationId": "get_brand_strategy_seo_brands__brand_id__strategy_get",
         "parameters": [
           {
-            "name": "site_id",
+            "name": "brand_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Site Id"
+              "title": "Brand Id"
             }
           }
         ],
@@ -37452,7 +37452,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
                 }
               }
             }
@@ -37470,14 +37470,204 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief/generate": {
+    "/seo/brands/{brand_id}/strategy/generate": {
       "post": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Generate Site Landscape Brief",
-        "description": "Stage 1 of the staged-confidence pattern: establish the ground facts.\n\nLeaves the brief `awaiting_review` with a 24-hour deadline — after which\ndownstream work proceeds on these assumptions rather than stalling.",
-        "operationId": "generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post",
+        "summary": "Generate Brand Strategy",
+        "description": "Establish the brand's ground facts as a DURABLE streamed command.\n\nIt reads every site the brand owns, each site's crawl, and the current\nresearch document before it writes — minutes of work, so it claims its\n`seo.collection_run` row first and streams a named stage per input. Rejoin\nwith `POST /seo/collections/{run_id}/rejoin`.",
+        "operationId": "generate_brand_strategy_seo_brands__brand_id__strategy_generate_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptsInjectedScope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/brands/{brand_id}/strategy/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Brand Strategy",
+        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits, for every website this brand owns.",
+        "operationId": "rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/brands/{brand_id}/strategy/history": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Brand Strategy History",
+        "description": "Superseded brand strategies, newest first.",
+        "operationId": "get_brand_strategy_history_seo_brands__brand_id__strategy_history_get",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Site Strategy",
+        "description": "What this website is FOR, as it stands, whatever its review state.",
+        "operationId": "get_site_strategy_seo_sites__site_id__strategy_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy/generate": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Generate Site Strategy",
+        "description": "Establish what this website is FOR as a DURABLE streamed command.\n\nIt reads the established brand strategy, this site's crawl, its Search\nConsole performance, its keyword library, its content plan and its research\ndocument before it writes. Rejoin with\n`POST /seo/collections/{run_id}/rejoin`.",
+        "operationId": "generate_site_strategy_seo_sites__site_id__strategy_generate_post",
         "parameters": [
           {
             "name": "site_id",
@@ -37504,8 +37694,59 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Site Strategy",
+        "description": "The owner's correction on what this website is for.",
+        "operationId": "rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
                 }
               }
             }
@@ -37523,14 +37764,14 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief/ruling": {
-      "post": {
+    "/seo/sites/{site_id}/strategy/history": {
+      "get": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Rule On Site Landscape Brief",
-        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits.",
-        "operationId": "rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post",
+        "summary": "Get Site Strategy History",
+        "description": "Superseded site strategies, newest first.",
+        "operationId": "get_site_strategy_history_seo_sites__site_id__strategy_history_get",
         "parameters": [
           {
             "name": "site_id",
@@ -37542,23 +37783,13 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LandscapeBriefRulingBody"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/StrategyBriefHistoryResponse"
                 }
               }
             }
@@ -167353,197 +167584,6 @@
         ],
         "title": "LandrServiceStatus"
       },
-      "LandscapeBrief": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "site_id": {
-            "type": "string",
-            "title": "Site Id"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "brief_markdown": {
-            "type": "string",
-            "title": "Brief Markdown"
-          },
-          "facts": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Facts"
-          },
-          "service_lines": {
-            "items": {
-              "$ref": "#/components/schemas/ServiceLine"
-            },
-            "type": "array",
-            "title": "Service Lines"
-          },
-          "agent_confidence": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Agent Confidence"
-          },
-          "confidence_reason": {
-            "type": "string",
-            "title": "Confidence Reason",
-            "default": ""
-          },
-          "guidance": {
-            "type": "string",
-            "title": "Guidance",
-            "default": ""
-          },
-          "auto_accept_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auto Accept At"
-          },
-          "reviewed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reviewed At"
-          },
-          "generated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Generated At"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "site_id",
-          "status",
-          "brief_markdown"
-        ],
-        "title": "LandscapeBrief"
-      },
-      "LandscapeBriefResponse": {
-        "properties": {
-          "brief": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LandscapeBrief"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "LandscapeBriefResponse"
-      },
-      "LandscapeBriefRulingBody": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "guidance": {
-            "type": "string",
-            "maxLength": 8000,
-            "minLength": 1,
-            "title": "Guidance"
-          },
-          "service_lines": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/ServiceLine"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Service Lines"
-          },
-          "brief_markdown": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Brief Markdown"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "guidance"
-        ],
-        "title": "LandscapeBriefRulingBody"
-      },
       "LaserficheServiceStatus": {
         "properties": {
           "__kind": {
@@ -222913,7 +222953,7 @@
           "name"
         ],
         "title": "ServiceLine",
-        "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company."
+        "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company.\n\nIt is a BRAND fact. A site brief names which of these lines it carries by\nname; it never re-describes them."
       },
       "SessionExchangeRequest": {
         "properties": {
@@ -232996,6 +233036,255 @@
         ],
         "title": "StrapiServiceStatus",
         "description": "Safe aggregate status projection for Strapi's fixed status page."
+      },
+      "StrategyBrief": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "brief_markdown": {
+            "type": "string",
+            "title": "Brief Markdown"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Facts"
+          },
+          "service_lines": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceLine"
+            },
+            "type": "array",
+            "title": "Service Lines"
+          },
+          "inputs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Inputs"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No",
+            "default": 1
+          },
+          "agent_confidence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Confidence"
+          },
+          "confidence_reason": {
+            "type": "string",
+            "title": "Confidence Reason",
+            "default": ""
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance",
+            "default": ""
+          },
+          "auto_accept_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Accept At"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "scope",
+          "brand_id",
+          "status",
+          "brief_markdown"
+        ],
+        "title": "StrategyBrief",
+        "description": "One strategy document — brand or site — exactly as the row holds it."
+      },
+      "StrategyBriefHistoryResponse": {
+        "properties": {
+          "briefs": {
+            "items": {
+              "$ref": "#/components/schemas/StrategyBrief"
+            },
+            "type": "array",
+            "title": "Briefs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StrategyBriefHistoryResponse",
+        "description": "Every SUPERSEDED version, newest first. Regeneration INSERTS, so the\nstrategy document has a history instead of an overwrite."
+      },
+      "StrategyBriefResponse": {
+        "properties": {
+          "brief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StrategyBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StrategyBriefResponse"
+      },
+      "StrategyRulingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Guidance"
+          },
+          "service_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ServiceLine"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines"
+          },
+          "service_lines_served": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines Served"
+          },
+          "brief_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Markdown"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "guidance"
+        ],
+        "title": "StrategyRulingBody"
       },
       "StreamServiceStatus": {
         "properties": {

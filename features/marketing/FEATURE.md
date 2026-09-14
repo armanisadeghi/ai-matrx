@@ -44,6 +44,38 @@ underlying evidence never dead-ends. The nested
 `matrx-user/marketing-authority` surface exposes the loaded verdict, pages,
 candidate allowlist, and recommendations to platform agents without refetching.
 
+## Brand strategy and site brief — THE reference every page refers back to (2026-09-14)
+
+Org → Brand → Website, and Arman's ruling: *a property of the brand belongs to
+the brand; a property of the site belongs to the site.* So the strategy is ONE
+staged-confidence document in TWO scopes, stored in `seo.landscape_brief`
+(`scope` = brand|site) — the machine the competitor classifier already used
+(facts, a plain-language brief the owner corrects in one sentence, a 1-5
+confidence the system honours, a 24-hour review window that never blocks, the
+owner's words carried forward through every regeneration). It was site-only,
+server-only, fed from name+domain+description and read by nothing but the
+classifier — the "big overarching plan" Arman kept asking for, buried.
+
+- **Brand strategy** (`/marketing/[brandId]/identity/strategy`, a Brand Home
+  room): the business facts — what it does, who it serves, each service line
+  with its OWN footprint. Built from the brand, every site's crawl, and the
+  research report.
+- **Site brief** (`/marketing/[brandId]/content/plan/[siteId]/brief`, the plan
+  workspace's seventh view): what THIS website is for — which service lines it
+  carries, who it is for, what it must win, its shape. READS the brand strategy,
+  never restates it. Built from the crawl, Search Console, the keyword library,
+  the existing plan and the research report; `inputs` records exactly which.
+- **One component** (`strategy/components/StrategyBriefWorkspace.tsx`, split by
+  `scope`); data in `strategy/data.ts` (defensive parse — HONESTY RULE), hooks
+  in `strategy/hooks.ts`. Generation is a DURABLE SEO command
+  (`useSeoCommandRun`, final kind `seo.strategy_brief_result`) — floats into
+  the live window and rejoins after a reload; regenerating SUPERSEDES (history
+  is real) and the button names that consequence first.
+- **Readers (server-side):** the content-plan generator, the brief writer, the
+  page writer and the plan review all receive the composed brand+site guidance
+  as a named variable. The brief is inert on its own — it changes no page and
+  no plan; the readers are how it reaches them.
+
 ## THE AGENCY MODEL — two planes, the brand is the tenant (2026-08-28)
 
 The user is an **agency**; a brand is one of their **clients**. The URL tree has
