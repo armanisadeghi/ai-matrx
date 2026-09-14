@@ -85,9 +85,10 @@ interface RouteModeNavProps {
 
 const PILL =
   "matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
-// Route navigation lives inside the shell's compact fixed-height header. Keep
-// the visible pills compact at every width; mobile access expands into the
-// BottomSheet rows below rather than making the header itself 44px tall.
+// Route navigation lives inside the shell's compact fixed-height header. The
+// collapsed mobile trigger alone is a true tap control, so it reserves a 44px
+// hit target without changing the compact desktop pill geometry. Its sheet
+// owns the large route rows after activation.
 const ITEM =
   "flex items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
@@ -242,7 +243,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           <>
             <button
               type="button"
-              className={cn(PILL, "px-1")}
+              className={cn(PILL, "min-h-11 px-1")}
               aria-label="Switch view"
               onClick={() => setMobileMenuOpen(true)}
             >
