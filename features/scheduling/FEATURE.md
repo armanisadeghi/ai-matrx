@@ -226,8 +226,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   visible, recoverable state rather than an indefinite loading shell.
 
 - **2026-09-13** — Every user schedule route now reserves responsive bottom
-  clearance on its actual vertical scroll owner for the global fixed schedule
-  alarm. List, detail, edit, and new content can all scroll fully above the
+  clearance on its actual vertical scroll owner for the global fixed
+  attention dock (then the schedule alarm). List, detail, edit, and new content can all scroll fully above the
   control instead of letting the alarm cover their final meaningful row.
 
 - **2026-09-13** — The user schedule roster now aborts a stalled complete-list
@@ -256,9 +256,24 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   AccessGate ("You don't have access to this scheduled task"), so the banner and
   scanner-health rows led nowhere and raw SQL was the only way to re-enable a
   wrongly-suspended schedule. See *A system schedule's record page* below.
+- **2026-09-14** — **Schedule alarms v2: an alarm with a way out.** The global
+  banner became furniture (three commerce schedules red for 16 days because
+  commerce is unbuilt; two SEO schedules orange on one transient failure; every
+  row a title with a link; uuids in the reason text). The RPC now returns a
+  per-row timed mute (`metadata.alarm_mute`), a failure streak knob
+  (`scheduler.alarms.failing_streak`), the overdue grace as a knob,
+  `succeeded_since_suspension`, the failed run and the job's declared impact
+  pages; the banner, its notice builder and snooze were deleted and the rows
+  render through the ONE super-admin attention dock
+  (`features/admin/attention/FEATURE.md`), which also carries provider
+  outages. The scanner-health page renders the same row and lists muted rows
+  with Unmute. `SuspensionCard` no longer prints a truncated run uuid and
+  shows the alarm mute. aidream: `register_system_task(..., impact=[...])`
+  and a guard reason that names no uuid.
 - **2026-09-11** — `SystemScheduleAlarmBanner`: critical schedule alarms reach
   every super-admin page (global singleton, fixed under the header, one door per
   schedule). Six suspended system schedules had been unread for 17 days.
+  (Superseded 2026-09-14 by the attention dock.)
 - **2026-08-31** — Independent rule `.2` verification repaired the canonical
   schedule roster read: `listAgentTasks` now pages to the exact count with
   `readAllRows` and a stable `updated_at, id` order, while the S15 source-census
@@ -555,35 +570,36 @@ independently — a green scanner says nothing about whether a schedule ran — 
 if the alarm read itself fails the page says so ("treat this as unknown, not
 healthy") rather than implying all-clear.
 
-**The alarm nobody heard (2026-09-11).** Six critical `suspended` rows sat on
-that page for seventeen days — one of them an approved schedule whose
-suspension froze a 76,129-row classification queue — because a page you open
-only when you already suspect the problem is a report, not an alarm. The same
-rows now reach a super-admin on EVERY page through
-`components/alarm/SystemScheduleAlarmBanner.tsx`, mounted with the other
-admin-gated global singletons in `app/DeferredSingletonCore.tsx`: super-admin
-gated BEFORE the read (the RPC's 42501 would otherwise be captured as a red
-error for every other user), read directly from Supabase on boot / route
-change / focus, rendered as a `CalloutBanner` fixed under the header with an
-`EntityRef` door per schedule and "Review all" → scanner health. It is ABSENT
-at zero alarms (`lib/system-schedule-alarm-notice.ts` returns `null`,
-unit-tested — never an all-clear strip), a failed read is said with Retry, and
-it collapses to a pill per tab session but is never dismissable: only fixing
-the schedules removes it. Inventoried and rejected first: Assists (Chip Rescue
-ruling — a notification is never a chip; `scheduler_` is dispositioned
-`notification` and ambient presentation is off), the Notification System (the
-right destination once it has an in-app channel — today email/SMS only, server
-producers only), and the Error Inspector (client errors, no record door).
+**The alarm nobody heard (2026-09-11) → the attention dock (2026-09-14).**
+Six critical `suspended` rows sat on that page for seventeen days because a
+page you open only when you already suspect the problem is a report, not an
+alarm. The same rows now reach a super-admin on EVERY page — but through the
+ONE super-admin attention dock, `features/admin/attention/` (read its
+`FEATURE.md`), which also carries provider outages. The schedule-specific
+banner, its notice builder and its snooze were deleted on 2026-09-14 (no
+shims) because the alarm had become furniture: three commerce schedules were
+red for sixteen days with no way to say "this is supposed to be off", two
+SEO schedules were orange on ONE transient failed run, and every row was a
+title with a link. v2 of the RPC (`migrations/scheduler_system_schedule_alarms_v2_*.sql`)
+answers that: a per-row timed **mute** on `metadata.alarm_mute` (written from
+the dock through RLS + `mergeJsonColumn`, seen by every super-admin), a
+**failure streak** (`scheduler.alarms.failing_streak` knob, default 2) before
+`failing` fires, the **overdue grace** as a knob, `succeeded_since_suspension`
+so a guard-suspended row whose later run succeeded says "off for no live
+reason", and the failed run + the job's declared **impact** pages on every
+row. The scanner-health page renders the SAME row component and lists the
+muted rows with their note and an Unmute. Thresholds are read by the function
+itself; the client mirrors nothing.
 
-**2026-09-13 — global fixed-alert runway.** The schedule alarm is still a
-movable, snoozable global operational door, but its bottom-right default may
-not cover an unrelated page's final action. While it is present it publishes a
-compact/expanded document state; `styles/shell.css` consumes that state on the
-actual `.shell-main` scroll owner with responsive bottom and scroll padding
-(phone expanded: at least `36dvh`; desktop: at least `24dvh`). The marker is
-removed on zero alarms, failed read recovery, snooze, and unmount. The shared
+**2026-09-13 — global fixed-alert runway.** The dock is a movable, snoozable
+global operational door, but its bottom-right default may not cover an
+unrelated page's final action. While it is present it publishes a
+compact/expanded document state (`data-admin-attention`); `styles/shell.css`
+consumes that state on the actual `.shell-main` scroll owner with responsive
+bottom and scroll padding (phone expanded: at least `36dvh`; desktop: at least
+`24dvh`). The marker is removed on zero items, snooze, and unmount. The shared
 toast viewport consumes the same clearance so a success/error toast cannot
-stack over the persistent alarm. Guard:
+stack over the persistent dock. Guard:
 `styles/__tests__/no-overlay-layout-reservation.test.ts` checks the semantic
 state, responsive runway, no measurement feedback loop, and toast separation.
 

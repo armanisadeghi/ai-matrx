@@ -1500,7 +1500,7 @@ button.shell-nav-flyout-item {
    real final flow item does: even full-viewport route children can scroll
    completely above the fixed alarm instead of leaving their last control
    underneath it. */
-:root[data-schedule-alarm] .shell-main::after {
+:root[data-admin-attention] .shell-main::after {
   content: "";
   display: block;
   height: var(--shell-fixed-alert-clearance);
@@ -1527,7 +1527,7 @@ button.shell-nav-flyout-item {
    A surface that clips at the viewport can never have content hidden under a
    fixed notice in the first place — its own inner scrollers carry
    `.scroll-page-end-space` for that. So this rule takes nothing away. */
-:root[data-schedule-alarm]
+:root[data-admin-attention]
   .shell-main:has(> .h-full.overflow-hidden)::after {
   content: none;
 }
@@ -1537,16 +1537,16 @@ button.shell-nav-flyout-item {
    intentionally not a measured height, so no observer can feed layout back
    into the fixed card. The compact pill clears one touch target; an expanded
    alarm clears its action row on phones and its card on desktop. */
-:root[data-schedule-alarm="compact"] {
+:root[data-admin-attention="compact"] {
   --shell-fixed-alert-clearance: max(4.5rem, env(safe-area-inset-bottom, 0px));
 }
 
-:root[data-schedule-alarm="expanded"] {
+:root[data-admin-attention="expanded"] {
   --shell-fixed-alert-clearance: max(14rem, 36dvh, env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 640px) {
-  :root[data-schedule-alarm="expanded"] {
+  :root[data-admin-attention="expanded"] {
     --shell-fixed-alert-clearance: max(10rem, 24dvh, env(safe-area-inset-bottom, 0px));
   }
 }
@@ -1614,7 +1614,7 @@ button.shell-nav-flyout-item {
   padding-bottom: 0;
   scroll-padding-bottom: 0;
 }
-:root[data-schedule-alarm] .shell-root[data-pathname^="/administration"] .shell-main::after {
+:root[data-admin-attention] .shell-root[data-pathname^="/administration"] .shell-main::after {
   display: none;
 }
 
@@ -1692,10 +1692,10 @@ button.shell-nav-flyout-item {
     scroll-padding-bottom: var(--shell-fixed-alert-clearance);
   }
 
-  /* The schedule alarm's real ::after runway already supplies this clearance.
+  /* The attention dock's real ::after runway already supplies this clearance.
      Keep scroll padding for focus navigation, but do not duplicate the flow
      reserve on natural pages. Dock routes retain their separate reserve below. */
-  :root[data-schedule-alarm] body:not(:has(.shell-show-dock)) .shell-main {
+  :root[data-admin-attention] body:not(:has(.shell-show-dock)) .shell-main {
     padding-bottom: 0;
   }
 

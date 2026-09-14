@@ -17,7 +17,7 @@ describe("schedule route terminal clearance", () => {
     const source = fs.readFileSync(shellStyles, "utf8");
 
     expect(source).toContain(
-      ':root[data-schedule-alarm] .shell-main::after',
+      ':root[data-admin-attention] .shell-main::after',
     );
     expect(source).toContain("height: var(--shell-fixed-alert-clearance)");
   });

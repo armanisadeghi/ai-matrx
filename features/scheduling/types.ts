@@ -95,9 +95,30 @@ export interface AutoSuspendedBlock {
  * (common-docs/policies/no-unapproved-schedules.md); the rest is the guard's
  * suspension record and its history.
  */
+/**
+ * A super-admin's "this one is supposed to be off, for now" — written from the
+ * attention dock onto the row (`metadata.alarm_mute`), read by
+ * `scheduler.system_schedule_alarms`. Always timed.
+ */
+export interface AlarmMuteBlock {
+  until: string;
+  reason?: string;
+  by?: string;
+  at?: string;
+}
+
+/** One product page this job feeds — see `SystemTaskImpact` in service/queries.ts. */
+export interface TaskImpactEntry {
+  href: string;
+  label: string;
+  what?: string;
+}
+
 export interface SchTaskMetadata {
   auto_suspended?: AutoSuspendedBlock;
   auto_suspended_history?: AutoSuspendedBlock[];
+  alarm_mute?: AlarmMuteBlock;
+  impact?: TaskImpactEntry[];
   approval?: string;
   approved_by?: string;
   approved_at?: string;

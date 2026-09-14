@@ -10,7 +10,7 @@
  * depends on simply could not be seen or reached.
  *
  * The mechanism, reproduced by this file: `.shell-main` is the scroll owner.
- * While a fixed notice is on screen (`:root[data-schedule-alarm]`) it appends
+ * While a fixed notice is on screen (`:root[data-admin-attention]`) it appends
  * a `::after` runway — 4.5rem compact, 14rem expanded — so a NATURAL-HEIGHT
  * page can scroll its last control clear of the notice. On a route body that
  * is already exactly the viewport and clips its own overflow (the chat room),
@@ -24,7 +24,7 @@
  * rects, so the numbers are the engine's, not a test's model.
  *
  * Proven failing before passing: delete the
- * `:root[data-schedule-alarm] .shell-main:has(> .h-full.overflow-hidden)::after
+ * `:root[data-admin-attention] .shell-main:has(> .h-full.overflow-hidden)::after
  * { content: none; }` rule from `styles/shell.css` and every case below goes
  * RED with the canvas header at a negative `y`, exactly as production did.
  *
@@ -100,7 +100,7 @@ async function mount(page: import("@playwright/test").Page, alarm: string) {
   await page.addStyleTag({ content: SHELL_CSS });
   await page.addStyleTag({ content: TAILWIND_SUBSET });
   await page.evaluate((value) => {
-    document.documentElement.setAttribute("data-schedule-alarm", value);
+    document.documentElement.setAttribute("data-admin-attention", value);
   }, alarm);
 }
 

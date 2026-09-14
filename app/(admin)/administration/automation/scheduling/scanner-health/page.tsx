@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Activity,
@@ -19,13 +20,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { getStatus } from "@/features/scheduling/service/schedulerClient";
-import {
-  fetchSystemScheduleAlarms,
-  type SystemScheduleAlarm,
-} from "@/features/scheduling/service/queries";
 import type { ScannerStatusResponse } from "@/features/scheduling/service/schedulerApi.types";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AttentionItemRow } from "@/features/admin/attention/AttentionItemRow";
+import { partitionItems } from "@/features/admin/attention/build-notice";
+import { NOTE_MUTE } from "@/features/admin/attention/item-mute";
+import {
+  SCHEDULE_ALARMS_QUERY_KEY,
+  useScheduleAlarmSource,
+} from "@/features/admin/attention/sources/useScheduleAlarmSource";
+import type { AttentionAction, AttentionItem } from "@/features/admin/attention/types";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useNow } from "@/hooks/useNow";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   definedOnly,
   useAdminSchedulingScopeSlice,
@@ -39,12 +49,54 @@ export default function ScannerHealthPage() {
    * THE ALARM NOBODY READS (2026-08-24). A running scanner is not a healthy
    * schedule: on 2026-08-23 the scanner was fine and an APPROVED nightly was
    * repeat-guard-suspended, recorded perfectly, and read by no one for a day.
-   * These rows are the schedules that need a human — and they are read through
-   * a super-admin SECURITY DEFINER function because `sch_task` has no admin RLS
-   * clause, so a system schedule is invisible to an ordinary console read.
+   * These rows are the schedules that need a human — the SAME source and the
+   * SAME row the global attention dock renders (features/admin/attention), so
+   * this page can never drift from the card that points at it. This page is
+   * the review: it also lists the MUTED rows with their note, and un-mutes.
    */
-  const [alarms, setAlarms] = useState<SystemScheduleAlarm[] | null>(null);
-  const [alarmError, setAlarmError] = useState<string | null>(null);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const schedules = useScheduleAlarmSource(Boolean(isSuperAdmin));
+  const queryClient = useQueryClient();
+  const now = useNow();
+  const { live: liveAlarms, muted: mutedAlarms } = partitionItems(schedules.items, {}, now);
+  const [noteFor, setNoteFor] = useState<AttentionItem | null>(null);
+  const [noteBusy, setNoteBusy] = useState(false);
+  const alarmError = schedules.status === "failed" ? schedules.error ?? "unknown error" : null;
+
+  const onAction = async (item: AttentionItem, action: AttentionAction) => {
+    if (action.confirm) {
+      const ok = await confirm({
+        title: action.confirm.title,
+        description: action.confirm.description,
+        confirmLabel: action.confirm.confirmLabel,
+        variant: action.confirm.variant ?? "default",
+      });
+      if (!ok) return;
+    }
+    try {
+      await action.run();
+      toast.success(`${action.label}: done for "${item.title}"`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+  const onMute = async (item: AttentionItem, ms: number, note: string | null = null) => {
+    try {
+      await item.mute.apply(Date.now() + ms, note);
+      toast.success(`"${item.title}" is muted for every super-admin — it comes back on its own.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+  const onUnmute = async (item: AttentionItem) => {
+    if (!item.mute.clear) return;
+    try {
+      await item.mute.clear();
+      toast.success(`"${item.title}" is back on the attention dock.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   // Everything the poll returns, plus why the poll failed if it did. The
   // scanner's OWN error and an unreachable backend are different facts, so
@@ -71,28 +123,13 @@ export default function ScannerHealthPage() {
     setError(null);
     // The scanner status and the schedule alarms are DIFFERENT facts: the
     // scanner can be perfectly healthy while an approved schedule is off. One
-    // failing must never hide the other, so they settle independently.
-    const [statusResult, alarmResult] = await Promise.allSettled([
-      getStatus(),
-      fetchSystemScheduleAlarms(),
-    ]);
-    if (statusResult.status === "fulfilled") setStatus(statusResult.value);
-    else
-      setError(
-        statusResult.reason instanceof Error
-          ? statusResult.reason.message
-          : String(statusResult.reason),
-      );
-    if (alarmResult.status === "fulfilled") {
-      setAlarms(alarmResult.value);
-      setAlarmError(null);
-    } else {
-      setAlarms(null);
-      setAlarmError(
-        alarmResult.reason instanceof Error
-          ? alarmResult.reason.message
-          : String(alarmResult.reason),
-      );
+    // failing must never hide the other, so they settle independently — the
+    // alarms through their own query, refreshed alongside every status poll.
+    void queryClient.invalidateQueries({ queryKey: SCHEDULE_ALARMS_QUERY_KEY });
+    try {
+      setStatus(await getStatus());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
     setLoading(false);
   };
@@ -148,59 +185,52 @@ export default function ScannerHealthPage() {
       </div>
 
       {/* Schedules that need a human. First on the page, because a green
-          scanner told nobody that an approved nightly had switched itself off. */}
-      {alarms && alarms.length > 0 ? (
-        <div className="space-y-2" data-surface-value="schedule_alarms">
-          {alarms.map((alarm) => (
-            <Alert
-              key={alarm.task_id}
-              variant={alarm.severity === "critical" ? "destructive" : "default"}
-              className={cn(
-                alarm.severity === "critical"
-                  ? undefined
-                  : "border-warning/50 bg-warning/10",
-              )}
-            >
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="flex flex-wrap items-center gap-2">
-                <span>
-                  {alarm.alarm === "suspended"
-                    ? "Switched off by the repeat guard"
-                    : alarm.alarm === "overdue"
-                      ? "Enabled but overdue"
-                      : "Last run failed"}
-                </span>
-                {/* THE DOOR LAW: a named schedule opens. `href` is explicit
-                    because these are scheduled tasks, whose record route is
-                    /schedules/<id> — never the workspace task route. */}
-                <EntityRef
-                  token="scheduled_task"
-                  id={alarm.task_id}
-                  name={alarm.title}
-                  href={`/schedules/${alarm.task_id}`}
-                />
-              </AlertTitle>
-              <AlertDescription>
-                <div className="text-xs leading-5">{alarm.detail}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  {alarm.alarm === "suspended"
-                    ? "Nothing will run until a person re-enables it."
-                    : alarm.next_due_at
-                      ? `Due ${humanizeRelative(alarm.next_due_at)}.`
-                      : "No next run is scheduled."}
-                  {alarm.consecutive_failures
-                    ? ` ${alarm.consecutive_failures} identical failures in a row.`
-                    : ""}
-                </div>
-              </AlertDescription>
-            </Alert>
-          ))}
+          scanner told nobody that an approved nightly had switched itself off.
+          The same rows, the same row component and the same actions as the
+          global attention dock — plus the muted ones, which the dock hides. */}
+      {liveAlarms.length > 0 ? (
+        <div className="rounded-lg border border-border bg-card px-3" data-surface-value="schedule_alarms">
+          <ul className="divide-y divide-border/60">
+            {liveAlarms.map((item) => (
+              <AttentionItemRow
+                key={item.key}
+                item={item}
+                onAction={onAction}
+                onMute={onMute}
+                onMuteWithNote={setNoteFor}
+                onUnmute={onUnmute}
+              />
+            ))}
+          </ul>
         </div>
       ) : null}
-      {alarms && alarms.length === 0 ? (
+      {schedules.status === "ok" && liveAlarms.length === 0 ? (
         <p className="text-xs text-muted-foreground" data-surface-value="schedule_alarms_clear">
-          No schedule needs attention — nothing suspended, overdue, or failing.
+          No schedule needs attention — nothing suspended, overdue, or failing
+          {mutedAlarms.length > 0 ? ` (${mutedAlarms.length} muted below)` : ""}.
         </p>
+      ) : null}
+      {mutedAlarms.length > 0 ? (
+        <div className="space-y-1" data-surface-value="schedule_alarms_muted">
+          <h2 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Muted — quiet on purpose, for a while
+          </h2>
+          <div className="rounded-lg border border-border bg-card px-3">
+            <ul className="divide-y divide-border/60">
+              {mutedAlarms.map((item) => (
+                <AttentionItemRow
+                  key={item.key}
+                  item={item}
+                  muted
+                  onAction={onAction}
+                  onMute={onMute}
+                  onMuteWithNote={setNoteFor}
+                  onUnmute={onUnmute}
+                />
+              ))}
+            </ul>
+          </div>
+        </div>
       ) : null}
       {alarmError ? (
         <Alert variant="destructive" data-surface-value="schedule_alarms_error">
@@ -212,6 +242,29 @@ export default function ScannerHealthPage() {
           </AlertDescription>
         </Alert>
       ) : null}
+      <TextInputDialog
+        open={noteFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoteFor(null);
+        }}
+        title={noteFor ? `Mute "${noteFor.title}" for ${NOTE_MUTE.label}` : "Mute"}
+        description="Say why it is fine for this to stay off — every super-admin will read it beside the schedule, and the mute ends on its own."
+        placeholder="e.g. The commerce module is not built yet; nothing to sync until eBay approves us."
+        multiline
+        rows={3}
+        confirmLabel={`Mute for ${NOTE_MUTE.label}`}
+        busy={noteBusy}
+        onConfirm={async (value) => {
+          if (!noteFor) return;
+          setNoteBusy(true);
+          try {
+            await onMute(noteFor, NOTE_MUTE.ms, value.trim());
+            setNoteFor(null);
+          } finally {
+            setNoteBusy(false);
+          }
+        }}
+      />
 
       {error && (
         <Alert

@@ -22,6 +22,7 @@
 "use client";
 
 import { useState } from "react";
+import { useNow } from "@/hooks/useNow";
 import {
   AlertOctagon,
   ChevronDown,
@@ -72,7 +73,10 @@ export function approvalSentence(task: AgendaTask): string | null {
 
 export function SuspensionCard({ task, onRestore, restoring }: Props) {
   const [historyOpen, setHistoryOpen] = useState(false);
+  const now = useNow();
   const suspended = task.metadata.auto_suspended;
+  const alarmMute = task.metadata.alarm_mute;
+  const alarmMuted = alarmMute !== undefined && new Date(alarmMute.until).getTime() > now;
   const history = task.metadata.auto_suspended_history ?? [];
   const approval = approvalSentence(task);
 
@@ -113,15 +117,26 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
                 </p>
               )}
               {suspended.run_id && (
+                // A door to the run row on this page. Its LABEL is the words,
+                // never a truncated uuid — an id is not something a person
+                // reads (Arman, 2026-09-14).
                 <p>
-                  The run that tipped it:{" "}
                   <a
                     href={`#run-${suspended.run_id}`}
-                    className="font-mono text-xs underline underline-offset-2"
+                    className="underline underline-offset-2"
+                    title="Jump to this run in the history below"
                   >
-                    {suspended.run_id.slice(0, 8)}…
+                    The run that tipped it
                   </a>{" "}
-                  in the history below.
+                  is in the history below.
+                </p>
+              )}
+              {alarmMuted && alarmMute && (
+                <p data-surface-value="schedule_alarm_mute">
+                  Its alarm is muted until {formatWhen(alarmMute.until)}
+                  {alarmMute.by ? ` by ${alarmMute.by}` : ""}
+                  {alarmMute.reason ? ` — ${alarmMute.reason}` : ""}. It leaves the
+                  super-admin attention dock until then and returns on its own.
                 </p>
               )}
               {suspended.override_notice && (
