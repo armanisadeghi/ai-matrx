@@ -1,0 +1,41 @@
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useSnapshots, marketingKeys } from "./hooks";
+import { getSnapshotReceiptWatermark, listSnapshotReceiptPage } from "./service";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
+
+jest.mock("./service", () => ({
+  getSnapshotReceiptWatermark: jest.fn(), listSnapshotReceiptPage: jest.fn(),
+  decodeSnapshotReceiptCursor: (value: string) => JSON.parse(value),
+  snapshotSourceIdentity: (state: MatrxDataTableQueryState) => ({ pageSize: state.pageSize, search: state.search }),
+  SnapshotReceiptError: class SnapshotReceiptError extends Error {},
+}));
+const watermark = jest.mocked(getSnapshotReceiptWatermark);
+const page = jest.mocked(listSnapshotReceiptPage);
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+const state: MatrxDataTableQueryState = { page: 1, pageSize: 10, search: "", searchMatchMode: "contains", anyOf: "", layeredFilters: [], columnFilters: {}, sort: { id: "captured_at", direction: "desc" } };
+let result: ReturnType<typeof useSnapshots> | null = null;
+function Harness() { result = useSnapshots("site", "page", state); return null; }
+async function flush() { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); }); }
+
+describe("snapshot append production hook", () => {
+  let client: QueryClient; let root: Root; let host: HTMLDivElement;
+  beforeEach(async () => {
+    watermark.mockReset().mockResolvedValue("2026-09-13T00:00:00Z");
+    page.mockReset().mockResolvedValueOnce({ rows: [{ id: "one" }], total: 2, nextCursor: JSON.stringify({ watermark: "2026-09-13T00:00:00Z", sortId: "captured_at", direction: "desc", value: "x", id: "one" }) }).mockResolvedValueOnce({ rows: [{ id: "two" }], total: 2, nextCursor: null });
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); host = document.createElement("div"); document.body.append(host); root = createRoot(host);
+    await act(async () => root.render(<QueryClientProvider client={client}><Harness /></QueryClientProvider>)); await flush(); await flush();
+  });
+  afterEach(() => { act(() => root.unmount()); host.remove(); client.clear(); });
+  it("loadAll reaches the frozen terminal receipt", async () => {
+    await act(async () => result!.pagination.requestLoadAll());
+    for (let count = 0; count < 10 && result!.pagination.rows.length < 2; count += 1) await flush();
+    expect(result!.pagination.rows.map((row) => row.id)).toEqual(["one", "two"]);
+  });
+  it("invalidation starts a fresh watermark receipt", async () => {
+    await act(async () => client.refetchQueries({ queryKey: marketingKeys.page("site", "page") }));
+    for (let count = 0; count < 10 && watermark.mock.calls.length < 2; count += 1) await flush();
+    expect(watermark.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+});
