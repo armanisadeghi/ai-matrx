@@ -14,8 +14,22 @@ import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { TableSavedViews } from "./TableSavedViews";
 import { TableToolbarAction } from "./TableToolbarAction";
+
+export type TableDensity = "condensed" | "normal" | "spacious";
+export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
+
+/** The register is authoritative; an unresolved or malformed answer stays normal. */
+export function tableDensityFromKnob(value: unknown): TableDensity {
+  return value === "condensed" || value === "spacious" || value === "normal"
+    ? value
+    : "normal";
+}
 
 const WindowPanel = dynamic(() => import("@/features/window-panels/WindowPanel").then((module) => module.WindowPanel), { ssr: false });
 
@@ -51,5 +65,17 @@ const ports: TableHost = {
   notify: toast,
 };
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {
-  return <MatrxDataTableProvider value={ports}>{children}</MatrxDataTableProvider>;
+  const organizationId = useAppSelector(selectOrganizationId);
+  const userId = useAppSelector(selectUserId);
+  const defaultDensity = tableDensityFromKnob(
+    useEffectiveKnob(organizationId, userId, TABLE_DENSITY_KNOB_KEY),
+  );
+  // `defaultDensity` is the shared package's host contract. The intersection
+  // keeps this host compatible with the currently installed package while its
+  // next published declaration catches up to the reviewed core change.
+  const densityPorts: TableHost & { defaultDensity: TableDensity } = {
+    ...ports,
+    defaultDensity,
+  };
+  return <MatrxDataTableProvider value={densityPorts}>{children}</MatrxDataTableProvider>;
 }
