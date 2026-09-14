@@ -51,12 +51,23 @@ export function GitHubRepositoryPicker({
   onSelect,
   disabled = false,
   showConnectionCard = true,
+  /**
+   * The account/inventory fetch this list is drawn from is still in flight
+   * (mirrors `useGitHubConnection().loading`, shown above by
+   * `GitHubConnectionCard`'s "Loading GitHub account…" state). While it is
+   * true, `repositories` is necessarily still `[]` — an empty array never
+   * means "connect an org", only "not answered yet". Rendering the
+   * missing-repos fix message here at the same moment the card says
+   * "Loading…" told the user two contradictory things at once.
+   */
+  loading = false,
 }: {
   repositories: GitHubRepository[];
   selectedId: string | null;
   onSelect: (repository: GitHubRepository) => void;
   disabled?: boolean;
   showConnectionCard?: boolean;
+  loading?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const matches = useMemo(
@@ -81,7 +92,11 @@ export function GitHubRepositoryPicker({
       </div>
 
       <div className="max-h-56 overflow-y-auto rounded-md border border-border">
-        {matches.length === 0 ? (
+        {loading ? (
+          <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+            Loading your repositories…
+          </p>
+        ) : matches.length === 0 ? (
           <p className="px-3 py-4 text-center text-xs text-muted-foreground">
             {repositories.length === 0
               ? "No repositories yet. Add an organization or repositories above, then refresh."

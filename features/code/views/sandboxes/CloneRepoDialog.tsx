@@ -174,6 +174,7 @@ export function CloneRepoDialog({
                 setDest(repository.fullName.split("/").pop() ?? "repo");
               }}
               disabled={cloning || github.loading}
+              loading={github.loading}
             />
           ) : (
             /* Not connected: the SAME card, which carries the connect button

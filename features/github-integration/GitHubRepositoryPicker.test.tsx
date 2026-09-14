@@ -143,4 +143,23 @@ describe("GitHubRepositoryPicker", () => {
 
     expect(container.textContent).toContain("add that organization above");
   });
+
+  // Regression guard: while the inventory fetch is still in flight,
+  // `repositories` is necessarily `[]` — that must never be read as "no
+  // repos, go add an organization" (the class-of-bug this file's sibling,
+  // GitHubConnectionCard's "Loading GitHub account…" state, also guards).
+  it("shows a loading message, never the missing-org fix, while the inventory is loading", async () => {
+    await act(async () => {
+      root.render(
+        <GitHubRepositoryPicker
+          repositories={[]}
+          selectedId={null}
+          onSelect={jest.fn()}
+          loading
+        />,
+      );
+    });
+    expect(container.textContent).not.toContain("No repositories yet");
+    expect(container.textContent).toContain("Loading your repositories");
+  });
 });

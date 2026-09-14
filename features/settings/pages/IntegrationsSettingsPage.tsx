@@ -73,8 +73,10 @@ import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
+import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildManualMcpCredentials,
@@ -148,6 +150,30 @@ const STATUS_CONFIG: Record<
 
 type ViewFilter = "all" | "connected" | "available" | "coming_soon";
 
+/**
+ * "Your connections" section summary — the loading-state guard the class of
+ * bug is named for.
+ *
+ * `totalConnected` alone told a partial truth: it only ever reflected the MCP
+ * catalog, never the GitHub card or the Google directory cards that render in
+ * the SAME section right below it, and neither `status` (the catalog fetch)
+ * nor either of those two other loading states gated the claim it made. On a
+ * cold load, `totalConnected` reads `0` on the very first paint — before ANY
+ * of the three sources has answered — so the summary declared "Nothing
+ * connected yet" in the same instant `GitHubConnectionCard` right underneath
+ * it was still showing "Loading GitHub account…": a loading surface and its
+ * own "found nothing" verdict, on screen together. The fix is the rule this
+ * whole family must follow: the empty sentence is earned only by "no items
+ * AND nothing still loading" — never by item count alone.
+ */
+export function connectionsSummaryLabel(
+  stillLoading: boolean,
+  totalConnected: number,
+): string {
+  if (stillLoading) return "Checking connections…";
+  return totalConnected > 0 ? `${totalConnected} active` : "Nothing connected yet";
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function IntegrationsPage() {
@@ -157,6 +183,12 @@ export default function IntegrationsPage() {
   const status = useAppSelector(selectMcpCatalogStatus);
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
+  // The other two "your connections" contributors rendered in this same
+  // section (GitHubConnectionCard below, DirectoryConnectorCards for
+  // Google) — their own loading state must gate the section summary too,
+  // not just the MCP catalog's.
+  const github = useGitHubConnection();
+  const googleInventory = useGoogleConnectionInventory();
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -224,6 +256,14 @@ export default function IntegrationsPage() {
   const connectedCount = catalog.filter(
     (entry) => entry.connectionStatus === "connected",
   ).length;
+
+  const githubConnectedCount =
+    github.inventory.connection?.status === "connected" ? 1 : 0;
+  const googleConnectedCount = (googleInventory.data?.connections ?? []).length;
+  const totalConnectedCount =
+    connectedCount + githubConnectedCount + googleConnectedCount;
+  const connectionsStillLoading =
+    status === "loading" || github.loading || googleInventory.isLoading;
 
   useSurfaceScopeContribution(
     "matrx-user/settings",
@@ -417,7 +457,7 @@ export default function IntegrationsPage() {
           <div className="flex shrink-0 items-center gap-2">
             <div className="rounded-lg border border-border bg-card px-3 py-2 text-right">
               <p className="text-lg font-semibold leading-none text-foreground">
-                {connectedCount}
+                {totalConnectedCount}
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">ready to use</p>
             </div>
@@ -456,7 +496,7 @@ export default function IntegrationsPage() {
               </p>
             </div>
             <span className="hidden text-xs text-muted-foreground sm:block">
-              {connectedCount > 0 ? `${connectedCount} active` : "Nothing connected yet"}
+              {connectionsSummaryLabel(connectionsStillLoading, totalConnectedCount)}
             </span>
           </div>
           <GitHubConnectionCard />
