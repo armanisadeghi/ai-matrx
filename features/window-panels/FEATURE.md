@@ -100,6 +100,8 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-09-14 — **`impactBatchWindow` carries `posture` and `focusAgentId`** (Agent Change Impact I6): the opener, the controller block, the window's `onCollectData` and the metadata `defaultData`/`preservation.dataKeys` all grew the two keys, so a post-edit panel opened through the per-person read door and scoped to one agent restores as such. Title reads "Change impact — this agent" in that case.
+
 - 2026-09-09 — Watchdog failure payloads retain the viewport used for diagnosis, its degenerate/fallback flag, and render acknowledgement kind; missing acknowledgements remain `none`, never an inferred presentation.
 
 - 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.

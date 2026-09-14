@@ -27,6 +27,7 @@
 
 import { useState } from "react";
 import { Loader2, Radar, X } from "lucide-react";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -102,14 +103,16 @@ export function useAgentChangeReach(agentId: string) {
   const [reach, setReach] = useState<AgentReach | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
 
-  const openPanel = () =>
+  // The name is passed in, not read from state: the toast's Review door is a
+  // closure from the render that started the read, before any state landed.
+  const openPanel = (name: string | null) =>
     openImpactBatchWindow({
       agentIds: [agentId],
       mode: "post_batch",
       posture: "mine",
       focusAgentId: agentId,
-      batchLabel: `Edit of ${agentName ?? "agent"}`,
-      sourceSentence: `You just saved ${agentName ?? "this agent"} — these are the jobs that change reaches.`,
+      batchLabel: `Edit of ${name ?? "agent"}`,
+      sourceSentence: `You just saved ${name ?? "this agent"} — these are the jobs that change reaches.`,
       surfaceName: "agent-post-edit",
     });
 
@@ -127,11 +130,11 @@ export function useAgentChangeReach(agentId: string) {
         duration: REACH_TOAST_MS,
         description:
           "Nothing moved. Review the jobs, compare the versions, test it, and advance the safe ones when you are ready.",
-        action: { label: "Review", onClick: openPanel },
+        action: { label: "Review", onClick: () => openPanel(name) },
       });
       const autoOpen = await readPostEditAutoOpen();
       if (autoOpen.state === "known" && autoOpen.value) {
-        openPanel();
+        openPanel(name);
       } else if (autoOpen.state === "unknown") {
         // The knob could not be read: the badge and the toast still stand, so
         // the person loses nothing but the automatic open — said once, quietly.
@@ -191,7 +194,7 @@ export function useAgentChangeReach(agentId: string) {
       <span className="inline-flex items-center gap-0.5">
         <button
           type="button"
-          onClick={openPanel}
+          onClick={() => openPanel(agentName)}
           className="rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           title={`${reach.sentence}. Open the impact panel — compare versions, test, advance the safe ones.`}
           aria-label={reach.sentence}
@@ -217,5 +220,38 @@ export function useAgentChangeReach(agentId: string) {
       </span>
     );
 
-  return { reach, announce, badge, openPanel } as const;
+  // The mobile header is a fixed row of 44pt tap targets, so the chip above
+  // would squeeze the mode pill. This is the same badge as ONE tap target: a
+  // radar with the count in a bubble; tapping opens the scoped panel, and a
+  // failed read is a red radar that tapping dismisses (the toast already
+  // carried the sentence).
+  const tapBadge =
+    reach === null || reach.state === "none" || reach.state === "reading" ? null : (
+      <div className="relative shrink-0" data-testid="agent-change-reach-tap">
+        <TapTargetButton
+          icon={
+            <Radar
+              className={`h-4 w-4 ${reach.state === "failed" ? "text-rose-600 dark:text-rose-400" : "text-primary"}`}
+            />
+          }
+          ariaLabel={
+            reach.state === "failed"
+              ? `This change's reach is unknown: ${reach.why}. Tap to dismiss.`
+              : `${reach.sentence}. Open the impact panel.`
+          }
+          tooltip={false}
+          onClick={() => (reach.state === "failed" ? setReach(null) : openPanel(agentName))}
+        />
+        {reach.state === "reached" ? (
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute -right-0.5 -top-0.5 min-w-[1.1rem] rounded-full border px-1 text-center text-[10px] font-semibold leading-4 tabular-nums ${reachToneClassName(reach.counts)}`}
+          >
+            {reach.counts.mandates}
+          </span>
+        ) : null}
+      </div>
+    );
+
+  return { reach, announce, badge, tapBadge } as const;
 }

@@ -48,7 +48,7 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
     setShowModelWarning,
     readOnlySavePrompt,
     duplicateDialog,
-    reachBadge,
+    reachTapBadge,
   } = useAgentSaveAction(agentId);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -86,22 +86,29 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
 
   return (
     <>
-      {reachBadge}
-      <div className="relative shrink-0">
-        <TapTargetButton
-          icon={icon}
-          ariaLabel={ariaLabel}
-          tooltip={false}
-          onClick={handleSave}
-          disabled={!canSave}
-        />
-        {showDirtyDot && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-500"
+      {/* The header is a fixed row of 44pt targets with no room for a seventh.
+          After a save the target is disabled (nothing to save), so that slot
+          carries the post-save "reaches N" badge until the next edit dirties
+          the record and the save target returns (Agent Change Impact I6). */}
+      {reachTapBadge && !isDirty && !isNewRoute ? (
+        reachTapBadge
+      ) : (
+        <div className="relative shrink-0">
+          <TapTargetButton
+            icon={icon}
+            ariaLabel={ariaLabel}
+            tooltip={false}
+            onClick={handleSave}
+            disabled={!canSave}
           />
-        )}
-      </div>
+          {showDirtyDot && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-500"
+            />
+          )}
+        </div>
+      )}
 
       <AlertDialog open={showModelWarning} onOpenChange={setShowModelWarning}>
         <AlertDialogContent>

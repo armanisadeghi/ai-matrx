@@ -170,7 +170,7 @@ describe("the badge and the toast", () => {
         agent_name: "Quick Test Agent (copy)",
         lineage_path: [
           { agent_id: "agent-1", agent_name: "Quick Test Agent", relation: "self" },
-          { agent_id: "agent-2", agent_name: "Quick Test Agent (copy)", relation: "duplicate" },
+          { agent_id: "agent-2", agent_name: "Quick Test Agent (copy)", relation: "duplicated_from" },
         ],
         apply_token: {
           holder_kind: "mandate_default",
@@ -209,6 +209,14 @@ describe("the badge and the toast", () => {
       posture: "mine",
       focusAgentId: "agent-1",
       surfaceName: "agent-post-edit",
+      batchLabel: "Edit of Quick Test Agent",
+    });
+    // The toast's Review door opens the same scoped panel, named the same.
+    act(() => options.action.onClick());
+    expect(openWindowMock).toHaveBeenCalledTimes(2);
+    expect(openWindowMock.mock.calls[1][0]).toMatchObject({
+      batchLabel: "Edit of Quick Test Agent",
+      focusAgentId: "agent-1",
     });
   });
 

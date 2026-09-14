@@ -77,8 +77,11 @@ export function useAgentSaveAction(
   // Agent Change Impact (I6): after a save lands, which jobs does it reach?
   // Non-blocking — the read runs after the save has succeeded and never
   // delays it; the badge and the toast's "Review" door open the impact panel.
-  const { badge: reachBadge, announce: announceReach } =
-    useAgentChangeReach(agentId);
+  const {
+    badge: reachBadge,
+    tapBadge: reachTapBadge,
+    announce: announceReach,
+  } = useAgentChangeReach(agentId);
 
   const isNewRoute = pathname === "/agents/new";
   const isEditMode =
@@ -188,5 +191,7 @@ export function useAgentSaveAction(
     duplicateDialog,
     /** The post-save "reaches N" badge (Agent Change Impact I6), or null. */
     reachBadge,
+    /** The same badge as one 44pt tap target, for the mobile header. */
+    reachTapBadge,
   } as const;
 }
