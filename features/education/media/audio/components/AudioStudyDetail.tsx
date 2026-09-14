@@ -235,17 +235,14 @@ function ReadyAudioView({ media }: { media: StudyMediaRow }) {
   const { isOwner } = useAccess("study_media", media.id);
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <Headphones className="h-4 w-4 text-primary" />
-        Listen
-      </div>
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
       <AudioPlayback
         fileId={media.audio_file_id}
         episodeId={media.episode_id}
+        title={media.title}
       />
       {isOwner && (
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-2 border-t border-border pt-3">
           <Button
             variant="outline"
             size="sm"
@@ -321,6 +318,7 @@ function LiveAudioRun({
           <AudioPlayback
             fileId={state.audioFileId}
             episodeId={state.episodeId}
+            title={state.title}
           />
         </div>
       )}

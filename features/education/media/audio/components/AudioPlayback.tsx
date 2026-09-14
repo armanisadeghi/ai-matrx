@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import { podcastService } from "@/features/podcasts/service";
-import { SessionAudio } from "@/features/education/study/components/SessionAudio";
-import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
+import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 
 interface EpisodeAudioResolution {
   episodeId: string;
@@ -18,9 +18,11 @@ interface EpisodeAudioResolution {
 export function AudioPlayback({
   fileId,
   episodeId,
+  title,
 }: {
   fileId: string | null;
   episodeId: string | null;
+  title?: string;
 }) {
   const [episodeAudio, setEpisodeAudio] =
     useState<EpisodeAudioResolution | null>(null);
@@ -43,25 +45,18 @@ export function AudioPlayback({
     };
   }, [fileId, episodeId]);
 
-  if (fileId) return <SessionAudio fileId={fileId} className="h-10 w-full" />;
-
-  const resolvedUrl =
+  const episodeUrl =
     episodeAudio?.episodeId === episodeId ? episodeAudio.url : undefined;
-  if (resolvedUrl) {
-    return (
-      <SessionMediaElement
-        as="audio"
-        src={resolvedUrl}
-        controls
-        preload="none"
-        className="h-10 w-full"
-        sessionSource="podcast"
-        sessionLabel="Education audio study"
-        trackKey={resolvedUrl}
-      />
-    );
+  // The player always resolves a durable identity first. A freshly produced
+  // study has only fileId; recovered studies retain an episode URL. Both pass
+  // through the media client so a stale URL can be re-minted before playback.
+  const audioUrl = useMediaResolution(fileId ?? episodeUrl ?? null).resolution
+    ?.src;
+
+  if (audioUrl) {
+    return <PodcastAudioPlayer audioUrl={audioUrl} title={title} />;
   }
-  if (!episodeId || resolvedUrl === null) {
+  if (!fileId && (!episodeId || episodeUrl === null)) {
     return (
       <p className="text-xs text-destructive" role="alert">
         This audio study could not be loaded. Try again.
