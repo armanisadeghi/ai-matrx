@@ -20,6 +20,11 @@ function stateWithInput(
         [CONVERSATION_ID]: { orderedIds: [] },
       },
     },
+    instanceUIState: {
+      byConversationId: {
+        [CONVERSATION_ID]: {},
+      },
+    },
     instanceUserInput: {
       byConversationId: {
         [CONVERSATION_ID]: {
