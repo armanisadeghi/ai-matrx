@@ -58,5 +58,18 @@ export const destroyInstanceIfAbandoned =
       Boolean(input?.messageParts?.length) ||
       (input != null && input.submissionPhase !== "idle");
     if (hasComposerWork) return;
+    // CONFIGURING A RUN IS WORK. Attaching an MCP server, a tool, or a skill
+    // from the `+` menu is a deliberate act that happens BEFORE most people
+    // type a word — on `/chat/new` it is usually the first thing they do. Judging
+    // "abandoned" on messages and composer text alone reaped conversations the
+    // person had already configured, and the attachment vanished with no notice.
+    const added =
+      state.instanceUIState.byConversationId[conversationId]
+        ?.builderAdvancedSettings;
+    const hasRunConfiguration =
+      Boolean(added?.addedTools?.length) ||
+      Boolean(added?.addedMcpServers?.length) ||
+      Boolean(added?.addedSkills?.length);
+    if (hasRunConfiguration) return;
     dispatch(destroyInstance(conversationId));
   };

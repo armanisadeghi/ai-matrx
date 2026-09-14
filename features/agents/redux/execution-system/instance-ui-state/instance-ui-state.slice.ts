@@ -695,6 +695,23 @@ const instanceUIStateSlice = createSlice({
       }
     },
 
+    /**
+     * CREATE-OR-SCREAM — never drop a per-run pick.
+     *
+     * This used to be `if (entry) { ... }`: a write for a conversation whose
+     * UI-state entry did not exist YET was discarded in silence. That window is
+     * real on `/chat/new` — the landing composer renders against the minted
+     * conversation id BEFORE the launcher's create effect runs (`ChatRoomClient`
+     * gates it on `ready: !isInitializing && isFreshRoute`) — so a person could
+     * attach an MCP server or a tool, see nothing happen, and send a run without
+     * it. A silent drop of a deliberate user pick is exactly what law 4 forbids.
+     *
+     * Now the entry is created at its documented defaults and the change is
+     * applied on top, with a loud console error naming the conversation so the
+     * ordering defect is still visible to us. `createInstanceFull` carries the
+     * per-run additions across its own re-init (see extraReducers below), so the
+     * pick survives the real create landing a beat later.
+     */
     setBuilderAdvancedSettings(
       state,
       action: PayloadAction<{
@@ -702,10 +719,24 @@ const instanceUIStateSlice = createSlice({
         changes: Partial<BuilderAdvancedSettings>;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        Object.assign(entry.builderAdvancedSettings, action.payload.changes);
+      const { conversationId, changes } = action.payload;
+      if (!state.byConversationId[conversationId]) {
+        console.error(
+          `[instance-ui-state] setBuilderAdvancedSettings arrived for conversation ` +
+            `"${conversationId}" before its UI-state entry existed — creating the entry ` +
+            `at defaults so the pick is kept. The conversation record is expected to ` +
+            `land moments later; if it never does, the surface launched its composer ` +
+            `without a conversation.`,
+        );
+        instanceUIStateSlice.caseReducers.initInstanceUIState(
+          state,
+          instanceUIStateSlice.actions.initInstanceUIState({ conversationId }),
+        );
       }
+      Object.assign(
+        state.byConversationId[conversationId].builderAdvancedSettings,
+        changes,
+      );
     },
 
     resetBuilderAdvancedSettings(state, action: PayloadAction<string>) {
@@ -837,6 +868,24 @@ const instanceUIStateSlice = createSlice({
     // defaults apply (conversationId only).
     builder.addCase(createInstanceFull, (state, action) => {
       const { conversationId, uiState } = action.payload;
+      // PER-RUN ADDITIONS SURVIVE A RE-CREATE. Init REPLACES the whole entry,
+      // which is right for the ~45 display fields — but `addedTools`,
+      // `addedMcpServers` and `addedSkills` are deliberate user picks, not
+      // display config. A surface that re-creates the same conversation id
+      // (the chat launcher re-runs its effect whenever `ready` or the
+      // fresh-session nonce changes, and `destroyInstanceIfAbandoned` +
+      // re-create is its normal cleanup path) would otherwise wipe an MCP the
+      // person attached seconds earlier, with nothing on screen to say so.
+      // Carry them forward unless THIS creation explicitly states its own.
+      const prior = state.byConversationId[conversationId]?.builderAdvancedSettings;
+      const incoming = uiState?.builderAdvancedSettings;
+      const carried = (
+        ["addedTools", "addedMcpServers", "addedSkills"] as const
+      ).filter(
+        (key) =>
+          (prior?.[key]?.length ?? 0) > 0 && incoming?.[key] === undefined,
+      );
+
       instanceUIStateSlice.caseReducers.initInstanceUIState(
         state,
         instanceUIStateSlice.actions.initInstanceUIState({
@@ -844,6 +893,20 @@ const instanceUIStateSlice = createSlice({
           ...(uiState ?? {}),
         }),
       );
+
+      if (carried.length > 0 && prior) {
+        for (const key of carried) {
+          state.byConversationId[conversationId].builderAdvancedSettings[key] = [
+            ...(prior[key] ?? []),
+          ];
+        }
+        console.warn(
+          `[instance-ui-state] conversation "${conversationId}" was re-created while it ` +
+            `already carried per-run additions (${carried.join(", ")}) — they were kept. ` +
+            `A re-create on a conversation the person has already configured means a ` +
+            `launcher effect re-ran under them; the picks must never be the casualty.`,
+        );
+      }
     });
 
     builder.addCase(destroyInstance, (state, action) => {

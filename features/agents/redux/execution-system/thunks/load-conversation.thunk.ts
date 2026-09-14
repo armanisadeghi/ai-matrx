@@ -29,7 +29,10 @@ import {
   hydrateConversation,
   setConversationLabel,
 } from "../conversations/conversations.slice";
-import { hydrateMessages } from "../messages/messages.slice";
+import {
+  hydrateMessages,
+  setMessagesHydrationFailure,
+} from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
 import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
@@ -75,6 +78,15 @@ import {
 // Thunk
 // =============================================================================
 
+/**
+ * The `detail` a failed transcript read shows under the honest empty state.
+ * Plain English, no table or endpoint names — the reader is a subject-matter
+ * expert, not an engineer. The surrounding sentence and the "Try again" button
+ * come from `StaleDataNotice`.
+ */
+const NOT_READABLE_DETAIL =
+  "it may have been removed, or your sign-in lost access to it";
+
 export interface LoadConversationArgs {
   conversationId: string;
   /** Optional — surface key to set focus on after rehydration. */
@@ -97,6 +109,22 @@ export interface LoadConversationArgs {
    * this conversation after the user already moved on (e.g. clicked `+`).
    */
   signal?: AbortSignal;
+  /**
+   * The caller is REOPENING a conversation it believes the server already has
+   * (a resume from a URL, a history row, a saved binding) rather than touching
+   * one this client just minted.
+   *
+   * It changes exactly one thing: what a bundle with no conversation row
+   * MEANS. For a locally-minted conversation it is benign — the row appears on
+   * the first turn. For a reopen it is a failed read (RLS denied it because the
+   * session was not hydrated yet, the RPC failed, the id is wrong), and a
+   * failed read that renders as an empty room is a screen that lies. When this
+   * is true, such a read records `hydrationFailure` on the transcript so the UI
+   * can say so and offer a retry (law 4 — nothing fails silently).
+   *
+   * Nothing about the RPC call itself changes.
+   */
+  expectMaterialized?: boolean;
 }
 
 interface ThunkApi {
@@ -123,7 +151,14 @@ export const loadConversation = createAsyncThunk<
 >(
   "conversations/load",
   async (
-    { conversationId, surfaceKey, messageLimit, beforePosition, signal },
+    {
+      conversationId,
+      surfaceKey,
+      messageLimit,
+      beforePosition,
+      signal,
+      expectMaterialized = false,
+    },
     { dispatch },
   ) => {
     // Auth diagnostics — RLS-denied reads return as `PGRST116` with
@@ -167,6 +202,18 @@ export const loadConversation = createAsyncThunk<
         (err as { code?: string } | null)?.code === CONVERSATION_NOT_MATERIALIZED
       ) {
         void historyPromise.catch?.(() => undefined);
+        // Benign only for a conversation this client minted. For a REOPEN the
+        // server was supposed to have this row, so an empty transcript would be
+        // a claim about the database nobody is entitled to make — say the read
+        // failed instead, and carry a retry.
+        if (expectMaterialized) {
+          dispatch(
+            setMessagesHydrationFailure({
+              conversationId,
+              failure: NOT_READABLE_DETAIL,
+            }),
+          );
+        }
         return { conversationId };
       }
        
@@ -176,6 +223,16 @@ export const loadConversation = createAsyncThunk<
       );
       // Don't leave the history fetch dangling on a bundle failure.
       void historyPromise;
+      // The transcript must never present a failed read as an empty room.
+      dispatch(
+        setMessagesHydrationFailure({
+          conversationId,
+          failure:
+            err instanceof Error && err.message
+              ? err.message
+              : NOT_READABLE_DETAIL,
+        }),
+      );
       throw err;
     }
     // Surface a single dev-only warning if the history fetch fails

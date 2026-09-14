@@ -211,7 +211,6 @@ export function AgentConversationColumn({
       didAutoRevealRef.current = false;
     }
     if (didAutoRevealRef.current) return undefined;
-    didAutoRevealRef.current = true;
     dispatch(
       setVisibleGroupLimit({
         conversationId: displayId,
@@ -219,6 +218,12 @@ export function AgentConversationColumn({
       }),
     );
     const timer = window.setTimeout(() => {
+      // Marked DONE here, not above: the cleanup below cancels this timeout, so
+      // a latch written before it would survive a cancelled reveal and leave
+      // the transcript narrowed to two groups forever (same class as the chat
+      // resume latch fixed 2026-09-13 in useConversationResume — a latch is a
+      // record of completed work, never of started work).
+      didAutoRevealRef.current = true;
       setChatVisibleGroupWindow((current) => ({
         displayId,
         limit:

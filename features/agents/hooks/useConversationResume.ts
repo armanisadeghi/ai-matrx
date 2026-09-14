@@ -98,6 +98,20 @@ export function useConversationResume({
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * THE INVARIANT: a conversation that has not been loaded is never left
+   * permanently un-loadable.
+   *
+   * This ref is a record of a COMPLETED resume, never of a started one. It
+   * used to be written the moment the effect began its async work — and the
+   * effect's own cleanup aborts that work, so any re-run (a dep change such as
+   * `enabled` flipping while the auth session re-hydrates, or a StrictMode
+   * double-mount) aborted attempt #1 and then short-circuited attempt #2 on a
+   * latch nothing released: the room rendered with zero messages and full
+   * chrome, forever (owner, 2026-09-13). Only a settled resume may write it,
+   * so every non-success exit — abort, error, early return — leaves the
+   * conversation loadable by the next run.
+   */
   const loadedKeyRef = useRef<string | null>(null);
   const onSettledRef = useRef(onSettled);
   // Held in refs, NEVER in the dependency array: a fresh identity every render
@@ -118,7 +132,6 @@ export function useConversationResume({
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    loadedKeyRef.current = conversationId;
     setError(null);
     setIsResuming(true);
 
@@ -155,6 +168,7 @@ export function useConversationResume({
           applySandboxSeed();
           setIsResuming(false);
           if (ctrl.signal.aborted) return;
+          loadedKeyRef.current = conversationId;
           dispatch(setFocus({ surfaceKey, conversationId }));
           onSettledRef.current?.(true);
           return;
@@ -182,10 +196,16 @@ export function useConversationResume({
             surfaceKey,
             messageLimit,
             signal: ctrl.signal,
+            // Nothing was in memory for this id, so the surface is reopening a
+            // conversation the SERVER is supposed to have. A bundle with no
+            // row is then a failed read, not a fresh mint, and the transcript
+            // must say so instead of rendering an empty room.
+            expectMaterialized: !exists,
           }),
         ).unwrap();
         if (ctrl.signal.aborted) return;
         setIsResuming(false);
+        loadedKeyRef.current = conversationId;
 
         // (4) + (5) Fire-and-forget resume of anything still in flight.
         void dispatch(surfaceColdPendingCalls(conversationId));
@@ -207,6 +227,8 @@ export function useConversationResume({
             ? err.message
             : "We couldn't reopen that conversation.",
         );
+        // The latch is written only on success, so a failed attempt never held
+        // it — this stays as a belt-and-braces assertion of the invariant.
         if (loadedKeyRef.current === conversationId) loadedKeyRef.current = null;
         onSettledRef.current?.(false);
       }

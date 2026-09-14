@@ -214,6 +214,17 @@ export interface MessagesEntry {
    * revealed above the current viewport.
    */
   visibleGroupLimit: number | null;
+  /**
+   * Why this transcript is empty when it is empty for a BAD reason.
+   *
+   * A hydrate that could not read the conversation (RLS denied the bundle, the
+   * RPC failed, the row the surface was sent to does not exist) used to land
+   * as a fulfilled load with zero messages, and the room rendered as a normal
+   * brand-new chat — a screen that lies (law 4). When this is set, the
+   * transcript says the read failed and offers a retry; a genuinely empty
+   * conversation leaves it `null`. Cleared by any successful `hydrateMessages`.
+   */
+  hydrationFailure: string | null;
 }
 
 export interface MessagesState {
@@ -268,6 +279,7 @@ function getOrCreate(
       hasMoreOlder: false,
       isLoadingOlder: false,
       visibleGroupLimit: null,
+      hydrationFailure: null,
     };
     state.byConversationId[conversationId] = entry;
   }
@@ -508,6 +520,8 @@ const messagesSlice = createSlice({
         entry.hasMoreOlder = false;
       }
       entry.isLoadingOlder = false;
+      // The read worked — whatever failed before is no longer true.
+      entry.hydrationFailure = null;
     },
 
     /**
@@ -640,6 +654,25 @@ const messagesSlice = createSlice({
       entry.keywords = keywords;
     },
 
+    /**
+     * Record (or clear) the reason this conversation's transcript could not be
+     * read. Set by `loadConversation` on a failed or empty-but-expected read;
+     * the transcript renders an honest "couldn't load — try again" state
+     * instead of an empty room. NEVER set for a conversation that is legitimately
+     * empty (one minted locally and not yet submitted).
+     */
+    setMessagesHydrationFailure(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        failure: string | null;
+      }>,
+    ) {
+      const { conversationId, failure } = action.payload;
+      const entry = getOrCreate(state, conversationId);
+      entry.hydrationFailure = failure;
+    },
+
     /** Clear the transcript (e.g. auto-clear on a new run). */
     clearMessages(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
@@ -683,6 +716,7 @@ export const {
   revealOlderGroups,
   removeMessage,
   setConversationLabel,
+  setMessagesHydrationFailure,
   clearMessages,
 } = messagesSlice.actions;
 
