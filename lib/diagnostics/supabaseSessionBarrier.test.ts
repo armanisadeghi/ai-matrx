@@ -172,11 +172,28 @@ describe("the wait — a read does not leave before the session attaches", () =>
     await expect(pending).resolves.toEqual(SERVED);
   });
 
-  it("never waits on a door declared anonymous-by-design", async () => {
+  it("STILL waits on a dual-audience door — a signed-in reader never gets the anonymous answer", async () => {
     setAuthCookie(true);
     const h = makeHarness([SERVED]);
 
-    const pending = h.rpc("meet_meeting_by_slug");
+    // `assoc_for_targets` is declared anonymous-by-design AND fires on nearly
+    // every page for signed-in readers. Letting it skip the wait would hand a
+    // reader whose session had not attached the public-lane answer — fewer
+    // rows, no error, nothing on screen to say so.
+    const pending = h.rpc("assoc_for_targets");
+    await jest.advanceTimersByTimeAsync(1);
+    expect(h.executions()).toBe(0);
+
+    h.report(true);
+    await expect(pending).resolves.toEqual(SERVED);
+    expect(h.executions()).toBe(1);
+  });
+
+  it("never waits on the error sink — it must not block on the session it is reporting", async () => {
+    setAuthCookie(true);
+    const h = makeHarness([SERVED]);
+
+    const pending = h.rpc("log_client_error");
     expect(h.executions()).toBe(1);
     await expect(pending).resolves.toEqual(SERVED);
   });
@@ -285,6 +302,23 @@ describe("the retry — one replay after a refusal that carried no identity", ()
     const second = h.read("kind_component");
     await jest.advanceTimersByTimeAsync(20);
     await expect(second).resolves.toEqual(REFUSED_NO_IDENTITY);
+  });
+
+  it("does not replay an anonymous-by-design door's honest refusal to a guest", async () => {
+    setAuthCookie(true);
+    const h = makeHarness([REFUSED_NO_IDENTITY]);
+    h.report(true);
+    h.setSession(false);
+
+    // meet_meeting_by_slug answers a guest with its own human sentence at
+    // 42501/401. Replaying that would be resilience theatre over a real answer.
+    const pending = h.rpc("meet_meeting_by_slug");
+    await jest.advanceTimersByTimeAsync(20);
+    await expect(pending).resolves.toEqual(REFUSED_NO_IDENTITY);
+    expect(h.executions()).toBe(1);
+    expect(getSnapshot().map((e) => e.code)).not.toContain(
+      "SESSION_BARRIER_UNRECOVERED",
+    );
   });
 
   it("leaves a REAL grant gap alone — 42501 at 403 is not a session problem", async () => {

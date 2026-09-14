@@ -300,6 +300,19 @@ const BARE: ReadonlySet<string> = new Set(
 /**
  * Is this door declared anonymous-by-design? A call with no relation name is
  * never treated as anonymous — the barrier's default is to protect.
+ *
+ * 🚨 THIS SUPPRESSES THE RETRY, NEVER THE WAIT, and the difference is the whole
+ * point. Most of these doors serve BOTH audiences: `assoc_for_targets` answers
+ * a signed-out visitor from the public-class lane and a signed-in reader from
+ * theirs, and it fires on nearly every page. If the barrier let such a call
+ * skip the wait, a signed-in reader whose session had not attached yet would be
+ * handed the ANONYMOUS answer — fewer rows, no error, nothing on screen to say
+ * so. That is the silent-wrongness this whole lane exists to end. So a caller
+ * whose browser holds an auth cookie still waits for its session here; a caller
+ * with no cookie never waited in the first place. What this list removes is the
+ * retry: a 42501 on one of these doors is the function's honest refusal to a
+ * guest (`meet_meeting_by_slug` answers "this meeting is not open to guests —
+ * sign in with an account in the organization"), not a session bug to replay.
  */
 export function isAnonymousByDesign(
   schema: string | undefined,
@@ -308,4 +321,20 @@ export function isAnonymousByDesign(
   if (!relation) return false;
   if (QUALIFIED.has(`${schema ?? "public"}.${relation}`)) return true;
   return BARE.has(relation);
+}
+
+/**
+ * The doors that must never wait for a session, even when one is expected.
+ *
+ * Exactly one, and it is the error sink: `persistCapturedErrors` calls
+ * `log_client_error` to report failures, and a sink that waited on the session
+ * whose absence it is reporting would be the slowest possible way to lose the
+ * evidence. Everything else waits — see the note above.
+ */
+const NEVER_WAITS: ReadonlySet<string> = new Set(["log_client_error"]);
+
+/** Does this door skip the pre-send session wait entirely? */
+export function bypassesSessionWait(relation: string | undefined): boolean {
+  if (!relation) return false;
+  return NEVER_WAITS.has(relation);
 }

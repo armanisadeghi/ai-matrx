@@ -75,7 +75,11 @@
  *     request that was already async, and it never gates rendering: skeletons
  *     stay exactly where they were (the `ssr-zero-layout-shift` rule).
  *   - Widen access. The anonymous-by-design list (anonymousByDesignDoors.ts)
- *     only removes a WAIT. It can never grant anything.
+ *     only removes the RETRY, because a 42501 on one of those doors is the
+ *     function's honest refusal to a guest. It never removes the wait — those
+ *     doors mostly serve BOTH audiences, and handing a signed-in reader the
+ *     anonymous answer is the silent wrongness this lane exists to end — and it
+ *     can never grant anything.
  *
  * ──────────────────────────────────────────────────────────────────────────
  * WHERE IT IS INSTALLED
@@ -88,7 +92,10 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { isAnonymousByDesign } from "@/utils/supabase/anonymousByDesignDoors";
+import {
+  bypassesSessionWait,
+  isAnonymousByDesign,
+} from "@/utils/supabase/anonymousByDesignDoors";
 
 /** How long a request may wait for the first auth report before going anyway. */
 export const SESSION_ATTACH_BUDGET_MS = 3_000;
@@ -353,15 +360,19 @@ function doorName(ctx: BarrierCallContext): string {
 /**
  * SEAM 1 — may this request be sent right now, with no await at all?
  *
- * Yes whenever the session is attached, whenever the door is declared
- * anonymous-by-design, and whenever waiting could not help (no cookie, or
- * nothing to read). Keeping this synchronous is what makes the barrier free on
- * the path every healthy request takes.
+ * Yes whenever the session is attached, whenever waiting could not help (no
+ * cookie, or nothing to read), and for the ONE door that must never wait (the
+ * error sink). Keeping this synchronous is what makes the barrier free on the
+ * path every healthy request takes.
  */
 export function canSendImmediately(ctx: BarrierCallContext): boolean {
   if (typeof window === "undefined") return true;
   if (sessionPresent === true) return true;
-  if (isAnonymousByDesign(ctx.schema, ctx.relation)) return true;
+  // Only the error sink skips the wait outright. A door that ALSO serves
+  // anonymous callers still waits, because handing a signed-in reader the
+  // anonymous answer — quietly, with no error — is the defect this lane exists
+  // to end. See anonymousByDesignDoors.ts.
+  if (bypassesSessionWait(ctx.relation)) return true;
   if (Date.now() < waitSuppressedUntil) return true;
   return authCookiePresent() !== true;
 }
