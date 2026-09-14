@@ -531,7 +531,7 @@ export function useSnapshots(
       if (cursor === "initial") {
         const watermark = await getSnapshotReceiptWatermark(siteId, pageId, signal);
         if (!watermark) return { rows: [], nextCursor: null, totalItems: 0 };
-        const page = await listSnapshotReceiptPage({ siteId, pageId, state, watermark, signal });
+        const page = await listSnapshotReceiptPage({ siteId, pageId, state, watermark, signal, verifyTerminal: true });
         seen.current.total = page.total;
         for (const row of page.rows) seen.current.ids.add(row.id);
         const nextCursor = page.rows.length >= page.total ? null : page.nextCursor;
@@ -543,7 +543,7 @@ export function useSnapshots(
       const decoded = decodeSnapshotReceiptCursor(cursor);
       const page = await listSnapshotReceiptPage({
         siteId, pageId, state, watermark: decoded.watermark, cursor: decoded,
-        expectedTotal: seen.current.total, signal,
+        expectedTotal: seen.current.total, verifyTerminal: seen.current.ids.size + state.pageSize >= seen.current.total!, signal,
       });
       const duplicates = page.rows.some((row) => seen.current.ids.has(row.id));
       if (duplicates) throw new SnapshotReceiptError("a page repeated a snapshot");

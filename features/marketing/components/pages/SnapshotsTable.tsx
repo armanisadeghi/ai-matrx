@@ -257,6 +257,14 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
               stop: snapshots.pagination.stopLoadingAll,
             },
             totalItems: snapshots.pagination.totalItems,
+            sourcePageSize: {
+              value: appendState.pageSize,
+              options: [10, 25, 50, 100, 250],
+              onChange: (pageSize) =>
+                table.onStateChange(
+                  normalizeSnapshotAppendState({ ...table.state, pageSize }),
+                ),
+            },
           },
         }}
         toolbar={{

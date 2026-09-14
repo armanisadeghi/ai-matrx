@@ -1900,9 +1900,10 @@ export async function listSnapshotReceiptPage(input: {
   watermark: string;
   cursor?: SnapshotReceiptCursor;
   expectedTotal?: number;
+  verifyTerminal?: boolean;
   signal?: AbortSignal;
 }): Promise<SnapshotReceiptPage> {
-  const { siteId, pageId, state, watermark, cursor, expectedTotal, signal } = input;
+  const { siteId, pageId, state, watermark, cursor, expectedTotal, verifyTerminal, signal } = input;
   if (state.search && state.searchMatchMode === "whole_words") {
     throw new SnapshotReceiptError(
       "whole-word search is not available for snapshot history; clear that search mode and try again",
@@ -1969,6 +1970,19 @@ export async function listSnapshotReceiptPage(input: {
     .limit(state.pageSize)
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);
+  if (verifyTerminal) {
+    let terminalCount = db.from("snapshot").select("id", { count: "exact", head: true }).eq("site_id", siteId).eq("page_id", pageId).lte("created_at", watermark);
+    if (search) terminalCount = terminalCount.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+    if (finalUrl) terminalCount = terminalCount.ilike("final_url", `%${finalUrl}%`);
+    if (hash) terminalCount = terminalCount.ilike("content_hash", `%${hash}%`);
+    if (http?.min !== undefined) terminalCount = terminalCount.gte("http_status", http.min);
+    if (http?.max !== undefined) terminalCount = terminalCount.lte("http_status", http.max);
+    if (words?.min !== undefined) terminalCount = terminalCount.gte("word_count", words.min);
+    if (words?.max !== undefined) terminalCount = terminalCount.lte("word_count", words.max);
+    const terminalResponse = await terminalCount.abortSignal(signal ?? new AbortController().signal);
+    if (terminalResponse.error) throw terminalResponse.error;
+    if (terminalResponse.count !== countResponse.count) throw new SnapshotReceiptError("the matching count changed at the terminal page");
+  }
   const last = rows.at(-1);
   const nextCursor = rows.length < state.pageSize || !last
     ? null
