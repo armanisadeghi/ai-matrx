@@ -102612,6 +102612,11 @@
             "type": "boolean",
             "title": "Deletions Supported",
             "default": false
+          },
+          "poll_after_seconds": {
+            "type": "integer",
+            "title": "Poll After Seconds",
+            "default": 30
           }
         },
         "type": "object",

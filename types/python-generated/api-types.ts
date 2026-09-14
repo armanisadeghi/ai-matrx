@@ -45798,6 +45798,11 @@ export interface components {
              * @default false
              */
             deletions_supported?: boolean;
+            /**
+             * Poll After Seconds
+             * @default 30
+             */
+            poll_after_seconds?: number;
         };
         /** BridgeCheckpoint */
         BridgeCheckpoint: {
