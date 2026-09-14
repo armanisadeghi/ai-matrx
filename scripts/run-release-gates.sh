@@ -169,6 +169,17 @@ if $STRICT; then
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
+        # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
+        # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
+        # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant
+        # (`user_input` and `variables` among them) while a "sync live share and
+        # exposure registries" sweep DELETED its declaration, and nothing failed for a
+        # day because nothing ran the guard that already knew. A guard nobody runs is
+        # a comment. Both exit 1 on their own without a --strict flag, so the entry is
+        # the plain script; both are proven failing-then-passing by their own
+        # `:self-test` (3 and 7 RED proofs, rolled back against the live database).
+        "Anon column surface: every anon-readable relation declares its columns (DD-186)|pnpm check:anon-column-surface"
+        "Anon write surface: a signed-out caller writes nothing undeclared (DD-193/DD-196)|pnpm check:anon-write-surface"
         # IMPL DOORS is BLOCKING as of 2026-09-12 (DD-152, the condition DD-154
         # named): its backlog is gone. D6 — a declared ANONYMOUS door whose body
         # reads visibility-bearing rows with no gate of any kind — had REGRESSED
@@ -574,6 +585,17 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
+        # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
+        # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant
+        # (`user_input` and `variables` among them) while a "sync live share and
+        # exposure registries" sweep DELETED its declaration, and nothing failed for a
+        # day because nothing ran the guard that already knew. A guard nobody runs is
+        # a comment. Both exit 1 on their own without a --strict flag, so the entry is
+        # the plain script; both are proven failing-then-passing by their own
+        # `:self-test` (3 and 7 RED proofs, rolled back against the live database).
+        "Anon column surface: every anon-readable relation declares its columns (DD-186)|pnpm check:anon-column-surface"
+        "Anon write surface: a signed-out caller writes nothing undeclared (DD-193/DD-196)|pnpm check:anon-write-surface"
         # IMPL DOORS ran NOWHERE until 2026-09-12 — not here, not in the strict
         # list, not in ci.yml — while three migrations cite it as the gate holding
         # their decision (d31, dd146, schema_templates_reference_write_doors_b8). It

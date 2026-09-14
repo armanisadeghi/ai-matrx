@@ -405,6 +405,19 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
+  // (`agent.mandate_exemplar` — the rename alias over the table below — carried this same
+  //  22-column anon grant and its own declaration here until 2026-09-14. A "sync live share and
+  //  exposure registries" sweep (cced6b5893) DELETED the declaration and left the grant live, and
+  //  the guard sat red for a day because nothing ran it. DD-218 revoked anon on the view outright
+  //  (no signed-out reader in any of the four repositories, and a temporary alias is never a public
+  //  door) and wired this guard into scripts/run-release-gates.sh. Do not re-grant it.)
+  //
+  // 🚩 STILL OPEN, and named rather than left for rediscovery: the same four-repository census
+  //  finds NO signed-out reader for `agent.exemplar` either, so the bound below is a declared door
+  //  nobody uses — and it publishes `user_input` and `variables`. Proven live and rolled back
+  //  (B-110, 2026-09-14): flip ONE exemplar to visibility='public' and an anonymous visitor reads
+  //  that row's `variables` through this grant. Zero exemplars are public today. Revoking it is a
+  //  row-surface decision with its own register row.
   {
     relation: "agent.exemplar",
     columns: [

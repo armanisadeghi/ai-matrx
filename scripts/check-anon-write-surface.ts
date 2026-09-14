@@ -223,11 +223,27 @@ async function red(client: any, label: string, setup: string[], state: { reds: n
   }
 }
 
+/**
+ * WHY THIS EXISTS (B-110, measured 2026-09-14)
+ * -------------------------------------------
+ * `process.exit()` ends the process with whatever is still sitting in the stdout
+ * pipe buffer. Piped — which is how a release gate, a CI step and every `| tail`
+ * read it — this guard printed THREE FAIL lines and only ONE arrived. A gate that
+ * silently hides two thirds of its own findings is the failure it exists to
+ * prevent. Drain stdout first, then exit.
+ */
+async function exitAfterFlush(code: number): Promise<never> {
+  await new Promise<void>((done) => {
+    process.stdout.write("", () => done());
+  });
+  process.exit(code);
+}
+
 async function main() {
   const client = await connect();
   try {
     if (!SELF_TEST) {
-      process.exit(report(await measure(client)) ? 1 : 0);
+      await exitAfterFlush(report(await measure(client)) ? 1 : 0);
     }
 
     // -- THE SELF-TEST: a guard nobody has seen fail is not a guard. ----------
@@ -241,7 +257,7 @@ async function main() {
         `\n${C.r}FAIL${C.x} the self-test needs a GREEN starting point and the live surface already drifts (above).\n` +
           `     Fix the drift first; a RED proof on top of a RED baseline proves nothing.`,
       );
-      process.exit(1);
+      await exitAfterFlush(1);
     }
     console.log(`${C.g}GREEN${C.x} baseline: no signed-out caller can write anything.\n`);
 
@@ -312,10 +328,10 @@ async function main() {
       console.error(
         `\n${C.r}FAIL${C.x} the self-test did not restore the live state. THIS IS A LIVE DEFECT - fix it by hand now.`,
       );
-      process.exit(1);
+      await exitAfterFlush(1);
     }
     console.log(`${C.g}GREEN${C.x} teardown verified: ${state.reds} RED proof(s), live grants, policies and doors unchanged.`);
-    process.exit(0);
+    await exitAfterFlush(0);
   } finally {
     await client.end();
   }

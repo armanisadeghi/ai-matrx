@@ -188,11 +188,27 @@ function report(live: LiveAnonColumn[]): number {
   return drift.length;
 }
 
+/**
+ * WHY THIS EXISTS (B-110, measured 2026-09-14)
+ * -------------------------------------------
+ * `process.exit()` ends the process with whatever is still sitting in the stdout
+ * pipe buffer. Piped — which is how a release gate, a CI step and every `| tail`
+ * read it — this guard printed THREE FAIL lines and only ONE arrived. A gate that
+ * silently hides two thirds of its own findings is the failure it exists to
+ * prevent. Drain stdout first, then exit.
+ */
+async function exitAfterFlush(code: number): Promise<never> {
+  await new Promise<void>((done) => {
+    process.stdout.write("", () => done());
+  });
+  process.exit(code);
+}
+
 async function main() {
   const client = await connect();
   try {
     if (!SELF_TEST) {
-      process.exit(report(await measure(client)) ? 1 : 0);
+      await exitAfterFlush(report(await measure(client)) ? 1 : 0);
     }
 
     // ── THE SELF-TEST: a guard nobody has seen fail is not a guard. ──────────
@@ -201,7 +217,7 @@ async function main() {
     const target = ANON_COLUMN_SURFACE[0];
     if (!target) {
       console.error(`${C.r}FAIL${C.x} ANON_COLUMN_SURFACE is empty — there is nothing to self-test against.`);
-      process.exit(1);
+      await exitAfterFlush(1);
     }
     console.log(`${C.b}--self-test${C.x} ${C.d}forcing both drift directions on ${target.relation}${C.x}\n`);
 
@@ -211,7 +227,7 @@ async function main() {
         `\n${C.r}FAIL${C.x} the self-test needs a GREEN starting point and the live surface already drifts (above).\n` +
           `     Fix the drift first; a RED proof on top of a RED baseline proves nothing.`,
       );
-      process.exit(1);
+      await exitAfterFlush(1);
     }
     console.log(`${C.g}GREEN${C.x} baseline: the live surface matches the register.\n`);
 
@@ -233,7 +249,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} granting anon SELECT on ${target.relation}.${extra} did NOT fail the guard. It cannot see a leak.`);
-        process.exit(1);
+        await exitAfterFlush(1);
       }
       reds++;
       console.log(`${C.g}RED 1 proven${C.x} ${C.d}(anon granted ${target.relation}.${extra} → ${n} finding(s))${C.x}\n`);
@@ -249,7 +265,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} revoking anon SELECT on ${target.relation}.${gone} did NOT fail the guard. It cannot see a broken client.`);
-        process.exit(1);
+        await exitAfterFlush(1);
       }
       reds++;
       console.log(`${C.g}RED 2 proven${C.x} ${C.d}(anon lost ${target.relation}.${gone} → ${n} finding(s))${C.x}\n`);
@@ -276,7 +292,7 @@ async function main() {
       const n = report(await measure(client));
       if (n === 0) {
         console.error(`\n${C.r}FAIL${C.x} granting anon SELECT on the undeclared ${victim} did NOT fail the guard. It cannot see a new door.`);
-        process.exit(1);
+        await exitAfterFlush(1);
       }
       reds++;
       console.log(`${C.g}RED 3 proven${C.x} ${C.d}(anon granted the undeclared ${victim} → ${n} finding(s))${C.x}\n`);
@@ -288,10 +304,10 @@ async function main() {
     const after = report(await measure(client));
     if (after !== 0) {
       console.error(`\n${C.r}FAIL${C.x} the self-test did not restore the live column grants. THIS IS A LIVE DEFECT — fix the grants by hand now.`);
-      process.exit(1);
+      await exitAfterFlush(1);
     }
     console.log(`${C.g}GREEN${C.x} teardown verified: ${reds} RED proof(s), live grants unchanged.`);
-    process.exit(0);
+    await exitAfterFlush(0);
   } finally {
     await client.end();
   }
