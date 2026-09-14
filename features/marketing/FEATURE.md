@@ -614,6 +614,42 @@ name: retain it only for genuine semantic taxonomy and move commercial identity
 to `brand_offering`. Cutover proposal:
 [`docs/db_rebuild/proposals/brand-offerings-cutover.md`](../../docs/db_rebuild/proposals/brand-offerings-cutover.md).
 
+#### Canonical offering writers — THE CONTRACT (live 2026-09-14)
+
+Build on these and nothing else. Every write carries the site's
+`organization_id` explicitly and is refused when it does not own the site;
+every placement and worth write is refused for an offering the site has not
+made available (`site_offering_unavailable`). No caller writes the tables
+directly.
+
+| Job | Signed-in client (PostgREST RPC) | Service job (service_role) |
+|---|---|---|
+| List what a site offers | `web.site_offerings(p_site_id)` | same |
+| Suggestions, only inside Add offering (D6) | `web.offering_templates_for_site(p_site_id, p_search)` | same |
+| Adopt a suggestion (copy-on-adopt; also makes it available on the site) | `web.adopt_offering_template(p_organization_id, p_site_id, p_template_id)` → brand offering id | same |
+| Create / rename / retype / reparent an offering the brand owns (create also makes it available on the site) | `web.save_site_offering(p_organization_id, p_site_id, p_offering_id NULL=create, p_name, p_kind product\|service, p_description, p_parent_id)` → id | same |
+| Reorder / reparent | `web.move_site_offering(p_organization_id, p_site_id, p_offering_id, p_parent_id, p_sibling_order)` | same |
+| Remove from a site (preview first) | `web.site_offering_delete_impact(p_site_id, p_offering_id)` then `web.remove_site_offering(p_organization_id, p_site_id, p_offering_id, p_replacement_offering_id)` | same |
+| Place keywords (NULL offering = take them off) | `seo.gsc_set_keyword_offering(p_organization_id, p_site_id, p_keyword_ids ≤5,000, p_offering_id, p_notes)` → each keyword's value band | `seo.write_site_keyword_offering(p_organization_id, p_site_id, p_keyword_ids, p_offering_id, p_notes, p_assigned_by 'human'\|'agent', p_confidence, p_placement jsonb)` → written / removed / human_protected. An agent never overwrites a human ruling (P12). |
+| Worth (D9: **points**, not a 0–100 weight; `p_clear` removes the ruling) | `seo.set_site_offering_value(p_organization_id, p_site_id, p_brand_offering_id, p_worth_points, p_lead_quality, p_offering_match, p_notes, p_clear, p_audience_fit, p_capacity_appetite, p_brand_fit)` | `seo.write_site_offering_value(… same …, p_metadata jsonb)` |
+| Read placements for the keywords on screen (≤2,000) | `seo.gsc_keyword_offerings_for(p_site_id, p_keyword_ids)` | same |
+| Per-offering keywords/clicks/bands | `seo.gsc_offering_stats(p_site_id, p_start, p_end)` | same |
+| Filter / sort the keyword breakdown | `filters.offering` = offering id or `"none"`; `p_sort: 'offering'` on `seo.gsc_perf_breakdown` / `seo.gsc_breakdown_keyword_ids` | same |
+
+What a worth row means: a keyword placed on an offering, or beneath it in the
+brand's hierarchy, starts at the site baseline plus the nearest offering's
+`worth_points`; `lead_quality = negative_value` or `offering_match` in
+`not_offered | actively_avoided` makes it Negative. `seo.keyword_value_map`
+reads only this site's rows (proven lossless: 40,574 keywords, 0 unexplained;
+`pnpm check:offering-resolver-equivalence:self-test`).
+
+TRANSITION, deleted at cutover step 8: the legacy `seo.gsc_set_keyword_topic`,
+`seo.gsc_set_topic_value` and `seo.gsc_confirm_keyword_topic` still serve the
+screens not yet moved and also write the canonical rows through the writers
+above; `seo.fn_reconcile_site_offering_facts` and `seo.fn_site_offering_for_topic`
+exist only for that bridge. Never call any of them from new code
+(`pnpm check:offering-topic-refs` fails a new caller).
+
 #### Current legacy surface (pending cutover)
 
 `[brandKey]/identity/offerings` is the customer-facing route and vocabulary —
@@ -681,6 +717,8 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-14 — Claude (brand-offerings cutover, step 6): **The canonical offering writers are live; their contract is published above** ("Canonical offering writers — THE CONTRACT"). The value resolver reads `seo.site_keyword_offering` / `web.brand_offering` / `seo.site_offering_value` (lossless: 40,574 keywords, 0 unexplained); offering worth is points (D9); a brand sets a placement once natively, never through `seo.keyword_topic` rungs (D10); the placement and worth writers refuse unavailable offerings and foreign organizations; the legacy topic RPCs still used by the screens also write the canonical rows until the screens move. Migrations `brand_offerings_step6a`…`6e`; guards `check:offering-resolver-equivalence`, `check:offering-tenancy`, `check:offering-topic-refs`.
 
 - 2026-09-14 — Claude (KI-040): **Business discovery step 6 proposes every Offering, and discovery opens beside any value screen.** Step 6 (`proposed_setup`, aidream `services/seo/business_discovery.py`) calls no agent: it turns the latest step-4 Offerings and step-5 points into one `keyword_meaning:offering` proposal each through `seo.keyword_meaning_suggest` (new `offering` kind, `migrations/seo_suggest_offering_proposal_ki040.sql`), inventing nothing — an unvalued Offering says "not valued", a kind outside product/service is skipped with its reason. Proposals land in the one approval queue (`seo/value-system/approvals/`); Reject works now, Approve waits on the brand-offering writers (the row says so; `suggestions/apply.ts` refuses in words). `DiscoveryLadder` shows what step 6 proposed and what it could not, plus doors for what only this customer decides — service areas, combination rules, the blind check. `DiscoveryWorkspace` is the one discovery surface: mounted by the brand Knowledge route and by the new `siteDiscoveryWindow` (opened from the `ValueDoors` row on the site's keyword Start here screen), and it rules discovery's own proposals in place through `ApprovalQueue` narrowed to `keyword_meaning:offering` + `keyword_meaning:guideline_edit`.
 
