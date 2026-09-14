@@ -38,4 +38,8 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-09-14 — The canonical top-level attach rows now keep a 44px touch
+  target through tablet widths and return to the compact 24px desktop density
+  at `lg`. This fixes the shared Smart Input mobile bottom sheet for every
+  resource kind and consumer, including all Agent Battle modes.
 - 2026-09-12 — FEATURE.md created to record the attach contract and the consolidation decision (family stays; not merged onto the reference picker). No code change.
