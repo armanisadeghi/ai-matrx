@@ -7,7 +7,17 @@ import type { LLMParams } from "@/features/agents/types/agent-api-types";
 export const dynamic = "force-dynamic";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  // A PostgrestError is a plain object, not an Error — reading only
+  // `instanceof Error` turned every database refusal into "Unknown error"
+  // (2026-09-14: the provenance guard's sentence never reached the screen).
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error !== null &&
+          typeof (error as { message?: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : "Unknown error";
   const status = message.startsWith("Unauthorized")
     ? 401
     : message.startsWith("Forbidden")

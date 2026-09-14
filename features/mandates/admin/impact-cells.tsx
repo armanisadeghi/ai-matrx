@@ -211,7 +211,7 @@ export function ImpactGradeCell({
       </HoverCardTrigger>
       <HoverCardContent
         align="start"
-        className="w-[min(28rem,calc(100vw-2rem))] space-y-2 p-3"
+        className="w-[min(28rem,96vw)] space-y-2 p-3"
       >
         <div className="text-xs font-medium">
           {defaultVerdict.agent_name} — what changed
@@ -315,7 +315,7 @@ export function ImpactLegend() {
       </HoverCardTrigger>
       <HoverCardContent
         align="end"
-        className="w-[min(30rem,calc(100vw-2rem))] space-y-2 p-3 text-xs"
+        className="w-[min(30rem,96vw)] space-y-2 p-3 text-xs"
       >
         <div className="font-medium">Grade — how dangerous the change is</div>
         <ul className="space-y-1">
@@ -511,13 +511,14 @@ export function AdvanceResultBadge({
  */
 export function AdvanceResultsCard({
   batches,
-  verdictByRung,
+  verdictsOf,
   busy,
   onRevert,
   onDismiss,
 }: {
   batches: readonly AdvanceReport[];
-  verdictByRung: ReadonlyMap<string, ImpactVerdict>;
+  /** The verdicts each batch was written from (frozen at the click). */
+  verdictsOf: (batch: AdvanceReport) => ReadonlyMap<string, ImpactVerdict>;
   busy: ImpactWriteBusy;
   onRevert: (batch: AdvanceReport, rowId: string | null) => void;
   onDismiss: () => void;
@@ -562,7 +563,10 @@ export function AdvanceResultsCard({
       </div>
       <ul className="max-h-64 space-y-1 overflow-y-auto">
         {(latest.results ?? []).map((row) => {
-          const verdict = verdictByRung.get(rungIdentityOf(row.token));
+          const verdict = verdictsOf(latest).get(rungIdentityOf(row.token));
+          // A revert moves the other way: newest → the pin it restores.
+          const from = latest.action === "revert" ? verdict?.latest_version_number : verdict?.pinned_version_number;
+          const to = latest.action === "revert" ? verdict?.pinned_version_number : verdict?.latest_version_number;
           return (
             <li
               key={rungIdentityOf(row.token)}
@@ -574,9 +578,9 @@ export function AdvanceResultsCard({
               </span>
               {verdict ? (
                 <span className="inline-flex items-center gap-1 tabular-nums text-muted-foreground">
-                  {versionLabel(verdict.pinned_version_number)}
+                  {versionLabel(from)}
                   <ArrowRight className="h-3 w-3" />
-                  {versionLabel(verdict.latest_version_number)}
+                  {versionLabel(to)}
                 </span>
               ) : null}
               <AdvanceResultBadge result={row} />

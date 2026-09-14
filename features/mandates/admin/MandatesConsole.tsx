@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   Copy,
   ExternalLink,
+  BrainCircuit,
   History,
   Loader2,
   Link2,
@@ -160,6 +161,7 @@ import {
   type StandingImpact,
 } from "./impact";
 import { useImpactAdvance } from "./impact-advance";
+import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
   AdvanceResultsCard,
   ImpactBlockerCell,
@@ -1104,6 +1106,31 @@ export function MandatesConsole() {
   const advanceVerdicts = (verdicts: ImpactVerdict[], batchLabel: string) =>
     writes.advance(verdicts, batchLabel);
 
+  // The batch panel (I5) over the selection: the same three-pile body the
+  // deprecated-models sweep ends in, scoped to the agents these rows pin and
+  // walking their duplicates (R4), with the selected rungs pre-selected.
+  const openImpactBatchWindow = useOpenImpactBatchWindow();
+  const reviewSelectedAsBatch = (selected: ConsoleRow[]) => {
+    const agentIds = Array.from(
+      new Set(
+        selected
+          .map((row) => row.defaultVerdict?.agent_id ?? row.agentId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    openImpactBatchWindow({
+      agentIds,
+      mode: "post_batch",
+      batchLabel: "Standing table",
+      sourceSentence: `${selected.length} mandate${selected.length === 1 ? "" : "s"} selected on the standing table`,
+      preselectedRungIds: selected
+        .map((row) => row.defaultVerdict)
+        .filter((v): v is ImpactVerdict => v !== null)
+        .map((v) => rungIdentityOf(v.apply_token)),
+      surfaceName: "administration-mandates",
+    });
+  };
+
   const advanceSelected = (selected: ConsoleRow[]) =>
     void advanceVerdicts(
       selected
@@ -1537,7 +1564,7 @@ export function MandatesConsole() {
         />
         <AdvanceResultsCard
           batches={writes.batches}
-          verdictByRung={verdictByRung}
+          verdictsOf={writes.verdictsOf}
           busy={writes.busy}
           onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
           onDismiss={writes.clear}
@@ -1705,17 +1732,30 @@ export function MandatesConsole() {
                   r.defaultVerdict !== null &&
                   batchEligibilityOf(r.defaultVerdict).batchable,
                 actions: (selected) => (
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1 text-xs"
-                    disabled={advancing || selected.length === 0}
-                    onClick={() => advanceSelected(selected)}
-                  >
-                    {advancing ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : null}
-                    Advance selected ({selected.length})
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 text-xs"
+                      disabled={selected.length === 0}
+                      title="Open the batch panel over these rows: every rung their agents hold, in three piles, with per-row grades."
+                      onClick={() => reviewSelectedAsBatch(selected)}
+                    >
+                      <BrainCircuit className="h-3 w-3" />
+                      Review as batch
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={advancing || selected.length === 0}
+                      onClick={() => advanceSelected(selected)}
+                    >
+                      {advancing ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : null}
+                      Advance selected ({selected.length})
+                    </Button>
+                  </>
                 ),
               }}
             />

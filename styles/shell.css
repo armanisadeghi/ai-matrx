@@ -28,6 +28,17 @@
      owner consumes it so a fixed operational notice cannot cover final page
      actions or the shared toast viewport. */
   --shell-fixed-alert-clearance: 0px;
+  /* How much of the bottom-LEFT corner the shell's own floating chrome covers,
+     measured and published by that chrome while it is on screen (today: the
+     admin Error Inspector badge). Page content parked in that corner — a key
+     legend, a status line, a footer control — reserves it so the shell never
+     sits on top of a page's last line. 0 when nothing is floating there.
+     Unlike the schedule alarm's runway this IS measured, and safely: the badge
+     is fixed-position and sized by its own contents (a pill, or a dot), so
+     nothing it publishes can feed back into its own size. A guessed padding
+     was tried first and was wrong at the next viewport (verifier finding 6,
+     2026-09-12; still overlapping at 1440x900 in V2 finding 7, 2026-09-14). */
+  --shell-fixed-corner-clearance: 0px;
   /* Panel sidebar background — matches bg-textured (zinc-100 + subtle grid) */
   --shell-panel-bg: rgb(244 244 245);
   --shell-panel-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
@@ -1466,6 +1477,15 @@ button.shell-nav-flyout-item {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+  /* Same class as the header's fix above: a grid item defaults to
+     min-width:auto, so a route whose content is wider than the viewport (a
+     2,800px admin table inside its own overflow-auto box) STRETCHED THE MAIN
+     TRACK to the content's width instead of letting the table scroll. The
+     shell clips at the viewport, so every column past it was unreachable —
+     measured 2026-09-14 on /administration/mandates at 1024px and 1440px:
+     the grid's second track computed to 2845px. The shell's width is the
+     viewport's, never its content's. */
+  min-width: 0;
   background: transparent;
   /* Pull main up so it occupies the full viewport including the header row.
      The header is transparent — content scrolls behind it.

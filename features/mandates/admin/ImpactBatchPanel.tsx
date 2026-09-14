@@ -165,7 +165,7 @@ function GradeHover({ verdict }: { verdict: ImpactVerdict }) {
       </HoverCardTrigger>
       <HoverCardContent
         align="start"
-        className="w-[min(28rem,calc(100vw-2rem))] space-y-2 p-3"
+        className="w-[min(28rem,96vw)] space-y-2 p-3"
       >
         <div className="text-xs font-medium">{verdict.agent_name} — what changed</div>
         <VerdictDetail verdict={verdict} />
@@ -286,7 +286,7 @@ export function ImpactBatchPanel({
       out.push({
         id,
         verdict,
-        tier: batchTierOf(verdict),
+        tier: batchTierOf(verdict, { dryRun: mode === "dry_run" }),
         grade: verdict.grade,
         mandateKey: verdict.mandate_key,
         agentName: verdict.agent_name,
@@ -296,7 +296,7 @@ export function ImpactBatchPanel({
             : "mandate default",
         ownerUserId:
           verdict.principal.kind === "user" ? (verdict.principal.subject_user_id ?? null) : null,
-        versions: `${versionLabel(verdict.pinned_version_number)} → ${versionLabel(verdict.latest_version_number)}`,
+        versions: `${versionLabel(verdict.pinned_version_number)} → ${mode === "dry_run" ? "proposed" : versionLabel(verdict.latest_version_number)}`,
         settingsState: settingsSignalOf(verdict).state,
         resultStatus: "",
       });
@@ -307,7 +307,10 @@ export function ImpactBatchPanel({
   const verdictByRung = new Map<string, ImpactVerdict>();
   for (const row of rows) verdictByRung.set(row.id, row.verdict);
 
-  const counts = countBatchTiers(rows.map((row) => row.verdict));
+  const counts = countBatchTiers(
+    rows.map((row) => row.verdict),
+    { dryRun: mode === "dry_run" },
+  );
 
   // Selection: controlled by the host (dry run lifts it) or local.
   const [localSelected, setLocalSelected] = useState<string[]>(() =>
@@ -423,14 +426,14 @@ export function ImpactBatchPanel({
       {
         id: "versions",
         accessorKey: "versions",
-        header: "Pin → newest",
+        header: mode === "dry_run" ? "Pin → proposed" : "Pin → newest",
         filter: "text",
         width: 110,
         cell: (r) => (
           <span className="inline-flex items-center gap-1 tabular-nums text-xs">
             {versionLabel(r.verdict.pinned_version_number)}
             <ArrowRight className="h-3 w-3 text-muted-foreground" />
-            {versionLabel(r.verdict.latest_version_number)}
+            {mode === "dry_run" ? "proposed" : versionLabel(r.verdict.latest_version_number)}
           </span>
         ),
       },
@@ -671,7 +674,7 @@ export function ImpactBatchPanel({
 
       <AdvanceResultsCard
         batches={writes.batches}
-        verdictByRung={verdictByRung}
+        verdictsOf={writes.verdictsOf}
         busy={writes.busy}
         onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
         onDismiss={writes.clear}

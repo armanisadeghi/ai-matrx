@@ -967,7 +967,7 @@ export default function DeprecatedModelsAudit({
           if (open) setDryRunSelection([]);
         }}
       >
-        <AlertDialogContent className="flex max-h-[90dvh] w-[min(72rem,calc(100vw-2rem))] max-w-none flex-col overflow-hidden">
+        <AlertDialogContent className="flex max-h-[90dvh] w-[min(72rem,96vw)] max-w-none flex-col overflow-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Bulk Replace {entriesReadyForBulk.length} Deprecated Models

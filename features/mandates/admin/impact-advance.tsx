@@ -40,6 +40,12 @@ export interface ImpactAdvanceApi {
   batches: AdvanceReport[];
   /** The latest server sentence per rung identity, across every batch. */
   resultByRung: Map<string, AdvanceRowResult>;
+  /**
+   * The verdicts a batch was written FROM, frozen at the click — the grades
+   * are re-read after every write, so the live map no longer says which
+   * versions that batch moved between.
+   */
+  verdictsOf: (batch: AdvanceReport) => ReadonlyMap<string, ImpactVerdict>;
   busy: ImpactWriteBusy;
   revertWindow: RevertWindow;
   /**
@@ -85,6 +91,9 @@ export function useImpactAdvance({
 }: UseImpactAdvanceOptions): ImpactAdvanceApi {
   const dispatch = useAppDispatch();
   const [batches, setBatches] = useState<AdvanceReport[]>([]);
+  const [snapshots, setSnapshots] = useState<
+    Record<string, ReadonlyMap<string, ImpactVerdict>>
+  >({});
   const [busy, setBusy] = useState<ImpactWriteBusy>(null);
   const [revertWindow, setRevertWindow] = useState<RevertWindow>({
     state: "unknown",
@@ -132,8 +141,13 @@ export function useImpactAdvance({
     });
     if (!ok) return null;
     setBusy("advance");
+    // Frozen BEFORE the write: after it the live map is re-read and the
+    // moved rows read as current.
+    const frozen = new Map<string, ImpactVerdict>();
+    for (const verdict of verdicts) frozen.set(rungIdentityOf(verdict.apply_token), verdict);
     try {
       const report = await postAdvance(dispatch, verdicts, batchLabel);
+      setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);
       const summary = summarizeAdvanceReport(report);
       if ((report.counts?.advanced ?? 0) > 0) {
@@ -162,10 +176,11 @@ export function useImpactAdvance({
       toast.error("Nothing in this batch moved, so there is nothing to put back.");
       return null;
     }
+    const frozen = snapshots[batch.batch_id] ?? verdictByRung;
     const { title, description, moves } = describeRevert(
       rows,
       rowId === null ? "batch" : "row",
-      verdictByRung,
+      frozen,
     );
     const ok = await confirm({
       title,
@@ -188,6 +203,7 @@ export function useImpactAdvance({
         rowId,
         `Revert of ${batch.batch_label ?? batch.batch_id}`,
       );
+      setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);
       const summary = summarizeAdvanceReport(report);
       if ((report.counts?.reverted ?? 0) > 0) {
@@ -208,11 +224,15 @@ export function useImpactAdvance({
   return {
     batches,
     resultByRung,
+    verdictsOf: (batch) => snapshots[batch.batch_id] ?? verdictByRung,
     busy,
     revertWindow,
     advance,
     revert,
-    clear: () => setBatches([]),
+    clear: () => {
+      setBatches([]);
+      setSnapshots({});
+    },
   };
 }
 

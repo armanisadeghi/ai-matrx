@@ -653,13 +653,17 @@ export const BATCH_TIER_META: Record<BatchTier, BatchTierMeta> = {
   },
 };
 
-export function batchTierOf(verdict: ImpactVerdict): BatchTier {
-  const eligibility = batchEligibilityOf(verdict);
-  if (!eligibility.batchable) {
-    // A dry run has no target token by design (R23) — that is not a blocker,
-    // and a current row is not blocked either; both are told apart here.
-    if (verdict.blocker || verdict.principal.kind === "user") return "blocked";
-    if (!isBehindLatest(verdict)) return "current";
+export function batchTierOf(
+  verdict: ImpactVerdict,
+  options: { dryRun?: boolean } = {},
+): BatchTier {
+  if (verdict.blocker || verdict.principal.kind === "user") return "blocked";
+  // A DRY RUN grades pinned → pinned ∪ delta (R23): its "latest" is the
+  // hypothetical, its token has no target, and pin-vs-newest means nothing.
+  // The pile comes from the grade alone; "current" is a post-write answer.
+  if (!options.dryRun) {
+    const eligibility = batchEligibilityOf(verdict);
+    if (!eligibility.batchable && !isBehindLatest(verdict)) return "current";
   }
   if (verdict.grade === "red") return "red";
   if (verdict.grade === "orange") return "drift";
@@ -685,6 +689,7 @@ export interface BatchTierCounts {
 
 export function countBatchTiers(
   verdicts: readonly ImpactVerdict[],
+  options: { dryRun?: boolean } = {},
 ): BatchTierCounts {
   const byTier: Record<BatchTier, number> = {
     safe: 0,
@@ -696,7 +701,7 @@ export function countBatchTiers(
   const agents = new Set<string>();
   const mandates = new Set<string>();
   for (const verdict of verdicts) {
-    byTier[batchTierOf(verdict)] += 1;
+    byTier[batchTierOf(verdict, options)] += 1;
     agents.add(verdict.agent_id);
     mandates.add(verdict.mandate_key);
   }

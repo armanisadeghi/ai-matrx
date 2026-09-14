@@ -122,13 +122,20 @@ describe("batchTierOf — Arman's three piles plus the two a batch must name", (
     expect(batchTierOf(v)).toBe("current");
   });
 
-  it("a DRY-RUN verdict (no target token, R23) keeps its pile but is never actionable", () => {
+  it("a DRY-RUN verdict (no target token, R23) takes its pile from the grade alone and is never actionable", () => {
     const v = verdict({
       grade: "red",
+      latest_version_id: null,
+      latest_version_number: null,
       apply_token: { holder_kind: "mandate_default", row_id: "row-1", expected_pinned_version_id: "v1", target_version_id: null },
     });
-    expect(batchTierOf(v)).toBe("red");
+    expect(batchTierOf(v, { dryRun: true })).toBe("red");
     expect(isBatchActionable(v)).toBe(false);
+    // Live 2026-09-14: the dry run returns no newest version, so without the
+    // flag the green probes read "current" and the preview said nothing.
+    const green = verdict({ latest_version_id: null, latest_version_number: null, apply_token: { ...v.apply_token } });
+    expect(batchTierOf(green, { dryRun: true })).toBe("safe");
+    expect(batchTierOf(green)).toBe("current");
   });
 });
 
