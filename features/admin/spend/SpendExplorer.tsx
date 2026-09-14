@@ -38,9 +38,11 @@ import { useSpendExplorerKnobs } from "./useSpendExplorerKnobs";
 import {
   readExplorerUrlState,
   resolveWindow,
+  WINDOW_PRESETS,
   writeExplorerUrlState,
   type ExplorerUrlState,
 } from "./windows";
+import { BatchSavingsPanel } from "@/features/batch-savings/BatchSavingsPanel";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
 const DATABASE_WINDOW_DAY_CAP = 92;
@@ -96,6 +98,11 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
     urlState.toDay,
   );
   const filters = urlState.filters;
+  const windowLabel =
+    urlState.preset === "custom"
+      ? `${urlState.fromDay ?? "?"} to ${urlState.toDay ?? "?"}`
+      : (WINDOW_PRESETS.find((p) => p.value === urlState.preset)?.label ??
+        "Selected window");
   // The database caps a window at 92 days; say so here in words rather than
   // surfacing its refusal as a raw error after a round trip.
   const windowDays = (window.to.getTime() - window.from.getTime()) / 86_400_000;
@@ -201,6 +208,23 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
         onRemove={removeFilter}
         onClear={clearFilters}
       />
+
+      {windowTooWide ? null : (
+        <BatchSavingsPanel
+          from={window.from}
+          to={window.to}
+          windowLabel={windowLabel}
+          organizationId={
+            filters.organization && filters.organization !== "(none)"
+              ? filters.organization
+              : null
+          }
+          ignoredFilters={Object.entries(filters)
+            .filter(([key, value]) => key !== "organization" && Boolean(value))
+            .map(([key]) => key)}
+          refreshKey={refreshKey}
+        />
+      )}
 
       {knobs.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">

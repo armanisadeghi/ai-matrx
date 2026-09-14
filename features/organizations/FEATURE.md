@@ -284,6 +284,10 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-14` — The AI budget section (`OrgManage` `#ai-budget`) shows
+  `OrgBatchSavings`: this organization's batch spend and savings for the last 30
+  days from `batch.savings_summary` (RLS authorizes; the org id only scopes).
+  Contract: `features/batch-savings/FEATURE.md`.
 - `2026-09-12` — `ResourcePeekHost` now gives Next's lazy boundary the
   renderable host component rather than a module-shaped wrapper. Every
   registered `EntityRef` Quick look control can consequently mount its peek;

@@ -26,7 +26,7 @@ the role it plays, and never silently added:
 | ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `primary`    | The headline. One table.                                             | `runtime.global_execution`                                    |
 | `overlap`    | Real spend, the SAME money through another lens. Shown, never added. | `chat.user_request` (the same executions counted per request) |
-| `additive`   | Genuinely separate spend.                                            | `ops.proof_run`, `batch.cost_event`                           |
+| `additive`   | Genuinely separate spend.                                            | `ops.proof_run`, `rag.ingest_run`                             |
 | `gap`        | A ledger that EXISTS and records nothing (or nothing but zeros).     | `docproc.derive_runs`, `communication.sms_messages`           |
 | `unmeasured` | Money we know we spend with no row anywhere.                         | Resend email, TTS/STT, SerpAPI/DataForSEO/Brave, hosting      |
 
@@ -42,6 +42,17 @@ Consequences that are not negotiable:
   "Model not recorded (no API-call row)"), never the bare word "Unattributed".
 - **Print orders are revenue, not spend**, and sit in their own folded tile with
   our Lulu cost beside them so the margin is visible. They are not in the headline.
+- **Batch API work is inside the headline, exactly once.** Every completed, priced
+  `batch.work_item` is one `runtime.global_execution` row (`link_kind
+  batch_work_item` — the explorer's Source dimension), so `batch.work_item` and
+  `batch.cost_event` are never added on top. Guard: aidream
+  `tests/test_batch_spend_ledger_live.py` (calls `admin_spend_breakdown` as the
+  super admin and reconciles it against `batch.work_item.actual_cost_usd`).
+- **"Saved by batching" is `batch.savings_summary`** — the explorer's window, the
+  actual tokens at the live catalog rate minus the bill, with discount, spend by
+  lane and a breakdown by consumer and model. It follows the `organization`
+  filter and names any other active filter as not applied. Never the
+  pre-submission estimate. Contract: `features/batch-savings/FEATURE.md`.
 
 ## Where the money is attributed (the thing the first version got wrong)
 
@@ -286,6 +297,12 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-14 (batch is first-class)** — Batch spend lands on
+  `runtime.global_execution` (aidream 0679: 32 items, $0.0323 backfilled), so the
+  headline and explorer include it once. The registry's `batch.work_item` became
+  an overlap lens and a measured `batch.global_execution` row names where batch
+  money lives (`migrations/batch_spend_one_ledger_registry_and_kg_savings.sql`).
+  The explorer leads with `BatchSavingsPanel` ("Saved by batching").
 - **2026-09-13 (dashboard-density contract)** — Removed both standalone
   Updated/Refresh rows and the redundant selected-window sentence. The one
   icon-only refresh lives inside the headline, where its tooltip names the

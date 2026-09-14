@@ -154,42 +154,47 @@ export function DeliveryBadge({ handlerStatus }: { handlerStatus: string | null 
 }
 
 /**
- * Actual vs live-equivalent, with the discount stated rather than implied.
+ * Billed vs live-equivalent, with the discount stated rather than implied.
  *
- * `settled` is false while the provider has not billed the row yet (a pending
- * or in-flight item). Printing `$0.0000 -100%` there would read as a measured
- * total discount; the honest cell says nothing has been billed and shows only
- * the live estimate the discount will be measured against.
+ * `liveEquivalent` is the row's ACTUAL tokens at the same model's live rate —
+ * the only honest basis for a discount. `estimate` is the pre-submission guess:
+ * shown only on an unsettled row and labelled "est.", never turned into a
+ * percentage. Printing `$0.0000 -100%` on an unbilled row would read as a
+ * measured total discount; the honest cell says nothing has been billed.
  */
 export function CostCell({
   actual,
-  estLive,
+  liveEquivalent,
+  estimate,
   settled = true,
 }: {
   actual: number;
-  estLive: number;
+  liveEquivalent: number | null;
+  estimate: number;
   settled?: boolean;
 }) {
-  const saved = estLive - actual;
-  const pct = estLive > 0 ? (saved / estLive) * 100 : null;
   if (!settled) {
     return (
       <div className="leading-tight">
         <div className="text-xs text-muted-foreground">not billed yet</div>
         <div className="font-mono text-[10px] tabular-nums text-muted-foreground">
-          {estLive > 0 ? `live ${fmtUsd(estLive)}` : "live —"}
+          {estimate > 0 ? `est. live ${fmtUsd(estimate)}` : "no estimate"}
         </div>
       </div>
     );
   }
+  const pct =
+    liveEquivalent !== null && liveEquivalent > 0
+      ? ((liveEquivalent - actual) / liveEquivalent) * 100
+      : null;
   return (
     <div className="leading-tight">
       <div className="font-mono text-xs tabular-nums text-foreground">
         {fmtUsd(actual)}
       </div>
       <div className="font-mono text-[10px] tabular-nums text-muted-foreground">
-        {estLive > 0 ? `live ${fmtUsd(estLive)}` : "live —"}
-        {pct !== null && saved > 0 ? (
+        {liveEquivalent !== null ? `live ${fmtUsd(liveEquivalent)}` : "live price not recorded"}
+        {pct !== null && pct > 0 ? (
           <span className="ml-1 text-success">-{pct.toFixed(0)}%</span>
         ) : null}
       </div>

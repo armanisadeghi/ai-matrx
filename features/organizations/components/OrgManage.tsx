@@ -47,6 +47,7 @@ import {
   type OrgRole,
 } from "../types";
 import { GeneralSettings } from "./GeneralSettings";
+import { OrgBatchSavings } from "@/features/batch-savings/OrgBatchSavings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
@@ -335,11 +336,14 @@ export function OrgManage({
             title="AI budget"
             description="What the plan includes, what this organization has spent, and the lower ceiling it chooses for itself."
           >
-            <SpendBudgetCard
-              organizationId={displayOrganization.id}
-              mode="org"
-              canEdit={canManageSettings}
-            />
+            <div className="flex flex-col gap-3">
+              <SpendBudgetCard
+                organizationId={displayOrganization.id}
+                mode="org"
+                canEdit={canManageSettings}
+              />
+              <OrgBatchSavings organizationId={displayOrganization.id} />
+            </div>
           </SectionCard>
 
           {/* Members */}

@@ -268,7 +268,7 @@ function KpiTiles({
         }
         icon={<Receipt className="h-3.5 w-3.5" />}
         loading={loading}
-        hint="Estimated live-price cost minus actual batch cost across completed provider batches."
+        hint="The same actual tokens at the live catalog rate, minus the batch bill — completed batch items, last 7 days (batch.savings_summary, the figure the platform spend dashboard leads with)."
       />
       <KpiTile
         label="Live NER coverage"

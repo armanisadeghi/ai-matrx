@@ -331,7 +331,12 @@ export function WorkItemsPanel({
                         <td className="px-2 py-1.5 text-right">
                           <CostCell
                             actual={num(row.actual_cost_usd)}
-                            estLive={num(row.est_live_cost_usd)}
+                            liveEquivalent={
+                              row.live_equivalent_cost_usd === null
+                                ? null
+                                : num(row.live_equivalent_cost_usd)
+                            }
+                            estimate={num(row.est_live_cost_usd)}
                             settled={row.status === "completed"}
                           />
                         </td>
@@ -500,7 +505,13 @@ function WorkItemDetail({
           {fmtInt(row.est_tokens_in)} / {fmtInt(row.est_tokens_out)}
         </Field>
         <Field label="Billed / live-equivalent">
-          {fmtUsd(num(row.actual_cost_usd))} / {fmtUsd(num(row.est_live_cost_usd))}
+          {fmtUsd(num(row.actual_cost_usd))} /{" "}
+          {row.live_equivalent_cost_usd === null
+            ? "not recorded"
+            : fmtUsd(num(row.live_equivalent_cost_usd))}
+        </Field>
+        <Field label="Pre-submission estimate (live)">
+          {fmtUsd(num(row.est_live_cost_usd))}
         </Field>
         <Field label="Attempts">{fmtInt(row.attempt_count)}</Field>
 
