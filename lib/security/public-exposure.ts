@@ -82,7 +82,6 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   { relation: "billing.capability_limit", policy: "capability_limit_read", cmd: "SELECT", why: "plan capability limits shown on the public pricing page" },
 
   // — Reference/catalogue data with no personal content —
-  { relation: "crm.jurisdiction_policy", policy: "jurisdiction_policy_select_all", cmd: "SELECT", why: "outreach-compliance reference rules; jurisdictional policy, no personal data" },
   { relation: "iam.industries", policy: "industries_select_all", cmd: "SELECT", why: "industry picker must populate on the sign-up form, before an account exists" },
   { relation: "platform.assurance_level", policy: "assurance_level_select_all", cmd: "SELECT", why: "static reference enum" },
   { relation: "platform.source_authority", policy: "source_authority_select_all", cmd: "SELECT", why: "static reference enum" },
@@ -103,9 +102,6 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   { relation: "ui.ui_surface_write_target", policy: "ui_surface_write_target_read_anon", cmd: "SELECT", why: "surface catalogue write targets for public routes" },
 
   // — Deliberately public product surfaces —
-  { relation: "education.content_certification", policy: "cc_public_read", cmd: "SELECT", why: "certification badges shown on public education content" },
-  { relation: "education.math_course_structure", policy: "Public can view course structure", cmd: "SELECT", why: "public curriculum outline" },
-  { relation: "users.user_follows", policy: "Follows are viewable by everyone", cmd: "SELECT", why: "follow graph is public on creator profiles (/c/{handle})" },
   { relation: "extend.wbx_recipe", policy: "pub_read", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted. DD-173 (B-103): the hand-written `wbx_recipe_read_all` (USING true) was superseded by the generated system-variant lane, which publishes only rows whose `visibility` is `public` — derived from `is_active`, so a retired recipe leaves the open web by the flag that already means that." },
 
   // — Anonymous WRITES: none. All three are closed (DD-181a, 2026-09-13,
@@ -114,6 +110,16 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   //   as the service role behind a per-IP rate limit — and the guest flow's real signed-out
   //   writer is `public.record_guest_execution`, a SECURITY DEFINER function owned by the
   //   tables' owner, which never consulted their RLS. A row returns here only with a caller. —
+
+  // — DD-226, 2026-09-14: four rows left this list because the exposures they described stopped
+  //   existing. `crm.jurisdiction_policy`, `education.content_certification`,
+  //   `education.math_course_structure` and `users.user_follows` each had a SELECT policy reaching
+  //   anon AND an anon column grant; the grant is revoked, so the policy now grants nothing and the
+  //   relation is no longer client-reachable. The prose on two of them was also simply wrong:
+  //   `users.user_follows` claimed "public on creator profiles (/c/{handle})" while that page reads
+  //   the SECURITY DEFINER RPC `creator_public_page` and never touches the table, and
+  //   `education.math_course_structure` claimed a public curriculum outline no signed-out route
+  //   renders. A row here is a declaration of intent, never evidence that a reader exists. —
 
   // — KNOWN WRONG, tracked. These warn until fixed, then get deleted from here. —
   // (Empty. D257 — `extend.wbx_demo`'s `wbx_demo_svc`, named for the service role but created
@@ -356,17 +362,60 @@ export interface AnonColumnSurface {
 }
 
 export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
-  {
-    relation: "admin.admin_markdown_samples",
-    columns: [
-      "id", "name", "description", "content", "detected_blocks", "created_at",
-      "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `admin_markdown_samples_super_admin_all`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
+  // ══ DD-226, 2026-09-14 — A DECLARED "NO SIGNED-OUT READER" MEANS ZERO ANON COLUMNS ═══════════
+  //
+  // DD-186 declared the whole signed-out surface and bounded each relation's columns. On 175 of
+  // those relations it wrote the reason "No signed-out reader was found for it in the four-
+  // repository census — the bound is what keeps a column added tomorrow from publishing itself",
+  // and then left the columns granted. DD-222 (B-113) settled what that reason implies: the bound
+  // of a signed-out surface is the set of columns that surface RENDERS, so where there is no
+  // signed-out surface the bound is the EMPTY list. A relation cannot simultaneously declare that
+  // nobody signed-out reads it and publish its columns to `anon`; the grant is the half that is
+  // wrong.
+  //
+  // 121 relations across 23 schemas were revoked to ZERO on that test
+  // (migrations/dd226_<schema>_publishes_nothing_to_a_signed_out_reader.sql, one file per schema,
+  // each asserting anon reaches 0 columns and `authenticated`'s count is unchanged). They are gone
+  // from this list rather than left with an empty `columns` array — an absent relation is the
+  // guard's own RED for a re-grant: `check:anon-column-surface` fails on an UNDECLARED relation.
+  // Re-granting any of them is a publishing decision that needs its own register row.
+  //
+  // 🚨 THE REASON TEXT WAS NOT EVIDENCE, AND THAT IS THE CLASS FINDING. DD-186 pasted the same
+  // "no signed-out reader was found" sentence onto relations whose PUBLIC_EXPOSURE_ALLOWED row a
+  // few hundred lines above says the opposite in the same file — `billing.price` ("public pricing
+  // page renders prices before sign-in"), `iam.industries` ("the sign-up form, before an account
+  // exists"), `ui.ui_surface` ("the shell renders public routes before sign-in"), `tool.executor`
+  // ("public tool catalogue"), `users.user_follows` ("public on creator profiles"). So this lane
+  // re-ran the census per relation instead of trusting the sentence, and the readers it found are
+  // NAMED on the rows that stayed. Never read a `why` here as a measurement.
+  //
+  // KEPT, with a real signed-out reader named and replayable:
+  //   workbench.heatmap_saves        /free/zip-code-heatmap/[id] — an app/(public) route that reads
+  //                                  the table directly with the SSR client.
+  //   canvas.shared_canvas_items     /canvas/discover and /canvas/shared/[token], both app/(public).
+  //   ai.model_definition, ai.provider   GET /api/ai-models — an UNAUTHENTICATED route that builds
+  //                                  its client with getScriptSupabaseClient() (publishable key), so
+  //                                  it runs as `anon`, and CDN-caches the answer.
+  //   education.learn_doc            the published learn-doc list, same publishable-key client.
+  //   platform.categories            lib/services/agent-apps-admin-service.ts, same client.
+  //   podcast.pc_shows / pc_episodes / pc_articles
+  //                                  /podcast/[slug]/feed.xml and chapters.json are podcast feeds —
+  //                                  a podcast client fetches them with no account — and
+  //                                  /podcast/[slug]/blog renders public articles.
+  //   agent.message_template         /p/e/message_template, bounded to the exact eight columns
+  //                                  PUBLIC_LANE_COLUMNS names (DD-226 revoked the ninth).
+  //   app.definition, tool.definition, public.app_config, public.catalog_entries, workbench.notes,
+  //   ai.model_public, ai.model_offering, billing.plan, canvas.canvas_items, extend.wbx_recipe —
+  //                                  DD-186's own named readers, unchanged.
+  //
+  // NAMED, NOT SWEPT — 46 relations in the catalogue-shaped schemas `ai`, `billing`, `content_ir`,
+  // `extend`, `iam`, `platform`, `tool`, `ui` still carry the same unevidenced reason. They are last
+  // on purpose (they hold reference rows, not people's content) AND they are the ones whose readers
+  // are hardest to name: app/(core) is NOT auth-gated — its layout renders a guest shell — so the
+  // shell's own catalogue reads (features/surfaces/services/*, lib/knobs/featureKnobs.ts,
+  // features/tool-registry/**) may genuinely execute as `anon` on a signed-out visit, and revoking
+  // them blind would 42501 a guest's first paint. Each needs its request replayed with no JWT before
+  // it is closed or bounded. That is DD-226's remaining half, not a decision already taken.
   // (Schema `agent` held SEVEN declared anon bounds until 2026-09-14. FIVE of them —
   //  `cmp_comparison_sets`, `cmp_response_feedback`, `definition`, `shortcut`, `template` — were
   //  revoked to ZERO by DD-222's sibling sweep
@@ -408,10 +457,15 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     relation: "agent.message_template",
     columns: [
       "id", "label", "content", "role", "created_at", "updated_at",
-      "tags", "deleted_at", "visibility",
+      "tags", "visibility",
     ],
     why:
-      "The indexable public viewer /p/e/message_template reads a public template's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
+      "The indexable public viewer /p/e/message_template reads a public template's display columns "
+      + "(utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS) — and this list is EXACTLY that one. "
+      + "DD-226 (2026-09-14) revoked the ninth, `deleted_at`: the page does not render or filter it "
+      + "(`pub_read` already excludes deleted rows), and under DD-222's rule a column the signed-out "
+      + "surface does not render is an over-grant however harmless its values look. "
+      + "migrations/dd226_agent_message_template_publishes_exactly_what_it_renders.sql",
   },
   {
     relation: "ai.api",
@@ -652,265 +706,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "chat.agent_memory",
-    columns: [
-      "id", "memory_type", "scope", "scope_id", "key", "content",
-      "importance", "access_count", "last_accessed_at", "expires_at", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "chat.agent_run",
-    columns: [
-      "id", "kind", "status", "input_fingerprint", "request", "result",
-      "error", "total_cost", "created_at", "updated_at", "episode_id", "last_heartbeat_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "chat.conversation",
-    columns: [
-      "id", "title", "system_instruction", "config", "status", "message_count",
-      "forked_from_id", "forked_at_position", "created_at", "updated_at", "deleted_at", "last_model_id",
-      "parent_conversation_id", "variables", "overrides", "description", "keywords", "task_id",
-      "source_app", "source_feature", "is_ephemeral", "initial_agent_id", "initial_agent_version_id", "is_favorite",
-      "cache_state", "last_context_breakdown", "sandbox_instance_id", "last_request_status", "last_request_id", "app_instance_id",
-      "exclude_from_kg", "conversation_type", "visibility", "origin_class",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "chat.user_request",
-    columns: [
-      "id", "total_input_tokens", "total_output_tokens", "total_cached_tokens", "total_tokens", "total_cost",
-      "total_duration_ms", "api_duration_ms", "tool_duration_ms", "iterations", "total_tool_calls", "status",
-      "finish_reason", "error", "created_at", "completed_at", "deleted_at", "source_app",
-      "source_feature", "agent_id", "agent_version_id", "last_activity_at", "updated_at", "origin_class",
-      "origin_witness", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "code.code_file_folders",
-    columns: [
-      "id", "parent_folder_id", "project_id", "workspace_id", "name", "description",
-      "icon_name", "color", "sort_order", "is_active", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "code.code_files",
-    columns: [
-      "id", "folder_id", "project_id", "workspace_id", "task_id", "name",
-      "path", "language", "content", "content_hash", "s3_key", "s3_bucket",
-      "is_readonly", "tags", "created_at", "updated_at", "repository_id", "deleted_at",
-      "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "code.code_repositories",
-    columns: [
-      "id", "root_folder_id", "project_id", "workspace_id", "name", "description",
-      "git_url", "git_branch", "git_provider", "git_commit_sha", "s3_bucket", "s3_prefix",
-      "last_synced_at", "sync_status", "sync_error", "is_active", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.dm_conversations",
-    columns: [
-      "id", "type", "group_name", "group_image_url", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.meet_call_invites",
-    columns: [
-      "id", "room_name", "mode", "caller_user_id", "caller_name", "caller_avatar_url",
-      "callee_ids", "conversation_id", "expires_at", "state", "decline_message", "settled_at",
-      "created_at", "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.meet_meetings",
-    columns: [
-      "id", "room_name", "slug", "title", "kind", "host_user_id",
-      "scheduled_for", "scheduled_duration_minutes", "started_at", "ended_at", "locked", "lobby_enabled",
-      "recording_policy", "ai_enabled", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.notification",
-    columns: [
-      "id", "event_key", "recipient_user_id", "channel", "dedupe_key", "payload",
-      "subject", "body", "to_address", "status", "attempt_count", "next_attempt_at",
-      "claimed_by", "lease_expires_at", "provider", "provider_message_id", "error_code", "error_message",
-      "sent_at", "created_at", "updated_at", "visibility", "recipient_kind", "recipient_party_id",
-      "recipient_actor_token_id", "recipient_label", "delivered_at", "read_at", "read_channel", "acted_at",
-      "outcome", "outcome_at", "target_kind", "target_id", "deep_link",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.notification_event_override",
-    columns: [
-      "id", "event_key", "enabled", "default_channels", "config_patch", "created_at",
-      "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.notification_event_type",
-    columns: [
-      "id", "event_key", "label", "description", "default_channels", "config",
-      "enabled", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.notification_preference",
-    columns: [
-      "id", "event_key", "channel", "enabled", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_consent",
-    columns: [
-      "id", "consent_type", "status", "opted_in_at", "opted_out_at", "opt_in_method",
-      "opt_out_method", "opt_in_keyword", "opt_out_keyword", "created_at", "updated_at", "deleted_at",
-      "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_conversations",
-    columns: [
-      "id", "external_phone_number", "our_phone_number", "status", "conversation_type", "ai_agent_id",
-      "last_message_at", "last_message_preview", "last_message_direction", "message_count", "unread_count", "created_at",
-      "updated_at", "deleted_at", "visibility", "provider", "provider_account_id", "destination_identity_id",
-      "program_key", "party_id", "contact_medium_id", "contact_point_id", "interaction_id", "chat_conversation_id",
-      "agent_version_id", "identity_status", "agent_id", "canonical_agent_version_id",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_notification_preferences",
-    columns: [
-      "id", "sms_enabled", "dm_notifications", "task_notifications", "job_completion_notifications", "system_alerts",
-      "marketing_messages", "ai_agent_messages", "quiet_hours_enabled", "quiet_hours_start", "quiet_hours_end", "timezone",
-      "max_messages_per_hour", "max_messages_per_day", "created_at", "updated_at", "deleted_at", "visibility",
-      "preferred_agent_id", "preferred_agent_version_id", "assistant_destination_id", "assistant_program_key",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_notifications",
-    columns: [
-      "id", "message_id", "notification_type", "category", "reference_type", "reference_id",
-      "status", "failure_reason", "scheduled_for", "sent_at", "created_at", "deleted_at",
-      "visibility", "updated_at", "idempotency_key", "interaction_id",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_phone_numbers",
-    columns: [
-      "id", "twilio_sid", "friendly_name", "capabilities", "number_type", "is_active",
-      "assigned_at", "released_at", "created_at", "updated_at", "deleted_at", "visibility",
-      "provider", "provider_account_id", "program_key", "assistant_enabled",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_rate_limits",
-    columns: [
-      "id", "window_start", "window_type", "message_count",
-    ],
-    why:
-      "Anon-readable by the policy `Service role only`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "communication.sms_webhook_logs",
-    columns: [
-      "id", "webhook_type", "twilio_sid", "raw_payload", "processed", "processing_error",
-      "created_at", "provider", "provider_account_id", "provider_event_key", "message_id", "processing_attempts",
-      "claimed_at", "lease_expires_at", "processed_at",
-    ],
-    why:
-      "Anon-readable by the policy `Service role only for webhook logs`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "content_ir.kind_component",
     columns: [
       "id", "kind_definition_id", "platform", "role", "component_key", "source",
@@ -969,271 +764,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "context.scopes",
-    columns: [
-      "id", "scope_type_id", "parent_scope_id", "name", "description", "settings",
-      "created_at", "updated_at", "slug", "sort_order", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.blocklist_entry",
-    columns: [
-      "id", "subject_kind", "subject_value", "reason", "source", "party_id",
-      "expires_at", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.contact_medium",
-    columns: [
-      "id", "channel", "platform_slug", "value_raw", "value_key", "display_value",
-      "external_id", "handle", "profile_url", "line_type", "phone_country", "calling_time_zone",
-      "is_role_address", "mx_valid", "verification_status", "verified_at", "bounce_type", "bounce_count",
-      "first_bounced_at", "last_bounced_at", "complaint_at", "unsubscribed_at", "dnc_state", "dnc_checked_at",
-      "suppressed_at", "suppression_reason", "suppression_expires_at", "details", "created_at", "updated_at",
-      "deleted_at", "visibility", "is_contactable", "consent_basis", "consent_source", "consent_source_url",
-      "consent_recorded_at", "consent_evidence_at", "consent_expires_at", "consent_jurisdiction", "consent_evidence", "subscriber_kind",
-      "source_disclosed_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.deal",
-    columns: [
-      "id", "name", "description", "pipeline_id", "stage_id", "stage_entered_at",
-      "status", "amount", "currency", "expected_close_date", "closed_at", "probability",
-      "primary_party_id", "assigned_to", "lost_reason_id", "lost_reason_note", "source", "source_detail",
-      "sort_order", "attributes", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.enrichment_call",
-    columns: [
-      "id", "provider", "operation", "cache_key", "request", "response",
-      "result_count", "status", "error", "credits_used", "estimated_cost_usd", "latency_ms",
-      "expires_at", "party_id", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.jurisdiction_policy",
-    columns: [
-      "country_code", "country_name", "region", "cold_b2b", "cold_b2c", "conditions",
-      "unsubscribe_validity_days", "honor_within_hours", "requires_postal_address", "requires_source_disclosure", "requires_role_relevance", "distinguishes_subscriber_kind",
-      "citation", "ratified_at", "ratified_note", "notes", "is_active", "created_at",
-      "updated_at", "id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.outreach_list",
-    columns: [
-      "id", "name", "description", "list_kind", "status", "definition",
-      "started_at", "ended_at", "created_at", "updated_at", "deleted_at", "visibility",
-      "sending_identity_id", "paused_at", "paused_by", "pause_reason", "paused_by_kind", "lane",
-      "lawful_basis", "lia_interest", "lia_necessity", "lia_balancing", "lia_completed_at", "lia_completed_by",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.party",
-    columns: [
-      "id", "party_kind", "display_name", "sort_name", "name_key", "aka",
-      "first_name", "middle_name", "last_name", "preferred_name", "name_prefix", "name_suffix",
-      "pronouns", "date_of_birth", "headline", "legal_name", "primary_domain", "industry_id",
-      "employee_band", "founded_year", "tax_id", "registration_number", "bio", "avatar_file_id",
-      "timezone", "locale", "canonical_id", "source_party_id", "source_synced_at", "locked_fields",
-      "expert_status", "claimed_by", "claimed_at", "assigned_to", "lifecycle_stage_id", "lifecycle_stage_changed_at",
-      "became_customer_at", "rating_id", "source", "source_detail", "do_not_contact", "do_not_contact_reason",
-      "linked_organization_id", "primary_employer_party_id", "job_title", "attributes", "created_at", "updated_at",
-      "deleted_at", "visibility", "record_class", "created_by_tier", "created_by_system", "updated_by_tier",
-      "updated_by_system",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.registry_ingest_run",
-    columns: [
-      "id", "source_slug", "pass_key", "params", "status", "cursor",
-      "lease_owner", "lease_expires_at", "heartbeat_at", "started_at", "finished_at", "last_completed_at",
-      "next_due_at", "run_count", "requests_made", "items_seen", "organizations_created", "organizations_matched",
-      "people_created", "people_skipped_no_identifier", "candidates_created", "estimated_cost_usd", "lifetime", "error",
-      "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.registry_source",
-    columns: [
-      "id", "slug", "label", "homepage_url", "terms_url", "terms_version",
-      "licence_class", "ingest_status", "allows_persistence", "allows_customer_use", "allows_person_promotion", "permitted_fields",
-      "refresh_cadence_days", "deletion_feed", "crawl_policy", "api_base_url", "rate_limit_per_second", "review_due_at",
-      "notes", "declared_at", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.saved_view",
-    columns: [
-      "id", "name", "description", "definition", "last_used_at", "created_at",
-      "updated_at", "deleted_at", "visibility", "list_key",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.sending_identity",
-    columns: [
-      "id", "display_name", "provider", "connection_id", "provider_account", "from_address",
-      "from_address_key", "from_name", "reply_to", "sending_domain", "status", "status_changed_at",
-      "paused_by_kind", "paused_at", "paused_by", "pause_reason", "pause_code", "resumed_at",
-      "resumed_by", "domain_verification_token", "domain_verified_at", "domain_checked_at", "domain_check_error", "spf_pass",
-      "dkim_pass", "dmarc_pass", "auth_checked_at", "auth_detail", "warmup_started_at", "warmup_completed_at",
-      "warmup_day", "daily_cap", "hourly_cap", "min_interval_seconds", "max_interval_seconds", "quiet_hours_start",
-      "quiet_hours_end", "send_weekends", "default_recipient_timezone", "health", "health_computed_at", "last_send_at",
-      "attributes", "created_at", "updated_at", "deleted_at", "visibility", "postal_name",
-      "postal_line1", "postal_line2", "postal_city", "postal_region", "postal_code", "postal_country",
-      "domain_registered_at", "domain_age_checked_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "crm.sending_policy",
-    columns: [
-      "id", "outreach_enabled", "disabled_at", "disabled_by", "disabled_reason", "disabled_by_kind",
-      "enabled_at", "enabled_by", "notes", "attributes", "created_at", "updated_at",
-      "deleted_at", "visibility", "postal_name", "postal_line1", "postal_line2", "postal_city",
-      "postal_region", "postal_code", "postal_country", "postal_verified_at", "privacy_notice_url",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "docproc.page_extraction_results",
-    columns: [
-      "id", "run_id", "page_run_id", "job_id", "file_id", "payload",
-      "source_pages", "canonical_page", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `page_extraction_results_owner_write/page_extraction_results_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "docproc.page_extraction_runs",
-    columns: [
-      "id", "job_id", "status", "trigger_source", "triggered_by", "chunk_count",
-      "completed_chunks", "failed_chunks", "result_count", "total_cost", "total_tokens", "started_at",
-      "finished_at", "error", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `page_extraction_runs_owner_write/page_extraction_runs_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "education.content_certification",
-    columns: [
-      "id", "resource_type", "resource_id", "note", "certified_at", "human_verified_at",
-      "created_at", "updated_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "education.learn_doc",
     columns: [
       "id", "created_at", "updated_at", "deleted_at", "visibility", "slug",
       "title", "summary", "subject", "letter", "keywords", "sections",
       "related", "content_updated_at", "published_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "education.math_course_structure",
-    columns: [
-      "id", "course_name", "topic_name", "module_name", "module_description", "lesson_name",
-      "lesson_objectives", "lesson_content", "sort_order", "created_at", "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `Public can view course structure`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "education.math_problems",
-    columns: [
-      "id", "title", "course_name", "topic_name", "module_name", "description",
-      "intro_text", "final_statement", "problem_statement", "solutions", "hint", "resources",
-      "difficulty_level", "related_content", "sort_order", "is_published", "created_at", "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `Public can view published math problems`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "education.quiz_sessions",
-    columns: [
-      "id", "title", "state", "is_completed", "created_at", "updated_at",
-      "completed_at", "quiz_content_hash", "quiz_metadata", "category", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "education.study_media",
-    columns: [
-      "id", "created_at", "updated_at", "deleted_at", "visibility", "media_kind",
-      "title", "description", "status", "source_kind", "source_id", "source_title",
-      "config", "trust", "run_id", "episode_id", "audio_file_id", "audio_format",
-      "duration_seconds", "ir_envelope", "diagram_kind",
     ],
     why:
       "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
@@ -1339,100 +874,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "files.analysis",
-    columns: [
-      "file_id", "mime_type", "status", "analyzer_version", "detectors_run", "progress",
-      "classification", "page_count", "summary_counts", "text_source_map", "thumbnail_url", "started_at",
-      "completed_at", "updated_at", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `file_analysis_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.analysis_result",
-    columns: [
-      "id", "file_id", "detector_kind", "detector_version", "confidence_tier", "status",
-      "text_sources", "elapsed_ms", "summary", "payload", "payload_uri", "payload_bytes",
-      "error", "created_at", "page_id",
-    ],
-    why:
-      "Anon-readable by the policy `file_analysis_result_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.files",
-    columns: [
-      "id", "file_path", "file_name", "mime_type", "size_bytes", "checksum",
-      "visibility", "current_version", "parent_folder_id", "created_at", "updated_at", "deleted_at",
-      "parent_file_id", "derivation_kind", "derivation_metadata", "duplicate_of_file_id", "canonical_processed_document_id", "width",
-      "height", "duration_ms",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.folders",
-    columns: [
-      "id", "folder_path", "folder_name", "parent_id", "visibility", "created_at",
-      "updated_at", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.idempotency",
-    columns: [
-      "idempotency_key", "request_hash", "endpoint", "status_code", "response_body", "resource_id",
-      "resource_type", "created_at", "expires_at",
-    ],
-    why:
-      "Anon-readable by the policy `cld_idempotency_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.uploads_inflight",
-    columns: [
-      "id", "file_id", "file_path", "bucket", "key", "multipart_upload_id",
-      "upload_length", "upload_offset", "visibility", "mime_type", "file_name", "idempotency_key",
-      "parts", "status", "expires_at", "created_at", "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `cld_uploads_inflight_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.webhook_deliveries",
-    columns: [
-      "id", "webhook_id", "attempt", "status", "http_status", "latency_ms",
-      "error_message", "next_attempt_at", "created_at", "completed_at", "activity_log_id", "net_request_id",
-      "signature", "dispatched_at",
-    ],
-    why:
-      "Anon-readable by the policy `cld_webhook_deliveries_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "files.webhooks",
-    columns: [
-      "id", "target_url", "description", "is_active", "event_types", "resource_types",
-      "last_attempt_at", "last_success_at", "consecutive_failures", "max_consecutive_failures", "created_at", "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `cld_webhooks_owner_all`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "iam.industries",
     columns: [
       "id", "slug", "name", "facet", "parent_id", "default_template_id",
@@ -1452,54 +893,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     ],
     why:
       "Anon-readable by the policy `Users can view relevant permissions`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "legal.wc_claim",
-    columns: [
-      "id", "created_at", "applicant_name", "person_id", "date_of_birth", "date_of_injury",
-      "age_at_doi", "occupational_code", "weekly_earnings", "gender", "case_number", "evaluator_name",
-      "comments", "project_id", "is_public", "tags", "updated_at", "p_s_date",
-      "job_offer_date", "large_employer", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "ops.app_log",
-    columns: [
-      "id", "ts", "level", "level_no", "logger_name", "feature",
-      "route", "message", "exc_type", "traceback", "request_id", "conversation_id",
-      "process_pid", "host_role", "classified", "created_at", "stage",
-    ],
-    why:
-      "Anon-readable by the policy `app_log_self_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "pdf.pdf_redaction_audits",
-    columns: [
-      "id", "parent_file_id", "file_id", "reason", "redaction_kind", "redaction_params",
-      "tier_used", "status", "bytes_removed_estimate", "regions_count", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "pdf.pdf_redaction_key_escrow",
-    columns: [
-      "id", "session_id", "file_id", "wrapped_key", "wrap_alg", "created_at",
-      "revoked_at",
-    ],
-    why:
-      "Anon-readable by the policy `pdf_redaction_key_escrow_select`; every identity, bookkeeping and secret column is "
       + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
@@ -1623,37 +1016,11 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "podcast.pc_race",
-    columns: [
-      "id", "topic", "request", "status", "arms", "verdict_winner",
-      "verdict_notes", "verdict_at", "error", "completed_at", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "podcast.pc_shows",
     columns: [
       "id", "slug", "title", "description", "image_url", "author",
       "is_published", "created_at", "updated_at", "og_image_url", "thumbnail_url", "rss_settings",
       "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "podcast.pc_studio_runs",
-    columns: [
-      "id", "status", "input_data_type", "podcast_type", "request", "title",
-      "description", "script", "audio_url", "image_urls", "video_urls", "image_prompts",
-      "video_prompts", "selected_cover_url", "show_id", "episode_id", "episode_slug", "error",
-      "created_at", "updated_at", "backend_run_id", "host_count", "speakers", "deleted_at",
-      "visibility",
     ],
     why:
       "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
@@ -1682,294 +1049,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "These fourteen columns are the feature's own declared public contract — the exact set "
       + "aidream's unauthenticated GET /api/catalogs/{app} publishes in services/catalogs/service.py. "
       + "Deliberately absent: updated_by, created_by, organization_id, metadata, version, visibility.",
-  },
-  {
-    relation: "public.current_user_is_admin",
-    columns: [
-      "is_admin", "admin_level",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.pdf_unified_pages",
-    columns: [
-      "page_id", "processed_document_id", "file_id", "page_number", "page_index", "raw_text",
-      "cleaned_text", "section_kind", "section_title", "is_continuation", "width", "height",
-      "extract_rotation", "used_ocr", "image_cld_file_id", "file_page_id", "user_status", "user_rotation",
-      "excluded_at", "user_modified", "thumbnail_url",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_context_item_suggestions",
-    columns: [
-      "id", "scope_type_id", "suggested_key", "display_name", "rationale", "example_value",
-      "example_source_kind", "example_source_id", "confidence", "status", "created_at", "decided_at",
-      "decided_by", "suppressed_until", "scope_type_label", "scope_type_label_plural", "scope_type_icon", "scope_type_slug",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_kg_alerts",
-    columns: [
-      "id", "source_kind", "source_id", "target_scope_id", "target_slot_key", "kind",
-      "severity", "description", "suggested_action", "evidence", "confidence", "status",
-      "created_at", "decided_at", "decided_by", "viewed_at", "scope_name",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_kg_sweep_effectiveness",
-    columns: [
-      "sweep_run_row_id", "sweep_run_id", "trigger_type", "scope_type_id", "run_status", "suggestions_created",
-      "entities_selected", "llm_calls", "cost_usd", "started_at", "completed_at", "suggestions_tracked",
-      "pending", "accepted", "rejected", "deferred", "expired",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_kg_value_matches",
-    columns: [
-      "id", "source_kind", "source_id", "kg_entity_id", "target_scope_id", "target_context_item_id",
-      "target_slot_key", "matched_value", "current_value_snapshot", "mention_count", "evidence_chunk_id", "confidence",
-      "created_at", "scope_name", "scope_slug", "scope_type_label", "scope_type_icon", "item_label",
-      "item_key",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_ner_canonicalizer_shadow",
-    columns: [
-      "id", "source_kind", "source_id", "run_id", "input_pair_count", "agent_input_json",
-      "agent_output_json", "agent_merge_group_count", "deterministic_groups_json", "deterministic_merge_group_count", "comparison_json", "agreed_merge_surface_count",
-      "agent_only_merge_surface_count", "deterministic_only_merge_surface_count", "agent_model", "agent_cost_usd", "agent_elapsed_ms", "agent_error",
-      "status", "created_at",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_scope_suggestion_stats",
-    columns: [
-      "status", "is_starred", "n",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_scope_suggestions",
-    columns: [
-      "id", "stage", "source_kind", "source_id", "kg_entity_id", "target_scope_id",
-      "target_item_id", "target_slot", "suggested_value", "current_value_snapshot", "match_kind", "confidence",
-      "status", "context_snippet", "decision_note", "is_starred", "viewed_at", "created_at",
-      "decided_at", "decided_by", "suppressed_until", "org_name", "org_slug", "scope_type_id",
-      "scope_type_label", "scope_type_slug", "scope_type_icon", "scope_name", "scope_slug", "item_label",
-      "item_key",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "public.v_scope_suggestions_new",
-    columns: [
-      "id", "source_kind", "source_id", "scope_type_id", "scope_type_label", "suggested_name",
-      "suggested_slot_values", "reasoning", "confidence", "status", "created_at", "decided_at",
-      "decided_by", "suppressed_until", "resolved_scope_type_label", "scope_type_icon", "scope_type_slug",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "rag.context_item_suggestions",
-    columns: [
-      "id", "scope_type_id", "suggested_key", "display_name", "rationale", "example_value",
-      "example_source_kind", "example_source_id", "confidence", "status", "created_at", "decided_at",
-      "decided_by", "suppressed_until", "sweep_run_id", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.kg_alerts",
-    columns: [
-      "id", "source_kind", "source_id", "target_scope_id", "target_slot_key", "kind",
-      "severity", "description", "suggested_action", "evidence", "confidence", "status",
-      "created_at", "decided_at", "decided_by", "viewed_at", "deleted_at", "updated_at",
-      "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.kg_sweep_queue",
-    columns: [
-      "id", "change_type", "entity_id", "scope_type_id", "status", "enqueued_at",
-      "claim_at", "claimed_at", "sweep_run_id", "updated_at", "deleted_at", "visibility",
-      "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.kg_sweep_run",
-    columns: [
-      "id", "run_id", "trigger_type", "trigger_entity_id", "scope_type_id", "status",
-      "change_count", "documents_considered", "entities_enumerated", "entities_excluded_resolved", "entities_after_dedup", "entities_selected",
-      "entities_deferred", "batches", "llm_calls", "tokens_in", "tokens_out", "cost_usd",
-      "suggestions_created", "started_at", "completed_at", "error", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.kg_value_matches",
-    columns: [
-      "id", "source_kind", "source_id", "kg_entity_id", "target_scope_id", "target_context_item_id",
-      "target_slot_key", "matched_value", "current_value_snapshot", "mention_count", "evidence_chunk_id", "confidence",
-      "created_at", "deleted_at", "updated_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.ner_canonicalizer_shadow",
-    columns: [
-      "id", "source_kind", "source_id", "run_id", "input_pair_count", "agent_input_json",
-      "agent_output_json", "agent_merge_group_count", "deterministic_groups_json", "deterministic_merge_group_count", "comparison_json", "agreed_merge_surface_count",
-      "agent_only_merge_surface_count", "deterministic_only_merge_surface_count", "agent_model", "agent_cost_usd", "agent_elapsed_ms", "agent_error",
-      "status", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "rag.scope_suggestions",
-    columns: [
-      "id", "source_kind", "source_id", "scope_type_id", "scope_type_label", "suggested_name",
-      "suggested_slot_values", "reasoning", "confidence", "status", "created_at", "decided_at",
-      "decided_by", "suppressed_until", "sweep_run_id", "deleted_at", "updated_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "research.rs_source_keywords",
-    columns: [
-      "id", "topic_id", "url", "title", "description", "hostname",
-      "source_type", "origin", "rank", "page_age", "thumbnail_url", "extra_snippets",
-      "raw_search_result", "is_included", "is_stale", "scrape_status", "discovered_at", "last_seen_at",
-      "keyword_id", "rank_for_keyword",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "research.rs_template",
-    columns: [
-      "id", "name", "description", "keyword_templates", "default_tags", "default_search_params",
-      "agent_config", "autonomy_level", "created_at", "updated_at", "visibility", "deleted_at",
-      "intent_key",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "research.rs_topic",
-    columns: [
-      "id", "name", "autonomy_level", "default_search_provider", "default_search_params", "good_scrape_threshold",
-      "scrapes_per_keyword", "status", "template_id", "agent_config", "created_at", "updated_at",
-      "description", "max_keywords", "analyses_per_keyword", "max_keyword_syntheses", "max_topic_syntheses", "max_documents",
-      "max_tag_consolidations", "max_auto_tag_calls", "tone_profile", "outputs", "tag_suggestions", "visibility",
-      "deleted_at", "videos_per_keyword", "intent_key", "intent_brief", "refresh_interval_hours", "next_refresh_at",
-      "refresh_claim_token", "refresh_claim_expires_at", "last_refresh_at", "last_refresh_outcome", "last_refresh_error", "last_refresh_trigger",
-      "consecutive_refresh_failures",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "scheduler.sch_task",
-    columns: [
-      "id", "kind", "title", "description", "queue", "surfaces",
-      "enabled", "expires_at", "tags", "next_due_at", "last_run_at", "created_at",
-      "updated_at", "deleted_at", "visibility", "taxonomy_node_id",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "skill.definition",
-    columns: [
-      "id", "skill_id", "label", "description", "skill_type", "body",
-      "icon_name", "model_preference", "allowed_tools", "trigger_patterns", "disable_auto_invocation", "platform_targets",
-      "semver", "config", "category_id", "parent_skill_id", "is_active", "sort_order",
-      "project_id", "task_id", "created_at", "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "skill.render_definition",
-    columns: [
-      "id", "block_id", "label", "description", "icon_name", "template",
-      "sort_order", "is_active", "skill_id", "category_id", "project_id", "task_id",
-      "created_at", "updated_at", "visibility", "deleted_at", "block_type",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
     relation: "tool.bundle",
@@ -2038,86 +1117,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "surface_name", "always_include_tools", "always_include_bundles", "never_include_tools", "never_include_bundles", "arg_defaults",
       "arg_injection", "notes", "is_active", "created_at", "updated_at", "id",
       "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_cleaned_segments",
-    columns: [
-      "id", "session_id", "run_id", "pass_index", "t_start", "t_end",
-      "text", "trigger_cause", "superseded_at", "created_at", "recording_segment_id", "processor_key",
-    ],
-    why:
-      "Anon-readable by the policy `studio_cleaned_segments_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_concept_items",
-    columns: [
-      "id", "session_id", "run_id", "pass_index", "t_start", "t_end",
-      "kind", "label", "description", "confidence", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `studio_concept_items_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_module_segments",
-    columns: [
-      "id", "session_id", "run_id", "pass_index", "module_id", "block_type",
-      "t_start", "t_end", "payload", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `studio_module_segments_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_raw_segments",
-    columns: [
-      "id", "session_id", "recording_segment_id", "chunk_index", "t_start", "t_end",
-      "text", "speaker", "source", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `studio_raw_segments_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_session_settings",
-    columns: [
-      "session_id", "cleaning_shortcut_id", "cleaning_interval_ms", "concept_shortcut_id", "concept_interval_ms", "module_id",
-      "module_shortcut_id", "module_interval_ms", "column_widths", "show_prior_modules", "created_at", "updated_at",
-      "context_items", "custom_slots", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `studio_session_settings_public_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.studio_sessions",
-    columns: [
-      "id", "project_id", "transcript_id", "title", "status", "module_id",
-      "started_at", "ended_at", "total_duration_ms", "audio_storage_path", "created_at", "updated_at",
-      "assistant_conversation_id", "source", "assistant_conversations", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "transcripts.transcripts",
-    columns: [
-      "id", "title", "description", "segments", "audio_file_path", "video_file_path",
-      "source_type", "tags", "folder_name", "created_at", "updated_at", "is_draft",
-      "draft_saved_at", "project_id", "task_id", "deleted_at", "visibility",
     ],
     why:
       "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
@@ -2218,156 +1217,9 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "users.feedback_comments",
-    columns: [
-      "id", "feedback_id", "author_type", "author_name", "content", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `Users can view comments on own feedback`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.guest_execution_log",
-    columns: [
-      "id", "guest_id", "resource_type", "resource_id", "resource_name", "task_id",
-      "success", "error_message", "tokens_used", "cost", "execution_time_ms", "user_agent",
-      "referer", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `Only service role can read guest executions`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.guest_executions",
-    columns: [
-      "id", "user_agent", "total_executions", "first_execution_at", "last_execution_at", "daily_reset_at",
-      "daily_executions", "is_blocked", "blocked_until", "blocked_reason", "converted_to_user_id", "converted_at",
-      "created_at", "updated_at", "auth_user_id",
-    ],
-    why:
-      "Anon-readable by the policy `Only service role can read guest executions`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.invitation_requests",
-    columns: [
-      "id", "status",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.profiles",
-    columns: [
-      "id", "display_name", "avatar_url", "status_text", "is_online", "last_seen_at",
-      "created_at", "updated_at", "deleted_at", "visibility", "creator_handle", "creator_public",
-      "creator_tagline", "creator_bio", "creator_links", "creator_featured", "creator_published_at", "age_band",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.system_announcements",
-    columns: [
-      "id", "title", "message", "announcement_type", "is_active", "created_at",
-      "updated_at", "min_display_seconds", "target_user_id", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_achievements",
-    columns: [
-      "id", "achievement_type", "achievement_data", "unlocked_at", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_analysis_preferences",
-    columns: [
-      "per_detector_enabled", "default_tier_per_detector", "custom_patterns", "default_redaction_mode", "per_file_type_overrides", "substitute_formats",
-      "updated_at", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `user_analysis_preferences_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_follows",
-    columns: [
-      "id", "follower_id", "following_id", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `Follows are viewable by everyone`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_form_profile",
-    columns: [
-      "legal_first_name", "legal_middle_name", "legal_last_name", "preferred_name", "name_suffix", "pronouns",
-      "date_of_birth", "phones", "emails", "social_handles", "website_url", "shipping_line1",
-      "shipping_line2", "shipping_city", "shipping_region", "shipping_postal_code", "shipping_country", "billing_same_as_shipping",
-      "billing_line1", "billing_line2", "billing_city", "billing_region", "billing_postal_code", "billing_country",
-      "company_name", "job_title", "emergency_contacts", "images", "custom_fields", "created_at",
-      "updated_at", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `user_form_profile_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_markdown_samples",
-    columns: [
-      "id", "name", "description", "content", "detected_blocks", "created_at",
-      "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "users.user_memory",
-    columns: [
-      "id", "path", "content", "labels", "created_at", "updated_at",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "workbench.heatmap_saves",
     columns: [
       "id", "title", "description", "data", "view_settings", "created_at",
-      "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.note_folders",
-    columns: [
-      "id", "name", "parent_id", "path", "position", "created_at",
       "updated_at", "deleted_at", "visibility",
     ],
     why:
@@ -2384,266 +1236,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     ],
     why:
       "The indexable public viewer /p/e/note reads a public note's display columns (utils/permissions/publicLane.ts#PUBLIC_LANE_COLUMNS).",
-  },
-  {
-    relation: "workbench.udt_dataset_row_versions",
-    columns: [
-      "id", "row_id", "table_id", "data", "prior_data", "change_kind",
-      "changed_at",
-    ],
-    why:
-      "Anon-readable by the policy `udt_row_versions_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.udt_datasets",
-    columns: [
-      "id", "table_name", "description", "is_public", "created_at", "updated_at",
-      "row_ordering_config", "project_id", "task_id", "workbook_id", "sheet_index", "validation_mode",
-      "template_id", "template_version", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.udt_document_snapshots",
-    columns: [
-      "id", "document_id", "snapshot", "label", "origin", "created_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.udt_documents",
-    columns: [
-      "id", "document_name", "description", "source", "original_file_id", "project_id",
-      "task_id", "is_public", "created_at", "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.udt_structured_lists",
-    columns: [
-      "id", "created_at", "updated_at", "list_name", "description", "is_public",
-      "public_read", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.udt_workbooks",
-    columns: [
-      "id", "workbook_name", "description", "source", "original_file_id", "project_id",
-      "task_id", "is_public", "created_at", "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workbench.working_documents",
-    columns: [
-      "id", "title", "content", "created_at", "updated_at", "kind",
-      "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.card",
-    columns: [
-      "id", "name", "description", "category", "tags", "variables",
-      "step_count", "is_active", "created_at", "updated_at", "card_visibility",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "workflow.comparison",
-    columns: [
-      "id", "title", "status", "request", "shared_inputs", "arms",
-      "verdict_winner", "verdict_notes", "verdict_at", "metrics", "error", "completed_at",
-      "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.definition",
-    columns: [
-      "id", "name", "description", "nodes", "edges", "viewport",
-      "channels", "strict_channels", "entry_nodes", "is_active", "is_archived", "is_favorite",
-      "tags", "category", "project_id", "task_id", "source_definition_id", "source_snapshot_at",
-      "created_at", "updated_at", "max_concurrent_runs", "visibility", "deleted_at", "variables",
-      "updated_by_tier", "updated_by_system", "engram_state", "confirmed_success_count", "promotion_threshold_k", "grounding_score",
-      "compiled_at", "demoted_at", "demotion_reason", "engram_version_tags", "engram_counter_since", "card_visibility",
-      "input_kind", "output_kind",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.run",
-    columns: [
-      "id", "thread_id", "parent_run_id", "definition_id", "definition_version_id", "definition_hash",
-      "status", "input", "output", "error", "interrupt_payload", "steps_executed",
-      "last_checkpoint_id", "project_id", "task_id", "conversation_id", "agent_id", "agent_version_id",
-      "created_at", "started_at", "completed_at", "max_recovery_retries", "recovery_retry_count", "event_seq",
-      "visibility", "deleted_at", "updated_at", "request_attribution_complete",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.runtime_surface",
-    columns: [
-      "id", "definition_id", "name", "audience", "profile", "is_default",
-      "schema_version", "config", "created_at", "updated_at", "deleted_at", "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.template",
-    columns: [
-      "id", "name", "description", "category", "definition", "preview_image_url",
-      "popularity", "is_published", "created_at", "updated_at", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.trigger",
-    columns: [
-      "id", "definition_id", "definition_version_id", "name", "description", "kind",
-      "cron_expression", "timezone", "webhook_secret", "default_inputs", "max_steps", "is_active",
-      "last_fired_at", "last_run_id", "next_run_at", "fire_count", "project_id", "task_id",
-      "created_at", "updated_at", "visibility", "deleted_at", "callback_url", "event_source",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.trigger_event",
-    columns: [
-      "id", "trigger_id", "entity_key", "payload", "status", "claim_at",
-      "claimed_at", "attempts", "max_attempts", "run_id", "last_error", "created_at",
-      "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `wf_trigger_event_parent_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workflow.v_definition_catalog",
-    columns: [
-      "id", "name", "description", "category", "tags", "is_favorite",
-      "is_active", "is_archived", "visibility", "created_at", "updated_at", "engram_state",
-      "step_count", "last_run_id", "last_run_status", "last_run_at", "run_count",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "workflow.v_engram_confirmed_run",
-    columns: [
-      "run_id", "definition_id", "definition_hash", "completed_at",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
-    relation: "workflow.work_item",
-    columns: [
-      "id", "run_id", "set_name", "seq", "canonical_key", "payload",
-      "state", "attempts", "max_attempts", "wave", "discovered_by", "claim_holder",
-      "claimed_at", "lease_expires_at", "error", "created_at", "completed_at",
-    ],
-    why:
-      "Anon-readable by the policy `wf_work_item_parent_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workspace.projects",
-    columns: [
-      "id", "name", "description", "created_at", "updated_at", "slug",
-      "settings", "status", "priority", "start_date", "target_date", "deleted_at",
-      "visibility",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workspace.tasks",
-    columns: [
-      "id", "title", "description", "project_id", "status", "due_date",
-      "created_at", "updated_at", "parent_task_id", "priority", "assignee_id", "settings",
-      "visibility", "deleted_at", "completed_at", "origin", "source_type", "source_id",
-      "source_url", "source_label", "dedupe_key", "start_date", "due_time", "timezone",
-      "recurrence_rule", "reminders",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workspace.threads",
-    columns: [
-      "id", "active_tab", "position", "title", "created_at", "updated_at",
-      "anchor_type", "anchor_id", "visibility", "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
-    relation: "workspace.war_rooms",
-    columns: [
-      "id", "title", "description", "icon", "color", "active_thread_id",
-      "last_opened_at", "created_at", "updated_at", "anchor_type", "anchor_id", "visibility",
-      "deleted_at",
-    ],
-    why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
 ];
 

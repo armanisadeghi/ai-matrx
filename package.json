@@ -299,6 +299,8 @@
     "check:mandate-fallback-pin:strict": "tsx scripts/check-mandate-fallback-pin.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
     "check:migration-slot-guard:strict": "tsx scripts/check-migration-slot-guard.ts --strict",
+    "check:topic-placement-ceiling": "tsx scripts/check-topic-placement-ceiling-counter.ts",
+    "check:topic-placement-ceiling:strict": "tsx scripts/check-topic-placement-ceiling-counter.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
     "check:impl-doors": "tsx scripts/check-impl-doors.ts",
     "check:impl-doors:strict": "tsx scripts/check-impl-doors.ts --strict",
