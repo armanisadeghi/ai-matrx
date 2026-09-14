@@ -802,11 +802,20 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "id", "slug", "show_id", "title", "description", "audio_url",
       "image_url", "video_url", "display_mode", "episode_number", "duration_seconds", "is_published",
       "created_at", "updated_at", "og_image_url", "thumbnail_url", "host_count", "speakers",
-      "script", "deleted_at", "visibility",
+      "script", "chapters", "deleted_at", "visibility",
     ],
     why:
       "The same public routes plus /podcast/[slug]/chapters.json; PC_EPISODE_PUBLIC_SELECT. Broken "
-      + "by the same `select=*` trap and fixed the same way (DD-230).",
+      + "by the same `select=*` trap and fixed the same way (DD-230). 🚨 `chapters` joined this "
+      + "bound on 2026-09-14 (DD-234, migrations/dd234_public_chapters_are_a_public_column.sql) "
+      + "and it is a PUBLISHING decision, not a widening: chapters are podcast content and are "
+      + "public exactly when the episode is (pub_read gates the row on visibility='public'). Its "
+      + "reader is the exported GET of app/(core)/podcast/[slug]/chapters.json/route.ts — the "
+      + "target of the <podcast:chapters> element feed.xml emits, which a podcast app fetches "
+      + "with no account at all. Until DD-234 chapters lived in metadata->'chapters', so that "
+      + "route answered 404 \"No chapters for this episode\" to EVERY signed-out listener while "
+      + "the feed advertised nothing. `metadata` stays withheld (DD-186) — this is a column of "
+      + "its own, never a metadata grant.",
   },
   {
     relation: "podcast.pc_shows",

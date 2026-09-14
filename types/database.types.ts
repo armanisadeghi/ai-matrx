@@ -65987,6 +65987,7 @@ export type Database = {
       pc_episodes: {
         Row: {
           audio_url: string
+          chapters: Json | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -66015,6 +66016,7 @@ export type Database = {
         }
         Insert: {
           audio_url: string
+          chapters?: Json | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -66043,6 +66045,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string
+          chapters?: Json | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null

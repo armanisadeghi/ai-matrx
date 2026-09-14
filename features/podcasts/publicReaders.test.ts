@@ -163,6 +163,11 @@ const EPISODE = {
   host_count: 1,
   speakers: null,
   script: null,
+  // DD-234: a real column in the signed-out bound, no longer metadata.
+  chapters: [
+    { start_hint: "00:00", title: "Cold open", summary: "The hook." },
+    { start_hint: "01:30", title: "The main thread", summary: "The body." },
+  ],
   deleted_at: null,
   visibility: "public",
 };
@@ -225,19 +230,53 @@ describe("the public podcast readers survive a column grant", () => {
     expectEverySelectWithinItsBound();
   });
 
-  it("chapters.json resolves the episode and never asks for a column anon lacks", async () => {
+  it("chapters.json SERVES a signed-out listener the JSON Chapters document", async () => {
+    // 🚨 THE DD-234 CASE. Until 2026-09-14 chapters lived in
+    // `pc_episodes.metadata.chapters` and `metadata` is withheld from `anon`
+    // (DD-186), so this route answered 404 "No chapters for this episode" to
+    // EVERY listener with no account — for every episode, no matter what it
+    // held. Chapters are podcast content and are public exactly when the
+    // episode is, so they are a column of their own inside the signed-out
+    // bound. A reader that goes back to `metadata` fails HERE, on the 404 the
+    // old one produced.
     const { GET } = await import("@/app/(core)/podcast/[slug]/chapters.json/route");
     const res = await GET(new Request("https://aimatrx.com/podcast/episode-one/chapters.json"), {
       params: Promise.resolve({ slug: "episode-one" }),
     });
 
-    // The episode read SUCCEEDS — the route never says "Episode not found".
-    // It does answer 404 "No chapters for this episode", and that is honest:
-    // chapters live in `pc_episodes.metadata.chapters`, and `metadata` is not in
-    // the signed-out bound, so a caller with no account can never be served
-    // chapters here. feed.xml derives its <podcast:chapters> element from the
-    // same withheld field, so no dead link is ever advertised (DD-230).
-    expect(await res.text()).not.toContain("Episode not found");
+    const body = await res.text();
+    expect(body).not.toContain("Episode not found");
+    expect({ status: res.status, body }).toMatchObject({ status: 200 });
+    expect(res.headers.get("Content-Type")).toContain("application/json+chapters");
+    expect(JSON.parse(body)).toEqual({
+      version: "1.2.0",
+      chapters: [
+        { startTime: 0, title: "Cold open" },
+        { startTime: 90, title: "The main thread" },
+      ],
+    });
+    // And it asked for `chapters` by name, inside the bound — never `*`, and
+    // never `metadata`.
+    expect(selects.some((s) => s.table === "pc_episodes" && s.select.includes("chapters"))).toBe(
+      true,
+    );
+    expect(selects.every((s) => !s.select.includes("metadata"))).toBe(true);
+    expectEverySelectWithinItsBound();
+  });
+
+  it("feed.xml advertises <podcast:chapters> for an episode that has them", async () => {
+    // The other half of DD-234: the element the route above is the target of.
+    // With chapters withheld, `buildChaptersJson` saw an empty list and the feed
+    // emitted no element at all — honest, but it meant no podcast app ever
+    // learned that chapters existed.
+    const { GET } = await import("@/app/(core)/podcast/[slug]/feed.xml/route");
+    const res = await GET(new Request("https://aimatrx.com/podcast/us-history/feed.xml"), {
+      params: Promise.resolve({ slug: "us-history" }),
+    });
+    const xml = await res.text();
+    expect(xml).toContain("<podcast:chapters");
+    expect(xml).toContain('type="application/json+chapters"');
+    expect(xml).toContain("/podcast/episode-one/chapters.json");
     expectEverySelectWithinItsBound();
   });
 
@@ -288,6 +327,28 @@ describe("a refused read is never rendered as an empty state", () => {
     // Either it throws (Next renders a 500) or it answers — what it may NEVER
     // do is tell the world this podcast does not exist.
     expect(body).not.toContain("Podcast not found");
+  });
+
+  it("chapters.json does not answer 404 'No chapters' when the chapters read is denied", async () => {
+    // Tomorrow's revoke: `chapters` leaves the bound. The reader still names it,
+    // so PostgREST refuses the WHOLE request with 42501 — and the one thing this
+    // route may never do is turn that refusal back into "this episode has no
+    // chapters", which is precisely the sentence DD-234 removed.
+    revoked = { relation: "podcast.pc_episodes", column: "chapters" };
+
+    const { GET } = await import("@/app/(core)/podcast/[slug]/chapters.json/route");
+    let body: string;
+    try {
+      const res = await GET(new Request("https://aimatrx.com/podcast/episode-one/chapters.json"), {
+        params: Promise.resolve({ slug: "episode-one" }),
+      });
+      body = await res.text();
+    } catch {
+      // Throwing is the correct outcome: loud beats a false empty answer.
+      return;
+    }
+    expect(body).not.toContain("No chapters for this episode");
+    expect(body).not.toContain("Episode not found");
   });
 
   it("the pricing loader throws rather than reporting 'no Premium' on a denied read", async () => {

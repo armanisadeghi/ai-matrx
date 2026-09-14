@@ -56,7 +56,8 @@ export type PcEpisodeSpeaker = {
 };
 
 /** One auto-generated chapter marker (podcast.chapter_marker agent output),
- *  persisted under `pc_episodes.metadata.chapters` for the player/RSS layer. */
+ *  persisted in the `pc_episodes.chapters` column for the player/RSS layer
+ *  (DD-234 — it lived in `metadata.chapters` until 2026-09-14). */
 export type PcEpisodeChapter = MediaChapterData;
 
 export type PcEpisode = {
@@ -80,9 +81,11 @@ export type PcEpisode = {
   /** Full generated dialogue script (migration pc_episodes_script) — null on
    *  older rows / uploaded episodes. Source for transcript + article gen. */
   script: string | null;
-  /** Auto-generated chapter markers (stored in metadata.chapters) — null until
-   *  generated. Write via podcastService.saveEpisodeChapters, never
-   *  updateEpisode (it is not a column). */
+  /** Auto-generated chapter markers — the `pc_episodes.chapters` COLUMN since
+   *  DD-234 (2026-09-14), and part of the signed-out bound, which is what lets
+   *  /podcast/[slug]/chapters.json serve a listener with no account. Null until
+   *  generated. Write via podcastService.saveEpisodeChapters, which replaces the
+   *  whole list — the only writer there has ever been. */
   chapters: PcEpisodeChapter[] | null;
   is_published: boolean;
   created_at: string;
@@ -205,16 +208,40 @@ function parseSpeakers(raw: Json | null): PcEpisodeSpeaker[] | null {
 }
 
 /**
- * Read `{ chapters: [...] }` (episode `metadata` or an agent's
- * `media_chapters` payload) into the persisted chapter list. Thin wrapper over
- * `readChapterList` — the `media_chapters` kind bridge's reader, THE one
- * canonical chapter reader (a duplicate copy here drifted; collapsed
- * 2026-08-23). `MediaChapterData` is field-identical to `PcEpisodeChapter`.
- * Returns null (not []) when nothing usable is present, for the row mappers.
+ * Read `{ chapters: [...] }` (an agent's `media_chapters` payload, or the
+ * `episode_chapters` write target's wire value) into the persisted chapter
+ * list. Thin wrapper over `readChapterList` — the `media_chapters` kind
+ * bridge's reader, THE one canonical chapter reader (a duplicate copy here
+ * drifted; collapsed 2026-08-23). `MediaChapterData` is field-identical to
+ * `PcEpisodeChapter`. Returns null (not []) when nothing usable is present.
+ *
+ * NOTE (DD-234, 2026-09-14): this reads an ENVELOPE `{ chapters: [...] }`. The
+ * persisted column is the bare ARRAY — `parseChaptersColumn` below.
  */
 export function parseChapters(raw: unknown): PcEpisodeChapter[] | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const list = readChapterList((raw as { chapters?: unknown }).chapters);
+  return list.length ? list : null;
+}
+
+/**
+ * Read `pc_episodes.chapters` — the COLUMN (DD-234, 2026-09-14), a bare JSON
+ * array of `{start_hint, title, summary}`.
+ *
+ * Until DD-234 this list lived in `metadata->'chapters'`, and `metadata` is a
+ * column `anon` may never read (DD-186). So `/podcast/<slug>/chapters.json`
+ * answered 404 "No chapters for this episode" to every signed-out listener, and
+ * feed.xml emitted no `<podcast:chapters>` element for any of them. Chapters are
+ * podcast CONTENT — public exactly when the episode is — so they now have a
+ * public-class column of their own, in the episode's declared signed-out bound
+ * (`PC_EPISODE_PUBLIC_COLUMNS` / `ANON_COLUMN_SURFACE`). `metadata` is unchanged
+ * and still withheld.
+ *
+ * Returns null (not []) when the column is null or holds nothing usable, so the
+ * mappers keep distinguishing "never generated" from "generated and empty".
+ */
+export function parseChaptersColumn(raw: unknown): PcEpisodeChapter[] | null {
+  const list = readChapterList(raw);
   return list.length ? list : null;
 }
 
@@ -304,9 +331,11 @@ export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
 /**
  * The episode columns the display mapper reads. `created_by` and `metadata` are
  * OPTIONAL for the same reason as on the show above (DD-230): `anon` holds
- * neither, so a public reader's row has neither, and `chapters` — which lives
- * inside `metadata` — is therefore null for a signed-out visitor by
- * construction. `chapters.json` documents that consequence at its 404.
+ * neither, so a public reader's row has neither.
+ *
+ * DD-234 (2026-09-14): `chapters` is NOT one of them any more. It is a real
+ * column in the signed-out bound, so a public reader's row carries it and
+ * `chapters.json` serves a listener with no account.
  */
 export type PcEpisodeDisplayRow = SignedOutReadable<PcEpisodeRow>;
 
@@ -331,7 +360,8 @@ export function mapPcEpisodeRow(row: PcEpisodeDisplayRow): PcEpisode {
     host_count: row.host_count,
     speakers: parseSpeakers(row.speakers),
     script: row.script,
-    chapters: parseChapters(row.metadata ?? null),
+    // DD-234: the column, never `metadata`. A signed-out reader holds this one.
+    chapters: parseChaptersColumn(row.chapters ?? null),
     is_published: row.is_published,
     created_at: row.created_at,
     updated_at: row.updated_at,

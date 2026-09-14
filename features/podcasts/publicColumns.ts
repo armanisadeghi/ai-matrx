@@ -47,7 +47,7 @@ export const PC_SHOW_PUBLIC_COLUMNS = [
   "visibility",
 ] as const;
 
-/** `podcast.pc_episodes` — the 21 columns `anon` may read. */
+/** `podcast.pc_episodes` — the 22 columns `anon` may read. */
 export const PC_EPISODE_PUBLIC_COLUMNS = [
   "id",
   "slug",
@@ -68,6 +68,7 @@ export const PC_EPISODE_PUBLIC_COLUMNS = [
   "host_count",
   "speakers",
   "script",
+  "chapters",
   "deleted_at",
   "visibility",
 ] as const;
@@ -99,7 +100,7 @@ export const PC_SHOW_PUBLIC_SELECT =
   "id,slug,title,description,image_url,author,is_published,created_at,updated_at,og_image_url,thumbnail_url,rss_settings,deleted_at,visibility";
 
 export const PC_EPISODE_PUBLIC_SELECT =
-  "id,slug,show_id,title,description,audio_url,image_url,video_url,display_mode,episode_number,duration_seconds,is_published,created_at,updated_at,og_image_url,thumbnail_url,host_count,speakers,script,deleted_at,visibility";
+  "id,slug,show_id,title,description,audio_url,image_url,video_url,display_mode,episode_number,duration_seconds,is_published,created_at,updated_at,og_image_url,thumbnail_url,host_count,speakers,script,chapters,deleted_at,visibility";
 
 export const PC_ARTICLE_PUBLIC_SELECT =
   "id,show_id,episode_id,kind,slug,title,content_markdown,og_image_url,canonical_url,status,created_at,updated_at,deleted_at,visibility";

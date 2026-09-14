@@ -18,7 +18,8 @@
  * own kind. (Reuse was checked first, per the reuse-first ladder.)
  *
  * FIELD PARITY is with `PcEpisodeChapter` (`features/podcasts/types.ts`) and
- * the shape `parseChapters` reads back off `pc_episodes.metadata.chapters` —
+ * the shape `parseChaptersColumn` reads back off the `pc_episodes.chapters`
+ * column (DD-234; it was `metadata.chapters` until 2026-09-14) —
  * `start_hint` / `title` / `summary`, no more, no less. The kind is named
  * generically (`media_chapters`, not `podcast_chapters`) because the same
  * index serves video and any other timed media; nothing here is

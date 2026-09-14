@@ -6,8 +6,10 @@
 // podcast.chapter_marker agent (DB-managed mandate, floating — rebind from
 // /administration/mandates) segments the episode script into 3–12 ordered
 // chapters and emits them as the `media_chapters` content-IR kind; the parsed
-// list is saved under pc_episodes.metadata.chapters via
-// podcastService.saveEpisodeChapters.
+// list is saved to the pc_episodes.chapters COLUMN via
+// podcastService.saveEpisodeChapters (DD-234 — it went into
+// metadata.chapters until 2026-09-14, where a signed-out listener could never
+// read it and /podcast/<slug>/chapters.json 404'd for all of them).
 //
 // 🚨 THE FLOATING LAW (features/window-panels/FEATURE.md). This run STREAMS
 // into the floating LiveRunWindow — it never shows a spinner and never puts a

@@ -269,28 +269,33 @@ export const podcastService = {
     return mapPcEpisodeRow(data);
   },
 
-  /** Persist auto-generated chapter markers under metadata.chapters (not a
-   *  column — read-merge-write so unrelated metadata keys survive). */
+  /**
+   * Persist auto-generated chapter markers to the `chapters` COLUMN.
+   *
+   * DD-234 (2026-09-14). This used to read-merge-write `metadata.chapters`, and
+   * that had two costs. (1) `metadata` is withheld from a signed-out reader by
+   * DD-186, so the public `/podcast/<slug>/chapters.json` route answered 404
+   * "No chapters for this episode" to EVERY listener without an account, and
+   * feed.xml advertised no `<podcast:chapters>` element for any episode.
+   * Chapters are podcast content and are public exactly when the episode is.
+   * (2) A jsonb column is ONE field forever (db-rules §4, the conflict-domain
+   * rule). `metadata` on this table also carries `raw_script_backup` and
+   * `script_canonicalized_at` — measured on a live row 2026-09-14, and no code
+   * in any repo writes either key today, so they came from a one-off
+   * canonicalisation pass. The race was therefore latent rather than live, and
+   * the schema-review question is the one that decides it: could two writers
+   * move these independently? Yes → separate columns.
+   *
+   * The whole list is replaced in one write — the only shape this has ever had.
+   * No read-merge-write, so nothing else on the row can be lost to it.
+   */
   async saveEpisodeChapters(
     id: string,
     chapters: PcEpisodeChapter[],
   ): Promise<PcEpisode> {
-    const { data: current, error: readError } = await supabase
-      .schema("podcast").from("pc_episodes")
-      .select("metadata")
-      .eq("id", id)
-      .single();
-    if (readError) throw readError;
-    const base =
-      current?.metadata &&
-      typeof current.metadata === "object" &&
-      !Array.isArray(current.metadata)
-        ? current.metadata
-        : {};
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
-      // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
-      .update({ metadata: { ...base, chapters } })
+      .update({ chapters })
       .eq("id", id)
       .select()
       .single();
