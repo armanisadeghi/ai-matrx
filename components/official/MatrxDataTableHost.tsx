@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MatrxDataTableProvider, type MatrxDataTableHost as TableHost, type TableWindowPanelProps } from "@ai-matrx/design-system/data-table/host";
+import type { MatrxDataTableDensity } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
@@ -21,7 +22,7 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { TableSavedViews } from "./TableSavedViews";
 import { TableToolbarAction } from "./TableToolbarAction";
 
-export type TableDensity = "condensed" | "normal" | "spacious";
+export type TableDensity = MatrxDataTableDensity;
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
 
 /** The register is authoritative; an unresolved or malformed answer stays normal. */
@@ -70,10 +71,7 @@ export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const defaultDensity = tableDensityFromKnob(
     useEffectiveKnob(organizationId, userId, TABLE_DENSITY_KNOB_KEY),
   );
-  // `defaultDensity` is the shared package's host contract. The intersection
-  // keeps this host compatible with the currently installed package while its
-  // next published declaration catches up to the reviewed core change.
-  const densityPorts: TableHost & { defaultDensity: TableDensity } = {
+  const densityPorts: TableHost = {
     ...ports,
     defaultDensity,
   };
