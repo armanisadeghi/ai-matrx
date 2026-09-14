@@ -1242,7 +1242,9 @@ function WorkspaceDirectory({
     {
       name: "Digital PR & Reputation",
       detail: "Publication opportunities & response decisions",
-      href: marketingRoutes.site(brandId, siteId, "/reputation"),
+      href: brandId
+        ? marketingRoutes.brandReputation(brandId, siteId)
+        : marketingRoutes.site(null, siteId, "/reputation"),
       icon: <Newspaper className="h-4 w-4" />,
     },
     {
