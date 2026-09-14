@@ -16,7 +16,7 @@ import { mayRunNoteConflictCommand } from "./conflictCommandLock";
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
-import { noteEditBaseOf } from "../utils/saveVerification";
+import { noteEditBaseFromRecord } from "../utils/saveVerification";
 import { createAsyncThunk, unwrapResult, type ThunkAction, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -598,6 +598,11 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
           updatedAt: note.updated_at ?? undefined,
           version: note.version,
           savedSnapshot,
+          // The INSERT's row IS this record's first edit base. Without it a
+          // web-created note had no base at all, and the desktop sync's
+          // file_path stamp 0.9s later was a conflict again (adversarial
+          // review, 2026-09-13).
+          acknowledgedPhysicalSnapshot: note,
         }));
       } catch (error) {
         if (error instanceof SessionUnavailableError) throw error;
@@ -673,9 +678,7 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
         // The edit base: a CAS miss on a row whose edited fields still equal
         // it is a phantom (the version moved for a column nobody edits) and
         // is retried inside the service, never shown as a conflict.
-        ...(record._acknowledgedPhysicalSnapshot
-          ? { acknowledgedBase: noteEditBaseOf(record._acknowledgedPhysicalSnapshot) }
-          : {}),
+        acknowledgedBase: noteEditBaseFromRecord(record),
       });
       retainAttemptReceipt(attempt, receipt);
       if (receipt.failedFields.length > 0) throw new NoteContextPartialSaveError(receipt);

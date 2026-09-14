@@ -46,7 +46,7 @@ importers:
         version: 0.11.5(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.14.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+        version: 0.14.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.19.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -73,7 +73,7 @@ importers:
         version: 0.5.5(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/realtime':
         specifier: latest
-        version: 0.8.0(react@19.3.0)
+        version: 0.8.1(react@19.3.0)
       '@ai-matrx/tap-target':
         specifier: latest
         version: 0.2.10(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -932,8 +932,8 @@ packages:
     resolution: {integrity: sha512-3n8S7EaQCJyKVIDPFDfcY5KVo8wpawcj++VX0QAR/+mbLNZvikIKeoeCkLxOFhJzZpM4vUpdOCwtkydN+ddn2A==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/data@0.14.0':
-    resolution: {integrity: sha512-bu+lfOVhDwd81rnI0Xf8Uv0yezHlrhWGygcNF+IOHON3i+nKet90NzZsZj1cW7YiveLQfBa0jABlK7TgXPC5Hw==}
+  '@ai-matrx/data@0.14.1':
+    resolution: {integrity: sha512-ZRL+nCwCVEWKLv9AJeJHdJXE2C4OchYa4lriyGO5KTriViuzjh4u0koEBxwTVXvtVXhaCyr+glZ48BVbpRPVsg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -1015,8 +1015,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/realtime@0.8.0':
-    resolution: {integrity: sha512-7Ui7fh6Mc/RaxWtlYaBAE+c8t2UHVVvyPAnlLWDErtOKpKMfSXcGfThcQTEPsHQ/sGhnBZ1Y096pOJN8VzuAug==}
+  '@ai-matrx/realtime@0.8.1':
+    resolution: {integrity: sha512-0SFABYpOOl4hDHeiD4YxNyOsXm8lCm8HLAftL8F+EOaHB5JneyjabaE+d3ZncqbGDtXwPMt8yUcgQwi4fUu41Q==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12824,7 +12824,7 @@ snapshots:
 
   '@ai-matrx/agents@0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/data': 0.14.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+      '@ai-matrx/data': 0.14.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.19.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.13.14(react@19.3.0)
     optionalDependencies:
@@ -12882,9 +12882,9 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  '@ai-matrx/data@0.14.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
+  '@ai-matrx/data@0.14.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/realtime': 0.8.0(react@19.3.0)
+      '@ai-matrx/realtime': 0.8.1(react@19.3.0)
       '@supabase/ssr': 0.12.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))
     optionalDependencies:
       react: 19.3.0
@@ -12975,7 +12975,7 @@ snapshots:
       '@ai-matrx/agents': 0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.13.14(react@19.3.0)
       '@ai-matrx/messaging': 0.11.8(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/realtime': 0.8.0(react@19.3.0)
+      '@ai-matrx/realtime': 0.8.1(react@19.3.0)
       livekit-client: 2.22.3(@types/dom-mediacapture-record@1.0.22)
     optionalDependencies:
       react: 19.3.0
@@ -12992,7 +12992,7 @@ snapshots:
     dependencies:
       '@ai-matrx/agents': 0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.13.14(react@19.3.0)
-      '@ai-matrx/realtime': 0.8.0(react@19.3.0)
+      '@ai-matrx/realtime': 0.8.1(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
     transitivePeerDependencies:
@@ -13021,7 +13021,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/realtime@0.8.0(react@19.3.0)':
+  '@ai-matrx/realtime@0.8.1(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 

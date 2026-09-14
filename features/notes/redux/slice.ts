@@ -2,7 +2,7 @@
 // Redux slice for notes — follows the agent-definition pattern with
 // per-note undo/redo, two-stage fetch, and dirty tracking.
 
-import { noteEditBaseOf, noteEditedFieldsEqual } from "../utils/saveVerification";
+import { noteEditBaseFromRecord, noteEditedFieldsEqual } from "../utils/saveVerification";
 import { mayRunNoteConflictCommand } from "./conflictCommandLock";
 import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import { createReviewSession, materializeReviewSession, reduceReviewSession, type ReviewSessionAction } from "@ai-matrx/diff";
@@ -432,16 +432,18 @@ function applyServerNoteUpsert(
   // CAS's on the version the row actually holds. The merge loop below skips
   // every dirty field, so the draft is untouched. Root cause of the recurring
   // Note Conflict dialog, 2026-09-13.
+  // Completeness is PROVEN from the payload's keys, never taken from the
+  // caller's declared fetchStatus, and the base is rebuilt from field history
+  // when the record never received a snapshot.
   const fastForwardable =
     existing._dirty &&
     hasDirtyPhysicalField &&
-    fetchStatus === "full" &&
+    acknowledgedSnapshotFromFullRead(note, fetchStatus) !== null &&
     !existing._conflictDecision &&
-    existing._acknowledgedPhysicalSnapshot !== null &&
     incomingVersion !== null &&
     heldVersion !== null &&
     incomingVersion > heldVersion &&
-    noteEditedFieldsEqual(note, noteEditBaseOf(existing._acknowledgedPhysicalSnapshot));
+    noteEditedFieldsEqual(note, noteEditBaseFromRecord(existing));
   if (fastForwardable) {
     const observed = existing._remoteObservation;
     if (observed && (observed.version === null || observed.version <= incomingVersion)) {
@@ -987,6 +989,10 @@ const notesSlice = createSlice({
         delete record._fieldHistory[field];
       }
       record._dirty = record._dirtyFields.size > 0;
+      // The adopted server row is now this record's edit base — exactly as
+      // the "mine" branch does. Leaving the pre-conflict base in place
+      // re-armed the phantom conflict on the very next bookkeeping bump.
+      record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(current(remote));
       record._error = null;
       record._conflictDecision = null;
       state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "theirs", content: remote.content ?? "" };
@@ -1035,6 +1041,11 @@ const notesSlice = createSlice({
       }
       if (action.payload.version !== undefined) {
         record.version = action.payload.version;
+        // Remote evidence at or below the number we now hold is spent.
+        const observed = record._remoteObservation;
+        if (observed && (observed.version === null || observed.version <= action.payload.version)) {
+          record._remoteObservation = null;
+        }
       }
       if (action.payload.acknowledgedPhysicalSnapshot) {
         const snapshot = action.payload.acknowledgedPhysicalSnapshot;

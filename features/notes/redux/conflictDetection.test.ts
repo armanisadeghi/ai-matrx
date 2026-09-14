@@ -12,6 +12,10 @@ import notesReducer, {
   upsertNoteFromServer,
   updateNoteContent,
   recordNoteWriteAttempt,
+  recordNoteConflict,
+  captureNoteConflictLiveBuffer,
+  applyNoteConflictResolution,
+  markNoteSaved,
 } from "./slice";
 import { serverMatchesAttempt } from "../utils/saveVerification";
 
@@ -133,7 +137,7 @@ describe("serverMatchesAttempt", () => {
 // version 2, so its next save CAS'd on 1 and opened a conflict dialog against a
 // row whose text equalled its own base.
 import { NOTE_ROW_KEYS } from "./notes.types";
-import { noteEditedFieldsEqual } from "../utils/saveVerification";
+import { noteEditBaseFromRecord, noteEditedFieldsEqual } from "../utils/saveVerification";
 import type { Note } from "../types";
 
 function fullRow(overrides: Partial<Note> = {}): Note {
@@ -228,5 +232,54 @@ describe("noteEditedFieldsEqual", () => {
     for (const field of ["content", "label", "folder_id", "folder_name", "visibility"] as const) {
       expect(noteEditedFieldsEqual({ ...base, [field]: "changed" }, base)).toBe(false);
     }
+  });
+});
+
+describe("adversarial review 2026-09-13 — holes closed", () => {
+  it("choosing \"theirs\" makes the adopted server row the edit base, so the next bookkeeping bump fast-forwards", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "mine" }));
+    const remote = fullRow({ version: 2, content: "theirs", updated_at: "2026-09-14T05:56:00.000Z" });
+    state = notesReducer(state, recordNoteConflict({ id: NOTE_ID, expectedVersion: 1, currentVersion: 2, currentRow: remote, sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG_ID, decisionId: "d", reviewId: "r" }));
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
+    state = notesReducer(state, applyNoteConflictResolution({ id: NOTE_ID, decisionId: "d", reviewId: "r", requestId: "q", choice: "theirs", proposedContent: "theirs", reviewedLiveContent: "mine" }));
+    expect(state.notes[NOTE_ID].content).toBe("theirs");
+    expect(state.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.version).toBe(2);
+    // The user types on, the desktop sync stamps file_path: version 3, nothing edited moved.
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "theirs, plus" }));
+    state = notesReducer(state, upsertNoteFromServer({ note: fullRow({ version: 3, content: "theirs", file_path: "/x.md", updated_at: "2026-09-14T05:57:00.000Z" }), fetchStatus: "full" }));
+    expect(state.notes[NOTE_ID].version).toBe(3);
+    expect(state.notes[NOTE_ID].content).toBe("theirs, plus");
+    expect(state.notes[NOTE_ID]._remoteObservation).toBeNull();
+  });
+
+  it("does not fast-forward from a payload DECLARED full that omits an edited field — completeness is proven from the keys", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow({ folder_id: null, folder_name: null }), fetchStatus: "full" }));
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "draft" }));
+    const partial: Partial<Note> & { id: string } = { ...fullRow({ version: 2, folder_name: null, updated_at: "2026-09-14T05:57:00.000Z" }) };
+    delete (partial as Record<string, unknown>).folder_id; // the server may hold a real folder move here
+    state = notesReducer(state, upsertNoteFromServer({ note: partial, fetchStatus: "full" }));
+    expect(state.notes[NOTE_ID].version).toBe(1);
+    expect(state.notes[NOTE_ID]._remoteObservation?.version).toBe(2);
+  });
+
+  it("rebuilds the edit base from field history when a record never received a snapshot", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: { id: NOTE_ID, organization_id: ORG_ID, version: 1, label: "L", content: "the recipe", folder_name: "Draft", tags: [], updated_at: "2026-09-14T05:55:17.534Z" }, fetchStatus: "list" }));
+    expect(state.notes[NOTE_ID]._acknowledgedPhysicalSnapshot).toBeNull();
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "the recipe, shorter" }));
+    expect(noteEditBaseFromRecord(state.notes[NOTE_ID]).content).toBe("the recipe");
+    state = notesReducer(state, upsertNoteFromServer({ note: fullRow({ version: 2, label: "L", folder_id: null, file_path: "/x.md", updated_at: "2026-09-14T05:55:18.435Z" }), fetchStatus: "full" }));
+    expect(state.notes[NOTE_ID].version).toBe(2);
+    expect(state.notes[NOTE_ID].content).toBe("the recipe, shorter");
+    expect(state.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.version).toBe(2);
+  });
+
+  it("markNoteSaved retires remote evidence at or below the acknowledged version", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
+    state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "mine" }));
+    state = notesReducer(state, upsertNoteFromServer({ note: fullRow({ version: 2, content: "mine", updated_at: "2026-09-14T05:56:00.000Z" }), fetchStatus: "full" }));
+    expect(state.notes[NOTE_ID]._remoteObservation?.version).toBe(2);
+    state = notesReducer(state, markNoteSaved({ id: NOTE_ID, version: 2, savedSnapshot: { content: "mine" }, acknowledgedPhysicalSnapshot: fullRow({ version: 2, content: "mine" }) }));
+    expect(state.notes[NOTE_ID]._remoteObservation).toBeNull();
   });
 });

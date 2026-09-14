@@ -60,6 +60,32 @@ export function noteEditedFieldsEqual(
   return true;
 }
 
+/**
+ * The edit base of a live record. The acknowledged full-row snapshot is
+ * preferred; when a record has none (a web-created draft whose first save
+ * never left a snapshot, a list-hydrated row), the base is REBUILT from the
+ * record itself: every clean edited field holds the server's value, and every
+ * dirty one keeps its pre-edit value in `_fieldHistory` (captured once per
+ * field per clean cycle, before the first keystroke). A record therefore
+ * always has a base to compare a phantom bump against — no record is left
+ * on the old CAS-miss-equals-conflict path.
+ */
+export function noteEditBaseFromRecord(record: {
+  _acknowledgedPhysicalSnapshot: NoteEditBase | null;
+  _dirtyFields: Set<NoteUndoableField>;
+  _fieldHistory: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>>;
+} & NoteEditBase): NoteEditBase {
+  if (record._acknowledgedPhysicalSnapshot) return noteEditBaseOf(record._acknowledgedPhysicalSnapshot);
+  const base: Record<string, unknown> = {};
+  for (const field of NOTE_EDITED_FIELDS) {
+    base[field] =
+      record._dirtyFields.has(field) && field in record._fieldHistory
+        ? record._fieldHistory[field]
+        : record[field];
+  }
+  return noteEditBaseOf(base as NoteEditBase);
+}
+
 /** Project the edit base out of a full row (drops the bookkeeping columns). */
 export function noteEditBaseOf(note: NoteEditBase): NoteEditBase {
   return {

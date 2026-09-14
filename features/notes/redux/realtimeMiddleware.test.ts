@@ -249,7 +249,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
         table: "workbench.notes",
         id: "note-1",
         updatedAt: "2026-09-07T00:00:01.000Z",
-        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", []]),
+        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", null, [], null]),
         updatedBy: "user-1",
       };
       expect(stub.ledger.classify(echo).origin).toBe("remote");
@@ -299,7 +299,9 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
             "Ideas",
             "a colleague rewrote this",
             "Draft",
+            null,
             [],
+            null,
           ]),
           updatedBy: "user-2",
         }).origin,
@@ -321,7 +323,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
       };
       const h = (opened = harness(state));
       h.handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
-      const fingerprint = JSON.stringify(["The Best Chicken Alfredo", "the recipe", "Draft", []]);
+      const fingerprint = JSON.stringify(["The Best Chicken Alfredo", "the recipe", "Draft", null, [], null]);
 
       // The save opens a ticket for the number it will produce (1 → 2)…
       h.handle({ type: "notes/markNoteSaving", payload: "note-1" });
@@ -401,7 +403,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
           table: "workbench.notes",
           id: "note-2",
           updatedAt: "2026-09-07T00:00:08.000Z",
-          fingerprint: JSON.stringify(["L", "c", null, []]),
+          fingerprint: JSON.stringify(["L", "c", null, null, [], null]),
         }).origin,
       ).toBe("stale");
     });

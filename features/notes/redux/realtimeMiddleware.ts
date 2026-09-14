@@ -118,11 +118,16 @@ let subscribedUserId: string | null = null;
  * every field the autosave path writes and nothing volatile.
  */
 function noteFingerprint(row: Record<string, unknown>): string {
+  // Every user-edited field (NOTE_EDITED_FIELDS). folder_id and visibility
+  // were missing: a collaborator changing only those matched our pending
+  // write's fingerprint and was dropped as our echo (review, 2026-09-13).
   return JSON.stringify([
     row.label ?? null,
     row.content ?? null,
     row.folder_name ?? null,
+    row.folder_id ?? null,
     row.tags ?? null,
+    row.visibility ?? null,
   ]);
 }
 
