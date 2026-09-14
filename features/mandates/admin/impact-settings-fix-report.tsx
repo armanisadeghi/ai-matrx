@@ -49,6 +49,8 @@ export interface SettingsFixReport {
   sentence?: string;
 }
 
+const MOVABLE_TIERS: ReadonlySet<BatchTier> = new Set<BatchTier>(["safe", "drift", "red"]);
+
 /** Compare the fix's rows before the save with the verdicts read after it. */
 export function settleSettingsFix(
   fix: SettingsFixReport,
@@ -79,6 +81,11 @@ export function settleSettingsFix(
   });
   const moved = after.filter((row) => row.afterTier !== null && row.afterTier !== row.tier);
   const changedPile = moved.length > 0;
+  // The rows a person could act on before the fix; blocked/current rungs on
+  // the same agent are counted, not listed, unless the fix moved one.
+  const movable = after.filter((row) => MOVABLE_TIERS.has(row.tier));
+  const others = after.length - movable.length;
+  const othersSentence = others > 0 ? ` ${others} other rung${others === 1 ? "" : "s"} on this agent (not in this batch, or current) unchanged.` : "";
   const name = fix.outcome.agentName;
   const version =
     newestAfter != null
@@ -86,8 +93,8 @@ export function settleSettingsFix(
       : `expected v${fix.outcome.expectedVersionNumber ?? "N+1"}`;
   const changes = fix.outcome.changes.join(", ");
   const sentence = changedPile
-    ? `Fixed settings on ${name} (${version}: ${changes}) — ${moved.length} of ${after.length} pin${after.length === 1 ? "" : "s"} moved from ${BATCH_TIER_META[moved[0].tier].label} to ${BATCH_TIER_META[moved[0].afterTier ?? moved[0].tier].label}.`
-    : `Fixed settings on ${name} (${version}: ${changes}) — no pile changed: ${after.length === 1 ? "the pin still grades" : "the pins still grade"} ${after.map((row) => `${BATCH_TIER_META[row.afterTier ?? row.tier].label}${row.stillFinds ? ` (${row.stillFinds})` : ""}`).join("; ")}. Open the agent, or advance anyway.`;
+    ? `Fixed settings on ${name} (${version}: ${changes}) — ${moved.length} of ${movable.length} movable pin${movable.length === 1 ? "" : "s"} moved from ${BATCH_TIER_META[moved[0].tier].label} to ${BATCH_TIER_META[moved[0].afterTier ?? moved[0].tier].label}.${othersSentence}`
+    : `Fixed settings on ${name} (${version}: ${changes}) — no pile changed: ${movable.length === 1 ? "the pin still grades" : "the pins still grade"} ${(movable.length > 0 ? movable : after).map((row) => `${row.afterTier ? BATCH_TIER_META[row.afterTier].label : "no longer in this read"}${row.stillFinds ? ` (${row.stillFinds})` : ""}`).join("; ")}. Open the agent, or advance anyway.${othersSentence}`;
   return { ...fix, after, newestAfter, changedPile, sentence };
 }
 
@@ -130,9 +137,9 @@ export function SettingsFixReportCard({
             <CheckCircle2 className={`mt-0.5 h-3 w-3 shrink-0 ${report.changedPile ? "text-emerald-500" : "text-amber-500"}`} />
             <span>{report.sentence}</span>
           </p>
-          {report.after && report.after.length > 1 ? (
+          {report.after && report.after.filter((row) => MOVABLE_TIERS.has(row.tier) || row.afterTier !== row.tier).length > 1 ? (
             <ul className="ml-5 space-y-0.5 font-mono text-[11px] text-muted-foreground">
-              {report.after.map((row) => (
+              {report.after.filter((row) => MOVABLE_TIERS.has(row.tier) || row.afterTier !== row.tier).map((row) => (
                 <li key={row.rungId}>
                   {row.mandateKey}: {BATCH_TIER_META[row.tier].label} → {row.afterTier ? BATCH_TIER_META[row.afterTier].label : "no longer in this read"}
                   {row.afterVersions ? ` (${row.afterVersions})` : ""}

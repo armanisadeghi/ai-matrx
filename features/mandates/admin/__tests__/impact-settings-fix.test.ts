@@ -72,7 +72,7 @@ describe("settleSettingsFix — before → after from the read that followed the
     expect(after.changedPile).toBe(true);
     expect(after.newestAfter).toBe(32);
     expect(after.sentence).toBe(
-      "Fixed settings on Quick Test Agent (now v32: sets reasoning_effort from high to medium) — 1 of 1 pin moved from Check settings to Safe.",
+      "Fixed settings on Quick Test Agent (now v32: sets reasoning_effort from high to medium) — 1 of 1 movable pin moved from Check settings to Safe.",
     );
   });
 
@@ -91,6 +91,27 @@ describe("settleSettingsFix — before → after from the read that followed the
     expect(after.sentence).toContain("no pile changed");
     expect(after.sentence).toContain("Check settings (temperature is not supported here)");
     expect(after.sentence).toContain("Open the agent, or advance anyway.");
+  });
+
+  it("blocked and current rungs on the same agent are counted, never listed as moved", () => {
+    const wide: SettingsFixReport = {
+      ...fix,
+      before: [
+        ...fix.before,
+        { rungId: "mandate_default:row-9", mandateKey: "app.other", tier: "blocked", versions: "latest → v31" },
+      ],
+    };
+    const after = settleSettingsFix(
+      wide,
+      [
+        verdict({ latest_version_id: "v32", latest_version_number: 32 }),
+        verdict({ row_id: "row-9", mandate_key: "app.other", blocker: "tracks_latest", pinned_version_id: null, pinned_version_number: null, latest_version_id: "v32", latest_version_number: 32, apply_token: { holder_kind: "mandate_default", row_id: "row-9", expected_pinned_version_id: null, target_version_id: null } }),
+      ],
+      options,
+    );
+    expect(after.sentence).toBe(
+      "Fixed settings on Quick Test Agent (now v32: sets reasoning_effort from high to medium) — 1 of 1 movable pin moved from Check settings to Safe. 1 other rung on this agent (not in this batch, or current) unchanged.",
+    );
   });
 
   it("a rung the re-read no longer returns is named, not assumed fixed", () => {
