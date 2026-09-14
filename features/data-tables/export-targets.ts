@@ -47,6 +47,21 @@ export interface PushResult {
   error?: string;
 }
 
+function partialCreationFailure(
+  kind: "Document" | "Workbook",
+  id: string,
+  href: string,
+  error: unknown,
+): PushResult {
+  const detail = error instanceof Error ? error.message : String(error);
+  return {
+    ok: false,
+    id,
+    href,
+    error: `${kind} was created, but its initial content could not be saved. Open the created ${kind.toLowerCase()} and retry saving there; do not create another copy. ${detail}`,
+  };
+}
+
 // ─── Document target ─────────────────────────────────────────────────────────
 
 /**
@@ -59,6 +74,7 @@ export async function pushMarkdownToDocument(
   name?: string,
   organizationId?: string,
 ): Promise<PushResult> {
+  let createdId: string | undefined;
   try {
     if (!organizationId)
       return {
@@ -72,6 +88,7 @@ export async function pushMarkdownToDocument(
       organizationId,
     });
     if (isServiceFailure(created)) return { ok: false, error: created.error };
+    createdId = created.data.id;
 
     const snapshot = markdownToUniverDoc(markdown, docName);
     const saved = await saveDocumentSnapshot({
@@ -80,7 +97,14 @@ export async function pushMarkdownToDocument(
       origin: "imported",
       label: "Imported from markdown",
     });
-    if (isServiceFailure(saved)) return { ok: false, error: saved.error };
+    if (isServiceFailure(saved)) {
+      return partialCreationFailure(
+        "Document",
+        created.data.id,
+        `/documents/${created.data.id}`,
+        saved.error,
+      );
+    }
 
     return {
       ok: true,
@@ -88,6 +112,14 @@ export async function pushMarkdownToDocument(
       href: `/documents/${created.data.id}`,
     };
   } catch (e) {
+    if (createdId) {
+      return partialCreationFailure(
+        "Document",
+        createdId,
+        `/documents/${createdId}`,
+        e,
+      );
+    }
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
@@ -180,6 +212,7 @@ export async function pushTableToWorkbook(
   input: TableInput,
   organizationId?: string,
 ): Promise<PushResult> {
+  let createdId: string | undefined;
   try {
     if (!organizationId)
       return {
@@ -194,6 +227,7 @@ export async function pushTableToWorkbook(
       organizationId,
     });
     if (isServiceFailure(created)) return { ok: false, error: created.error };
+    createdId = created.data.id;
 
     const snapshot = tableToUniverSnapshot({ ...input, name });
     const saved = await saveSnapshot({
@@ -202,7 +236,14 @@ export async function pushTableToWorkbook(
       origin: "imported",
       label: name,
     });
-    if (isServiceFailure(saved)) return { ok: false, error: saved.error };
+    if (isServiceFailure(saved)) {
+      return partialCreationFailure(
+        "Workbook",
+        created.data.id,
+        `/workbooks/${created.data.id}`,
+        saved.error,
+      );
+    }
 
     return {
       ok: true,
@@ -210,6 +251,14 @@ export async function pushTableToWorkbook(
       href: `/workbooks/${created.data.id}`,
     };
   } catch (e) {
+    if (createdId) {
+      return partialCreationFailure(
+        "Workbook",
+        createdId,
+        `/workbooks/${createdId}`,
+        e,
+      );
+    }
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }

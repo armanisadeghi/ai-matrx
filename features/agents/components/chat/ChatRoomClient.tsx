@@ -1,5 +1,10 @@
 "use client";
 
+import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
+import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
@@ -312,17 +317,34 @@ export function ChatRoomClient({
       ? selectUserInputEntryExists(liveConversationId)(state)
       : false,
   );
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const resourcesEntryReady = useAppSelector((state) => liveConversationId
+    ? Object.prototype.hasOwnProperty.call(state.instanceResources.byConversationId, liveConversationId)
+    : false);
+  const attachResource = useAttachResource(liveConversationId ?? "");
+  const [pendingTransfer, setPendingTransfer] = useState<(NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & { conversationId: string }) | null>(null);
   const draftAppliedRef = useRef<string | null>(null);
   useEffect(() => {
     if (conversationIdProp) return; // existing conversation, not a chip target
     if (!liveConversationId || !draftInputEntryReady) return;
     if (draftAppliedRef.current === liveConversationId) return;
-    const transfer = consumeChatDraftTransfer(agentId);
+    let transfer;
+    try {
+      transfer = consumeChatDraftTransfer(agentId, { userId, organizationId });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Prepared chat content could not be attached.");
+      draftAppliedRef.current = liveConversationId;
+      return;
+    }
     if (!transfer) {
       draftAppliedRef.current = liveConversationId;
       return;
     }
     draftAppliedRef.current = liveConversationId;
+    // Consuming an external navigation handoff must wake the resource-readiness hook.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingTransfer({ ...transfer, conversationId: liveConversationId });
     dispatch(
       setUserInputText({
         conversationId: liveConversationId,
@@ -335,7 +357,22 @@ export function ChatRoomClient({
     draftInputEntryReady,
     agentId,
     dispatch,
+    userId,
+    organizationId,
   ]);
+
+  // Recheck capture identity when attachment becomes ready, not only at storage consumption.
+  usePreparedResourceSeed({
+    conversationId: !conversationIdProp && pendingTransfer?.conversationId === liveConversationId ? liveConversationId : null,
+    ready: resourcesEntryReady,
+    resources: pendingTransfer?.resources,
+    expectedIdentity: pendingTransfer?.userId && pendingTransfer.organizationId
+      ? { userId: pendingTransfer.userId, organizationId: pendingTransfer.organizationId }
+      : null,
+    currentIdentity: { userId, organizationId },
+    attach: attachResource,
+    reportError: toast.error,
+  });
 
   // ── Post-submit URL promotion (only on /chat/new + /chat/a/[agentId]) ─────
   // The launcher pre-creates an instance with a client UUID, but the

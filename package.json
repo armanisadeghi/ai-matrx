@@ -440,6 +440,7 @@
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
+    "@ai-matrx/alchemy": "latest",
     "@ai-matrx/associations": "latest",
     "@ai-matrx/browser-audio": "latest",
     "@ai-matrx/capture": "latest",

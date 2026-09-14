@@ -13,6 +13,7 @@
  */
 "use client";
 
+import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
 import type { ReactNode } from "react";
 import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
 import { useEffect } from "react";
@@ -3034,6 +3035,16 @@ export default function OverlayController() {
               data?.initialVariableValues &&
               typeof data.initialVariableValues === "object"
                 ? (data.initialVariableValues as Record<string, string>)
+                : null
+            }
+            initialResources={
+              Array.isArray(data?.initialResources)
+                ? (data.initialResources as import("@/features/agents/resources/types").Resource[])
+                : null
+            }
+            initialResourceIdentity={
+              isPreparedResourceIdentity(data?.initialResourceIdentity)
+                ? data.initialResourceIdentity as { userId: string; organizationId: string }
                 : null
             }
             initialAutoRun={data?.initialAutoRun === true}

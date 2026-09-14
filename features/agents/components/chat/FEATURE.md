@@ -298,6 +298,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-13` — codex: **prepared text opens as a visible first-turn resource, never as user input.** `chat-draft-transfer` accepts an identity-bound `resources` handoff alongside an ordinary draft; `ChatRoomClient` accepts only the canonical text-resource shape, waits for the fresh instance resource map, and attaches it through `useAttachResource` while `/chat/new` remains provisional. Invalid or cross-account/org handoffs are discarded with a visible error; existing text-only handoffs retain their prior behavior.
+
 - `2026-09-13` — codex: **uploaded image turns survive hard reload with their
   thumbnails and original filenames.** The server's pristine `user_content`
   projection bypassed the generated MessagePart persistence validator at its

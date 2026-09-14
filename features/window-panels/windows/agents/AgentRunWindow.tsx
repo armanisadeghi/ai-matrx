@@ -38,6 +38,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import { selectAllWindows } from "@/lib/redux/slices/windowManagerSlice";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
@@ -71,6 +73,9 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { usePreparedResourceSeed } from "@/features/agents/components/chat/usePreparedResourceSeed";
+import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import type { Resource } from "@/features/agents/resources/types";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
@@ -86,6 +91,8 @@ const AGENT_RUN_WINDOW_POSITIONS = [
 /** Header-scale primary disc — must stay ≤ traffic-light row height (see WindowPanel `WindowHeader`). */
 const HEADER_NEW_RUN_BTN =
   "flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary p-0 text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40 [&_svg]:h-2.5 [&_svg]:w-2.5";
+
+
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -307,6 +314,8 @@ interface AgentRunBodyProps {
    * The structured-content channel — never folded into `initialDraftText`.
    */
   initialVariableValues?: Record<string, string> | null;
+  initialResources?: Resource[] | null;
+  initialResourceIdentity?: { userId: string; organizationId: string } | null;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
   mandateKey?: string | null;
@@ -320,6 +329,8 @@ function AgentRunBody({
   selectedConversationId,
   initialDraftText,
   initialVariableValues,
+  initialResources,
+  initialResourceIdentity,
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
@@ -330,7 +341,7 @@ function AgentRunBody({
     Boolean(initialDraftText) ||
     Boolean(
       initialVariableValues && Object.keys(initialVariableValues).length > 0,
-    );
+    ) || Boolean(initialResources?.length);
 
   // Register as a `window` surface — fork outcomes update the window's
   // internal focus (no URL change). The conversation column already
@@ -434,6 +445,26 @@ function AgentRunBody({
   const draftEntryReady = useAppSelector((state) =>
     conversationId ? selectUserInputEntryExists(conversationId)(state) : false,
   );
+  const resourcesEntryReady = useAppSelector((state) =>
+    conversationId
+      ? Object.prototype.hasOwnProperty.call(
+          state.instanceResources.byConversationId,
+          conversationId,
+        )
+      : false,
+  );
+  const resourceSeedUserId = useAppSelector(selectUserId);
+  const resourceSeedOrganizationId = useAppSelector(selectOrganizationId);
+  const attachResource = useAttachResource(conversationId ?? "");
+  usePreparedResourceSeed({
+    conversationId: selectedConversationId ? null : conversationId,
+    ready: resourcesEntryReady,
+    resources: initialResources,
+    expectedIdentity: initialResourceIdentity,
+    currentIdentity: { userId: resourceSeedUserId, organizationId: resourceSeedOrganizationId },
+    attach: attachResource,
+    reportError: toast.error,
+  });
   const draftSeededRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedConversationId) return;
@@ -626,6 +657,8 @@ interface AgentRunWindowProps {
   initialDraftText?: string | null;
   /** Structured-content channel paired with `initialDraftText` — see AgentRunBodyProps. */
   initialVariableValues?: Record<string, string> | null;
+  initialResources?: Resource[] | null;
+  initialResourceIdentity?: { userId: string; organizationId: string } | null;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
   mandateKey?: string | null;
@@ -652,6 +685,8 @@ export default function AgentRunWindow({
   initialAgentName,
   initialDraftText,
   initialVariableValues,
+  initialResources,
+  initialResourceIdentity = null,
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
@@ -667,6 +702,8 @@ export default function AgentRunWindow({
       initialAgentName={initialAgentName ?? null}
       initialDraftText={initialDraftText ?? null}
       initialVariableValues={initialVariableValues ?? null}
+      initialResources={initialResources ?? null}
+      initialResourceIdentity={initialResourceIdentity}
       initialAutoRun={initialAutoRun}
       mandateKey={mandateKey}
       surfaceName={surfaceName}
@@ -686,6 +723,8 @@ function AgentRunWindowInner({
   initialAgentName,
   initialDraftText,
   initialVariableValues,
+  initialResources,
+  initialResourceIdentity,
   initialAutoRun,
   mandateKey,
   surfaceName,
@@ -698,6 +737,8 @@ function AgentRunWindowInner({
   initialAgentName: string | null;
   initialDraftText: string | null;
   initialVariableValues: Record<string, string> | null;
+  initialResources: Resource[] | null;
+  initialResourceIdentity: { userId: string; organizationId: string } | null;
   initialAutoRun: boolean;
   mandateKey: string | null;
   surfaceName: string | null;
@@ -724,6 +765,8 @@ function AgentRunWindowInner({
   const seedApplies = seedLive && agentId === initialAgentId;
   const liveDraftText = seedApplies ? initialDraftText : null;
   const liveVariableValues = seedApplies ? initialVariableValues : null;
+  const liveResources = seedApplies ? initialResources : null;
+  const liveResourceIdentity = seedApplies ? initialResourceIdentity : null;
   const liveAutoRun = seedApplies ? initialAutoRun : false;
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -862,6 +905,8 @@ function AgentRunWindowInner({
           selectedConversationId={selectedConversationId}
           initialDraftText={liveDraftText}
           initialVariableValues={liveVariableValues}
+          initialResources={liveResources}
+          initialResourceIdentity={liveResourceIdentity}
           initialAutoRun={liveAutoRun}
           // The mandate door only applies to the job the window was opened
           // on. Picking a different agent from the title bar is a plain agent

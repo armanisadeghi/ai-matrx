@@ -65,7 +65,7 @@ const config: Config = {
         //   ./matrx     the shared matrx client
         //   ./catalog   the ONE agent picker (+ ./catalog/react)
         //   ./mandates  the published mandate-key vocabulary (0.10.0)
-        "^@ai-matrx/agents/(matrx|catalog|mandates)$":
+        "^@ai-matrx/agents/(matrx|catalog|mandates|content-transfer)$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/$1/index.js",
         "^@ai-matrx/agents/catalog/react$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",

@@ -12,8 +12,11 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { Resource } from "@/features/agents/resources/types";
 
 const OVERLAY_ID = "agentRunWindow" as const;
 
@@ -49,6 +52,12 @@ export interface OpenAgentRunWindowOptions {
    * passing a value here — an undeclared name is silently dropped).
    */
   initialVariableValues?: Record<string, string> | null;
+  /**
+   * Durable or prepared context for the first unsent turn. This is rendered as
+   * an attachment chip and must never be folded into `initialDraftText`.
+   */
+  initialResources?: Resource[] | null;
+  initialResourceIdentity?: { userId: string; organizationId: string } | null;
   /** Start the seeded run immediately after the window opens. */
   initialAutoRun?: boolean;
   /**
@@ -80,11 +89,16 @@ export interface AgentRunWindowHandle {
 
 export function useOpenAgentRunWindow() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   return useCallback(
     (opts: OpenAgentRunWindowOptions = {}): AgentRunWindowHandle => {
       const instanceId =
         opts.instanceId ??
         `${OVERLAY_ID}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const state = store.getState();
+      const userId = selectUserId(state);
+      const organizationId = selectOrganizationId(state);
+      const resourceIdentity = opts.initialResourceIdentity ?? (userId && organizationId ? { userId, organizationId } : null);
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -95,6 +109,8 @@ export function useOpenAgentRunWindow() {
             initialAgentName: opts.initialAgentName,
             initialDraftText: opts.initialDraftText,
             initialVariableValues: opts.initialVariableValues,
+            initialResources: opts.initialResources,
+            initialResourceIdentity: resourceIdentity,
             initialAutoRun: opts.initialAutoRun,
             mandateKey: opts.mandateKey ?? undefined,
             surfaceName: opts.surfaceName ?? undefined,
@@ -107,7 +123,8 @@ export function useOpenAgentRunWindow() {
               opts.initialAutoRun ||
               opts.initialDraftText ||
               (opts.initialVariableValues &&
-                Object.keys(opts.initialVariableValues).length > 0)
+                Object.keys(opts.initialVariableValues).length > 0) ||
+              (opts.initialResources && opts.initialResources.length > 0)
                 ? Date.now()
                 : undefined,
           },
@@ -119,7 +136,7 @@ export function useOpenAgentRunWindow() {
           dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
       };
     },
-    [dispatch],
+    [dispatch, store],
   );
 }
 
@@ -143,6 +160,7 @@ export function AgentRunWindowController(
     props.initialAgentName,
     props.initialDraftText,
     props.initialVariableValues,
+    props.initialResources,
     props.initialAutoRun,
     props.mandateKey,
     props.surfaceName,

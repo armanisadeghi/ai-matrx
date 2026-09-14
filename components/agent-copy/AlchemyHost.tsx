@@ -1,6 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useState, type ReactNode } from "react";
+import { startTransition, useLayoutEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
 import {
   useAppDispatch,
@@ -30,6 +31,8 @@ import { supabase } from "@/utils/supabase/client";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { toast } from "@/lib/toast";
+import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";
+import { createAlchemyDestinationPorts } from "./alchemy-destinations";
 
 const PREPARE_PATH = `/ai/mandates/${encodeURIComponent(
   MANDATE_KEYS.alchemy__prepare_content,
@@ -134,6 +137,7 @@ function AlchemyHostSession({
 }: AlchemyHostSessionProps) {
   const dispatch = useAppDispatch();
   const dispatchThunk = useDispatchThunk();
+  const router = useRouter();
   const createPorts = () => {
     const identity = { userId, orgId };
     const streamControllers = new Set<AbortController>();
@@ -236,6 +240,11 @@ function AlchemyHostSession({
       transport,
       organizationId,
       onProgress,
+      actions: createMatrxTransferActions(createAlchemyDestinationPorts({
+        getCurrentState,
+        dispatch,
+        navigate: (href) => startTransition(() => router.push(href)),
+      })),
     };
   };
   const [ports, setPorts] = useState(createPorts);
@@ -251,6 +260,7 @@ function AlchemyHostSession({
       organizationId={ports.organizationId}
       sourceApp="matrx-frontend"
       onProgress={ports.onProgress}
+      capabilities={{ actions: userId && orgId ? ports.actions : [] }}
     >
       <AlchemyCapabilitiesGate
         userId={userId}
