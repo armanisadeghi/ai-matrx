@@ -119,6 +119,8 @@
  * credentials with --strict · 2 script error.
  */
 
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -163,6 +165,13 @@ const flag = (name: string): string | null => {
 const POPULATION = (flag("population") ?? "b75") as "b75" | "signed-in" | "all";
 const ONLY = flag("only");
 const LIMIT = Number(flag("limit") ?? "0") || 0;
+/**
+ * DD-209. `--offset=N` with `--limit=M` runs the population in SLICES. V-73 had
+ * to fork a scratch copy of this script to do that, because the wide lane takes
+ * longer than a single synchronous call is allowed to run and a forked harness
+ * is a harness nobody can trust. The slicing belongs here.
+ */
+const OFFSET = Number(flag("offset") ?? "0") || 0;
 const TABLE_OUT = flag("table");
 const JSON_OUT = flag("json");
 const CALL_TIMEOUT_MS = Number(flag("timeout") ?? "6000") || 6000;
@@ -276,6 +285,7 @@ interface Door {
   argDefaults: number; // count of arguments with defaults (trailing)
   retSet: boolean;
   retType: string; // pg_get_function_result, e.g. "boolean", "jsonb", "TABLE(id uuid)"
+  probeArgs: ProbeRecipe | null; // DD-209: the declared argument recipe, if the row carries one
 }
 
 /**
@@ -305,6 +315,8 @@ interface DoorResult {
   why: string;
   leaked: string[];
   probes: Probe[];
+  /** DD-209: writes into the SYSTEM organization — platform-shared content, printed by name on every run. */
+  shared: string[];
 }
 
 // ─── argument derivation ─────────────────────────────────────────────────────
@@ -413,14 +425,33 @@ async function main(): Promise<number> {
     const catalog = await buildVictimCatalog(q, cast);
     console.log(`${TAG.info}victim catalog: ${Object.keys(catalog.byEntity).length} entity names over ${new Set(Object.values(catalog.byEntity).flat().map((e) => e.table)).size} tables with a real victim row`);
 
-    const doors = await loadDoors(q);
+    await loadColumnPresence(q);
+    const resolved = await resolveDoorRows(q);
+    const byCatalogKey = resolved.filter((r) => r.how === "catalog-key" || r.how === "argtypes-column").length;
+    const byText = resolved.filter((r) => r.how === "rendered-text").length;
+    const doors = await loadDoors(q, resolved);
     console.log(
       `${TAG.info}population: ${doors.length} declared signed-in doors (--population=${POPULATION})`,
     );
+    console.log(
+      `${TAG.info}door identity (DD-223): ${byCatalogKey} row(s) matched on the catalog key (schema, name, argument type OIDs)${
+        COLUMN_PRESENT.identity_argtypes ? " — reading platform.client_callable_door.identity_argtypes" : ""
+      }, ${byText} on the rendered identity text only, ${resolved.length - byCatalogKey - byText} unresolved`,
+    );
+
+    const warm = await warmRecipes(q, catalog, cast, doors);
+    if (warm.withRecipes)
+      console.log(
+        `${TAG.info}probe_args (DD-209): ${warm.withRecipes} door(s) in this population carry an argument recipe${
+          warm.unresolvable.length
+            ? `; ${warm.unresolvable.length} recipe row verb(s) resolved to NO live row and will leave their doors UNMEASURED by name: ${warm.unresolvable.join(", ")}`
+            : ""
+        }`,
+      );
 
     if (SELF_TEST) return await selfTest(db, q, cast, catalog, doors);
 
-    const structural = await structuralFindings(q);
+    const structural = structuralFindings(resolved);
 
 
     // Each probe is its own transaction on its own connection, so the
@@ -534,19 +565,82 @@ interface Catalog {
   idTables: { sch: string; tab: string; orgCol: string | null }[];
   victimOrgId: string;
   victimOrgIds: string[];
+  /**
+   * 🚨 DD-209. THE SYSTEM ORGANIZATION IS NOT A TENANT. `iam.organizations`
+   * flags it (`is_system`), seven tables DEFAULT their `organization_id` to it
+   * (`seo.keyword`, `seo.topic`, `education.learn_doc`, …), and the platform's
+   * shared vocabularies live there on purpose — `seo.fn_upsert_keyword`'s own
+   * body says so: "this writes the shared keyword vocabulary every site reads."
+   * A row written there is not a row written into somebody else's tenant, and
+   * calling it one would make this gate cry wolf on the doors behaving as
+   * designed. It is still never silent: such writes are reported by name on
+   * every run, and a write into the system organization that the caller CANNOT
+   * read back under RLS stays a FAIL — that is the DD-213 shape (a stranger
+   * writing rows nobody can see) and it does not become safe here.
+   */
+  systemOrgIds: string[];
+  /** column names and types per `schema.table`, for the recipe resolver's liveness tests */
+  columnsOf: Record<string, { cols: string[]; types: Record<string, string> }>;
+  /** DD-209 recipe cache: `other_row:seo.topic` → the id it resolved to, or null */
+  recipeRows: Map<string, string | null>;
+}
+
+/**
+ * 🚨 DD-209. A SOFT-DELETED VICTIM ROW IS NOT A VICTIM ROW.
+ *
+ * The catalog used to take `limit 1` with no liveness test, so `web.site`
+ * registered a row whose `deleted_at` is set — and `seo.gsc_assert_site_editor`
+ * answers `P0002 gsc_site_not_found` for a deleted site before it has decided
+ * anything about the caller. TWENTY-FOUR seo doors went UNMEASURED on that one
+ * bad row, every one of them printed as "the call failed for a non-authorization
+ * reason", when the truth was "this harness handed the door a tombstone".
+ * (Measured 2026-09-14: `web.site 2462b0aa-362b-452d-a126-079fe9abfaf9` has
+ * `deleted_at` set, and that exact id is in the `gsc_site_not_found` text of all
+ * 24.) So every victim row is now taken LIVE, using the platform's own archival
+ * vocabulary and nothing invented.
+ */
+const LIVENESS_COLS = ["deleted_at", "archived_at", "deactivated_at", "revoked_at"] as const;
+
+function livenessTerms(cols: string[], types: Record<string, string>): string[] {
+  const parts: string[] = [];
+  for (const c of LIVENESS_COLS) if (cols.includes(c)) parts.push(`${qi(c)} is null`);
+  if (cols.includes("is_active") && types.is_active === "boolean") parts.push(`${qi("is_active")} is not false`);
+  if (cols.includes("is_deleted") && types.is_deleted === "boolean") parts.push(`${qi("is_deleted")} is not true`);
+  return parts;
+}
+
+/**
+ * PREFER a live row, never REQUIRE one: a table whose every victim row is
+ * archived would otherwise lose its entry in the catalog altogether and take
+ * its doors from "measured" to "no argument could be derived", which trades one
+ * blind spot for another. So liveness sorts, it does not filter.
+ */
+function livenessOrder(cols: string[], types: Record<string, string>): string {
+  const parts = livenessTerms(cols, types);
+  return parts.length ? ` order by (${parts.join(" and ")}) desc nulls last` : "";
 }
 
 async function buildVictimCatalog(
   q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
   cast: Cast,
 ): Promise<Catalog> {
-  const idTables = await q<{ sch: string; tab: string; orgcol: string | null }>(`
+  const idTables = await q<{
+    sch: string;
+    tab: string;
+    orgcol: string | null;
+    cols: string[] | null;
+    types: string[] | null;
+  }>(`
     select c.relnamespace::regnamespace::text as sch,
            c.relname as tab,
            (select a2.attname from pg_attribute a2
              where a2.attrelid = c.oid and not a2.attisdropped
                and a2.attname in ('organization_id','org_id')
-             order by a2.attnum limit 1) as orgcol
+             order by a2.attnum limit 1) as orgcol,
+           (select array_agg(a3.attname::text order by a3.attnum) from pg_attribute a3
+             where a3.attrelid = c.oid and not a3.attisdropped and a3.attnum > 0) as cols,
+           (select array_agg(format_type(a3.atttypid, null) order by a3.attnum) from pg_attribute a3
+             where a3.attrelid = c.oid and not a3.attisdropped and a3.attnum > 0) as types
     from pg_class c
     join pg_attribute a on a.attrelid = c.oid and a.attname = 'id' and not a.attisdropped
     join pg_type ty on ty.oid = a.atttypid and ty.typname = 'uuid'
@@ -556,11 +650,18 @@ async function buildVictimCatalog(
         'storage','supabase_migrations','net','cron','graphql','graphql_public','pgbouncer','auth','graveyard')
     order by 1,2`);
 
+  const columnsOf: Record<string, { cols: string[]; types: Record<string, string> }> = {};
+  for (const t of idTables) {
+    const types: Record<string, string> = {};
+    (t.cols ?? []).forEach((c, i) => (types[c] = (t.types ?? [])[i] ?? ""));
+    columnsOf[`${t.sch}.${t.tab}`] = { cols: t.cols ?? [], types };
+  }
+
   const byEntity: Catalog["byEntity"] = {};
-  // For every table that carries an organization column, take one row belonging
-  // to a victim organization — a row the callers have no membership standing
-  // in, by construction. ONE round trip: a gate that spends four minutes on its
-  // own setup is a gate nobody puts in the release lane.
+  // For every table that carries an organization column, take one LIVE row
+  // belonging to a victim organization — a row the callers have no membership
+  // standing in, by construction. ONE round trip: a gate that spends four
+  // minutes on its own setup is a gate nobody puts in the release lane.
   const orgTables = idTables.filter((t) => t.orgcol);
   const CHUNK = 120;
   for (let i = 0; i < orgTables.length; i += CHUNK) {
@@ -570,7 +671,10 @@ async function buildVictimCatalog(
         (t) =>
           `select '${t.sch}.${t.tab}' as tbl, (select id::text from ${qi(t.sch)}.${qi(t.tab)} where ${qi(
             t.orgcol!,
-          )} = any($1::uuid[]) limit 1) as id`,
+          )} = any($1::uuid[])${livenessOrder(
+            columnsOf[`${t.sch}.${t.tab}`].cols,
+            columnsOf[`${t.sch}.${t.tab}`].types,
+          )} limit 1) as id`,
       )
       .join(" union all ");
     try {
@@ -586,7 +690,12 @@ async function buildVictimCatalog(
         try {
           const row = (
             await q<{ id: string }>(
-              `select id::text from ${qi(t.sch)}.${qi(t.tab)} where ${qi(t.orgcol!)} = any($1::uuid[]) limit 1`,
+              `select id::text from ${qi(t.sch)}.${qi(t.tab)} where ${qi(
+                t.orgcol!,
+              )} = any($1::uuid[])${livenessOrder(
+                columnsOf[`${t.sch}.${t.tab}`].cols,
+                columnsOf[`${t.sch}.${t.tab}`].types,
+              )} limit 1`,
               [cast.victimOrgIds],
             )
           )[0];
@@ -602,7 +711,143 @@ async function buildVictimCatalog(
     idTables: idTables.map((t) => ({ sch: t.sch, tab: t.tab, orgCol: t.orgcol })),
     victimOrgId: cast.victimOrgIds[0],
     victimOrgIds: cast.victimOrgIds,
+    systemOrgIds: (
+      await q<{ id: string }>(`select id::text from iam.organizations where is_system`)
+    ).map((r) => r.id),
+    columnsOf,
+    recipeRows: new Map(),
   };
+}
+
+// ─── DD-209: the argument recipes ────────────────────────────────────────────
+//
+// Derivation guesses from a NAME. A recipe is a person saying, on the door row
+// itself, WHICH row this argument wants — the half the harness cannot read off
+// `pg_proc`. Seventy-four doors in the blocking lane had an argument nothing
+// could derive (`p_table_id`, `p_store_id`, `p_pack_id`, `p_class`, an enum, a
+// status word), and every one of them was UNMEASURED BY NAME: honest, and blind.
+//
+// The recipe lives in `platform.client_callable_door.probe_args`, beside the
+// reason and the owner, because the person who declares a door is the person who
+// knows what its arguments mean. Its shape:
+//
+//   { "args": { "p_store_id": "other_row:rag.data_store",
+//               "p_audience": "literal:organization" },
+//     "boolean_oracle": "<sentence>",          -- see BOOLEAN_ONLY
+//     "note": "<why these values>" }
+//
+// The verbs, and nothing else — an unknown verb is an ERROR, never a silent skip:
+//
+//   other_org              an organization neither caller has standing in
+//   own_org                the caller's own first organization
+//   victim_user            the victim identity's user id
+//   self                   the caller's own user id
+//   pending_invitation     a LIVE pending invitation in a victim organization
+//   other_row:<sch.table>  a live row of that table in a victim organization
+//                            (or, for a table with no organization column, one
+//                             the victim identity owns)
+//   own_row:<sch.table>    a live row of that table the CALLER owns
+//   literal:<value>        a fixed value — an enum label, a registered token, a
+//                            status word the door's own validator accepts
+//   omit                   leave an optional argument out entirely
+//
+// `other_org`, `other_row:*`, `victim_user` and `pending_invitation` CROSS the
+// boundary; `own_org`, `own_row:*`, `self`, `literal:*` and `omit` do not. A
+// recipe that crosses nowhere is still a recipe — it gets the door past its own
+// validator so the benign-argument row-diff (below) can do its work.
+
+interface ProbeRecipe {
+  args?: Record<string, string>;
+  boolean_oracle?: string;
+  note?: string;
+}
+
+const CROSSING_VERBS = /^(other_org|victim_user|pending_invitation|other_row:)/;
+
+/**
+ * The row a `other_row:` / `own_row:` verb names, taken LIVE and cached. Runs as
+ * `postgres`, outside any probe transaction, so it can see rows RLS hides — that
+ * is the whole point: the victim row must be one the caller genuinely cannot read.
+ */
+async function resolveRecipeRow(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  catalog: Catalog,
+  cast: Cast,
+  verb: string,
+): Promise<string | null> {
+  if (catalog.recipeRows.has(verb)) return catalog.recipeRows.get(verb) ?? null;
+  let id: string | null = null;
+  try {
+    if (verb === "pending_invitation") {
+      const r = await q<{ id: string }>(
+        `select id::text from iam.invitations
+          where organization_id = any($1::uuid[]) and status = 'pending'
+            and (expires_at is null or expires_at > now())
+          order by created_at desc limit 1`,
+        [catalog.victimOrgIds],
+      );
+      id = r[0]?.id ?? null;
+    } else {
+      const own = verb.startsWith("own_row:");
+      const table = verb.slice(verb.indexOf(":") + 1);
+      const meta = catalog.columnsOf[table];
+      if (!meta) throw new Error(`no such table in the id catalog: ${table}`);
+      const [sch, tab] = table.split(".");
+      const live = livenessOrder(meta.cols, meta.types);
+      const orgCol = ["organization_id", "org_id"].find((c) => meta.cols.includes(c));
+      const ownerCol = ["user_id", "created_by", "owner_id", "actor_user_id"].find((c) => meta.cols.includes(c));
+      const who = own ? cast.a : cast.b;
+      const orgs = own ? cast.a.orgIds : catalog.victimOrgIds;
+      let where: string;
+      let params: unknown[];
+      if (orgCol && orgs.length) {
+        where = `${qi(orgCol)} = any($1::uuid[])`;
+        params = [orgs];
+      } else if (ownerCol) {
+        where = `${qi(ownerCol)} = $1::uuid`;
+        params = [who.id];
+      } else {
+        throw new Error(
+          `${table} carries neither an organization column nor an owning-user column, so no row of it can be placed on one side of the boundary`,
+        );
+      }
+      const r = await q<{ id: string }>(
+        `select id::text from ${qi(sch)}.${qi(tab)} where ${where}${live} limit 1`,
+        params,
+      );
+      id = r[0]?.id ?? null;
+    }
+  } catch (e) {
+    console.log(`${TAG.warn}recipe ${verb}: ${(e as Error).message.slice(0, 140)}`);
+    id = null;
+  }
+  catalog.recipeRows.set(verb, id);
+  return id;
+}
+
+/**
+ * Pre-resolve every row verb every recipe in the population names, once, as
+ * `postgres`, before any probe starts. Doing it inside a probe transaction would
+ * read as the caller and find nothing.
+ */
+async function warmRecipes(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  catalog: Catalog,
+  cast: Cast,
+  doors: Door[],
+): Promise<{ withRecipes: number; unresolvable: string[] }> {
+  const verbs = new Set<string>();
+  let withRecipes = 0;
+  for (const d of doors) {
+    if (!d.probeArgs?.args) continue;
+    withRecipes++;
+    for (const v of Object.values(d.probeArgs.args)) {
+      if (v === "pending_invitation" || v.startsWith("other_row:") || v.startsWith("own_row:")) verbs.add(v);
+    }
+  }
+  const unresolvable: string[] = [];
+  for (const v of verbs) if ((await resolveRecipeRow(q, catalog, cast, v)) === null) unresolvable.push(v);
+  return { withRecipes, unresolvable };
 }
 
 /** Register a victim row under its table name and every trailing token of it. */
@@ -631,7 +876,230 @@ function qi(ident: string): string {
 const NORM = (expr: string): string =>
   `lower(btrim(regexp_replace(regexp_replace(${expr}, '(^|[ ,(])[a-z_][a-z0-9_]*\\.', '\\1', 'g'), '\\s+', ' ', 'g')))`;
 
-async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>): Promise<Door[]> {
+/** The same normalisation, in this process, so the match can be made here. */
+const normJs = (s: string): string =>
+  s
+    .replace(/(^|[ ,(])[a-z_][a-z0-9_]*\./g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+/**
+ * 🚨 DD-223 (B-108 §9.4, V-83 item 7). `identity_args` IS RENDERED TEXT, AND THE
+ * RENDERING MOVES. `pg_get_function_identity_arguments` spells a type through
+ * the CURRENT search_path, so `web.create_site` reads `p_visibility visibility`
+ * under the §6d-4 guard's own path and `p_visibility platform.visibility` under
+ * the default one. A door row written under one path and matched under the other
+ * resolves to NO function — and a door this gate cannot resolve is a door it
+ * never probes and nobody is told about, which is the exact silent-green shape
+ * DD-192 exists to close.
+ *
+ * So the match is made on the CATALOG KEY — (schema, name, argument type OIDs) —
+ * and the rendered text is only a fallback for a row whose types this process
+ * cannot resolve. A parallel lane (B-118) is adding `identity_argtypes` to the
+ * door table straight from `pg_proc.proargtypes`; the moment that column exists
+ * this reads it instead of parsing, with no change here.
+ *
+ * Parsing rule, applied to each `, `-separated token of the identity list:
+ * try the WHOLE token as a type name (an unnamed argument), then the token with
+ * its first word removed (`p_id uuid`), then with two removed (`VARIADIC p_x
+ * text[]`). A token nothing resolves leaves the row on the text fallback, which
+ * is where it was before — never worse.
+ */
+interface TypeIndex {
+  byName: Map<string, Set<number>>;
+}
+
+async function loadTypeIndex(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+): Promise<TypeIndex> {
+  const rows = await q<{ oid: number; bare: string; qualified: string; rendered: string }>(`
+    select t.oid::int as oid,
+           lower(t.typname::text) as bare,
+           lower(n.nspname::text || '.' || t.typname::text) as qualified,
+           lower(format_type(t.oid, null)) as rendered
+    from pg_type t join pg_namespace n on n.oid = t.typnamespace`);
+  const byName = new Map<string, Set<number>>();
+  const add = (k: string, oid: number) => {
+    const s = byName.get(k) ?? new Set<number>();
+    s.add(oid);
+    byName.set(k, s);
+  };
+  for (const r of rows) {
+    add(r.bare, r.oid);
+    add(r.qualified, r.oid);
+    add(r.rendered, r.oid);
+    // `_uuid` is how the catalog spells `uuid[]`; format_type already gives the
+    // readable spelling, and the bare name would collide with nothing else.
+  }
+  return { byName };
+}
+
+/** The argument-type OID candidates for one rendered identity list, or null. */
+function argTypeKey(identityArgs: string, types: TypeIndex): Set<number>[] | null {
+  const text = identityArgs.trim();
+  if (text === "") return [];
+  const out: Set<number>[] = [];
+  for (const raw of text.split(",")) {
+    const tok = raw.trim().replace(/^(variadic|in|inout|out)\s+/i, "");
+    const tries = [tok, tok.replace(/^\S+\s+/, ""), tok.replace(/^\S+\s+\S+\s+/, "")];
+    let hit: Set<number> | null = null;
+    for (const t of tries) {
+      const s = types.byName.get(t.trim().toLowerCase());
+      if (s && s.size) {
+        hit = s;
+        break;
+      }
+    }
+    if (!hit) return null;
+    out.push(hit);
+  }
+  return out;
+}
+
+interface ProcRow {
+  oid: number;
+  schema: string;
+  name: string;
+  identityArgs: string;
+  argTypeOids: number[];
+  argNames: string[];
+  argTypes: string[];
+  ndefaults: number;
+  retSet: boolean;
+  retType: string;
+  volatile: boolean;
+  execAuth: boolean;
+  execAnon: boolean;
+}
+
+interface DoorRowRaw {
+  schema_name: string;
+  function_name: string;
+  identity_args: string;
+  identity_argtypes: number[] | null;
+  declared_by: string | null;
+  gate_predicate: string | null;
+  non_client_lane: string | null;
+  probe_args: unknown;
+}
+
+interface ResolvedDoorRow {
+  row: DoorRowRaw;
+  proc: ProcRow | null;
+  how: "argtypes-column" | "catalog-key" | "rendered-text" | null;
+}
+
+let COLUMN_PRESENT: Record<string, boolean> = {};
+
+async function loadColumnPresence(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+): Promise<void> {
+  const rows = await q<{ column_name: string }>(
+    `select column_name from information_schema.columns
+      where table_schema = 'platform' and table_name = 'client_callable_door'`,
+  );
+  COLUMN_PRESENT = Object.fromEntries(rows.map((r) => [r.column_name, true]));
+}
+
+/**
+ * Every door row, resolved to at most one live function, by the catalog key
+ * first and the rendered text only as a fallback. One resolution, used by BOTH
+ * the population and the structural findings, so a row can never be "measured"
+ * by one and "resolves to no function" by the other.
+ */
+async function resolveDoorRows(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+): Promise<ResolvedDoorRow[]> {
+  const hasArgtypes = COLUMN_PRESENT.identity_argtypes === true;
+  const hasProbeArgs = COLUMN_PRESENT.probe_args === true;
+  const doorRows = await q<DoorRowRaw>(`
+    select d.schema_name, d.function_name, d.identity_args,
+           ${hasArgtypes ? "d.identity_argtypes::int[]" : "null::int[]"} as identity_argtypes,
+           d.declared_by, d.gate_predicate, d.non_client_lane,
+           ${hasProbeArgs ? "d.probe_args" : "null::jsonb"} as probe_args
+      from platform.client_callable_door d
+     order by d.schema_name, d.function_name, d.identity_args`);
+
+  const procs = await q<{
+    oid: number;
+    sch: string;
+    nm: string;
+    identity_args: string;
+    argtype_oids: number[] | null;
+    argnames: string[] | null;
+    argtypes: string[] | null;
+    ndefaults: number;
+    proretset: boolean;
+    rettype: string;
+    provolatile: string;
+    exec_auth: boolean;
+    exec_anon: boolean;
+  }>(`
+    select p.oid::int as oid, n.nspname::text as sch, p.proname::text as nm,
+           pg_get_function_identity_arguments(p.oid) as identity_args,
+           (select array_agg(t::int order by ord) from unnest(p.proargtypes::oid[]) with ordinality as u(t, ord)) as argtype_oids,
+           coalesce(p.proargnames[1:p.pronargs], array[]::text[]) as argnames,
+           (select array_agg(format_type(t, null) order by ord)
+              from unnest(p.proargtypes::oid[]) with ordinality as u(t, ord)) as argtypes,
+           p.pronargdefaults as ndefaults, p.proretset, pg_get_function_result(p.oid) as rettype,
+           p.provolatile,
+           has_function_privilege('authenticated', p.oid, 'EXECUTE') as exec_auth,
+           has_function_privilege('anon', p.oid, 'EXECUTE') as exec_anon
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where (n.nspname, p.proname) in (
+       select distinct schema_name, function_name from platform.client_callable_door)`);
+
+  const byQualified = new Map<string, ProcRow[]>();
+  for (const p of procs) {
+    const rec: ProcRow = {
+      oid: p.oid,
+      schema: p.sch,
+      name: p.nm,
+      identityArgs: p.identity_args ?? "",
+      argTypeOids: p.argtype_oids ?? [],
+      argNames: p.argnames ?? [],
+      argTypes: p.argtypes ?? [],
+      ndefaults: Number(p.ndefaults ?? 0),
+      retSet: p.proretset,
+      retType: p.rettype ?? "",
+      volatile: p.provolatile === "v",
+      execAuth: p.exec_auth,
+      execAnon: p.exec_anon,
+    };
+    const k = `${p.sch}.${p.nm}`;
+    byQualified.set(k, [...(byQualified.get(k) ?? []), rec]);
+  }
+
+  const types = await loadTypeIndex(q);
+  const sameKey = (a: Set<number>[], b: number[]): boolean =>
+    a.length === b.length && a.every((s, i) => s.has(b[i]));
+
+  return doorRows.map((row) => {
+    const candidates = byQualified.get(`${row.schema_name}.${row.function_name}`) ?? [];
+    if (row.identity_argtypes) {
+      const want = row.identity_argtypes;
+      const hit = candidates.find(
+        (c) => c.argTypeOids.length === want.length && c.argTypeOids.every((o, i) => o === want[i]),
+      );
+      if (hit) return { row, proc: hit, how: "argtypes-column" as const };
+    }
+    const key = argTypeKey(row.identity_args, types);
+    if (key) {
+      const hit = candidates.find((c) => sameKey(key, c.argTypeOids));
+      if (hit) return { row, proc: hit, how: "catalog-key" as const };
+    }
+    const want = normJs(row.identity_args);
+    const hit = candidates.find((c) => normJs(c.identityArgs) === want);
+    if (hit) return { row, proc: hit, how: "rendered-text" as const };
+    return { row, proc: null, how: null };
+  });
+}
+
+async function loadDoors(
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  resolved: ResolvedDoorRow[],
+): Promise<Door[]> {
   // 🚨 DD-213c. The blocking lane was "the 477 doors DD-169 batch 3 declared" and
   // nothing else — so `iam.emergency_door_open`, `iam.emergency_door_approve` and
   // `iam.emergency_door_deny`, declared under their own `declared_by`, were never
@@ -642,63 +1110,69 @@ async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown
   // PLUS every declaration named here. Adding a row here is how a family joins the
   // blocking lane; it is never a way to take one out.
   const ALWAYS_PROBED = ["iam_emergency_door_dd137a"];
-  const alsoProbed = `or d.declared_by in (${ALWAYS_PROBED.map((s) => `'${s}'`).join(", ")})`;
-  const where =
-    POPULATION === "b75"
-      ? `and (d.declared_by = 'DD-169 batch 3 / B-75' ${alsoProbed})`
-      : POPULATION === "signed-in"
-        ? ``
-        : ``;
-  const signedIn =
-    POPULATION === "all"
-      ? `has_function_privilege('authenticated', p.oid, 'EXECUTE')`
-      : `has_function_privilege('authenticated', p.oid, 'EXECUTE') and not has_function_privilege('anon', p.oid, 'EXECUTE')`;
+  const inPopulation = (declaredBy: string | null): boolean =>
+    POPULATION === "b75" ? declaredBy === "DD-169 batch 3 / B-75" || ALWAYS_PROBED.includes(declaredBy ?? "") : true;
 
-  const rows = await q<{
-    schema_name: string;
-    function_name: string;
-    identity_args: string;
-    declared_by: string | null;
-    gate_predicate: string | null;
-    oid: number;
-    provolatile: string;
-    proretset: boolean;
-    argnames: string[] | null;
-    argtypes: string[] | null;
-    ndefaults: number;
-    rettype: string;
-  }>(`
-    select d.schema_name, d.function_name, d.identity_args, d.declared_by, d.gate_predicate,
-           p.oid::int as oid, p.provolatile, p.proretset,
-           pg_get_function_result(p.oid) as rettype,
-           coalesce(p.proargnames[1:p.pronargs], array[]::text[]) as argnames,
-           (select array_agg(format_type(t, null) order by ord)
-              from unnest(p.proargtypes::oid[]) with ordinality as u(t, ord)) as argtypes,
-           p.pronargdefaults as ndefaults
-    from platform.client_callable_door d
-    join pg_namespace n on n.nspname = d.schema_name
-    join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
-                  and ${NORM('pg_get_function_identity_arguments(p.oid)')} = ${NORM('d.identity_args')}
-    where ${signedIn} ${where}
-    order by d.schema_name, d.function_name, d.identity_args`);
-
-  let doors = rows.map((r) => ({
-    schema: r.schema_name,
-    fn: r.function_name,
-    identityArgs: r.identity_args,
-    declaredBy: r.declared_by,
-    gatePredicate: r.gate_predicate,
-    oid: r.oid,
-    volatile: r.provolatile === "v",
-    argNames: r.argnames ?? [],
-    argTypes: r.argtypes ?? [],
-    argDefaults: Number(r.ndefaults ?? 0),
-    retSet: r.proretset,
-    retType: r.rettype ?? "",
-  }));
+  let doors: Door[] = resolved
+    .filter((r) => r.proc !== null)
+    .filter((r) => (POPULATION === "all" ? r.proc!.execAuth : r.proc!.execAuth && !r.proc!.execAnon))
+    .filter((r) => inPopulation(r.row.declared_by))
+    .map((r) => ({
+      schema: r.row.schema_name,
+      fn: r.row.function_name,
+      identityArgs: r.row.identity_args,
+      declaredBy: r.row.declared_by,
+      gatePredicate: r.row.gate_predicate,
+      oid: r.proc!.oid,
+      volatile: r.proc!.volatile,
+      argNames: r.proc!.argNames,
+      argTypes: r.proc!.argTypes,
+      argDefaults: r.proc!.ndefaults,
+      retSet: r.proc!.retSet,
+      retType: r.proc!.retType,
+      probeArgs: parseRecipe(`${r.row.schema_name}.${r.row.function_name}`, r.row.probe_args),
+    }));
+  doors.sort((a, b) =>
+    `${a.schema}.${a.fn}.${a.identityArgs}`.localeCompare(`${b.schema}.${b.fn}.${b.identityArgs}`),
+  );
   if (ONLY) doors = doors.filter((d) => `${d.schema}.${d.fn}` === ONLY);
-  if (LIMIT) doors = doors.slice(0, LIMIT);
+  if (OFFSET || LIMIT) doors = doors.slice(OFFSET, LIMIT ? OFFSET + LIMIT : undefined);
   return doors;
+}
+
+/**
+ * A recipe nobody can read is worse than no recipe. A malformed `probe_args`, or
+ * a verb this harness does not know, THROWS — it never degrades to "no recipe",
+ * because that would put a door back into UNMEASURED while its row claims it is
+ * covered, and nobody would be told.
+ */
+const KNOWN_VERB = /^(own_org|other_org|victim_user|self|pending_invitation|omit|own_row:.+|other_row:.+|literal:.*)$/;
+
+function parseRecipe(door: string, raw: unknown): ProbeRecipe | null {
+  if (raw === null || raw === undefined) return null;
+  const r = (typeof raw === "string" ? safeJson(raw) : raw) as ProbeRecipe | null;
+  if (!r || typeof r !== "object" || Array.isArray(r)) {
+    throw new Error(`probe_args on ${door} is not a JSON object`);
+  }
+  for (const [arg, verb] of Object.entries(r.args ?? {})) {
+    if (typeof verb !== "string" || !KNOWN_VERB.test(verb)) {
+      throw new Error(
+        `probe_args on ${door}: argument ${arg} names the verb ${JSON.stringify(verb)}, which this harness does not know. ` +
+          `Known verbs: own_org, other_org, victim_user, self, pending_invitation, omit, own_row:<schema.table>, other_row:<schema.table>, literal:<value>.`,
+      );
+    }
+  }
+  if (r.note !== undefined && (typeof r.note !== "string" || r.note.trim().length < 40)) {
+    throw new Error(
+      `probe_args on ${door}: note must be a sentence of at least 40 characters saying why this door cannot be reached by a recipe.`,
+    );
+  }
+  if (r.boolean_oracle !== undefined && (typeof r.boolean_oracle !== "string" || r.boolean_oracle.trim().length < 40)) {
+    throw new Error(
+      `probe_args on ${door}: boolean_oracle must be a sentence of at least 40 characters saying what a TRUE answer about the victim's row would mean.`,
+    );
+  }
+  return r;
 }
 
 // ─── S1/S2: a declaration that is not a door ─────────────────────────────────
@@ -709,43 +1183,35 @@ async function loadDoors(q: <T = Record<string, unknown>>(s: string, p?: unknown
 // population had been measured.
 
 interface Structural {
-  unresolved: { fn: string; args: string; declaredBy: string | null }[];
+  unresolved: { fn: string; args: string; declaredBy: string | null; serviceLane: boolean }[];
   notCallable: { fn: string; args: string; declaredBy: string | null; serviceLane: boolean }[];
 }
 
-async function structuralFindings(
-  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
-): Promise<Structural> {
-  const unresolved = await q<{ fn: string; args: string; declared_by: string | null }>(`
-    select d.schema_name || '.' || d.function_name as fn, d.identity_args as args, d.declared_by
-    from platform.client_callable_door d
-    where not exists (
-      select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = d.schema_name and p.proname = d.function_name
-        and ${NORM("pg_get_function_identity_arguments(p.oid)")} = ${NORM("d.identity_args")})
-    order by 1, 2`);
+function structuralFindings(resolved: ResolvedDoorRow[]): Structural {
+  const unresolved = resolved
+    .filter((r) => r.proc === null)
+    .map((r) => ({
+      fn: `${r.row.schema_name}.${r.row.function_name}`,
+      args: r.row.identity_args,
+      declaredBy: r.row.declared_by,
+      serviceLane: false,
+    }));
   // 🚨 DD-210 (B-108). A row carrying `non_client_lane` is a SERVICE-LANE door —
   // reached with the service key, never by a browser — so "no client holds EXECUTE"
   // is its declared shape, not a discrepancy. The COLUMN is the flag (it holds the
   // reason, so non-null means declared); the harness never infers the lane from a
   // name, and never from a word in the free-text `reason`.
-  const notCallable = await q<{ fn: string; args: string; declared_by: string | null; service_lane: boolean }>(`
-    select d.schema_name || '.' || d.function_name as fn, d.identity_args as args, d.declared_by,
-           (d.non_client_lane is not null) as service_lane
-    from platform.client_callable_door d
-    join pg_namespace n on n.nspname = d.schema_name
-    join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
-                  and ${NORM("pg_get_function_identity_arguments(p.oid)")} = ${NORM("d.identity_args")}
-    where not has_function_privilege('authenticated', p.oid, 'EXECUTE')
-      and not has_function_privilege('anon', p.oid, 'EXECUTE')
-    order by 1, 2`);
-  const map = (r: { fn: string; args: string; declared_by: string | null; service_lane?: boolean }) => ({
-    fn: r.fn,
-    args: r.args,
-    declaredBy: r.declared_by,
-    serviceLane: r.service_lane === true,
-  });
-  return { unresolved: unresolved.map(map), notCallable: notCallable.map(map) };
+  const notCallable = resolved
+    .filter((r) => r.proc !== null && !r.proc.execAuth && !r.proc.execAnon)
+    .map((r) => ({
+      fn: `${r.row.schema_name}.${r.row.function_name}`,
+      args: r.row.identity_args,
+      declaredBy: r.row.declared_by,
+      serviceLane: r.row.non_client_lane !== null,
+    }));
+  const by = (a: { fn: string; args: string }, b: { fn: string; args: string }) =>
+    `${a.fn}${a.args}`.localeCompare(`${b.fn}${b.args}`);
+  return { unresolved: unresolved.sort(by), notCallable: notCallable.sort(by) };
 }
 
 // ─── argument filling ────────────────────────────────────────────────────────
@@ -796,7 +1262,14 @@ function doorNeedsDiscriminator(door: Door): boolean {
   return door.argNames.some((n, i) => DISCRIMINATOR.test(n.replace(/^p_/, "")) && /^(text|character varying|citext)$/.test(door.argTypes[i] ?? ""));
 }
 
-function fillArgs(door: Door, catalog: Catalog, cast: Cast, victimUserId: string, discriminator: string | null = null): FilledArgs {
+function fillArgs(
+  door: Door,
+  catalog: Catalog,
+  cast: Cast,
+  victimUserId: string,
+  discriminator: string | null = null,
+  caller: Principal | null = null,
+): FilledArgs {
   const parts: string[] = [];
   const values: unknown[] = [];
   const injectedIds: string[] = [];
@@ -809,12 +1282,53 @@ function fillArgs(door: Door, catalog: Catalog, cast: Cast, victimUserId: string
   };
 
   const required = door.argTypes.length - door.argDefaults;
+  const recipe = door.probeArgs?.args ?? null;
 
   for (let i = 0; i < door.argTypes.length; i++) {
     const name = door.argNames[i] ?? `$${i + 1}`;
     const type = door.argTypes[i];
     const isRequired = i < required;
     const bare = name.replace(/^p_/, "");
+
+    // 🚨 DD-209. A DECLARED RECIPE OUTRANKS EVERY GUESS BELOW. The person who
+    // declared the door said what this argument wants; derivation from the NAME
+    // is what the harness does when nobody has.
+    const verb = recipe ? (recipe[name] ?? recipe[bare]) : undefined;
+    if (verb) {
+      if (verb === "omit") {
+        if (isRequired) unresolved.push(`${name} ${type} (the recipe says omit, but the argument is required)`);
+        continue;
+      }
+      if (verb.startsWith("literal:")) {
+        const lit = verb.slice("literal:".length);
+        // An array argument takes a one-element array of the literal; passing the
+        // bare text would be a type error, which this gate must never read as a
+        // refusal.
+        push(name, type, type.endsWith("[]") ? [lit] : lit);
+        continue;
+      }
+      let id: string | null = null;
+      let crosses = CROSSING_VERBS.test(verb);
+      if (verb === "other_org") id = catalog.victimOrgId;
+      else if (verb === "own_org") id = (caller?.orgIds ?? cast.a.orgIds)[0] ?? null;
+      else if (verb === "victim_user") id = victimUserId;
+      else if (verb === "self") id = caller?.id ?? cast.a.id;
+      else id = catalog.recipeRows.get(verb) ?? null;
+      // `own_org` for the org-less caller C names nothing; that is not a failure
+      // of the recipe, it is the caller having no own organization to name.
+      if (!id) {
+        unresolved.push(`${name} ${type} (the recipe verb ${verb} names no live row for this caller)`);
+        continue;
+      }
+      if (crosses) {
+        crossed = true;
+        injectedIds.push(id);
+      } else if (type === "uuid" || type === "uuid[]") {
+        injectedIds.push(id);
+      }
+      push(name, type === "uuid[]" ? "uuid[]" : type, type === "uuid[]" ? [id] : id);
+      continue;
+    }
 
     // The inventory RPC takes a column name plus a generic container UUID.
     // Neither parameter names its entity in isolation, so ordinary derivation
@@ -1101,6 +1615,7 @@ async function measureDoor(
 ): Promise<DoorResult> {
   const probes: Probe[] = [];
   const leaked: string[] = [];
+  const shared: string[] = [];
   let anyMeasured = false;
   const unmeasuredWhy: string[] = [];
 
@@ -1108,22 +1623,35 @@ async function measureDoor(
 
   for (const caller of [cast.a, cast.c]) {
    for (const discriminator of discriminators) {
-    const filled = fillArgs(door, catalog, cast, cast.b.id, discriminator);
+    const filled = fillArgs(door, catalog, cast, cast.b.id, discriminator, caller);
     if (filled.unresolved.length) {
       unmeasuredWhy.push(`argument(s) not derivable: ${filled.unresolved.join(", ")}`);
       if (discriminators.length === 1)
         probes.push({ caller: caller.label, args: "-", outcome: "UNMEASURED", detail: filled.unresolved.join(", ") });
       continue;
     }
-    if (door.argTypes.length > 0 && !filled.crossed) {
-      unmeasuredWhy.push("no argument names another identity's row — the boundary cannot be crossed by argument");
-      if (discriminators.length === 1)
-        probes.push({ caller: caller.label, args: filled.sql, outcome: "UNMEASURED", detail: "no cross-identity argument" });
-      continue;
-    }
+    // 🚨 DD-209. A DOOR WHOSE ARGUMENTS CANNOT CROSS THE BOUNDARY IS STILL CALLED.
+    //
+    // This is where V-73's finding lived. The gate used to `continue` here —
+    // skipping a door BEFORE calling it whenever no argument could name a victim
+    // row — on the reasoning that a probe which cannot cross proves nothing. But
+    // the boundary is not crossed only by arguments: `public.get_agents_for_chat`
+    // (p_limit, p_cursor) OVER-READ in its own body, with entirely benign
+    // arguments, and this gate never called it once. `public.agx_get_list_full`
+    // was caught by the same class of leak ONLY because it happens to take zero
+    // arguments and so slipped past this test.
+    //
+    // The measurability test was argument-driven; the leak was not. So the door
+    // is now called with whatever benign values derivation produced, and its
+    // answer is row-diffed exactly like any other: the oracle is "did it hand
+    // back a row this caller cannot SELECT", which needs no crossing argument at
+    // all. The probe is labelled so nobody mistakes it for a cross-boundary one.
+    const benign = door.argTypes.length > 0 && !filled.crossed;
 
-    const probe = await runProbe(db, q, caller, door, filled, catalog);
+    const probe = await runProbe(db, q, caller, door, filled, catalog, cast, benign);
     if (discriminator) probe.probe.caller = `${caller.label} [${discriminator}]`;
+    if (benign) probe.probe.outcome = `${probe.probe.outcome} [benign args]`;
+    for (const w of probe.shared) if (!shared.includes(w)) shared.push(w);
     if (probe.verdict === "UNMEASURED") {
       unmeasuredWhy.push(`${caller.label}: ${probe.why}`);
       // Only keep the noise when nothing else was learned about this door.
@@ -1137,12 +1665,35 @@ async function measureDoor(
   }
 
   if (leaked.length) {
-    return { door, verdict: "FAIL", why: "returned or minted rows the caller cannot read", leaked, probes };
+    return { door, verdict: "FAIL", why: "returned or minted rows the caller cannot read", leaked, probes, shared };
   }
   if (!anyMeasured) {
-    return { door, verdict: "UNMEASURED", why: unmeasuredWhy[0] ?? "not measured", leaked: [], probes };
+    // 🚨 DD-209. A DECLARED REASON RIDES THE FINDING. When a door row carries a
+    // `note`, the person who declared it has written down WHY no recipe can reach
+    // it — "the only education class on this database is in caller A's own
+    // organization", "rag.data_stores holds no row across the boundary". That
+    // sentence is the difference between an anonymous UNMEASURED and a measured
+    // fact about why, so it is printed with the finding, every run.
+    const note = door.probeArgs?.note;
+    return {
+      door,
+      verdict: "UNMEASURED",
+      why: `${unmeasuredWhy[0] ?? "not measured"}${note ? ` — declared on the door row: ${note}` : ""}`,
+      leaked: [],
+      probes,
+      shared,
+    };
   }
-  return { door, verdict: "PASS", why: "refused, answered nothing, or answered only rows the caller can read", leaked: [], probes };
+  return {
+    door,
+    verdict: "PASS",
+    why: shared.length
+      ? "answered only rows the caller can read; its writes landed in the SYSTEM organization (platform-shared content) and the caller can read them back"
+      : "refused, answered nothing, or answered only rows the caller can read",
+    leaked: [],
+    probes,
+    shared,
+  };
 }
 
 async function runProbe(
@@ -1152,6 +1703,24 @@ async function runProbe(
   door: Door,
   filled: FilledArgs,
   catalog: Catalog,
+  cast: Cast,
+  benign: boolean,
+): Promise<{ verdict: Verdict; why: string; leaked: string[]; probe: Probe; shared: string[] }> {
+  const shared: string[] = [];
+  const r = await runProbeCore(db, q, caller, door, filled, catalog, cast, benign, shared);
+  return { ...r, shared };
+}
+
+async function runProbeCore(
+  db: pg.Client,
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  caller: Principal,
+  door: Door,
+  filled: FilledArgs,
+  catalog: Catalog,
+  cast: Cast,
+  benign: boolean,
+  shared: string[],
 ): Promise<{ verdict: Verdict; why: string; leaked: string[]; probe: Probe }> {
   const claims = JSON.stringify({
     sub: caller.id,
@@ -1205,7 +1774,8 @@ async function runProbe(
     // its rows are gone and the xid confirmation reports nothing — which is the
     // truth: a door that raises leaves nothing behind.
     await db.query("reset role");
-    const wrote = await writesCrossingTheBoundary(db, caller);
+    const wrote = await writesCrossingTheBoundary(db, caller, catalog);
+    shared.push(...wrote.sharedVocabulary);
     await db.query("set local role authenticated");
 
     const answerShape =
@@ -1245,28 +1815,104 @@ async function runProbe(
 
     if (rows === null) {
       const refused = isRefusal(errCode, errMsg);
+      if (refused) {
+        await db.query(TX_ROLLBACK());
+        return {
+          verdict: "PASS",
+          why: `refused ${errCode}, and wrote nothing`,
+          leaked: [],
+          probe: { caller: caller.label, args: filled.sql, outcome: "REFUSED", detail: `${errCode} ${errMsg.slice(0, 160)}` },
+        };
+      }
+      // 🚨 DD-209. THE CONTROL PROBE — which of the two sentences is true?
+      //
+      // "the argument was wrong" and "the door refused by not seeing the row"
+      // arrive wearing the same clothes. `seo.gsc_assert_site_editor` raises
+      // `P0002 gsc_site_not_found` both when the harness handed it a tombstone
+      // and when RLS hid a live site from the caller — 58 doors sat in the
+      // UNMEASURED bucket under one flat sentence, "the call failed for a
+      // non-authorization reason", and nobody could tell which was which
+      // without opening each body by hand. A hand classification also goes
+      // stale the day a door changes.
+      //
+      // So the harness asks. The IDENTICAL call is repeated as the VICTIM —
+      // the identity that really does own the rows — inside the same
+      // always-rolled-back transaction. If the victim's own call fails the same
+      // way, the value was wrong and no identity could have made it right:
+      // that door needs a probe_args recipe, and the finding says so by name.
+      // If the victim gets further, the stranger's "not found" WAS the
+      // authorization decision — the door declined to see a row it may not see,
+      // returned nothing and (measured above) wrote nothing. That is a bounded
+      // door, and calling it UNMEASURED would understate what was proven.
+      const control = await controlProbe(db, call, filled.values, cast.b);
+      const sameShape = control.code === errCode && ERROR_SHAPE(control.message) === ERROR_SHAPE(errMsg);
       await db.query(TX_ROLLBACK());
-      return refused
-        ? {
-            verdict: "PASS",
-            why: `refused ${errCode}, and wrote nothing`,
-            leaked: [],
-            probe: { caller: caller.label, args: filled.sql, outcome: "REFUSED", detail: `${errCode} ${errMsg.slice(0, 160)}` },
-          }
-        : {
-            verdict: "UNMEASURED",
-            why: `call failed for a non-authorization reason: ${errCode} ${errMsg.slice(0, 160)}`,
-            leaked: [],
-            probe: { caller: caller.label, args: filled.sql, outcome: "ERROR", detail: `${errCode} ${errMsg.slice(0, 160)}` },
-          };
+      if (sameShape) {
+        return {
+          verdict: "UNMEASURED",
+          why:
+            `the argument is wrong, not the caller: ${errCode} ${errMsg.slice(0, 120)} — the victim's own identical call fails the same way ` +
+            `(${control.code} ${control.message.slice(0, 80)}), so no identity makes this value work. Declare a probe_args recipe on the door row.`,
+          leaked: [],
+          probe: { caller: caller.label, args: filled.sql, outcome: "ERROR (argument)", detail: `${errCode} ${errMsg.slice(0, 160)}` },
+        };
+      }
+      return {
+        verdict: "PASS",
+        why:
+          `refused by not seeing the row: ${errCode} ${errMsg.slice(0, 120)} — the victim's identical call gets further ` +
+          `(${control.outcome}), so this error IS the authorization decision. The door returned nothing and wrote nothing.`,
+        leaked: [],
+        probe: {
+          caller: caller.label,
+          args: filled.sql,
+          outcome: "REFUSED (row invisible)",
+          detail: `${errCode} ${errMsg.slice(0, 120)} | victim: ${control.outcome}`,
+        },
+      };
     }
 
-    // A boolean door can never be judged by the row oracle — say so, never pass it.
+    // A boolean door can never be judged by the row oracle — unless somebody has
+    // declared what a TRUE answer about the victim's row would MEAN. DD-209: with
+    // a `boolean_oracle` on the door row and a probe that really did cross the
+    // boundary, the ANSWER is the measurement, not the rows.
     if (BOOLEAN_ONLY(door)) {
+      const oracle = door.probeArgs?.boolean_oracle;
+      if (oracle && !benign) {
+        const said = rows.some((r) => Object.values(r).some((v) => v === true));
+        await db.query(TX_ROLLBACK());
+        return said
+          ? {
+              verdict: "FAIL",
+              why: "answered TRUE about a row across the boundary",
+              leaked: [
+                `${door.schema}.${door.fn} answered TRUE for arguments naming a row the caller has no standing in — ${oracle}`,
+              ],
+              probe: {
+                caller: caller.label,
+                args: filled.sql,
+                outcome: "BOOLEAN TRUE ACROSS THE BOUNDARY",
+                detail: JSON.stringify(rows).slice(0, 200),
+              },
+            }
+          : {
+              verdict: "PASS",
+              why: `answered false about a row across the boundary, and wrote nothing — ${oracle}`,
+              leaked: [],
+              probe: {
+                caller: caller.label,
+                args: filled.sql,
+                outcome: "BOOLEAN false (measured)",
+                detail: JSON.stringify(rows).slice(0, 120),
+              },
+            };
+      }
       await db.query(TX_ROLLBACK());
       return {
         verdict: "UNMEASURED",
-        why: `the door returns ${door.retType.trim()} and wrote nothing — a true/false answer carries no row to place against the caller's standing, so its boundedness is NOT measured by this method`,
+        why: oracle
+          ? `the door returns ${door.retType.trim()} and carries a boolean_oracle, but this probe crossed no boundary, so its answer proves nothing`
+          : `the door returns ${door.retType.trim()} and wrote nothing — a true/false answer carries no row to place against the caller's standing, so its boundedness is NOT measured by this method. Declare a probe_args boolean_oracle if a recipe can make its answer differ across the boundary.`,
         leaked: [],
         probe: {
           caller: caller.label,
@@ -1335,6 +1981,17 @@ async function runProbe(
     // Resolve the ids to real rows as postgres …
     await db.query("reset role");
     const resolved = await resolveIds(db, catalog, ids);
+    // 🚨 DD-209. ONE STANDING RULE FOR BOTH ARMS. DD-208 taught the WRITE arm that
+    // a personal organization this very call minted FOR THE CALLER is the caller's
+    // own — and the ROWS arm below was left comparing against the stale snapshot.
+    // So `public.league_set_opt_in(p_opted_in, p_display_name)`, whose only
+    // arguments are benign and which calls `iam.personal_org_id(auth.uid())`,
+    // came back a FAIL for the org-less caller: it returned the membership row it
+    // had just minted into that caller's OWN brand-new personal organization
+    // (measured 2026-09-14: created_by = the caller, membership role = owner).
+    // Two arms judging standing two ways is how a gate cries wolf, so they now ask
+    // the same question.
+    const callerOrgsNow = [...caller.orgIds, ...(await orgsMintedForTheCallerByThisCall(db, caller))];
 
     // … then ask, as the caller, whether RLS lets them read each one.
     await db.query("set local role authenticated");
@@ -1346,11 +2003,19 @@ async function runProbe(
       // A row this very call created, landing in an organization the caller has
       // no standing in, is a cross-boundary WRITE — the half of DD-191 that was
       // `inv_create` minting an admin invitation into a stranger's tenant.
-      if (r.minted && r.orgId && !caller.orgIds.includes(r.orgId)) {
-        leakedRows.push(
-          `${r.table} ${r.id} — MINTED by this call into organization ${r.orgId}, which the caller has no standing in`,
-        );
-        continue;
+      if (r.minted && r.orgId && !callerOrgsNow.includes(r.orgId)) {
+        // 🚨 DD-209. The SYSTEM organization is not a tenant. A row minted there
+        // is platform-shared content (`seo.keyword`, `seo.topic`,
+        // `education.learn_doc` and four more DEFAULT their organization_id to
+        // it), so it is not judged here — it falls through to the ordinary RLS
+        // test below, which FAILS it if the caller cannot read what it was just
+        // handed, and the write arm has already named it on this run.
+        if (!catalog.systemOrgIds.includes(r.orgId)) {
+          leakedRows.push(
+            `${r.table} ${r.id} — MINTED by this call into organization ${r.orgId}, which the caller has no standing in`,
+          );
+          continue;
+        }
       }
       if (!identitySet.has(r.id.toLowerCase())) continue; // a foreign key inside the caller's own row
       const [sch, tab] = r.table.split(".");
@@ -1416,6 +2081,58 @@ async function runProbe(
 }
 
 /**
+ * DD-209's control probe. The identical call, as the victim identity, inside its
+ * own savepoint so nothing it does survives and the caller's probe transaction
+ * is never poisoned. The comparison is on the error SHAPE, not the text: uuids,
+ * numbers and quoted values are blanked, because `class <id> not found` and
+ * `class <other id> not found` are the same sentence about different rows.
+ */
+const ERROR_SHAPE = (msg: string): string =>
+  msg
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "<id>")
+    .replace(/"[^"]*"/g, "<q>")
+    .replace(/\d+/g, "<n>")
+    .trim()
+    .toLowerCase();
+
+async function controlProbe(
+  db: pg.Client,
+  call: string,
+  values: unknown[],
+  victim: Principal,
+): Promise<{ code: string; message: string; outcome: string }> {
+  const claims = JSON.stringify({
+    sub: victim.id,
+    role: "authenticated",
+    email: victim.email,
+    aud: "authenticated",
+    app_metadata: {},
+    user_metadata: {},
+  });
+  await db.query("savepoint control_probe");
+  try {
+    await db.query("reset role");
+    await db.query(`select set_config('request.jwt.claims', $1, true)`, [claims]);
+    await db.query("set local role authenticated");
+    const r = await db.query(call, values);
+    return { code: "", message: "", outcome: `answered ${r.rowCount ?? 0} row(s)` };
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    return {
+      code: err.code ?? "",
+      message: err.message ?? String(e),
+      outcome: `${err.code ?? ""} ${(err.message ?? "").slice(0, 80)}`,
+    };
+  } finally {
+    try {
+      await db.query("rollback to savepoint control_probe");
+    } catch {
+      /* the caller's rollback ends the transaction anyway */
+    }
+  }
+}
+
+/**
  * "This row was written by THIS call" — exactly, not approximately.
  *
  * The obvious test, `xmin >= the xid we started with`, is wrong on a live
@@ -1447,6 +2164,8 @@ const WRITTEN_BY_THIS_CALL = `(pg_xact_status((greatest(case when xmin::text::bi
 interface WriteVerdict {
   crossed: string[];
   unjudged: string[];
+  /** DD-209: writes into the SYSTEM organization the caller can read back — shared platform content, named on every run, never silent and never a tenant crossing. */
+  sharedVocabulary: string[];
 }
 
 /**
@@ -1540,7 +2259,11 @@ async function rowsVisibleToTheCaller(
   }
 }
 
-async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Promise<WriteVerdict> {
+async function writesCrossingTheBoundary(
+  db: pg.Client,
+  caller: Principal,
+  catalog: Catalog,
+): Promise<WriteVerdict> {
   const touched = (
     await db.query(`
       select schemaname as sch, relname as tab, n_tup_ins as ins, n_tup_upd as upd, n_tup_del as del
@@ -1549,7 +2272,8 @@ async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Prom
   ).rows as { sch: string; tab: string; ins: string; upd: string; del: string }[];
   const crossed: string[] = [];
   const unjudged: string[] = [];
-  if (!touched.length) return { crossed, unjudged };
+  const sharedVocabulary: string[] = [];
+  if (!touched.length) return { crossed, unjudged, sharedVocabulary };
 
   for (const t of touched) {
     const qualified = `${t.sch}.${t.tab}`;
@@ -1602,6 +2326,17 @@ async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Prom
       // `hr.access_audit`, a log that stranger can never read back — so a
       // measurement taken only as the caller would have seen nothing at all.
       const seen = await rowsVisibleToTheCaller(db, t.sch, t.tab, placeCol, r.v);
+      // 🚨 DD-209. The SYSTEM organization is not a tenant (see Catalog.systemOrgIds).
+      // A row written there that the caller can read back IS the shared platform
+      // vocabulary doing its job; it is named on every run and never counted as a
+      // crossing. A row written there the caller CANNOT read back is still a FAIL —
+      // that is the DD-213 shape, and being shared content does not excuse it.
+      if ((orgCol || isOrgTable) && r.v && catalog.systemOrgIds.includes(r.v) && seen !== null && seen >= r.n) {
+        sharedVocabulary.push(
+          `${qualified} — ${r.n} row(s) written by this call into the SYSTEM organization ${r.v} (platform-shared content, not a tenant), all ${seen} readable back by the caller under RLS`,
+        );
+        continue;
+      }
       const lens =
         seen === null
           ? "" // the caller's own view could not be taken; the postgres count stands alone
@@ -1620,7 +2355,7 @@ async function writesCrossingTheBoundary(db: pg.Client, caller: Principal): Prom
     // the honest position; claiming a cross-boundary delete on that evidence is
     // not. THIS IS A KNOWN HOLE in the gate, and it is named in the header.
   }
-  return { crossed, unjudged };
+  return { crossed, unjudged, sharedVocabulary };
 }
 
 interface ResolvedId {
@@ -1726,6 +2461,7 @@ async function plantDd191Shape(
     argDefaults: 0,
     retSet: true,
     retType: "TABLE(id uuid)",
+    probeArgs: null,
   };
 
   await db.query("begin");
@@ -1772,6 +2508,95 @@ async function plantDd191Shape(
     await db.query("rollback");
   }
   return caught;
+}
+
+/**
+ * 🚨 DD-209, RED then GREEN: A DOOR WITH ONLY BENIGN ARGUMENTS.
+ *
+ * V-73 found the gap by reading one line: the gate used to `continue` before
+ * calling a door whose arguments could not name a victim row, so
+ * `public.get_agents_for_chat(p_limit, p_cursor)` — which over-read inside its
+ * own body — was never called once, while `public.agx_get_list_full()` was caught
+ * by the same class of leak only because it takes ZERO arguments and slipped past
+ * the test. The boundary is not crossed only by arguments.
+ *
+ * This plants exactly that shape: a `SECURITY DEFINER` door whose only argument is
+ * a page size — nothing in it can name anybody — returning a row measured to be
+ * unreadable by caller A. It must be a FAIL. Then the same door, bounded to the
+ * caller's own organizations, must be a PASS: a gate that fails a correct door is
+ * as useless as one that passes a leak.
+ */
+async function plantBenignArgumentShape(
+  db: pg.Client,
+  q: <T = Record<string, unknown>>(s: string, p?: unknown[]) => Promise<T[]>,
+  cast: Cast,
+  catalog: Catalog,
+  victim: { table: string; id: string },
+): Promise<boolean> {
+  const [vSch, vTab] = victim.table.split(".");
+  const door: Door = {
+    schema: "public",
+    fn: "dd209_selftest_benign_args_door",
+    identityArgs: "p_limit integer",
+    declaredBy: "DD-209 self-test",
+    gatePredicate: "auth.uid()",
+    oid: 0,
+    volatile: false,
+    argNames: ["p_limit"],
+    argTypes: ["integer"],
+    argDefaults: 0,
+    retSet: true,
+    retType: "TABLE(id uuid)",
+    probeArgs: null,
+  };
+
+  await db.query("begin");
+  OUTER_TX = true;
+  let red = false;
+  let green = false;
+  try {
+    await db.query(`
+      create function public.dd209_selftest_benign_args_door(p_limit integer)
+      returns table(id uuid) language sql security definer set search_path = pg_catalog, public as $fn$
+        select t.id from ${qi(vSch)}.${qi(vTab)} t where t.id = '${victim.id}'::uuid limit p_limit
+      $fn$`);
+    await db.query(`
+      insert into platform.client_callable_door (schema_name, function_name, identity_args, declared_by, reason, gate_predicate)
+      values ('public','dd209_selftest_benign_args_door','p_limit integer','DD-209 self-test',
+              'planted by pnpm check:door-rows:self-test inside a rolled-back transaction','auth.uid()')`);
+    await db.query(`grant execute on function public.dd209_selftest_benign_args_door(integer) to authenticated`);
+
+    const r1 = await measureDoor(db, q, cast, catalog, door);
+    red = r1.verdict === "FAIL";
+    console.log(
+      red
+        ? `${TAG.ok}DD-209 BENIGN-ARGUMENT RED proven: a door whose only argument is a page size is ${r1.verdict} — ${r1.leaked.slice(0, 1).join(", ")}`
+        : `${TAG.fail}DD-209 BENIGN-ARGUMENT RED: the planted over-reading door came back ${r1.verdict} (${r1.why}) — this gate is still skipping doors it cannot cross by argument, and V-73's class is open`,
+    );
+
+    await db.query(`
+      create or replace function public.dd209_selftest_benign_args_door(p_limit integer)
+      returns table(id uuid) language sql security definer set search_path = pg_catalog, public as $fn$
+        select t.id from ${qi(vSch)}.${qi(vTab)} t
+         where t.id = '${victim.id}'::uuid
+           and exists (select 1 from iam.organization_member m
+                        where m.user_id = auth.uid() and m.organization_id = t.organization_id)
+         limit p_limit
+      $fn$`);
+    const r2 = await measureDoor(db, q, cast, catalog, door);
+    green = r2.verdict === "PASS";
+    console.log(
+      green
+        ? `${TAG.ok}DD-209 BENIGN-ARGUMENT GREEN proven: the same door bounded to the caller's own organizations is PASS — ${r2.why}`
+        : `${TAG.fail}DD-209 BENIGN-ARGUMENT GREEN: the bounded door came back ${r2.verdict} (${r2.why}) — this gate would fail a correct door`,
+    );
+  } catch (e) {
+    console.log(`${TAG.fail}DD-209 BENIGN-ARGUMENT arm could not run: ${(e as Error).message.slice(0, 200)}`);
+  } finally {
+    OUTER_TX = false;
+    await db.query("rollback");
+  }
+  return red && green;
 }
 
 /**
@@ -1970,6 +2795,7 @@ async function selfTest(
     argDefaults: 0,
     retSet: true,
     retType: "TABLE(id uuid)",
+    probeArgs: null,
   };
 
   await db.query("begin");
@@ -2038,6 +2864,11 @@ async function selfTest(
   // a FAIL. If it does not, DD-191 could come back and the gate would stay green.
   const replay = await plantDd191Shape(db, q, cast, catalog);
 
+  // THE BENIGN-ARGUMENT ARM (DD-209). The plants above all cross the boundary by
+  // ARGUMENT. This one cannot: its only argument is a page size, which is exactly
+  // the shape V-73 proved the gate was skipping without calling.
+  const benignArm = await plantBenignArgumentShape(db, q, cast, catalog, victim);
+
   // THE WRITE ARM. DD-213's defect was not a leaked row — it was a row this gate
   // never looked for, because the door refused. This replays it on the REAL door
   // `public.hr_my_compensation` with the REAL pre-fix recorder restored from its
@@ -2051,11 +2882,11 @@ async function selfTest(
   const writeArmIam = await replayDd213c(db, q, cast, catalog, _doors);
 
   const planted = await q<{ n: string }>(
-    `select count(*)::text n from pg_proc where proname like 'dd192_selftest%'`,
+    `select count(*)::text n from pg_proc where proname like 'dd192_selftest%' or proname like 'dd209_selftest%'`,
   );
   console.log(`${TAG.info}after rollback, planted functions remaining: ${planted[0].n} (must be 0)`);
   const clean = planted[0].n === "0";
-  return failedTheLeak && passedTheBounded && clean && replay && writeArm && writeArmIam ? 0 : 1;
+  return failedTheLeak && passedTheBounded && clean && replay && benignArm && writeArm && writeArmIam ? 0 : 1;
 }
 
 // ─── the by-design allowlist (DD-208) ────────────────────────────────────────
@@ -2108,9 +2939,22 @@ function report(results: DoorResult[], structural: Structural): number {
   const byDesignFor = (r: DoorResult) =>
     byDesign.find((e) => e.door === `${r.door.schema}.${r.door.fn}(${r.door.identityArgs})`);
   const allowed = results.filter((r) => r.verdict === "FAIL" && byDesignFor(r));
-  const stale = byDesign.filter(
-    (e) => !results.some((r) => r.verdict === "FAIL" && `${r.door.schema}.${r.door.fn}(${r.door.identityArgs})` === e.door),
-  );
+  // 🚨 DD-209. A SLICE CANNOT JUDGE THE ALLOWLIST. `--only` / `--offset` /
+  // `--limit` run part of the population, so an allowlisted door outside the
+  // slice looks "no longer failing" and the stale rule fails the run for an
+  // artifact of the slicing — which is exactly what V-73 hit and had to explain
+  // away by hand. The stale rule now applies only to a whole-population run,
+  // and a sliced run SAYS it did not judge the list.
+  const sliced = Boolean(ONLY || OFFSET || LIMIT);
+  const stale = sliced
+    ? []
+    : byDesign.filter(
+        (e) => !results.some((r) => r.verdict === "FAIL" && `${r.door.schema}.${r.door.fn}(${r.door.identityArgs})` === e.door),
+      );
+  if (sliced && byDesign.length)
+    console.log(
+      `${TAG.warn}this run is a SLICE (--only/--offset/--limit), so the by-design allowlist was NOT checked for stale entries; only a whole-population run judges it.`,
+    );
   const fails = results.filter((r) => r.verdict === "FAIL" && !byDesignFor(r));
   const unmeasured = results.filter((r) => r.verdict === "UNMEASURED");
   const passes = results.filter((r) => r.verdict === "PASS");
@@ -2137,6 +2981,18 @@ function report(results: DoorResult[], structural: Structural): number {
           ? `       ${r.fn}(${r.args}) — service-lane door, not client-callable (declared non_client_lane); this gate probes browser callers, so it is out of scope by design, not a suspect [${r.declaredBy ?? "no declared_by"}]`
           : `       ${r.fn}(${r.args}) — no client holds EXECUTE; the row declares a door that is not one [${r.declaredBy ?? "no declared_by"}]`,
       );
+  }
+
+  const sharedWriters = results.filter((r) => r.shared.length);
+  if (sharedWriters.length) {
+    console.log("");
+    console.log(
+      `${TAG.warn}WROTE INTO THE SYSTEM ORGANIZATION (${sharedWriters.length}) — platform-shared content, not a tenant crossing. Named here on every run, because "a signed-in stranger may add to the shared vocabulary" is a real decision somebody made and it should never be invisible:`,
+    );
+    for (const r of sharedWriters) {
+      console.log(`       ${r.door.schema}.${r.door.fn}`);
+      for (const w of r.shared) console.log(`         ${w}`);
+    }
   }
 
   if (allowed.length) {
@@ -2191,6 +3047,7 @@ function report(results: DoorResult[], structural: Structural): number {
           verdict: r.verdict,
           why: r.why,
           leaked: r.leaked,
+          sharedVocabularyWrites: r.shared,
           probes: r.probes,
         })),
         null,
@@ -2211,8 +3068,8 @@ function report(results: DoorResult[], structural: Structural): number {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((e) => {
     console.error(`${TAG.fail}script error: ${(e as Error).stack ?? e}`);
-    process.exit(2);
+    exitAfterDrain(2);
   });
