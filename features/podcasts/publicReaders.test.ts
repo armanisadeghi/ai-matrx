@@ -28,6 +28,8 @@
  *      query that was denied. The false-empty-state half is the one that shipped.
  */
 
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { ANON_COLUMN_SURFACE } from "@/lib/security/public-exposure";
 
 /**
@@ -408,4 +410,59 @@ describe("a refused read is never rendered as an empty state", () => {
     // empty catalogue, not a denial. The denial path is covered above.
     await expect(loadEducationPricing()).resolves.toMatchObject({ premium: null });
   });
+});
+
+
+describe("THE ONE ROW GATE — every signed-out episode reader goes through it", () => {
+  /**
+   * The class, not the instance (DD-234 residue, V-103). chapters.json was the
+   * reader V-103 caught, but it was never the only one: `resolveSlug` in the
+   * episode page and `resolveBlog` in the blog page filtered `deleted_at` alone
+   * too, so a PUBLIC but UNPUBLISHED episode rendered its own page and its
+   * companion article to anyone holding the slug. `pub_read` is
+   * `deleted_at IS NULL AND visibility = 'public'` and carries no
+   * `is_published` term, so row security closes none of it.
+   *
+   * A reviewer cannot hold four call sites in their head, and the next public
+   * reader will be written by someone who never read this file. So the rule is
+   * MEASURED: any file under app/(core)/podcast that reads pc_episodes must
+   * call `publiclyServableEpisodes`, and none of them may hand-roll the
+   * predicate it owns.
+   */
+  const ROUTE_ROOT = join(process.cwd(), "app", "(core)", "podcast");
+
+  function podcastSourceFiles(dir: string): string[] {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...podcastSourceFiles(full));
+      else if (/\.tsx?$/.test(entry.name)) out.push(full);
+    }
+    return out;
+  }
+
+  const episodeReaders = podcastSourceFiles(ROUTE_ROOT)
+    .map((file) => ({ file, source: readFileSync(file, "utf8") }))
+    .filter(({ source }) => source.includes('from("pc_episodes")') || source.includes("from('pc_episodes')"));
+
+  it("finds the public episode readers at all (a guard over nothing proves nothing)", () => {
+    expect(episodeReaders.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(episodeReaders.map(({ file }) => file))(
+    "%s reads episodes through publiclyServableEpisodes",
+    (file) => {
+      const source = readFileSync(file, "utf8");
+      expect({ file, callsTheGate: source.includes("publiclyServableEpisodes(") }).toEqual({
+        file,
+        callsTheGate: true,
+      });
+      // And never re-states the predicate the gate owns: two copies is how the
+      // routes came to disagree in the first place.
+      expect({ file, handRolled: /\.eq\(\s*["']is_published["']/.test(source) }).toEqual({
+        file,
+        handRolled: false,
+      });
+    },
+  );
 });
