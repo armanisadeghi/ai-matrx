@@ -47,6 +47,7 @@ export interface ReasonLinkContext {
 }
 
 const VALUE_QUERY_KEYS = {
+  offering: "offering",
   topic: "topic",
   worth: "worth",
   dimension: "dimension",
@@ -75,6 +76,23 @@ function valuePath(
 export function levelVocabularyHref(ctx: ReasonLinkContext): string {
   return valuePath(ctx, "/value/rules", {
     [VALUE_QUERY_KEYS.bands]: "value_band",
+  });
+}
+
+/**
+ * The Offerings screen, opened AT one brand offering (optionally with its worth
+ * editor open). The screen also still resolves a legacy `?topic=<id>` link — a
+ * product/service topic id is its offering template id — onto the brand's copy
+ * of that template, so a saved link keeps landing on the same offering.
+ */
+export function offeringNodeHref(
+  ctx: ReasonLinkContext,
+  offeringId: string | null | undefined,
+  openWorth = false,
+): string {
+  return valuePath(ctx, "/value/offerings", {
+    [VALUE_QUERY_KEYS.offering]: offeringId ?? undefined,
+    [VALUE_QUERY_KEYS.worth]: openWorth ? "1" : undefined,
   });
 }
 
@@ -179,11 +197,8 @@ export function reasonEditorLink(
         label: "Change or clear your ruling",
       };
     case "offering":
-      // The Offerings screen still focuses nodes by legacy topic id until it
-      // moves to brand offerings (brand-offerings cutover step 4c), so this door
-      // opens the screen where the offering's worth is edited, without a focus.
       return {
-        href: topicNodeHref(ctx, null),
+        href: offeringNodeHref(ctx, reason.offering_id, true),
         label: `Change what “${reason.offering}” is worth`,
       };
     case "topic":

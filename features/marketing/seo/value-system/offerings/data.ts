@@ -162,6 +162,181 @@ export async function adoptOfferingTemplate(input: {
   return assertGoverned(response.data, response.error, "add that offering");
 }
 
+/** One offering the site's BRAND owns, as the Offerings screen shows it. */
+export interface CatalogOffering {
+  id: string;
+  parentId: string | null;
+  name: string;
+  kind: OfferingKind;
+  description: string | null;
+  sort: number;
+  /** The platform suggestion it was copied from (D6), if any. */
+  templateId: string | null;
+  templateName: string | null;
+  /** The brand edited its copy since adopting it. */
+  changedFromTemplate: boolean;
+  /** THIS site offers it (D2). */
+  available: boolean;
+  availabilityReason: string | null;
+  otherSiteCount: number;
+  /** This site's own worth ruling, in points (D9); null = no ruling here. */
+  worthPoints: number | null;
+  leadQuality: string | null;
+  offeringMatch: string | null;
+  worthNotes: string | null;
+}
+
+/** Every live offering the site's brand owns, with this site's availability and worth. */
+export async function listBrandOfferingCatalog(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<CatalogOffering[]> {
+  const response = await (await webDb())
+    .rpc("brand_offering_catalog", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read this brand's offerings");
+  return (rows ?? []).map((row) => ({
+    id: row.id,
+    parentId: row.parent_id,
+    name: row.name,
+    kind: row.kind === "product" ? "product" : "service",
+    description: row.description,
+    sort: row.sort,
+    templateId: row.template_id,
+    templateName: row.template_name,
+    changedFromTemplate: row.changed_from_template === true,
+    available: row.available === true,
+    availabilityReason: row.availability_reason,
+    otherSiteCount: Number(row.other_site_count ?? 0),
+    worthPoints: row.worth_points === null ? null : Number(row.worth_points),
+    leadQuality: row.lead_quality,
+    offeringMatch: row.offering_match,
+    worthNotes: row.worth_notes,
+  }));
+}
+
+export interface AvailabilityImpact {
+  offeringId: string;
+  offeringName: string;
+  available: boolean;
+  placements: number;
+  humanPlacements: number;
+  hasWorth: boolean;
+  keywordsInheritingWorth: number;
+}
+
+/** What stopping these offerings on this site would take with it — read before the click. */
+export async function getAvailabilityImpact(
+  siteId: string,
+  offeringIds: string[],
+  signal?: AbortSignal,
+): Promise<AvailabilityImpact[]> {
+  const response = await (await webDb())
+    .rpc("site_offering_availability_impact", {
+      p_site_id: siteId,
+      p_offering_ids: offeringIds,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "measure what that would change");
+  return (rows ?? []).map((row) => ({
+    offeringId: row.offering_id,
+    offeringName: row.offering_name,
+    available: row.available === true,
+    placements: Number(row.placements ?? 0),
+    humanPlacements: Number(row.human_placements ?? 0),
+    hasWorth: row.has_worth === true,
+    keywordsInheritingWorth: Number(row.keywords_inheriting_worth ?? 0),
+  }));
+}
+
+export interface AvailabilityChange {
+  offeringId: string;
+  changed: boolean;
+  placementsRemoved: number;
+  placementsRestored: number;
+  worthRemoved: number;
+  worthRestored: number;
+}
+
+/**
+ * THE availability writer (D2): offer, or stop offering, one or many brand
+ * offerings on this site. Stopping removes this site's placements and worth on
+ * them; offering again restores exactly those. The reason is kept (P24).
+ */
+export async function setSiteOfferingAvailability(input: {
+  organizationId: string;
+  siteId: string;
+  offeringIds: string[];
+  available: boolean;
+  reason?: string | null;
+}): Promise<AvailabilityChange[]> {
+  const response = await (await webDb()).rpc("set_site_offering_availability", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_offering_ids: input.offeringIds,
+    p_available: input.available,
+    ...(input.reason?.trim() ? { p_reason: input.reason.trim() } : {}),
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    input.available ? "offer those on this site" : "stop offering those on this site",
+  );
+  return (rows ?? []).map((row) => ({
+    offeringId: row.offering_id,
+    changed: row.changed === true,
+    placementsRemoved: Number(row.placements_removed ?? 0),
+    placementsRestored: Number(row.placements_restored ?? 0),
+    worthRemoved: Number(row.worth_removed ?? 0),
+    worthRestored: Number(row.worth_restored ?? 0),
+  }));
+}
+
+/** Reparent / reorder within the brand's catalog (D3). */
+export async function moveBrandOffering(input: {
+  organizationId: string;
+  siteId: string;
+  offeringId: string;
+  parentId: string | null;
+  siblingOrder: string[];
+}): Promise<string> {
+  const response = await (await webDb()).rpc("move_site_offering", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_offering_id: input.offeringId,
+    ...(input.parentId ? { p_parent_id: input.parentId } : {}),
+    p_sibling_order: input.siblingOrder,
+  });
+  return assertGoverned(response.data, response.error, "move that offering");
+}
+
+/** This site's worth ruling on one offering, in points (D9); `clear` removes it. */
+export async function setOfferingWorth(input: {
+  organizationId: string;
+  siteId: string;
+  offeringId: string;
+  worthPoints: number | null;
+  leadQuality: string | null;
+  offeringMatch: string | null;
+  notes: string | null;
+  clear?: boolean;
+}): Promise<string | null> {
+  const response = await (await seoDb()).rpc("set_site_offering_value", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_brand_offering_id: input.offeringId,
+    ...(input.worthPoints !== null ? { p_worth_points: input.worthPoints } : {}),
+    ...(input.leadQuality ? { p_lead_quality: input.leadQuality } : {}),
+    ...(input.offeringMatch ? { p_offering_match: input.offeringMatch } : {}),
+    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
+    ...(input.clear ? { p_clear: true } : {}),
+  });
+  if (response.error) {
+    assertGoverned(null, response.error, "save that offering's worth");
+  }
+  return response.data ?? null;
+}
+
 /**
  * Create a brand offering (it becomes available on this site in the same write)
  * or rename / retype / reparent one the brand owns. Returns its id.
