@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { unwrapResult } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUser } from "@/lib/redux/slices/userSlice";
 import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
   setActiveNote as setActiveNoteAction,
@@ -51,6 +52,7 @@ export function useNotesRedux() {
   const activeNoteId = useAppSelector(selectActiveNoteId);
   const openTabs = useAppSelector(selectOpenTabs);
   const listStatus = useAppSelector(selectNotesListStatus);
+  const { id: userId, authReady } = useAppSelector(selectUser);
 
   const isLoading = listStatus === "loading" || listStatus === "idle";
   const error =
@@ -83,16 +85,17 @@ export function useNotesRedux() {
   }
 
   // Fetch notes list on first use (if not already loaded)
-  const fetchedRef = useRef(false);
+  const fetchedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!fetchedRef.current && listStatus === "idle") {
-      fetchedRef.current = true;
-      console.log(
-        "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
-      );
-      dispatch(fetchNotesList());
-    }
-  }, [dispatch, listStatus]);
+    if (!authReady || !userId || listStatus !== "idle") return;
+    if (fetchedUserIdRef.current === userId) return;
+    if (fetchedUserIdRef.current !== null) dispatch(resetNotesState());
+    fetchedUserIdRef.current = userId;
+    console.log(
+      "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
+    );
+    dispatch(fetchNotesList());
+  }, [authReady, dispatch, listStatus, userId]);
 
   useEffect(() => {
     if (listStatus === "loaded") {

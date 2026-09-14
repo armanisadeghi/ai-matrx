@@ -51,6 +51,7 @@ import {
   Eye,
   Pencil,
   ListChecks,
+  Loader2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -1200,6 +1201,12 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         ref={folderTreeRef}
         onDragOver={handleListAutoScroll}
       >
+        {(listStatus === "idle" || listStatus === "loading") && (
+          <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground" role="status" aria-label="Loading notes">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            <span>Loading notes…</span>
+          </div>
+        )}
         {/* Recent — collapsible, paginated. Sits ABOVE "Shared with me".
             Default mode only (other modes surface recency differently). */}
         {groupBy === "default" && recentSorted.length > 0 && (
