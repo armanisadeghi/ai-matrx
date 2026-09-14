@@ -153,7 +153,7 @@
     "review-queue:sweep": "tsx scripts/review-queue-sweep.ts",
     "check:unbounded-reads": "tsx scripts/check-unbounded-reads.ts",
     "check:one-table-law": "tsx scripts/check-one-table-law.ts",
-    "check:autorun-headless": "tsx scripts/check-autorun-headless.ts",
+    "check:headless-ui-flags": "tsx scripts/check-headless-ui-flags.ts",
     "check:kind-schema-source": "npx tsx scripts/check-kind-schema-source.ts",
     "check:flattened-shapes": "tsx scripts/check-flattened-shapes.ts",
     "check:kind-marker-law": "tsx scripts/check-kind-marker-law.ts",

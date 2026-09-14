@@ -1,7 +1,16 @@
 #!/usr/bin/env npx tsx
 /**
- * check:autorun-headless — `autoRun: false` on a display mode that renders
- * nothing is a contradiction, and it silently deletes runs.
+ * check:headless-ui-flags — a user-interface flag on a display mode that
+ * renders nothing is a contradiction, and two of them silently delete runs.
+ *
+ * TWO SHAPES OF THE SAME DEFECT, both scanned here:
+ *   1. `autoRun: false` on a headless mode (the original, measured victim
+ *      below).
+ *   2. Any INTERFACE-ONLY flag set true on a headless mode —
+ *      `showPreExecutionGate`, `showVariablePanel`, `allowChat`. The gate is
+ *      the dangerous one: it holds the run behind an overlay nobody can press.
+ *      Ruled in on 2026-09-12 ("sweep them now") by the same laws that
+ *      produced the autoRun repair — nothing fails silently, fix the class.
  *
  * 🚨 WHAT autoRun IS (Arman, 2026-08-25, after this class bit the app again):
  *
@@ -55,6 +64,13 @@ const ROOT = path.resolve(__dirname, "..");
 /** Kept in lockstep with HEADLESS_DISPLAY_MODES. */
 const HEADLESS_MODES = ["background"];
 
+/** Kept in lockstep with INTERFACE_ONLY_LAUNCH_FLAGS. */
+const INTERFACE_ONLY_FLAGS = [
+  "showPreExecutionGate",
+  "showVariablePanel",
+  "allowChat",
+];
+
 /**
  * How far above a `config:` literal to look for its sibling `callerExecutes`
  * declaration on the same launch-options object. It sits within a few lines in
@@ -66,6 +82,8 @@ interface Violation {
   file: string;
   line: number;
   snippet: string;
+  /** `autoRun` for the original shape, otherwise the interface-only flag. */
+  flag: string;
 }
 
 function sourceFiles(): string[] {
@@ -104,6 +122,9 @@ function scan(): Violation[] {
   const autoRunFalseRe = /autoRun\s*:\s*false\b/;
   const callerExecutesRe = /callerExecutes\s*:\s*true\b/;
   const configRe = /\bconfig\s*:\s*\{/g;
+  const interfaceFlagRes = INTERFACE_ONLY_FLAGS.map(
+    (flag) => [flag, new RegExp(`${flag}\\s*:\\s*true\\b`)] as const,
+  );
 
   for (const rel of sourceFiles()) {
     if (rel.includes("__tests__") || /\.test\.tsx?$/.test(rel)) continue;
@@ -113,7 +134,10 @@ function scan(): Violation[] {
     } catch {
       continue;
     }
-    if (!modeRe.test(text) || !autoRunFalseRe.test(text)) continue;
+    const anyFlagInFile =
+      autoRunFalseRe.test(text) ||
+      interfaceFlagRes.some(([, re]) => re.test(text));
+    if (!modeRe.test(text) || !anyFlagInFile) continue;
 
     configRe.lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -121,19 +145,25 @@ function scan(): Violation[] {
       const openIdx = text.indexOf("{", match.index);
       const body = literalBody(text, openIdx);
       if (!body) continue;
-      if (!modeRe.test(body) || !autoRunFalseRe.test(body)) continue;
+      if (!modeRe.test(body)) continue;
 
       const lineNo = text.slice(0, match.index).split("\n").length;
       const lines = text.split("\n");
       const from = Math.max(0, lineNo - 1 - SIBLING_LOOKBEHIND_LINES);
       const siblingWindow = lines.slice(from, lineNo).join("\n");
-      if (callerExecutesRe.test(siblingWindow)) continue;
+      const snippet = body.replace(/\s+/g, " ").slice(0, 120);
 
-      violations.push({
-        file: rel,
-        line: lineNo,
-        snippet: body.replace(/\s+/g, " ").slice(0, 120),
-      });
+      // `callerExecutes: true` is the one lawful deferral, and it excuses
+      // ONLY the autoRun shape — it is a claim about who sends the run, not a
+      // licence to paint an interface on a mode that paints nothing.
+      if (autoRunFalseRe.test(body) && !callerExecutesRe.test(siblingWindow)) {
+        violations.push({ file: rel, line: lineNo, snippet, flag: "autoRun" });
+      }
+      for (const [flag, re] of interfaceFlagRes) {
+        if (re.test(body)) {
+          violations.push({ file: rel, line: lineNo, snippet, flag });
+        }
+      }
     }
   }
   return violations;
@@ -143,28 +173,31 @@ function main(): void {
   const violations = scan();
   if (violations.length === 0) {
     console.log(
-      "✅ autoRun is never paired with a headless display mode — no runs are being deleted by a UI flag.",
+      "✅ No user-interface flag is aimed at a headless display mode — no runs are being deleted by a UI flag.",
     );
     return;
   }
 
-  console.error(
-    "\n🚨 `autoRun: false` ON A MODE THAT RENDERS NO INTERFACE\n",
-  );
+  console.error("\n🚨 A USER-INTERFACE FLAG ON A MODE THAT RENDERS NO INTERFACE\n");
   for (const v of violations) {
-    console.error(`  ✗ ${v.file}:${v.line}  ${v.snippet}`);
+    console.error(`  ✗ ${v.file}:${v.line}  [${v.flag}]  ${v.snippet}`);
   }
   console.error(
-    "\nautoRun is a USER-INTERFACE control: it decides whether the interface pauses and\n" +
-      "lets the person act before the request goes out. It has no say in whether a run\n" +
-      `happens. A headless mode (${HEADLESS_MODES.join(", ")}) paints nothing — no component, no\n` +
-      "composer, no button — so there is nobody to pause for and nothing that would ever\n" +
-      "send it later. The flag reads as \"wait\" and behaves as \"throw the run away\".\n\n" +
-      "FIX: drop `autoRun` (headless runs either way), or pass `autoRun: true`.\n" +
-      "Only if you truly dispatch `executeInstance` yourself — because you seed something\n" +
-      "the launch cannot carry — declare `callerExecutes: true` on the launch options.\n\n" +
-      "The launch thunk already ignores this at runtime and logs loudly; this check exists\n" +
-      "so the config is caught where it is written.\n",
+    `\nA headless mode (${HEADLESS_MODES.join(", ")}) paints nothing — no component, no composer,\n` +
+      "no button. Every flag below answers a question about what a PERSON sees, so on those\n" +
+      "modes each one describes an interface that does not exist.\n\n" +
+      "  autoRun: false            — reads as \"wait\", behaves as \"throw the run away\": there is\n" +
+      "                              nobody to pause for and nothing that would ever send it.\n" +
+      "  showPreExecutionGate:true — same deletion, different door: the launch returns early\n" +
+      "                              behind a gate overlay nobody can ever press.\n" +
+      "  showVariablePanel: true   — paints a panel on a surface that paints nothing.\n" +
+      "  allowChat: true           — offers a composer that does not exist.\n\n" +
+      "FIX: drop the flag (headless runs either way), or launch on a display mode that\n" +
+      "actually paints something. For `autoRun` only, a caller that truly dispatches\n" +
+      "`executeInstance` itself — because it seeds something the launch cannot carry —\n" +
+      "declares `callerExecutes: true` on the launch options.\n\n" +
+      "The launch thunk already ignores all of these at runtime and logs loudly; this check\n" +
+      "exists so the config is caught where it is written.\n",
   );
   exitAfterDrain(1);
 }

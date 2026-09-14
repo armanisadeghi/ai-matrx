@@ -401,7 +401,7 @@ if $STRICT; then
         # measured victim before it (image-studio DESCRIBE never ran), so there
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
-        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "no UI flag aimed at a headless mode|pnpm check:headless-ui-flags"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by
@@ -771,7 +771,7 @@ else
         # measured victim before it (image-studio DESCRIBE never ran), so there
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
-        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "no UI flag aimed at a headless mode|pnpm check:headless-ui-flags"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by

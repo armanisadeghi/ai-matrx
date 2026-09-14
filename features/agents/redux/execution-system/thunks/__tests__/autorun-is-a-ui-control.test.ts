@@ -316,3 +316,79 @@ describe("autoRun is a UI control — it never decides whether a run happens", (
     errorSpy.mockRestore();
   });
 });
+
+/**
+ * THE SAME LAW, SWEPT ACROSS ITS SIBLINGS (ruled 2026-09-12).
+ *
+ * `autoRun` was never special — it was only the flag that had already cost us
+ * runs. `showPreExecutionGate`, `showVariablePanel` and `allowChat` are UI
+ * controls by the same definition, and can be set the same meaningless way on
+ * a mode that paints nothing. The gate is the one that repeats the DEFECT and
+ * not just the nonsense: honouring it returns the launch early behind an
+ * overlay nobody can ever press, so the run is deleted rather than deferred.
+ */
+describe("interface-only flags are ignored on a mode with no interface", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    executeSpy.mockClear();
+  });
+
+  it("HEADLESS + showPreExecutionGate:true — ignores the gate and runs anyway", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const store = makeStore();
+
+    await launchAndSettle(store, {
+      config: { displayMode: "background", showPreExecutionGate: true },
+    });
+
+    // The gate cannot hold a run nobody can release.
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    const shouted = errorSpy.mock.calls.some((c) =>
+      String(c[0]).includes("IGNORING showPreExecutionGate=true"),
+    );
+    expect(shouted).toBe(true);
+    errorSpy.mockRestore();
+  });
+
+  it("INTERACTIVE + showPreExecutionGate:true — the gate still holds the send", async () => {
+    const store = makeStore();
+
+    await launch(store, {
+      config: { displayMode: "flexible-panel", showPreExecutionGate: true },
+    });
+
+    // The sweep must not weaken the gate where there IS someone to press it.
+    expect(executeSpy).not.toHaveBeenCalled();
+  });
+
+  it("HEADLESS + allowChat:true — runs, and says so by name", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const store = makeStore();
+
+    await launchAndSettle(store, {
+      config: { displayMode: "background", allowChat: true },
+    });
+
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    const shouted = errorSpy.mock.calls.some((c) =>
+      String(c[0]).includes("IGNORING allowChat=true"),
+    );
+    expect(shouted).toBe(true);
+    errorSpy.mockRestore();
+  });
+
+  it("HEADLESS + the flags omitted — runs, and says nothing", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const store = makeStore();
+
+    await launchAndSettle(store, { config: { displayMode: "background" } });
+
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    // Omitting a UI flag on a UI-less mode is the sane thing to write.
+    const shouted = errorSpy.mock.calls.some((c) =>
+      String(c[0]).includes("IGNORING"),
+    );
+    expect(shouted).toBe(false);
+    errorSpy.mockRestore();
+  });
+});

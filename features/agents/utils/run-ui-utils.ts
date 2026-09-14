@@ -61,6 +61,79 @@ export function isHeadlessDisplayMode(
   return (HEADLESS_DISPLAY_MODES as readonly string[]).includes(mode);
 }
 
+/**
+ * Flags on `AgentExecutionConfig` that describe an INTERFACE and nothing else:
+ * whether a gate stops the person before the send, whether the variables panel
+ * is painted, whether a composer is offered after the answer. Like `autoRun`,
+ * every one of them is a question about what a human sees — so on a mode that
+ * paints nothing (`HEADLESS_DISPLAY_MODES`) each is describing an interface
+ * that does not exist.
+ *
+ * Arman's rule, quoted in `features/agents/docs/AUTORUN_IS_A_UI_CONTROL.md`:
+ * *"If there is no user interface, it's impossible for autorun to have any
+ * impact at all because there is no ui."* The same sentence is true of these
+ * three with their names swapped in; `autoRun` was only the one that had
+ * already cost us runs.
+ *
+ * `showPreExecutionGate: true` is the dangerous one: it takes the same shape
+ * as the `autoRun` defect — the launch returns early behind a gate overlay on
+ * a launch nobody is watching, so the run is not deferred, it is thrown away.
+ * The other two are merely meaningless. All three are treated the same way, by
+ * `resolveInterfaceOnlyFlag`: ignored at the root, screamed about by name.
+ */
+export const INTERFACE_ONLY_LAUNCH_FLAGS = [
+  "showPreExecutionGate",
+  "showVariablePanel",
+  "allowChat",
+] as const;
+
+export type InterfaceOnlyLaunchFlag =
+  (typeof INTERFACE_ONLY_LAUNCH_FLAGS)[number];
+
+/**
+ * Resolve one interface-only flag, refusing to honour it on a headless mode.
+ *
+ * Precedence is unchanged (caller literal → the shortcut's / job's stored
+ * answer → undefined); the only new behaviour is at the end: on a headless
+ * mode a `true` becomes `false` and says so, naming the flag, the mode and
+ * which side asserted it, so the CALL SITE gets fixed rather than the symptom.
+ *
+ * Silence is deliberate for `false`/omitted — leaving a user-interface flag
+ * off a mode with no user interface is the sane thing to write, exactly as
+ * with `autoRun`.
+ */
+export function resolveInterfaceOnlyFlag({
+  flag,
+  callerValue,
+  storedValue,
+  displayMode,
+  conversationLabel,
+}: {
+  flag: InterfaceOnlyLaunchFlag;
+  callerValue: boolean | undefined;
+  storedValue?: boolean | null | undefined;
+  displayMode: ResultDisplayMode;
+  conversationLabel?: string;
+}): boolean | undefined {
+  const stored = storedValue ?? undefined;
+  const resolved = callerValue ?? stored;
+
+  if (!isHeadlessDisplayMode(displayMode) || resolved !== true) {
+    return resolved;
+  }
+
+  const source =
+    callerValue === true ? "the call site" : "the stored shortcut/job record";
+  console.error(
+    `[launchAgentExecution] IGNORING ${flag}=true: it was passed with displayMode="${displayMode}"` +
+      `${conversationLabel ? ` (${conversationLabel})` : ""}, which renders no interface. ` +
+      `${flag} decides what the person sees before or after the send; with no UI there is nobody to show it to. ` +
+      `${flag === "showPreExecutionGate" ? "Honouring it would hold the run behind a gate nobody can ever press, which does not defer the run, it deletes it. " : ""}` +
+      `Treating it as false. Fix ${source}: drop ${flag}, or launch on a display mode that paints something.`,
+  );
+  return false;
+}
+
 export interface DisplayModeMeta {
   label: string;
   description: string;

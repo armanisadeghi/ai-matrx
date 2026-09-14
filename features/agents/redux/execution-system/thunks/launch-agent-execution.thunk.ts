@@ -24,7 +24,10 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
-import { isHeadlessDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import {
+  isHeadlessDisplayMode,
+  resolveInterfaceOnlyFlag,
+} from "@/features/agents/utils/run-ui-utils";
 import {
   resolveMandate,
   assertMandateVariables,
@@ -632,12 +635,30 @@ export const launchAgentExecution = createAsyncThunk<
         ...(contextAnchor !== undefined ? { contextAnchor } : {}),
         displayMode: resolvedDisplayMode,
         autoRun,
-        allowChat: allowChat ?? shortcut.allowChat,
-        showPreExecutionGate,
+        // Interface-only flags are refused on a mode that paints nothing —
+        // same law as autoRun, same scream. See INTERFACE_ONLY_LAUNCH_FLAGS.
+        allowChat: resolveInterfaceOnlyFlag({
+          flag: "allowChat",
+          callerValue: allowChat,
+          storedValue: shortcut.allowChat,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `shortcutId=${shortcutId}`,
+        }),
+        showPreExecutionGate: resolveInterfaceOnlyFlag({
+          flag: "showPreExecutionGate",
+          callerValue: showPreExecutionGate,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `shortcutId=${shortcutId}`,
+        }),
         showAutoClearToggle,
         autoClearConversation,
         apiEndpointMode,
-        showVariablePanel: resolvedShowVariablePanel,
+        showVariablePanel: resolveInterfaceOnlyFlag({
+          flag: "showVariablePanel",
+          callerValue: resolvedShowVariablePanel,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `shortcutId=${shortcutId}`,
+        }),
         showDefinitionMessages: resolvedShowDefinitionMessages,
         showDefinitionMessageContent: resolvedShowDefinitionMessageContent,
         widgetHandleId,
@@ -702,9 +723,27 @@ export const launchAgentExecution = createAsyncThunk<
         // Caller first, then the JOB's own stored presentation, then nothing —
         // see THE JOB'S OWN PRESENTATION above. `??` and not `||`: `false` is
         // an answer, and only `undefined` means "the caller said nothing".
-        allowChat: allowChat ?? jobAllowChat,
-        showPreExecutionGate: showPreExecutionGate ?? jobShowPreExecutionGate,
-        showVariablePanel: resolvedShowVariablePanel ?? jobShowVariablePanel,
+        allowChat: resolveInterfaceOnlyFlag({
+          flag: "allowChat",
+          callerValue: allowChat,
+          storedValue: jobAllowChat,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `agentId=${agentId}`,
+        }),
+        showPreExecutionGate: resolveInterfaceOnlyFlag({
+          flag: "showPreExecutionGate",
+          callerValue: showPreExecutionGate,
+          storedValue: jobShowPreExecutionGate,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `agentId=${agentId}`,
+        }),
+        showVariablePanel: resolveInterfaceOnlyFlag({
+          flag: "showVariablePanel",
+          callerValue: resolvedShowVariablePanel,
+          storedValue: jobShowVariablePanel,
+          displayMode: resolvedDisplayMode,
+          conversationLabel: `agentId=${agentId}`,
+        }),
         showDefinitionMessages:
           resolvedShowDefinitionMessages ?? jobShowDefinitionMessages,
         showDefinitionMessageContent:
@@ -1000,8 +1039,18 @@ export const launchAgentExecution = createAsyncThunk<
 
   const seededUiState = (getState() as RootState).instanceUIState
     .byConversationId[conversationId];
+  // The gate is the interface-only flag that can still DELETE a run: it
+  // returns the launch early behind an overlay, and on a headless mode there
+  // is nobody to press it. The seed above is already sanitized; this covers
+  // the caller literal reaching the decision directly.
   const effectiveShowPreExecutionGate =
-    showPreExecutionGate ?? seededUiState?.showPreExecutionGate ?? false;
+    resolveInterfaceOnlyFlag({
+      flag: "showPreExecutionGate",
+      callerValue: showPreExecutionGate,
+      storedValue: seededUiState?.showPreExecutionGate,
+      displayMode: resolvedDisplayMode,
+      conversationLabel: `conversationId=${conversationId}`,
+    }) ?? false;
   // Precedence: the caller's explicit literal → the surface binding's stored
   // answer → whatever instance-ui-state was seeded with (a shortcut's own
   // `auto_run`, or the hard default false) → false. The binding sits ABOVE the

@@ -62,7 +62,9 @@ few weeks and it costs a real feature each time.
 [`docs/AUTORUN_IS_A_UI_CONTROL.md`](docs/AUTORUN_IS_A_UI_CONTROL.md).** It
 carries the rule, why a headless mode (`background`) ignores the flag outright
 rather than deleting the run, why `direct` is deliberately not headless, and
-the one lawful deferral (`callerExecutes`). Guards: `pnpm check:autorun-headless`
+the one lawful deferral (`callerExecutes`), and the same refusal now applied to
+every other interface-only flag (`showPreExecutionGate`, `showVariablePanel`,
+`allowChat`). Guards: `pnpm check:headless-ui-flags`
 (release gates, blocking) + `autorun-is-a-ui-control.test.ts`.
 
 ---
