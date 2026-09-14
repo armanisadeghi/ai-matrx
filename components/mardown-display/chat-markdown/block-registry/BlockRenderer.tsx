@@ -21,6 +21,7 @@ import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading
 import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 import {
   resolveAnnouncedKindLoading,
   resolveProvisionalKindRender,
@@ -237,7 +238,7 @@ const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
  */
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   requestId,
-  block: rawBlock,
+  block: inputBlock,
   index,
   isStreamActive,
   onContentChange,
@@ -249,6 +250,21 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   handleOpenEditor,
   suppressLoadingGate = false,
 }) => {
+  // Reload has only the original text when an interrupted run could not stamp
+  // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
+  // boundary, never on a live prefix, and keep its error status intact.
+  const terminalMetadata =
+    !isStreamActive &&
+    !inputBlock.isStreamingBlock &&
+    !readEnvelope(inputBlock.metadata)
+      ? withIrEnvelope(inputBlock.content, inputBlock.metadata, {
+          allowTerminalError: true,
+        })
+      : inputBlock.metadata;
+  const rawBlock =
+    terminalMetadata !== inputBlock.metadata
+      ? { ...inputBlock, metadata: terminalMetadata }
+      : inputBlock;
   // Late-arrival repaint, GRANULAR: subscribe to THIS block's envelope kind
   // only — a schema/component that lands after this block rendered (cold
   // fetch losing the race with region end) re-runs the route on the frozen
@@ -285,6 +301,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     );
   }, [rawBlock, kindRouteVersion]);
 
+  const interruptedEnvelope = readEnvelope(block.metadata);
+  const hasInterruptedKind = Boolean(
+    !isStreamActive &&
+    interruptedEnvelope?.root.kind &&
+    interruptedEnvelope.root.status === "error",
+  );
+
   // Per-conversation display flags. When a surface has `hideReasoning` or
   // `hideToolResults` set on its `instanceUIState`, the matching block
   // types self-gate in their dispatch registrations so there's exactly one
@@ -317,7 +340,27 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const withRecordChrome = <T extends React.ReactElement | null>(
     el: T,
   ): T | React.ReactElement => {
-    if (!el || !recordChromeKind || isStreamActive || isBlockLoading(block)) {
+    if (el && hasInterruptedKind) {
+      return (
+        <div key={index} data-incomplete-kind={interruptedEnvelope?.root.kind}>
+          <p
+            role="status"
+            className="mb-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200"
+          >
+            This response is incomplete. The content received so far is shown
+            below.
+          </p>
+          {el}
+        </div>
+      );
+    }
+    if (
+      !el ||
+      !recordChromeKind ||
+      isStreamActive ||
+      isBlockLoading(block) ||
+      readEnvelope(block.metadata)?.root.status !== "complete"
+    ) {
       return el;
     }
     return (

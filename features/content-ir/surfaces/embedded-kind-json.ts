@@ -26,9 +26,9 @@ export type EmbeddedKindJsonPiece =
   | { type: "kind"; content: string; kind: string };
 
 function matchingJsonObjectEnd(source: string, start: number): number | null {
-  if (source[start] !== "{") return null;
+  if (source[start] !== "{" && source[start] !== "[") return null;
 
-  const stack: string[] = ["{"];
+  const stack: string[] = [source[start]];
   let inString = false;
   let escaped = false;
 
@@ -67,6 +67,112 @@ function matchingJsonObjectEnd(source: string, start: number): number | null {
   }
 
   return null;
+}
+
+function skipWhitespace(source: string, cursor: number): number {
+  while (/\s/.test(source[cursor] ?? "")) cursor++;
+  return cursor;
+}
+
+function jsonStringEnd(source: string, start: number): number | null {
+  if (source[start] !== '"') return null;
+
+  let escaped = false;
+  for (let cursor = start + 1; cursor < source.length; cursor++) {
+    const char = source[cursor];
+    if (escaped) {
+      escaped = false;
+    } else if (char === "\\") {
+      escaped = true;
+    } else if (char === '"') {
+      return cursor + 1;
+    }
+  }
+  return null;
+}
+
+function jsonValueEnd(source: string, start: number): number | null {
+  const char = source[start];
+  if (char === '"') return jsonStringEnd(source, start);
+  if (char === "{" || char === "[") return matchingJsonObjectEnd(source, start);
+
+  const end = source.slice(start).search(/[\s,}\]]/);
+  const tokenEnd = end === -1 ? source.length : start + end;
+  const token = source.slice(start, tokenEnd);
+  return /^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)$/.test(
+    token,
+  )
+    ? tokenEnd
+    : null;
+}
+
+/**
+ * Returns the structural boundary of an unfinished or malformed object whose
+ * root directly declares `__kind`. That root owns all of its descendants even
+ * though it cannot be promoted as a renderable JSON region itself.
+ */
+function malformedKindOwnerEnd(
+  source: string,
+  start: number,
+  boundary = source.length,
+): number | null {
+  let cursor = skipWhitespace(source, start + 1);
+  let kindFound = false;
+  const ownerEnd = () => (kindFound ? boundary : null);
+
+  while (cursor < boundary) {
+    const keyStart = cursor;
+    const keyEnd = jsonStringEnd(source, keyStart);
+    if (keyEnd === null || keyEnd > boundary) return ownerEnd();
+
+    let key: unknown;
+    try {
+      key = JSON.parse(source.slice(keyStart, keyEnd));
+    } catch {
+      return ownerEnd();
+    }
+
+    cursor = skipWhitespace(source, keyEnd);
+    if (cursor >= boundary || source[cursor] !== ":") return ownerEnd();
+    cursor = skipWhitespace(source, cursor + 1);
+
+    const valueStart = cursor;
+    const valueEnd = jsonValueEnd(source, valueStart);
+    if (valueEnd === null || valueEnd > boundary) return ownerEnd();
+
+    if (key === "__kind") {
+      try {
+        const value = JSON.parse(source.slice(valueStart, valueEnd));
+        kindFound ||= typeof value === "string" && value.trim().length > 0;
+      } catch {
+        return ownerEnd();
+      }
+    }
+
+    cursor = skipWhitespace(source, valueEnd);
+    if (source[cursor] === "}") return kindFound ? cursor + 1 : null;
+    if (cursor >= boundary || source[cursor] !== ",") return ownerEnd();
+    cursor = skipWhitespace(source, cursor + 1);
+  }
+
+  return ownerEnd();
+}
+
+/** String literals in a valid anonymous JSON wrapper are never regions. */
+function jsonStringRanges(
+  source: string,
+  start: number,
+  end: number,
+): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  for (let cursor = start; cursor < end; cursor++) {
+    if (source[cursor] !== '"') continue;
+    const stringEnd = jsonStringEnd(source, cursor);
+    if (stringEnd === null || stringEnd > end) break;
+    ranges.push([cursor, stringEnd]);
+    cursor = stringEnd - 1;
+  }
+  return ranges;
 }
 
 function declaredKind(candidate: string): string | null {
@@ -191,7 +297,9 @@ export function findEmbeddedKindJsonRegions(
 ): EmbeddedKindJsonRegion[] {
   const regions: EmbeddedKindJsonRegion[] = [];
   const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
+  const jsonStrings: Array<[number, number]> = [];
   let excludedIndex = 0;
+  let jsonStringIndex = 0;
 
   for (let start = 0; start < source.length; start++) {
     while (
@@ -200,19 +308,43 @@ export function findEmbeddedKindJsonRegions(
     ) {
       excludedIndex++;
     }
+    while (
+      jsonStringIndex < jsonStrings.length &&
+      jsonStrings[jsonStringIndex][1] <= start
+    ) {
+      jsonStringIndex++;
+    }
     if (
       excludedIndex < excluded.length &&
       start >= excluded[excludedIndex][0] &&
       start < excluded[excludedIndex][1]
     )
       continue;
+    if (
+      jsonStringIndex < jsonStrings.length &&
+      start >= jsonStrings[jsonStringIndex][0] &&
+      start < jsonStrings[jsonStringIndex][1]
+    )
+      continue;
     if (source[start] !== "{") continue;
     const end = matchingJsonObjectEnd(source, start);
-    if (end === null) continue;
+    if (end === null) {
+      const ownerEnd = malformedKindOwnerEnd(source, start);
+      if (ownerEnd !== null) start = ownerEnd - 1;
+      continue;
+    }
 
     const content = source.slice(start, end);
     const kind = declaredKind(content);
-    if (!kind) continue;
+    if (!kind) {
+      const ownerEnd = malformedKindOwnerEnd(source, start, end);
+      if (ownerEnd !== null) {
+        start = ownerEnd - 1;
+        continue;
+      }
+      jsonStrings.push(...jsonStringRanges(source, start, end));
+      continue;
+    }
 
     regions.push({ start, end, content, kind });
     start = end - 1;

@@ -3,8 +3,9 @@
  *
  * The splitter runs on DB-loaded messages AND on the hot re-split path while
  * a message streams, so this must be cheap and idempotent:
- * - Only COMPLETE JSON regions are normalized (balanced-brace guard) — live
- *   partials are the accumulator's job (it has the streaming session).
+ * - The hot splitter normalizes complete JSON only. Terminal renderers can
+ *   explicitly rehydrate interrupted kinds with the same parser as the stream,
+ *   retaining their error status and original bytes after a refresh.
  * - Results are memoized by source text, so repeated re-splits of the same
  *   message return the SAME envelope object (reference equality → React
  *   bail-outs) and never re-parse.
@@ -17,10 +18,7 @@
  * so a reload reuses the stream's envelope BY REFERENCE instead of parsing.
  */
 
-import {
-  IR_ENVELOPE_KEY,
-  type CanonicalBlockIR,
-} from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { isIrEnvelopeCache } from "@ai-matrx/content-ir";
 import { fingerprintText } from "@ai-matrx/content-ir";
@@ -106,7 +104,9 @@ function looksLikeCompleteJsonObject(trimmed: string): boolean {
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return false;
   try {
     const parsed: unknown = JSON.parse(trimmed);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+    return (
+      typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+    );
   } catch {
     return false;
   }
@@ -114,12 +114,26 @@ function looksLikeCompleteJsonObject(trimmed: string): boolean {
 
 export function memoizedRegionEnvelope(
   source: string,
+  options: { allowTerminalError?: boolean } = {},
 ): CanonicalBlockIR | null {
   const trimmed = source.trim();
-  if (!looksLikeCompleteJsonObject(trimmed)) return null;
+  if (!trimmed.startsWith("{")) return null;
 
   const cached = memo.get(source);
-  if (cached) return cached;
+  if (
+    cached &&
+    (cached.root.status === "complete" || options.allowTerminalError)
+  )
+    return cached;
+
+  const completeJson = looksLikeCompleteJsonObject(trimmed);
+  // This is only a cheap candidate filter. The canonical parser below must
+  // identify the ROOT kind; a nested marker or a string example is not one.
+  if (
+    !completeJson &&
+    (!options.allowTerminalError || !trimmed.includes("__kind"))
+  )
+    return null;
 
   // `existing` is the persisted-envelope fast path: when a seeded envelope's
   // fingerprint exactly matches this region source, normalizeJsonRegion
@@ -131,6 +145,7 @@ export function memoizedRegionEnvelope(
     schemas: kindRegistry.resolver(),
     existing: seededEnvelopeFor(source),
   });
+  if (!completeJson && !envelope.root.kind) return null;
 
   // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): the warm tiers are kicked
   // ONLY after this region actually identified a kind — a `__kind` key or a
@@ -175,8 +190,9 @@ export function memoizedRegionEnvelope(
 export function withIrEnvelope(
   source: string,
   metadata: Record<string, unknown> | undefined,
+  options: { allowTerminalError?: boolean } = {},
 ): Record<string, unknown> | undefined {
-  const envelope = memoizedRegionEnvelope(source);
+  const envelope = memoizedRegionEnvelope(source, options);
   if (!envelope) return metadata;
   return { ...(metadata ?? {}), [IR_ENVELOPE_KEY]: envelope };
 }
