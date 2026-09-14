@@ -30316,6 +30316,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/impact/advance/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Advance Mine
+         * @description The same batch advance, as the OWNER (I12): only this person's own
+         *     personal pins and the org rungs of organizations they administer move;
+         *     every other token is refused with the same sentence as a rung they cannot
+         *     see. Never on anyone's behalf.
+         */
+        post: operations["agent_impact_advance_mine_mandates_impact_advance_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/revert/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Revert Mine
+         * @description The same revert, as the OWNER (I12): a batch id is not an entitlement —
+         *     only rows this person may write go back; the rest are refused without
+         *     being named.
+         */
+        post: operations["agent_impact_revert_mine_mandates_impact_revert_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-testing/agents/{agent_id}/tests": {
         parameters: {
             query?: never;
@@ -41614,7 +41659,10 @@ export interface components {
              * @enum {string}
              */
             holder_kind: "binding" | "mandate_default";
-            /** Row Id */
+            /**
+             * Row Id
+             * Format: uuid
+             */
             row_id: string;
             /** Expected Pinned Version Id */
             expected_pinned_version_id?: string | null;
@@ -69921,7 +69969,7 @@ export interface components {
             model_id?: string | null;
             /** Settings */
             settings?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /** ImpactFinding */
@@ -69937,10 +69985,8 @@ export interface components {
             message: string;
             /** Field */
             field?: string | null;
-            /** Before */
-            before?: unknown | null;
-            /** After */
-            after?: unknown | null;
+            before?: components["schemas"]["JsonValue"] | null;
+            after?: components["schemas"]["JsonValue"] | null;
         };
         /** ImpactPrincipal */
         ImpactPrincipal: {
@@ -73516,6 +73562,31 @@ export interface components {
             truncated?: boolean;
             /** Step */
             step?: number | null;
+        };
+        /** KindSubmitSummary */
+        KindSubmitSummary: {
+            /**
+             * Pending
+             * @default 0
+             */
+            pending?: number;
+            /**
+             * Enqueued
+             * @default 0
+             */
+            enqueued?: number;
+            /**
+             * Skipped In Flight
+             * @default 0
+             */
+            skipped_in_flight?: number;
+            /**
+             * Skipped No Owner
+             * @default 0
+             */
+            skipped_no_owner?: number;
+            /** Errors */
+            errors?: string[];
         };
         /**
          * KindSurfaceDescriptor
@@ -81718,6 +81789,11 @@ export interface components {
             params: string[];
             /** Where */
             where: string;
+        };
+        /** OAuthIncidentResponse */
+        OAuthIncidentResponse: {
+            /** Status */
+            status: string;
         };
         /**
          * OAuthTokenPersistRequest
@@ -95528,7 +95604,10 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Batch Id */
+            /**
+             * Batch Id
+             * Format: uuid
+             */
             batch_id: string;
             /** Row Id */
             row_id?: string | null;
@@ -99503,10 +99582,8 @@ export interface components {
              * @enum {string}
              */
             action: "clamped" | "const" | "dropped" | "effort_ceiling" | "mapped" | "omitted" | "to_default" | "unsupported_value";
-            /** Canonical Value */
-            canonical_value?: unknown | null;
-            /** Sent Value */
-            sent_value?: unknown | null;
+            canonical_value?: components["schemas"]["JsonValue"] | null;
+            sent_value?: components["schemas"]["JsonValue"] | null;
             /** Reason */
             reason: string;
             /** Expected */
@@ -99533,10 +99610,8 @@ export interface components {
              * @enum {string}
              */
             change: "added" | "changed" | "removed";
-            /** Before */
-            before?: unknown | null;
-            /** After */
-            after?: unknown | null;
+            before?: components["schemas"]["JsonValue"] | null;
+            after?: components["schemas"]["JsonValue"] | null;
         };
         /** SettlePlanRequest */
         SettlePlanRequest: {
@@ -118462,9 +118537,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["OAuthIncidentResponse"];
                 };
             };
             /** @description Validation Error */
@@ -160607,9 +160680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["KindSubmitSummary"];
                 };
             };
             /** @description Validation Error */
@@ -165478,6 +165549,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_advance_mine_mandates_impact_advance_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_revert_mine_mandates_impact_revert_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
                 };
             };
             /** @description Validation Error */

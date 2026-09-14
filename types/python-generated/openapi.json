@@ -227,11 +227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Report Oauth Incident Auth Session Oauth Incident Post"
+                  "$ref": "#/components/schemas/OAuthIncidentResponse"
                 }
               }
             }
@@ -57980,9 +57976,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Queue Party Kind Resolution Crm Parties Kind Resolution Batch Post"
+                  "$ref": "#/components/schemas/KindSubmitSummary"
                 }
               }
             }
@@ -65365,6 +65359,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ImpactReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/advance/mine": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Agent Impact Advance Mine",
+        "description": "The same batch advance, as the OWNER (I12): only this person's own\npersonal pins and the org rungs of organizations they administer move;\nevery other token is refused with the same sentence as a rung they cannot\nsee. Never on anyone's behalf.",
+        "operationId": "agent_impact_advance_mine_mandates_impact_advance_mine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/revert/mine": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Agent Impact Revert Mine",
+        "description": "The same revert, as the OWNER (I12): a batch id is not an entitlement —\nonly rows this person may write go back; the rest are refused without\nbeing named.",
+        "operationId": "agent_impact_revert_mine_mandates_impact_revert_mine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
                 }
               }
             }
@@ -94168,12 +94246,14 @@
           },
           "row_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Row Id"
           },
           "expected_pinned_version_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -94184,7 +94264,8 @@
           "target_version_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -157745,7 +157826,9 @@
           "settings": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -157793,21 +157876,23 @@
           },
           "before": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Before"
+            ]
           },
           "after": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "After"
+            ]
           }
         },
         "additionalProperties": false,
@@ -165431,6 +165516,40 @@
         ],
         "title": "KindPickerEntry",
         "description": "One row in the picker — everything the UI needs, nothing it must derive."
+      },
+      "KindSubmitSummary": {
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "default": 0
+          },
+          "enqueued": {
+            "type": "integer",
+            "title": "Enqueued",
+            "default": 0
+          },
+          "skipped_in_flight": {
+            "type": "integer",
+            "title": "Skipped In Flight",
+            "default": 0
+          },
+          "skipped_no_owner": {
+            "type": "integer",
+            "title": "Skipped No Owner",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KindSubmitSummary"
       },
       "KindSurfaceDescriptor": {
         "properties": {
@@ -183739,6 +183858,19 @@
           "where"
         ],
         "title": "OAuthIncidentRequest"
+      },
+      "OAuthIncidentResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "OAuthIncidentResponse"
       },
       "OAuthTokenPersistRequest": {
         "properties": {
@@ -214476,12 +214608,14 @@
           },
           "batch_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Batch Id"
           },
           "row_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -223437,21 +223571,23 @@
           },
           "canonical_value": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Canonical Value"
+            ]
           },
           "sent_value": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Sent Value"
+            ]
           },
           "reason": {
             "type": "string",
@@ -223515,21 +223651,23 @@
           },
           "before": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Before"
+            ]
           },
           "after": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "After"
+            ]
           }
         },
         "additionalProperties": false,
