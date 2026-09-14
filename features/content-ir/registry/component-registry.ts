@@ -159,8 +159,16 @@ export class ComponentRegistry extends ComponentResolver {
       // the path the package's ensureWarm / refresh / requestComponent all
       // take, so a guard that only sat on the ingest overrides never saw a
       // `loading` row at all.
-      loadAll: async () =>
-        dispatchableRows(await listKindComponentsFromTables()),
+      loadAll: async () => {
+        const rows = dispatchableRows(await listKindComponentsFromTables());
+        // DD-215: the ONE honest "the db tier is complete" signal. The
+        // package's `hasSettled()` also answers true the moment the map holds
+        // ANY row — which the per-kind demand below would itself make true,
+        // closing the window for every other kind on the page after the first
+        // one succeeded.
+        this.warmListLanded = true;
+        return rows;
+      },
       loadForKind: async (kind, platform) =>
         dispatchableRows(await getKindComponentBySlug(kind, platform)),
       reportError: captureError,
@@ -218,6 +226,9 @@ export class ComponentRegistry extends ComponentResolver {
     void this.demandDbTier(kind, platform, role);
   }
 
+  /** True once the WARM list has actually come back — see `loadAll` above. */
+  private warmListLanded = false;
+
   /** In-flight / known-miss dedupe for {@link demandDbTier}. */
   private provisionalInFlight = new Set<string>();
   private provisionalMisses = new Set<string>();
@@ -251,7 +262,7 @@ export class ComponentRegistry extends ComponentResolver {
     platform: string,
     role: ComponentRole,
   ): Promise<void> {
-    if (this.hasSettled()) return;
+    if (this.warmListLanded) return;
     const resolution = this.resolve(kind, platform, role);
     if (resolution?.resolvedBy !== "compiled") return;
     const key = `${kind} ${platform}`;

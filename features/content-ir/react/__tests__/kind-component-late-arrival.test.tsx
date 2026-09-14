@@ -154,6 +154,36 @@ afterEach(() => {
 });
 
 describe("DD-215 — an organization-authored component is demanded, not raced for", () => {
+  // FIRST in the file on purpose: the window this guards is "the warm list has
+  // not come back yet", and any earlier test that warms the registry closes it
+  // for the session.
+  test("one kind's answer does not close the window for the next kind on the page", async () => {
+    const A = "quiz_set";
+    const B = "flashcard_set";
+    // Both must be compiled-floor kinds or this proves nothing.
+    expect(componentRegistry.resolve(A, "web", "output")?.resolvedBy).toBe("compiled");
+    expect(componentRegistry.resolve(B, "web", "output")?.resolvedBy).toBe("compiled");
+
+    bySlugMock.mockResolvedValue([{ ...coldRow(), kind: A, componentKey: "quiz_board" }]);
+    componentRegistry.requestComponent(A, "web", "output");
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(bySlugMock).toHaveBeenCalledWith(A, "web");
+    expect(componentRegistry.resolve(A, "web", "output")?.resolvedBy).toBe("db");
+
+    // The package's own `hasSettled()` is now true (the map holds a row), which
+    // would have silenced every remaining kind on the page. It must not.
+    bySlugMock.mockClear();
+    bySlugMock.mockResolvedValue([]);
+    componentRegistry.requestComponent(B, "web", "output");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(bySlugMock).toHaveBeenCalledWith(B, "web");
+  });
+
   test("the render path DEMANDS the kind's own component rows even when a compiled floor answers", async () => {
     await act(async () => {
       root.render(<RoutedType block={instanceBlock("creatine")} />);
@@ -222,4 +252,5 @@ describe("DD-215 — an organization-authored component is demanded, not raced f
     expect(mountFirst).toBe(warmFirst);
     expect(warmFirst).toBe("db_kind_component");
   });
+
 });
