@@ -459,7 +459,7 @@ function AgentRunBody({
   const resourceSeedUserId = useAppSelector(selectUserId);
   const resourceSeedOrganizationId = useAppSelector(selectOrganizationId);
   const attachResource = useAttachResource(conversationId ?? "");
-  usePreparedResourceSeed({
+  const preparedResourcesAttached = usePreparedResourceSeed({
     conversationId: selectedConversationId ? null : conversationId,
     ready: resourcesEntryReady,
     resources: initialResources,
@@ -471,12 +471,12 @@ function AgentRunBody({
   const openRunControls = useOpenRunControlsWindow();
   const toolsOpenedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialToolsOpen || selectedConversationId || !conversationId || !resourcesEntryReady) return;
+    if (!initialToolsOpen || selectedConversationId || !conversationId || !preparedResourcesAttached) return;
     if (toolsOpenedRef.current === conversationId) return;
     if (!initialResourceIdentity || initialResourceIdentity.userId !== resourceSeedUserId || initialResourceIdentity.organizationId !== resourceSeedOrganizationId) return;
     toolsOpenedRef.current = conversationId;
     openRunControls({ conversationId, initialTab: "tools" });
-  }, [initialToolsOpen, selectedConversationId, conversationId, resourcesEntryReady, initialResourceIdentity, resourceSeedUserId, resourceSeedOrganizationId, openRunControls]);
+  }, [initialToolsOpen, selectedConversationId, conversationId, preparedResourcesAttached, initialResourceIdentity, resourceSeedUserId, resourceSeedOrganizationId, openRunControls]);
   const draftSeededRef = useRef<string | null>(null);
   useEffect(() => {
     if (selectedConversationId) return;

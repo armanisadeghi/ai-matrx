@@ -11,8 +11,8 @@ async function mountSeed(initial: Partial<SeedProps> = {}) {
   const reportError = jest.fn();
   const handle = await renderHook(() => {
     const [props, setProps] = useState<SeedProps>({ ready: false, currentIdentity: identity, expectedIdentity: identity, ...initial });
-    usePreparedResourceSeed({ conversationId: "new-chat", resources, attach, reportError, ...props });
-    return { setProps };
+    const attached = usePreparedResourceSeed({ conversationId: "new-chat", resources, attach, reportError, ...props });
+    return { setProps, attached };
   });
   return { handle, attach, reportError };
 }
@@ -22,8 +22,10 @@ describe("prepared window resource seed", () => {
     const { handle, attach, reportError } = await mountSeed();
     try {
       expect(attach).not.toHaveBeenCalled();
+      expect(handle.current.attached).toBe(false);
       await handle.act(() => handle.current.setProps((p) => ({ ...p, ready: true })));
       expect(attach).toHaveBeenCalledTimes(1);
+      expect(handle.current.attached).toBe(true);
       expect(attach).toHaveBeenCalledWith(resources[0]);
       await handle.act(() => handle.current.setProps((p) => ({ ...p })));
       expect(attach).toHaveBeenCalledTimes(1);
@@ -47,3 +49,17 @@ describe("prepared window resource seed", () => {
     } finally { await handle.unmount(); }
   });
 });
+
+  it.each([true, false])("reports successful readiness only after attachment resolves: %s", async (success) => {
+    let finish: (value: boolean) => void = () => {};
+    const pending = new Promise<boolean>((resolve) => { finish = resolve; });
+    const reportError = jest.fn();
+    const attach = jest.fn(() => pending);
+    const handle = await renderHook(() => usePreparedResourceSeed({ conversationId: "pending-chat", ready: true, resources, expectedIdentity: identity, currentIdentity: identity, attach, reportError }));
+    try {
+      expect(handle.current).toBe(false);
+      await handle.act(async () => { finish(success); await pending; });
+      expect(handle.current).toBe(success);
+      expect(reportError).toHaveBeenCalledTimes(success ? 0 : 1);
+    } finally { await handle.unmount(); }
+  });
