@@ -52,13 +52,36 @@ const DEFAULT_KEYS = [
     "newsjacking_expert_article_default",
 ];
 
+/**
+ * `.env.local` when there is one, the ENVIRONMENT when there is not.
+ *
+ * A checkout has the file; a CI runner never does — it has repository secrets.
+ * Reading only the file is what kept this instrument, and therefore the whole
+ * browser proof above it, off every automatic surface (DD-242).
+ */
 async function loadEnv(): Promise<Record<string, string>> {
-    const raw = await readFile(resolve(ROOT, ".env.local"), "utf8");
     const out: Record<string, string> = {};
-    for (const line of raw.split("\n")) {
-        if (!/^[A-Z0-9_]+=/.test(line)) continue;
-        const i = line.indexOf("=");
-        out[line.slice(0, i)] = line.slice(i + 1).replace(/^["']|["']$/g, "");
+    try {
+        const raw = await readFile(resolve(ROOT, ".env.local"), "utf8");
+        for (const line of raw.split("\n")) {
+            if (!/^[A-Z0-9_]+=/.test(line)) continue;
+            const i = line.indexOf("=");
+            out[line.slice(0, i)] = line.slice(i + 1).replace(/^["']|["']$/g, "");
+        }
+    } catch {
+        // No file here — the environment is the only source, and the check below
+        // names exactly what is missing rather than failing on `undefined`.
+    }
+    for (const key of ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SECRET_KEY"]) {
+        if (!out[key] && process.env[key]) out[key] = process.env[key] as string;
+    }
+    const missing = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SECRET_KEY"].filter((k) => !out[k]);
+    if (missing.length > 0) {
+        throw new Error(
+            `The parity witness reads LIVE content_ir rows and cannot be built without ` +
+                `${missing.join(" and ")}. Put them in .env.local, or export them ` +
+                `(in CI: repository secrets). A witness built from a fixture would prove nothing.`,
+        );
     }
     return out;
 }

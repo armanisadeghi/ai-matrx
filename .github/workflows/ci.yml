@@ -95,7 +95,7 @@ jobs:
         run: |
           if [ -n "$SUPABASE_SECRET_KEY" ] && [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
             echo "supabase=true" >> "$GITHUB_OUTPUT"
-            echo "measured: the live Supabase gates (kind registry freshness, hr.punch write path, migration slot guard, soft-delete cascade, realtime publication)"
+            echo "measured: the live Supabase gates (kind registry freshness, hr.punch write path, migration slot guard, soft-delete cascade, realtime publication, the Shape sandbox browser boundary)"
           else
             echo "supabase=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=UNMEASURED — the live Supabase gates did NOT run::NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SECRET_KEY are not configured for this repository, so four gates are SKIPPED, not passed: generated kind types may be stale against content_ir.kind_definition; a client-direct insert path into hr.punch may exist unnoticed; the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled; and soft-deleting a parent may again leave its bindings, treatments, exemplars and notes alive underneath it. Nothing was checked — that is NOT a pass. Fix: add the NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets."
@@ -318,6 +318,60 @@ jobs:
       # preflight stamps the UNMEASURED warning. No silent degradation.
       - name: Generated kind types vs content_ir.kind_definition
         run: pnpm check:kind-types
+
+  # ---------------------------------------------------------------------------
+  # kind-sandbox-boundary — THE SHAPE SANDBOX'S REAL-BROWSER PROOF (DD-242).
+  #
+  # Organization-authored component bodies execute in the viewer's browser. The
+  # only evidence that one of them reaches NOTHING on the network, that every
+  # attempt is refused BY NAME as a CSP violation, and that the frame's origin is
+  # opaque, is a real-Chromium spec — and until 2026-09-14 that spec ran in NO
+  # gate, NO CI job and NO hook. It needed a running app, so it only ever ran when
+  # someone typed it on a machine that happened to hold the single shared
+  # dev-server lease; that is why the DD-123 rollout's step-2 parity witness is
+  # UNKNOWN to this day.
+  #
+  # `pnpm check:kind-sandbox-gate` closed that: it boots its OWN server on a port
+  # the OS hands out, serving the real `app/kind-sandbox/route.ts`, regenerates the
+  # witness from live `content_ir` rows, and drives the spec. 13.4 s locally; the
+  # browser download is the only added cost here.
+  #
+  # A SIGNAL, NEVER A GATE (Arman's standing ruling — CI must never slow a
+  # deployment), so the proof step is `continue-on-error` and announces itself. The
+  # surface that actually screams before a release builds is the release-gate entry
+  # "The Shape sandbox boundary, in a real browser (DD-242)" in
+  # scripts/run-release-gates.sh. Credential-gated like the other live jobs: with no
+  # secret the whole job is SKIPPED and the preflight stamps UNMEASURED — the
+  # witness reads live rows, and a witness built from a fixture would prove nothing.
+  # ---------------------------------------------------------------------------
+  kind-sandbox-boundary:
+    name: "[signal] the Shape sandbox boundary in a real browser (UNMEASURED without the secret)"
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The gate's own comparison logic can still fail (self-test)
+        run: pnpm check:kind-sandbox-gate:self-test
+      - name: Install the browser the proof runs in
+        # The CSP behaviour under test is an engine's, so it is the bundled
+        # Chromium or nothing — never whatever the runner happens to have.
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build the sandbox bundle the frame loads
+        run: pnpm build:kind-sandbox
+      - name: "[signal] A live component in the frame reaches nothing and is refused by name"
+        continue-on-error: true
+        run: pnpm check:kind-sandbox-gate
 
   # ---------------------------------------------------------------------------
   # hr-punch — the STRICT lane of the HR punch write-path conformance gate.

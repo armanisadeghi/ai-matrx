@@ -14,6 +14,9 @@ import { execFileSync } from "node:child_process";
 
 const CANDIDATES = ["http://localhost:3001", "http://localhost:3000"];
 
+/** How long a DECLARED origin is given to start answering (each probe is a 4 s curl). */
+const WAIT_MS = 30_000;
+
 function answers(origin: string): boolean {
     try {
         const code = execFileSync(
@@ -27,16 +30,45 @@ function answers(origin: string): boolean {
     }
 }
 
-/** The origin serving `/kind-sandbox`, or null when nothing is. */
+/**
+ * The origin serving `/kind-sandbox`, or null when nothing is.
+ *
+ * A DECLARED origin is WAITED FOR, briefly. `pnpm check:kind-sandbox-gate`
+ * (DD-242) boots its own server on a port the OS hands out and passes that
+ * origin in `MATRX_SANDBOX_BASE_URL`; the very first probe can lose the race
+ * with the listener, and a gate that fails because it asked one moment too
+ * early would be the same "it only runs on a machine" failure this gate exists
+ * to end. An UNdeclared origin is never waited for — nobody is starting one.
+ */
 export function resolveBaseURL(): string | null {
     const declared = process.env.MATRX_SANDBOX_BASE_URL;
-    if (declared) return answers(declared) ? declared : null;
+    if (declared) {
+        const deadline = Date.now() + WAIT_MS;
+        do {
+            if (answers(declared)) return declared;
+        } while (Date.now() < deadline);
+        return null;
+    }
     return CANDIDATES.find(answers) ?? null;
 }
 
-export const NO_APP_SENTENCE =
-    `No app is answering GET /kind-sandbox on ${CANDIDATES.join(" or ")}.\n` +
-    `This gate drives a REAL sandbox frame, and the sandbox route's CSP only allows\n` +
-    `the app's own origin to embed it — so there is no way to run it without the app.\n\n` +
-    `Start it with:  pnpm preview:start\n` +
-    `Or name a running one:  MATRX_SANDBOX_BASE_URL=http://localhost:3002 pnpm test:kind-sandbox:browser\n`;
+/**
+ * The refusal, naming what was actually tried. A declared origin that never
+ * answered is a DIFFERENT fact from "no server anywhere", and reporting the
+ * second when the first happened is how the gate's own first run misread
+ * itself as a missing app (2026-09-14).
+ */
+export function noAppSentence(): string {
+    const declared = process.env.MATRX_SANDBOX_BASE_URL;
+    const where = declared
+        ? `The origin named in MATRX_SANDBOX_BASE_URL (${declared}) never answered GET /kind-sandbox\nwithin ${WAIT_MS / 1000}s.`
+        : `No app is answering GET /kind-sandbox on ${CANDIDATES.join(" or ")}.`;
+    return (
+        `${where}\n` +
+        `This gate drives a REAL sandbox frame, and the sandbox route's CSP only allows\n` +
+        `the app's own origin to embed it — so there is no way to run it without the app.\n\n` +
+        `Start it with:  pnpm preview:start\n` +
+        `Or name a running one:  MATRX_SANDBOX_BASE_URL=http://localhost:3002 pnpm test:kind-sandbox:browser\n` +
+        `Or let the gate boot its own server and run this for you:  pnpm check:kind-sandbox-gate\n`
+    );
+}

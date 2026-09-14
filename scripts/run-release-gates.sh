@@ -374,6 +374,26 @@ if $STRICT; then
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
+        # 🚨 THE SHAPE SANDBOX'S OWN GATE (DD-242). Organization-authored component
+        # bodies execute in the browser; the ONLY proof that one of them reaches
+        # nothing on the network, is refused BY NAME as a CSP violation, and sits on
+        # an opaque origin is the real-Chromium spec this runs. Until 2026-09-14 that
+        # spec was in NO gate, NO CI job and NO hook — it ran only when a person typed
+        # it on a machine holding the single shared dev-server lease, which is why the
+        # DD-123 rollout's step-2 parity witness is UNKNOWN to this day. This gate
+        # boots ITS OWN server on a port the OS hands out (never 3001, never a port a
+        # peer holds), serving the REAL app/kind-sandbox/route.ts, regenerates the
+        # witness from live rows, and runs the spec plus the protocol and safelist
+        # guards. MEASURED 13.4 s end to end — cheaper than type-check and far cheaper
+        # than the jest suite already here. It also refuses to pass when it cannot
+        # compare its policy against the one production is serving (UNMEASURED is a
+        # finding, never a green). Proven failing-then-passing 2026-09-14 in a
+        # throwaway worktree: `connect-src 'none'` -> `connect-src *` produced two
+        # findings (the live-policy divergence by directive, and the spec's
+        # "connect-src never refused anything in the frame") with the in-page RED
+        # controls still firing; exit 1. `pnpm check:kind-sandbox-gate:self-test`
+        # proves the gate's own comparison logic can still fail.
+        "The Shape sandbox boundary, in a real browser (DD-242)|pnpm check:kind-sandbox-gate"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -744,6 +764,26 @@ else
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
+        # 🚨 THE SHAPE SANDBOX'S OWN GATE (DD-242). Organization-authored component
+        # bodies execute in the browser; the ONLY proof that one of them reaches
+        # nothing on the network, is refused BY NAME as a CSP violation, and sits on
+        # an opaque origin is the real-Chromium spec this runs. Until 2026-09-14 that
+        # spec was in NO gate, NO CI job and NO hook — it ran only when a person typed
+        # it on a machine holding the single shared dev-server lease, which is why the
+        # DD-123 rollout's step-2 parity witness is UNKNOWN to this day. This gate
+        # boots ITS OWN server on a port the OS hands out (never 3001, never a port a
+        # peer holds), serving the REAL app/kind-sandbox/route.ts, regenerates the
+        # witness from live rows, and runs the spec plus the protocol and safelist
+        # guards. MEASURED 13.4 s end to end — cheaper than type-check and far cheaper
+        # than the jest suite already here. It also refuses to pass when it cannot
+        # compare its policy against the one production is serving (UNMEASURED is a
+        # finding, never a green). Proven failing-then-passing 2026-09-14 in a
+        # throwaway worktree: `connect-src 'none'` -> `connect-src *` produced two
+        # findings (the live-policy divergence by directive, and the spec's
+        # "connect-src never refused anything in the frame") with the in-page RED
+        # controls still firing; exit 1. `pnpm check:kind-sandbox-gate:self-test`
+        # proves the gate's own comparison logic can still fail.
+        "The Shape sandbox boundary, in a real browser (DD-242)|pnpm check:kind-sandbox-gate"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
