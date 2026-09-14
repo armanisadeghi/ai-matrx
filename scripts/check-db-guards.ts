@@ -69,10 +69,14 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
 import {
+  EXPECTED_FUNCTION_BIRTH_SCHEMAS,
+  FUNCTION_BIRTH_GUARD_QUERY,
+  FUNCTION_BIRTH_SCHEMAS_QUERY,
   PUBLIC_EXPOSURE_QUERY,
   UNPROTECTED_RELATION_QUERY,
   classifyExposures,
   classifyUnprotected,
+  type FunctionBirthFinding,
   type LiveExposure,
   type UnprotectedRelation,
 } from "../lib/security/public-exposure";
@@ -108,6 +112,10 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
   {
     name: "enforce_definer_client_grants",
     why: "removes undeclared client EXECUTE grants from SECURITY DEFINER functions at creation time",
+  },
+  {
+    name: "close_new_functions_to_anon",
+    why: "DD-202 — closes every new SECURITY INVOKER function in a PostgREST-exposed schema to PUBLIC and anon at creation, because PostgreSQL's hard-wired default makes one callable by a signed-out visitor from the moment it exists and no ALTER DEFAULT PRIVILEGES can take that back",
   },
 ];
 
@@ -631,12 +639,78 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  // ── SIXTH DETECTOR — DD-202, the function birth door ──────────────────────
+  // The event trigger above is asserted by EXPECTED. These are the two facts
+  // that must hold beside it: no default privilege still promises `anon` a
+  // function EXECUTE, the pre-existing snapshot still refuses new rows, and the
+  // schema list the live guard governs still matches this repo's.
+  let birthFindings = 0;
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: FUNCTION_BIRTH_GUARD_QUERY,
+    });
+    if (error) throw new Error(error.message);
+    const findings = unwrapRows(data) as unknown as FunctionBirthFinding[];
+
+    const { data: schemaData, error: schemaError } = await supabase.rpc(
+      "execute_admin_query",
+      { query: FUNCTION_BIRTH_SCHEMAS_QUERY },
+    );
+    if (schemaError) throw new Error(schemaError.message);
+    const live = (unwrapRows(schemaData) as unknown as { schema: string }[]).map(
+      (r) => r.schema,
+    );
+    const want = new Set(EXPECTED_FUNCTION_BIRTH_SCHEMAS);
+    const have = new Set(live);
+    const onlyLive = [...have].filter((s) => !want.has(s)).sort();
+    const onlyRepo = [...want].filter((s) => !have.has(s)).sort();
+
+    console.log("");
+    console.log(
+      `${C.bold}Function birth door${C.reset} ${C.dim}(DD-202 — a new function is closed to anon at birth)${C.reset}`,
+    );
+    for (const f of findings) {
+      birthFindings += 1;
+      console.log(`  ${TAG.fail}${f.kind} ${C.dim}${f.detail}${C.reset}`);
+    }
+    if (onlyLive.length || onlyRepo.length) {
+      birthFindings += 1;
+      console.log(
+        `  ${TAG.fail}schema_list_drift ${C.dim}platform.anon_function_birth_schemas() and POSTGREST_EXPOSED_SCHEMAS disagree` +
+          `${onlyLive.length ? ` — only in the DB: ${onlyLive.join(", ")}` : ""}` +
+          `${onlyRepo.length ? ` — only in this repo: ${onlyRepo.join(", ")}` : ""}${C.reset}`,
+      );
+    }
+    if (birthFindings === 0) {
+      console.log(
+        `  ${TAG.ok}No function default privilege grants anon or PUBLIC EXECUTE; the birth snapshot is closed; ${live.length} governed schemas match this repo's list.`,
+      );
+    } else {
+      console.log(
+        `  ${C.dim}       A new function is born executable by PUBLIC — and PUBLIC reaches anon — so the${C.reset}`,
+      );
+      console.log(
+        `  ${C.dim}       event trigger \`close_new_functions_to_anon\` is the only thing closing it.${C.reset}`,
+      );
+      console.log(
+        `  ${C.dim}       Repair with migrations/dd202_a_function_is_closed_to_anon_at_birth.sql.${C.reset}`,
+      );
+    }
+  } catch (err) {
+    console.error(`${TAG.fail}Function birth door: query failed — ${String(err)}`);
+    return 2;
+  }
+
   if (!missing.length && !disabled.length && !definerTriggers.length) {
     console.log("");
     console.log(
       `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound, enabled and SECURITY INVOKER.`,
     );
-    return (traps > 0 || undeclaredExposures > 0 || unprotected > 0) && strict
+    return (traps > 0 ||
+      undeclaredExposures > 0 ||
+      unprotected > 0 ||
+      birthFindings > 0) &&
+      strict
       ? 1
       : 0;
   }

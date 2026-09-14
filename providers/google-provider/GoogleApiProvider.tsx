@@ -15,6 +15,7 @@ import type {
   GooglePlatformApi,
 } from "@/lib/googlePicker";
 import {
+  assertGoogleOAuthRedirectInitiator,
   buildGoogleOAuthRedirectPending,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
@@ -439,16 +440,19 @@ export default function GoogleAPIProvider({
       const response = await fetch("/api/google/oauth/redirect-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initiatingUserId: user.id }),
       });
       const body = (await response.json()) as {
         state?: unknown;
         redirectUri?: unknown;
+        userId?: unknown;
         error?: unknown;
       };
       if (
         !response.ok ||
         typeof body.state !== "string" ||
-        typeof body.redirectUri !== "string"
+        typeof body.redirectUri !== "string" ||
+        typeof body.userId !== "string"
       ) {
         throw new Error(
           typeof body.error === "string"
@@ -456,6 +460,10 @@ export default function GoogleAPIProvider({
             : "Google redirect authorization could not start.",
         );
       }
+      assertGoogleOAuthRedirectInitiator(
+        { initiatingUserId: user.id },
+        body.userId,
+      );
       const redirectUri = new URL(body.redirectUri);
       if (
         redirectUri.origin !== window.location.origin ||
@@ -467,7 +475,7 @@ export default function GoogleAPIProvider({
       }
       const pending = buildGoogleOAuthRedirectPending(
         body.state,
-        { ...options, initiatingUserId: user.id },
+        { ...options, initiatingUserId: body.userId },
         window.location.origin,
       );
       storeGoogleOAuthRedirectPending(window.sessionStorage, pending);

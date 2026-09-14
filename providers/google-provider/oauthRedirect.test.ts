@@ -2,7 +2,8 @@ import {
   GOOGLE_OAUTH_REDIRECT_TTL_MS,
   buildGoogleOAuthRedirectPending,
   assertGoogleOAuthRedirectInitiator,
-  consumeGoogleOAuthRedirectPending,
+  clearGoogleOAuthRedirectPending,
+  readGoogleOAuthRedirectPending,
   returnPathWithGoogleOAuthResult,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
@@ -48,10 +49,11 @@ describe("Google OAuth redirect state", () => {
     storeGoogleOAuthRedirectPending(storage, pending);
 
     expect(
-      consumeGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
+      readGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
     ).toEqual(pending);
+    clearGoogleOAuthRedirectPending(storage, "state-1");
     expect(
-      consumeGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
+      readGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
     ).toBeNull();
   });
 
@@ -70,7 +72,7 @@ describe("Google OAuth redirect state", () => {
     );
     storeGoogleOAuthRedirectPending(storage, pending);
     expect(
-      consumeGoogleOAuthRedirectPending(
+      readGoogleOAuthRedirectPending(
         storage,
         "state-2",
         ORIGIN,

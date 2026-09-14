@@ -331,6 +331,18 @@ async function connect(env: DbEnv): Promise<pg.Client> {
     application_name: "matrx-frontend db:apply",
     connectionTimeoutMillis: 15_000,
   });
+  // 🚨 NOTHING FAILS SILENTLY. Every DDL guard on this database speaks through
+  // `RAISE WARNING` / `RAISE NOTICE` — the §6d-4 door guard's "THE GRANT DID NOT
+  // STICK" sentence, DD-202's "EXECUTE for PUBLIC and anon was REVOKED", the
+  // lock-timeout guard's bound. Until 2026-09-13 this runner discarded all of
+  // them, so the one message db-rules FEATURE.md promises you "will see,
+  // verbatim" reached nobody on the one sanctioned apply path. Print them.
+  client.on("notice", (n) => {
+    const severity = (n.severity ?? "NOTICE").toUpperCase();
+    const colour = severity.startsWith("W") ? C.yellow : C.dim;
+    console.log(`${colour}[${severity}]${C.reset} ${n.message ?? ""}`);
+    if (n.hint) console.log(`${C.dim}        hint: ${n.hint}${C.reset}`);
+  });
   await client.connect();
   return client;
 }

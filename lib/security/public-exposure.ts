@@ -3141,3 +3141,73 @@ export function classifyAnonWrites(live: LiveAnonWrite): AnonWriteFinding[] {
 
   return findings;
 }
+
+/* ===============================================================================
+ * DD-202 — A NEW FUNCTION IS CLOSED TO `anon` AT BIRTH.
+ *
+ * PostgreSQL hands every new function EXECUTE to PUBLIC, and PUBLIC reaches
+ * `anon`. `ALTER DEFAULT PRIVILEGES … REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`
+ * does NOT take it back (measured three ways, 2026-09-13, B-94): the PUBLIC
+ * item is the hard-wired default, not a default ACL, and a schema-scoped
+ * default privilege merges on top of it. So the enforcement is an event
+ * trigger — `close_new_functions_to_anon`, asserted bound + enabled +
+ * SECURITY INVOKER by the EXPECTED list in scripts/check-db-guards.ts — and
+ * these are the two standing facts that go with it.
+ * =============================================================================== */
+
+/**
+ * The vendor-managed schemas inside POSTGREST_EXPOSED_SCHEMAS that the birth
+ * guard leaves alone — the same boundary DD-193/DD-196 drew.
+ */
+export const FUNCTION_BIRTH_VENDOR_SCHEMAS = ["graphql_public"] as const;
+
+/** What the DB's `platform.anon_function_birth_schemas()` must return. */
+export const EXPECTED_FUNCTION_BIRTH_SCHEMAS: readonly string[] =
+  POSTGREST_EXPOSED_SCHEMAS.filter(
+    (s) => !(FUNCTION_BIRTH_VENDOR_SCHEMAS as readonly string[]).includes(s),
+  );
+
+export interface FunctionBirthFinding {
+  kind: string;
+  detail: string;
+}
+
+/**
+ * Two things that must be true for the birth door to stay shut, beyond the
+ * event trigger itself:
+ *
+ *  1. No FUNCTION default privilege — in any governed schema, under any
+ *     grantor, plus the global (all-schemas) row — grants `anon` or PUBLIC
+ *     EXECUTE. On its own that closes nothing (PUBLIC's EXECUTE is hard-wired);
+ *     it exists so the DECLARED default stops promising a grant the guard takes
+ *     back one statement later.
+ *  2. `platform.anon_function_birth_grandfather` still refuses new rows. It is
+ *     the snapshot of what was already open when DD-202 shipped, and it may
+ *     only shrink — a writable one would become the place a new function hides.
+ */
+export const FUNCTION_BIRTH_GUARD_QUERY = `
+  select 'anon_execute_default_privilege' as kind,
+         coalesce(n.nspname, '<all schemas>') || ' (grantor ' || pg_get_userbyid(d.defaclrole) || ')' as detail
+    from pg_default_acl d
+    left join pg_namespace n on n.oid = d.defaclnamespace
+   where d.defaclobjtype = 'f'
+     and (n.nspname is null or n.nspname = any (platform.anon_function_birth_schemas()))
+     and exists (
+       select 1 from unnest(d.defaclacl) a
+        where (a::text like 'anon=%' or a::text like '=%') and a::text like '%X%')
+  union all
+  select 'grandfather_table_is_writable',
+         'platform.anon_function_birth_grandfather has no BEFORE INSERT refusal trigger — it may only shrink'
+   where not exists (
+     select 1 from pg_trigger t
+      where t.tgrelid = 'platform.anon_function_birth_grandfather'::regclass
+        and t.tgname = 'anon_function_birth_grandfather_is_closed'
+        and not t.tgisinternal)
+  order by 1, 2
+`;
+
+/** The schema list the live guard governs, so drift from the TS list is a finding. */
+export const FUNCTION_BIRTH_SCHEMAS_QUERY = `
+  select unnest(platform.anon_function_birth_schemas()) as schema
+  order by 1
+`;

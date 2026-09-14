@@ -77,7 +77,7 @@ export function storeGoogleOAuthRedirectPending(
   storage.setItem(pendingKey(pending.state), JSON.stringify(pending));
 }
 
-export function consumeGoogleOAuthRedirectPending(
+export function readGoogleOAuthRedirectPending(
   storage: Storage,
   state: string,
   origin: string,
@@ -85,7 +85,6 @@ export function consumeGoogleOAuthRedirectPending(
 ): GoogleOAuthRedirectPending | null {
   const key = pendingKey(state);
   const raw = storage.getItem(key);
-  storage.removeItem(key);
   if (!raw) return null;
   try {
     const value = JSON.parse(raw) as Partial<GoogleOAuthRedirectPending>;
@@ -128,6 +127,13 @@ export function consumeGoogleOAuthRedirectPending(
   } catch {
     return null;
   }
+}
+
+export function clearGoogleOAuthRedirectPending(
+  storage: Storage,
+  state: string,
+): void {
+  storage.removeItem(pendingKey(state));
 }
 
 /** Refuse a consent result when the Matrx session changed mid-redirect. */

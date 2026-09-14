@@ -2,15 +2,10 @@
 
 import { cloneElement, isValidElement } from "react";
 
-import {
-  TapTargetButton,
-  TapTargetButtonTransparent,
-} from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import type { TableToolbarActionProps } from "@ai-matrx/design-system/data-table/host";
 
-type TableToolbarActionWithActiveProps = TableToolbarActionProps & {
-  active?: boolean;
-};
+type TableToolbarActionWithActiveProps = TableToolbarActionProps & { active?: boolean };
 
 const PAGE_LABEL_CLASS = "!h-auto !w-auto min-w-0 max-w-7 overflow-hidden text-ellipsis whitespace-nowrap text-center text-xs leading-none tabular-nums";
 const LONG_PAGE_LABEL_CLASS = "text-[11px]";
@@ -55,24 +50,26 @@ export function TableToolbarAction({
   children,
 }: TableToolbarActionWithActiveProps) {
   const icon = tableActionContent(children);
-  return active ? (
-    <TapTargetButton
-      ariaLabel={ariaLabel}
-      tooltip={tooltip ?? ariaLabel}
-      disabled={disabled}
-      aria-busy={busy || undefined}
-      aria-current="page"
-      onClick={onClick}
-      icon={icon}
-    />
-  ) : (
-    <TapTargetButtonTransparent
-      ariaLabel={ariaLabel}
-      tooltip={tooltip ?? ariaLabel}
-      disabled={disabled}
-      aria-busy={busy || undefined}
-      onClick={onClick}
-      icon={icon}
-    />
+  return (
+    active ? (
+      <TapTargetButton
+        ariaLabel={ariaLabel}
+        tooltip={tooltip ?? ariaLabel}
+        disabled={disabled}
+        aria-busy={busy || undefined}
+        aria-current="page"
+        onClick={onClick}
+        icon={icon}
+      />
+    ) : (
+      <TapTargetButtonTransparent
+        ariaLabel={ariaLabel}
+        tooltip={tooltip ?? ariaLabel}
+        disabled={disabled}
+        aria-busy={busy || undefined}
+        onClick={onClick}
+        icon={icon}
+      />
+    )
   );
 }
