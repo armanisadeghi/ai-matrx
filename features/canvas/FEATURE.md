@@ -15,7 +15,9 @@ the rules an agent editing THIS directory must obey.
 | Layer                                                                          | Where                                                                                            |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Front door (always mounted, owns ⌘\ + availability signalling)                 | `core/CanvasSideSheet.tsx`                                                                       |
-| Heavy shell — slide-in, width resize, optional vertical split, surface emitter | `core/CanvasSideSheetImpl.tsx`                                                                   |
+| DOCKED presentation — a resizable column beside a route's own content          | `core/CanvasDock.tsx` (+ heavy half `core/CanvasDockBody.tsx`)                                   |
+| SHEET presentation — overlay slide-in + width resize (fallback / phone)        | `core/CanvasSideSheetImpl.tsx`                                                                   |
+| The content both presentations share — card, vertical split, surface emitter   | `core/CanvasSurface.tsx`                                                                         |
 | Per-pane header chrome + body                                                  | `core/CanvasPane.tsx`                                                                            |
 | The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`)          | `core/CanvasBody.tsx`                                                                            |
 | Unified artifact renderers (chart, table, quiz, mermaid, …)                    | `artifact-types/renderers/*`                                                                     |
@@ -29,6 +31,26 @@ the rules an agent editing THIS directory must obey.
 | Visual maps — a DIFFERENT registry node built on this stack                    | `maps/FEATURE.md`                                                                                |
 
 ## Rules for this directory
+
+- **DOCKED IS THE DEFAULT; THE SHEET IS THE FALLBACK.** A route with room for
+  the canvas wraps its body in `<CanvasDock groupId="…">`: the canvas becomes a
+  resizable column, the route body shrinks, and **nothing the route draws is
+  ever covered**. While any dock is mounted (`dockHosts > 0`,
+  `selectCanvasIsDocked`) the global `CanvasSideSheet` renders NOTHING — the
+  two presentations can never both be on screen. A dock deliberately does not
+  register on a phone, where the full-bleed sheet is still right. Owner
+  standard, 2026-09-13: *"we have an entire Canvas system that gives us a nice
+  adjustable sidebar that can be folded out and in."*
+- **Never fork the canvas body per presentation.** Card, vertical split and
+  pane chrome live once in `core/CanvasSurface.tsx`; a presentation owns only
+  placement.
+- **`CanvasDock` keeps its `<Group>` mounted whether the canvas is open or
+  not** — swapping between a bare div and a panel group would remount the whole
+  route body (chat scroll, in-flight streams, input state) on every toggle. The
+  canvas panel is `collapsible` and driven to 0% instead.
+- **react-resizable-panels v4: a bare number is PIXELS.** Percentages must
+  carry the unit (`defaultSize={\`${ratio}%\`}`). Invoke the
+  `react-resizable-panels-v4` skill before touching any group here.
 
 - **The owner of a canvas write is `auth.uid()`, never a value the client sends.** The write RPCs
   still take `p_user_id`, but `canvas._require_actor()` validates it (`28000` with no session,
@@ -86,6 +108,15 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-14` — **the canvas DOCKS instead of covering.** `CanvasDock` +
+  `CanvasDockBody` give any route a resizable canvas column; `CanvasSurface`
+  holds the body both presentations share; `CanvasSideSheet` stands down while
+  a dock is mounted (`dockHosts` / `dockRatio` in the slice, width persisted to
+  localStorage). The chat route (`ChatRoomClient`) is the first consumer — the
+  overlay had been drawn over the composer, the mic and the send button. Also
+  fixed in passing: the vertical split's `defaultSize={splitRatio}` was
+  **pixels**, not percent, under v4's unit rules.
 
 - `2026-09-13` — **the bound SANDBOX is a canvas content type** (`sandbox`, NON_PERSISTABLE): Terminal / Files / Activity for a
   conversation's box, rendered by `features/agents/components/chat/sandbox-insight/SandboxCanvasBody`, opened through `useOpenSandboxCanvas`.
