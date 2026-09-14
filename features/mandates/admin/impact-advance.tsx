@@ -16,22 +16,26 @@
 import { useEffect, useState } from "react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   describeAdvance,
   describeRevert,
   indexResultsByRung,
+  mergeAdvanceReports,
   postAdvance,
   postRevert,
   readRevertWindow,
   revertableRows,
   rungIdentityOf,
+  splitWriteLegs,
   summarizeAdvanceReport,
   type AdvanceReport,
   type AdvanceRowResult,
   type ImpactPosture,
   type ImpactVerdict,
   type RevertWindow,
+  type WriteContext,
 } from "./impact";
 
 export type ImpactWriteBusy = "advance" | "revert" | null;
@@ -75,11 +79,20 @@ export interface UseImpactAdvanceOptions {
   /** Called after ANY write that changed something, so the caller re-grades. */
   onWritten?: (report: AdvanceReport) => void;
   /**
-   * Which write door (I12). `admin` is the super-admin lane; `mine` is the
-   * owner lane — the caller's own personal pins and the org rungs they
-   * administer, everything else refused by the server with its sentence.
+   * WHO is writing (I12). Defaults to the signed-in person: a super admin's
+   * lane for non-own rungs is `admin`, anyone else's is `mine`. The actor's
+   * OWN personal pins always go through `/mine` — so a super admin with one
+   * own pin and one org rung makes two requests, shown as one batch.
    */
-  posture?: ImpactPosture;
+  context?: WriteContext;
+}
+
+/** One server batch behind a merged result view. */
+interface BatchPart {
+  batch_id: string;
+  posture: ImpactPosture;
+  /** Rung identities this part carried, so a one-row revert finds its door. */
+  rungIds: Set<string>;
 }
 
 function MovesList({ moves }: { moves: string[] }) {
@@ -95,10 +108,18 @@ function MovesList({ moves }: { moves: string[] }) {
 export function useImpactAdvance({
   verdictByRung,
   onWritten,
-  posture = "admin",
+  context,
 }: UseImpactAdvanceOptions): ImpactAdvanceApi {
   const dispatch = useAppDispatch();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const actorUserId = useAppSelector(selectUserId);
+  const writeContext: WriteContext = context ?? {
+    posture: isSuperAdmin ? "admin" : "mine",
+    actorUserId: actorUserId ?? null,
+  };
   const [batches, setBatches] = useState<AdvanceReport[]>([]);
+  // Merged display batch id → the server batches behind it.
+  const [parts, setParts] = useState<Record<string, BatchPart[]>>({});
   const [snapshots, setSnapshots] = useState<
     Record<string, ReadonlyMap<string, ImpactVerdict>>
   >({});
@@ -126,8 +147,18 @@ export function useImpactAdvance({
     }
   }
 
-  const advance: ImpactAdvanceApi["advance"] = async (verdicts, batchLabel) => {
-    if (verdicts.length === 0 || busy) return null;
+  const advance: ImpactAdvanceApi["advance"] = async (chosen, batchLabel) => {
+    if (busy) return null;
+    // Another person's pin is dropped BEFORE the dialog and before any
+    // request; the legs are what will actually be sent.
+    const legs = splitWriteLegs(chosen, writeContext);
+    const verdicts = legs.flatMap((leg) => leg.verdicts);
+    if (verdicts.length === 0) {
+      if (chosen.length > 0) {
+        toast.error("None of the chosen pins is yours to move — a person's own pin is theirs to advance.");
+      }
+      return null;
+    }
     const { title, description, moves } = describeAdvance(verdicts, revertWindow);
     const ok = await confirm({
       title,
@@ -154,7 +185,21 @@ export function useImpactAdvance({
     const frozen = new Map<string, ImpactVerdict>();
     for (const verdict of verdicts) frozen.set(rungIdentityOf(verdict.apply_token), verdict);
     try {
-      const report = await postAdvance(dispatch, verdicts, batchLabel, posture);
+      // One request per lane (own pins → /mine, the rest → the actor's lane),
+      // shown as ONE batch; every server batch id is kept for the revert.
+      const reports: AdvanceReport[] = [];
+      const batchParts: BatchPart[] = [];
+      for (const leg of legs) {
+        const legReport = await postAdvance(dispatch, leg.verdicts, batchLabel, leg.posture);
+        reports.push(legReport);
+        batchParts.push({
+          batch_id: legReport.batch_id,
+          posture: leg.posture,
+          rungIds: new Set(leg.verdicts.map((v) => rungIdentityOf(v.apply_token))),
+        });
+      }
+      const report = mergeAdvanceReports(reports);
+      setParts((prev) => ({ ...prev, [report.batch_id]: batchParts }));
       setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);
       const summary = summarizeAdvanceReport(report);
@@ -208,13 +253,32 @@ export function useImpactAdvance({
     if (!ok) return null;
     setBusy("revert");
     try {
-      const report = await postRevert(
-        dispatch,
-        batch.batch_id,
-        rowId,
-        `Revert of ${batch.batch_label ?? batch.batch_id}`,
-        posture,
-      );
+      // Each server batch behind this view is reverted through its own door;
+      // a one-row revert goes only to the part that carried that rung.
+      const batchParts: BatchPart[] = parts[batch.batch_id] ?? [
+        { batch_id: batch.batch_id, posture: writeContext.posture, rungIds: new Set(rows.map((row) => rungIdentityOf(row.token))) },
+      ];
+      const label = `Revert of ${batch.batch_label ?? batch.batch_id}`;
+      const reports: AdvanceReport[] = [];
+      const revertParts: BatchPart[] = [];
+      for (const part of batchParts) {
+        const partRows = rows.filter((row) => part.rungIds.has(rungIdentityOf(row.token)));
+        if (partRows.length === 0) continue;
+        const partReport = await postRevert(dispatch, part.batch_id, rowId, label, part.posture);
+        reports.push(partReport);
+        revertParts.push({
+          batch_id: partReport.batch_id,
+          posture: part.posture,
+          rungIds: new Set(partRows.map((row) => rungIdentityOf(row.token))),
+        });
+      }
+      // The merged view points at the merged advance, so `revertableRows`
+      // sees what this revert put back.
+      const report: AdvanceReport = {
+        ...mergeAdvanceReports(reports),
+        reverts_batch_id: batch.batch_id,
+      };
+      setParts((prev) => ({ ...prev, [report.batch_id]: revertParts }));
       setSnapshots((prev) => ({ ...prev, [report.batch_id]: frozen }));
       setBatches((prev) => [report, ...prev]);
       const summary = summarizeAdvanceReport(report);
@@ -244,6 +308,7 @@ export function useImpactAdvance({
     clear: () => {
       setBatches([]);
       setSnapshots({});
+      setParts({});
     },
   };
 }

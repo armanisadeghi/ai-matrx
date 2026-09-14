@@ -481,27 +481,100 @@ export const IMPACT_WRITE_PATH: Record<
 };
 
 /**
- * WHO is looking, for the eligibility rules below. `posture: "mine"` with an
- * `actorUserId` makes that person's OWN personal pins movable (I12 — the
- * owner lane lets the owner act); every other person's pin stays "theirs to
- * advance". The default is the admin lane, where no personal pin batches.
+ * WHO is looking, for the eligibility rules and the routing below. The
+ * actor's OWN personal pins (`isOwnPin`) are movable for anyone, super admin
+ * included, and always travel through the owner lane (`/mine`); every other
+ * rung travels through the admin lane when the actor is a super admin and
+ * through the owner lane otherwise — where the server judges it. Another
+ * person's pin is never sent anywhere (I12; desk 2026-09-12).
  */
 export interface WriteContext {
+  /** The lane for rungs that are NOT the actor's own pins. */
   posture: ImpactPosture;
   actorUserId: string | null;
 }
 
 export const ADMIN_WRITE_CONTEXT: WriteContext = { posture: "admin", actorUserId: null };
 
-/** A personal pin that belongs to the person looking at it. */
 export function isOwnPin(verdict: ImpactVerdict, context: WriteContext): boolean {
   return (
-    context.posture === "mine" &&
     verdict.principal.kind === "user" &&
     typeof context.actorUserId === "string" &&
     context.actorUserId.length > 0 &&
     verdict.principal.subject_user_id === context.actorUserId
   );
+}
+
+/** One write request: which door, and the verdicts it carries. */
+export interface WriteLeg {
+  posture: ImpactPosture;
+  verdicts: ImpactVerdict[];
+}
+
+/**
+ * Split a chosen set by ownership (I12): the actor's own pins → the owner
+ * lane; the rest → the actor's lane. A super admin with one own pin and one
+ * org rung therefore makes TWO requests. Another person's pin is dropped
+ * here, before any request, whatever the caller chose.
+ */
+export function splitWriteLegs(
+  verdicts: readonly ImpactVerdict[],
+  context: WriteContext,
+): WriteLeg[] {
+  const mine: ImpactVerdict[] = [];
+  const rest: ImpactVerdict[] = [];
+  for (const verdict of verdicts) {
+    if (verdict.principal.kind === "user") {
+      if (isOwnPin(verdict, context)) mine.push(verdict);
+      continue;
+    }
+    rest.push(verdict);
+  }
+  const legs: WriteLeg[] = [];
+  if (context.posture === "mine") {
+    const all = [...mine, ...rest];
+    if (all.length > 0) legs.push({ posture: "mine", verdicts: all });
+    return legs;
+  }
+  if (mine.length > 0) legs.push({ posture: "mine", verdicts: mine });
+  if (rest.length > 0) legs.push({ posture: "admin", verdicts: rest });
+  return legs;
+}
+
+/**
+ * Several server batches shown as ONE result view (one label, the first
+ * batch id as the display id). The parts keep their own ids so a revert can
+ * reach each of them; `partsOf` in `useImpactAdvance` remembers the mapping.
+ */
+export function mergeAdvanceReports(reports: readonly AdvanceReport[]): AdvanceReport {
+  if (reports.length === 0) throw new Error("nothing to merge — no batch report was returned");
+  if (reports.length === 1) return reports[0];
+  const [first] = reports;
+  const counts: NonNullable<AdvanceReport["counts"]> = {
+    total: 0,
+    advanced: 0,
+    reverted: 0,
+    refused: 0,
+    excluded: 0,
+  };
+  const results: AdvanceRowResult[] = [];
+  let computedAt = first.computed_at;
+  for (const report of reports) {
+    results.push(...(report.results ?? []));
+    const c = report.counts ?? {};
+    counts.total = (counts.total ?? 0) + (c.total ?? report.results?.length ?? 0);
+    counts.advanced = (counts.advanced ?? 0) + (c.advanced ?? 0);
+    counts.reverted = (counts.reverted ?? 0) + (c.reverted ?? 0);
+    counts.refused = (counts.refused ?? 0) + (c.refused ?? 0);
+    counts.excluded = (counts.excluded ?? 0) + (c.excluded ?? 0);
+    if (report.computed_at > computedAt) computedAt = report.computed_at;
+  }
+  return {
+    ...first,
+    results,
+    counts,
+    computed_at: computedAt,
+  };
 }
 
 export interface FetchImpactOptions {

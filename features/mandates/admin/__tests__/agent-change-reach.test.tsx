@@ -303,8 +303,9 @@ describe("the sentence and the companion's inputs", () => {
     expect(isBatchActionable(own, mine)).toBe(true);
     expect(batchTierOf(theirs, { context: mine })).toBe("blocked");
     expect(isBatchActionable(theirs, mine)).toBe(false);
-    // The admin lane never batches a personal pin — not even the admin's own.
-    expect(batchTierOf(own, { context: { posture: "admin", actorUserId: "user-1" } })).toBe("blocked");
+    // A super admin's OWN pin is movable too (it travels through /mine); with
+    // no actor named, no pin is anyone's.
+    expect(batchTierOf(own, { context: { posture: "admin", actorUserId: "user-1" } })).toBe("safe");
     expect(batchTierOf(own)).toBe("blocked");
     // The badge counts the same way: the owner's pin is actionable for them.
     expect(describeReach(countBatchTiers([own, theirs], { context: mine }))).toBe(

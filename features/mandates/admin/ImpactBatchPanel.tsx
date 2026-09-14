@@ -234,9 +234,9 @@ export function ImpactBatchPanel({
   const dispatch = useAppDispatch();
   const openMandateWindow = useOpenMandateWindow();
   const walkDescendants = includeDescendants ?? mode === "post_batch";
-  // THE WRITE DOOR (I12): a super admin writes through the admin lane; anyone
-  // else through the owner lane, where their OWN personal pins are movable
-  // and the server refuses the rest with its sentence. Never on behalf.
+  // THE WRITE DOORS (I12): the actor's OWN personal pins always go through
+  // the owner lane; the rest through the admin lane for a super admin and the
+  // owner lane for anyone else (the server judges). Never on behalf.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const actorUserId = useAppSelector(selectUserId);
   const writeContext: WriteContext = {
@@ -409,7 +409,7 @@ export function ImpactBatchPanel({
 
   const writes = useImpactAdvance({
     verdictByRung,
-    posture: writeContext.posture,
+    context: writeContext,
     onWritten: () => {
       setSelected([]);
       setEpoch((value) => value + 1);
