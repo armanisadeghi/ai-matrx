@@ -135,6 +135,34 @@
  *       Comments are stripped before the positions are compared, so prose about
  *       a role helper is not a finding. ABSOLUTE: no baseline, no allowlist.
  *
+ *   D13 Every `platform.client_callable_door` row's `anonymous_callers` flag
+ *       says the same thing as the live `anon` EXECUTE grant on its function.
+ *       DD-212 (2026-09-14) made the FLAG the declaration — before it, D5/D9 and
+ *       the DD-202 birth trigger all read `reason ~* '(anonymous|signed[- ]out|
+ *       guest|kiosk|outsider)'`, and V-68 proved a row reading "SIGNED-IN door …
+ *       No anonymous caller exists" opened the birth door for a new INVOKER
+ *       function. A flag is only as good as its agreement with the database, so
+ *       this arm holds the two together in both directions: TRUE with no grant is
+ *       a stand-down waiting to hand anon back on the next CREATE OR REPLACE;
+ *       FALSE with a grant is DD-207's silent door (16 rows on 2026-09-14,
+ *       `public.admin_spend_headline` declared SUPER-ADMIN-ONLY while the
+ *       published anon key could call it). Rows whose function does not exist
+ *       under that exact identity_args are out of the population. ABSOLUTE.
+ *
+ *   D14 Every ASSOCIATION door's declared reason names BOTH ENDS of the edge.
+ *       An association is the one row shape with two subjects, and a gate that
+ *       asks about one of them is a direction, not a gate. DD-195 (2026-09-13)
+ *       gated the end an edge REVEALS and said so honestly — "The door does NOT
+ *       gate the anchor the caller named" — and that true, incomplete sentence
+ *       survived a whole verification round because incomplete read as fine.
+ *       DD-205 (2026-09-14) measured what it left open: passing nine ids the
+ *       kernel refused you as the ANCHOR returned all nine edges. So a reason
+ *       that does not say `both ends`, or that disclaims gating an end, is the
+ *       finding — the class is the sentence, not the one door. ABSOLUTE: no
+ *       baseline, no allowlist; the population is every
+ *       `platform.client_callable_door` row whose function name starts
+ *       `assoc_`, and it was 11 of 11 green the day this shipped.
+ *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
  *
@@ -374,6 +402,16 @@ interface ClientWriteRow {
 // `anon` can execute it and it is SECURITY DEFINER, there is a row saying why an
 // anonymous caller may reach it. Trigger functions are excluded (a trigger is
 // not called by a client); extension-owned `pgsodium.*` is left to Supabase.
+//
+// 🚨 DD-212 (2026-09-14) STRENGTHENED IT: the row must carry
+// `anonymous_callers = true`, not merely exist. Before that, ANY door row
+// satisfied D5, so 16 functions `anon` could execute passed on a row that
+// described a signed-in caller and never considered a stranger (DD-207:
+// `public.admin_spend_headline` held anon EXECUTE behind a door row saying
+// SUPER-ADMIN-ONLY). Those 16 were decided in
+// `migrations/dd212_an_anonymous_door_is_declared_never_inferred.sql` —
+// `log_client_error` declared, the other 15 revoked — so this strengthening
+// costs the baseline nothing: the population was 8 before it and is 8 after.
 const UNDECLARED_ANON_DEFINER_QUERY = `
   select n.nspname || '.' || p.proname as fn,
          pg_get_function_identity_arguments(p.oid) as args
@@ -389,6 +427,7 @@ const UNDECLARED_ANON_DEFINER_QUERY = `
       where d.schema_name = n.nspname
         and d.function_name = p.proname
         and d.identity_args = pg_get_function_identity_arguments(p.oid)
+        and d.anonymous_callers
     )
   order by 1, 2
 `;
@@ -677,12 +716,19 @@ interface NullUnsafeRoleRow {
 //
 // THE RULE. A SECURITY INVOKER, non-trigger function in a PostgREST-exposed
 // schema whose body writes may not be executable by `anon` unless a
-// `platform.client_callable_door` row declares it AND that row says out loud that
-// the caller may have no account. The door register's own wording is the test —
-// every anonymous door on this database says "ANONYMOUS door", "signed-out",
-// "guest", "kiosk" or "outsider" in its reason — because a door row that does not
-// mention the anonymous caller is a declaration about signed-in callers, and
-// silently reading it as permission for a stranger is the drift this closes.
+// `platform.client_callable_door` row declares it with `anonymous_callers = true`.
+//
+// 🚨 DD-212 (2026-09-14) CHANGED WHAT "DECLARES" MEANS. Until then this test was
+// `reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'` — a substring over
+// prose, and prose has no polarity. V-68 planted a row reading "SIGNED-IN door
+// (authenticated only; anon revoked). No anonymous caller exists for it in any
+// repo." on a new INVOKER function and the DD-202 birth guard, reading the same
+// regex, let it keep `anon` EXECUTE: a sentence that said the OPPOSITE of an
+// anonymous purpose opened the door. It was not a rare wording either — 314 of
+// 971 live door rows matched that regex while only 47 named a function `anon`
+// could actually execute. The declaration is now a FLAG a human sets beside an
+// `anonymous_purpose` sentence, and D12 below keeps the flag honest against the
+// live grant. No regex over `reason` decides anything here any more.
 const ANON_INVOKER_WRITER_QUERY = `
   select n.nspname || '.' || p.proname as fn,
          pg_get_function_identity_arguments(p.oid) as args,
@@ -707,7 +753,7 @@ const ANON_INVOKER_WRITER_QUERY = `
       select 1 from platform.client_callable_door d
       where d.schema_name = n.nspname
         and d.function_name = p.proname
-        and d.reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'
+        and d.anonymous_callers
     )
   order by 1, 2
 `;
@@ -977,6 +1023,95 @@ interface NullUnsafeRoleHelperRow {
   site: string;
 }
 
+// ─── D14: an association door's reason names BOTH ends of the edge ───────────
+//
+// DD-205 (2026-09-14). D11 asks whether a door reaches the gate it names. This asks the question
+// D11 cannot: whether the sentence is COMPLETE. An association row has two subjects — the anchor the
+// caller named and the row at the other end — and every one of the eleven `assoc_*` doors touches
+// both. Until DD-205 the readers gated one of them, and the door register said so in a sentence that
+// was true and incomplete: "The door does NOT gate the anchor the caller named, so a caller holding
+// an id they cannot read can still learn an edge touches it." Measured live the day after: as a
+// plain member of the row's organization, passing nine `confidential` `personal` `agent_run` ids the
+// kernel refused him as the ANCHOR returned all nine edges, with their roles, labels, positions and
+// metadata. Two more doors carried the same shape unnoticed — `assoc_list` gated only the anchor,
+// `assoc_members_visible` admitted an edge on an organization predicate OR'd with the anchor check.
+//
+// THE RULE, and why it is worded as prose rather than as body analysis. The bodies of these eleven
+// doors gate their ends five different ways (a materialized anchor boolean, a reduced id array, an
+// up-front RAISE, a per-edge conjunct, and one hop down into `assoc_add`/`assoc_remove`), so no
+// single structural pattern recognises "both ends are gated" across all of them without lying about
+// at least one. What every one of them CAN do is say which ends it gates, in the register row that
+// is the only thing most reviewers ever read. So: the reason must contain `both ends`, and must not
+// contain a disclaimer that an end is ungated. A door that genuinely gates one end may not pass this
+// by rewording — it has to be fixed, and then the sentence is true. ABSOLUTE: no baseline.
+const ASSOC_DOOR_REASON_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         case
+           when d.reason ~* 'not gate the (anchor|other|far)'
+             then 'its reason DISCLAIMS gating an end'
+           else 'its reason never says what happens to BOTH ENDS'
+         end as problem
+    from platform.client_callable_door d
+   where d.function_name ~ '^assoc_'
+     and (d.reason !~* 'both ends' or d.reason ~* 'not gate the (anchor|other|far)')
+   order by 1
+`;
+
+interface AssocDoorReasonRow {
+  fn: string;
+  args: string;
+  problem: string;
+}
+
+// ─── D13: the declared flag and the live anon grant say the same thing ───────
+//
+// DD-212 / DD-207 (2026-09-14). Every other arm here asks about the DATABASE.
+// This one asks whether the REGISTER still tells the truth about it, because
+// after DD-212 the register is what the birth trigger and D5/D9 obey. Two ways
+// it can lie, and both have happened:
+//
+//   * `anonymous_callers = true` while `anon` holds no EXECUTE — a door row that
+//     will hand a `CREATE OR REPLACE` its anon grant back at birth, for a
+//     function somebody deliberately closed. A stand-down waiting for a rebuild.
+//   * `anonymous_callers = false` while `anon` DOES hold EXECUTE — DD-207's
+//     class, measured at 16 rows on 2026-09-14: `public.admin_spend_headline`
+//     declared SUPER-ADMIN-ONLY with `anon` holding EXECUTE, plus the four
+//     `ues_*`, the four `cmt_*`, `cat_list`, `can_curate_library_document`
+//     (whose reason claimed "2 live policies, anon included" — zero policies
+//     named it and `anon` could not SELECT the table at all), the two
+//     `agx_get_shared_*`, `agx_build_shortcut_menu_m` and
+//     `platform._confirmation_admission`. Fifteen were revoked and
+//     `log_client_error` was declared; the population is 0 and 0 is the only
+//     correct number.
+//
+// Rows whose function does not exist under that exact identity_args are OUT of
+// the population — 28 of them on 2026-09-14, a separate staleness question this
+// arm must not silently answer. ABSOLUTE: no baseline, no allowlist.
+const DOOR_FLAG_VS_GRANT_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         d.anonymous_callers as flag,
+         has_function_privilege('anon', p.oid, 'EXECUTE') as anon_executes,
+         (d.anonymous_purpose is not null) as has_purpose
+    from platform.client_callable_door d
+    join pg_catalog.pg_namespace n on n.nspname = d.schema_name
+    join pg_catalog.pg_proc p
+      on p.pronamespace = n.oid
+     and p.proname = d.function_name
+     and pg_get_function_identity_arguments(p.oid) = d.identity_args
+   where d.anonymous_callers <> has_function_privilege('anon', p.oid, 'EXECUTE')
+   order by 1, 2
+`;
+
+interface DoorFlagRow {
+  fn: string;
+  args: string;
+  flag: boolean;
+  anon_executes: boolean;
+  has_purpose: boolean;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -1045,6 +1180,8 @@ async function main(): Promise<number> {
   let anonInvokerWriters: AnonInvokerWriterRow[];
   let unreachedGateClaims: ReasonClaimRow[];
   let roleBeforeCapability: RoleBeforeCapabilityRow[];
+  let doorFlagMismatches: DoorFlagRow[];
+  let assocDoorReasons: AssocDoorReasonRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -1098,6 +1235,14 @@ async function main(): Promise<number> {
     roleBeforeCapability = await q<RoleBeforeCapabilityRow>(
       ROLE_BEFORE_CAPABILITY_QUERY,
       "D12 HR functions that refuse on a role before asking a capability",
+    );
+    doorFlagMismatches = await q<DoorFlagRow>(
+      DOOR_FLAG_VS_GRANT_QUERY,
+      "D13 door rows whose anonymous_callers flag disagrees with the live anon grant",
+    );
+    assocDoorReasons = await q<AssocDoorReasonRow>(
+      ASSOC_DOOR_REASON_QUERY,
+      "D14 association door reasons that do not name both ends",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1704,6 +1849,89 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       cost estimate rather than a rule.${C.reset}`,
+    );
+  }
+
+  // ── D13 ────────────────────────────────────────────────────────────────
+  if (doorFlagMismatches.length === 0) {
+    console.log(
+      `${TAG.ok}D13 every door row's anonymous_callers flag matches the live anon grant ${C.dim}(DD-212/DD-207)${C.reset}`,
+    );
+  } else {
+    findings += doorFlagMismatches.length;
+    console.log(
+      `${TAG.fail}D13 ${doorFlagMismatches.length} declared door(s) disagree with the database about a signed-out caller:`,
+    );
+    for (const r of doorFlagMismatches) {
+      const said = r.flag
+        ? "declares anonymous_callers = true, but anon holds NO EXECUTE"
+        : "declares anonymous_callers = false, but anon HOLDS EXECUTE";
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${said}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       DD-212: the flag is what the DD-202 birth trigger and D5/D9 obey, so a flag that${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       disagrees with the grant is a decision nobody made. TRUE with no grant re-opens${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       anon on the next CREATE OR REPLACE of a function somebody closed on purpose;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       FALSE with a grant is DD-207's silent door — admin_spend_headline sat there${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       declared SUPER-ADMIN-ONLY while the published anon key could call it. Fix: decide.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Either \`revoke execute on function <fn>(<args>) from anon, public;\` (re-granting${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       every signed-in role that held it), or set anonymous_callers = true WITH an${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       anonymous_purpose saying who the signed-out caller is and what stands in for an${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       identity — and gate the body for a NULL auth.uid(). Never both, never neither.${C.reset}`,
+    );
+  }
+
+  // ── D14 ───────────────────────────────────────────────────────────────────
+  if (assocDoorReasons.length === 0) {
+    console.log(
+      `${TAG.ok}D14 every association door's reason names BOTH ends of the edge ${C.dim}(DD-205)${C.reset}`,
+    );
+  } else {
+    findings += assocDoorReasons.length;
+    console.log(
+      `${TAG.fail}D14 ${assocDoorReasons.length} association door row(s) describe only one end of the edge:`,
+    );
+    for (const r of assocDoorReasons) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.problem}${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       An association is the one row shape with TWO subjects — the anchor the caller${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       named and the row at the other end — and a gate that asks about one of them is${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       a direction, not a gate. DD-195 gated the revealed end and said honestly that it${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       did not gate the anchor; that true, incomplete sentence survived a verification${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       round, and DD-205 then measured nine confidential agent runs handed to a plain${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       member who passed their ids as the anchor. Fix the BODY so both ends are gated,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       then say so: the reason must contain "both ends" and disclaim neither of them.${C.reset}`,
     );
   }
 
