@@ -111,8 +111,6 @@ export interface UnifiedChatWrapperProps {
   enableCanvas?: boolean;
   /** Show the submit-on-enter toggle */
   showSubmitOnEnterToggle?: boolean;
-  /** Show the shift+enter hint */
-  showShiftEnterHint?: boolean;
 
   // ── Input Configuration ──────────────────────────────────────────────────
   /** Placeholder text for the input */
@@ -179,7 +177,6 @@ export function UnifiedChatWrapper({
   showSystemMessages = false,
   enableCanvas = false,
   showSubmitOnEnterToggle = false,
-  showShiftEnterHint = false,
 
   // Input Config
   placeholder,
@@ -259,7 +256,6 @@ export function UnifiedChatWrapper({
     showModelPicker: effectiveShowModelPicker,
     showVariables,
     showSubmitOnEnterToggle,
-    showShiftEnterHint,
     seamless,
     compact,
     variableMode,

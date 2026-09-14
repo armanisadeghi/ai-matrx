@@ -24,9 +24,8 @@
 //   • `ProTextarea`            — opt-in, defaulting to Enter-is-a-newline
 //
 // So the same keystroke means different things on different screens of one
-// product. This module is the single decision; `ComposerHint` is the single
-// sentence that tells the reader what it decided. A composer imports both —
-// it never writes the rule again.
+// product. This module is the single decision. A composer imports it and
+// never writes the rule again.
 
 export type ComposerKeyIntent =
   /** Send the message now. */
@@ -91,23 +90,4 @@ export function composerKeyIntent(
 /** True when the composer must swallow the browser's own Enter handling. */
 export function intentTakesTheKey(intent: ComposerKeyIntent): boolean {
   return intent !== "none" && intent !== "newline";
-}
-
-const MODIFIER = (): string => {
-  if (typeof navigator === "undefined") return "Ctrl";
-  return /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
-    ? "⌘"
-    : "Ctrl";
-};
-
-/**
- * THE ONE SENTENCE. A composer never invents its own wording — three of them
- * used to ("Ctrl+Enter to submit", "⌘+Enter to send, Shift+Enter for new
- * line", and nothing at all), and the rest said nothing, which is how a dead
- * Return key became invisible.
- */
-export function composerHintText(submitOnEnter: boolean): string {
-  return submitOnEnter
-    ? "Enter to send · Shift+Enter for a new line"
-    : `${MODIFIER()}+Enter to send · Enter for a new line`;
 }
