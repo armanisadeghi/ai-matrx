@@ -25,7 +25,13 @@
  * Supabase read of the live corpus, and about half a minute of real page work —
  * cost that belongs on the sandbox's own gate, not on every commit.
  *
- *   pnpm test:kind-sandbox:browser
+ * THAT GATE NOW EXISTS (DD-242): `pnpm check:kind-sandbox-gate` boots its own
+ * server on a port the OS hands out, regenerates the witness from live rows and
+ * runs this spec — in the release gates and in CI, so it is no longer a proof
+ * that only happens when someone types it.
+ *
+ *   pnpm check:kind-sandbox-gate      the gate (boots a server, runs this)
+ *   pnpm test:kind-sandbox:browser    this spec alone, against a server you have
  */
 import { expect, test, type Frame, type Request } from "@playwright/test";
 
