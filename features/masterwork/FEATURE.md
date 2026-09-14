@@ -261,7 +261,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 ## Change Log
 
 - `2026-09-14` — **The `rule_draft` write target has a REGISTERED value contract.** `masterwork_rule_draft`
-  (`content_ir.kind_definition` `fc6eba46-709b-4cfd-bde2-a264420f18a8`, v1, active) is registered from the
+  (`content_ir.kind_definition` `fc6eba46-709b-4cfd-bde2-a264420f18a8`, active) is registered from the
   ONE shared validator `agent-context/ruleDraftInput.ts` — same single required field (`mode`), same
   optional fields, same `RULE_ACTION_KINDS` / `RULE_POLICY_LEVELS` enums — and the manifest target now
   names it (`valueKind`). Nothing about what the page accepts changed; what changed is that the contract
