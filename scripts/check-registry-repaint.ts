@@ -65,6 +65,12 @@ function compileWithReactCompiler(source: string, filename: string): string {
       SYNTAX_JSX,
     ],
     compact: false,
+    // 🚨 COMMENTS OFF. The rule reads the compiled output as CODE; the modules
+    // that document this very defect quote `useContentIrKindVersion(kind)` in
+    // their headers, and a guard that flags its own doctrine is a guard someone
+    // switches off. Stripping them here is what makes the finding mean what it
+    // says: a real call whose answer nothing reads.
+    comments: false,
   });
   return out?.code ?? "";
 }
@@ -220,6 +226,22 @@ export function AlsoBroken({ subject }: { subject: { kind: string } }) {
   useContentIrKindVersion(subject.kind);
   const answer = readIt(subject);
   return <div>{String(answer)}</div>;
+}
+`,
+    },
+    {
+      name: "a module that only QUOTES the defect in its documentation",
+      mustFail: false,
+      source: `
+/**
+ * The rule. Never write this:
+ *     const v = useContentIrKindVersion(kind);
+ *     const x = useMemo(() => { void v; return read(kind); }, [kind, v]);
+ * and never call useContentIrKindVersion(kind) for its side effect alone.
+ */
+export function readAtVersion<T>(version: number, read: () => T): T {
+  void version;
+  return read();
 }
 `,
     },
