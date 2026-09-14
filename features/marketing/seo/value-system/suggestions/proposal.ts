@@ -104,11 +104,31 @@ export interface GuidelineEditProposal {
   summary: string;
 }
 
+/** The only two things an Offering can be (`web.brand_offering.kind`). */
+export const OFFERING_KINDS = ["product", "service"] as const;
+export type OfferingKind = (typeof OFFERING_KINDS)[number];
+
+/**
+ * An Offering the Business Discovery Ladder proposes (KI-040 step 6): named in
+ * step 4, valued in step 5. Worth is POINTS from the 100 baseline (KI-001,
+ * cutover ruling D9), or `null` when step 5 did not value it — never a
+ * made-up 0. Approving it waits on the brand-offering writers (`apply.ts`).
+ */
+export interface OfferingProposal {
+  proposal: "offering";
+  name: string;
+  offeringKind: OfferingKind;
+  description: string | null;
+  aliases: string[];
+  valueAdd: number | null;
+}
+
 export type KeywordMeaningProposal =
   | MatcherProposal
   | WorthProposal
   | StampProposal
-  | GuidelineEditProposal;
+  | GuidelineEditProposal
+  | OfferingProposal;
 
 export type KeywordMeaningProposalKind = KeywordMeaningProposal["proposal"];
 
@@ -214,6 +234,21 @@ export function toKeywordMeaningProposal(
         summary: str(obj.summary) ?? "Update the keyword guidelines",
       };
     }
+    case "offering": {
+      const name = str(obj.name)?.trim();
+      const offeringKind = OFFERING_KINDS.find((k) => k === obj.offeringKind);
+      if (!name || !offeringKind) return null;
+      return {
+        proposal: "offering",
+        name,
+        offeringKind,
+        description: str(obj.description) ?? null,
+        aliases: Array.isArray(obj.aliases)
+          ? obj.aliases.filter((a): a is string => typeof a === "string")
+          : [],
+        valueAdd: typeof obj.valueAdd === "number" ? obj.valueAdd : null,
+      };
+    }
     default:
       return null;
   }
@@ -307,6 +342,16 @@ export function describeKeywordMeaningProposal(
             : `Stamps ${p.dimensionLabel} → ${p.valueLabel} on ${n} keyword${n === 1 ? "" : "s"} as your own ruling.`,
       };
     }
+    case "offering": {
+      const points =
+        p.valueAdd === null
+          ? null
+          : `${p.valueAdd >= 0 ? "+" : ""}${p.valueAdd} points`;
+      return {
+        headline: `Add the ${p.offeringKind} "${p.name}"${points ? `, worth ${points}` : ""}`,
+        writePath: `Adds "${p.name}" to this brand's offerings, makes it available on this site${points ? ` and sets its worth to ${points} from the 100 baseline` : ""}. This lands with the brand-offering model; until then it waits here and nothing is written.`,
+      };
+    }
     case "guideline_edit":
       return {
         headline: p.summary,
@@ -322,4 +367,5 @@ export const PROPOSAL_KIND_LABEL: Record<KeywordMeaningProposalKind, string> = {
   worth: "Worth",
   stamp: "Stamps",
   guideline_edit: "Guidelines",
+  offering: "Offerings",
 };

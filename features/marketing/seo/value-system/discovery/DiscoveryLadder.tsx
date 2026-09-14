@@ -1,16 +1,22 @@
 "use client";
 
 /**
- * The Business Discovery Ladder (KI-040) — the screen where the six-rung
- * chain is RUN and RULED, one rung at a time.
+ * The Business Discovery Ladder (KI-040) — the screen where the chain is RUN
+ * and RULED, one rung at a time.
  *
  * What this surface is: AI reads the site cold (its own crawled pages, no
  * operator input) and proposes, in order — business model → ideal customer →
- * money map → Offerings → Offering values (± from the 100 baseline) →
+ * money map → Offerings → Offering values (± points from the 100 baseline) →
  * proposed setup. Every rung's result renders here from SERVER state (the
  * durable-run ledger), the human reads it, and only then runs the next rung.
  * Re-running any rung is always allowed — that is the tune-up / full-redo
  * path, and it supersedes what the later rungs will consume.
+ *
+ * Step 6 calls no agent: it turns steps 4 and 5 into proposals in the ONE
+ * approval queue (KI-045), where a person approves or rejects each, or all.
+ * The questions only THIS customer can answer — their service areas, their
+ * combination rules, whether the AI agrees with their rulings — are doors at
+ * the bottom, never questions put to anyone else.
  *
  * Streaming: one durable command per rung through `useSeoCommandRun`, agent
  * output floated in `LiveRunWindow` (never a spinner while AI works).
@@ -19,21 +25,27 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowUpRight,
   BrainCircuit,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleDashed,
+  Layers,
   Loader2,
   Lock,
+  MapPin,
   Play,
   RotateCcw,
+  ScanSearch,
 } from "lucide-react";
+import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import {
   OrganizationRequiredNotice,
@@ -89,16 +101,16 @@ const STEP_META: Record<
   },
   offering_values: {
     title: "5 · Offering values",
-    question: "Each Offering's proposed ± from the 100-point baseline.",
+    question: "Each Offering's proposed ± points from the 100 baseline.",
     agent: "Offering Valuer",
     requires: ["business_model", "ideal_customer", "money_map", "offerings"],
   },
   proposed_setup: {
     title: "6 · Proposed setup",
     question:
-      "Dimensions, matchers, worths and guidelines — proposed for your approval.",
-    agent: "Coming with the pack-content reshape",
-    requires: ["business_model", "ideal_customer", "money_map", "offerings", "offering_values"],
+      "Every Offering and its worth, turned into proposals you approve or reject — nothing is set until you do.",
+    agent: "the setup proposer (no AI — it reads steps 4 and 5)",
+    requires: ["offerings", "offering_values"],
   },
   guidelines_draft: {
     title: "Business guidelines",
@@ -119,7 +131,14 @@ interface StepResultDoc {
   artifact?: Record<string, unknown>;
 }
 
-export function DiscoveryLadder({ siteId }: { siteId: string }) {
+export interface DiscoveryLadderProps {
+  siteId: string;
+  brandId?: string | null;
+  organizationId?: string | null;
+  siteLabel?: string | null;
+}
+
+export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
   const queryClient = useQueryClient();
   const status = useQuery({
     queryKey: ["marketing", "seo", "discovery", siteId],
@@ -207,7 +226,7 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
           proposes each answer below in order. You read a rung's result, then
           run the next. Re-run any rung to redo it; later rungs consume the
           newest result. Every number in step 5 is a proposal from the 100-point
-          baseline, never a final say.
+          baseline, and step 6 hands each one to you to approve or reject.
         </p>
       </div>
       {DISCOVERY_STEP_ORDER.map((step) => {
@@ -221,7 +240,7 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
           runningStep === step ||
           (run.status === "running" && runningStep === step);
         const open = openStep === step;
-        const card = (
+        return (
           <div
             key={step}
             className={cn(
@@ -298,7 +317,7 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
                             .join(", ")} — run those first.`
                         : completed
                           ? `Re-run ${meta.agent} — supersedes this result for later steps.`
-                          : `Run ${meta.agent} on this site's pages.`
+                          : `Run ${meta.agent} on this site.`
                     }
                     onClick={() => void launchStep(step)}
                   >
@@ -313,7 +332,7 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
                   </Button>
                 ) : (
                   <span className="text-[10px] text-muted-foreground">
-                    {meta.agent}
+                    Arrives with the next server release
                   </span>
                 )}
               </div>
@@ -325,8 +344,72 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
             ) : null}
           </div>
         );
-        return card;
       })}
+      <SetupDoors siteId={siteId} brandId={brandId ?? null} />
+    </div>
+  );
+}
+
+/**
+ * The settings only THIS business can decide. Discovery cannot read them off
+ * a website, and nobody else should answer them for the customer
+ * (`ask-the-builder-not-the-user`): each is a door straight to the screen
+ * where the customer sets it.
+ */
+function SetupDoors({
+  siteId,
+  brandId,
+}: {
+  siteId: string;
+  brandId: string | null;
+}) {
+  const doors = [
+    {
+      icon: MapPin,
+      title: "Where you do business",
+      body: "Name the areas you serve — ideal, acceptable, expansion, never — so a keyword for the wrong city is worth nothing.",
+      href: marketingRoutes.site(brandId, siteId, "/value/rules?areas=incomplete"),
+      label: "Set your service areas",
+    },
+    {
+      icon: Layers,
+      title: "What changes together",
+      body: "Say when two answers together change worth — for example, a consumer searching outside your area is never a lead.",
+      href: marketingRoutes.site(brandId, siteId, "/value/dimensions"),
+      label: "Add a combination rule",
+    },
+    {
+      icon: ScanSearch,
+      title: "Does the AI agree with you?",
+      body: "Once you have ruled a few keywords, start a ruling session and choose Blind-check my rulings: the AI answers them cold and you settle every disagreement.",
+      href: marketingRoutes.site(brandId, siteId, "/value"),
+      label: "Open the value workbench",
+    },
+  ];
+  return (
+    <div className="rounded-lg border border-border bg-card p-2.5">
+      <p className="text-sm font-medium">Finish what only you can decide</p>
+      <p className="mb-2 text-[11px] text-muted-foreground">
+        Discovery cannot read these off your website. They are yours to set.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {doors.map((door) => (
+          <AppLink
+            key={door.title}
+            href={door.href}
+            className="group flex flex-col gap-1 rounded-md border border-border p-2 hover:bg-muted/50"
+          >
+            <span className="flex items-center gap-1.5 text-xs font-medium">
+              <door.icon className="h-3.5 w-3.5 text-primary" />
+              {door.title}
+            </span>
+            <span className="text-[11px] text-muted-foreground">{door.body}</span>
+            <span className="mt-auto inline-flex items-center gap-0.5 text-[11px] text-primary group-hover:underline">
+              {door.label} <ArrowUpRight className="h-3 w-3" />
+            </span>
+          </AppLink>
+        ))}
+      </div>
     </div>
   );
 }
@@ -354,6 +437,7 @@ function StepArtifact({
       {step === "money_map" ? <MoneyMapView a={artifact} /> : null}
       {step === "offerings" ? <OfferingsView a={artifact} /> : null}
       {step === "offering_values" ? <OfferingValuesView a={artifact} /> : null}
+      {step === "proposed_setup" ? <ProposedSetupView a={artifact} /> : null}
       {step === "guidelines_draft" ? <GuidelinesDraftView a={artifact} /> : null}
     </div>
   );
@@ -374,6 +458,82 @@ function GuidelinesDraftView({ a }: { a: Record<string, unknown> }) {
       <p className="text-[11px] text-muted-foreground">
         Nothing was saved. This is waiting for you in the approval queue on the
         Business guidelines screen — approve it, or edit it there first.
+      </p>
+    </div>
+  );
+}
+
+const PROPOSAL_STATUS_WORDS: Record<string, string> = {
+  created: "new — waiting for you",
+  already_pending: "already waiting for you",
+  already_decided: "you already ruled on this",
+};
+
+/**
+ * Step 6's receipt: which proposals it recorded, and — never silently — what
+ * it could not propose and why. The proposals themselves are ruled in the
+ * approval queue, not here.
+ */
+function ProposedSetupView({ a }: { a: Record<string, unknown> }) {
+  const proposals = asList(a.proposals);
+  const skipped = asList(a.skipped);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-muted-foreground">{String(a.summary ?? "")}</p>
+      <div className="flex flex-col gap-1">
+        {proposals.map((p, i) => {
+          const add = typeof p.value_add === "number" ? p.value_add : null;
+          return (
+            <div key={i} className="flex items-start gap-2">
+              <span
+                className={cn(
+                  "mt-0.5 w-16 shrink-0 rounded px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums",
+                  add == null
+                    ? "bg-muted text-muted-foreground"
+                    : add > 0
+                      ? "bg-success/15 text-success"
+                      : add < 0
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground",
+                )}
+              >
+                {add == null ? "not valued" : add > 0 ? `+${add}` : add}
+              </span>
+              <p>
+                <span className="font-medium">{String(p.name)}</span>{" "}
+                <span className="text-[10px] text-muted-foreground">
+                  ({String(p.offering_kind)})
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  — {PROPOSAL_STATUS_WORDS[String(p.status)] ?? String(p.status)}
+                </span>
+              </p>
+            </div>
+          );
+        })}
+      </div>
+      {skipped.length > 0 ? (
+        <div className="rounded-md border border-warning/40 bg-warning/10 p-2">
+          <p className="mb-1 font-medium">Not proposed ({skipped.length})</p>
+          {skipped.map((s, i) => (
+            <p key={i} className="text-muted-foreground">
+              <span className="text-foreground">{String(s.name)}</span> —{" "}
+              {String(s.reason)}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      <p className="text-[11px] text-muted-foreground">
+        Nothing was set. Each proposal waits in your approval queue: reject any
+        that are wrong for this business now. Approving an offering adds it to
+        your brand, makes it available on this site and sets its worth — that
+        step lands with the brand-offering model.{" "}
+        <AppLink
+          href={marketingRoutes.approvals()}
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          Open the approval queue
+        </AppLink>
       </p>
     </div>
   );
@@ -568,9 +728,8 @@ function OfferingValuesView({ a }: { a: Record<string, unknown> }) {
         );
       })}
       <p className="mt-1 text-[10px] text-muted-foreground">
-        Proposals from the 100-point baseline — ratify or adjust them on the
-        Offerings screen (worth per offering); step 6 will bring one-click adoption
-        here.
+        Proposals in points from the 100-point baseline. Run step 6 to turn
+        each one into a proposal you approve or reject.
       </p>
     </div>
   );

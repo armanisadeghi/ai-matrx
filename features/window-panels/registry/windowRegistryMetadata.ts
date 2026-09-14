@@ -1660,6 +1660,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // The site discovery panel (KI-040): the canonical `DiscoveryWorkspace` —
+  // the Business Discovery Ladder, its proposals queue and the setup doors —
+  // beside whatever the person is looking at. Preserved: the ladder's truth is
+  // server state, so restoring the site binding restores the whole panel.
+  {
+    slug: "site-discovery-window",
+    overlayId: "siteDiscoveryWindow",
+    kind: "window",
+    label: "Business discovery",
+    defaultData: {
+      siteId: "",
+      brandId: "",
+      organizationId: "",
+      siteLabel: "",
+    },
+    mobilePresentation: "fullscreen",
+    preservation: {
+      dataKeys: ["siteId", "brandId", "organizationId", "siteLabel"],
+    },
+  },
+
   {
     slug: "page-research-window",
     overlayId: "pageResearchWindow",

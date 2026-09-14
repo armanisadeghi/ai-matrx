@@ -705,6 +705,11 @@ const MatcherReviewWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/MatcherReviewWindow"),
   { ssr: false },
 );
+const SiteDiscoveryWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteDiscoveryWindow"),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -1442,6 +1447,9 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "matcherReviewWindow"),
     ),
+    siteDiscoveryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteDiscoveryWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordWindow"),
     ),
@@ -1853,6 +1861,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
+    ) as Record<string, unknown> | null,
+    siteDiscoveryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteDiscoveryWindow"),
     ) as Record<string, unknown> | null,
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "socialCardAnalyzerWindow"),
@@ -4963,6 +4974,33 @@ export default function OverlayController() {
             kindLabel={str("kindLabel")}
             valueLabel={str("valueLabel")}
             dimensionLabel={str("dimensionLabel")}
+          />
+        );
+      })()}
+
+      {/* siteDiscoveryWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteDiscoveryWindow;
+        const data = dataById.siteDiscoveryWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteDiscoveryWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteDiscoveryWindow" }))
+            }
+            siteId={siteId}
+            brandId={str("brandId")}
+            organizationId={str("organizationId")}
+            siteLabel={str("siteLabel")}
           />
         );
       })()}
