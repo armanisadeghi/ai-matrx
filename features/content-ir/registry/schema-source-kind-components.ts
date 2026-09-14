@@ -154,8 +154,14 @@ function asConfigRecord(value: Json, kind: string): JsonObject {
 /**
  * Warm tier: every non-deleted resolver row as metadata only, ordered
  * is_default-first then sort_order so the FIRST row per (kind, platform,
- * role) is the one the registry keeps. Component and transform BODIES never
- * ride this list; a parallel id-only projection derives body presence without
+ * role) is the one the registry keeps. 🚨 `is_default` and `sort_order` are
+ * SELECTED, not merely ordered on: PostgREST returns only the columns a
+ * select names, and `projectRows` re-applies `sortKindComponentRows` to
+ * whatever it is handed — an unselected flag reads as `false`/`0` there and
+ * silently re-sorts the entire tier by `created_at` (DD-236). Every column
+ * the order-by names must also be selected. Component and transform BODIES
+ * never ride this list; a parallel id-only projection derives body presence
+ * without
  * transferring the text. The fallback cannot win here either:
  * `content_ir.kind_component`'s `zzz_demote_generic_fallback` trigger pins
  * every `generic_structured` row to is_default=false / sort_order=1000, and
@@ -193,7 +199,7 @@ export async function listKindComponentsFromTables(): Promise<
             .schema("content_ir")
             .from("kind_component")
             .select(
-              "id, kind_definition_id, platform, role, component_key, source, is_active, config, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
+              "id, kind_definition_id, platform, role, component_key, source, is_active, config, is_default, sort_order, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
               { count: "exact" },
             )
             .is("deleted_at", null)
@@ -309,9 +315,15 @@ type RawKindComponentRow = {
   created_at: string;
   created_by: string | null;
   /**
-   * Selected by the cold single-kind fetch so the client-side defense sort
-   * (`sortKindComponentRows`) can actually act on them; the warm list omits
-   * them (SQL order is authoritative there) — hence optional.
+   * Selected by BOTH loaders so the client-side defense sort
+   * (`sortKindComponentRows`) can actually act on them. The warm list used to
+   * omit them on the theory that the SQL order was authoritative there; it is
+   * not — `projectRows` re-sorts every list it is handed, and a column
+   * PostgREST never sent reads as `false`/`0`, so the whole warm tier
+   * collapsed onto `created_at` and the oldest row won every contest
+   * (DD-236; seven live resolver keys resolved against their declared
+   * default on 2026-09-14, five of them to an inactive row). Optional only
+   * because the type is shared with test fixtures.
    */
   is_default?: boolean;
   sort_order?: number;
@@ -325,6 +337,9 @@ function projectRows(
   const out: KindComponentProjection[] = [];
   // Re-apply the deterministic contract client-side (defense in depth — the
   // SQL order above should already match; sortKindComponentRows is the truth).
+  // Because this sort is the truth, every caller must SELECT the columns it
+  // reads (`is_default`, `sort_order`, `created_at`, `id`); a missing column
+  // is not a no-op here, it is a different winner (DD-236).
   for (const row of sortKindComponentRows(rows)) {
     const kind = slugById.get(row.kind_definition_id);
     if (!kind) {
