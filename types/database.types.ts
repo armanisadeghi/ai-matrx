@@ -89065,6 +89065,20 @@ export type Database = {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: number
       }
+      gsc_confirm_keyword_offering: {
+        Args: {
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_organization_id: string
+          p_site_id: string
+        }
+        Returns: {
+          keyword_id: string
+          value_band: string
+          value_score: number
+          value_source: string
+        }[]
+      }
       gsc_confirm_keyword_topic: {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: {
@@ -89466,6 +89480,40 @@ export type Database = {
         Args: { p_offering_id: string; p_site_id: string }
         Returns: {
           kw_id: string
+        }[]
+      }
+      gsc_offering_placement_drift: {
+        Args: { p_limit?: number; p_site_id: string }
+        Returns: {
+          changed_at: string
+          confidence: number
+          keyword_id: string
+          new_offering_id: string
+          new_offering_name: string
+          old_offering_id: string
+          old_offering_name: string
+          phrase: string
+        }[]
+      }
+      gsc_offering_proposed_keywords: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          confidence: number
+          impressions: number
+          keyword_id: string
+          offering_id: string
+          offering_name: string
+          phrase: string
+          total_count: number
+          value_band: string
         }[]
       }
       gsc_offering_stats: {
