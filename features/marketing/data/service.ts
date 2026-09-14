@@ -1763,6 +1763,195 @@ export async function listSnapshots(
   };
 }
 
+const SNAPSHOT_SORT_COLUMNS = {
+  captured_at: "captured_at",
+  final_url: "final_url",
+  http_status: "http_status",
+  word_count: "word_count",
+  content_hash: "content_hash",
+} as const;
+
+type SnapshotSortId = keyof typeof SNAPSHOT_SORT_COLUMNS;
+type SnapshotCursorValue = string | number | null;
+
+export type SnapshotReceiptCursor = {
+  watermark: string;
+  sortId: SnapshotSortId;
+  direction: "asc" | "desc";
+  value: SnapshotCursorValue;
+  id: string;
+};
+
+export type SnapshotReceiptPage = {
+  rows: PageSnapshot[];
+  total: number;
+  nextCursor: string | null;
+};
+
+/** A receipt failure means the user must restart from a new immutable boundary. */
+export class SnapshotReceiptError extends Error {
+  constructor(message: string) {
+    super(`Snapshot history changed while loading. Refresh required: ${message}`);
+    this.name = "SnapshotReceiptError";
+  }
+}
+
+function snapshotSort(state: MatrxDataTableQueryState): {
+  id: SnapshotSortId;
+  column: (typeof SNAPSHOT_SORT_COLUMNS)[SnapshotSortId];
+  direction: "asc" | "desc";
+} {
+  const requested = state.sort?.id;
+  const id =
+    requested && requested in SNAPSHOT_SORT_COLUMNS
+      ? (requested as SnapshotSortId)
+      : "captured_at";
+  return {
+    id,
+    column: SNAPSHOT_SORT_COLUMNS[id],
+    direction: state.sort?.direction === "asc" ? "asc" : "desc",
+  };
+}
+
+/** Quote one PostgREST logic literal; null is always expressed through `is.null`. */
+export function quotePostgrestLogicLiteral(value: string | number): string {
+  if (typeof value === "number") return String(value);
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+export function encodeSnapshotReceiptCursor(cursor: SnapshotReceiptCursor): string {
+  return btoa(encodeURIComponent(JSON.stringify(cursor)));
+}
+
+export function decodeSnapshotReceiptCursor(value: string): SnapshotReceiptCursor {
+  try {
+    const parsed: unknown = JSON.parse(decodeURIComponent(atob(value)));
+    if (!parsed || typeof parsed !== "object") throw new Error("not an object");
+    const cursor = parsed as Record<string, unknown>;
+    if (
+      typeof cursor.watermark !== "string" ||
+      !(typeof cursor.id === "string") ||
+      !(typeof cursor.sortId === "string" && cursor.sortId in SNAPSHOT_SORT_COLUMNS) ||
+      (cursor.direction !== "asc" && cursor.direction !== "desc") ||
+      !(
+        cursor.value === null ||
+        typeof cursor.value === "string" ||
+        (typeof cursor.value === "number" && Number.isFinite(cursor.value))
+      )
+    ) {
+      throw new Error("invalid cursor fields");
+    }
+    return cursor as SnapshotReceiptCursor;
+  } catch {
+    throw new SnapshotReceiptError("the next-page cursor was malformed");
+  }
+}
+
+/** Immutable identity: deliberately excludes the UI page number and unsupported controls. */
+export function snapshotSourceIdentity(state: MatrxDataTableQueryState) {
+  const sort = snapshotSort(state);
+  const filters = state.columnFilters;
+  return {
+    pageSize: state.pageSize,
+    search: cleanSearch(state.search),
+    sort: { id: sort.id, direction: sort.direction },
+    final_url: textFilter(state, "final_url"),
+    content_hash: textFilter(state, "content_hash"),
+    http_status: numberFilter(state, "http_status"),
+    word_count: numberFilter(state, "word_count"),
+    // Referencing filters makes accidental expansion visible in review without
+    // granting source ownership to anyOf/layered/whole-word controls.
+    filterKeys: Object.keys(filters)
+      .filter((key) => ["final_url", "content_hash", "http_status", "word_count"].includes(key))
+      .sort(),
+  };
+}
+
+export async function getSnapshotReceiptWatermark(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("snapshot")
+    .select("created_at")
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  const row = assertData(response.data, response.error);
+  return row?.created_at ?? null;
+}
+
+export async function listSnapshotReceiptPage(input: {
+  siteId: string;
+  pageId: string;
+  state: MatrxDataTableQueryState;
+  watermark: string;
+  cursor?: SnapshotReceiptCursor;
+  expectedTotal?: number;
+  signal?: AbortSignal;
+}): Promise<SnapshotReceiptPage> {
+  const { siteId, pageId, state, watermark, cursor, expectedTotal, signal } = input;
+  const sort = snapshotSort(state);
+  if (cursor && (cursor.sortId !== sort.id || cursor.direction !== sort.direction || cursor.watermark !== watermark)) {
+    throw new SnapshotReceiptError("the cursor does not belong to this view");
+  }
+  let query = (await authenticatedWebDb(supabase))
+    .from("snapshot")
+    .select(SNAPSHOT_COLUMNS, { count: "exact" })
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    // Deliberately include deleted snapshots: history is an audit record.
+    .lte("created_at", watermark);
+  const search = cleanSearch(state.search);
+  if (search) query = query.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+  const finalUrl = textFilter(state, "final_url");
+  const hash = textFilter(state, "content_hash");
+  const http = numberFilter(state, "http_status");
+  const words = numberFilter(state, "word_count");
+  if (finalUrl) query = query.ilike("final_url", `%${finalUrl}%`);
+  if (hash) query = query.ilike("content_hash", `%${hash}%`);
+  if (http?.min !== undefined) query = query.gte("http_status", http.min);
+  if (http?.max !== undefined) query = query.lte("http_status", http.max);
+  if (words?.min !== undefined) query = query.gte("word_count", words.min);
+  if (words?.max !== undefined) query = query.lte("word_count", words.max);
+  if (cursor) {
+    const relation = sort.direction === "asc" ? "gt" : "lt";
+    const idRelation = relation;
+    const id = quotePostgrestLogicLiteral(cursor.id);
+    const after = cursor.value === null
+      ? `and(${sort.column}.is.null,id.${idRelation}.${id})`
+      : `${sort.column}.${relation}.${quotePostgrestLogicLiteral(cursor.value)},${sort.column}.is.null,and(${sort.column}.eq.${quotePostgrestLogicLiteral(cursor.value)},id.${idRelation}.${id})`;
+    query = query.or(after);
+  }
+  const response = await query
+    .order(sort.column, { ascending: sort.direction === "asc", nullsFirst: false })
+    .order("id", { ascending: sort.direction === "asc" })
+    .limit(state.pageSize)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  if (typeof response.count !== "number" || !Number.isFinite(response.count) || response.count < 0) {
+    throw new SnapshotReceiptError("the exact count was unavailable");
+  }
+  if (expectedTotal !== undefined && response.count !== expectedTotal) {
+    throw new SnapshotReceiptError("the matching count changed");
+  }
+  const last = rows.at(-1);
+  const nextCursor = rows.length < state.pageSize || !last
+    ? null
+    : encodeSnapshotReceiptCursor({
+        watermark,
+        sortId: sort.id,
+        direction: sort.direction,
+        value: last[sort.column] as SnapshotCursorValue,
+        id: last.id,
+      });
+  return { rows, total: response.count, nextCursor };
+}
+
 export async function getSnapshot(
   siteId: string,
   pageId: string,

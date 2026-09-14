@@ -251,5 +251,22 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
     }, 250);
   };
 
-  return { state, queryState, onStateChange };
+  /**
+   * Append-only tables cannot honor an offset URL page. Replace it immediately
+   * so the first rendered source request and the address bar both mean page 1.
+   */
+  const replaceState = (nextState: MatrxDataTableQueryState) => {
+    setState(nextState);
+    setQueryState(nextState);
+    const nextParams = writeState(
+      new URLSearchParams(searchParams.toString()),
+      nextState,
+      options,
+    );
+    const query = nextParams.toString();
+    lastWrittenUrl.current = query;
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  return { state, queryState, onStateChange, replaceState };
 }
