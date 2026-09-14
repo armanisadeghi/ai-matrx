@@ -6360,6 +6360,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-sources/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Provider File
+         * @description Import provider bytes into one actor-owned canonical Matrx file.
+         */
+        post: operations["import_provider_file_storage_sources_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tiktok-integrations/public-video-metadata": {
         parameters: {
             query?: never;
@@ -26088,8 +26108,7 @@ export interface paths {
          * Create Topic Canonical
          * @description Create a research topic. No project required — ever.
          *
-         *     Org resolves via `resolve_effective_organization_id` (explicit
-         *     `organization_id` wins, else the caller's personal org). An optional
+         *     The admitted request context supplies the organization. An optional
          *     `project_id` becomes one canonical `platform.associations` edge; edge
          *     failure is loud but never fails the create.
          */
@@ -62937,6 +62956,29 @@ export interface components {
             jsonLd?: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * ExternalSourceMetadata
+         * @description Non-secret provenance persisted under ``files.files.metadata``.
+         *
+         *     ``source_ref`` is provider-owned opaque identity. It is never trusted as
+         *     authorization: every later read must resolve ``connection_id`` again for
+         *     the acting user before the adapter touches the provider.
+         */
+        ExternalSourceMetadata: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "google_drive" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Source Ref */
+            source_ref: string;
+            /** Revision */
+            revision?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
         };
         /** ExternalUrlChange */
         ExternalUrlChange: {
@@ -103322,6 +103364,46 @@ export interface components {
             /** State */
             state: string;
         };
+        /**
+         * StorageImportResult
+         * @description Safe result of importing a provider item into canonical Matrx Files.
+         */
+        StorageImportResult: {
+            /** File Id */
+            file_id: string;
+            /** File Path */
+            file_path: string;
+            /** Checksum */
+            checksum?: string | null;
+            /** Version Number */
+            version_number: number;
+            /** Created */
+            created: boolean;
+            source: components["schemas"]["ExternalSourceMetadata"];
+        };
+        /**
+         * StorageSourceImportRequest
+         * @description Safe caller-supplied portion of an exact-item canonical import.
+         */
+        StorageSourceImportRequest: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google_drive" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Source Ref */
+            source_ref: string;
+            /** File Path */
+            file_path: string;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "link" | "personal" | "public";
+        };
         /** StorageUsageResponse */
         StorageUsageResponse: {
             /** Tier Id */
@@ -128872,6 +128954,39 @@ export interface operations {
             };
         };
     };
+    import_provider_file_storage_sources_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageSourceImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_public_video_metadata_tiktok_integrations_public_video_metadata_get: {
         parameters: {
             query: {
@@ -153972,7 +154087,9 @@ export interface operations {
     create_interview_session_vision_interview_sessions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -157216,7 +157333,9 @@ export interface operations {
     create_topic_canonical_research_topics_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -157344,7 +157463,9 @@ export interface operations {
     create_topic_research_projects__project_id__topics_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 project_id: string;
             };

@@ -16079,6 +16079,48 @@
         }
       }
     },
+    "/storage-sources/import": {
+      "post": {
+        "tags": [
+          "Storage Sources"
+        ],
+        "summary": "Import Provider File",
+        "description": "Import provider bytes into one actor-owned canonical Matrx file.",
+        "operationId": "import_provider_file_storage_sources_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageSourceImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tiktok-integrations/public-video-metadata": {
       "get": {
         "tags": [
@@ -48646,15 +48688,26 @@
         ],
         "summary": "Create Interview Session",
         "operationId": "create_interview_session_vision_interview_sessions_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateSessionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -53207,10 +53260,10 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ResearchTopicSummary"
                   },
-                  "type": "array",
                   "title": "Response List User Topics Research Topics Get"
                 }
               }
@@ -53223,17 +53276,28 @@
           "Research"
         ],
         "summary": "Create Topic Canonical",
-        "description": "Create a research topic. No project required — ever.\n\nOrg resolves via `resolve_effective_organization_id` (explicit\n`organization_id` wins, else the caller's personal org). An optional\n`project_id` becomes one canonical `platform.associations` edge; edge\nfailure is loud but never fails the create.",
+        "description": "Create a research topic. No project required — ever.\n\nThe admitted request context supplies the organization. An optional\n`project_id` becomes one canonical `platform.associations` edge; edge\nfailure is loud but never fails the create.",
         "operationId": "create_topic_canonical_research_topics_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TopicCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -53358,6 +53422,15 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -143222,6 +143295,65 @@
         "title": "ExtensionStructured",
         "description": "JSON-LD + page metadata gathered in the same live-DOM injection."
       },
+      "ExternalSourceMetadata": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox",
+              "google_drive",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Source Ref"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id",
+          "source_ref"
+        ],
+        "title": "ExternalSourceMetadata",
+        "description": "Non-secret provenance persisted under ``files.files.metadata``.\n\n``source_ref`` is provider-owned opaque identity. It is never trusted as\nauthorization: every later read must resolve ``connection_id`` again for\nthe acting user before the adapter touches the provider."
+      },
       "ExternalUrlChange": {
         "properties": {
           "url": {
@@ -231431,6 +231563,103 @@
           "state"
         ],
         "title": "StopRunResponse"
+      },
+      "StorageImportResult": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "version_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Version Number"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ExternalSourceMetadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file_id",
+          "file_path",
+          "version_number",
+          "created",
+          "source"
+        ],
+        "title": "StorageImportResult",
+        "description": "Safe result of importing a provider item into canonical Matrx Files."
+      },
+      "StorageSourceImportRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google_drive",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "source_ref": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Source Ref"
+          },
+          "file_path": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "File Path"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "link",
+              "personal",
+              "public"
+            ],
+            "title": "Visibility",
+            "default": "personal"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id",
+          "source_ref",
+          "file_path"
+        ],
+        "title": "StorageSourceImportRequest",
+        "description": "Safe caller-supplied portion of an exact-item canonical import."
       },
       "StorageUsageResponse": {
         "properties": {
