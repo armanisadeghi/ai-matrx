@@ -78,13 +78,25 @@ function ProposalDoors({
     );
   }
   if (proposal.proposal === "offering") {
-    return (
+    const offeringsDoor = (
       <AppLink
         href={marketingRoutes.site(scope.brandId, scope.siteId, "/value/offerings")}
         className="text-primary underline-offset-2 hover:underline"
       >
         Offerings
       </AppLink>
+    );
+    if (proposal.keywordIds.length === 0) return offeringsDoor;
+    const rest = proposal.keywordIds.length - proposal.keywordPhrases.length;
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1">
+        {offeringsDoor}
+        <span>· keywords</span>
+        {proposal.keywordPhrases.map((phrase) => (
+          <KeywordDoor key={phrase} scope={scope} phrase={phrase} />
+        ))}
+        {rest > 0 ? <span>and {rest.toLocaleString()} more</span> : null}
+      </span>
     );
   }
   const valueDoor = (
