@@ -265,9 +265,9 @@ export class ComponentRegistry extends ComponentResolver {
     if (this.warmListLanded) return;
     const resolution = this.resolve(kind, platform, role);
     if (resolution?.resolvedBy !== "compiled") return;
-    const key = `${kind} ${platform}`;
+    const key = `${kind} ${platform}`;
     if (this.provisionalInFlight.has(key)) return;
-    if (this.provisionalMisses.has(`${key} ${role}`)) return;
+    if (this.provisionalMisses.has(`${key} ${role}`)) return;
     this.provisionalInFlight.add(key);
     try {
       const rows = await getKindComponentBySlug(kind, platform);
@@ -275,7 +275,7 @@ export class ComponentRegistry extends ComponentResolver {
       // beat us to this key, its row stands and this is a no-op.
       this.ingestDbRows(rows);
       if (this.resolve(kind, platform, role)?.resolvedBy !== "db") {
-        this.provisionalMisses.add(`${key} ${role}`);
+        this.provisionalMisses.add(`${key} ${role}`);
       }
     } catch (error) {
       captureError({
