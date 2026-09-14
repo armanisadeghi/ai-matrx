@@ -122,6 +122,70 @@ async function saveSiteOffering(
   return response.data;
 }
 
+async function adoptOfferingTemplate(
+  organizationId: string,
+  siteId: string,
+  templateId: string,
+): Promise<string> {
+  const response = await supabase.schema("web").rpc("adopt_offering_template", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_template_id: templateId,
+  });
+  if (response.error) throw rpcError(response.error);
+  return response.data;
+}
+
+/** The two canonical bounds: 2,000 keywords per placement read, 5,000 per write. */
+const PLACEMENT_READ_CHUNK = 2000;
+
+/**
+ * Places the keywords an agent proposed with the offering, through the
+ * ordinary human placement writer (`seo.gsc_set_keyword_offering`). A keyword
+ * that already has a placement on this site keeps it: approving an offering is
+ * not a ruling on a keyword someone (or the assigner) already put elsewhere.
+ */
+async function placeProposedKeywords(
+  organizationId: string,
+  siteId: string,
+  offeringId: string,
+  keywordIds: string[],
+  note: string,
+): Promise<{ placed: number; alreadyPlaced: number }> {
+  let placed = 0;
+  let alreadyPlaced = 0;
+  for (let i = 0; i < keywordIds.length; i += PLACEMENT_READ_CHUNK) {
+    const chunk = keywordIds.slice(i, i + PLACEMENT_READ_CHUNK);
+    const current = await supabase
+      .schema("seo")
+      .rpc("gsc_keyword_offerings_for", {
+        p_site_id: siteId,
+        p_keyword_ids: chunk,
+      });
+    if (current.error) throw rpcError(current.error);
+    const elsewhere = new Set(
+      (current.data ?? [])
+        .filter((row) => row.offering_id !== offeringId)
+        .map((row) => row.keyword_id),
+    );
+    const open = chunk.filter((id) => !elsewhere.has(id));
+    alreadyPlaced += chunk.length - open.length;
+    if (open.length === 0) continue;
+    const written = await supabase
+      .schema("seo")
+      .rpc("gsc_set_keyword_offering", {
+        p_organization_id: organizationId,
+        p_site_id: siteId,
+        p_keyword_ids: open,
+        p_offering_id: offeringId,
+        p_notes: note,
+      });
+    if (written.error) throw rpcError(written.error);
+    placed += open.length;
+  }
+  return { placed, alreadyPlaced };
+}
+
 async function setSiteOfferingWorth(
   organizationId: string,
   siteId: string,
@@ -233,12 +297,24 @@ export async function applyKeywordMeaningProposal(
       // its worth in POINTS (D9). Both carry the site's own organization id
       // explicitly and refuse any other.
       const organizationId = await siteOrganizationId(siteId);
-      // Idempotent on the name the site already offers: a retried approval
-      // (lost response, double click) must not mint a second offering.
-      const existing = await findSiteOfferingByName(siteId, proposal.name);
-      const offeringId =
-        existing ??
-        (await saveSiteOffering(organizationId, siteId, proposal));
+      // An agent's request to offer a platform suggestion (D2) adopts THAT
+      // template — copy-on-adopt, D6. `web.adopt_offering_template` reuses the
+      // brand's live copy, so a retried approval never mints a second one.
+      // Otherwise: idempotent on the name the site already offers.
+      const existing = proposal.templateId
+        ? null
+        : await findSiteOfferingByName(siteId, proposal.name);
+      const offeringId = proposal.templateId
+        ? await adoptOfferingTemplate(organizationId, siteId, proposal.templateId)
+        : (existing ??
+          (await saveSiteOffering(organizationId, siteId, proposal)));
+      const placed = await placeProposedKeywords(
+        organizationId,
+        siteId,
+        offeringId,
+        proposal.keywordIds,
+        `Approved the Offering assigner's proposal to offer "${proposal.name}" on this site.`,
+      );
       if (proposal.valueAdd !== null) {
         await setSiteOfferingWorth(
           organizationId,
@@ -251,14 +327,23 @@ export async function applyKeywordMeaningProposal(
         proposal.valueAdd === null
           ? ""
           : ` and set its worth to ${proposal.valueAdd >= 0 ? "+" : ""}${proposal.valueAdd} points`;
+      const keywordReceipt =
+        proposal.keywordIds.length === 0
+          ? ""
+          : ` Placed ${placed.placed} keyword${placed.placed === 1 ? "" : "s"} on it${placed.alreadyPlaced > 0 ? `; ${placed.alreadyPlaced} already on another offering stayed where ${placed.alreadyPlaced === 1 ? "it was" : "they were"}` : ""}.`;
       return {
-        receipt: existing
-          ? `"${proposal.name}" was already one of this site's offerings${points ? `; ${points.trim()}` : ""}.`
-          : `Added "${proposal.name}" to this brand's offerings, made it available on this site${points}.`,
+        receipt:
+          (existing
+            ? `"${proposal.name}" was already one of this site's offerings${points ? `; ${points.trim()}` : ""}.`
+            : `Offered "${proposal.name}" on this site${points}.`) +
+          keywordReceipt,
         detail: {
           offering_id: offeringId,
           organization_id: organizationId,
           created: existing ? 0 : 1,
+          template_id: proposal.templateId ?? "none",
+          keywords_placed: placed.placed,
+          keywords_left_on_another_offering: placed.alreadyPlaced,
           worth_points: proposal.valueAdd ?? "not valued",
         },
       };
