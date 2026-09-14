@@ -206,6 +206,15 @@ describe("the canvas docks beside the chat instead of covering it", () => {
     expect(
       canvasPanel.querySelector('[data-testid="dock-canvas-body"]'),
     ).not.toBeNull();
+
+    // The app shell header FLOATS over the route body, so the column must
+    // start below it or the pane header (title, Preview/Source, actions) is
+    // drawn underneath the shell's own controls — seen live on 2026-09-14
+    // once the dock shipped. The library applies `style` to a NESTED div, so
+    // the offset lives on the panel's inner content element.
+    const canvasInner = canvasPanel.firstElementChild as HTMLElement | null;
+    if (!canvasInner) throw new Error("the canvas panel rendered no content");
+    expect(canvasInner.style.paddingTop).toBe("var(--shell-header-h, 0px)");
   });
 
   it("never puts an overlay on screen while a dock is mounted", async () => {

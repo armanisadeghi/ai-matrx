@@ -212,7 +212,18 @@ export function CanvasDock({
         defaultSize="0%"
         minSize="24%"
         maxSize="70%"
-        style={{ overflow: "hidden", height: "100%" }}
+        // The app shell's header FLOATS over the route body (the chat thread
+        // deliberately scrolls under it and portals its own title into it), so
+        // a docked column that starts at y=0 puts its pane header — title,
+        // Preview/Source, the action cluster — underneath the shell's Records
+        // button and avatar. The sheet never hit this because it was drawn
+        // above the header at z-10000. Where the variable is not defined this
+        // resolves to 0 and nothing moves.
+        style={{
+          overflow: "hidden",
+          height: "100%",
+          paddingTop: "var(--shell-header-h, 0px)",
+        }}
       >
         {shouldShow ? <CanvasDockBody /> : null}
       </ResizablePanel>
