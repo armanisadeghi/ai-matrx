@@ -257,7 +257,6 @@ function AlchemyExamples() {
                         () => ({ kind: "text", text: plainText }),
                       )}
                       label="Editable sample text"
-                      triggerVariant="glass"
                       icon="portal"
                     />
                   </div>
@@ -320,7 +319,6 @@ function AlchemyExamples() {
                       }),
                     )}
                     label="Release evidence"
-                    triggerVariant="glass"
                     icon="portal"
                   />
                 </div>
@@ -431,7 +429,6 @@ function AlchemyExamples() {
                 </div>
                 <ContentTransferMenu
                   label="Official Components detail scope"
-                  triggerVariant="glass"
                   icon="portal"
                 />
               </div>
