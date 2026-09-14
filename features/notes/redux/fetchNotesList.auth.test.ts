@@ -14,18 +14,22 @@ jest.mock("../service/noteContextAssociations", () => ({
   syncNoteContextLinks: jest.fn(),
 }));
 
-function notesQuery(result: unknown) {
+function notesQuery(result: { data: unknown[] | null; error: unknown }) {
+  // The list reads through `readAllRows`: a counted, ordered, ranged page.
+  const paged = { ...result, count: result.data?.length ?? 0 };
   const chain = {
     from: jest.fn(),
     select: jest.fn(),
     eq: jest.fn(),
     is: jest.fn(),
-    order: jest.fn(async () => result),
+    order: jest.fn(),
+    range: jest.fn(async () => paged),
   };
   chain.from.mockReturnValue(chain);
   chain.select.mockReturnValue(chain);
   chain.eq.mockReturnValue(chain);
   chain.is.mockReturnValue(chain);
+  chain.order.mockReturnValue(chain);
   return chain;
 }
 

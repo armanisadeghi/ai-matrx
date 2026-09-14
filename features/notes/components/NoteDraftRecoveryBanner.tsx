@@ -56,6 +56,10 @@ const REASON_LABELS: Record<string, string> = {
   unload: "the page closed before the save finished",
 };
 
+/** A save can land this long before the capture and still be the capture's
+ *  own text (the autosave debounce plus a slow request). */
+export const SAVED_BEFORE_CAPTURE_WINDOW_MS = 60_000;
+
 /**
  * Is this draft's text already on the server — as the note itself, or as any
  * version in its history? Only text that is in NEITHER is unsaved work.
@@ -63,14 +67,23 @@ const REASON_LABELS: Record<string, string> = {
  * and offered (degrade to showing, never to silently dropping).
  */
 export async function isDraftAlreadySaved(
-  draft: Pick<LocalDraft, "content" | "entityId">,
-  currentContent: string,
-  readVersions: (noteId: string) => Promise<{ content: string }[]> = fetchVersions,
+  draft: Pick<LocalDraft, "content" | "entityId" | "capturedAt">,
+  currentContent: string | null,
+  readVersions: (noteId: string) => Promise<{ content: string; created_at: string }[]> = fetchVersions,
 ): Promise<boolean> {
-  if (draft.content === currentContent) return true;
+  if (currentContent !== null && draft.content === currentContent) return true;
   try {
     const versions = await readVersions(draft.entityId);
-    return versions.some((version) => version.content === draft.content);
+    // Only a version saved AROUND OR AFTER the capture counts as "this text was
+    // saved": a save landing inside the debounce window just before the tab
+    // closed, or any later save of the same words. A version from long BEFORE
+    // the capture is a different event — a user who reverted to an older text
+    // and lost the tab has unsaved work, however familiar the words.
+    const floor = draft.capturedAt - SAVED_BEFORE_CAPTURE_WINDOW_MS;
+    return versions.some(
+      (version) =>
+        version.content === draft.content && Date.parse(version.created_at) >= floor,
+    );
   } catch (error) {
     console.warn(
       "[Notes] could not read version history to judge a recovered draft; offering it.",

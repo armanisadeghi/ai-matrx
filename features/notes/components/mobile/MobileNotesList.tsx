@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useRef, useState, useMemo } from "react";
+import { draftInitializationErrorMessage } from "../../redux/thunks";
+import { selectNotesListError, selectNotesListStatus } from "../../redux/selectors";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   FolderOpen,
@@ -12,6 +14,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Loader2,
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +27,8 @@ import {
   selectSharedWithMeNotes,
 } from "../../redux/selectors";
 import {
+  fetchNotesList,
+  fetchSharedNotesList,
   fetchDeletedNotes,
   restoreNote,
   permanentlyDeleteNoteThunk,
@@ -55,6 +60,8 @@ export default function MobileNotesList({
 }: MobileNotesListProps) {
   const dispatch = useAppDispatch();
   const { notes, findOrCreateEmptyNote, isLoading } = useNotesRedux();
+  const listStatus = useAppSelector(selectNotesListStatus);
+  const listError = useAppSelector(selectNotesListError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
 
@@ -155,7 +162,9 @@ export default function MobileNotesList({
       const note = await findOrCreateEmptyNote(folder);
       if (note) onNoteSelect(note);
     } catch (error) {
+      // A tap that does nothing is a lying screen: say why, in words.
       console.error("Error creating note:", error);
+      toast.error(draftInitializationErrorMessage(error));
     }
   };
 
@@ -274,13 +283,42 @@ export default function MobileNotesList({
             )}
 
             {filteredNotes.length === 0 ? (
-              <div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
-                <p className="text-sm">
-                  {searchQuery || isFiltered
-                    ? "No notes match your filters"
-                    : "No notes yet — tap + to create one"}
-                </p>
-              </div>
+              // THE EMPTY STATE MUST BE TRUE. "No notes yet" is only honest
+              // once the list has actually loaded; while it loads the screen
+              // says so, and when the read failed it says that and offers the
+              // retry — never a "no notes" over notes that exist (Ava, 2026-09-14).
+              listStatus === "idle" || listStatus === "loading" ? (
+                <div
+                  className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground"
+                  role="status"
+                  aria-label="Loading notes"
+                >
+                  <Loader2 size={18} className="animate-spin" />
+                  <p className="text-sm">Loading your notes…</p>
+                </div>
+              ) : listStatus === "error" ? (
+                <div className="flex h-40 flex-col items-center justify-center gap-3 px-6 text-center" role="alert">
+                  <p className="text-sm text-destructive">{listError ?? "Your notes could not be loaded."}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(fetchNotesList());
+                      dispatch(fetchSharedNotesList());
+                    }}
+                    className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground active:bg-muted"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <p className="text-sm">
+                    {searchQuery || isFiltered
+                      ? "No notes match your filters"
+                      : "No notes yet — tap + to create one"}
+                  </p>
+                </div>
+              )
             ) : (
               <div className="divide-y divide-border/50">
                 {filteredNotes.map((note) => (

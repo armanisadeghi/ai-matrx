@@ -68,13 +68,17 @@ describe("resolveNewNoteOrganization", () => {
     await expect(pending).resolves.toBe(ORG);
   });
 
-  it("keeps waiting after boot settles empty while the auto-select layer can still name one", async () => {
+  it("SELECTS the nameable organization itself when boot settled empty (the multi-org, no-default user)", async () => {
     const store = fakeStore(
       stateWith({ orgBootstrapResolved: true, personal: PERSONAL, memberships: [PERSONAL, ORG] }),
     );
-    const pending = resolveNewNoteOrganization(store, { timeoutMs: 2_000 });
-    setTimeout(
-      () =>
+    const dispatched: unknown[] = [];
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const withDispatch = {
+      ...store,
+      dispatch: (action: unknown) => {
+        dispatched.push(action);
+        // The thunk would set the org; emulate the reducer.
         store.set(
           stateWith({
             organization_id: PERSONAL,
@@ -82,10 +86,34 @@ describe("resolveNewNoteOrganization", () => {
             personal: PERSONAL,
             memberships: [PERSONAL, ORG],
           }),
-        ),
-      30,
-    );
-    await expect(pending).resolves.toBe(PERSONAL);
+        );
+        return action;
+      },
+    };
+    const started = Date.now();
+    await expect(resolveNewNoteOrganization(withDispatch, { timeoutMs: 8_000 })).resolves.toBe(PERSONAL);
+    expect(dispatched).toHaveLength(1);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    warn.mockRestore();
+  });
+
+  it("does not spin: a store that changes every millisecond costs at most ~20 looks per second", async () => {
+    const store = fakeStore(stateWith({ orgBootstrapResolved: false }));
+    let looks = 0;
+    const counting = {
+      ...store,
+      getState: () => {
+        looks += 1;
+        return store.getState();
+      },
+    };
+    const ticker = setInterval(() => store.set(stateWith({ orgBootstrapResolved: false })), 1);
+    try {
+      await resolveNewNoteOrganization(counting, { timeoutMs: 500 }).catch(() => undefined);
+    } finally {
+      clearInterval(ticker);
+    }
+    expect(looks).toBeLessThan(40);
   });
 
   it("refuses with the organization-required error when boot settled and nothing can be named", async () => {

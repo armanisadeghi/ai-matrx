@@ -34,5 +34,10 @@ export function useDraftInitializationControl() {
       setPending(false);
     }
   }, []);
-  return { run, pending, error, organizationRequired };
+  /** Clear a shown failure — e.g. once the organization it asked for exists. */
+  const reset = useCallback(() => {
+    setError(null);
+    setOrganizationRequired(false);
+  }, []);
+  return { run, pending, error, organizationRequired, reset };
 }

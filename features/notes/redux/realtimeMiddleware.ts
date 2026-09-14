@@ -66,6 +66,7 @@ import {
 import { NOTE_ROW_KEYS } from "./notes.types";
 import type { Note } from "../types";
 import { fetchNotesList, fetchSharedNotesList } from "./thunks";
+import { captureNoteDrafts } from "../utils/notesDrafts";
 
 /** Thunk-aware dispatch — this middleware refreshes lists via async thunks. */
 type NotesDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
@@ -436,6 +437,14 @@ export const notesRealtimeMiddleware: Middleware<
   }
 
   return (next) => (action) => {
+    // `resetNotesState` wipes every dirty buffer. Snapshot unsaved work into
+    // the browser-local draft store FIRST (one place, for every dispatcher:
+    // account switch, sign-out, the hook's own reset) so the text is offered
+    // back instead of vanishing (audit N-02, 2026-09-14).
+    if ((action as { type?: string }).type === "notes/resetNotesState") {
+      captureNoteDrafts("signed-out");
+    }
+
     // The reducer must run FIRST for markNoteSaved (we read the settled state),
     // and for markNoteSaving the pre-save content is what we want — both are
     // satisfied by registering after `next`.

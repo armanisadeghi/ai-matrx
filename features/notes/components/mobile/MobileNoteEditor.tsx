@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
+import { setNoteLiveContent } from "../../utils/noteLiveContent";
 import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -216,6 +217,41 @@ export default function MobileNoteEditor({
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
   }, [isDirty, scheduleAutoSave]);
+
+  // THE LOCAL DRAFT NET COVERS MOBILE. The unsaved-work snapshot taken at
+  // page hide reads the editor's live buffer; this editor keeps its text in
+  // React state and never told the buffer, so a phone that backgrounded the
+  // tab lost whatever was typed in the last two seconds with no copy anywhere.
+  useEffect(() => {
+    setNoteLiveContent(note.id, localContent);
+  }, [note.id, localContent]);
+
+  // TYPE, TAP BACK, GONE — closed. The 2s autosave timer used to be cancelled
+  // by this component's own unmount, so edits younger than two seconds never
+  // reached Redux or the database. On unmount, unsaved edits are flushed
+  // through the same save path immediately.
+  const latestRef = useRef({ isDirty, localLabel, localContent, localTags, noteId: note.id });
+  useEffect(() => {
+    latestRef.current = { isDirty, localLabel, localContent, localTags, noteId: note.id };
+  }, [isDirty, localLabel, localContent, localTags, note.id]);
+  useEffect(() => {
+    return () => {
+      const latest = latestRef.current;
+      setNoteLiveContent(latest.noteId, null);
+      if (!latest.isDirty) return;
+      void Promise.resolve()
+        .then(() =>
+          updateNote(latest.noteId, {
+            label: latest.localLabel.trim() || "Untitled Note",
+            content: latest.localContent,
+            tags: latest.localTags,
+          }),
+        )
+        .catch(() => {
+          // The save path already toasted and captured the failure.
+        });
+    };
+  }, [updateNote]);
 
   const handleSave = async () => {
     if (!isDirty || isSaving) return;

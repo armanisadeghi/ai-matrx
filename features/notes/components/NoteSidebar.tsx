@@ -299,6 +299,11 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     { kind: "new-note" } | { kind: "move-note"; noteId: string } | null
   >(null);
   const draftControl = useDraftInitializationControl();
+  // The "choose an organization" notice answers itself: once one is selected
+  // (from the notice's own picker or the header) the notice goes away.
+  useEffect(() => {
+    if (draftControl.organizationRequired && activeOrgId) draftControl.reset();
+  }, [activeOrgId, draftControl]);
   const [renameFolderTarget, setRenameFolderTarget] = useState<string | null>(
     null,
   );
@@ -889,11 +894,13 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   return (
     <div className="flex flex-col h-full min-h-0">
       {draftControl.error && draftControl.organizationRequired && (
-        <OrganizationRequiredNotice
-          compact
-          title="Choose an organization for this note"
-          description="Notes are filed under an organization, and none is selected right now. Pick one and press + again."
-        />
+        <div className="shrink-0 max-h-[50%] overflow-y-auto border-b border-border">
+          <OrganizationRequiredNotice
+            compact
+            title="Choose an organization for this note"
+            description="Notes are filed under an organization, and none is selected right now. Pick one and press + again."
+          />
+        </div>
       )}
       {draftControl.error && !draftControl.organizationRequired && (
         <p role="alert" className="px-2 text-xs text-destructive">{draftControl.error}</p>
@@ -1712,8 +1719,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           className="flex items-center gap-1.5 flex-1 px-2 py-1 text-[0.6875rem] text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
           onClick={() => { void handleNewNote("Draft").catch(() => undefined); }}
           disabled={draftControl.pending}
+          aria-busy={draftControl.pending}
         >
-          <Plus /> New Note
+          {draftControl.pending ? <Loader2 className="animate-spin" /> : <Plus />} New Note
         </button>
         <button
           className="flex items-center justify-center w-7 h-7 text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3.5 [&_svg]:h-3.5"

@@ -38,18 +38,49 @@ import {
 import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { pickActiveOrganization } from "@/features/organizations/hooks/useActiveOrganizationAutoSelect";
+import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
+import {
+  isOrganizationPickerAvailable,
+  requestOrganizationContextChoice,
+} from "@/lib/organization/organization-gate";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** The scope tree and preference slices are not mounted in every store this
+ *  resolver can meet (a notes-only test store, an embedded host); an absent
+ *  slice reads as "nothing to name from", never as a crash. */
+function memberships(state: RootState): ReturnType<typeof selectOrganizationsList> {
+  return (state as { scopesTree?: unknown }).scopesTree ? selectOrganizationsList(state) : [];
+}
+function defaultOrganizationId(state: RootState): string | null {
+  return (state as { userPreferences?: unknown }).userPreferences
+    ? selectDefaultOrganizationId(state)
+    : null;
+}
 
 /** How long a click waits for boot to name the organization before refusing. */
 export const NEW_NOTE_ORGANIZATION_WAIT_MS = 8_000;
 
 /** The two store methods the resolver needs. Loose on purpose so a test can
  *  hand it a plain object; the real caller passes the `AppStore`. */
-type StoreLike = {
+export type NewNoteOrganizationStore = {
   getState: () => unknown;
-  subscribe: (listener: () => void) => () => unknown;
+  /** Absent inside a thunk (which has no subscribe); the wait then ticks. */
+  subscribe?: (listener: () => void) => () => unknown;
+  /** Present on the real store; a test store may omit it (then a nameable
+   *  organization is only waited for, never selected here). */
+  dispatch?: (action: unknown) => unknown;
 };
 
-function waitForStoreChange(store: StoreLike, maxMs: number): Promise<void> {
+/** Minimum spacing between two looks at the store: a busy store must not turn
+ *  the wait into a busy-loop. */
+const WAIT_TICK_MS = 50;
+
+function waitForStoreChange(store: NewNoteOrganizationStore, maxMs: number): Promise<void> {
+  if (!store.subscribe) return sleep(maxMs);
+  const subscribe = store.subscribe;
   return new Promise((resolve) => {
     let done = false;
     const finish = () => {
@@ -59,7 +90,7 @@ function waitForStoreChange(store: StoreLike, maxMs: number): Promise<void> {
       clearTimeout(timer);
       resolve();
     };
-    const unsubscribe = store.subscribe(finish);
+    const unsubscribe = subscribe(finish);
     const timer = setTimeout(finish, maxMs);
   });
 }
@@ -70,7 +101,7 @@ function waitForStoreChange(store: StoreLike, maxMs: number): Promise<void> {
  * boot has settled and nothing can be named, or when the wait runs out.
  */
 export async function resolveNewNoteOrganization(
-  store: StoreLike,
+  store: NewNoteOrganizationStore,
   options: { timeoutMs?: number; now?: () => number } = {},
 ): Promise<string> {
   const timeoutMs = options.timeoutMs ?? NEW_NOTE_ORGANIZATION_WAIT_MS;
@@ -84,15 +115,31 @@ export async function resolveNewNoteOrganization(
 
     const resolved = selectOrgBootstrapResolved(state);
     if (resolved) {
-      // Boot settled with nothing selected. The auto-select layer fills this
-      // in (after its own short grace) whenever Redux holds enough to name an
-      // organization; if it holds nothing, no amount of waiting helps.
+      // Boot settled with nothing selected. Apply the canonical rung order
+      // (stated default → own personal org → sole membership) to what Redux
+      // holds and SELECT it — the same choice `useActiveOrganizationAutoSelect`
+      // makes, made here because on /notes that hook is mounted only inside
+      // the header's picker popover, which nothing has opened.
       const nameable = pickActiveOrganization(
-        selectOrganizationsList(state),
-        selectDefaultOrganizationId(state),
+        memberships(state),
+        defaultOrganizationId(state),
         selectPersonalOrganizationId(state),
       );
+      if (nameable && store.dispatch) {
+        console.warn(
+          "[notes] No active organization after boot while one could be named — selecting it for the new note.",
+          { selected: nameable.id },
+        );
+        store.dispatch(chooseActiveOrganization({ id: nameable.id, name: nameable.name }));
+        continue;
+      }
       if (!nameable) {
+        // Nothing can be named from Redux. Ask the person, through the ONE
+        // organization chooser, when it is mounted; otherwise refuse with the
+        // kernel's error so the surface renders the honest picker notice.
+        if (isOrganizationPickerAvailable()) {
+          return await requestOrganizationContextChoice();
+        }
         throw new OrganizationContextError(
           "organization_context_required",
           "Choose the organization this note belongs to.",
@@ -108,6 +155,7 @@ export async function resolveNewNoteOrganization(
       );
     }
     await waitForStoreChange(store, Math.min(remaining, 250));
+    await sleep(WAIT_TICK_MS);
   }
 }
 
