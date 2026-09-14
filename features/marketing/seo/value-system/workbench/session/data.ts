@@ -6,7 +6,7 @@
  *
  * 🚨 THIS MODULE OPENS NO WRITE PATH OF ITS OWN. The session's assignments go
  * through the same functions a person clicking anywhere else in the keyword
- * system calls — `setKeywordStamps`, `setKeywordService`, `setGscKeywordClass`
+ * system calls — `setKeywordStamps`, `setKeywordOffering`, `setGscKeywordClass`
  * — and its RULE changes go through `seo.keyword_meaning_suggest`, the C9
  * suggestion spine, so nothing an agent proposed can land without a human
  * saying yes (P12). The only thing written here is a PROPOSAL.
