@@ -468,7 +468,7 @@ export function ResourcePickerMenu({
                 key={resource.id}
                 variant="ghost"
                 size="sm"
-                className="group h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
+                className="group h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
                 onClick={() => {
                   // "Cloud browser" is a direct action (give the agent a
                   // browser → open the canvas), not a drill-in picker view.
@@ -510,7 +510,7 @@ export function ResourcePickerMenu({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
+              className="h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
               onClick={() => {
                 onSettingsClick();
                 onClose();
@@ -524,7 +524,7 @@ export function ResourcePickerMenu({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
+              className="h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
               onClick={() => {
                 onDebugClick();
                 onClose();
