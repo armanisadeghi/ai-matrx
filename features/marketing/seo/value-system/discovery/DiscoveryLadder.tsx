@@ -160,6 +160,13 @@ export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
     void queryClient.invalidateQueries({
       queryKey: ["marketing", "seo", "discovery", siteId],
     });
+    // Step 6 and the guidelines draft write proposals. The approval queue
+    // mounted beside the ladder must show them the moment the run ends, not
+    // after a reload (found live 2026-09-14: six proposals were invisible
+    // until the page was refreshed). Prefix match on the kind's read key.
+    void queryClient.invalidateQueries({
+      queryKey: ["assists", "keyword-meaning-queue"],
+    });
   }, [queryClient, siteId]);
 
   const launchStep = useCallback(
