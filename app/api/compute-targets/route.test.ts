@@ -95,14 +95,14 @@ beforeEach(() => {
 
 test.each([
   [
-    "uses the canonical top-level template over stale config",
-    { template: "ec2", config: { template: "bare" } },
-    "ec2 · ec2 · 9aa2f6",
+    "uses the canonical top-level template when config is empty",
+    { template: "bare", config: {} },
+    "bare · ec2 · 9aa2f6",
   ],
   [
     "keeps config.template as the legacy fallback",
-    { template: null, config: { template: "bare" } },
-    "bare · ec2 · 9aa2f6",
+    { template: null, config: { template: "legacy" } },
+    "legacy · ec2 · 9aa2f6",
   ],
 ])("GET /api/compute-targets %s", async (_case, templateFields, expectedName) => {
   sandboxRows = [
@@ -122,7 +122,8 @@ test.each([
 
   expect(response.status).toBe(200);
   // This projection-modeling fake drops unselected fields, exactly as
-  // PostgREST does. The pre-fix select therefore produced `bare · ec2 …`.
+  // PostgREST does. The pre-fix select therefore emitted `ec2 · 9aa2f6` for
+  // the observed row: top-level `template: "bare"`, `tier: "ec2"`, config {}.
   expect(body.targets).toEqual([
     expect.objectContaining({
       id: SANDBOX_ID,
