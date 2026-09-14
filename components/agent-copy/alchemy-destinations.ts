@@ -48,7 +48,7 @@ export function createAlchemyDestinationPorts(host: Host) {
         host.dispatch(clearFocus(chatRouteSurfaceKey(mandate.agentId))); host.dispatch(bumpFreshSession()); host.navigate("/chat/new"); return;
       }
       const instanceId = `alchemy-chat:${crypto.randomUUID()}`;
-      host.dispatch(openOverlay({ overlayId: "agentRunWindow", instanceId, data: { initialAgentId: mandate.agentId, initialResources: [resource], initialResourceIdentity: current, initialAutoRun: false, mandateKey: DEFAULT_NEW_CHAT_MANDATE_KEY, surfaceName: null, seedNonce: Date.now() } }));
+      host.dispatch(openOverlay({ overlayId: "agentRunWindow", instanceId, data: { initialAgentId: mandate.agentId, initialResources: [resource], initialResourceIdentity: current, initialAutoRun: false, initialToolsOpen: mode === "tools", mandateKey: DEFAULT_NEW_CHAT_MANDATE_KEY, surfaceName: null, seedNonce: Date.now() } }));
     },
   });
 }

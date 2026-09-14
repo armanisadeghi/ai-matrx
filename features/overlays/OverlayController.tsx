@@ -3037,6 +3037,7 @@ export default function OverlayController() {
                 ? (data.initialVariableValues as Record<string, string>)
                 : null
             }
+            initialToolsOpen={data?.initialToolsOpen === true}
             initialResources={
               Array.isArray(data?.initialResources)
                 ? (data.initialResources as import("@/features/agents/resources/types").Resource[])
