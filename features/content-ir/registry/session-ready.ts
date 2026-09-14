@@ -1,5 +1,5 @@
 /**
- * THE SESSION-READY SIGNAL for the content-ir registries (DD-215b).
+ * THE SESSION-READY SIGNAL for the content-ir registries (DD-215b → DD-237).
  *
  * WHY THIS EXISTS. The registries' reads (`content_ir.kind_component`,
  * `content_ir.kind_definition`) are SIGNED-IN doors: `anon` holds no grant on
@@ -17,61 +17,42 @@
  * floor, nothing retried the refused read, and the reader silently got the
  * platform's component instead of their organization's — the DD-215b symptom.
  *
- * WHAT THIS IS NOT. The boot race itself (client reads racing the session) is
- * DD-237 and belongs to the client's session layer, not here. This module is
- * the narrow half content-ir can own honestly: *tell me when a session exists,
- * so a refused read can be retried instead of standing as a verdict.*
+ * WHAT THIS IS NOW. When this module was written it said: *"There is no shared
+ * session-ready primitive in the app today … When DD-237 ships a real barrier,
+ * this module is the ONE place that has to point at it."* DD-237 shipped, and
+ * this is that pointer. The signal, the tri-state and the one-shot drain all
+ * live in `utils/supabase/sessionBarrier.ts` — bound to the browser client at
+ * construction, where it also makes every authenticated read in the app wait
+ * for the session and retries a refused one. There is exactly ONE auth
+ * subscription per tab again, and this file is the content-ir name for it.
  *
- * There is no shared session-ready primitive in the app today — `AuthSessionWatcher`
- * is a component, not a signal — so this subscribes to the one source of truth
- * (`supabase.auth.onAuthStateChange`) exactly once per tab. When DD-237 ships a
- * real barrier, this module is the ONE place that has to point at it.
+ * The exported API is unchanged on purpose: `component-registry.ts`,
+ * `kindComponentIncident.ts` and the DD-215b tests keep their seam.
  */
 
-/** Listeners waiting for a session to exist. Drained once, then dropped. */
-const waiting = new Set<() => void>();
-
-let subscribed = false;
-/** Tri-state on purpose: `null` = we have not heard from auth yet. */
-let sessionPresent: boolean | null = null;
-
-function drain(): void {
-  if (waiting.size === 0) return;
-  const pending = [...waiting];
-  waiting.clear();
-  for (const listener of pending) {
-    try {
-      listener();
-    } catch {
-      /* one bad listener must never stop the others */
-    }
-  }
-}
+import {
+  announceSessionForTests as announceBarrierSessionForTests,
+  hasAttachedSession,
+  resetSessionBarrierForTests,
+  whenSessionAttached,
+} from "@/utils/supabase/sessionBarrier";
 
 /**
- * Subscribe once per tab. Lazy + dynamic so the registry cluster keeps its
- * zero static import edge into the Supabase client (the same reason every
- * loader in this folder reaches for it through `await import`).
+ * The barrier binds itself when the browser client is constructed, so touching
+ * the client is what arms the signal. This module's callers may ask before any
+ * other code has imported it (the registry cluster keeps a zero static import
+ * edge into Supabase — the same reason every loader here reaches for it through
+ * `await import`), so keep the lazy, once-per-tab touch the original had.
  */
-function ensureSubscribed(): void {
-  if (subscribed || typeof window === "undefined") return;
-  subscribed = true;
-  void (async () => {
-    try {
-      const { supabase } = await import("@/utils/supabase/client");
-      // `INITIAL_SESSION` fires immediately with whatever the client already
-      // holds, so a session that attached before this call still reaches us.
-      supabase.auth.onAuthStateChange((_event, session) => {
-        const had = sessionPresent;
-        sessionPresent = Boolean(session);
-        if (sessionPresent && had !== true) drain();
-      });
-    } catch {
-      // No client, no signal. Callers treat that as "never ready" and keep
-      // their existing behaviour — this module can only ever ADD a retry.
-      subscribed = false;
-    }
-  })();
+let armed = false;
+function ensureArmed(): void {
+  if (armed || typeof window === "undefined") return;
+  armed = true;
+  void import("@/utils/supabase/client").catch(() => {
+    // No client, no signal. Callers treat that as "never ready" and keep their
+    // existing behaviour — this module can only ever ADD a retry.
+    armed = false;
+  });
 }
 
 /**
@@ -80,8 +61,8 @@ function ensureSubscribed(): void {
  * out", which is why {@link whenSessionReady} exists.
  */
 export function hasSession(): boolean {
-  ensureSubscribed();
-  return sessionPresent === true;
+  ensureArmed();
+  return hasAttachedSession();
 }
 
 /**
@@ -93,31 +74,18 @@ export function hasSession(): boolean {
  * standing poll.
  */
 export function whenSessionReady(listener: () => void): () => void {
-  ensureSubscribed();
-  if (sessionPresent === true) {
-    try {
-      listener();
-    } catch {
-      /* never throw into a caller's catch block */
-    }
-    return () => {};
-  }
-  waiting.add(listener);
-  return () => {
-    waiting.delete(listener);
-  };
+  ensureArmed();
+  return whenSessionAttached(listener);
 }
 
 /** Test seam — forget the subscription and every waiter. */
 export function resetSessionReadyForTests(present: boolean | null = null): void {
-  waiting.clear();
-  subscribed = false;
-  sessionPresent = present;
+  armed = false;
+  resetSessionBarrierForTests();
+  if (present !== null) announceBarrierSessionForTests(present);
 }
 
 /** Test seam — drive the signal without a Supabase client. */
 export function announceSessionForTests(present: boolean): void {
-  const had = sessionPresent;
-  sessionPresent = present;
-  if (present && had !== true) drain();
+  announceBarrierSessionForTests(present);
 }
