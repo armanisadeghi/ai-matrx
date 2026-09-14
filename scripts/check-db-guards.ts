@@ -194,7 +194,29 @@ const QUERY = `
  * shape is `in (select iam.unnest_uuids(<call>))`, which this deliberately does
  * NOT match (the `unnest(` form below requires the bare `unnest(` spelling).
  */
-const PLANNER_TRAP_QUERY = `
+//
+// 🚨 IT IS READ ONE SCHEMA AT A TIME, AND IT SAYS SO WHEN IT CANNOT FINISH ONE.
+// `pg_policies` renders EVERY policy expression through `pg_get_expr` the moment
+// anything reads `qual`/`with_check`, so the cost of this arm grows with every
+// policy on the database — 5,017 of them on 2026-09-14, and `iam.apply_rls`
+// writes more on every canonicalisation. Whole-database, that render took ~1.5 s
+// on an idle connection and ~41 s under a peer lane's load (V-96, 2026-09-14), and
+// this check reads through `execute_admin_query`, whose statement timeout it
+// cannot raise. The arm therefore CRASHED the whole gate, intermittently, with a
+// bare `canceling statement due to statement timeout` — a red gate for every lane,
+// for a reason that had nothing to do with what it measures. Split per schema the
+// worst chunk is 706 policies (~0.2 s), the predicate is byte-identical, and a
+// chunk that still fails is reported UNMEASURED BY NAME rather than taking the
+// process down: never a crash, and never a silence that reads as a pass.
+const PLANNER_TRAP_SCHEMAS_QUERY = `
+  select distinct n.nspname as schemaname
+    from pg_catalog.pg_policy p
+    join pg_catalog.pg_class c on c.oid = p.polrelid
+    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   order by 1
+`;
+
+const plannerTrapQueryFor = (schema: string) => `
   select p.schemaname || '.' || p.tablename as relation,
          p.policyname,
          case
@@ -203,8 +225,9 @@ const PLANNER_TRAP_QUERY = `
            else '= ANY (<stable fn>) — scalararraysel pre-evaluates the array'
          end as form
   from pg_catalog.pg_policies p
-  where coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
-     or lower(coalesce(p.qual,'') || coalesce(p.with_check,'')) like '%any (iam.accessible%'
+  where p.schemaname = '${schema.replace(/'/g, "''")}'
+    and (coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
+      or lower(coalesce(p.qual,'') || coalesce(p.with_check,'')) like '%any (iam.accessible%')
   order by 1, 2
 `;
 
@@ -218,17 +241,30 @@ interface PlannerTrapRow {
  * Reports policies that would make the planner execute the access walk.
  * Returns the number of offending policies (0 = clean).
  */
-function reportPlannerTraps(rows: PlannerTrapRow[]): number {
+function reportPlannerTraps(rows: PlannerTrapRow[], unmeasured: string[] = []): number {
   console.log("");
   console.log(
     `${C.bold}RLS planner traps${C.reset} ${C.dim}(no policy may hand the access walk to the planner)${C.reset}`,
   );
-  if (!rows.length) {
+  if (unmeasured.length) {
+    for (const u of unmeasured) {
+      console.log(`  ${TAG.fail}${C.red}UNMEASURED${C.reset} schema ${C.bold}${u}${C.reset}`);
+    }
+    console.log(
+      `${TAG.fail}${unmeasured.length} schema(s) could not be read, so this arm did NOT measure them —` +
+        ` an unread schema is never a clean one. The per-schema read is normally ~0.2 s; a timeout here` +
+        ` means the database was under load or the policy count in that schema has grown far past the` +
+        ` rest. Re-run when the database is quieter, and if it persists, narrow the render further` +
+        ` (pg_policies calls pg_get_expr on every policy it returns).`,
+    );
+  }
+  if (!rows.length && !unmeasured.length) {
     console.log(
       `${TAG.ok}No policy pre-evaluates iam.accessible_entity_ids at plan time.`,
     );
     return 0;
   }
+  if (!rows.length) return 0;
   for (const r of rows) {
     console.log(`  ${TAG.fail}${r.relation} ${C.dim}(${r.policyname})${C.reset} — ${r.form}`);
   }
@@ -587,18 +623,38 @@ async function main(): Promise<number> {
     );
   }
 
-  let trapRows: PlannerTrapRow[];
+  const trapRows: PlannerTrapRow[] = [];
+  const trapUnmeasured: string[] = [];
+  let trapSchemas: string[];
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
-      query: PLANNER_TRAP_QUERY,
+      query: PLANNER_TRAP_SCHEMAS_QUERY,
     });
     if (error) throw new Error(error.message);
-    trapRows = unwrapRows(data) as unknown as PlannerTrapRow[];
+    trapSchemas = (unwrapRows(data) as unknown as { schemaname: string }[]).map(
+      (r) => r.schemaname,
+    );
   } catch (err) {
-    console.error(`${TAG.fail}Planner-trap check: query failed — ${String(err)}`);
+    console.error(
+      `${TAG.fail}Planner-trap check: could not even list the schemas holding policies — ${String(err)}.` +
+        ` That read touches no policy expression at all, so the connection itself is the problem.`,
+    );
     return 2;
   }
-  const traps = reportPlannerTraps(trapRows);
+  for (const schema of trapSchemas) {
+    try {
+      const { data, error } = await supabase.rpc("execute_admin_query", {
+        query: plannerTrapQueryFor(schema),
+      });
+      if (error) throw new Error(error.message);
+      trapRows.push(...(unwrapRows(data) as unknown as PlannerTrapRow[]));
+    } catch (err) {
+      // 🚨 NEVER a crash and never a silence: this schema is named as UNMEASURED
+      // and the arm fails on it below.
+      trapUnmeasured.push(`${schema} — ${String(err)}`);
+    }
+  }
+  const traps = reportPlannerTraps(trapRows, trapUnmeasured);
 
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
@@ -706,6 +762,7 @@ async function main(): Promise<number> {
     console.log(
       `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound, enabled and SECURITY INVOKER.`,
     );
+    if (trapUnmeasured.length) return 2;
     return (traps > 0 ||
       undeclaredExposures > 0 ||
       unprotected > 0 ||
