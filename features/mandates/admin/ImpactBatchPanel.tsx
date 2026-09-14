@@ -26,7 +26,7 @@
  * second renderer of a grade exists — the cells are `./impact-cells`.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -39,6 +39,7 @@ import {
   Loader2,
   RefreshCw,
   UserRound,
+  Wrench,
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table";
@@ -63,6 +64,7 @@ import {
   selectAuthReady,
 } from "@/lib/redux/selectors/userSelectors";
 import { fetchUserDisplayNames } from "@/features/mandates/notes";
+import { toast } from "@/lib/toast";
 import { agentHref } from "./mandate-health";
 import {
   BATCH_TIER_META,
@@ -82,6 +84,7 @@ import {
   newestLabelOf,
   pinnedLabelOf,
   settingsSignalOf,
+  tooYoungReasonOf,
   type BatchTier,
   type ImpactDelta,
   type ImpactGrade,
@@ -92,6 +95,8 @@ import {
 } from "./impact";
 import { ImpactAgentCompanion, type CompanionSection } from "./ImpactAgentCompanion";
 import { useImpactAdvance } from "./impact-advance";
+import { useImpactSettingsFix, type SettingsFixOutcome } from "./impact-settings-fix";
+import { SettingsFixReportCard, settleSettingsFix, type SettingsFixReport } from "./impact-settings-fix-report";
 import {
   AdvanceResultBadge,
   AdvanceResultsCard,
@@ -256,6 +261,12 @@ export function ImpactBatchPanel({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [epoch, setEpoch] = useState(0);
+  // R13 — fixes waiting for the read AFTER their own to say what they changed
+  // (the ref is what the read's callback consults; the state is the screen),
+  // and the settled reports, kept on screen: a fix that changed no pile says so.
+  const pendingFixesRef = useRef<SettingsFixReport[]>([]);
+  const [pendingFixes, setPendingFixes] = useState<SettingsFixReport[]>([]);
+  const [fixReports, setFixReports] = useState<SettingsFixReport[]>([]);
   // React Compiler memoizes — no manual useMemo anywhere in this file.
   // The read identity is a STRING so a new array with the same contents never
   // re-fires it.
@@ -293,6 +304,23 @@ export function ImpactBatchPanel({
         if (cancelled) return;
         setImpact(report);
         setError(null);
+        // R13 — settle every fix this read was waited for: the row's pile
+        // before → after, in words, on screen and in a toast.
+        const ready = pendingFixesRef.current.filter((fix) => epoch >= fix.settleEpoch);
+        if (ready.length === 0) return;
+        const settled = ready.map((fix) =>
+          settleSettingsFix(fix, report.verdicts, {
+            dryRun: mode === "dry_run",
+            context: { posture: isSuperAdmin ? "admin" : "mine", actorUserId: actorUserId ?? null },
+          }),
+        );
+        pendingFixesRef.current = pendingFixesRef.current.filter((fix) => !ready.includes(fix));
+        setPendingFixes(pendingFixesRef.current);
+        setFixReports((prev) => [...settled, ...prev]);
+        for (const settledFix of settled) {
+          if (settledFix.changedPile) toast.success(settledFix.sentence, { duration: 15_000 });
+          else toast.info(settledFix.sentence, { duration: 15_000 });
+        }
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
@@ -304,7 +332,7 @@ export function ImpactBatchPanel({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, epoch, posture, scopeKey, sessionReady, walkDescendants]);
+  }, [dispatch, epoch, posture, scopeKey, sessionReady, walkDescendants, mode, isSuperAdmin, actorUserId]);
 
   // Owners of personal pins, by name (I12) — best effort, one lookup.
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(() => new Map());
@@ -387,7 +415,34 @@ export function ImpactBatchPanel({
       setEpoch((value) => value + 1);
     },
   });
-  const busy = writes.busy !== null;
+  const settingsFix = useImpactSettingsFix({
+    onFixed: (outcomes: SettingsFixOutcome[]) => {
+      const settleEpoch = epoch + 1;
+      pendingFixesRef.current = [
+        ...pendingFixesRef.current,
+        ...outcomes.map((outcome) => ({
+          outcome,
+          settleEpoch,
+          before: rows
+            .filter((row) => row.verdict.agent_id === outcome.agentId)
+            .map((row) => ({ rungId: row.id, mandateKey: row.mandateKey, tier: row.tier, versions: row.versions })),
+        })),
+      ];
+      setPendingFixes(pendingFixesRef.current);
+      setEpoch((value) => value + 1);
+    },
+  });
+  const busy = writes.busy !== null || settingsFix.busy;
+  /** A drift row whose settings check found something the fixer may repair (R13). */
+  const isSettingsFixable = (row: BatchRow): boolean =>
+    mode === "post_batch" &&
+    row.tier === "drift" &&
+    settingsSignalOf(row.verdict).state === "changed" &&
+    isBatchActionable(row.verdict, writeContext);
+  const fixableRows = rows.filter(isSettingsFixable);
+  const fixableAgents = new Set(fixableRows.map((row) => row.verdict.agent_id)).size;
+  const fixAllSettings = () => void settingsFix.fix(fixableRows.map((row) => row.verdict));
+  const fixOne = (row: BatchRow) => void settingsFix.fix([row.verdict]);
 
   const isSelectable = (row: BatchRow): boolean =>
     mode === "dry_run"
@@ -588,6 +643,14 @@ export function ImpactBatchPanel({
           if (r.tier === "current") {
             return <span className="text-[11px] text-muted-foreground">Already current.</span>;
           }
+          const tooYoung = tooYoungReasonOf(r.verdict);
+          if (tooYoung) {
+            return (
+              <span className="text-[11px] text-muted-foreground" title="Not automatic — a person may still advance it.">
+                {tooYoung}.
+              </span>
+            );
+          }
           return <span className="text-muted-foreground">—</span>;
         },
       },
@@ -608,6 +671,19 @@ export function ImpactBatchPanel({
               <ExternalLink className="h-3 w-3" />
               Open
             </Button>
+            {isSettingsFixable(r) ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                className="h-6 gap-1 px-1.5 text-[11px]"
+                title="Repair the flagged settings on the agent's newest version and save it as a new version (the same fixer as the builder's Fix all), then grade this pin again. The pin does not move."
+                onClick={() => fixOne(r)}
+              >
+                <Wrench className="h-3 w-3" />
+                Fix settings
+              </Button>
+            ) : null}
             {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) && r.tier !== "safe" ? (
               <Button
                 size="sm"
@@ -730,17 +806,32 @@ export function ImpactBatchPanel({
               </span>
             ))}
             {mode === "post_batch" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto h-7 gap-1 text-xs"
-                disabled={busy || safeCount === 0}
-                title={BATCH_TIER_META.safe.meaning}
-                onClick={advanceAllSafe}
-              >
-                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                Advance all safe ({safeCount})
-              </Button>
+              <div className="ml-auto flex flex-wrap items-center gap-1">
+                {fixableRows.length > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    disabled={busy}
+                    title={`Repair the flagged settings on ${fixableAgents} agent${fixableAgents === 1 ? "" : "s"} (${fixableRows.length} pin${fixableRows.length === 1 ? "" : "s"} in the Check settings pile), each saved as a new version, then grade them again. Rows the fixer cannot help say so and keep their Advance door.`}
+                    onClick={fixAllSettings}
+                  >
+                    {settingsFix.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wrench className="h-3 w-3" />}
+                    Fix all fixable ({fixableRows.length})
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs"
+                  disabled={busy || safeCount === 0}
+                  title={BATCH_TIER_META.safe.meaning}
+                  onClick={advanceAllSafe}
+                >
+                  {writes.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                  Advance all safe ({safeCount})
+                </Button>
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -771,6 +862,12 @@ export function ImpactBatchPanel({
           ))}
         </div>
       ) : null}
+
+      <SettingsFixReportCard
+        pending={pendingFixes}
+        reports={fixReports}
+        onDismiss={() => setFixReports([])}
+      />
 
       <AdvanceResultsCard
         batches={writes.batches}

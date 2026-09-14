@@ -328,6 +328,98 @@ export function isAdvanceAnyway(verdict: ImpactVerdict): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// I9 — the minimum version age and the auto-advance predicate.
+// ---------------------------------------------------------------------------
+
+/**
+ * The server's grade-neutral finding that a target version is younger than
+ * the ROW organization's `agent_impact.minimum_version_age_hours` knob:
+ * "v30 is 3 h old; this organization waits 24 h …". The row is NOT
+ * auto-advanceable while it stands; a person may still advance it.
+ */
+export const TOO_YOUNG_RULE_ID = "pin.too_young";
+
+/** The server's own sentence for a too-young target, or null when it is old enough. */
+export function tooYoungReasonOf(verdict: ImpactVerdict): string | null {
+  const finding = (verdict.findings ?? []).find((f) => f.rule_id === TOO_YOUNG_RULE_ID);
+  return finding ? finding.message : null;
+}
+
+/** The findings a person reads as "what changed" — the age reason is shown on its own line. */
+export function changeFindingsOf(verdict: ImpactVerdict): ImpactFinding[] {
+  return (verdict.findings ?? []).filter((f) => f.rule_id !== TOO_YOUNG_RULE_ID);
+}
+
+/**
+ * Whether any verdict BELOW this one in the same duplication chain (a row whose
+ * lineage passes through this row's agent) grades higher — I9's hard condition
+ * in reverse, the same walk the server runs before it sets
+ * `auto_advance_eligible`.
+ */
+export function hasDescendantAtHigherGrade(
+  verdict: ImpactVerdict,
+  all: readonly ImpactVerdict[],
+): boolean {
+  const own = IMPACT_GRADE_ORDER.indexOf(verdict.grade);
+  const chain = new Set((verdict.lineage_path ?? []).map((step) => step.agent_id));
+  chain.add(verdict.agent_id);
+  return all.some(
+    (other) =>
+      other !== verdict &&
+      IMPACT_GRADE_ORDER.indexOf(other.grade) > own &&
+      (other.lineage_path ?? []).some((step) => chain.has(step.agent_id)),
+  );
+}
+
+export type AutoAdvanceVerdict =
+  | { eligible: true }
+  | { eligible: false; why: string };
+
+/**
+ * THE HARD CONDITIONS (I9), every one of them, in the order a person would
+ * ask. None is a knob; the knob (`auto_advance_green`) only decides whether a
+ * row that passes is ACTED on. The server's own `auto_advance_eligible` is
+ * required too — it is the authority; this predicate exists so the screen can
+ * say WHICH condition failed, and so a test can flip each one.
+ */
+export function autoAdvanceVerdictOf(
+  verdict: ImpactVerdict,
+  all: readonly ImpactVerdict[],
+  context: WriteContext = ADMIN_WRITE_CONTEXT,
+): AutoAdvanceVerdict {
+  const eligibility = batchEligibilityOf(verdict, context);
+  if (!eligibility.batchable) return { eligible: false, why: eligibility.why };
+  if (verdict.grade !== "green" && verdict.grade !== "identical") {
+    return { eligible: false, why: `graded ${GRADE_META[verdict.grade].label} — only green or identical moves by itself.` };
+  }
+  const drift = verdict.settings_drift;
+  if (!drift || drift.capability_checked !== true) {
+    return { eligible: false, why: "the settings capability check could not run, so the settings are unmeasured." };
+  }
+  const unexpected = (drift.capability ?? []).filter((issue) => !issue.expected);
+  if (unexpected.length > 0) {
+    return { eligible: false, why: `the settings check found ${unexpected.length} unexpected issue${unexpected.length === 1 ? "" : "s"}: ${unexpected.map((issue) => issue.reason).join("; ")}` };
+  }
+  if (hasDescendantAtHigherGrade(verdict, all)) {
+    return { eligible: false, why: "another job on this agent, or on a duplicate of it, grades higher — moving this one alone is not the quiet act auto-advance claims." };
+  }
+  const tooYoung = tooYoungReasonOf(verdict);
+  if (tooYoung) return { eligible: false, why: tooYoung };
+  if (verdict.auto_advance_eligible !== true) {
+    return { eligible: false, why: "the server did not mark this row auto-advance eligible." };
+  }
+  return { eligible: true };
+}
+
+/** The rows that meet every hard condition — what auto-advance moves when the knob is on. */
+export function autoAdvanceCandidates(
+  verdicts: readonly ImpactVerdict[],
+  context: WriteContext = ADMIN_WRITE_CONTEXT,
+): ImpactVerdict[] {
+  return verdicts.filter((verdict) => autoAdvanceVerdictOf(verdict, verdicts, context).eligible);
+}
+
+// ---------------------------------------------------------------------------
 // The read.
 // ---------------------------------------------------------------------------
 
@@ -1108,6 +1200,33 @@ export type PostEditAutoOpen =
 export async function readPostEditAutoOpen(): Promise<PostEditAutoOpen> {
   try {
     const value = await resolveSessionKnob(POST_EDIT_AUTO_OPEN_KNOB);
+    if (value === undefined) {
+      return { state: "unknown", why: "no organization is active in this session" };
+    }
+    return { state: "known", value: value === true || value === "true" };
+  } catch (error) {
+    return { state: "unknown", why: describeError(error) };
+  }
+}
+
+/**
+ * I9 — whether green/identical pins that meet EVERY hard condition are
+ * advanced by themselves after an agent save. Organization knob, default
+ * OFF (the mandate: earned later, on instrumented batches). Read through THE
+ * settings ladder, never a constant: `agent_impact.auto_advance_green`,
+ * seeded by `migrations/agent_change_impact_07_org_knobs.sql`. The sibling
+ * `agent_impact.minimum_version_age_hours` is read by the SERVER per row
+ * organization; the screen only repeats its `pin.too_young` sentence.
+ */
+export const AUTO_ADVANCE_GREEN_KNOB = "agent_impact.auto_advance_green";
+
+export type AutoAdvanceGreen =
+  | { state: "known"; value: boolean }
+  | { state: "unknown"; why: string };
+
+export async function readAutoAdvanceGreen(): Promise<AutoAdvanceGreen> {
+  try {
+    const value = await resolveSessionKnob(AUTO_ADVANCE_GREEN_KNOB);
     if (value === undefined) {
       return { state: "unknown", why: "no organization is active in this session" };
     }

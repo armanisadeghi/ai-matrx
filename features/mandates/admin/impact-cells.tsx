@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   CircleHelp,
   ExternalLink,
+  Clock,
   FastForward,
   Loader2,
   Undo2,
@@ -37,6 +38,7 @@ import {
   RESULT_STATUS_META,
   batchEligibilityOf,
   blockerKeyOf,
+  changeFindingsOf,
   isAdvanceAnyway,
   revertableRows,
   rungIdentityOf,
@@ -46,6 +48,7 @@ import {
   rungSuffixOf,
   settingsSignalOf,
   summarizeAdvanceReport,
+  tooYoungReasonOf,
   type AdvanceReport,
   type AdvanceRowResult,
   type ImpactBlocker,
@@ -71,6 +74,8 @@ export function VerdictDetail({ verdict }: { verdict: ImpactVerdict }) {
   const settings = settingsSignalOf(verdict);
   const reason = setAsideReasonOf(verdict);
   const eligibility = batchEligibilityOf(verdict);
+  const tooYoung = tooYoungReasonOf(verdict);
+  const findings = changeFindingsOf(verdict);
   return (
     <div className="space-y-1.5 text-xs">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -88,9 +93,9 @@ export function VerdictDetail({ verdict }: { verdict: ImpactVerdict }) {
           {newestLabelOf(verdict)}
         </span>
       </div>
-      {verdict.findings && verdict.findings.length > 0 ? (
+      {findings.length > 0 ? (
         <ul className="space-y-0.5">
-          {verdict.findings.map((finding, index) => (
+          {findings.map((finding, index) => (
             <li
               key={`${finding.rule_id}-${index}`}
               className="flex items-start gap-1.5 leading-snug"
@@ -122,6 +127,12 @@ export function VerdictDetail({ verdict }: { verdict: ImpactVerdict }) {
             {settings.state === "unmeasured" ? "UNMEASURED — " : ""}
             {settings.sentence}
           </span>
+        </p>
+      ) : null}
+      {tooYoung ? (
+        <p className="flex items-start gap-1.5 text-muted-foreground">
+          <Clock className="mt-0.5 h-3 w-3 shrink-0" />
+          <span>Not automatic — {tooYoung}.</span>
         </p>
       ) : null}
       {verdict.blocker ? (
@@ -201,6 +212,15 @@ export function ImpactGradeCell({
               className="border-amber-500/40 px-1 text-[10px] text-amber-700 dark:text-amber-400"
             >
               unmeasured
+            </Badge>
+          ) : null}
+          {tooYoungReasonOf(defaultVerdict) ? (
+            <Badge
+              variant="outline"
+              className="gap-0.5 border-border px-1 text-[10px] text-muted-foreground"
+              title={`Not automatic — ${tooYoungReasonOf(defaultVerdict)}`}
+            >
+              <Clock className="h-2.5 w-2.5" /> waits
             </Badge>
           ) : null}
           {worstBinding ? (

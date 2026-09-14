@@ -10,6 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 const fetchImpactMock = jest.fn();
 const readPostEditAutoOpenMock = jest.fn(async () => ({ state: "known", value: false }));
+const readAutoAdvanceGreenMock = jest.fn(async () => ({ state: "known", value: false }));
 const openWindowMock = jest.fn();
 const toastInfoMock = jest.fn();
 const toastErrorMock = jest.fn();
@@ -20,6 +21,7 @@ jest.mock("../impact", () => {
     ...actual,
     fetchImpact: (...args: unknown[]) => fetchImpactMock(...args),
     readPostEditAutoOpen: () => readPostEditAutoOpenMock(),
+    readAutoAdvanceGreen: () => readAutoAdvanceGreenMock(),
   };
 });
 let viewer: { isSuperAdmin: boolean; userId: string | null } = { isSuperAdmin: true, userId: "admin-1" };

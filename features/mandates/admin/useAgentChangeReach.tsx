@@ -23,6 +23,15 @@
  *
  * Whether the badge also OPENS the panel by itself is an organization knob
  * (`agent_impact.post_edit_auto_open`, default off — opinions become knobs).
+ *
+ * AUTO-ADVANCE (I9): a second organization knob, `agent_impact.auto_advance_green`
+ * (default OFF = nothing automatic, ever). ON means the rungs that meet EVERY
+ * hard condition (`autoAdvanceVerdictOf`: green or identical, no blocker,
+ * zero unexpected settings findings, capability check ran, no duplicate at a
+ * higher grade, target older than the organization's minimum version age) are
+ * advanced through the SAME advance route the batch panel uses, and the
+ * result ANNOUNCES itself: a toast naming every pin that moved with a "Put
+ * back" door that calls the same revert. Never silent, never a wall.
  */
 
 import { useState } from "react";
@@ -34,11 +43,20 @@ import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSele
 import { toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
+  autoAdvanceCandidates,
   countBatchTiers,
   describeReach,
   fetchImpact,
+  postAdvance,
+  postRevert,
+  readAutoAdvanceGreen,
   readPostEditAutoOpen,
+  rungSuffixOf,
+  summarizeAdvanceReport,
+  versionsLabelOf,
+  type AdvanceReport,
   type BatchTierCounts,
+  type ImpactVerdict,
   type StandingImpact,
   type WriteContext,
 } from "./impact";
@@ -101,6 +119,63 @@ export function reachToneClassName(counts: BatchTierCounts): string {
 }
 
 const REACH_TOAST_MS = 20_000;
+const AUTO_ADVANCE_TOAST_MS = 60_000;
+
+/** What the auto-advance step decided — exported so a test can pin every branch. */
+export type AutoAdvanceOutcome =
+  | { state: "off" }
+  | { state: "knob_unknown"; why: string }
+  | { state: "no_candidates" }
+  | { state: "advanced"; report: AdvanceReport; candidates: ImpactVerdict[] }
+  | { state: "failed"; why: string; candidates: ImpactVerdict[] };
+
+/**
+ * The automatic step, as a pure function of the read: candidates by the hard
+ * predicate, the knob, then the SAME writer the panel uses. Throws nothing.
+ */
+export async function autoAdvanceAfterSave(
+  dispatch: AppDispatch,
+  impact: StandingImpact,
+  context: WriteContext,
+  batchLabel: string,
+): Promise<AutoAdvanceOutcome> {
+  const knob = await readAutoAdvanceGreen();
+  if (knob.state === "unknown") return { state: "knob_unknown", why: knob.why };
+  if (!knob.value) return { state: "off" };
+  const candidates = autoAdvanceCandidates(impact.verdicts, context);
+  if (candidates.length === 0) return { state: "no_candidates" };
+  try {
+    const report = await postAdvance(dispatch, candidates, batchLabel, context.posture);
+    return { state: "advanced", report, candidates };
+  } catch (error) {
+    return {
+      state: "failed",
+      why: error instanceof Error ? error.message : String(error),
+      candidates,
+    };
+  }
+}
+
+/** The announcement's lines: every pin that moved, from → to, in the batch's own words. */
+export function describeAutoAdvance(
+  report: AdvanceReport,
+  candidates: readonly ImpactVerdict[],
+): { title: string; lines: string[] } {
+  const byRung = new Map(candidates.map((v) => [`${v.holder_kind}:${v.row_id}`, v]));
+  const lines: string[] = [];
+  for (const row of report.results ?? []) {
+    const verdict = byRung.get(`${row.token.holder_kind}:${row.token.row_id}`);
+    const name = row.mandate_key ?? verdict?.mandate_key ?? row.token.row_id;
+    const versions = verdict ? ` ${versionsLabelOf(verdict)}` : "";
+    const suffix = verdict ? rungSuffixOf(verdict) : "";
+    lines.push(`${name}${suffix}${versions} — ${row.status}${row.status === "advanced" ? "" : `: ${row.reason ?? ""}`}`);
+  }
+  const advanced = report.counts?.advanced ?? 0;
+  return {
+    title: `Advanced ${advanced} green pin${advanced === 1 ? "" : "s"} automatically (${summarizeAdvanceReport(report)})`,
+    lines,
+  };
+}
 
 export function useAgentChangeReach(agentId: string) {
   const dispatch = useAppDispatch();
@@ -137,10 +212,79 @@ export function useAgentChangeReach(agentId: string) {
     const result = await readAgentReach(dispatch, agentId, writeContext);
     setReach(result);
     if (result.state === "reached") {
-      toast.info(result.sentence, {
+      // I9 — the automatic move, BEFORE the review toast so the sentence the
+      // person reads describes what is true after it ran.
+      const auto = await autoAdvanceAfterSave(
+        dispatch,
+        result.impact,
+        writeContext,
+        `Auto-advance after edit of ${name ?? "agent"}`,
+      );
+      let countsNow = result.counts;
+      if (auto.state === "advanced") {
+        const { title, lines } = describeAutoAdvance(auto.report, auto.candidates);
+        const advanced = auto.report.counts?.advanced ?? 0;
+        const batchId = auto.report.batch_id;
+        const announce = advanced > 0 ? toast.success : toast.error;
+        announce(title, {
+          duration: AUTO_ADVANCE_TOAST_MS,
+          description: `${lines.join(" · ")} — this organization has automatic green advances on (agent_impact.auto_advance_green). Put back undoes every pin this batch moved.`,
+          action:
+            advanced > 0
+              ? {
+                  label: "Put back",
+                  onClick: () => {
+                    void postRevert(
+                      dispatch,
+                      batchId,
+                      null,
+                      `Put back auto-advance after edit of ${name ?? "agent"}`,
+                      writeContext.posture,
+                    )
+                      .then((revert) => {
+                        const back = revert.counts?.reverted ?? 0;
+                        (back > 0 ? toast.success : toast.error)(
+                          `${back > 0 ? "Put back" : "Nothing put back"}: ${summarizeAdvanceReport(revert)}`,
+                          {
+                            description: (revert.results ?? [])
+                              .map((row) => `${row.mandate_key ?? row.token.row_id}: ${row.status} — ${row.reason ?? ""}`)
+                              .join(" · "),
+                          },
+                        );
+                      })
+                      .catch((error: unknown) => {
+                        toast.error(
+                          `The revert failed: ${error instanceof Error ? error.message : String(error)}`,
+                          { description: "Open the impact panel — the batch is in its ledger and can be put back from there." },
+                        );
+                      });
+                  },
+                }
+              : undefined,
+        });
+        // The badge's counts describe the world AFTER the move.
+        const after = await readAgentReach(dispatch, agentId, writeContext);
+        setReach(after);
+        if (after.state === "reached") countsNow = after.counts;
+      } else if (auto.state === "failed") {
+        toast.error(
+          `Automatic green advance failed: ${auto.why}`,
+          {
+            duration: AUTO_ADVANCE_TOAST_MS,
+            description: `${auto.candidates.length} pin${auto.candidates.length === 1 ? "" : "s"} qualified and none moved. Review them in the impact panel.`,
+          },
+        );
+      } else if (auto.state === "knob_unknown") {
+        console.warn(
+          `[agent-change-reach] agent_impact.auto_advance_green could not be read (${auto.why}); nothing was advanced automatically.`,
+        );
+      }
+      toast.info(auto.state === "advanced" ? describeReach(countsNow) : result.sentence, {
         duration: REACH_TOAST_MS,
         description:
-          "Nothing moved. Review the jobs, compare the versions, test it, and advance the safe ones when you are ready.",
+          auto.state === "advanced"
+            ? "The green pins above moved by themselves; the rest wait for you. Review the jobs, compare the versions, test it, and advance the others when you are ready."
+            : "Nothing moved. Review the jobs, compare the versions, test it, and advance the safe ones when you are ready.",
         action: { label: "Review", onClick: () => openPanel(name) },
       });
       const autoOpen = await readPostEditAutoOpen();
