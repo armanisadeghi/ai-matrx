@@ -427,7 +427,7 @@ export function ApprovalQueue({
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   <Badge
                                     variant="outline"
-                                    className="h-4 px-1 text-[10px] font-normal"
+                                    className="h-4 shrink-0 whitespace-nowrap px-1 text-[10px] font-normal"
                                   >
                                     {item.badge ?? section.kind.label}
                                   </Badge>
