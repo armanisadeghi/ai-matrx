@@ -1823,6 +1823,17 @@ export function encodeSnapshotReceiptCursor(cursor: SnapshotReceiptCursor): stri
   return btoa(encodeURIComponent(JSON.stringify(cursor)));
 }
 
+function cursorValueMatchesSort(
+  sortId: SnapshotSortId,
+  value: unknown,
+): value is SnapshotCursorValue {
+  if (value === null) return true;
+  if (sortId === "http_status" || sortId === "word_count") {
+    return typeof value === "number" && Number.isFinite(value);
+  }
+  return typeof value === "string";
+}
+
 export function decodeSnapshotReceiptCursor(value: string): SnapshotReceiptCursor {
   try {
     const parsed: unknown = JSON.parse(decodeURIComponent(atob(value)));
@@ -1833,11 +1844,7 @@ export function decodeSnapshotReceiptCursor(value: string): SnapshotReceiptCurso
       !(typeof cursor.id === "string") ||
       !(typeof cursor.sortId === "string" && cursor.sortId in SNAPSHOT_SORT_COLUMNS) ||
       (cursor.direction !== "asc" && cursor.direction !== "desc") ||
-      !(
-        cursor.value === null ||
-        typeof cursor.value === "string" ||
-        (typeof cursor.value === "number" && Number.isFinite(cursor.value))
-      )
+      !cursorValueMatchesSort(cursor.sortId as SnapshotSortId, cursor.value)
     ) {
       throw new Error("invalid cursor fields");
     }
@@ -1854,6 +1861,7 @@ export function snapshotSourceIdentity(state: MatrxDataTableQueryState) {
   return {
     pageSize: state.pageSize,
     search: cleanSearch(state.search),
+    searchMatchMode: state.searchMatchMode ?? "contains",
     sort: { id: sort.id, direction: sort.direction },
     final_url: textFilter(state, "final_url"),
     content_hash: textFilter(state, "content_hash"),
@@ -1895,23 +1903,51 @@ export async function listSnapshotReceiptPage(input: {
   signal?: AbortSignal;
 }): Promise<SnapshotReceiptPage> {
   const { siteId, pageId, state, watermark, cursor, expectedTotal, signal } = input;
+  if (state.search && state.searchMatchMode === "whole_words") {
+    throw new SnapshotReceiptError(
+      "whole-word search is not available for snapshot history; clear that search mode and try again",
+    );
+  }
   const sort = snapshotSort(state);
   if (cursor && (cursor.sortId !== sort.id || cursor.direction !== sort.direction || cursor.watermark !== watermark)) {
     throw new SnapshotReceiptError("the cursor does not belong to this view");
   }
-  let query = (await authenticatedWebDb(supabase))
-    .from("snapshot")
-    .select(SNAPSHOT_COLUMNS, { count: "exact" })
-    .eq("site_id", siteId)
-    .eq("page_id", pageId)
-    // Deliberately include deleted snapshots: history is an audit record.
-    .lte("created_at", watermark);
+  const db = await authenticatedWebDb(supabase);
   const search = cleanSearch(state.search);
-  if (search) query = query.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
   const finalUrl = textFilter(state, "final_url");
   const hash = textFilter(state, "content_hash");
   const http = numberFilter(state, "http_status");
   const words = numberFilter(state, "word_count");
+  let countQuery = db
+    .from("snapshot")
+    .select("id", { count: "exact", head: true })
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    // Deliberately include deleted snapshots: history is an audit record.
+    .lte("created_at", watermark);
+  if (search) countQuery = countQuery.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+  if (finalUrl) countQuery = countQuery.ilike("final_url", `%${finalUrl}%`);
+  if (hash) countQuery = countQuery.ilike("content_hash", `%${hash}%`);
+  if (http?.min !== undefined) countQuery = countQuery.gte("http_status", http.min);
+  if (http?.max !== undefined) countQuery = countQuery.lte("http_status", http.max);
+  if (words?.min !== undefined) countQuery = countQuery.gte("word_count", words.min);
+  if (words?.max !== undefined) countQuery = countQuery.lte("word_count", words.max);
+  const countResponse = await countQuery.abortSignal(signal ?? new AbortController().signal);
+  if (countResponse.error) throw countResponse.error;
+  if (typeof countResponse.count !== "number" || !Number.isFinite(countResponse.count) || countResponse.count < 0) {
+    throw new SnapshotReceiptError("the exact count was unavailable");
+  }
+  if (expectedTotal !== undefined && countResponse.count !== expectedTotal) {
+    throw new SnapshotReceiptError("the matching count changed");
+  }
+
+  let query = db
+    .from("snapshot")
+    .select(SNAPSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .lte("created_at", watermark);
+  if (search) query = query.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
   if (finalUrl) query = query.ilike("final_url", `%${finalUrl}%`);
   if (hash) query = query.ilike("content_hash", `%${hash}%`);
   if (http?.min !== undefined) query = query.gte("http_status", http.min);
@@ -1933,12 +1969,6 @@ export async function listSnapshotReceiptPage(input: {
     .limit(state.pageSize)
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);
-  if (typeof response.count !== "number" || !Number.isFinite(response.count) || response.count < 0) {
-    throw new SnapshotReceiptError("the exact count was unavailable");
-  }
-  if (expectedTotal !== undefined && response.count !== expectedTotal) {
-    throw new SnapshotReceiptError("the matching count changed");
-  }
   const last = rows.at(-1);
   const nextCursor = rows.length < state.pageSize || !last
     ? null
@@ -1949,7 +1979,7 @@ export async function listSnapshotReceiptPage(input: {
         value: last[sort.column] as SnapshotCursorValue,
         id: last.id,
       });
-  return { rows, total: response.count, nextCursor };
+  return { rows, total: countResponse.count, nextCursor };
 }
 
 export async function getSnapshot(

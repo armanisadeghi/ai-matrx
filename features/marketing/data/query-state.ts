@@ -15,6 +15,19 @@ import {
 
 const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
+/** Snapshot history is cursor-backed: it accepts only bounded page sizes and
+ * server-supported page sizes. This is applied before rendering and
+ * again before querying so URL state cannot briefly issue an offset request. */
+export function normalizeSnapshotAppendState(
+  state: MatrxDataTableQueryState,
+): MatrxDataTableQueryState {
+  return {
+    ...state,
+    page: 1,
+    pageSize: PAGE_SIZE_OPTIONS.has(state.pageSize) ? state.pageSize : 25,
+  };
+}
+
 /**
  * Separator for a multi-choice select filter in the URL (`select:a|b`).
  * Without this the `values` OR-set was silently dropped on every URL write —
@@ -256,6 +269,8 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
    * so the first rendered source request and the address bar both mean page 1.
    */
   const replaceState = (nextState: MatrxDataTableQueryState) => {
+    if (queryTimer.current) clearTimeout(queryTimer.current);
+    if (urlTimer.current) clearTimeout(urlTimer.current);
     setState(nextState);
     setQueryState(nextState);
     const nextParams = writeState(
