@@ -696,6 +696,38 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobileSidebarAs: "drawer",
     urlSync: { key: "mandate" },
   },
+  {
+    // Agent Change Impact (I5): the batch panel — dry run before a write,
+    // three piles after it. Restores on refresh from its scope alone (the
+    // grades are re-read from the server, never stored).
+    slug: "impact-batch-window",
+    overlayId: "impactBatchWindow",
+    kind: "window",
+    label: "Change impact",
+    defaultData: {
+      agentIds: null,
+      mode: null,
+      delta: null,
+      batchLabel: null,
+      sourceSentence: null,
+      preselectedRungIds: null,
+      surfaceName: null,
+    },
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: [
+        "agentIds",
+        "mode",
+        "delta",
+        "batchLabel",
+        "sourceSentence",
+        "preselectedRungIds",
+        "surfaceName",
+      ],
+      requiredDataKeys: ["agentIds", "mode"],
+    },
+  },
 
   // ── Agent Run History ─────────────────────────────────────────────────────
   {

@@ -13,17 +13,26 @@
 // member).
 //
 // Contract: common-docs/projects/agent-change-impact/CONTRACT.md (frozen, with
-// Amendments 1 and 2 — `global` principals, `tracks_latest`, the envelope).
+// Amendments 1–3 — `global` principals, `tracks_latest`, the envelope, the
+// unknown-agent sentence). The WRITE half (`/mandates/impact/advance` and
+// `/mandates/impact/revert`, I3) is called from here too: every advance sends
+// exactly the tokens the read emitted, and every per-row result sentence on a
+// screen is the server's, verbatim (R8, R9).
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
+import { knobInt } from "@/lib/knobs/featureKnobs";
 
 export type ImpactReport = components["schemas"]["ImpactReport"];
 export type ImpactVerdict = components["schemas"]["ImpactVerdict"];
 export type ImpactFinding = components["schemas"]["ImpactFinding"];
 export type ImpactWithheld = components["schemas"]["ImpactWithheld"];
 export type ApplyToken = components["schemas"]["ApplyToken"];
+export type AdvanceReport = components["schemas"]["AdvanceReport"];
+export type AdvanceRowResult = components["schemas"]["AdvanceRowResult"];
+export type AdvanceRowStatus = AdvanceRowResult["status"];
+export type ImpactDelta = components["schemas"]["ImpactDelta"];
 export type ImpactGrade = ImpactVerdict["grade"];
 export type ImpactBlocker = NonNullable<ImpactVerdict["blocker"]>;
 
@@ -276,17 +285,39 @@ export interface StandingImpact {
   withheldTotal: number;
   withheldSentences: string[];
   agentsExamined: number;
+  /** Ids the caller asked about that are not live agents it can read (Amendment 3d). */
+  unknownAgentIds: string[];
+  unknownSentences: string[];
+  /** True when every page was graded against a hypothetical delta (R23). */
+  dryRun: boolean;
   computedAt: string;
 }
 
+export interface FetchImpactOptions {
+  /**
+   * A DRY RUN (R14, R23): grade every rung as if this patch had been applied
+   * to the pinned version. Every verdict then carries a null target token, so
+   * no advance can be applied from it.
+   */
+  delta?: ImpactDelta | null;
+  /**
+   * Walk duplicated descendants (R4). OFF for the standing table, which passes
+   * every holder agent itself; ON for a batch scoped to the agents a writer
+   * touched, so a mandate on a duplicate of one of them is surfaced too.
+   */
+  includeDescendants: boolean;
+}
+
 /**
- * Grade every rung the named agents hold, directly. Descendants are OFF: the
- * console passes every holder agent it lists, so walking descendants would
- * return the same rung twice under two lineage paths.
+ * THE read, paged and bounded. Every caller — the standing table, the batch
+ * dry-run, the post-batch census — goes through here so there is one place
+ * that pages, one place that caps concurrency, and one place that sums what
+ * the server withheld.
  */
-export async function fetchStandingImpact(
+export async function fetchImpact(
   dispatch: AppDispatch,
   agentIds: readonly string[],
+  options: FetchImpactOptions,
 ): Promise<StandingImpact> {
   const unique = Array.from(new Set(agentIds)).sort();
   const pages: string[][] = [];
@@ -298,20 +329,24 @@ export async function fetchStandingImpact(
   // agents. Firing every page at once would pin the serving loop; two at a
   // time keeps the read honest without starving everyone else.
   const readPage = async (page: string[]): Promise<ImpactReport> => {
-      const response = await dispatch(
-        callApi({
-          path: "/mandates/impact",
-          method: "POST",
-          body: { agent_ids: page, include_descendants: false },
-        }),
+    const response = await dispatch(
+      callApi({
+        path: "/mandates/impact",
+        method: "POST",
+        body: {
+          agent_ids: page,
+          include_descendants: options.includeDescendants,
+          delta: options.delta ?? null,
+        },
+      }),
+    );
+    if (response.error) throw new Error(response.error.message);
+    if (!isImpactReport(response.data)) {
+      throw new Error(
+        "POST /mandates/impact did not return an impact report — the grades are unknown, not clean.",
       );
-      if (response.error) throw new Error(response.error.message);
-      if (!isImpactReport(response.data)) {
-        throw new Error(
-          "POST /mandates/impact did not return an impact report — the grades are unknown, not clean.",
-        );
-      }
-      return response.data;
+    }
+    return response.data;
   };
   const IMPACT_PAGE_CONCURRENCY = 2;
   const reports: ImpactReport[] = new Array<ImpactReport>(pages.length);
@@ -329,10 +364,20 @@ export async function fetchStandingImpact(
       () => worker(),
     ),
   );
+  return mergeImpactReports(reports);
+}
+
+/** Sum a set of page reports into one — exported so a test can prove the arithmetic. */
+export function mergeImpactReports(
+  reports: readonly ImpactReport[],
+): StandingImpact {
   const sentences = new Set<string>();
+  const unknownSentences = new Set<string>();
+  const unknownAgentIds = new Set<string>();
   let withheldTotal = 0;
   let agentsExamined = 0;
   let computedAt = "";
+  let dryRun = reports.length > 0;
   const verdicts: ImpactVerdict[] = [];
   for (const report of reports) {
     verdicts.push(...(report.verdicts ?? []));
@@ -340,16 +385,338 @@ export async function fetchStandingImpact(
     if (report.withheld?.sentence && (report.withheld.total ?? 0) > 0) {
       sentences.add(report.withheld.sentence);
     }
+    for (const id of report.unknown_agent_ids ?? []) unknownAgentIds.add(id);
+    if (report.unknown_sentence && (report.unknown_agent_ids ?? []).length > 0) {
+      unknownSentences.add(report.unknown_sentence);
+    }
     agentsExamined += report.agents_examined ?? 0;
     if (report.computed_at > computedAt) computedAt = report.computed_at;
+    if (report.dry_run !== true) dryRun = false;
   }
   return {
     verdicts,
     withheldTotal,
     withheldSentences: Array.from(sentences),
     agentsExamined,
+    unknownAgentIds: Array.from(unknownAgentIds),
+    unknownSentences: Array.from(unknownSentences),
+    dryRun,
     computedAt,
   };
+}
+
+/** Sum several already-merged reads (a dry run with one delta per model). */
+export function mergeStandingImpacts(
+  parts: readonly StandingImpact[],
+): StandingImpact {
+  const merged: StandingImpact = {
+    verdicts: [],
+    withheldTotal: 0,
+    withheldSentences: [],
+    agentsExamined: 0,
+    unknownAgentIds: [],
+    unknownSentences: [],
+    dryRun: parts.length > 0 && parts.every((part) => part.dryRun),
+    computedAt: "",
+  };
+  const withheld = new Set<string>();
+  const unknownSentences = new Set<string>();
+  const unknownIds = new Set<string>();
+  for (const part of parts) {
+    merged.verdicts.push(...part.verdicts);
+    merged.withheldTotal += part.withheldTotal;
+    for (const sentence of part.withheldSentences) withheld.add(sentence);
+    for (const sentence of part.unknownSentences) unknownSentences.add(sentence);
+    for (const id of part.unknownAgentIds) unknownIds.add(id);
+    merged.agentsExamined += part.agentsExamined;
+    if (part.computedAt > merged.computedAt) merged.computedAt = part.computedAt;
+  }
+  merged.withheldSentences = Array.from(withheld);
+  merged.unknownSentences = Array.from(unknownSentences);
+  merged.unknownAgentIds = Array.from(unknownIds);
+  return merged;
+}
+
+/**
+ * Grade every rung the named agents hold, directly. Descendants are OFF: the
+ * console passes every holder agent it lists, so walking descendants would
+ * return the same rung twice under two lineage paths.
+ */
+export function fetchStandingImpact(
+  dispatch: AppDispatch,
+  agentIds: readonly string[],
+): Promise<StandingImpact> {
+  return fetchImpact(dispatch, agentIds, { includeDescendants: false });
+}
+
+// ---------------------------------------------------------------------------
+// The write (I3): advance and revert.
+// ---------------------------------------------------------------------------
+
+function isAdvanceReport(value: unknown): value is AdvanceReport {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as { batch_id?: unknown; results?: unknown; action?: unknown };
+  return (
+    typeof record.batch_id === "string" &&
+    (record.results === undefined || Array.isArray(record.results)) &&
+    (record.action === "advance" || record.action === "revert")
+  );
+}
+
+/**
+ * Move the named pins. Sends exactly the read's tokens (R9); the server judges
+ * every row again as the actor before it writes, and answers per row (R8) —
+ * advanced, refused or excluded, each with its own sentence.
+ */
+export async function postAdvance(
+  dispatch: AppDispatch,
+  verdicts: readonly ImpactVerdict[],
+  batchLabel: string,
+): Promise<AdvanceReport> {
+  const response = await dispatch(
+    callApi({
+      path: "/mandates/impact/advance",
+      method: "POST",
+      body: buildAdvancePayload(verdicts, batchLabel),
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!isAdvanceReport(response.data)) {
+    throw new Error(
+      "POST /mandates/impact/advance did not return a batch report — whether any pin moved is unknown; reload the table before acting again.",
+    );
+  }
+  return response.data;
+}
+
+/**
+ * Put a batch (or one rung of it) back where the ledger says it was. The
+ * server refuses, by sentence, a row outside the organization's revert window
+ * or one already reverted; the sentence reaches the screen verbatim.
+ */
+export async function postRevert(
+  dispatch: AppDispatch,
+  batchId: string,
+  rowId: string | null,
+  batchLabel: string,
+): Promise<AdvanceReport> {
+  const response = await dispatch(
+    callApi({
+      path: "/mandates/impact/revert",
+      method: "POST",
+      body: { batch_id: batchId, row_id: rowId, batch_label: batchLabel },
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!isAdvanceReport(response.data)) {
+    throw new Error(
+      "POST /mandates/impact/revert did not return a batch report — whether any pin moved back is unknown; reload the table before acting again.",
+    );
+  }
+  return response.data;
+}
+
+/** `${holder_kind}:${row_id}` — the one identity a rung has across reads, tokens and results. */
+export function rungIdentityOf(
+  rung: Pick<ApplyToken, "holder_kind" | "row_id">,
+): string {
+  return `${rung.holder_kind}:${rung.row_id}`;
+}
+
+/** Results keyed by rung identity, so a row can show what the last write said about it. */
+export function indexResultsByRung(
+  report: AdvanceReport,
+): Map<string, AdvanceRowResult> {
+  const out = new Map<string, AdvanceRowResult>();
+  for (const result of report.results ?? []) {
+    out.set(rungIdentityOf(result.token), result);
+  }
+  return out;
+}
+
+export interface ResultStatusMeta {
+  label: string;
+  toneClassName: string;
+}
+
+export const RESULT_STATUS_META: Record<AdvanceRowStatus, ResultStatusMeta> = {
+  advanced: {
+    label: "Advanced",
+    toneClassName:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  },
+  reverted: {
+    label: "Reverted",
+    toneClassName:
+      "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
+  },
+  refused: {
+    label: "Refused",
+    toneClassName:
+      "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400",
+  },
+  excluded: {
+    label: "Excluded",
+    toneClassName:
+      "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  },
+};
+
+/**
+ * One sentence for the toast after a write — counts only; the per-row
+ * sentences live on the rows. The server's counts are trusted over a recount.
+ */
+export function summarizeAdvanceReport(report: AdvanceReport): string {
+  const counts = report.counts ?? {};
+  const total = counts.total ?? report.results?.length ?? 0;
+  const parts: string[] = [];
+  if (report.action === "revert") {
+    parts.push(`${counts.reverted ?? 0} of ${total} put back`);
+  } else {
+    parts.push(`${counts.advanced ?? 0} of ${total} advanced`);
+  }
+  if ((counts.refused ?? 0) > 0) parts.push(`${counts.refused} refused`);
+  if ((counts.excluded ?? 0) > 0) parts.push(`${counts.excluded} excluded`);
+  return parts.join(", ") + ".";
+}
+
+/** The rows of a batch that actually moved and can therefore be put back. */
+export function revertableRows(report: AdvanceReport): AdvanceRowResult[] {
+  return (report.results ?? []).filter((row) => row.status === "advanced");
+}
+
+// ---------------------------------------------------------------------------
+// The batch panel's three tiers (I5).
+// ---------------------------------------------------------------------------
+
+/**
+ * Arman's three piles, plus the two a batch must name rather than hide:
+ *   safe    — only low-risk things changed AND the settings check ran clean:
+ *             one button moves them all.
+ *   drift   — the change itself is low-risk but the programmatic settings
+ *             check found something (or could not run), or the output changed
+ *             (orange): click through, fix, or advance anyway.
+ *   red     — variables or context slots changed: open one, or advance anyway.
+ *   blocked — a blocker or someone else's personal pin (R17, I12): shown by
+ *             name with the reason, never selectable.
+ *   current — already on the newest saved version; nothing to do.
+ */
+export type BatchTier = "safe" | "drift" | "red" | "blocked" | "current";
+
+export const BATCH_TIER_ORDER: readonly BatchTier[] = [
+  "red",
+  "drift",
+  "safe",
+  "blocked",
+  "current",
+];
+
+export interface BatchTierMeta {
+  label: string;
+  /** What the pile means and what the door is, in words. */
+  meaning: string;
+  toneClassName: string;
+}
+
+export const BATCH_TIER_META: Record<BatchTier, BatchTierMeta> = {
+  safe: {
+    label: "Safe",
+    meaning:
+      "Only low-risk things changed and the settings check ran clean. One button moves all of these.",
+    toneClassName:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  },
+  drift: {
+    label: "Check settings",
+    meaning:
+      "Low-risk change, but the settings check found something (or could not run), or the output changed. Click through each one, or advance it anyway.",
+    toneClassName:
+      "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  },
+  red: {
+    label: "Red",
+    meaning:
+      "Variables or context slots changed — the most common way a job breaks. Open it, or advance it anyway.",
+    toneClassName:
+      "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400",
+  },
+  blocked: {
+    label: "Not in this batch",
+    meaning:
+      "Blocked, or a person's own pin — named here with the reason; never moved by a batch.",
+    toneClassName: "border-border bg-muted text-muted-foreground",
+  },
+  current: {
+    label: "Current",
+    meaning: "Already on the newest saved version. Nothing to do.",
+    toneClassName: "border-border text-muted-foreground",
+  },
+};
+
+export function batchTierOf(verdict: ImpactVerdict): BatchTier {
+  const eligibility = batchEligibilityOf(verdict);
+  if (!eligibility.batchable) {
+    // A dry run has no target token by design (R23) — that is not a blocker,
+    // and a current row is not blocked either; both are told apart here.
+    if (verdict.blocker || verdict.principal.kind === "user") return "blocked";
+    if (!isBehindLatest(verdict)) return "current";
+  }
+  if (verdict.grade === "red") return "red";
+  if (verdict.grade === "orange") return "drift";
+  if (settingsSignalOf(verdict).state !== "clean") return "drift";
+  return "safe";
+}
+
+/** A row a person may move from the batch panel — safe, drift or red, never blocked/current. */
+export function isBatchActionable(verdict: ImpactVerdict): boolean {
+  const tier = batchTierOf(verdict);
+  return (
+    (tier === "safe" || tier === "drift" || tier === "red") &&
+    batchEligibilityOf(verdict).batchable
+  );
+}
+
+export interface BatchTierCounts {
+  agents: number;
+  mandates: number;
+  rungs: number;
+  byTier: Record<BatchTier, number>;
+}
+
+export function countBatchTiers(
+  verdicts: readonly ImpactVerdict[],
+): BatchTierCounts {
+  const byTier: Record<BatchTier, number> = {
+    safe: 0,
+    drift: 0,
+    red: 0,
+    blocked: 0,
+    current: 0,
+  };
+  const agents = new Set<string>();
+  const mandates = new Set<string>();
+  for (const verdict of verdicts) {
+    byTier[batchTierOf(verdict)] += 1;
+    agents.add(verdict.agent_id);
+    mandates.add(verdict.mandate_key);
+  }
+  return { agents: agents.size, mandates: mandates.size, rungs: verdicts.length, byTier };
+}
+
+/**
+ * The headline sentence Arman asked for: "N agents, M mandates: x safe /
+ * y to check / z red" — plus the piles a batch must name rather than hide.
+ */
+export function describeBatch(counts: BatchTierCounts): string {
+  const head = `${counts.agents} agent${counts.agents === 1 ? "" : "s"}, ${counts.mandates} mandate${counts.mandates === 1 ? "" : "s"} (${counts.rungs} pin${counts.rungs === 1 ? "" : "s"})`;
+  const piles = [
+    `${counts.byTier.safe} safe`,
+    `${counts.byTier.drift} to check`,
+    `${counts.byTier.red} red`,
+  ];
+  if (counts.byTier.blocked > 0) piles.push(`${counts.byTier.blocked} not in this batch`);
+  if (counts.byTier.current > 0) piles.push(`${counts.byTier.current} already current`);
+  return `${head}: ${piles.join(" / ")}`;
 }
 
 /** Verdicts grouped by mandate key: the mandate's own default rung, then its bindings. */
@@ -394,6 +761,7 @@ export function versionLabel(number: number | null | undefined): string {
  */
 export function describeAdvance(
   verdicts: readonly ImpactVerdict[],
+  revertWindow: RevertWindow,
 ): { title: string; description: string; moves: string[] } {
   const green = verdicts.filter(
     (v) => v.grade === "green" || v.grade === "identical",
@@ -409,7 +777,72 @@ export function describeAdvance(
     description:
       `This moves ${verdicts.length} ${noun} from the versions they run now to the newest saved version of their agent — every run of those jobs uses the new version from the moment it lands. ` +
       `${green} ${green === 1 ? "is" : "are"} green or identical; ${anyway} ${anyway === 1 ? "is" : "are"} orange or red and you are choosing to advance ${anyway === 1 ? "it" : "them"} anyway. ` +
-      `A pin that moved since this page read it is refused, not overwritten. Each moved pin can be reverted within your organization's revert window.`,
+      `A pin that moved since this page read it is refused, not overwritten. ${revertWindowSentence(revertWindow)}`,
     moves,
+  };
+}
+
+/**
+ * The undo window, as the dialog names it. The platform default is the
+ * `agent_impact.revert_window_hours` knob (72 h on 2026-09-14); an organization
+ * may override it, and the server judges every revert against the row's own
+ * organization — so the dialog names the platform value and says so, rather
+ * than promising a number it did not check per row.
+ */
+export type RevertWindow =
+  | { state: "known"; hours: number }
+  | { state: "unknown"; why: string };
+
+export const REVERT_WINDOW_KNOB = {
+  feature: "agent_impact",
+  key: "revert_window_hours",
+} as const;
+
+export async function readRevertWindow(): Promise<RevertWindow> {
+  try {
+    const hours = await knobInt(REVERT_WINDOW_KNOB.feature, REVERT_WINDOW_KNOB.key);
+    return { state: "known", hours };
+  } catch (error) {
+    return { state: "unknown", why: describeError(error) };
+  }
+}
+
+export function revertWindowSentence(window: RevertWindow): string {
+  if (window.state === "known") {
+    return `Undo: each moved pin can be put back for ${window.hours} hours after the move (the platform default; an organization may set its own window, and the server applies the row's own).`;
+  }
+  return `Undo: each moved pin can be put back within the organization's revert window — this page could not read the platform default (${window.why}), so the server's answer on each revert is the one that counts.`;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** The consequence sentence a revert states before the click. */
+export function describeRevert(
+  rows: readonly AdvanceRowResult[],
+  scope: "batch" | "row",
+  /** The verdicts the advance was made from, so the dialog can name versions. */
+  verdictByRung: ReadonlyMap<string, ImpactVerdict>,
+): { title: string; description: string; moves: string[] } {
+  const noun = rows.length === 1 ? "pin" : "pins";
+  return {
+    title:
+      scope === "batch"
+        ? `Put ${rows.length} ${noun} back?`
+        : `Put ${rows[0]?.mandate_key ?? "this pin"} back?`,
+    description:
+      `This moves ${rows.length} ${noun} back to the version${rows.length === 1 ? "" : "s"} recorded before the advance — every run of ${rows.length === 1 ? "that job" : "those jobs"} uses the older version again from the moment it lands. ` +
+      `A pin that moved again since the advance, or whose revert window has passed, is refused with the reason, not forced.`,
+    moves: rows.map((row) => {
+      const verdict = verdictByRung.get(rungIdentityOf(row.token));
+      const from = verdict ? versionLabel(verdict.latest_version_number) : "the advanced version";
+      const to = verdict
+        ? versionLabel(verdict.pinned_version_number)
+        : row.prior_pinned_version_id
+          ? "the prior pinned version"
+          : "tracking latest (no pin)";
+      return `${row.mandate_key ?? row.token.row_id}: ${from} → ${to}`;
+    }),
   };
 }

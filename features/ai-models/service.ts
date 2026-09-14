@@ -61,6 +61,8 @@ type ReplaceModelReferencesResult = {
   agents: number;
   builtins: number;
   templates: number;
+  /** Every agent.definition id the write touched — the post-batch impact scope (I5). */
+  agent_ids: string[];
 };
 
 function boundaryError(path: string, expected: string): Error {
@@ -75,6 +77,13 @@ function requireJsonObject(value: unknown, path: string): JsonObject {
 function requireString(value: unknown, path: string): string {
   if (typeof value !== "string") throw boundaryError(path, "a string");
   return value;
+}
+
+function requireStringArray(value: unknown, path: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw boundaryError(path, "an array of strings");
+  }
+  return value as string[];
 }
 
 function requireFiniteNumber(value: unknown, path: string): number {
@@ -113,6 +122,10 @@ function parseReplaceModelReferencesResult(
     templates: requireFiniteNumber(
       record.templates,
       "replace-references response.templates",
+    ),
+    agent_ids: requireStringArray(
+      record.agent_ids,
+      "replace-references response.agent_ids",
     ),
   };
 }

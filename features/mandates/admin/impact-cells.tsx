@@ -19,6 +19,8 @@ import {
   ExternalLink,
   FastForward,
   Loader2,
+  Undo2,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,16 +34,23 @@ import {
   BLOCKER_META,
   GRADE_META,
   IMPACT_GRADE_ORDER,
+  RESULT_STATUS_META,
   batchEligibilityOf,
   blockerKeyOf,
   isAdvanceAnyway,
+  revertableRows,
+  rungIdentityOf,
   setAsideReasonOf,
   settingsSignalOf,
+  summarizeAdvanceReport,
   versionLabel,
+  type AdvanceReport,
+  type AdvanceRowResult,
   type ImpactBlocker,
   type ImpactVerdict,
   type StandingImpact,
 } from "./impact";
+import type { ImpactWriteBusy } from "./impact-advance";
 
 /** Why a row carries no verdict — each is a different fact. */
 export type UngradedReason = "loading" | "read_failed" | "no_agent" | "not_returned";
@@ -459,6 +468,164 @@ export function StandingImpactStrip({
             Advance all green ({staleSafeCount})
           </Button>
         </>
+      ) : null}
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// After a write: per-row results and the revert door (R8, I8).
+// ---------------------------------------------------------------------------
+
+/**
+ * What the last write said about one rung — the status and the server's own
+ * sentence, verbatim. Rendered inside a table cell or a list row.
+ */
+export function AdvanceResultBadge({
+  result,
+  compact = false,
+}: {
+  result: AdvanceRowResult;
+  compact?: boolean;
+}) {
+  const meta = RESULT_STATUS_META[result.status];
+  return (
+    <span className="inline-flex max-w-full flex-wrap items-center gap-1">
+      <Badge variant="outline" className={meta.toneClassName} title={result.reason ?? undefined}>
+        {meta.label}
+      </Badge>
+      {!compact && result.reason ? (
+        <span className="text-[11px] leading-snug text-muted-foreground">
+          {result.reason}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * The batches this screen wrote, newest first, each with its per-row results
+ * and its revert door — the whole batch, or one rung. A refusal's sentence
+ * is the server's and is shown as it came.
+ */
+export function AdvanceResultsCard({
+  batches,
+  verdictByRung,
+  busy,
+  onRevert,
+  onDismiss,
+}: {
+  batches: readonly AdvanceReport[];
+  verdictByRung: ReadonlyMap<string, ImpactVerdict>;
+  busy: ImpactWriteBusy;
+  onRevert: (batch: AdvanceReport, rowId: string | null) => void;
+  onDismiss: () => void;
+}) {
+  if (batches.length === 0) return null;
+  const [latest, ...earlier] = batches;
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-card px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium">
+          {latest.action === "revert" ? "Revert" : "Batch"}{" "}
+          {latest.batch_label ? `“${latest.batch_label}”` : ""} — {summarizeAdvanceReport(latest)}
+        </span>
+        <span className="font-mono text-[10px] text-muted-foreground">{latest.batch_id}</span>
+        {latest.action === "advance" && revertableRows(latest).length > 0 ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto h-7 gap-1 text-xs"
+            disabled={busy !== null}
+            title="Put every pin this batch moved back where it was — the next dialog names each one."
+            onClick={() => onRevert(latest, null)}
+          >
+            {busy === "revert" ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Undo2 className="h-3 w-3" />
+            )}
+            Revert whole batch ({revertableRows(latest).length})
+          </Button>
+        ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          className={`h-7 w-7 p-0 ${latest.action === "advance" && revertableRows(latest).length > 0 ? "" : "ml-auto"}`}
+          aria-label="Dismiss batch results"
+          title="Hide these results (the server ledger keeps them)."
+          onClick={onDismiss}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <ul className="max-h-64 space-y-1 overflow-y-auto">
+        {(latest.results ?? []).map((row) => {
+          const verdict = verdictByRung.get(rungIdentityOf(row.token));
+          return (
+            <li
+              key={rungIdentityOf(row.token)}
+              className="flex flex-wrap items-start gap-x-2 gap-y-0.5 border-t border-border/60 pt-1 first:border-t-0 first:pt-0"
+            >
+              <span className="font-mono text-[11px]">
+                {row.mandate_key ?? row.token.row_id}
+                {row.token.holder_kind === "binding" ? " (binding)" : ""}
+              </span>
+              {verdict ? (
+                <span className="inline-flex items-center gap-1 tabular-nums text-muted-foreground">
+                  {versionLabel(verdict.pinned_version_number)}
+                  <ArrowRight className="h-3 w-3" />
+                  {versionLabel(verdict.latest_version_number)}
+                </span>
+              ) : null}
+              <AdvanceResultBadge result={row} />
+              {latest.action === "advance" && row.status === "advanced" ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 gap-1 px-1.5 text-[11px]"
+                  disabled={busy !== null}
+                  title="Put this one pin back where it was."
+                  onClick={() => onRevert(latest, row.token.row_id)}
+                >
+                  <Undo2 className="h-3 w-3" />
+                  Revert
+                </Button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      {earlier.length > 0 ? (
+        <details className="text-muted-foreground">
+          <summary className="cursor-pointer">
+            {earlier.length} earlier {earlier.length === 1 ? "batch" : "batches"} this session
+          </summary>
+          <ul className="mt-1 space-y-0.5">
+            {earlier.map((batch) => (
+              <li key={batch.batch_id} className="flex flex-wrap items-center gap-2">
+                <span>
+                  {batch.action === "revert" ? "Revert" : "Batch"}{" "}
+                  {batch.batch_label ? `“${batch.batch_label}”` : ""} — {summarizeAdvanceReport(batch)}
+                </span>
+                <span className="font-mono text-[10px]">{batch.batch_id}</span>
+                {batch.action === "advance" && revertableRows(batch).length > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    disabled={busy !== null}
+                    onClick={() => onRevert(batch, null)}
+                  >
+                    <Undo2 className="h-3 w-3" />
+                    Revert ({revertableRows(batch).length})
+                  </Button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
     </div>
   );

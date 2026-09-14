@@ -315,6 +315,10 @@ const MandateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/mandates/MandateWindow"),
   { ssr: false },
 );
+const ImpactBatchWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/mandates/ImpactBatchWindow"),
+  { ssr: false },
+);
 const AgentSidebarOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
@@ -1258,6 +1262,9 @@ export default function OverlayController() {
     mandateWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "mandateWindow"),
     ),
+    impactBatchWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "impactBatchWindow"),
+    ),
     aiVoiceWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "aiVoiceWindow"),
     ),
@@ -1644,6 +1651,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     mandateWindow: useAppSelector((s) =>
       selectOverlayData(s, "mandateWindow"),
+    ) as Record<string, unknown> | null,
+    impactBatchWindow: useAppSelector((s) =>
+      selectOverlayData(s, "impactBatchWindow"),
     ) as Record<string, unknown> | null,
     aiVoiceWindow: useAppSelector((s) =>
       selectOverlayData(s, "aiVoiceWindow"),
@@ -3155,6 +3165,49 @@ export default function OverlayController() {
             initialView={
               data?.initialView === "info" || data?.initialView === "surface"
                 ? data.initialView
+                : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* impactBatchWindow */}
+      {(() => {
+        const isOpen = isOpenById.impactBatchWindow;
+        const data = dataById.impactBatchWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const stringList = (value: unknown): string[] =>
+          Array.isArray(value)
+            ? (value as unknown[]).filter(
+                (entry): entry is string => typeof entry === "string",
+              )
+            : [];
+        return (
+          <ImpactBatchWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "impactBatchWindow" }))
+            }
+            agentIds={stringList(data?.agentIds)}
+            mode={data?.mode === "dry_run" ? "dry_run" : "post_batch"}
+            delta={
+              typeof data?.delta === "object" && data.delta !== null
+                ? (data.delta as { model_id?: string | null; settings?: Record<string, unknown> | null })
+                : null
+            }
+            batchLabel={
+              typeof data?.batchLabel === "string" ? data.batchLabel : undefined
+            }
+            sourceSentence={
+              typeof data?.sourceSentence === "string"
+                ? data.sourceSentence
+                : undefined
+            }
+            preselectedRungIds={stringList(data?.preselectedRungIds)}
+            surfaceName={
+              typeof data?.surfaceName === "string"
+                ? data.surfaceName
                 : undefined
             }
           />

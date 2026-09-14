@@ -35,7 +35,6 @@ export type MandateHealth =
   | "agent archived"
   | "code ↔ contract drift"
   | "output contract unmet"
-  | "version drift"
   | "no holder yet"
   | "ok";
 
@@ -62,7 +61,6 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   // contract, which `enforced_holder_contract` keeps in force ALWAYS. Ranked
   // above version drift because a drifted pin still runs and this does not.
   "output contract unmet": 5.5,
-  "version drift": 6,
   "no holder yet": 7,
   ok: 8,
 };
@@ -320,8 +318,6 @@ export function buildRow(
               ? "code ↔ contract drift"
               : outputContractUnmet
                 ? "output contract unmet"
-                : drift
-                ? "version drift"
                 : hasPin
                   ? "ok"
                   : "no holder yet";
@@ -403,7 +399,6 @@ export const HEALTH_CLASS: Record<MandateHealth, string> = {
   "code ↔ agent drift": "text-foreground border-destructive/40 bg-destructive/10",
   "code truth import failed":
     "text-foreground border-warning/40 bg-warning/10",
-  "version drift": "text-foreground border-warning/40 bg-warning/10",
   "code ↔ contract drift": "text-foreground border-warning/40 bg-warning/10",
   "output contract unmet": "text-foreground border-destructive/40 bg-destructive/10",
   "agent archived": "text-foreground border-destructive/40 bg-destructive/10",
@@ -419,8 +414,6 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
     "aidream found the code declaration but could not import it, so this mandate cannot be verified from live code.",
   "code ↔ contract drift":
     "The live code declaration and the mandate's stored contract cache disagree. Code truth is authoritative.",
-  "version drift":
-    "A newer saved version of this agent exists — users keep getting the pinned one until the pin is updated.",
   "unresolved pin":
     "This mandate's agent could not be read — it may be another user's personal agent, or a deleted record. Rebind it to a system agent.",
   "not a system agent":

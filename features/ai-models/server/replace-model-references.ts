@@ -11,6 +11,17 @@ type AgentSettingsRow = {
   model_tiers: Record<string, unknown> | null;
 };
 
+/**
+ * The change note stamped on every agent version this batch creates
+ * (Agent Change Impact I5, discovery A Gap 9). The snapshot trigger reads
+ * `app.change_note` only inside the writing transaction, which PostgREST
+ * cannot set — so the note is written onto the version row the UPDATE just
+ * produced (`agent.definition.version` is bumped to that row's number).
+ */
+function batchChangeNote(oldId: string, newId: string): string {
+  return `Deprecated model replaced ${oldId} → ${newId} (deprecated-models audit batch)`;
+}
+
 function buildModelReferenceFilter(oldId: string): string {
   return [
     `model_id.eq.${oldId}`,
@@ -69,8 +80,8 @@ async function applyDefinitionUpdates(
   oldId: string,
   newId: string,
   newSettings?: LLMParams,
-): Promise<number> {
-  let updated = 0;
+): Promise<string[]> {
+  const updated: string[] = [];
 
   for (const row of rows) {
     const hasColumn = row.model_id === oldId;
@@ -99,10 +110,29 @@ async function applyDefinitionUpdates(
       .from("definition")
       .update(payload)
       .eq("id", row.id)
-      .select("id");
+      .select("id, version");
 
     if (error) throw error;
-    if (data && data.length > 0) updated += data.length;
+    for (const written of data ?? []) {
+      updated.push(written.id);
+      // Name the batch on the snapshot the trigger just created. Best effort
+      // by design: a missing note never undoes a written replacement, but a
+      // failed stamp is said, not swallowed.
+      if (typeof written.version === "number") {
+        const { error: noteError } = await supabase
+          .schema("agent")
+          .from("definition_version")
+          .update({ change_note: batchChangeNote(oldId, newId) })
+          .eq("agent_id", written.id)
+          .eq("version_number", written.version)
+          .is("change_note", null);
+        if (noteError) {
+          console.warn(
+            `[replace-model-references] agent ${written.id} v${written.version} was replaced but its change note could not be stamped: ${noteError.message}`,
+          );
+        }
+      }
+    }
   }
 
   return updated;
@@ -112,6 +142,12 @@ export interface ReplaceModelReferencesResult {
   agents: number;
   builtins: number;
   templates: number;
+  /**
+   * Every `agent.definition` id this call rewrote (personal agents AND
+   * builtins) — the scope the post-batch impact panel grades (I5). Templates
+   * are not agents and hold no mandate, so they are counted, not listed.
+   */
+  agent_ids: string[];
 }
 
 export async function replaceModelReferencesAdmin(
@@ -202,7 +238,7 @@ export async function replaceModelReferencesAdmin(
     })(),
   ]);
 
-  const total = agents + builtins + templates;
+  const total = agents.length + builtins.length + templates;
   const candidates =
     (builtinsResult.data?.length ?? 0) +
     (agentsResult.data?.length ?? 0) +
@@ -214,5 +250,10 @@ export async function replaceModelReferencesAdmin(
     );
   }
 
-  return { agents, builtins, templates };
+  return {
+    agents: agents.length,
+    builtins: builtins.length,
+    templates,
+    agent_ids: [...builtins, ...agents],
+  };
 }

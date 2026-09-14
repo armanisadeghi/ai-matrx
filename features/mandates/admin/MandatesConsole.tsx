@@ -149,18 +149,19 @@ import {
   IMPACT_GRADE_ORDER,
   batchEligibilityOf,
   blockerKeyOf,
-  buildAdvancePayload,
-  describeAdvance,
   fetchStandingImpact,
   groupImpactByMandate,
   isBehindLatest,
   isSafeGreen,
   type ImpactBlocker,
   type ImpactGrade,
+  rungIdentityOf,
   type ImpactVerdict,
   type StandingImpact,
 } from "./impact";
+import { useImpactAdvance } from "./impact-advance";
 import {
+  AdvanceResultsCard,
   ImpactBlockerCell,
   ImpactGradeCell,
   ImpactLegend,
@@ -531,6 +532,9 @@ export function MandatesConsole() {
   // what it withheld. A failed read makes every row UNKNOWN, never clean.
   const [impact, setImpact] = useState<StandingImpact | null>(null);
   const [impactError, setImpactError] = useState<string | null>(null);
+  // Bumped after every write so the grades are re-read from the server — a
+  // moved pin is never shown as still behind on the strength of a local edit.
+  const [impactEpoch, setImpactEpoch] = useState(0);
   const holderAgentIds = useMemo((): string[] => {
     if (!data) return [];
     const ids = new Set<string>();
@@ -555,6 +559,8 @@ export function MandatesConsole() {
   useEffect(() => {
     if (holderAgentIds.length === 0) return;
     let cancelled = false;
+    // `impactEpoch` is a deliberate re-read trigger, not a data input.
+    void impactEpoch;
     fetchStandingImpact(dispatch, holderAgentIds)
       .then((report) => {
         if (cancelled) return;
@@ -568,7 +574,7 @@ export function MandatesConsole() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, holderAgentIds]);
+  }, [dispatch, holderAgentIds, impactEpoch]);
   const impactByMandate = useMemo(
     () => (impact ? groupImpactByMandate(impact.verdicts) : null),
     [impact],
@@ -890,7 +896,7 @@ export function MandatesConsole() {
     const summaries = rows.map(toMandateSummary);
     const health: MandatesHealthSummary = {
       ok: 0,
-      version_drift: 0,
+      behind_latest: 0,
       agent_archived: 0,
       not_a_system_agent: 0,
       unresolved_pin: 0,
@@ -900,6 +906,7 @@ export function MandatesConsole() {
       no_holder_yet: 0,
     };
     for (const r of rows) {
+      if (r.behindLatest) health.behind_latest += 1;
       if (r.health === "ok") health.ok += 1;
       else if (r.health === "no holder yet") health.no_holder_yet += 1;
       else if (r.health === "code ↔ agent drift") health.code_agent_drift += 1;
@@ -907,7 +914,6 @@ export function MandatesConsole() {
         health.code_contract_drift += 1;
       else if (r.health === "code truth import failed")
         health.code_truth_import_failed += 1;
-      else if (r.health === "version drift") health.version_drift += 1;
       else if (r.health === "agent archived") health.agent_archived += 1;
       else if (r.health === "unresolved pin") health.unresolved_pin += 1;
       else health.not_a_system_agent += 1;
@@ -1072,58 +1078,31 @@ export function MandatesConsole() {
   // Only rows whose DEFAULT rung is advanceable render a checkbox; a blocked
   // row keeps its per-row door and never rides a batch.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [advancing, setAdvancing] = useState(false);
 
   /**
-   * Consequence first, then the write. The dialog names every pin that moves,
-   * from which version to which, and how many were chosen despite a warning.
-   *
-   * 🚨 THE WRITE DOOR IS NOT IN THIS BUILD'S CONTRACT YET. aidream mounts
-   * `POST /mandates/impact/advance` (commit a9527cd53), but it is not in the
-   * generated `api-types.ts` and not deployed, and a generated file is never
-   * hand-edited. Until the regenerated contract lands, confirming SAYS so in
-   * words and logs the exact payload it would send — it never pretends a pin
-   * moved.
+   * THE write door (I3, I8) through the one shared hook: consequence dialog
+   * naming every pin from → to and the undo window, then
+   * `POST /mandates/impact/advance`, then the server's per-row sentences and
+   * the revert door. After any write the grades are re-read.
    */
-  const advanceVerdicts = async (
-    verdicts: ImpactVerdict[],
-    batchLabel: string,
-  ) => {
-    if (verdicts.length === 0 || advancing) return;
-    const { title, description, moves } = describeAdvance(verdicts);
-    const ok = await confirm({
-      title,
-      description: (
-        <div className="space-y-2 text-xs">
-          <p>{description}</p>
-          <ul className="max-h-48 space-y-0.5 overflow-y-auto rounded border border-border bg-muted/30 p-2 font-mono text-[11px]">
-            {moves.map((move) => (
-              <li key={move}>{move}</li>
-            ))}
-          </ul>
-        </div>
-      ),
-      confirmLabel:
-        verdicts.some((v) => v.grade === "orange" || v.grade === "red")
-          ? `Advance ${verdicts.length} anyway`
-          : `Advance ${verdicts.length}`,
-      cancelLabel: "Keep the current pins",
-      variant: verdicts.some((v) => v.grade === "red")
-        ? "destructive"
-        : "default",
-    });
-    if (!ok) return;
-    setAdvancing(true);
-    try {
-      const payload = buildAdvancePayload(verdicts, batchLabel);
-      console.info("[mandates] advance payload (not sent)", payload);
-      toast.error(
-        `Nothing was moved. The advance door (POST /mandates/impact/advance) is not in this app's API contract yet, so ${verdicts.length} pin${verdicts.length === 1 ? "" : "s"} stay where they are. It lights up when the regenerated server types land.`,
-      );
-    } finally {
-      setAdvancing(false);
+  const verdictByRung = useMemo(() => {
+    const out = new Map<string, ImpactVerdict>();
+    for (const verdict of impact?.verdicts ?? []) {
+      out.set(rungIdentityOf(verdict.apply_token), verdict);
     }
-  };
+    return out;
+  }, [impact]);
+  const writes = useImpactAdvance({
+    verdictByRung,
+    onWritten: () => {
+      setSelectedIds([]);
+      setImpactEpoch((epoch) => epoch + 1);
+      reload();
+    },
+  });
+  const advancing = writes.busy !== null;
+  const advanceVerdicts = (verdicts: ImpactVerdict[], batchLabel: string) =>
+    writes.advance(verdicts, batchLabel);
 
   const advanceSelected = (selected: ConsoleRow[]) =>
     void advanceVerdicts(
@@ -1364,16 +1343,6 @@ export function MandatesConsole() {
                     "none"}
                 </span>
               )}
-              {/* Drift always names both numbers — "version drift" without
-                  saying WHICH versions was the console's top complaint. */}
-              {r.drift && (
-                <Badge
-                  variant="outline"
-                  className={HEALTH_CLASS["version drift"]}
-                >
-                  {r.drift}
-                </Badge>
-              )}
               {r.health === "not a system agent" && twin && (
                 <>
                   <LineageChip
@@ -1565,6 +1534,13 @@ export function MandatesConsole() {
           blockedBehind={impactCounts.blockedBehind}
           onAdvanceAllGreen={advanceAllGreen}
           busy={advancing}
+        />
+        <AdvanceResultsCard
+          batches={writes.batches}
+          verdictByRung={verdictByRung}
+          busy={writes.busy}
+          onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
+          onDismiss={writes.clear}
         />
         {catalogueError && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">

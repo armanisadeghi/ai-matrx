@@ -912,7 +912,6 @@ function CodeAgentDriftPanel({
 export const HOLDER_HEALTH_VERDICTS: readonly MandateHealth[] = [
   "output contract unmet",
   "ok",
-  "version drift",
   "not a system agent",
   "agent archived",
   "no holder yet",
@@ -1060,6 +1059,14 @@ function StatusBanner({
         </div>
       );
     case "ok":
+      // A pin behind the agent's newest version is not a HEALTH state any
+      // more (Agent Change Impact I4, 2026-09-14): the console's Grade and
+      // Blocker columns say how dangerous the gap is. This panel keeps its
+      // single-pin door — the diff and the two remedies — whenever the local
+      // pin trails, so nothing here went missing when the flat state did.
+      if (row.drift != null) {
+        return <DriftPanel row={row} onSaved={onSaved} onTest={onTest} />;
+      }
       return (
         <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -1075,8 +1082,6 @@ function StatusBanner({
           </span>
         </div>
       );
-    case "version drift":
-      return <DriftPanel row={row} onSaved={onSaved} onTest={onTest} />;
     case "not a system agent":
       return <NonSystemPanel row={row} lineage={lineage} onSaved={onSaved} />;
     case "agent archived":
@@ -1718,7 +1723,7 @@ export function MandateDetailView({
   const [pinOpen, setPinOpen] = useState(
     row.health === "agent archived" || row.health === "unresolved pin",
   );
-  const [testOpen, setTestOpen] = useState(row.health === "version drift");
+  const [testOpen, setTestOpen] = useState(row.drift != null);
   // REVIEW TIME. Notes are written in the second something is noticed (from the
   // Agents menu, wherever the job runs) and read back HERE, when the mandate is
   // being judged. Open by default: evidence you have to go looking for is

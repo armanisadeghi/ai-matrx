@@ -369,7 +369,14 @@ export interface MandateSummary {
 /** Health roll-up across all loaded mandates. */
 export interface MandatesHealthSummary {
   ok: number;
-  version_drift: number;
+  /**
+   * Rows whose pin is not the agent's newest saved version, as the impact
+   * read (`POST /mandates/impact`) judges it. Replaced the flat
+   * `version_drift` health state on 2026-09-14 (Agent Change Impact I4): the
+   * server's grade + blocker now say HOW dangerous the gap is; a count alone
+   * says only that it exists.
+   */
+  behind_latest: number;
   agent_archived: number;
   not_a_system_agent: number;
   /** Pins whose agent row the caller could not read (RLS or deleted). */

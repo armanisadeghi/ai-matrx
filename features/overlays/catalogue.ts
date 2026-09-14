@@ -239,6 +239,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  impactBatchWindow: {
+    label: "Change impact",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentSkillsWindow: {
     label: "Agent Skills",
     instanceMode: "singleton",
