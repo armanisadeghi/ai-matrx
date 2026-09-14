@@ -54,7 +54,7 @@ import {
   listKindComponentsFromTables,
 } from "../../registry/schema-source-kind-components";
 import { componentRegistry } from "../../registry/component-registry";
-import { applyIrKindRoute, type IrRoutableBlock } from "../kind-route";
+import { routeBlockAtRegistryVersion } from "../route-at-version";
 import { useContentIrKindVersion } from "../use-registry-repaint";
 import { useEnsureKindRenderable } from "../ensure-kind-renderable";
 import { readEnvelope } from "../../redux/render-block-envelope";
@@ -107,15 +107,20 @@ function instanceBlock(instanceId: string) {
   } as const;
 }
 
-/** The essential BlockRenderer chain: repaint key → demand → route. */
+/**
+ * The essential BlockRenderer chain: repaint key → demand → route.
+ *
+ * 🚨 This used to be `useMemo(() => { void version; return applyIrKindRoute(…) },
+ * [block, version])` — the shape BlockRenderer shipped, and the shape the React
+ * Compiler erases (DD-215c). Jest does not run the compiler, so this harness
+ * passed on semantics production did not have and the suite vouched for a
+ * surface that was broken. It now calls the SAME seam the render path calls.
+ */
 function RoutedType({ block }: { block: ReturnType<typeof instanceBlock> }) {
   const kind = readEnvelope(block.metadata)?.root.kind ?? null;
   const version = useContentIrKindVersion(kind);
   useEnsureKindRenderable(kind);
-  const routed = React.useMemo(() => {
-    void version;
-    return applyIrKindRoute({ ...block } as IrRoutableBlock);
-  }, [block, version]);
+  const routed = routeBlockAtRegistryVersion({ ...block }, version);
   return <div data-routed-type={routed.type} />;
 }
 

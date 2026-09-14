@@ -73,7 +73,22 @@ export type KindComponentIncidentType =
    * reader gets the key/value viewer. Here a component IS bound and a
    * different, wrong one rendered.
    */
-  | "component_read_refused";
+  | "component_read_refused"
+  /**
+   * The reader is looking at a route decision the registry has already moved
+   * past: the block's `__ir_route` marker names one component and the
+   * resolver, in this same browser, now answers with another. The row was READ
+   * fine and the body is present — the render simply never recomputed, so a
+   * plausible-looking platform component stands where the organization's
+   * authored one belongs.
+   *
+   * Distinct from `component_read_refused` (there the read never answered) and
+   * from `generic_floor_render` (there no component is bound at all). This one
+   * is a staleness defect in the render seam, and before DD-215c it was
+   * completely silent: twenty of twenty-one production reads on 2026-09-14
+   * rendered the wrong component and not one of them recorded anything.
+   */
+  | "stale_route_render";
 
 export interface KindComponentIncidentInput {
   kind: string;

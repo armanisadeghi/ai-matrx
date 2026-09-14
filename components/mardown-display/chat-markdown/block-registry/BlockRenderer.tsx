@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
@@ -11,10 +11,8 @@ import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import {
-  applyIrKindRoute,
-  GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "@/features/content-ir/react/kind-route";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/react/kind-route";
+import { routeBlockAtRegistryVersion } from "@/features/content-ir/react/route-at-version";
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
@@ -25,7 +23,6 @@ import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-m
 import {
   resolveAnnouncedKindLoading,
   resolveProvisionalKindRender,
-  resolveSupersededKindRender,
 } from "@/features/content-ir/react/partial-kind-route";
 import {
   ProvisionalKindBoundary,
@@ -290,16 +287,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // (envelope-derived serverData) — e.g. bare/fenced JSON flashcard_set, which
   // the legacy detectors can only call "code". Everything else passes through
   // untouched.
-  // Explicit useMemo is CORRECT here: React Compiler is OFF in this repo
-  // (next.config.js reactCompiler: false), and the route must re-execute
-  // only when the block itself or its kind's registry version changes —
-  // not on every parent render.
-  const block = useMemo(() => {
-    void kindRouteVersion; // registry-arrival invalidation key
-    return (
-      resolveSupersededKindRender(rawBlock)?.block ?? applyIrKindRoute(rawBlock)
-    );
-  }, [rawBlock, kindRouteVersion]);
+  // 🚨 THE VERSION IS AN ARGUMENT, NEVER A DEPENDENCY (DD-215c). This used to
+  // be a `useMemo` over `applyIrKindRoute(rawBlock)` whose invalidation key was
+  // `void kindRouteVersion;` and whose comment said React Compiler was off.
+  // React Compiler is ON (`next.config.js` reactCompiler: true); it re-infers
+  // memo inputs from data flow, a `void`-ed value is not an input, and the
+  // shipped cache was keyed on the block alone — so a block that mounted before
+  // its organization's component row landed kept the platform's bundled
+  // component for the life of the mount, silently, on production. Jest does not
+  // run the compiler, which is why three lanes' tests said this worked.
+  // `routeBlockAtRegistryVersion` takes the version, so no compiler pass can
+  // decide it is dead. Guard: `pnpm check:registry-repaint`.
+  const block = routeBlockAtRegistryVersion(rawBlock, kindRouteVersion);
 
   const interruptedEnvelope = readEnvelope(block.metadata);
   const hasInterruptedKind = Boolean(

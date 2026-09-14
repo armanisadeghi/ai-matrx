@@ -50,10 +50,20 @@ import React from "react";
 import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
 import { useContentIrKindVersion } from "../use-registry-repaint";
+import { readAtVersionForKey } from "../registry-versioned";
 import { useEnsureKindRenderable } from "../ensure-kind-renderable";
 import type { KindLoadingProps } from "../loading/kind-loading.types";
 
 export type KindSlotPhase = "reserved" | "arriving" | "settled" | "failed";
+
+/**
+ * One entry per kind — the silhouette answer, and the registry version it was
+ * computed at. Bounded by the number of kinds a tab renders.
+ */
+const loadingSlugCache = new Map<
+  string,
+  { version: number; value: ReturnType<typeof resolveLoadingSlugForKind>["slug"] }
+>();
 
 export interface KindSlotProps {
   /**
@@ -106,12 +116,17 @@ export function KindSlot({
   useEnsureKindRenderable(kind ?? null);
   const kindVersion = useContentIrKindVersion(kind ?? null);
 
-  // Explicit memo: React Compiler is OFF in this repo, and resolution should
-  // re-run when the kind or its registry answer changes — not every render.
-  const slug = React.useMemo(() => {
-    void kindVersion; // registry-arrival invalidation key
-    return resolveLoadingSlugForKind(kind).slug;
-  }, [kind, kindVersion]);
+  // 🚨 THE VERSION IS AN ARGUMENT, NEVER A DEPENDENCY (DD-215c). This was a
+  // `React.useMemo` whose invalidation key was `void kindVersion;` and whose
+  // comment said React Compiler was off. It is ON (`next.config.js`
+  // reactCompiler: true), the compiler re-infers memo inputs from data flow, a
+  // `void`-ed value is not an input — so the emitted cache was keyed on `kind`
+  // alone and a definition arriving after the slot mounted never changed the
+  // silhouette. Same defect that froze the kind route on production
+  // (`react/registry-versioned.ts`). Guard: `pnpm check:registry-repaint`.
+  const slug = readAtVersionForKey(loadingSlugCache, kind ?? "", kindVersion, () =>
+    resolveLoadingSlugForKind(kind).slug,
+  );
 
   // ONE root element across every phase — React reconciles it in place, so
   // the container (and the reader's scroll position) survives the swap. A

@@ -13,10 +13,26 @@
  * Granularity contract: each consumer subscribes to ONE kind's version
  * (per-kind counters in both registries, plus a rare wholesale epoch for
  * `replaceDbRows`). A cold/warm arrival for kind X re-renders only mounted
- * blocks of kind X — never every block in every conversation. React
- * Compiler is OFF in this repo (`next.config.js` reactCompiler: false), so
- * consumers pair this with an explicit `useMemo` on (block, version) to
- * keep the route itself from re-executing on unrelated renders.
+ * blocks of kind X — never every block in every conversation.
+ *
+ * 🚨 WHAT YOU MAY DO WITH THE NUMBER THIS RETURNS (DD-215c). React Compiler is
+ * ON (`next.config.js` reactCompiler: true — this comment said the opposite
+ * until 2026-09-14, and the whole defect grew out of that one wrong word).
+ * The compiler re-infers memoization from DATA FLOW, so the version must be a
+ * real input to the registry read it guards:
+ *
+ *   ✅  const block = routeBlockAtRegistryVersion(rawBlock, version);
+ *   ✅  readAtVersionForKey(cache, kind, version, () => resolveComponent(kind, …))
+ *   ❌  useMemo(() => { void version; return read(x); }, [x, version])
+ *
+ * The ❌ form is correct WITHOUT the compiler and silently wrong with it: the
+ * subscription still fires and the component still re-renders, but the emitted
+ * cache is keyed on `x` alone, so the read never re-runs. On production that
+ * handed readers the platform's bundled component in place of their
+ * organization's authored one for the life of a mount, with nothing on screen
+ * and nothing in any queue to say so. Jest does not run the compiler, so tests
+ * of the ❌ form pass. The rule and the primitive: `./registry-versioned.ts`.
+ * Guard: `pnpm check:registry-repaint`.
  */
 
 import { useCallback, useSyncExternalStore } from "react";

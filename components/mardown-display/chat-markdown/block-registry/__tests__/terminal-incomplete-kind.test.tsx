@@ -76,7 +76,13 @@ jest.mock("../block-dispatch", () => ({
     },
 }));
 
+// 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
+// (DD-239). This suite had already stopped running: the session barrier calls
+// `setSessionStateProbe` from this module when the Supabase client is built, and
+// the mock did not have it, so the file died at import with zero tests while
+// still looking like a test file. Spread the real module.
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
   captureError: () => {},
 }));
 
