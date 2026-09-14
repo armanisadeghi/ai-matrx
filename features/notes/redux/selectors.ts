@@ -122,6 +122,11 @@ export const selectNotesListStatus = createSelector(
   (slice) => slice.listStatus,
 );
 
+export const selectNotesListError = createSelector(
+  [selectNotesState],
+  (slice) => slice.listError,
+);
+
 export const selectRealtimeConnected = createSelector(
   [selectNotesState],
   (slice) => slice.realtimeConnected,

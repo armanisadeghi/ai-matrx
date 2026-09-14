@@ -169,6 +169,36 @@ async function assertCurrentNotesUser(expectedUserId: string): Promise<void> {
   }
 }
 
+/** How long the FIRST read after boot waits for the Supabase session to name
+ *  the same user Redux does. */
+export const LIST_SESSION_SETTLE_MS = 6_000;
+
+/**
+ * The list read's auth boundary. `assertCurrentNotesUser` is the right check
+ * for a write mid-session — the session either names this user or it does
+ * not. It is the WRONG check for the first read after a fresh sign-in, where
+ * Redux already holds the user (hydrated from the cookie) while supabase-js is
+ * still restoring the session from storage: the one-shot check threw
+ * `SessionUnavailableError`, the list went back to `idle`, the mount guard
+ * believed it had already fetched, and /notes showed no folders, no notes and
+ * no loading state until something else happened to dispatch a fetch
+ * (2026-09-14: Ava's empty sidebar; Arman's empty /notes that filled in only
+ * after toggling the view menu). So the read WAITS, bounded, for the session
+ * to settle, and only then gives up — loudly.
+ */
+async function awaitCurrentNotesUser(
+  expectedUserId: string,
+  timeoutMs = LIST_SESSION_SETTLE_MS,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const { data, error } = await supabase.auth.getSession();
+    if (!error && data.session?.user.id === expectedUserId) return;
+    if (Date.now() >= deadline) throw new SessionUnavailableError();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+}
+
 function dispatchCustomEvent(name: string, detail?: unknown): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -192,7 +222,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
     dispatch(setListStatus("loading"));
 
     try {
-      await assertCurrentNotesUser(userId);
+      await awaitCurrentNotesUser(userId);
       // DD-137c / §3.3: where this list lands is the `note` token's registry word, not a literal.
       const ownerOnly = await scopeToOwner("note");
       const { data, error } = await runWithSessionRetry(() => {
@@ -240,7 +270,15 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       dispatch(setListStatus("loaded"));
     } catch (error) {
       if (error instanceof SessionUnavailableError) {
-        dispatch(setListStatus("idle"));
+        // The session never settled on this user within the wait. An `idle`
+        // status here is a screen that lies (a spinner that nothing will
+        // resolve): say what happened and offer the retry.
+        dispatch(
+          setListError(
+            "Your sign-in is still loading, so your notes could not be read yet. Try again in a moment.",
+          ),
+        );
+        dispatch(setListStatus("error"));
       }
       throw error;
     }

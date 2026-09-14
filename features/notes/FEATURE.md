@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-14`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 

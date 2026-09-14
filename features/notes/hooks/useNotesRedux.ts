@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { unwrapResult } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/slices/userSlice";
 import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
   setActiveNote as setActiveNoteAction,
@@ -52,7 +51,10 @@ export function useNotesRedux() {
   const activeNoteId = useAppSelector(selectActiveNoteId);
   const openTabs = useAppSelector(selectOpenTabs);
   const listStatus = useAppSelector(selectNotesListStatus);
-  const { id: userId, authReady } = useAppSelector(selectUser);
+  // Two scalar reads, not the composite `selectUser` (which joins the profile
+  // slice this hook never uses and re-renders on every profile change).
+  const userId = useAppSelector((state) => state.userAuth?.id ?? null);
+  const authReady = useAppSelector((state) => state.userAuth?.authReady ?? false);
 
   const isLoading = listStatus === "loading" || listStatus === "idle";
   const error =
