@@ -78,6 +78,20 @@ function asText(value: unknown): string {
   return "";
 }
 
+/** Footprint enum tokens, in the reader's words — never a raw `location_set`. */
+const FOOTPRINT_LABEL: Record<string, string> = {
+  national: "national",
+  regional: "regional",
+  local: "local",
+  radius: "service radius",
+  location_set: "specific locations",
+  global: "global",
+  online: "online only",
+};
+function footprintLabel(token: string): string {
+  return FOOTPRINT_LABEL[token] ?? token.replace(/_/g, " ");
+}
+
 function asList(value: unknown): string[] {
   return Array.isArray(value) ? value.map(asText).filter(Boolean) : [];
 }
@@ -271,6 +285,13 @@ export function StrategyBriefWorkspace({
           </SectionCard>
 
           <SectionCard title="Facts the AI established">
+            {FACT_ROWS[scope].every((row) => !asText(current.facts[row.key])) ? (
+              <p className="mb-3 text-sm text-foreground">
+                This version was written before the {noun} asked these questions,
+                so none of them are answered yet. Write a new version to establish
+                them.
+              </p>
+            ) : null}
             <dl className="grid gap-3 sm:grid-cols-2">
               {FACT_ROWS[scope].map((row) => {
                 const value = asText(current.facts[row.key]);
@@ -310,7 +331,7 @@ export function StrategyBriefWorkspace({
                     <li key={line.name} className="py-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{line.name}</span>
-                        <Badge variant="outline">{line.footprint}</Badge>
+                        <Badge variant="outline">{footprintLabel(line.footprint)}</Badge>
                         {line.customerSegment ? (
                           <span className="text-xs text-muted-foreground">for {line.customerSegment}</span>
                         ) : null}

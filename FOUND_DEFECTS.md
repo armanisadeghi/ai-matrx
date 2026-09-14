@@ -4036,3 +4036,18 @@ ambient organization is a genuinely different question from the admin one, and t
 the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
 auth admission.
 
+### D313 — The content plan's AI runs view lists nothing while the site's runs exist (2026-09-14)
+
+Found by independent live verification of the site brief on datadestruction.com
+(web.site `38eff4c9-b021-451a-b995-7d9b3d17db5e`). A "Draft brief" run completed
+(`chat.agent_run 641fee79-682c-4b04-81ad-1c1388b13344`, kind `content_plan.brief`,
+edged `web_site → agent_run` in `platform.associations 29d7ef6d…`, role `ai_run`,
+same org), yet `…/content/plan/datadestruction-com/ai-runs` says "No AI runs yet."
+Silent empty, no error. Reader chain: aidream `services/content_plan/ai_runs.py:213`
+→ `agent_runs/__init__.py:147` → `matrx-orm/associations.py:515-519`, whose
+`_load_gated` drops rows it deems unreachable WITHOUT an `actor_id` being passed —
+so every run is dropped and the list lies. Not fixed here (it is the ORM's
+association gate, shared by every association read; the fix must pass the actor
+and be proven on this view). Class: a gated read that receives no actor must
+FAIL loudly, never return an empty list that reads as "nothing exists".
+

@@ -127,6 +127,9 @@ export function useGenerateStrategy(
     onResult: () => {
       void queryClient.invalidateQueries({ queryKey: strategyKeys.all });
     },
+    // The brief row IS the answer and the screen reads it; a finished run must
+    // not re-float its "Done" window on every later visit.
+    keepFinished: false,
     ...(organizationId ? { scopeOverrides: { organization_id: organizationId } } : {}),
     live: {
       label: scope === "brand" ? "Brand strategy" : "Site brief",

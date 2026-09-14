@@ -8,7 +8,9 @@ import { StrategyBriefWorkspace } from "./StrategyBriefWorkspace";
 export function BrandStrategyRoom() {
   const brand = useMarketingBrand();
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    // Same header offset the identity host applies — without it the status
+    // card renders under the shell header on a phone.
+    <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
       <StrategyBriefWorkspace
         scope="brand"
         id={brand.id}
