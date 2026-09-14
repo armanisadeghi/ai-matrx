@@ -3997,3 +3997,19 @@ user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may ru
 ambient organization is a genuinely different question from the admin one, and the answer binds
 the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
 auth admission.
+
+### D313 — `seo.gsc_topic_placement_diff` never finishes for a large site (2026-09-14)
+
+Found while building the one approval queue (KI-045). For All Green Recycling (`d0aff5b6…`) the
+queue's "Inherited offering moved" section shows its error state, and the same call run as the
+database owner went past the SQL tool's timeout; for Data Destruction (`38eff4c9…`) it returns in
+well under a second. The function runs a correlated `history.row_versions` lookup once per
+inherited primary placement of every keyword the site has ever had demand for, so its cost grows
+with the site's keyword history, not with the number of drifted rows. Before this queue the same
+read sat in `PlacementDiffQueue` on the offering tree with the same failure. The queue reports it
+honestly with Retry, so nothing is silent — but a large site can never see its drift. Fix: express
+"previous topic per row" set-based (one `DISTINCT ON (row_id)` pass over `row_versions` for the
+candidate rows) and time a bare EXPLAIN on All Green. Owner: the placement ladder (register KI-050).
+Also in this family: `seo.gsc_confirm_keyword_topic` flips `metadata.placement.confirmed` on the
+SHARED system-tier row, so one site's confirmation confirms it for every tenant and has no
+tenant-safe place for that site's reason (see the tier-blind readers entry above).
