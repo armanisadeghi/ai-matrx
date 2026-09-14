@@ -67990,7 +67990,19 @@ export type Database = {
         }[]
       }
       admin_list_run_history: {
-        Args: { p_limit?: number }
+        Args: {
+          p_activity?: string
+          p_cursor_at?: string
+          p_cursor_id?: string
+          p_cursor_kind?: string
+          p_from?: string
+          p_kinds?: string[]
+          p_operation?: string
+          p_run_id?: string
+          p_status_groups?: string[]
+          p_task_id?: string
+          p_to?: string
+        }
         Returns: {
           ai_call_count: number
           detail: string
@@ -67999,11 +68011,16 @@ export type Database = {
           execution_id: string
           execution_kind: string
           finished_at: string
+          has_more: boolean
           label: string
+          operation: string
+          sort_at: string
           source: string
           started_at: string
           status: string
+          status_group: string
           summary: string
+          task_id: string
           total_cost: number
           total_tokens: number
         }[]
@@ -68177,6 +68194,25 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_run_history_facets: {
+        Args: {
+          p_from?: string
+          p_kinds?: string[]
+          p_status_groups?: string[]
+          p_to?: string
+        }
+        Returns: {
+          ai_run_count: number
+          execution_kind: string
+          failed_count: number
+          label: string
+          last_at: string
+          operation: string
+          quiet_count: number
+          run_count: number
+          task_id: string
+        }[]
       }
       admin_set_access_planner_exclusion: {
         Args: {
