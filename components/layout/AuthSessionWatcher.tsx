@@ -37,6 +37,14 @@
  * when the cookie emptied. Before this, a sign-in from one tab left every
  * other blocked tab blocked until a human pressed Reload on each of ~50.
  *
+ * WHAT "SESSION EXPIRED" USUALLY MEANS (2026-09-14 investigation): not an
+ * expiry. The auth configuration is 7-day tokens, no rotation, no inactivity
+ * timeout. The overlay appears when the account was signed out ELSEWHERE with
+ * the Supabase default scope `global`, which deletes every session on every
+ * device; each open tab's still-valid token then meets `session_not_found`.
+ * The fix lives in `features/shell/auth/useSignOut.ts` (device-scoped sign-out,
+ * super admins warned twice) and `pnpm check:signout-scope`.
+ *
  * The full-screen overlay (lucide icons, Button, the dialog markup) lives in
  * `AuthSessionWatcherImpl.tsx` and is `next/dynamic`-loaded ONLY when one of
  * the two conditions fires — i.e. nearly never — so the modal's dep graph

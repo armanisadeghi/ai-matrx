@@ -227,6 +227,8 @@
     "check:archived-items-law": "tsx scripts/check-archived-items-law.ts",
     "check:archived-items-law:self-test": "tsx scripts/check-archived-items-law.ts --self-test",
     "check:canonical-pickers": "tsx scripts/check-canonical-pickers.ts",
+    "check:signout-scope": "tsx scripts/check-signout-scope.ts",
+    "check:signout-scope:self-test": "tsx scripts/check-signout-scope.ts --self-test",
     "check:canonical-pickers:self-test": "tsx scripts/check-canonical-pickers.ts --self-test",
     "check:run-is-over": "tsx scripts/check-run-is-over.ts",
     "check:run-is-over:self-test": "tsx scripts/check-run-is-over.ts --self-test",

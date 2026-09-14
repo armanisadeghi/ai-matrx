@@ -493,12 +493,6 @@ export async function resetPasswordAction(formData: FormData) {
   );
 }
 
-export async function signOutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  return redirect("/login");
-}
-
 export async function signUpWithGoogleAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;

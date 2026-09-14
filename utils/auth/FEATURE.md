@@ -174,6 +174,7 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-09-14 — sign-out is device-scoped and super admins are warned twice.** Investigation of Arman's recurring "Session Expired" overlay: nothing expired (7-day tokens, no rotation, no inactivity timeout); four `POST /logout` calls in 24h, each with the Supabase default scope `global`, deleted every session on every device — one was a scheduled-task subagent clicking Sign Out through his real Chrome. Now: `features/shell/auth/useSignOut.ts` is THE sign-out primitive (`scope: "local"`, two named warnings for a super admin) used by the header menu, both legacy layouts and `/sign-out`; `signOutAction` deleted; dev-login eviction and the admin-callback revoke are `local`; guard `pnpm check:signout-scope` (+ `:self-test`, in `check:release-gates`); user-level hook `~/.claude/hooks/matrx-chrome-auth-guard.sh` denies Claude-in-Chrome / computer-use sign-in or sign-out on Matrx hosts.
 - **2026-09-12** — Auth submit buttons now preserve their idle dimensions while
   pending, show one centered spinner instead of variable-length visible status
   copy, disable repeat submission, maintain a 44px touch target, and retain an

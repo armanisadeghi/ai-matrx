@@ -4,7 +4,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { type LinkProps } from "next/link";
 import AppLink from "@/components/navigation/AppLink";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createClient } from "@/utils/supabase/client";
+import { useSignOut } from "@/features/shell/auth/useSignOut";
 import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
 
 interface Links {
@@ -189,13 +189,10 @@ function SidebarToggle({
 
 // Logout function component to handle user logout
 function LogoutAction() {
-  const router = useRouter();
+  // The one sign-out primitive: device-scoped, super admins warned twice.
+  const signOut = useSignOut();
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  const handleLogout = () => void signOut();
 
   return (
     <DropdownMenuItem

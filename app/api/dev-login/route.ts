@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
     console.warn(
       `[dev-login] evicting a stale session for ${user.email ?? user.id} — signing in as ${email}`,
     );
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });

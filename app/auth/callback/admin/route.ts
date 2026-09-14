@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
 
     if (!isAdmin) {
       // Revoke the session we just created — do not delete the user record
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
 
       const deniedResponse = NextResponse.redirect(
         loginUrl(
