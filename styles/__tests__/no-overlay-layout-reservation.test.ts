@@ -38,6 +38,16 @@ describe("global fixed alerts preserve reachable page actions", () => {
     expect(SHELL_CSS).toContain("@media (min-width: 640px)");
   });
 
+  it("uses one alarm runway on mobile natural pages and none on the admin outer shell", () => {
+    expect(SHELL_CSS).toContain(
+      ':root[data-schedule-alarm] body:not(:has(.shell-show-dock)) .shell-main',
+    );
+    expect(SHELL_CSS).toContain("overflow: clip");
+    expect(SHELL_CSS).toContain(
+      ':root[data-schedule-alarm] .shell-root[data-pathname^="/administration"] .shell-main::after',
+    );
+  });
+
   it("the alarm publishes semantic state, not a measured height", () => {
     expect(BANNER_TSX).toContain("root.dataset.scheduleAlarm");
     expect(BANNER_TSX).not.toContain("ResizeObserver");

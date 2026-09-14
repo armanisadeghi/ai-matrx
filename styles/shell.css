@@ -1563,7 +1563,14 @@ button.shell-nav-flyout-item {
      chrome (for example the global schedule alarm) changes the available
      height. Tables only expose horizontal overflow; they must never appear to
      trap page scrolling because the shell is moving behind the page scroller. */
-  overflow-y: hidden;
+  /* `hidden` still creates a programmatically scrollable box. `clip` on both
+     axes makes ClientAdminLayout the only scroll owner. */
+  overflow: clip;
+  padding-bottom: 0;
+  scroll-padding-bottom: 0;
+}
+:root[data-schedule-alarm] .shell-root[data-pathname^="/administration"] .shell-main::after {
+  display: none;
 }
 
 /* Ultra-thin auto-hiding scrollbar (global for shell) */
@@ -1638,6 +1645,13 @@ button.shell-nav-flyout-item {
   .shell-main {
     padding-bottom: var(--shell-fixed-alert-clearance);
     scroll-padding-bottom: var(--shell-fixed-alert-clearance);
+  }
+
+  /* The schedule alarm's real ::after runway already supplies this clearance.
+     Keep scroll padding for focus navigation, but do not duplicate the flow
+     reserve on natural pages. Dock routes retain their separate reserve below. */
+  :root[data-schedule-alarm] body:not(:has(.shell-show-dock)) .shell-main {
+    padding-bottom: 0;
   }
 
   body:has(.shell-show-dock) .shell-main {
