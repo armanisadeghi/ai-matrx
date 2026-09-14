@@ -124,6 +124,22 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-14` — **the docked canvas' own chrome can never scroll off the top,
+  and `Source` shows the item's real source.** The pane header and the
+  Preview/Source switcher measured `y = -18.5` on production: not the column's
+  offset (that lands at 44) but the SHELL SCROLL OWNER — `.shell-main` gains a
+  `::after` runway while a fixed notice is on screen, which on a full-height
+  clipping route body (the chat room) is pure slack, and one wheel tick carried
+  the whole surface under the floating header. Fixed in `styles/shell.css`; the
+  real-browser gate is `pnpm test:shell-layout`
+  (`features/shell/layout-gate/shell-scroll-runway.spec.ts`, 1280x720 +
+  390x844, red at `top: -260` without the rule). `Source` no longer prints the
+  redux envelope: `core/canvasSource.ts` resolves the item's own source
+  (document markdown, artifact code, a structured artifact's markdown export,
+  a pointer through its row) and types with no source of their own — every live
+  pane, plus image/iframe — do not offer the switcher at all. The raw envelope
+  stays admin-only in `CanvasArtifactDebugPanel`.
+
 - `2026-09-14` — **an open-in-canvas request can no longer silently do nothing.**
   New `openRequest.ts` (`reportCanvasOpenDrop` + copy) and
   `hooks/useCanvasOpenGuard.ts`; every drop point in the open path announces
