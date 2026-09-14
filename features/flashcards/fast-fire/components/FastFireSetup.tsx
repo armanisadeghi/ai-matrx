@@ -209,8 +209,6 @@ export function FastFireSetup() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoadError(null);
-    setSets(null);
     void (async () => {
       const res = await loadFastFireSets((signal) =>
         fcService.listSets({ signal }),
@@ -227,6 +225,14 @@ export function FastFireSetup() {
       cancelled = true;
     };
   }, [setsAttempt]);
+
+  const retrySetsLoad = () => {
+    // A retry is initiated by the learner. Reset here, not inside the effect,
+    // so the request effect only synchronizes its eventual result.
+    setLoadError(null);
+    setSets(null);
+    setSetsAttempt((attempt) => attempt + 1);
+  };
 
   const selectedSet = sets?.find((s) => s.id === config.setId) ?? null;
 
@@ -258,7 +264,7 @@ export function FastFireSetup() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setSetsAttempt((attempt) => attempt + 1)}
+                onClick={retrySetsLoad}
               >
                 Retry
               </Button>
