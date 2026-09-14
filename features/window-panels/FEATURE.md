@@ -919,3 +919,5 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 - **2026-04-26** — **Pop-out windows (Document Picture-in-Picture) shipped.** See `## Pop-out windows` section above. Any `kind: "window"` entry can now be popped out into a frameless always-on-top floating window via menu click or drag-out gesture. 39 new unit tests; zero TypeScript errors; zero per-window opt-in required.
 - **2026-04-23** — Phases 0–5, 8, 9 shipped. This `FEATURE.md` created; the long-form content previously in `INVENTORY.md` is absorbed above. `usePanelPersistence.ts` / `FloatingPanel.tsx` / `withGlobalState.tsx` / `TODO-persistence-spec.md` deleted. `UnifiedOverlayController` + `OverlaySurface` introduced behind `NEXT_PUBLIC_OVERLAYS_V2` flag. 6 missing URL-sync hydrators filled; dev-time integrity check added. Mobile drawer + card surfaces introduced; `WindowPanel` routes by `registry.mobilePresentation`.
 - **2026-04-11** — `INVENTORY.md` last reviewed.
+
+- 2026-09-13 — Alchemy Portal owner: prepared-resource Tools entry waits for successful attachment and current identity; RunControlsWindow forwards initialTab to the canonical mobile sheet.

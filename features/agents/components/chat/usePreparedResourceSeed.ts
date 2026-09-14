@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Resource } from "@/features/agents/resources/types";
 
 export type PreparedResourceIdentity = { userId: string; organizationId: string };
@@ -30,6 +30,7 @@ export function usePreparedResourceSeed({ conversationId, ready, resources, expe
   reportError(message: string): void;
 }) {
   const consumed = useRef(new Set<string>());
+  const [attachedConversationId, setAttachedConversationId] = useState<string | null>(null);
   useEffect(() => {
     if (!conversationId || !resources?.length || consumed.current.has(conversationId)) return;
     if (!isPreparedResourceIdentity(expectedIdentity) || expectedIdentity.userId !== currentIdentity.userId || expectedIdentity.organizationId !== currentIdentity.organizationId) {
@@ -44,8 +45,12 @@ export function usePreparedResourceSeed({ conversationId, ready, resources, expe
       return;
     }
     void Promise.all(resources.map((resource) => attach(resource))).then(
-      (results) => { if (!results.every(Boolean)) reportError("Prepared content could not be attached. Reopen Alchemy and try again."); },
+      (results) => {
+        if (results.every(Boolean)) setAttachedConversationId(conversationId);
+        else reportError("Prepared content could not be attached. Reopen Alchemy and try again.");
+      },
       () => reportError("Prepared content could not be attached. Reopen Alchemy and try again."),
     );
   }, [conversationId, ready, resources, expectedIdentity, currentIdentity.userId, currentIdentity.organizationId, attach, reportError]);
+  return attachedConversationId === conversationId && isPreparedResourceIdentity(expectedIdentity) && expectedIdentity.userId === currentIdentity.userId && expectedIdentity.organizationId === currentIdentity.organizationId;
 }

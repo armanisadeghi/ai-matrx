@@ -95,6 +95,7 @@ function RunControlsWindowInner({
           }
         }}
         title="Chat options"
+        initialTabId={initialTab}
         tabs={rc.tabs.map((t) => ({
           id: t.id,
           label: t.label,
