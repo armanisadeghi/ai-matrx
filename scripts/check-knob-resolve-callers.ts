@@ -56,6 +56,7 @@
  *   pnpm check:knob-resolve-callers --self-test  # RED then GREEN against the real database
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname, relative, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -160,6 +161,47 @@ function walk(dir: string, out: string[], depth = 0): void {
   }
 }
 
+/**
+ * SOURCE means SOURCE: a git-ignored file is not a caller.
+ *
+ * matrx-local mirrors coding-session artifacts into its gitignored runtime data directory
+ * (`system/data/coding-sessions/…`), so a lane's own scratch SQL — including the deliberately
+ * broken RED variants written to prove a guard fires — lands inside a scanned repo minutes
+ * later and is not code anybody runs. The same is true of any build output or cache a future
+ * `.gitignore` covers. Asking git is the durable rule; hardcoding one path is not.
+ *
+ * If git cannot answer (no repo, no binary), NOTHING is skipped and the script SAYS SO — a
+ * silent widening would be a stand-in that never announces itself.
+ */
+function ignoredIn(root: string, files: string[]): Set<string> {
+  const out = new Set<string>();
+  // In CHUNKS: `git check-ignore --stdin` writes its answers while it is still reading, so a
+  // single write of every path in a repo fills the pipe and the child is gone before we finish
+  // writing (spawnSync EPIPE, measured on all four repos). Only the handful of files that
+  // actually mention knob_resolve are ever asked about, so one chunk is normally enough.
+  const CHUNK = 200;
+  for (let i = 0; i < files.length; i += CHUNK) {
+    const batch = files.slice(i, i + CHUNK);
+    let answer: string;
+    try {
+      answer = execFileSync("git", ["-C", root, "check-ignore", "--stdin", "-z"], {
+        input: batch.map((f) => relative(root, f)).join("\0"),
+        encoding: "utf8", maxBuffer: 16 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch (e: unknown) {
+      // `git check-ignore` exits 1 when it matched NOTHING — a clean answer, not an error.
+      const err = e as { status?: number; stdout?: string; message?: string };
+      if (err.status === 1) { answer = String(err.stdout ?? ""); }
+      else {
+        console.log(`${C.y}[NOTE]${C.x} git could not tell this guard what is ignored in ${relative(WORKSPACE, root)} — every file there is being read, build output and mirrors included. (${err.message?.slice(0, 120)})`);
+        return new Set();
+      }
+    }
+    for (const r of answer.split("\0")) if (r) out.add(resolve(root, r));
+  }
+  return out;
+}
+
 function scanRepos(): Finding[] {
   const findings: Finding[] = [];
   for (const repo of SOURCE_ROOTS) {
@@ -167,14 +209,21 @@ function scanRepos(): Finding[] {
     if (!existsSync(root)) continue;
     const files: string[] = [];
     walk(root, files);
+    // Narrow to the files that actually mention it BEFORE asking git — that keeps the
+    // ignore question to a handful of paths instead of every file in the repo.
+    const candidates: { path: string; text: string }[] = [];
     for (const f of files) {
+      // Generated database types name the function; they never call it.
+      if (/database\.types\.ts$/.test(f) || SKIP_FILE.test(f)) continue;
       let text: string;
       try { text = readFileSync(f, "utf8"); } catch { continue; }
       if (!text.includes("knob_resolve")) continue;
-      // Generated database types name the function; they never call it.
-      if (/database\.types\.ts$/.test(f)) continue;
-      if (SKIP_FILE.test(f)) continue;
-      findings.push(...scan(relative(WORKSPACE, f), strip(text)));
+      candidates.push({ path: f, text });
+    }
+    const ignored = ignoredIn(root, candidates.map((c) => c.path));
+    for (const c of candidates) {
+      if (ignored.has(c.path)) continue;
+      findings.push(...scan(relative(WORKSPACE, c.path), strip(c.text)));
     }
   }
   return findings;
