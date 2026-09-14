@@ -1,5 +1,7 @@
 import {
   connectionResource,
+  buildGoogleReconnectRequest,
+  cumulativeGoogleReconnectScopes,
   filterGoogleConnectionInventoryForUser,
   isGoogleConnectionReachableByUser,
   isStaleGoogleConnectionSelection,
@@ -31,6 +33,54 @@ const baseResource = {
 };
 
 describe("Google OAuth connection resources", () => {
+  it("reconnects an existing Analytics and YouTube grant without widening it", () => {
+    const existing = [
+      GOOGLE_SCOPE.openid,
+      GOOGLE_SCOPE.userinfoEmail,
+      GOOGLE_SCOPE.userinfoProfile,
+      GOOGLE_SCOPE.analyticsReadonly,
+      GOOGLE_SCOPE.youtubeReadonly,
+    ];
+
+    expect(cumulativeGoogleReconnectScopes(existing, [])).toEqual(existing);
+    expect(
+      cumulativeGoogleReconnectScopes(existing, [GOOGLE_SCOPE.youtubeReadonly]),
+    ).toEqual(existing);
+    expect(cumulativeGoogleReconnectScopes(existing, [])).not.toContain(
+      GOOGLE_SCOPE.webmastersReadonly,
+    );
+  });
+
+  it("targets the original connection and organization for a row reconnect", () => {
+    const connection = {
+      id: "connection-1",
+      owner_type: "organization" as const,
+      owner_user_id: null,
+      organization_id: "original-org",
+      provider: "google" as const,
+      provider_subject: "subject-1",
+      account_email: "owner@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.analyticsReadonly, GOOGLE_SCOPE.youtubeReadonly],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      health: "connected" as const,
+    };
+
+    expect(buildGoogleReconnectRequest(connection)).toEqual({
+      scopes: connection.scopes,
+      loginHint: "owner@example.com",
+      owner: { type: "organization", organizationId: "original-org" },
+      options: { targetConnectionId: "connection-1" },
+    });
+  });
+
   it("removes admin-visible foreign connections and their resources from picker inventory", () => {
     const connection = {
       id: "owned-connection",

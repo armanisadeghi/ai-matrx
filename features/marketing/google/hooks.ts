@@ -55,11 +55,15 @@ export function useConnectGoogle() {
       code,
       owner,
       connectionPurpose = "general",
+      options,
     }: {
       code: string;
       owner: GoogleConnectionOwner;
       connectionPurpose?: GoogleConnectionPurpose;
-    }) => connectGoogle(code, owner, connectionPurpose),
+      options?: {
+        targetConnectionId?: string;
+      };
+    }) => connectGoogle(code, owner, connectionPurpose, options),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: googleConnectionKeys.inventory,

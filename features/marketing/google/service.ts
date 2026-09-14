@@ -27,10 +27,54 @@ import { operationFailed } from "@/utils/errors";
 // and a newly added fail-closed purpose must be usable as soon as both source
 // commits exist even while production type synchronization catches up.
 export type GoogleConnectionPurpose =
-  | "general"
-  | "google_ads_isolated"
-  | "read_only_sweep"
-  | "contacts_import";
+  "general" | "google_ads_isolated" | "read_only_sweep" | "contacts_import";
+
+/** Preserve every existing grant while an explicit feature adds its own scope. */
+export function cumulativeGoogleReconnectScopes(
+  existingScopes: readonly string[],
+  requestedFeatureScopes: readonly string[],
+): string[] {
+  return [...new Set([...existingScopes, ...requestedFeatureScopes])];
+}
+
+export function buildGoogleReconnectRequest(
+  connection: GoogleConnectionSummary,
+  requestedFeatureScopes: readonly string[] = [],
+): {
+  scopes: string[];
+  loginHint: string | undefined;
+  owner: GoogleConnectionOwner;
+  options: { targetConnectionId: string };
+} {
+  if (connection.owner_type === "organization") {
+    if (!connection.organization_id) {
+      throw new Error(
+        "This shared Google connection no longer names its organization.",
+      );
+    }
+    return {
+      scopes: cumulativeGoogleReconnectScopes(
+        connection.scopes,
+        requestedFeatureScopes,
+      ),
+      loginHint: connection.account_email ?? undefined,
+      owner: {
+        type: "organization",
+        organizationId: connection.organization_id,
+      },
+      options: { targetConnectionId: connection.id },
+    };
+  }
+  return {
+    scopes: cumulativeGoogleReconnectScopes(
+      connection.scopes,
+      requestedFeatureScopes,
+    ),
+    loginHint: connection.account_email ?? undefined,
+    owner: { type: "user" },
+    options: { targetConnectionId: connection.id },
+  };
+}
 
 /**
  * A connection/resource can disappear between the RLS-scoped inventory read
@@ -60,7 +104,7 @@ export function isGoogleConnectionReachableByUser(
   if (connection.owner_user_id === userId) return true;
   return Boolean(
     connection.organization_id &&
-      organizationIds.includes(connection.organization_id),
+    organizationIds.includes(connection.organization_id),
   );
 }
 
@@ -300,6 +344,7 @@ export async function connectGoogle(
     redirectUri?: string;
     organizationContextId?: string;
     expectedUserId?: string;
+    targetConnectionId?: string;
   },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -316,6 +361,7 @@ export async function connectGoogle(
         owner.type === "organization" ? owner.organizationId : null,
       redirect_uri: options?.redirectUri ?? window.location.origin,
       connection_purpose: connectionPurpose,
+      target_connection_id: options?.targetConnectionId,
     },
     "Unable to connect Google.",
     options?.organizationContextId,

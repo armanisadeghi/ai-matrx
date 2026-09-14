@@ -46,7 +46,10 @@ import {
   type GoogleConnectionResource,
   type GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
-import { isStaleGoogleConnectionSelection } from "@/features/marketing/google/service";
+import {
+  buildGoogleReconnectRequest,
+  isStaleGoogleConnectionSelection,
+} from "@/features/marketing/google/service";
 import {
   diagnoseGoogleConnection,
   googleConnectionDiagnostics,
@@ -170,21 +173,36 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
     attributes: { count: availableGoogleAccounts?.length ?? 0 },
   });
 
-  const startConnection = async (owner: "user" | "organization") => {
+  const startConnection = async (
+    owner: "user" | "organization",
+    existingConnection?: GoogleConnectionSummary,
+    requestedFeatureScopes: readonly string[] = GOOGLE_CONNECTION_SCOPES,
+  ) => {
     setConnectingOwner(owner);
     try {
-      const code = await google.requestAuthorizationCode([
-        ...GOOGLE_CONNECTION_SCOPES,
-      ]);
+      const reconnect = existingConnection
+        ? buildGoogleReconnectRequest(
+            existingConnection,
+            requestedFeatureScopes,
+          )
+        : null;
+      const scopes = reconnect?.scopes ?? [...requestedFeatureScopes];
+      const code = await google.requestAuthorizationCode(
+        scopes,
+        reconnect?.loginHint,
+        existingConnection ? { forceConsent: true } : undefined,
+      );
       await connect.mutateAsync({
         code,
-        owner:
-          owner === "organization" && organizations.activeOrgId
+        owner: reconnect
+          ? reconnect.owner
+          : owner === "organization" && organizations.activeOrgId
             ? {
                 type: "organization",
                 organizationId: organizations.activeOrgId,
               }
             : { type: "user" },
+        options: reconnect?.options,
       });
       toast.success("Google services connected and resources discovered.");
     } catch (error) {
@@ -199,7 +217,11 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
         code: explanation.code,
         requestId: explanation.requestId,
         status: explanation.status ?? undefined,
-        raw: { owner, chain: explanation.chain },
+        raw: {
+          owner,
+          connectionId: existingConnection?.id,
+          chain: explanation.chain,
+        },
       });
       toast.error("Google could not be connected", {
         description: explanation.headline,
@@ -360,8 +382,15 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                 <CopyButtons size="icon" {...connectionsCopy} />
                 {canUseReadOnlyReview ? (
-                  <Button asChild size="sm" variant="outline" className="h-7 gap-1 text-xs">
-                    <Link href="/google-read-only-review">Google read-only review</Link>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                  >
+                    <Link href="/google-read-only-review">
+                      Google read-only review
+                    </Link>
                   </Button>
                 ) : null}
                 <Button
@@ -476,6 +505,8 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                         connection.owner_type === "organization"
                           ? "organization"
                           : "user",
+                        connection,
+                        [],
                       )
                     }
                   />
@@ -909,21 +940,19 @@ function ConnectionRow({
         </details>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        {usable ? null : (
-          <Button
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            disabled={reconnecting}
-            onClick={onReconnect}
-          >
-            {reconnecting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Reconnect
-          </Button>
-        )}
+        <Button
+          size="sm"
+          className="h-7 gap-1.5 text-xs"
+          disabled={reconnecting}
+          onClick={onReconnect}
+        >
+          {reconnecting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          Reconnect
+        </Button>
         <Button
           size="sm"
           variant="outline"
