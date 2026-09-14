@@ -20,7 +20,7 @@ import React from "react";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
-import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
+import { ChatConnectionsStrip } from "./ChatConnectionsStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 
@@ -88,13 +88,17 @@ export function SmartAgentInput({
       <InboxQueueStrip conversationId={conversationId} />
     ) : null;
 
-  // One quiet line under EVERY composer variation: what this conversation could
-  // reach if the user connected it. Mounted here rather than in each host so a
-  // new composer surface cannot forget it. Renders nothing once everything is
-  // connected — it is a reminder, never a nag.
+  // One quiet line under EVERY composer variation: what this conversation is
+  // actually wired to, with each service's real state, one click from the
+  // Tools picker that changes it. Falls back to the "you could connect these"
+  // reminder only when this chat is wired to nothing. Mounted here rather than
+  // in each host so a new composer surface cannot forget it.
   const connectorStrip =
     showConnectors && !isAmbient ? (
-      <ChatConnectorStrip className="mt-0.5 pl-5" />
+      <ChatConnectionsStrip
+        conversationId={conversationId}
+        className="mt-0.5 pl-5"
+      />
     ) : null;
 
   if (singleRowTextarea || (isAmbient && ambientLayout === "single-line")) {
