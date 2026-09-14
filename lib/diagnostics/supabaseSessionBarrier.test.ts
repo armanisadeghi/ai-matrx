@@ -97,8 +97,8 @@ function makeHarness(results: readonly unknown[]): Harness {
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
     },
-    from: () => builder,
-    rpc: () => builder,
+    from: (_relation: string) => builder,
+    rpc: (_fn: string) => builder,
   });
 
   // `.then()` directly, never `Promise.resolve(builder)`: promise assimilation

@@ -242,7 +242,16 @@ export function announceSessionForTests(present: boolean | null): void {
 export function authCookiePresent(): boolean | null {
   if (typeof document === "undefined") return null;
   if (!storageKey) return null;
-  const cookie = document.cookie;
+  let cookie: string;
+  try {
+    // A sandboxed frame without `allow-same-origin` THROWS on this property
+    // rather than returning "" — and this app renders exactly such a frame
+    // (the kind sandbox). "I cannot tell" must never become "signed out", and
+    // it must never break the read it was asked about.
+    cookie = document.cookie;
+  } catch {
+    return null;
+  }
   if (!cookie) return false;
   for (const pair of cookie.split(";")) {
     const name = pair.slice(0, pair.indexOf("=")).trim() || pair.trim();

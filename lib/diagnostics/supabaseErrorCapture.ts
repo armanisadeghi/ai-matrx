@@ -306,17 +306,21 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
                   await wait(SCHEMA_CACHE_RETRY_DELAYS_MS[retryIndex]);
                   return execute(retryIndex + 1);
                 }
-                if (
-                  res &&
-                  typeof res === "object" &&
-                  !sessionRetried &&
-                  isSessionRefusal(res as PostgrestLikeResult) &&
-                  shouldRecoverSession(ctx)
-                ) {
-                  sessionRetried = true;
-                  if (await recoverSessionForRetry(ctx)) {
-                    return execute(retryIndex);
+                try {
+                  if (
+                    res &&
+                    typeof res === "object" &&
+                    !sessionRetried &&
+                    isSessionRefusal(res as PostgrestLikeResult) &&
+                    shouldRecoverSession(ctx)
+                  ) {
+                    sessionRetried = true;
+                    if (await recoverSessionForRetry(ctx)) {
+                      return execute(retryIndex);
+                    }
                   }
+                } catch {
+                  /* the retry is a recovery; its failure never eats the result */
                 }
                 try {
                   if (res && typeof res === "object" && "error" in res) {
@@ -348,9 +352,21 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
           // and it is byte-identical to the behaviour before the barrier. Only
           // a request whose session is EXPECTED but not yet in hand waits, and
           // only for a bounded budget.
-          if (canSendImmediately(ctx)) return execute(0);
+          // Fail OPEN, always: a barrier that threw would take every read in
+          // the app with it, which is a far worse defect than the one it fixes.
+          let gate = true;
+          try {
+            gate = canSendImmediately(ctx);
+          } catch {
+            gate = true;
+          }
+          if (gate) return execute(0);
           return (async () => {
-            await awaitSessionBeforeSend(ctx);
+            try {
+              await awaitSessionBeforeSend(ctx);
+            } catch {
+              /* the wait is an optimization; the request still goes */
+            }
             return execute(0);
           })();
         };
