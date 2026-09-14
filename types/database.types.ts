@@ -56292,7 +56292,7 @@ export type Database = {
           ip_address: string | null
           metadata: Json
           method: string
-          organization_id: string | null
+          organization_id: string
           path: string
           request_id: string
           status_code: number | null
@@ -56309,7 +56309,7 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json
           method: string
-          organization_id?: string | null
+          organization_id: string
           path: string
           request_id: string
           status_code?: number | null
@@ -56326,7 +56326,7 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json
           method?: string
-          organization_id?: string | null
+          organization_id?: string
           path?: string
           request_id?: string
           status_code?: number | null
