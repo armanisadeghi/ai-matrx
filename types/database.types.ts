@@ -88846,6 +88846,10 @@ export type Database = {
         Args: { p_keyword_ids: string[] }
         Returns: number
       }
+      fn_site_available_offering_for_template: {
+        Args: { p_site_id: string; p_template_id: string }
+        Returns: string
+      }
       fn_site_offering_for_topic: {
         Args: { p_site_id: string; p_topic_id: string }
         Returns: string
@@ -90687,6 +90691,22 @@ export type Database = {
           sort: number
           updated_at: string
           value_slug: string
+        }[]
+      }
+      propose_site_offering_from_template: {
+        Args: {
+          p_agent_name?: string
+          p_keyword_ids?: string[]
+          p_provenance?: Json
+          p_reasoning?: string
+          p_site_id: string
+          p_template_id: string
+          p_value_add?: number
+        }
+        Returns: {
+          assist_id: string
+          keyword_count: number
+          status: string
         }[]
       }
       release_page_measurement_quarantine: {
@@ -99343,6 +99363,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      brand_offering_catalog: {
+        Args: { p_site_id: string }
+        Returns: {
+          adopted_at: string
+          availability_reason: string
+          available: boolean
+          changed_from_template: boolean
+          description: string
+          id: string
+          kind: string
+          lead_quality: string
+          name: string
+          offering_match: string
+          other_site_count: number
+          parent_id: string
+          slug: string
+          sort: number
+          template_id: string
+          template_name: string
+          worth_notes: string
+          worth_points: number
+          worth_updated_at: string
+        }[]
+      }
       conform: {
         Args: {
           p_label: string
@@ -99531,6 +99575,23 @@ export type Database = {
         }
         Returns: string
       }
+      set_site_offering_availability: {
+        Args: {
+          p_available: boolean
+          p_offering_ids: string[]
+          p_organization_id: string
+          p_reason?: string
+          p_site_id: string
+        }
+        Returns: {
+          changed: boolean
+          offering_id: string
+          placements_removed: number
+          placements_restored: number
+          worth_removed: number
+          worth_restored: number
+        }[]
+      }
       site_audit_rollup: { Args: { p_site_id: string }; Returns: Json }
       site_audit_trend: { Args: { p_site_id: string }; Returns: Json }
       site_gsc_daily: {
@@ -99551,6 +99612,18 @@ export type Database = {
           page_id: string
           path: string
           url: string
+        }[]
+      }
+      site_offering_availability_impact: {
+        Args: { p_offering_ids: string[]; p_site_id: string }
+        Returns: {
+          available: boolean
+          has_worth: boolean
+          human_placements: number
+          keywords_inheriting_worth: number
+          offering_id: string
+          offering_name: string
+          placements: number
         }[]
       }
       site_offering_delete_impact: {

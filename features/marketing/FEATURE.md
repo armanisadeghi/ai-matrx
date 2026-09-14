@@ -625,6 +625,8 @@ directly.
 | Job | Signed-in client (PostgREST RPC) | Service job (service_role) |
 |---|---|---|
 | List what a site offers | `web.site_offerings(p_site_id)` | same |
+| The Offerings screen: every offering the site's BRAND owns, whether this site offers it, other sites offering it, template provenance, this site's worth in points | `web.brand_offering_catalog(p_site_id)` | same |
+| Offer or stop offering on this site, one or many (D2; stopping removes this site's placements and worth under one stamp, offering again restores exactly those; the reason is kept) | preview `web.site_offering_availability_impact(p_site_id, p_offering_ids)`, then `web.set_site_offering_availability(p_organization_id, p_site_id, p_offering_ids, p_available, p_reason)` → per offering: changed / placements_removed / placements_restored / worth_removed / worth_restored | same |
 | Suggestions, only inside Add offering (D6) | `web.offering_templates_for_site(p_site_id, p_search)` | same |
 | Adopt a suggestion (copy-on-adopt; also makes it available on the site) | `web.adopt_offering_template(p_organization_id, p_site_id, p_template_id)` → brand offering id | same |
 | Create / rename / retype / reparent an offering the brand owns (create also makes it available on the site) | `web.save_site_offering(p_organization_id, p_site_id, p_offering_id NULL=create, p_name, p_kind product\|service, p_description, p_parent_id)` → id | same |
