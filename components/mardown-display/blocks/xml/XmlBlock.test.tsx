@@ -120,6 +120,27 @@ describe("XmlBlock Markdown text rendering", () => {
     expect(writeText).toHaveBeenCalledWith(XML_WITH_MARKDOWN);
   });
 
+  it("gives every XML action a 44px touch target through tablet widths while preserving compact desktop controls", () => {
+    act(() => {
+      root.render(
+        <XmlBlock
+          content={`<report>\n  <relationships>\n    <relationship />\n  </relationships>\n</report>`}
+        />,
+      );
+    });
+
+    const actions = [...container.querySelectorAll<HTMLButtonElement>("button")];
+    expect(actions.map((action) => action.getAttribute("aria-label"))).toEqual([
+      "Copy XML",
+      "Collapse report",
+      "Collapse relationships",
+    ]);
+    for (const action of actions) {
+      expect(action.classList).toContain("size-11");
+      expect(action.classList).toContain("lg:size-auto");
+    }
+  });
+
   it("leaves an unclosed XML body and an unclosed fenced payload readable while streaming", () => {
     act(() => {
       root.render(
