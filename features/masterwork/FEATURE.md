@@ -316,6 +316,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   surface `audition_unfolding` so a tab never rejoins the other tab's run), and the per-case table
   shows each arm's diagnosis / dangerous branch / steps / cost / risk beside the headline.
   Parsing + the past-score read: `audition/unfoldingRuns.ts`.
+- `triad/` — THE TRIAD GAME's client half (`triad_game`, its own route
+  `/masterwork/[id]/triad` on `RulebookLaneRoute`, rule 7). We deal three real options from the
+  Expert's own craft; she taps one and says why in a line — out loud is fine — and that line is
+  the rule candidate while the three items are the evidence. `service.ts` holds the two calls
+  (`POST /masterworks/triads` deals and writes NOTHING; `POST /masterworks/ingest-triad` distils
+  ONE answered card, submitted the moment she swipes, so rules appear while she is still playing);
+  neither is a durable run and the file says why. `types.ts::parseDeck` is the ONE narrowing, and
+  it DROPS a card that is not exactly three known items rather than drawing a two-item "triad".
+  `TriadGamePage.tsx` is phone-first (dvh, `pb-safe`, sticky footer, 44pt targets, `text-base`,
+  one scroll area); the horizontal swipe means SKIP and only skip, because choosing between three
+  stacked options by swipe would be guessing which one the thumb meant. Every answered card
+  carries its OWN save status, and every prompt played goes back with the next deal so the game
+  never asks the same thing twice in one sitting. 🚨 Its `?triad=1` deep link is handled in
+  `RulebookDetailPage` by FORWARDING to the route — a query param this page swallowed silently is
+  how the live `timeline` card used to land Experts on a bare Rulebook (census row 3).
+  Guard: `triad/__tests__/triad-door.test.ts`.
 - `unfolding/` — the sealed-case lane's client half (contract:
   `../../../common-docs/systems/masterwork/unfolding-case-contract.md` §3/§5).
   `sealedCases.ts` detects the `masterwork.case.disclose` node in a definition (reading BOTH
