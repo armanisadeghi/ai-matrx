@@ -195,10 +195,14 @@ stale pre-reconciliation snapshot.
 Direct client INSERT into `ops.system_error` is denied — the canonical browser
 path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
 (`migrations/log_client_error.sql`, then DD-115's
-`migrations/log_client_error_source_app_and_loud_failures_dd115.sql`): attributes
-to `auth.uid()` and resolves `organization_id` (caller-supplied if reachable →
-personal org → `matrx-system`). The ad-hoc API-route writers (audio error logger,
-tool-ui-incident) can adopt this RPC over time.
+`migrations/log_client_error_source_app_and_loud_failures_dd115.sql`, then
+`migrations/log_client_error_explicit_org_is_exact.sql`): attributes to
+`auth.uid()`. A non-null caller-supplied `organization_id` is exact: the RPC
+refuses it with `42501` before insert unless the caller is `service_role` or an
+authenticated caller admitted by `iam.has_org_access`. A null organization retains the
+personal/system compatibility lane while older callers migrate. The ad-hoc
+API-route writers (audio error logger, tool-ui-incident) can adopt this RPC over
+time.
 
 **Every client names itself, and nothing about that door is silent any more
 (DD-115, applied live 2026-09-11).** The RPC used to stamp the literal
@@ -220,6 +224,13 @@ from a successful one. Now:
   itself is NOT NULL and is stamped by `ops._stamp_capture_org`);
 - **insert failures raise.** This adapter already ignores its own RPC failure by
   relation name, so it cannot loop; every other caller decides how to degrade.
+
+**Explicit organization IDs are assertions, never fallback hints** (applied live
+2026-09-15). Matrx Local's durable outbox sends the organization captured at the
+time of occurrence. If the occurrence-time identity is no longer admitted before
+upload, the RPC raises `42501` and the outbox keeps the item for an honest retry; it cannot acknowledge
+the item under a personal or system fallback. Null-organization callers retain
+the compatibility lane above until their own explicit-organization migrations.
 
 **Unknown public noise never persists.** The guest endpoint refuses fingerprints
 that do not exist in `guest_executions`; dedupe and the per-flush cap remain the
@@ -370,6 +381,10 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-09-15 — **Explicit diagnostic organizations are exact.** A non-null
+  `p_organization_id` now inserts only for `service_role` or an authenticated
+  caller admitted by `iam.has_org_access`; otherwise `public.log_client_error` raises
+  `42501` before insert. Null callers keep the existing compatibility lane.
 - 2026-09-09 — Transport-loss Redux wrappers recognize the canonical capture's human-facing message; the original transport incident remains actionable.
 - 2026-09-01 — **Structured console mirrors persist once.** `mirrorCapturedErrorToConsole` preserves deliberate console screams while marking their synchronous call so the production console adapter does not persist a second generic symptom; the associations error sink uses it for package transport/schema failures.
 - 2026-08-31 — **Browser cancellations stay local for every account tier.** The Supabase adapter recognizes `AbortError: signal is aborted without reason` in addition to the older `operation was aborted` response, and the canonical `request-aborted` rule is explicitly non-durable. React Query navigation/unmount cancellation remains visible as a yellow local diagnostic without entering `system_error`, including during the guest/new-account observation window. Focused adapter and persistence tests pin the exact observed wording and `users.integration_connections` path.
