@@ -196,6 +196,7 @@ import { adminAgentReviewManifest } from "./admin-agent-review.manifest";
 import { adminAgentReviewItemManifest } from "./admin-agent-review-item.manifest";
 import { adminCxDashboardManifest } from "./admin-cx-dashboard.manifest";
 import { adminServerLogsManifest } from "./admin-server-logs.manifest";
+import { adminBillingSpendManifest } from "./admin-billing-spend.manifest";
 import { adminSandboxManifest } from "./admin-sandbox.manifest";
 import { adminOfficialComponentsManifest } from "./admin-official-components.manifest";
 import { adminApplicationsManifest } from "./admin-applications.manifest";
@@ -417,6 +418,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminAgentReviewItemManifest,
   adminCxDashboardManifest,
   adminServerLogsManifest,
+  adminBillingSpendManifest,
   adminSandboxManifest,
   adminOfficialComponentsManifest,
   adminApplicationsManifest,

@@ -46,6 +46,8 @@ function ops(
     trace = [],
     persisted = [],
     closeFails = false,
+    launchFails = false,
+    verifyFails = false,
   } = {},
 ) {
   const saved = store.persist.bind(store);
@@ -68,6 +70,7 @@ function ops(
     preflight: async () => {},
     launch: async () => {
       trace.push("launch");
+      if (launchFails) throw Error("profile_lock");
       return {};
     },
     close: async () => {
@@ -76,6 +79,7 @@ function ops(
     },
     verify: async () => {
       trace.push("verify");
+      if (verifyFails) throw Error("verify_failed");
       return { token: "t", actorSha256: actor, sessionId };
     },
     logout: async () => {
@@ -175,6 +179,90 @@ test("present exact session durably starts one same-session retry before logout"
     assert.ok(trace.indexOf("close") < trace.indexOf("rm-profile"));
     assert.ok(trace.indexOf("rm-profile") < trace.indexOf("rm-fixture"));
     assert.equal(trace.filter((step) => step === "logout").length, 1);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+test("open receipt restarts by quiescing a fresh context before normal authentication", async () => {
+  const dir = await root();
+  try {
+    await owned(dir);
+    const file = path.join(dir, "receipt.json");
+    const receipt = initialState();
+    receipt.browser = { attemptId: sessionId, state: "open" };
+    atomicJson(file, receipt);
+    const trace = [];
+    const persisted = [];
+    const result = await runRecoveryStateMachine(
+      ops(createStore(file), dir, { trace, persisted }),
+    );
+    assert.equal(result.ok, true);
+    assert.deepEqual(trace.slice(0, 5), [
+      "launch",
+      "close",
+      "launch",
+      "verify",
+      "logout",
+    ]);
+    const attemptIds = [
+      ...new Set(
+        persisted
+          .filter((state) => state.browser.state === "open")
+          .map((state) => state.browser.attemptId),
+      ),
+    ];
+    assert.equal(attemptIds.length, 2);
+    assert.notEqual(attemptIds[0], attemptIds[1]);
+    assert.equal(
+      persisted.find((state) => state.browser.attemptId === attemptIds[0])
+        .actorSha256,
+      null,
+    );
+    assert.ok(trace.lastIndexOf("close") < trace.indexOf("rm-profile"));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+test("competing profile lock refuses without auth or removal", async () => {
+  const dir = await root();
+  try {
+    await owned(dir);
+    const file = path.join(dir, "receipt.json");
+    const receipt = initialState();
+    receipt.browser = { attemptId: sessionId, state: "open" };
+    atomicJson(file, receipt);
+    const trace = [];
+    const result = await runRecoveryStateMachine(
+      ops(createStore(file), dir, { trace, launchFails: true }),
+    );
+    assert.equal(result.ok, false);
+    assert.deepEqual(trace, ["launch"]);
+    await fs.stat(path.join(dir, "profile"));
+    await fs.stat(path.join(dir, "fixture"));
+    const durable = JSON.parse(await fs.readFile(file, "utf8"));
+    assert.equal(durable.browser.state, "open");
+    assert.notEqual(durable.browser.attemptId, sessionId);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+test("closed not-started receipt after verify failure can launch a fresh attempt", async () => {
+  const dir = await root();
+  try {
+    await owned(dir);
+    const file = path.join(dir, "receipt.json");
+    const first = await runRecoveryStateMachine(
+      ops(createStore(file), dir, { verifyFails: true }),
+    );
+    assert.equal(first.ok, false);
+    const failedReceipt = JSON.parse(await fs.readFile(file, "utf8"));
+    assert.equal(failedReceipt.browser.state, "closed");
+    const trace = [];
+    const second = await runRecoveryStateMachine(
+      ops(createStore(file), dir, { trace }),
+    );
+    assert.equal(second.ok, true);
+    assert.deepEqual(trace.slice(0, 3), ["launch", "verify", "logout"]);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

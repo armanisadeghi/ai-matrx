@@ -279,6 +279,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/server-logs",
   },
   {
+    prefix: "/administration/billing/spend",
+    surface: "matrx-admin/billing-spend",
+  },
+  {
     prefix: "/administration/compute/sandbox",
     surface: "matrx-admin/sandbox",
   },

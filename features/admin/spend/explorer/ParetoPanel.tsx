@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { usd } from "../format";
 import type {
   SpendBreakdown,
@@ -22,6 +23,10 @@ import type {
   SpendDimensionRow,
 } from "../types";
 import { DIMENSION_LABEL, identityHref, percent, rowLabel } from "./labels";
+import {
+  buildSpendLeadingKpis,
+  type SpendLeadingKpis,
+} from "./TotalsStrip";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
@@ -39,6 +44,139 @@ export interface ParetoCut {
   restCost: number;
   restCount: number;
   distinct: number;
+}
+
+export interface ParetoParentContext {
+  selectedWindow: string;
+  window: SpendBreakdown["window"];
+  filters: SpendBreakdown["filters"];
+  leadingKpis: SpendLeadingKpis;
+}
+
+export function paretoCopyData(
+  dim: SpendDimension,
+  cut: ParetoCut,
+  total: number,
+  parent: ParetoParentContext,
+) {
+  return {
+    parent,
+    dimension: DIMENSION_LABEL[dim],
+    windowTotal: total,
+    shownCount: cut.head.length,
+    distinctCount: cut.distinct,
+    shownShare: total > 0 ? cut.headCost / total : 0,
+    rows: cut.head.map((row) => ({
+      key: row.key,
+      label: rowLabel(dim, row),
+      cost: row.cost,
+      share: row.share,
+    })),
+    everythingElse: {
+      count: cut.restCount,
+      cost: cut.restCost,
+      share: total > 0 ? cut.restCost / total : 0,
+    },
+  };
+}
+
+export function paretoCopyText(
+  dim: SpendDimension,
+  cut: ParetoCut,
+  total: number,
+  parent: ParetoParentContext,
+): string {
+  const data = paretoCopyData(dim, cut, total, parent);
+  const activeFilters = Object.entries(parent.filters)
+    .filter(([, value]) => Boolean(value))
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(" · ");
+  const kpis = parent.leadingKpis;
+  return [
+    "AI Matrx Admin — Platform Spend",
+    `Window: ${parent.selectedWindow}`,
+    `Filters: ${activeFilters || "None"}`,
+    `Window total: ${kpis.windowTotal.value} · ${kpis.windowTotal.hint}`,
+    `Manual: ${kpis.manual.value} · ${kpis.manual.hint}`,
+    `Automated: ${kpis.automated.value} · ${kpis.automated.hint}`,
+    `Requests: ${kpis.requests.value} · ${kpis.requests.hint}`,
+    `Tokens in: ${kpis.tokensIn.value} · ${kpis.tokensIn.hint}`,
+    `Explained by a request: ${kpis.explainedByRequest.value} · ${kpis.explainedByRequest.hint}`,
+    "",
+    `${data.dimension} — 80% of spend`,
+    `${data.shownCount} of ${data.distinctCount} shown · ${percent(data.shownShare)} · Total ${usd(data.windowTotal)}`,
+    ...data.rows.map(
+      (row) => `${row.label}\t${percent(row.share)}\t${usd(row.cost)}`,
+    ),
+    `Everything else (${data.everythingElse.count} more)\t${percent(data.everythingElse.share)}\t${usd(data.everythingElse.cost)}`,
+  ].join("\n");
+}
+
+export function paretoAgentPayload(
+  dim: SpendDimension,
+  cut: ParetoCut,
+  total: number,
+  totals: SpendBreakdown["totals"],
+  parent: ParetoParentContext,
+) {
+  const kpis = parent.leadingKpis;
+  const tokenInputTotal = totals.tokensIn + totals.tokensCached;
+  const sliceHours = parent.filters.hour
+    ? 1
+    : parent.filters.day
+      ? 24
+      : totals.hours;
+  return {
+    kind: "spend-pareto-dimension",
+    location: "AI Matrx Admin — Platform Spend — 80% of spend",
+    description: `The rendered ${DIMENSION_LABEL[dim].toLowerCase()} concentration card for the selected spend window.`,
+    data: paretoCopyData(dim, cut, total, parent),
+    summary: paretoCopyText(dim, cut, total, parent),
+    context: {
+      selected_window: parent.selectedWindow,
+      window_from: parent.window.from,
+      window_to: parent.window.to,
+      window_hours: parent.window.hours,
+      filters: JSON.stringify(parent.filters),
+      leading_kpis: JSON.stringify(parent.leadingKpis),
+    },
+    attributes: {
+      dimension: dim,
+      shown: cut.head.length,
+      distinct: cut.distinct,
+      total_cost: total,
+      per_hour_cost: sliceHours > 0 ? totals.cost / sliceHours : 0,
+      requests: totals.requests,
+      conversations: totals.conversations,
+      executions: totals.executions,
+      paid_executions: totals.paidExecutions,
+      tokens_in: tokenInputTotal,
+      tokens_cached: totals.tokensCached,
+      token_cache_share:
+        tokenInputTotal > 0 ? totals.tokensCached / tokenInputTotal : 0,
+      tokens_out: totals.tokensOut,
+      manual_cost: totals.manualCost,
+      manual_share: totals.cost > 0 ? totals.manualCost / totals.cost : 0,
+      automated_cost: totals.automatedCost,
+      automated_share:
+        totals.cost > 0 ? totals.automatedCost / totals.cost : 0,
+      linked_cost: totals.linkedCost,
+      unlinked_cost: totals.unlinkedCost,
+      explained_share: totals.cost > 0 ? totals.linkedCost / totals.cost : 0,
+      window_total_display: kpis.windowTotal.value,
+      window_total_detail: kpis.windowTotal.hint,
+      manual_display: kpis.manual.value,
+      manual_detail: kpis.manual.hint,
+      automated_display: kpis.automated.value,
+      automated_detail: kpis.automated.hint,
+      requests_display: kpis.requests.value,
+      requests_detail: kpis.requests.hint,
+      tokens_in_display: kpis.tokensIn.value,
+      tokens_in_detail: kpis.tokensIn.hint,
+      explained_by_request_display: kpis.explainedByRequest.value,
+      explained_by_request_detail: kpis.explainedByRequest.hint,
+    },
+  };
 }
 
 /** The fewest top rows whose cumulative share reaches `target`. */
@@ -71,27 +209,41 @@ function ParetoCard({
   dim,
   cut,
   total,
+  totals,
+  parent,
   onDrill,
 }: {
   dim: SpendDimension;
   cut: ParetoCut;
   total: number;
+  totals: SpendBreakdown["totals"];
+  parent: ParetoParentContext;
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
   const headShare = total > 0 ? cut.headCost / total : 0;
   return (
     <div className="flex min-w-0 flex-col rounded-md border border-border bg-card">
-      <div className="flex items-baseline justify-between gap-2 border-b border-border px-3 py-1.5">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
         <span className="text-sm font-semibold text-foreground">
           {DIMENSION_LABEL[dim]}
         </span>
-        <div className="flex min-w-0 items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
           <span className="truncate">
             {cut.head.length} of {cut.distinct} · {percent(headShare)}
           </span>
           <span className="shrink-0 font-medium text-foreground">
             Total {usd(total)}
           </span>
+          <CopyButtons
+            size="xs"
+            className="shrink-0"
+            label={`${DIMENSION_LABEL[dim]} — 80% of spend`}
+            human={() => paretoCopyText(dim, cut, total, parent)}
+            json={() => paretoCopyData(dim, cut, total, parent)}
+            agent={() =>
+              paretoAgentPayload(dim, cut, total, totals, parent)
+            }
+          />
         </div>
       </div>
       <ul className="flex h-full flex-col">
@@ -161,12 +313,20 @@ function ParetoCard({
 
 export function ParetoPanel({
   data,
+  windowLabel,
   onDrill,
 }: {
   data: SpendBreakdown;
+  windowLabel: string;
   onDrill: (dim: SpendDimension, key: string) => void;
 }) {
   const total = data.totals.cost;
+  const parent: ParetoParentContext = {
+    selectedWindow: windowLabel,
+    window: data.window,
+    filters: data.filters,
+    leadingKpis: buildSpendLeadingKpis(data),
+  };
   // A dimension already filtered to one value has nothing to say here.
   const dims = PARETO_DIMENSIONS.filter((dim) => !data.filters[dim]);
   return (
@@ -180,6 +340,8 @@ export function ParetoPanel({
             dim={dim}
             cut={cut}
             total={total}
+            totals={data.totals}
+            parent={parent}
             onDrill={onDrill}
           />
         );
