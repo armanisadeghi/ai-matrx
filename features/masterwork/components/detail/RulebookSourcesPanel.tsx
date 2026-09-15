@@ -51,6 +51,7 @@ import {
   attachedKey,
 } from "@ai-matrx/associations/react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
+import { DUMP_ROLE, DUMP_SOURCE_TOKENS } from "../../sourceLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
@@ -73,23 +74,13 @@ import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 /**
- * The registered source→rulebook pairs (`platform.association_types`,
- * `container_side=none` — provenance only). Attach is open to ALL of them; the
- * tokens the server cannot distill YET are named in `UNSUPPORTED_TOKENS` and
- * their cards say so plainly — attached fine, never silently skipped.
+ * The registered source→rulebook pairs live in ONE place — `../../sourceLinks`
+ * — because the interview start screen asks the same question this panel
+ * answers ("does this Rulebook have anything written down?") to decide which
+ * interviewer the Expert gets. Attach is open to ALL of them; the tokens the
+ * server cannot distill YET are named in `UNSUPPORTED_TOKENS` below and their
+ * cards say so plainly — attached fine, never silently skipped.
  */
-const DUMP_SOURCE_TOKENS: EntityTypeToken[] = [
-  "note",
-  "transcript",
-  "studio_session",
-  "file",
-  "udt_document",
-  "fc_set",
-  "research_topic",
-  "pc_show",
-  "pc_episode",
-  "pc_studio_run",
-];
 
 /** Server-side distillation not built yet — honest cards, no silent skips. */
 const UNSUPPORTED_TOKENS = new Set<string>([
@@ -102,8 +93,6 @@ const UNSUPPORTED_TOKENS = new Set<string>([
 const UNSUPPORTED_NOTE =
   "Attached as a source — distillation for this type is coming.";
 
-/** The edge role every dump source carries. */
-const DUMP_ROLE = "distillation_source";
 
 // Endpoint being built in parallel in aidream. Cast pending the OpenAPI type
 // sync (precedent: features/marketing/FEATURE.md); until the server deploys it,

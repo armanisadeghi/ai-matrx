@@ -22,6 +22,13 @@ import { renderRulebookDocument } from "./rulebookDocument";
 export interface RulebookDocumentState {
   /** The rendered Rulebook. Never an empty string once `loading` is false. */
   document: string | null;
+  /**
+   * The Rulebook's OWN tenancy. Surfaces that resolve a per-Rulebook setting
+   * need it: a setting answered for a Rulebook must resolve in the tenancy the
+   * Rulebook lives in, never in whichever organization the person last clicked
+   * (organization is tenancy, never permission).
+   */
+  organizationId: string | null;
   loading: boolean;
   /** Set means REFUSE to launch — say this to the Expert and offer Retry. */
   error: string | null;
@@ -33,16 +40,17 @@ export function useRulebookDocument(
 ): RulebookDocumentState {
   const [state, setState] = useState<{
     document: string | null;
+    organizationId: string | null;
     loading: boolean;
     error: string | null;
-  }>({ document: null, loading: true, error: null });
+  }>({ document: null, organizationId: null, loading: true, error: null });
   const [epoch, setEpoch] = useState(0);
 
   const reload = useCallback(() => setEpoch((n) => n + 1), []);
 
   useEffect(() => {
     if (!rulebookId) {
-      setState({ document: null, loading: false, error: null });
+      setState({ document: null, organizationId: null, loading: false, error: null });
       return;
     }
     let cancelled = false;
@@ -54,6 +62,7 @@ export function useRulebookDocument(
         if (!rulebook) {
           setState({
             document: null,
+            organizationId: null,
             loading: false,
             error:
               "We couldn't open this Rulebook, so there is nothing to work from. " +
@@ -63,6 +72,7 @@ export function useRulebookDocument(
         }
         setState({
           document: renderRulebookDocument(rulebook),
+          organizationId: rulebook.organization_id ?? null,
           loading: false,
           error: null,
         });
@@ -76,6 +86,7 @@ export function useRulebookDocument(
         );
         setState({
           document: null,
+          organizationId: null,
           loading: false,
           error:
             "We couldn't load your rules just now, so we've stopped rather than " +

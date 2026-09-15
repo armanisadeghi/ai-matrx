@@ -32,8 +32,51 @@ const cache = new Map<string, Entry>();
 const inFlight = new Map<string, Promise<unknown>>();
 const listeners = new Set<() => void>();
 
-function addr(organizationId: string, userId: string | null, fullKey: string): string {
-  return `${organizationId}|${userId ?? ""}|${fullKey}`;
+/**
+ * A rung nearer than the organization that this READ should take into account —
+ * the entity the value is being resolved FOR (`{ kind: "rulebook", id }`,
+ * `{ kind: "agent", id }`, …). The rung must be registered in
+ * `platform.knob_scope_kind` and named in the knob's `overridable_by`, or the
+ * resolver ignores it; the device rung is added automatically below and never
+ * belongs here.
+ */
+export interface KnobScope {
+  kind: string;
+  id: string;
+}
+
+/**
+ * The `p_scopes` payload: this browser's device rung plus whatever entity rungs
+ * the caller is resolving for. `undefined` (not `[]`) when there is nothing to
+ * send — `knob_resolve` raises `22023` on anything that is not an array or NULL.
+ */
+function buildScopes(
+  deviceId: string | null | undefined,
+  scopes: readonly KnobScope[] | undefined,
+): KnobScope[] | undefined {
+  const all: KnobScope[] = [];
+  if (deviceId) all.push({ kind: "device", id: deviceId });
+  for (const scope of scopes ?? []) {
+    if (scope?.kind && scope?.id) all.push({ kind: scope.kind, id: scope.id });
+  }
+  return all.length > 0 ? all : undefined;
+}
+
+function scopeAddr(scopes: readonly KnobScope[] | undefined): string {
+  if (!scopes?.length) return "";
+  return scopes.map((s) => `${s.kind}:${s.id}`).join(",");
+}
+
+function addr(
+  organizationId: string,
+  userId: string | null,
+  fullKey: string,
+  scopes?: readonly KnobScope[],
+): string {
+  // The entity rungs are part of the ADDRESS: two Rulebooks in one org can
+  // legitimately resolve the same key to different values, and a cache that
+  // forgot them would serve one Rulebook's answer for another.
+  return `${organizationId}|${userId ?? ""}|${scopeAddr(scopes)}|${fullKey}`;
 }
 
 function notify(): void {
@@ -53,9 +96,10 @@ export function peekEffectiveKnob(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
   fullKey: string,
+  scopes?: readonly KnobScope[],
 ): unknown {
   if (!organizationId) return undefined;
-  const hit = cache.get(addr(organizationId, userId ?? null, fullKey));
+  const hit = cache.get(addr(organizationId, userId ?? null, fullKey, scopes));
   return hit ? hit.value : undefined;
 }
 
@@ -64,8 +108,9 @@ export function ensureEffectiveKnob(
   organizationId: string,
   userId: string | null,
   fullKey: string,
+  scopes?: readonly KnobScope[],
 ): Promise<unknown> {
-  const id = addr(organizationId, userId, fullKey);
+  const id = addr(organizationId, userId, fullKey, scopes);
   const hit = cache.get(id);
   if (hit && Date.now() - hit.at < TTL_MS) return Promise.resolve(hit.value);
   const pending = inFlight.get(id);
@@ -83,7 +128,7 @@ export function ensureEffectiveKnob(
         p_key: key,
         p_organization_id: organizationId,
         p_user_id: userId ?? undefined,
-        p_scopes: deviceId ? [{ kind: "device", id: deviceId }] : undefined,
+        p_scopes: buildScopes(deviceId, scopes),
       } as never);
       if (error) throw new Error(`knob_resolve ${fullKey} failed: ${error.message}`);
       cache.set(id, { value: data as unknown, at: Date.now() });
@@ -134,17 +179,25 @@ export function useEffectiveKnob(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
   fullKey: string,
+  scopes?: readonly KnobScope[],
 ): unknown {
+  // Scopes are compared by their address, so a caller may pass a fresh array
+  // literal every render without re-resolving on every render.
+  const scopeKey = scopeAddr(scopes);
   const value = useSyncExternalStore(
     subscribe,
-    () => peekEffectiveKnob(organizationId, userId, fullKey),
+    () => peekEffectiveKnob(organizationId, userId, fullKey, scopes),
     () => undefined,
   );
   useEffect(() => {
     if (!organizationId || value !== undefined) return;
-    void ensureEffectiveKnob(organizationId, userId ?? null, fullKey).catch(() => {
+    void ensureEffectiveKnob(organizationId, userId ?? null, fullKey, scopes).catch(() => {
       /* the caller's screen reports the failure; a runtime read never throws */
     });
-  }, [organizationId, userId, fullKey, value]);
+    // `scopes` is addressed by `scopeKey`; depending on the array identity
+    // would re-run this effect on every render for a caller that builds it
+    // inline, which every caller does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, userId, fullKey, scopeKey, value]);
   return value;
 }
