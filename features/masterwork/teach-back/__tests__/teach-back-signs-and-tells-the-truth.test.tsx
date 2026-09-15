@@ -43,6 +43,7 @@ import { TeachBack } from "../TeachBack";
 import {
   buildTeachBackRequest,
   describeBasis,
+  describeCorrection,
   parseTeachBackRound,
 } from "../service";
 import { EXPERT_SIGNATURE_SURFACE } from "../../review/signature";
@@ -143,6 +144,7 @@ function roundPayload(over: Record<string, unknown> = {}) {
     basis: "rulebook",
     rule_ids_cited: ["open-the-pallet-before-routing"],
     uncertain_part: "I'm least sure what happens with no manifest.",
+    distilled_round: 0,
     rules_added: 0,
     rule_ids: [],
     answered_rounds: 0,
@@ -284,6 +286,35 @@ describe("the screen never passes a generalist explanation off as the Expert's",
       "",
     );
     expect(describeBasis("")).toContain("a stranger's guess");
+  });
+});
+
+describe("a round nobody answered is never described as an answer", () => {
+  // FOUND LIVE, 2026-09-15: the sign-off screen said "Nothing new came out of
+  // that one" above "That's the teach-back done" — about a round the Expert had
+  // not corrected at all, because they pressed "yes, that's it" instead. Zero
+  // rules from a correction and zero rules because nobody corrected anything
+  // are different facts; the screen had only the first sentence for both.
+  it("says nothing about a round that carried no correction", () => {
+    const result = parseTeachBackRound(
+      roundPayload({ done: true, distilled_round: 0, answered_rounds: 2, rules_added: 0 }),
+    )!;
+    expect(result.distilledRound).toBe(0);
+    expect(describeCorrection(result)).toBeNull();
+  });
+
+  it("still says so when a real correction produced nothing", () => {
+    const result = parseTeachBackRound(
+      roundPayload({ done: true, distilled_round: 2, answered_rounds: 2, rules_added: 0 }),
+    )!;
+    expect(describeCorrection(result)).toContain("Nothing new came out of that one");
+  });
+
+  it("reports what a correction was worth when it was worth something", () => {
+    const result = parseTeachBackRound(
+      roundPayload({ distilled_round: 1, answered_rounds: 1, rules_added: 2 }),
+    )!;
+    expect(describeCorrection(result)).toContain("became 2 draft rules");
   });
 });
 

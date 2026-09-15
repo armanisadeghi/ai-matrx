@@ -84,6 +84,16 @@ export interface TeachBackRoundResult {
   basis: TeachBackBasis | "";
   ruleIdsCited: string[];
   uncertainPart: string;
+  /**
+   * WHICH round this call actually distilled, or 0 when there was nothing to
+   * distil (round one, or "yes, that's it" pressed without correcting first).
+   *
+   * 🚨 NEVER DERIVED FROM `rulesAdded`. Zero rules from a correction and zero
+   * rules because nobody corrected anything are different facts, and "nothing
+   * new came out of that one" is a LIE about the second — which is exactly what
+   * the live sign-off screen said on 2026-09-15 before this field existed.
+   */
+  distilledRound: number;
   rulesAdded: number;
   ruleIds: string[];
   duplicatesSkipped: number;
@@ -128,6 +138,7 @@ export function parseTeachBackRound(raw: unknown): TeachBackRoundResult | null {
     basis: basis === "rulebook" || basis === "generalist" ? basis : "",
     ruleIdsCited: cited.map((id) => String(id)),
     uncertainPart: String(data.uncertain_part ?? ""),
+    distilledRound: Number(data.distilled_round ?? 0),
     rulesAdded: Number(data.rules_added ?? 0),
     ruleIds: ids.map((id) => String(id)),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
@@ -182,7 +193,10 @@ export function describeCorrection(
       "second time. Your rules from it are on the Rulebook."
     );
   }
-  if (result.answeredRounds === 0) return null;
+  // Nothing was submitted this round — round one, or they signed off without
+  // correcting anything. Saying "nothing new came out of that one" here talks
+  // about an answer they never gave.
+  if (result.distilledRound === 0) return null;
   if (result.rulesAdded === 0) {
     return (
       "Nothing new came out of that one — either it's already one of your " +
