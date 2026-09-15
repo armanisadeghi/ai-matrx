@@ -1,6 +1,11 @@
 import type { Artifact, TransferOutcome } from "@ai-matrx/kit/content-transfer";
 
 const EMAIL_FORMATS = new Set(["csv", "json", "markdown"]);
+const EMAIL_MIME_BY_FORMAT = {
+  csv: "text/csv;charset=utf-8",
+  json: "application/json;charset=utf-8",
+  markdown: "text/markdown;charset=utf-8",
+} as const;
 
 type EmailResponse = {
   success?: unknown;
@@ -38,6 +43,24 @@ export async function sendAlchemyEmail(
     };
   }
 
+  const file = artifact.file;
+  if (!file) {
+    return { status: "error", code: "missing_email_attachment", message: "This prepared export has no reviewed file to email.", retryable: false };
+  }
+  const expectedMime = EMAIL_MIME_BY_FORMAT[artifact.format as keyof typeof EMAIL_MIME_BY_FORMAT];
+  if (file.mime !== expectedMime) {
+    return { status: "error", code: "unsupported_email_mime", message: "The prepared file type does not match this email export.", retryable: false };
+  }
+  let fileText: string;
+  try {
+    fileText = new TextDecoder("utf-8", { fatal: true }).decode(file.bytes);
+  } catch {
+    return { status: "error", code: "invalid_email_attachment", message: "The prepared file is not valid UTF-8 text.", retryable: false };
+  }
+  if (fileText !== artifact.plainText) {
+    return { status: "error", code: "email_attachment_mismatch", message: "The prepared file does not match the reviewed export text.", retryable: false };
+  }
+
   if (context.signal.aborted) return { status: "cancelled" };
 
   try {
@@ -49,6 +72,8 @@ export async function sendAlchemyEmail(
         label: context.label,
         format: artifact.format,
         content: artifact.plainText,
+        filename: file.filename,
+        mime: file.mime,
       }),
     });
     const body = await readEmailResponse(response);

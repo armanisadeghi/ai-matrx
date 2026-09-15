@@ -23,6 +23,8 @@ test("attaches the full UTF-8 artifact while escaping its label in email HTML", 
       tableName: "My <edited> table",
       format: "csv",
       content,
+      attachmentFilename: "reviewed-Ω.csv",
+      attachmentMime: "text/csv;charset=utf-8",
     }),
   ).resolves.toMatchObject({ success: true });
 
@@ -36,8 +38,8 @@ test("attaches the full UTF-8 artifact while escaping its label in email HTML", 
   expect(mail.text).toContain(content);
   expect(mail.attachments).toHaveLength(1);
   expect(mail.attachments[0]).toMatchObject({
-    filename: "My-edited-table.csv",
-    contentType: "text/csv; charset=utf-8",
+    filename: "reviewed-Ω.csv",
+    contentType: "text/csv;charset=utf-8",
   });
   expect(mail.attachments[0].content.toString("utf8")).toBe(content);
 });

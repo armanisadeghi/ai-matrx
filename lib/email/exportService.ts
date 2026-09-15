@@ -133,8 +133,12 @@ export async function emailTableExport(options: {
   format: 'csv' | 'json' | 'markdown';
   content: string;
   rowCount?: number;
+  /** The sealed transfer artifact's reviewed filename, when available. */
+  attachmentFilename?: string;
+  /** The sealed transfer artifact's reviewed MIME type, when available. */
+  attachmentMime?: string;
 }): Promise<EmailExportResult> {
-  const { to, tableName, format, content, rowCount } = options;
+  const { to, tableName, format, content, rowCount, attachmentFilename, attachmentMime } = options;
   
   const subject = `Your table export: ${tableName}`;
   const safeTableName = escapeHtml(tableName);
@@ -182,9 +186,9 @@ export async function emailTableExport(options: {
     text: `Table Export: ${tableName}\nFormat: ${formatLabel}\n\n${displayContent}`,
     attachments: [
       {
-        filename: tableExportFilename(tableName, format),
+        filename: attachmentFilename ?? tableExportFilename(tableName, format),
         content: Buffer.from(content, "utf8"),
-        contentType: EXPORT_ATTACHMENT_CONTENT_TYPE[format],
+        contentType: attachmentMime ?? EXPORT_ATTACHMENT_CONTENT_TYPE[format],
       },
     ],
   });

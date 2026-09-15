@@ -14,11 +14,15 @@ jest.mock("@/lib/email/exportService", () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { POST } = require("./route") as typeof import("./route");
 
-function request(body: unknown) {
+function request(body: Record<string, unknown>) {
   return new Request("https://www.aimatrx.com/api/export/email-table", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      filename: "reviewed-export.csv",
+      mime: "text/csv;charset=utf-8",
+      ...body,
+    }),
   });
 }
 
@@ -41,6 +45,7 @@ test("emails the exact prepared artifact only to the authenticated account", asy
       label: "My <edited> view",
       format: "csv",
       content: filteredAndEditedArtifact,
+      filename: "reviewed-Ω.csv",
       to: "attacker@example.test",
       recipient: "attacker@example.test",
       tableId: "table-that-must-never-be-read",
@@ -53,6 +58,8 @@ test("emails the exact prepared artifact only to the authenticated account", asy
     tableName: "My <edited> view",
     format: "csv",
     content: filteredAndEditedArtifact,
+    attachmentFilename: "reviewed-Ω.csv",
+    attachmentMime: "text/csv;charset=utf-8",
   });
 });
 
@@ -74,13 +81,34 @@ test("rejects control characters in a label before it reaches the email header",
   expect(emailTableExport).not.toHaveBeenCalled();
 });
 
+test("rejects a path-like filename and mismatched MIME before attempting an email", async () => {
+  const response = await POST(
+    request({
+      label: "Table",
+      format: "csv",
+      content: "data",
+      filename: "../reviewed.csv",
+      mime: "application/json;charset=utf-8",
+    }),
+  );
+
+  expect(response.status).toBe(400);
+  expect(emailTableExport).not.toHaveBeenCalled();
+});
+
 test("enforces the byte cap even when Content-Length is absent", async () => {
   const content = "x".repeat(1_000_000);
   const response = await POST(
     new Request("https://www.aimatrx.com/api/export/email-table", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "Table", format: "csv", content }),
+      body: JSON.stringify({
+        label: "Table",
+        format: "csv",
+        content,
+        filename: "reviewed.csv",
+        mime: "text/csv;charset=utf-8",
+      }),
     }),
   );
 
@@ -96,7 +124,13 @@ test("reports a mail-provider failure honestly", async () => {
   });
 
   const response = await POST(
-    request({ label: "Table", format: "markdown", content: "# exact" }),
+    request({
+      label: "Table",
+      format: "markdown",
+      content: "# exact",
+      filename: "reviewed.md",
+      mime: "text/markdown;charset=utf-8",
+    }),
   );
   const body = await response.json();
 

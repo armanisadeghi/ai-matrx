@@ -7,6 +7,11 @@ const artifact = (overrides: Partial<Artifact> = {}): Artifact => ({
   draftRevision: 2,
   format: "markdown",
   plainText: "# Filtered and edited\n\nOnly this revision is emailed.",
+  file: {
+    filename: "reviewed-export.md",
+    mime: "text/markdown;charset=utf-8",
+    bytes: new TextEncoder().encode("# Filtered and edited\n\nOnly this revision is emailed."),
+  },
   omissions: [],
   ...overrides,
 });
@@ -44,6 +49,8 @@ describe("sendAlchemyEmail", () => {
           label: "Current filtered view",
           format: "markdown",
           content: "# Filtered and edited\n\nOnly this revision is emailed.",
+          filename: "reviewed-export.md",
+          mime: "text/markdown;charset=utf-8",
         }),
       }),
     );
@@ -62,6 +69,25 @@ describe("sendAlchemyEmail", () => {
       code: "unsupported_email_format",
       retryable: false,
     });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a file whose bytes differ from the reviewed plain text", async () => {
+    const fetchMock = jest.mocked(globalThis.fetch);
+
+    await expect(
+      sendAlchemyEmail(artifact({
+        file: {
+          filename: "reviewed-export.md",
+          mime: "text/markdown;charset=utf-8",
+          bytes: new TextEncoder().encode("different bytes"),
+        },
+      }), {
+        label: "Prepared content",
+        signal: new AbortController().signal,
+      }),
+    ).resolves.toMatchObject({ status: "error", code: "email_attachment_mismatch" });
 
     expect(fetchMock).not.toHaveBeenCalled();
   });

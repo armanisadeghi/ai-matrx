@@ -5,6 +5,12 @@ import { createClient } from "@/utils/supabase/server";
 
 const EMAIL_FORMATS = ["csv", "json", "markdown"] as const;
 type EmailFormat = (typeof EMAIL_FORMATS)[number];
+const EMAIL_MIME_BY_FORMAT: Record<EmailFormat, string> = {
+  csv: "text/csv;charset=utf-8",
+  json: "application/json;charset=utf-8",
+  markdown: "text/markdown;charset=utf-8",
+};
+const MAX_ATTACHMENT_FILENAME_LENGTH = 128;
 
 /**
  * The email service renders one in-memory HTML/text payload. Keep the wire
@@ -19,19 +25,31 @@ function isEmailFormat(value: unknown): value is EmailFormat {
   return typeof value === "string" && EMAIL_FORMATS.includes(value as EmailFormat);
 }
 
-function isEmailExportRequest(
-  value: unknown,
-): value is { label: string; format: EmailFormat; content: string } {
+function isEmailExportRequest(value: unknown): value is {
+  label: string;
+  format: EmailFormat;
+  content: string;
+  filename: string;
+  mime: string;
+} {
   if (typeof value !== "object" || value === null) return false;
 
-  const { label, format, content } = value as Record<string, unknown>;
+  const { label, format, content, filename, mime } = value as Record<string, unknown>;
   return (
     typeof label === "string" &&
     label.trim().length > 0 &&
     !/[\u0000-\u001F\u007F]/.test(label) &&
     typeof content === "string" &&
     content.length > 0 &&
-    isEmailFormat(format)
+    isEmailFormat(format) &&
+    typeof filename === "string" &&
+    filename.length > 0 &&
+    filename.length <= MAX_ATTACHMENT_FILENAME_LENGTH &&
+    filename !== "." &&
+    filename !== ".." &&
+    !/[\\/\u0000-\u001F\u007F]/.test(filename) &&
+    typeof mime === "string" &&
+    mime === EMAIL_MIME_BY_FORMAT[format]
   );
 }
 
@@ -99,7 +117,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          msg: "A label, format (csv, json, or markdown), and non-empty content are required",
+          msg: "A label, reviewed filename and file type, supported format, and non-empty content are required",
         },
         { status: 400 },
       );
@@ -110,6 +128,8 @@ export async function POST(request: Request) {
       tableName: body.label,
       format: body.format,
       content: body.content,
+      attachmentFilename: body.filename,
+      attachmentMime: body.mime,
     });
 
     if (result.success) {
