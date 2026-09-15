@@ -981,7 +981,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Topical map",
-    urlPathTemplate: "/marketing/topical-maps/{id}",
+    // Empty in the live registry: a topical map has no route of its own yet, and
+    // a template pointing at a route that does not exist hands callers a dead link.
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   seo_keyword: {
