@@ -126,6 +126,14 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-14` — **Mobile presents one pane even when Redux remembers a
+  desktop split.** `CanvasPane` now follows the rendered presentation: with
+  two or more items a phone keeps the history switcher reachable and hides the
+  impossible Split canvas control; desktop retains its split-only header
+  behavior. `CanvasNavigation` icon controls now name previous, history,
+  next, and item removal actions for assistive technology. Guard:
+  `core/__tests__/CanvasPane.mobile-split.test.tsx`.
+
 - `2026-09-15` — **THE DOOR LAW: every record the UI names opens.** An
   independent reviewer created a document in a chat; the `document` tool
   succeeded, the row landed in `workbench.udt_documents`, the agent replied
