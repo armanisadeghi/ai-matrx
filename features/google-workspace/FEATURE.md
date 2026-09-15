@@ -14,6 +14,10 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 - `/google-workspace-review` is the clean production reviewer route.
 - `/user-settings/integrations/google-workspace` renders the same reusable workspace inside user settings.
 - `GoogleWorkspaceReviewRoot.tsx` is the single provider boundary used by both routes.
+- `GoogleWorkspaceConnectBody.tsx` owns the shared connect, account-selection,
+  selected-file registration, Drive-import, Picker-broker, and reviewed-Gmail
+  consent flow. `GoogleConnectWindow` supplies only WindowPanel chrome, so the
+  same body can compose into the Workspace overview and settings surfaces.
 
 ## Authorization contract
 
@@ -151,6 +155,10 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-15: Moved the shared Google connect/select/import body and state from
+  `GoogleConnectWindow` into `GoogleWorkspaceConnectBody`; the window is now a
+  thin WindowPanel composition and no OAuth, Picker, broker, Vault, callback,
+  or Gmail-consent behavior changed.
 - 2026-09-01: Distinguished the state-bound Google root callback from Supabase recovery codes in the shared proxy, so same-tab consent reaches its verifier instead of being misrouted to `/auth/callback`.
 - 2026-09-01: Added a secure same-tab GIS redirect-code fallback for browser environments that cannot control Google's consent popup. The exact registered origin callback validates one-time server and session state, then converges on the canonical aidream exchange without broadening scopes or persisting credentials in the browser.
 - 2026-09-01: Gated every Google connect and incremental-consent action on GIS readiness so an
