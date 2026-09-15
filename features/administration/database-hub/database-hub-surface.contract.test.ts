@@ -94,9 +94,13 @@ describe("database admin surface contract", () => {
 
   it("keeps every SQL-running client on the canonical terminal Server Action", () => {
     const action = source("actions/admin/database.ts");
-    const hook = source(
-      "features/administration/hooks/use-database-admin.ts",
+    const sqlFunctionActions = source("actions/admin/sql-functions.ts");
+    const enumActions = source("actions/admin/enum-functions.ts");
+    const schemaOverview = source("app/api/schema-overview/route.ts");
+    const privilegedClient = source(
+      "features/administration/database-hub/require-super-admin-database-client.ts",
     );
+    const hook = source("features/administration/hooks/use-database-admin.ts");
     const enhancedClient = source(
       "app/(admin)/administration/database/components/database-client.tsx",
     );
@@ -108,8 +112,24 @@ describe("database admin surface contract", () => {
     );
     const clientSources = [hook, enhancedClient, legacyDashboard, notebook];
 
-    expect(action.match(/rpc\("execute_admin_query"/g)).toHaveLength(1);
-    expect(action).toContain("await requireSuperAdmin()");
+    expect(privilegedClient).toContain("await requireSuperAdmin()");
+    expect(privilegedClient).toContain("return createAdminClient()");
+    for (const [serviceRoleCaller, expectedGateCount] of [
+      [action, 1],
+      [sqlFunctionActions, 4],
+      [enumActions, 3],
+      [schemaOverview, 1],
+    ] as const) {
+      expect(serviceRoleCaller).not.toContain("createAdminClient");
+      expect(
+        serviceRoleCaller.match(/await requireSuperAdminDatabaseClient\(\)/g),
+      ).toHaveLength(expectedGateCount);
+    }
+    expect(schemaOverview).toContain('"Cache-Control": "private, no-store"');
+    expect(schemaOverview).toContain("if (authResponse) return authResponse");
+    expect(
+      schemaOverview.indexOf("await requireSuperAdminDatabaseClient()"),
+    ).toBeLessThan(schemaOverview.indexOf("if (cached &&"));
     expect(hook).toContain("await executeSqlQuery(query)");
     expect(enhancedClient).toContain("onExecuteQuery={executeQuery}");
     expect(legacyDashboard).toContain("await executeQuery(query)");

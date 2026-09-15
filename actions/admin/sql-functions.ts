@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 import {
   type GetDatabaseFunctionsRow,
   mapGetDatabaseFunctionsRows,
@@ -100,7 +100,7 @@ export async function searchSqlFunctions({
  */
 export async function createSqlFunction(functionDefinition: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     const { data, error } = await supabase.rpc("execute_admin_query", {
       query: functionDefinition,
@@ -121,7 +121,7 @@ export async function createSqlFunction(functionDefinition: string) {
  */
 export async function updateSqlFunction(functionDefinition: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     const { data, error } = await supabase.rpc("execute_admin_query", {
       query: functionDefinition,
@@ -217,7 +217,7 @@ export async function executeSqlFunctionCall(
     : `SELECT * FROM ${functionCall}`;
 
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
     const { data, error } = await supabase.rpc("execute_admin_query", {
       query: sql,
     });
@@ -238,7 +238,7 @@ export async function deleteSqlFunction(
   argumentTypes: string,
 ) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     // Construct the DROP FUNCTION query
     const query = `DROP FUNCTION IF EXISTS ${schema}.${functionName}(${argumentTypes});`;
