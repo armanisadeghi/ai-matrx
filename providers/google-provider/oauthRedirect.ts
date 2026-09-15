@@ -10,7 +10,11 @@ export type GoogleRedirectConnectionPurpose =
   | "general"
   | "google_ads_isolated"
   | "read_only_sweep"
-  | "contacts_import";
+  | "contacts_import"
+  | "google_capability";
+
+export type GoogleRedirectCapabilityKey =
+  "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
 
 export interface GoogleOAuthRedirectPending {
   state: string;
@@ -20,6 +24,8 @@ export interface GoogleOAuthRedirectPending {
   owner: GoogleRedirectOwner;
   organizationContextId: string;
   connectionPurpose: GoogleRedirectConnectionPurpose;
+  targetConnectionId?: string;
+  capabilityKey?: GoogleRedirectCapabilityKey;
 }
 
 export interface GoogleOAuthRedirectStartOptions {
@@ -31,6 +37,8 @@ export interface GoogleOAuthRedirectStartOptions {
   connectionPurpose?: GoogleRedirectConnectionPurpose;
   loginHint?: string;
   forceConsent?: boolean;
+  targetConnectionId?: string;
+  capabilityKey?: GoogleRedirectCapabilityKey;
 }
 
 function pendingKey(state: string): string {
@@ -67,6 +75,10 @@ export function buildGoogleOAuthRedirectPending(
     owner: options.owner,
     organizationContextId: options.organizationContextId,
     connectionPurpose: options.connectionPurpose ?? "general",
+    ...(options.targetConnectionId
+      ? { targetConnectionId: options.targetConnectionId }
+      : {}),
+    ...(options.capabilityKey ? { capabilityKey: options.capabilityKey } : {}),
   };
 }
 
@@ -100,7 +112,19 @@ export function readGoogleOAuthRedirectPending(
       (value.connectionPurpose !== "general" &&
         value.connectionPurpose !== "google_ads_isolated" &&
         value.connectionPurpose !== "read_only_sweep" &&
-        value.connectionPurpose !== "contacts_import") ||
+        value.connectionPurpose !== "contacts_import" &&
+        value.connectionPurpose !== "google_capability") ||
+      (value.targetConnectionId !== undefined &&
+        (typeof value.targetConnectionId !== "string" ||
+          !value.targetConnectionId)) ||
+      (value.capabilityKey !== undefined &&
+        value.capabilityKey !== "contacts" &&
+        value.capabilityKey !== "calendar" &&
+        value.capabilityKey !== "tasks" &&
+        value.capabilityKey !== "tag_manager" &&
+        value.capabilityKey !== "youtube_analytics") ||
+      (value.connectionPurpose === "google_capability" &&
+        (!value.targetConnectionId || !value.capabilityKey)) ||
       !value.owner ||
       (value.owner.type !== "user" && value.owner.type !== "organization")
     ) {
@@ -123,6 +147,10 @@ export function readGoogleOAuthRedirectPending(
       owner,
       organizationContextId: value.organizationContextId,
       connectionPurpose: value.connectionPurpose,
+      ...(value.targetConnectionId
+        ? { targetConnectionId: value.targetConnectionId }
+        : {}),
+      ...(value.capabilityKey ? { capabilityKey: value.capabilityKey } : {}),
     };
   } catch {
     return null;
@@ -138,7 +166,7 @@ export function clearGoogleOAuthRedirectPending(
 
 /** Refuse a consent result when the Matrx session changed mid-redirect. */
 export function assertGoogleOAuthRedirectInitiator(
-  pending: GoogleOAuthRedirectPending,
+  pending: Pick<GoogleOAuthRedirectPending, "initiatingUserId">,
   currentUserId: string | null | undefined,
 ): void {
   if (!currentUserId || currentUserId !== pending.initiatingUserId) {

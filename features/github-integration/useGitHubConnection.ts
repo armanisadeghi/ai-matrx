@@ -68,6 +68,26 @@ export function useGitHubConnection() {
     if (outcome.ok) {
       await reload();
     } else if (!outcome.cancelled) {
+      // A complete OAuth exchange can persist `needs_attention`; refresh it so
+      // the card tells the truth instead of retaining a stale disconnected row.
+      await reload();
+      setError(outcome.error);
+    }
+    setBusy(false);
+  };
+
+  const install = async (returnUrl = window.location.pathname) => {
+    if (!organizationId) {
+      setError("Select an organization before adding GitHub access.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const outcome = await startGitHubConnection(returnUrl, organizationId, "install");
+    if (outcome.ok) {
+      await reload();
+    } else if (!outcome.cancelled) {
+      await reload();
       setError(outcome.error);
     }
     setBusy(false);
@@ -110,6 +130,7 @@ export function useGitHubConnection() {
     error,
     reload,
     connect,
+    install,
     sync,
     disconnect,
   };

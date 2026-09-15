@@ -6,6 +6,7 @@ import type {
   SandboxListResponse,
   SandboxDetailResponse,
   SandboxCreateRequest,
+  SandboxActionRequest,
   SandboxExecRequest,
   SandboxExecResponse,
   SandboxAccessResponse,
@@ -14,11 +15,14 @@ import { notifyComputeTargetsChanged } from "./use-compute-targets";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 import {
-  classifySandboxLifecycleResponse,
-  sandboxLifecycleMessage,
-} from "@/lib/sandbox/lifecycle-response";
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 
 /** The sandbox list's page size is the `infrastructure.sandbox list_page_size` knob. */
 const SANDBOX_KNOB_FEATURE = "infrastructure.sandbox";
@@ -62,6 +66,8 @@ async function extractSandboxError(
 
 export function useSandboxInstances(projectId?: string) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,7 +77,25 @@ export function useSandboxInstances(projectId?: string) {
   const [listProjectId, setListProjectId] = useState(projectId);
   const listProjectIdRef = useRef(projectId);
   const listRequestId = useRef(0);
+  const listScopeGeneration = useRef(0);
   const listAbortController = useRef<AbortController | null>(null);
+  const extensionGeneration = useRef(0);
+  const extensionIdentity = useRef("");
+  const pendingExtensions = useRef(new Map<string, number>());
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
+
+  const currentExtensionIdentity = `${authReady}:${userId ?? ""}:${organizationId ?? ""}`;
+
+  useEffect(() => {
+    listScopeGeneration.current += 1;
+    listRequestId.current += 1;
+    listAbortController.current?.abort();
+    extensionIdentity.current = currentExtensionIdentity;
+    extensionGeneration.current += 1;
+    return () => {
+      extensionGeneration.current += 1;
+    };
+  }, [currentExtensionIdentity, projectId]);
 
   useEffect(() => {
     return () => {
@@ -79,10 +103,11 @@ export function useSandboxInstances(projectId?: string) {
       listAbortController.current?.abort();
       listAbortController.current = null;
     };
-  }, [projectId]);
+  }, [authReady, organizationId, projectId, userId]);
 
   const fetchInstances = useCallback(
     async (opts?: SandboxListOptions) => {
+      const scopeGeneration = listScopeGeneration.current;
       const requestId = listRequestId.current + 1;
       listRequestId.current = requestId;
       listAbortController.current?.abort();
@@ -131,7 +156,7 @@ export function useSandboxInstances(projectId?: string) {
 
           while (hasMore) {
             const page = await fetchPage(pageSize, offset);
-            if (listRequestId.current !== requestId) return null;
+            if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
 
             instances.push(...page.instances);
             total = page.pagination.total;
@@ -161,7 +186,7 @@ export function useSandboxInstances(projectId?: string) {
           };
         }
 
-        if (listRequestId.current !== requestId) return null;
+        if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
 
         // Deduplicate by immutable database ID while preserving the server's
         // descending-created-at sequence across every fetched page.
@@ -185,6 +210,7 @@ export function useSandboxInstances(projectId?: string) {
           ids: uniqueInstances.map((i) => i.id),
         });
 
+        if (listScopeGeneration.current !== scopeGeneration) return null;
         setInstances(uniqueInstances);
         setTotal(data.pagination.total);
         hasFetchedOnce.current = true;
@@ -192,7 +218,7 @@ export function useSandboxInstances(projectId?: string) {
         setListProjectId(projectId);
         return { ...data, instances: uniqueInstances };
       } catch (err) {
-        if (listRequestId.current !== requestId) return null;
+        if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
         if (err instanceof DOMException && err.name === "AbortError") {
           return null;
         }
@@ -206,7 +232,7 @@ export function useSandboxInstances(projectId?: string) {
         setError(msg);
         return null;
       } finally {
-        if (listRequestId.current === requestId) {
+        if (listRequestId.current === requestId && listScopeGeneration.current === scopeGeneration) {
           setLoading(false);
           setRefreshing(false);
           if (listAbortController.current === abortController) {
@@ -215,8 +241,11 @@ export function useSandboxInstances(projectId?: string) {
         }
       }
     },
-    [projectId],
+    [authReady, organizationId, projectId, userId],
   );
+  useSandboxLifecycleTerminalInvalidation(async () => {
+    await fetchInstances();
+  });
 
   const showingCurrentProject = listProjectId === projectId;
 
@@ -302,37 +331,12 @@ export function useSandboxInstances(projectId?: string) {
 
   const stopInstance = useCallback(async (id: string) => {
     setError(null);
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop" } satisfies SandboxActionRequest),
-      });
-
-      const result = await classifySandboxLifecycleResponse(
-        resp,
-        "Failed to stop sandbox",
-      );
-      if (result.kind === "outcome_unknown") {
-        await fetchInstances();
-        setError(sandboxLifecycleMessage(result));
-        return "outcome_unknown" as const;
-      }
-      if (result.kind === "failure") {
-        throw new Error(sandboxLifecycleMessage(result));
-      }
-      const instance = result.payload?.instance as SandboxInstance | undefined;
-      if (!instance) {
-        throw new Error("Failed to stop sandbox: response did not include an instance.");
-      }
-      setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
-      return instance;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setError(msg);
-      return null;
-    }
-  }, [fetchInstances]);
+    const instance = instances.find((candidate) => candidate.id === id);
+    if (!instance) return null;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "stop" });
+    if (!result.admitted) { setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account."); return null; }
+    return "queued" as const;
+  }, [instances, submitLifecycle]);
 
   const renameInstance = useCallback(async (id: string, name: string) => {
     setError(null);
@@ -360,36 +364,33 @@ export function useSandboxInstances(projectId?: string) {
 
   const extendInstance = useCallback(
     async (id: string, additionalSeconds = 3600) => {
-      setError(null);
+      const requestGeneration = extensionGeneration.current;
+      const requestIdentity = extensionIdentity.current;
+      if (pendingExtensions.current.get(id) === requestGeneration) return null;
+      pendingExtensions.current.set(id, requestGeneration);
+
+      const isCurrent = () =>
+        extensionGeneration.current === requestGeneration &&
+        extensionIdentity.current === requestIdentity;
+
+      if (isCurrent()) setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${id}/extend`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ttl_seconds: additionalSeconds }),
-        });
-
-        if (!resp.ok) {
-          if (resp.status >= 500) {
-            throw new Error("Could not confirm extension; refresh sandbox list before retrying");
-          }
-          throw new Error(
-            await extractSandboxError(resp, "Failed to extend sandbox"),
+        const result = await requestSandboxExtension(id, additionalSeconds);
+        if (!isCurrent()) return null;
+        if (result.kind === "success") {
+          setInstances((prev) =>
+            prev.map((instance) =>
+              instance.id === id ? result.instance : instance,
+            ),
           );
+          return result.instance;
         }
-
-        const { instance }: SandboxDetailResponse = await resp.json();
-        if (
-          !instance || instance.id !== id || !instance.expires_at ||
-          !Number.isFinite(Date.parse(instance.expires_at))
-        ) {
-          throw new Error("Could not confirm extension; refresh sandbox list before retrying");
-        }
-        setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
-        return instance;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        setError(msg);
+        setError(result.message);
         return null;
+      } finally {
+        if (pendingExtensions.current.get(id) === requestGeneration) {
+          pendingExtensions.current.delete(id);
+        }
       }
     },
     [],
@@ -397,26 +398,12 @@ export function useSandboxInstances(projectId?: string) {
 
   const deleteInstance = useCallback(async (id: string) => {
     setError(null);
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-
-      const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
-      if (result.kind === "outcome_unknown") {
-        setError(sandboxLifecycleMessage(result));
-        return "outcome_unknown" as const;
-      }
-      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
-
-      setInstances((prev) => prev.filter((i) => i.id !== id));
-      setTotal((prev) => prev - 1);
-      return true;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setError(msg);
-      if (err instanceof TypeError) return "outcome_unknown" as const;
-      return false;
-    }
-  }, []);
+    const instance = instances.find((candidate) => candidate.id === id);
+    if (!instance) return null;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "delete" });
+    if (!result.admitted) { setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account."); return null; }
+    return "queued" as const;
+  }, [instances, submitLifecycle]);
 
   const deleteInstances = useCallback(async (ids: string[]) => {
     if (ids.length === 0) {
@@ -430,47 +417,28 @@ export function useSandboxInstances(projectId?: string) {
     setError(null);
     const results = await Promise.all(
       ids.map(async (id) => {
-        try {
-          const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-          const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
-          if (result.kind === "outcome_unknown") {
-            return { id, kind: "outcome_unknown" as const };
-          }
-          if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
-          return { id, ok: true as const };
-        } catch (err) {
-          if (err instanceof TypeError) {
-            return { id, kind: "outcome_unknown" as const };
-          }
-          return { id, ok: false as const };
-        }
+        const instance = instances.find((candidate) => candidate.id === id);
+        if (!instance) return { id, ok: false as const };
+        const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "delete" });
+        return result.admitted ? { id, queued: true as const } : { id, ok: false as const };
       }),
     );
-
-    const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
+    const queuedIds = results.filter((r) => "queued" in r).map((r) => r.id);
     const failed = results
       .filter((r) => "ok" in r && r.ok === false)
       .map((r) => r.id);
-    const unknownIds = results
-      .filter((r) => "kind" in r && r.kind === "outcome_unknown")
-      .map((r) => r.id);
-
-    if (deletedIds.length > 0) {
-      const deletedSet = new Set(deletedIds);
-      setInstances((prev) => prev.filter((i) => !deletedSet.has(i.id)));
-      setTotal((prev) => Math.max(0, prev - deletedIds.length));
-    }
+    const unknownIds: string[] = [];
 
     if (failed.length > 0) {
       setError(
         failed.length === ids.length
           ? "Failed to delete sandbox history"
-          : `Deleted ${deletedIds.length}, but ${failed.length} failed`,
+          : `${queuedIds.length} deletion request(s) queued, but ${failed.length} could not be requested`,
       );
     }
 
-    return { deletedIds, failed, unknownIds };
-  }, []);
+    return { queuedIds, deletedIds: [] as string[], failed, unknownIds };
+  }, [instances, submitLifecycle]);
 
   const execCommand = useCallback(
     async (

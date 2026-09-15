@@ -99,8 +99,10 @@ function formatDate(value: string): string {
 /**
  * Derive the truthful state for one catalog entry.
  *
- * Order of authority: aidream's answer → the first-party connection (when the
- * server has one) → the server's own auth strategy → the MCP connection row.
+ * Order of authority: a loaded first-party connection (when the server has
+ * one) → aidream's answer → the server's own auth strategy → the MCP
+ * connection row. GitHub's bearer and vault state belong to that first-party
+ * connection, so a stale MCP availability result cannot overrule it.
  */
 export function deriveMcpConnectionState(
   entry: Pick<
@@ -109,6 +111,36 @@ export function deriveMcpConnectionState(
   > & { serverStatus?: McpCatalogEntry["serverStatus"] },
   options: DeriveOptions = {},
 ): McpConnectionTruth {
+  // `undefined` means the canonical first-party inventory is still loading;
+  // `null` means it loaded and found no connection. Once loaded, that
+  // connection is the credential source and must outrank an MCP row or a
+  // stale availability response.
+  if (options.hasFirstPartyPath && options.firstPartyStatus !== undefined) {
+    const status = options.firstPartyStatus;
+    if (!status) {
+      return {
+        state: "not_connected",
+        reason: `Connect ${entry.slug} to your account before agents can use it.`,
+        source: "catalog",
+      };
+    }
+    if (REAUTH_FIRST_PARTY_STATUSES.has(status)) {
+      return {
+        state: "needs_reauth",
+        reason: `Your ${entry.slug} connection is ${status} — reconnect it.`,
+        source: "catalog",
+      };
+    }
+    if (status === "connected") {
+      return { state: "connected", reason: null, source: "catalog" };
+    }
+    return {
+      state: "not_connected",
+      reason: `Your ${entry.slug} connection is ${status}, not connected.`,
+      source: "catalog",
+    };
+  }
+
   const availability = options.availability;
   if (availability) {
     if (!isMcpConnectionState(availability.state)) {

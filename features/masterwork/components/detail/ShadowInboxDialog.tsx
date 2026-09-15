@@ -204,35 +204,39 @@ export function ShadowInboxDialog({
   // Asked once per open. `connected: false` is the ANSWER, not an error: the
   // third door simply is not offered, and the sentence the server wrote is
   // shown instead. Nothing here ever renders a control that cannot work.
-  const probeConnection = useCallback(async () => {
-    const result = await store.dispatch(
-      callApi({ path: CONNECTION_PATH, method: "GET" }),
-    );
-    const data = (
-      result as {
-        data?: {
-          connected?: boolean;
-          account_email?: string | null;
-          connection_id?: string | null;
-          days_back_default?: number | null;
-          how_to_connect?: string | null;
-        };
-      }
-    ).data;
-    setConnection({
-      connected: Boolean(data?.connected),
-      accountEmail: data?.account_email ?? null,
-      connectionId: data?.connection_id ?? null,
-      daysBackDefault: data?.days_back_default ?? null,
-      howToConnect: data?.how_to_connect ?? null,
-    });
-    if (data?.days_back_default) setDaysBack(data.days_back_default);
-  }, [store]);
-
   useEffect(() => {
     if (!open || connection !== null) return;
-    void probeConnection();
-  }, [open, connection, probeConnection]);
+    let cancelled = false;
+
+    void store
+      .dispatch(callApi({ path: CONNECTION_PATH, method: "GET" }))
+      .then((result) => {
+        if (cancelled) return;
+        const data = (
+          result as {
+            data?: {
+              connected?: boolean;
+              account_email?: string | null;
+              connection_id?: string | null;
+              days_back_default?: number | null;
+              how_to_connect?: string | null;
+            };
+          }
+        ).data;
+        setConnection({
+          connected: Boolean(data?.connected),
+          accountEmail: data?.account_email ?? null,
+          connectionId: data?.connection_id ?? null,
+          daysBackDefault: data?.days_back_default ?? null,
+          howToConnect: data?.how_to_connect ?? null,
+        });
+        if (data?.days_back_default) setDaysBack(data.days_back_default);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, connection, store]);
 
   // ── the doors → one picker ───────────────────────────────────────────────
 
@@ -837,18 +841,22 @@ export function ShadowInboxDialog({
     );
   }
 
+  const handleDialogOpenChange = (next: boolean): void => {
+    durableRunDialogOnOpenChange({
+      running,
+      reset,
+      onOpenChange: (value) => {
+        if (!value && running) dismissedRunIdRef.current = run.runId;
+        onOpenChange(value);
+      },
+      runLabel: "Shadowing your inbox",
+    })(next);
+  };
+
   return (
     <Dialog
       open={open}
-      onOpenChange={durableRunDialogOnOpenChange({
-        running,
-        reset,
-        onOpenChange: (next) => {
-          if (!next && running) dismissedRunIdRef.current = run.runId;
-          onOpenChange(next);
-        },
-        runLabel: "Shadowing your inbox",
-      })}
+      onOpenChange={handleDialogOpenChange}
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>

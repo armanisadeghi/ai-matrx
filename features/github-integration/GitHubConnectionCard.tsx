@@ -38,9 +38,9 @@ import { cn } from "@/lib/utils";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { GitHubInstallation } from "./types";
 import { useGitHubConnection } from "./useGitHubConnection";
-import { useGitHubInstallReturn } from "./useGitHubInstallReturn";
 
 function coverageLabel(installation: GitHubInstallation): string {
+  if (installation.suspended) return "Suspended on GitHub";
   if (installation.repositorySelection === "all") return "All repositories";
   if (installation.repositorySelection === "selected") {
     return `${installation.repositoryCount} selected`;
@@ -85,7 +85,7 @@ function InstallationRow({
         className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
         aria-label={installation.accountType ?? "Account"}
       />
-      <span className="shrink-0 text-muted-foreground">
+      <span className={cn("shrink-0", installation.suspended ? "text-destructive" : "text-muted-foreground")}>
         {coverageLabel(installation)}
       </span>
     </>
@@ -122,7 +122,6 @@ export function GitHubConnectionCard({
   const account = github.inventory.account;
   const installations = github.inventory.installations;
   const repositoryCount = github.inventory.repositories.length;
-  const { openInstallPage } = useGitHubInstallReturn(github.sync);
 
   const accountLogin = account?.login ?? null;
   const accountUrl =
@@ -149,7 +148,7 @@ export function GitHubConnectionCard({
     const confirmed = await confirm({
       title: "Disconnect GitHub?",
       description:
-        "Agents, GitHub MCP, sandboxes, and code workspaces will lose repository access until you reconnect. AI Matrx will revoke its GitHub authorization and remove its cached repository inventory; the GitHub App installation may remain until you remove it on GitHub.",
+        "Agents, GitHub MCP, sandboxes, and code workspaces will lose repository access until you reconnect. AI Matrx will revoke this GitHub connection and remove its cached repository inventory; the GitHub App installation may remain until you remove it on GitHub.",
       confirmLabel: "Disconnect GitHub",
       variant: "destructive",
     });
@@ -176,7 +175,8 @@ export function GitHubConnectionCard({
           variant="outline"
           size="sm"
           className="h-11 sm:h-7"
-          onClick={openInstallPage}
+          onClick={() => void github.install()}
+          disabled={github.busy || github.loading}
         >
           <Plus className="h-3.5 w-3.5" />
           Add an organization or more repositories
@@ -184,8 +184,8 @@ export function GitHubConnectionCard({
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
-        Opens GitHub in a new tab. This list refreshes automatically when you
-        come back.
+        Opens GitHub in a secure connection window and refreshes the inventory
+        after GitHub confirms the updated installation.
       </p>
     </div>
   );
@@ -251,6 +251,12 @@ export function GitHubConnectionCard({
               {github.error && (
                 <p className="mt-2 text-xs text-destructive" role="alert">
                   {github.error}
+                </p>
+              )}
+              {!github.error && connection?.status === "needs_attention" && (
+                <p className="mt-2 text-xs text-destructive" role="alert">
+                  {connection.last_error ??
+                    "GitHub is authorized, but no approved GitHub App installation is available yet."}
                 </p>
               )}
             </div>

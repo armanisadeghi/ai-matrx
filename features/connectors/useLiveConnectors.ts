@@ -142,6 +142,7 @@ export function useLiveConnectors() {
   const refresh = () => dispatch(fetchCatalog());
   const isLoading =
     inventory.isLoading ||
+    mcp.firstPartyLoading ||
     ((mcp.status === "idle" || mcp.status === "loading") &&
       mcp.catalog.length === 0);
 

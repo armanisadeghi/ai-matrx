@@ -23,7 +23,10 @@ import {
   listGoogleConnectionInventory,
   listGoogleCapabilities,
 } from "@/features/marketing/google/service";
-import type { GoogleConnectionPurpose } from "@/features/marketing/google/service";
+import type {
+  GoogleCapabilityKey,
+  GoogleConnectionPurpose,
+} from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
 
 export const googleConnectionKeys = {
@@ -85,6 +88,9 @@ export function useConnectGoogle() {
       connectionPurpose?: GoogleConnectionPurpose;
       options?: {
         targetConnectionId?: string;
+        capabilityKey?: GoogleCapabilityKey;
+        organizationContextId?: string;
+        expectedUserId?: string;
       };
     }) => connectGoogle(code, owner, connectionPurpose, options),
     onSuccess: () =>

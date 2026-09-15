@@ -4,11 +4,9 @@ import { NextRequest } from "next/server";
 import { POST } from "./route";
 
 const mockCreateClient = jest.fn();
-const mockReconcile = jest.fn();
 
 jest.mock("@/utils/supabase/server", () => ({ createClient: (...args: unknown[]) => mockCreateClient(...args) }));
 jest.mock("@/utils/supabase/workspaceDb", () => ({ workspaceDb: (client: unknown) => client }));
-jest.mock("@/lib/sandbox/reconcile", () => ({ reconcileUserSandboxes: (...args: unknown[]) => mockReconcile(...args) }));
 jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   resolveOrchestratorByTier: () => ({ tier: "ec2", url: "https://orchestrator.example.test", apiKey: "test-key" }),
   orchestratorJsonHeaders: () => ({ "X-API-Key": "test-key" }),
@@ -24,10 +22,10 @@ function clientForCount(result: unknown) {
   return { auth: { getUser: jest.fn().mockResolvedValue({ data: { user }, error: null }) }, from: jest.fn(() => countQuery(result)) };
 }
 
-afterEach(() => { jest.restoreAllMocks(); mockCreateClient.mockReset(); mockReconcile.mockReset(); });
+afterEach(() => { jest.restoreAllMocks(); mockCreateClient.mockReset(); });
 
 test("fails closed before orchestration or persistence when the active-count read fails", async () => {
-  const client = clientForCount({ data: null, error: { message: "db unavailable" } }); mockCreateClient.mockResolvedValue(client);
+  const client = clientForCount({ count: null, error: { message: "db unavailable" } }); mockCreateClient.mockResolvedValue(client);
   const fetch = jest.spyOn(global, "fetch");
   const response = await POST(request());
   expect(response.status).toBe(503);
@@ -36,25 +34,34 @@ test("fails closed before orchestration or persistence when the active-count rea
 });
 
 test("keeps the five active sandbox ceiling before orchestration", async () => {
-  const client = clientForCount({ data: Array.from({ length: 5 }, (_, index) => ({ id: String(index) })), error: null }); mockCreateClient.mockResolvedValue(client); mockReconcile.mockResolvedValue({ reconciled: 0 });
+  const client = clientForCount({ count: 5, error: null }); mockCreateClient.mockResolvedValue(client);
   const fetch = jest.spyOn(global, "fetch");
   const response = await POST(request());
   expect(response.status).toBe(429); expect(fetch).not.toHaveBeenCalled();
 });
 
-test("fails closed when reconciliation's replacement count read fails", async () => {
-  const client = clientForCount({ data: Array.from({ length: 5 }, (_, index) => ({ id: String(index) })), error: null });
-  client.from.mockImplementationOnce(() => countQuery({ data: Array.from({ length: 5 }, (_, index) => ({ id: String(index) })), error: null })).mockImplementationOnce(() => countQuery({ data: null, error: { message: "retry read unavailable" } }));
-  mockCreateClient.mockResolvedValue(client); mockReconcile.mockResolvedValue({ reconciled: 1 }); const fetch = jest.spyOn(global, "fetch");
-  const response = await POST(request());
-  expect(response.status).toBe(503); expect(fetch).not.toHaveBeenCalled(); expect(client.from).toHaveBeenCalledTimes(2);
-});
-
 test("admits below the ceiling and persists only after orchestration succeeds", async () => {
   const upsert = jest.fn(() => ({ select: () => ({ single: async () => ({ data: { id: "row-1", sandbox_id: "sandbox-1" }, error: null }) }) }));
-  const client = clientForCount({ data: [{ id: "one" }], error: null });
-  client.from.mockImplementationOnce(() => countQuery({ data: [{ id: "one" }], error: null })).mockImplementationOnce(() => ({ upsert } as unknown as ReturnType<typeof countQuery>)); mockCreateClient.mockResolvedValue(client);
+  const client = clientForCount({ count: 1, error: null });
+  client.from.mockImplementationOnce(() => countQuery({ count: 1, error: null })).mockImplementationOnce(() => ({ upsert } as unknown as ReturnType<typeof countQuery>)); mockCreateClient.mockResolvedValue(client);
   jest.spyOn(global, "fetch").mockResolvedValue({ ok: true, json: async () => ({ sandbox_id: "sandbox-1", status: "creating", container_id: null }) } as Response);
   const response = await POST(request());
   expect(response.status).toBe(201); expect(upsert).toHaveBeenCalledTimes(1);
+});
+
+test("preserves the orchestrator's atomic capacity refusal", async () => {
+  const client = clientForCount({ count: 4, error: null });
+  mockCreateClient.mockResolvedValue(client);
+  jest.spyOn(global, "fetch").mockResolvedValue({
+    ok: false,
+    status: 429,
+    text: async () => JSON.stringify({
+      detail: { code: "admission_capacity_exceeded", ceiling: 5, occupied: 5 },
+    }),
+  } as Response);
+
+  const response = await POST(request());
+
+  expect(response.status).toBe(429);
+  expect(client.from).toHaveBeenCalledTimes(1);
 });

@@ -57,6 +57,8 @@ import { MockProcessAdapter } from "../../adapters/SandboxProcessAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
 import { useOpenSandboxManagementWindow } from "@/features/overlays/openers/sandboxManagementWindow";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import {
   Tooltip,
   TooltipContent,
@@ -122,6 +124,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const [creatingRequest, setCreatingRequest] = useState<{
     generation: number;
     organizationId: string;
@@ -151,6 +154,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const currentUserIdRef = useRef(userId);
   const currentAuthReadyRef = useRef(authReady);
   const createRequestGenerationRef = useRef(0);
+  const refreshGenerationRef = useRef(0);
   const creating =
     creatingRequest?.organizationId === organizationId &&
     creatingRequest.userId === userId &&
@@ -171,11 +175,19 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     // A scope switch invalidates its old request's UI ownership. `creating`
     // is scoped to the request's organization, so the new scope is usable
     // immediately while an old completion cannot clear a newer create.
-    createRequestGenerationRef.current += 1;
+    const invalidatedGeneration = ++createRequestGenerationRef.current;
+    refreshGenerationRef.current += 1;
+    queueMicrotask(() => {
+      setCreatingRequest((current) =>
+        current && current.generation <= invalidatedGeneration ? null : current,
+      );
+    });
   }, [authReady, organizationId, userId]);
 
   const refresh = useCallback(async () => {
     if (!mountedRef.current) return;
+    const generation = refreshGenerationRef.current;
+    const scope = { authReady, organizationId, userId };
     setLoading(true);
     setError(null);
     try {
@@ -183,13 +195,14 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
-      if (mountedRef.current) setInstances(data.instances ?? []);
+      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentOrganizationIdRef.current === scope.organizationId && currentUserIdRef.current === scope.userId) setInstances(data.instances ?? []);
     } catch (err) {
-      if (mountedRef.current) setError(extractErrorMessage(err));
+      if (mountedRef.current && refreshGenerationRef.current === generation) setError(extractErrorMessage(err));
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current && refreshGenerationRef.current === generation) setLoading(false);
     }
-  }, []);
+  }, [authReady, organizationId, userId]);
+  useSandboxLifecycleTerminalInvalidation(() => refresh(), () => mountedRef.current && currentAuthReadyRef.current === authReady && currentOrganizationIdRef.current === organizationId && currentUserIdRef.current === userId);
 
   // First mount only: ask the orchestrator which of our "active" rows still
   // exist. Anything orphaned gets marked `destroyed` server-side and falls
@@ -369,21 +382,12 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       setBusyId(instance.id);
       setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${instance.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "stop" }),
-        });
-        const result = await classifySandboxLifecycleResponse(resp, "Stop failed");
-        if (result.kind === "outcome_unknown") {
-          setError(sandboxLifecycleMessage(result));
-          toast.warning(sandboxLifecycleMessage(result));
-          await refresh();
+        const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "stop" });
+        if (!result.admitted) {
+          setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
           return;
         }
-        if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
         if (activeId === instance.id) disconnect();
-        await refresh();
       } catch (err) {
         if (err instanceof TypeError) {
           const result = sandboxLifecycleTransportUnknown("stop");
@@ -396,7 +400,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         setBusyId(null);
       }
     },
-    [activeId, disconnect, refresh],
+    [activeId, disconnect, submitLifecycle],
   );
 
   const deleteSandbox = useCallback(
@@ -404,19 +408,12 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       setBusyId(instance.id);
       setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${instance.id}`, {
-          method: "DELETE",
-        });
-        const result = await classifySandboxLifecycleResponse(resp, "Delete failed");
-        if (result.kind === "outcome_unknown") {
-          setError(sandboxLifecycleMessage(result));
-          toast.warning(sandboxLifecycleMessage(result));
-          await refresh();
+        const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "delete" });
+        if (!result.admitted) {
+          setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
           return;
         }
-        if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
         if (activeId === instance.id) disconnect();
-        await refresh();
       } catch (err) {
         if (err instanceof TypeError) {
           const result = sandboxLifecycleTransportUnknown("delete");
@@ -429,7 +426,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         setBusyId(null);
       }
     },
-    [activeId, disconnect, refresh],
+    [activeId, disconnect, submitLifecycle],
   );
 
   const resetSandbox = useCallback(

@@ -81,6 +81,45 @@ describe("Google OAuth connection resources", () => {
     });
   });
 
+  it("adds one capability scope set while preserving the exact target", () => {
+    const connection = {
+      id: "connection-contacts",
+      owner_type: "user" as const,
+      owner_user_id: "user-1",
+      organization_id: null,
+      provider: "google" as const,
+      provider_subject: "subject-contacts",
+      account_email: "contacts@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.youtubeReadonly],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-09-15T00:00:00Z",
+      updated_at: "2026-09-15T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      health: "connected" as const,
+    };
+
+    expect(
+      buildGoogleReconnectRequest(
+        connection,
+        [GOOGLE_SCOPE.contactsReadonly],
+        "contacts",
+      ),
+    ).toEqual({
+      scopes: [GOOGLE_SCOPE.youtubeReadonly, GOOGLE_SCOPE.contactsReadonly],
+      loginHint: "contacts@example.com",
+      owner: { type: "user" },
+      options: {
+        targetConnectionId: "connection-contacts",
+        capabilityKey: "contacts",
+      },
+    });
+  });
+
   it("removes admin-visible foreign connections and their resources from picker inventory", () => {
     const connection = {
       id: "owned-connection",

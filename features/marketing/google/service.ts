@@ -28,7 +28,14 @@ import { operationFailed } from "@/utils/errors";
 // and a newly added fail-closed purpose must be usable as soon as both source
 // commits exist even while production type synchronization catches up.
 export type GoogleConnectionPurpose =
-  "general" | "google_ads_isolated" | "read_only_sweep" | "contacts_import";
+  | "general"
+  | "google_ads_isolated"
+  | "read_only_sweep"
+  | "contacts_import"
+  | "google_capability";
+
+export type GoogleCapabilityKey =
+  "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
 
 /** Preserve every existing grant while an explicit feature adds its own scope. */
 export function cumulativeGoogleReconnectScopes(
@@ -41,12 +48,17 @@ export function cumulativeGoogleReconnectScopes(
 export function buildGoogleReconnectRequest(
   connection: GoogleConnectionSummary,
   requestedFeatureScopes: readonly string[] = [],
+  capabilityKey?: GoogleCapabilityKey,
 ): {
   scopes: string[];
   loginHint: string | undefined;
   owner: GoogleConnectionOwner;
-  options: { targetConnectionId: string };
+  options: { targetConnectionId: string; capabilityKey?: GoogleCapabilityKey };
 } {
+  const options = {
+    targetConnectionId: connection.id,
+    ...(capabilityKey ? { capabilityKey } : {}),
+  };
   if (connection.owner_type === "organization") {
     if (!connection.organization_id) {
       throw new Error(
@@ -63,7 +75,7 @@ export function buildGoogleReconnectRequest(
         type: "organization",
         organizationId: connection.organization_id,
       },
-      options: { targetConnectionId: connection.id },
+      options,
     };
   }
   return {
@@ -73,7 +85,7 @@ export function buildGoogleReconnectRequest(
     ),
     loginHint: connection.account_email ?? undefined,
     owner: { type: "user" },
-    options: { targetConnectionId: connection.id },
+    options,
   };
 }
 
@@ -383,6 +395,7 @@ export async function connectGoogle(
     organizationContextId?: string;
     expectedUserId?: string;
     targetConnectionId?: string;
+    capabilityKey?: GoogleCapabilityKey;
   },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -400,6 +413,7 @@ export async function connectGoogle(
       redirect_uri: options?.redirectUri ?? window.location.origin,
       connection_purpose: connectionPurpose,
       target_connection_id: options?.targetConnectionId,
+      capability_key: options?.capabilityKey,
     },
     "Unable to connect Google.",
     options?.organizationContextId,

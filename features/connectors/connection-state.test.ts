@@ -185,6 +185,27 @@ describe("deriveMcpConnectionState — the server's answer wins", () => {
     expect(truth.state).toBe("needs_reauth");
     expect(truth.reason).toContain("no refresh token stored");
   });
+
+  it("keeps suspended canonical GitHub access disconnected despite a stale connected availability row", () => {
+    const truth = deriveMcpConnectionState(
+      entry({ slug: "github", connectionStatus: "connected" }),
+      {
+        now: NOW,
+        hasFirstPartyPath: true,
+        firstPartyStatus: "needs_attention",
+        availability: {
+          slug: "github",
+          server_id: "github-server",
+          state: "connected",
+          reason: null,
+          tool_count: 4,
+        },
+      },
+    );
+
+    expect(truth.state).toBe("not_connected");
+    expect(truth.reason).toContain("needs_attention");
+  });
 });
 
 describe("deriveMcpConnectionState — server status", () => {

@@ -1,13 +1,16 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import {
-  GITHUB_OAUTH_COOKIE,
-  parseGitHubOAuthSession,
-  requestBaseUrl,
-} from "../session";
+import { GITHUB_OAUTH_COOKIE, parseGitHubOAuthSession, requestBaseUrl } from "../session";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+
+type GitHubCompletion = {
+  status: string;
+  next_authorization_url?: string;
+  next_state?: string;
+  next_flow?: "authorize" | "install";
+};
 
 function errorRedirect(
   request: NextRequest,
@@ -20,8 +23,19 @@ function errorRedirect(
   return NextResponse.redirect(url);
 }
 
+function refreshNoticeRedirect(request: NextRequest) {
+  const url = new URL("/api/github/oauth/complete", requestBaseUrl(request));
+  url.searchParams.set("return_url", "/code");
+  url.searchParams.set("github_notice", "refresh");
+  return NextResponse.redirect(url);
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const cookieStore = await cookies();
+  const returnedState = request.nextUrl.searchParams.get("state");
+  // GitHub's installation settings may return here without joining an OAuth
+  // transaction. It proves neither an update nor the caller's identity.
+  if (!returnedState) return refreshNoticeRedirect(request);
   const rawSession = cookieStore.get(GITHUB_OAUTH_COOKIE)?.value;
   cookieStore.delete(GITHUB_OAUTH_COOKIE);
   const oauthSession = rawSession ? parseGitHubOAuthSession(rawSession) : null;
@@ -33,17 +47,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const error = request.nextUrl.searchParams.get("error");
-  if (error) {
-    return errorRedirect(
-      request,
-      oauthSession.returnUrl,
-      request.nextUrl.searchParams.get("error_description") ?? error,
-    );
-  }
   const code = request.nextUrl.searchParams.get("code");
-  const returnedState = request.nextUrl.searchParams.get("state");
-  if (!code || !returnedState || returnedState !== oauthSession.state) {
+  const providerError = request.nextUrl.searchParams.get("error");
+  if (returnedState !== oauthSession.state) {
     return errorRedirect(
       request,
       oauthSession.returnUrl,
@@ -53,9 +59,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!user || !session?.access_token) {
     return errorRedirect(
       request,
       oauthSession.returnUrl,
@@ -66,7 +73,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const backendBase = AIDREAM_PRODUCTION_URL;
   try {
     const response = await fetch(
-      `${backendBase}/api/github-integrations/exchange`,
+      `${backendBase}/api/github-integrations/complete`,
       {
         method: "POST",
         headers: applyOrganizationContextHeader(
@@ -76,7 +83,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           },
           oauthSession.organizationId,
         ),
-        body: JSON.stringify({ code, redirect_uri: oauthSession.redirectUri }),
+        body: JSON.stringify({ state: returnedState, browser_proof: oauthSession.browserProof, code, provider_error: providerError }),
         signal: AbortSignal.timeout(30_000),
       },
     );
@@ -90,6 +97,38 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           ? body.detail
           : "GitHub connection failed.";
       throw new Error(detail);
+    }
+    const completed: unknown = await response.json();
+    if (!completed || typeof completed !== "object" || !("status" in completed) || typeof completed.status !== "string") throw new Error("GitHub returned an invalid connection response.");
+    const completion = completed as GitHubCompletion;
+    if (completion.next_authorization_url || completion.next_state || completion.next_flow) {
+      if (
+        !completion.next_authorization_url ||
+        !completion.next_state ||
+        (completion.next_flow !== "authorize" && completion.next_flow !== "install")
+      ) {
+        throw new Error("GitHub returned an invalid continuation response.");
+      }
+      const continuationUrl = new URL(completion.next_authorization_url);
+      if (continuationUrl.protocol !== "https:" || continuationUrl.hostname !== "github.com") {
+        throw new Error("GitHub returned an unsafe continuation URL.");
+      }
+      cookieStore.set(
+        GITHUB_OAUTH_COOKIE,
+        JSON.stringify({
+          ...oauthSession,
+          state: completion.next_state,
+          flow: completion.next_flow,
+        }),
+        { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 10 * 60 },
+      );
+      return NextResponse.redirect(continuationUrl);
+    }
+    if (completion.status === "cancelled") {
+      return errorRedirect(request, oauthSession.returnUrl, "GitHub connection was cancelled.");
+    }
+    if (completion.status !== "connected") {
+      throw new Error("GitHub authorization finished, but AI Matrx is not installed on an approved account yet. Complete the GitHub installation or ask an owner to approve it, then try again.");
     }
   } catch (cause) {
     return errorRedirect(

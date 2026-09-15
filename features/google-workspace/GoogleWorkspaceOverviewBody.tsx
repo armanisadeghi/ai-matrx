@@ -20,7 +20,10 @@ import {
   useGoogleCapabilities,
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
-import { buildGoogleReconnectRequest } from "@/features/marketing/google/service";
+import {
+  buildGoogleReconnectRequest,
+  type GoogleCapabilityKey,
+} from "@/features/marketing/google/service";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
@@ -30,7 +33,11 @@ import type {
 } from "@/features/marketing/google/types";
 import { GOOGLE_WORKSPACE_FILE_SCOPES } from "@/lib/googleScopes";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
@@ -62,6 +69,8 @@ function GoogleWorkspaceOverviewBodyContent({
   onManageWorkspace,
 }: GoogleWorkspaceOverviewBodyProps) {
   const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const organizationContextId = useAppSelector(selectOrganizationId);
   const google = useGoogleAPI();
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
@@ -71,7 +80,7 @@ function GoogleWorkspaceOverviewBodyContent({
   >(initialConnectionId ?? null);
   const [targetUnavailableDismissed, setTargetUnavailableDismissed] =
     useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const connections = inventory.data?.connections ?? [];
   const requestedConnection = initialConnectionId
     ? (connections.find(
@@ -100,7 +109,7 @@ function GoogleWorkspaceOverviewBodyContent({
 
   async function reconnectSelectedAccount() {
     if (!selectedConnection) return;
-    setBusy(true);
+    setBusy("reconnect");
     try {
       const request = buildGoogleReconnectRequest(selectedConnection);
       const code = await google.requestAuthorizationCode(
@@ -120,7 +129,84 @@ function GoogleWorkspaceOverviewBodyContent({
         toast.info("Google authorization cancelled");
       else toast.error(extractErrorMessage(cause));
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  async function enableCapability(
+    capability: GoogleCapabilityMetadata,
+    redirect = false,
+  ) {
+    const connection = selectedConnection;
+    const capabilityKey = googleCapabilityKey(capability.key);
+    const requiredScopes = capability.required_scopes.map(({ scope }) => scope);
+    if (
+      !connection ||
+      !capabilityKey ||
+      !capability.eligible ||
+      connection.health !== "connected" ||
+      requiredScopes.every((scope) => connection.scopes.includes(scope))
+    ) {
+      return;
+    }
+    const request = buildGoogleReconnectRequest(
+      connection,
+      requiredScopes,
+      capabilityKey,
+    );
+    const frozenConnectionId = request.options.targetConnectionId;
+    const frozenCapabilityKey = request.options.capabilityKey;
+    const frozenOwner = request.owner;
+    const frozenOrganizationContextId =
+      connection.organization_id ?? organizationContextId;
+    const initiatingUserId = userId;
+    setBusy(`capability:${capabilityKey}:${redirect ? "redirect" : "popup"}`);
+    try {
+      if (redirect) {
+        if (!frozenOrganizationContextId) {
+          throw new Error(
+            "Choose an organization before continuing with Google in this tab.",
+          );
+        }
+        await google.startAuthorizationCodeRedirect(request.scopes, {
+          returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          owner: frozenOwner,
+          organizationContextId: frozenOrganizationContextId,
+          connectionPurpose: "google_capability",
+          loginHint: request.loginHint,
+          forceConsent: true,
+          targetConnectionId: frozenConnectionId,
+          capabilityKey: frozenCapabilityKey,
+        });
+        return;
+      }
+      const code = await google.requestAuthorizationCode(
+        request.scopes,
+        request.loginHint,
+        { forceConsent: true },
+      );
+      const result = await connectGoogle.mutateAsync({
+        code,
+        owner: frozenOwner,
+        connectionPurpose: "google_capability",
+        options: {
+          targetConnectionId: frozenConnectionId,
+          capabilityKey: frozenCapabilityKey,
+          organizationContextId: frozenOrganizationContextId ?? undefined,
+          expectedUserId: initiatingUserId ?? undefined,
+        },
+      });
+      setSelectedConnectionId(result.connectionId);
+      await inventory.refetch();
+      toast.success(`${capability.title} enabled.`);
+    } catch (cause) {
+      if (isGoogleAuthorizationCancelled(cause)) {
+        toast.info("Google authorization cancelled");
+      } else {
+        toast.error(extractErrorMessage(cause));
+      }
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -157,7 +243,7 @@ function GoogleWorkspaceOverviewBodyContent({
           connections={connections}
           selectedConnection={selectedConnection}
           resources={resources}
-          busy={busy}
+          busy={busy !== null}
           authorizationActionDisabled={authorizationActionDisabled}
           googleLoaded={google.isGoogleLoaded}
           onConnectionChange={setSelectedConnectionId}
@@ -181,6 +267,9 @@ function GoogleWorkspaceOverviewBodyContent({
             resources={resources}
             onAddAccount={onAddAccount}
             onManageWorkspace={onManageWorkspace}
+            onEnableCapability={enableCapability}
+            busy={busy}
+            authorizationActionDisabled={authorizationActionDisabled}
           />
         )}
         <GoogleAgentToolsSection />
@@ -289,12 +378,21 @@ function CapabilityCatalog({
   resources,
   onAddAccount,
   onManageWorkspace,
+  onEnableCapability,
+  busy,
+  authorizationActionDisabled,
 }: {
   capabilities: GoogleCapabilityMetadata[];
   connection: GoogleConnectionSummary | null;
   resources: GoogleConnectionResource[];
   onAddAccount: () => void;
   onManageWorkspace: (connectionId: string) => void;
+  onEnableCapability: (
+    capability: GoogleCapabilityMetadata,
+    redirect?: boolean,
+  ) => void;
+  busy: string | null;
+  authorizationActionDisabled: boolean;
 }) {
   return (
     <section>
@@ -318,6 +416,16 @@ function CapabilityCatalog({
           );
           const matchingResources = resources.filter((resource) =>
             capability.eligible_resource_types.includes(resource.resource_type),
+          );
+          const capabilityKey = googleCapabilityKey(capability.key);
+          const canEnable = Boolean(
+            capabilityKey &&
+            capability.eligible &&
+            connection?.health === "connected" &&
+            !permissionGranted,
+          );
+          const capabilityBusy = busy?.startsWith(
+            `capability:${capabilityKey}:`,
           );
           return (
             <article
@@ -414,6 +522,29 @@ function CapabilityCatalog({
                     Manage {capability.title}
                   </Link>
                 </Button>
+              ) : canEnable ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => onEnableCapability(capability)}
+                    disabled={authorizationActionDisabled}
+                  >
+                    {capabilityBusy === "capability:" + capabilityKey + ":popup"
+                      ? `Enabling ${capability.title}…`
+                      : `Enable ${capability.title}`}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEnableCapability(capability, true)}
+                    disabled={authorizationActionDisabled}
+                  >
+                    {capabilityBusy ===
+                    "capability:" + capabilityKey + ":redirect"
+                      ? "Opening Google…"
+                      : "Continue in this tab"}
+                  </Button>
+                </div>
               ) : capability.rollout_phase === "available" &&
                 (capability.key === "drive_files" ||
                   capability.key === "docs" ||
@@ -437,6 +568,16 @@ function CapabilityCatalog({
       </div>
     </section>
   );
+}
+
+function googleCapabilityKey(value: string): GoogleCapabilityKey | null {
+  return value === "contacts" ||
+    value === "calendar" ||
+    value === "tasks" ||
+    value === "tag_manager" ||
+    value === "youtube_analytics"
+    ? value
+    : null;
 }
 
 function CapabilityState({
