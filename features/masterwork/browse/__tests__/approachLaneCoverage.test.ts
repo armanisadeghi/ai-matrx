@@ -234,6 +234,35 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     intakeQuery: { predictions: "1" },
     launchHref: null,
   },
+  {
+    // THE SORTING TABLE — a NEW Approach, not one of the twenty Arman named on
+    // 2026-08-17, so its row carries no `catalog_number`. Created live and
+    // enabled on 2026-09-15 by `aidream/db/migrations/0745_the_sorting_table_is_live.sql`,
+    // whose parity block refuses to commit a row that is enabled with no lane
+    // key — the `timeline` defect (census row 3) cannot recur through this row.
+    // The lane: `/masterwork/[id]/sort`, `features/masterwork/sorting/`.
+    key: "sorting_table",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { sort: "1" },
+    launchHref: null,
+  },
+  {
+    // THE TEACH-BACK — another NEW Approach, not one of the twenty Arman named
+    // on 2026-08-17, so its row carries no `catalog_number` and its card words
+    // are marked `words_reviewed_by_arman: false` rather than passing as his.
+    // Created live and enabled on 2026-09-15 through the platform's own write
+    // path (`aidream/scripts/seed_teach_back_approach.py`, the Matrx ORM
+    // Approach model) together with its three `masterwork.teach_back` knobs —
+    // no schema edit, because migration 0727 made the run-kind vocabulary
+    // code-seeded. The lane: `/masterwork/[id]/teach-back`,
+    // `features/masterwork/teach-back/`, `POST /masterworks/teach-back`.
+    key: "teach_back",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { teachBack: "1" },
+    launchHref: null,
+  },
 ];
 
 function describe_(row: RegistryRow): string {
@@ -329,6 +358,34 @@ describe("every promised Distillation Approach has a lane", () => {
     expect(promisesALane(row as DistillationApproach)).toBe(true);
     expect(row!.enabled).toBe(true);
     expect(resolveApproachLane(row!)).toEqual<ApproachLane>({ kind: "probe" });
+  });
+
+  it("opens the sorting_table Approach on its own page — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "sorting_table");
+    expect(row).toBeDefined();
+    // Both halves, as for every other lane here: the row PROMISES a lane, and
+    // the lane exists. A live card that resolved to null would let an Expert
+    // select an Approach the product cannot open.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "sortingTable",
+    });
+  });
+
+  it("opens the teach_back Approach on its own page — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "teach_back");
+    expect(row).toBeDefined();
+    // Both halves, as for every other lane here: the row PROMISES a lane, and
+    // the lane exists. A live card that resolved to null would let an Expert
+    // select an Approach the product cannot open — and this one is the lane a
+    // brand-new Rulebook is most likely to be sent to, because it is the only
+    // one that needs no material at all.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "teachBack",
+    });
   });
 
   it("returns null — never a guess — for a row the product has no door for", () => {

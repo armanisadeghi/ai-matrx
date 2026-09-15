@@ -135,7 +135,67 @@ export type ApproachLane =
    * provider-gated door the chat lane has no notion of — and that door is
    * ABSENT, never dead, until the mailbox grant exists.
    */
-  | { kind: "shadowInbox" };
+  | { kind: "shadowInbox" }
+  /**
+   * THE SORTING TABLE (`sorting_table`, 2026-09-15) — a pile of real cases
+   * sorted wordlessly into piles the Expert names, then the boundary: the pairs
+   * that sat CLOSEST across a pile edge, and the pile nobody used. Reached by
+   * `intake_query.sort = "1"`.
+   *
+   * A door of its own and NOT an `ingest` mode: every ingest lane reads
+   * expertise out of something that already exists, and here the sort itself
+   * produces almost none — the expertise appears only when the platform's own
+   * arithmetic finds the edge and asks about it. It is also not a dialog. A
+   * phone-first sort needs the whole screen and a sticky thumb-reachable row of
+   * piles, the same reason the Triad game got a page.
+   */
+  | { kind: "sortingTable" }
+  /**
+   * THE TEACH-BACK (`teach_back`, 2026-09-15) — the system explains, the
+   * expert corrects. We say the Expert's own method back to them in about a
+   * minute of plain spoken words, the way a bright new hire would at the end of
+   * their first week, and they interrupt: "no, not like that", "you missed the
+   * part where…", "that's right but only when…". Reached by
+   * `intake_query.teachBack = "1"`.
+   *
+   * A door of its own and NOT an `ingest` mode, for the Probe's reason and one
+   * more. Every ingest lane reads expertise out of something that already
+   * exists; this one MANUFACTURES a misunderstanding for the Expert to break,
+   * so they bring nothing at all — it is the one lane that works on a Rulebook
+   * holding zero rules, where it explains what a generalist would do and says
+   * so. And it is not a dialog: a session is minutes of listening and
+   * interrupting, with audio playing, which is a working mode owed a real URL
+   * like the interview, the probe and the Conductor.
+   */
+  | { kind: "teachBack" }
+  /**
+   * THE CAPTURE PLAN (`capture_plan`, 2026-09-15) — a PROGRAM, not a lane.
+   * Reached by `intake_query.plan = "1"`.
+   *
+   * It is a door of its own and not a mode of anything, because it captures
+   * nothing itself: it decides which of the other doors the Expert opens next,
+   * sizes the session to the time they said they have, measures what came of
+   * it, and re-plans — giving more of their minutes to whatever is actually
+   * producing rules they keep, and dropping whatever is not. It gets its own
+   * page rather than a dialog because it is the longest-lived working mode
+   * Masterwork has: the thing an Expert returns to daily for a fortnight, and
+   * the thing every session reminder deep-links to.
+   */
+  | { kind: "plan" }
+  /**
+   * THE DAILY DRIP (`daily_drip`, 2026-09-15) — one short question a day about
+   * the work the Expert actually did, arriving by text, email or in-app, and
+   * answered by talking into one field on their phone. Reached by
+   * `intake_query.drip = "1"`.
+   *
+   * A door of its own and NOT an `ingest` mode, for the reason every other
+   * manufacturing lane here is one: every ingest lane reads expertise out of
+   * something that already exists, and this one MAKES its source one minute at
+   * a time over weeks. And the dialog is only where it is turned on and where
+   * the streak is read — the answering happens on its own phone page, in a
+   * channel, on a day the Expert is not looking at this app at all.
+   */
+  | { kind: "drip" };
 
 /**
  * Resolve a registry row to the lane it opens, or `null` when the product has
@@ -157,11 +217,15 @@ export function resolveApproachLane(
   if (q.meeting === "1") return { kind: "meeting" };
   if (q.conduct === "1") return { kind: "conduct" };
   if (q.triad === "1") return { kind: "triad" };
+  if (q.sort === "1") return { kind: "sortingTable" };
   if (q.shadowInbox === "1") return { kind: "shadowInbox" };
   if (q.red_pen === "1") return { kind: "redPen" };
   if (q.intake === "timeline") return { kind: "unfolding" };
   if (q.predictions === "1") return { kind: "prediction" };
   if (q.probe === "1") return { kind: "probe" };
+  if (q.teachBack === "1") return { kind: "teachBack" };
+  if (q.plan === "1") return { kind: "plan" };
+  if (q.drip === "1") return { kind: "drip" };
   return null;
 }
 

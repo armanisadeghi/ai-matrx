@@ -956,6 +956,34 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     router.replace(`/masterwork/${rulebook.id}/probe`);
   }, [probeDeepLink, rulebook?.id, router]);
 
+  // THE TEACH-BACK Approach lands here with ?teachBack=1 from the guided start,
+  // and its next step is a PAGE, not a dialog — so the deep link does the one
+  // thing the picker's `case "teachBack"` does: go there. Same census-row-3
+  // reasoning as the probe above: `launchApproach` only fires when the Expert
+  // picks an Approach ON this page, and a Rulebook the funnel created and
+  // deep-linked arrives with nobody having picked anything.
+  const teachBackDeepLink = searchParams.get("teachBack") === "1";
+  const teachBackDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!teachBackDeepLink || teachBackDeepLinkRef.current || !rulebook?.id) return;
+    teachBackDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/teach-back`);
+  }, [teachBackDeepLink, rulebook?.id, router]);
+
+  // THE CAPTURE PLAN lands here with ?plan=1 from the guided start, and its
+  // next step is its own PAGE. Same census-row-3 reasoning as the probe and the
+  // teach-back above: `launchApproach` only fires when the Expert picks an
+  // Approach ON this page, and a Rulebook the funnel just created arrives with
+  // nobody having picked anything — without this the card is a real door all
+  // the way through and the Expert still lands on a bare Rulebook.
+  const planDeepLink = searchParams.get("plan") === "1";
+  const planDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!planDeepLink || planDeepLinkRef.current || !rulebook?.id) return;
+    planDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/plan`);
+  }, [planDeepLink, rulebook?.id, router]);
+
   // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
   // ?predictions=1 — the ledger dialog IS the next step. The registry row
   // carries the same `{"predictions":"1"}` in its `intake_query`, so the deep
@@ -1086,6 +1114,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         // therefore owed a real URL like the interview and the Conductor.
         case "probe":
           router.push(`/masterwork/${rulebookId}/probe`);
+          return;
+        // THE TEACH-BACK — we explain their method back to them and they
+        // interrupt. Its own PAGE for the probe's reason and one more: a round
+        // plays AUDIO, and a voice coming out of a dialog somebody opened over
+        // their Rulebook is not a working mode, it is an ambush.
+        case "teachBack":
+          router.push(`/masterwork/${rulebookId}/teach-back`);
+          return;
+        // THE SORTING TABLE — a pile of real cases sorted wordlessly, then the
+        // boundary questions the edges between the piles produce. Its own PAGE
+        // and not a dialog, for the Triad's reason: a phone-first sort needs the
+        // whole screen and a sticky thumb-reachable row of piles.
+        case "sortingTable":
+          router.push(`/masterwork/${rulebookId}/sort`);
+          return;
+        // THE CAPTURE PLAN — a PROGRAM over the other lanes rather than a lane.
+        // Its own PAGE because it is the longest-lived working mode here: an
+        // Expert comes back to it daily, and every session reminder links to it.
+        case "plan":
+          router.push(`/masterwork/${rulebookId}/plan`);
           return;
         // SHADOW-THE-INBOX — the Expert's real mail, diffed against the reply
         // a competent generalist would have written. A registry row reaches it
