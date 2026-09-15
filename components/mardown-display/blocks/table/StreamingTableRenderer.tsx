@@ -51,6 +51,7 @@ import { RowActionsMenu } from "../../tables/editing/RowActionsMenu";
 import { ColumnActionsMenu } from "../../tables/editing/ColumnActionsMenu";
 import { useTableUndo } from "../../tables/editing/useTableUndo";
 import { useDoubleClickEdit } from "../../tables/editing/useDoubleClickEdit";
+import { MarkdownTableScrollArea } from "../../tables/MarkdownTableScrollArea";
 import {
   appendRow,
   appendColumn,
@@ -820,9 +821,9 @@ const StreamingTableRendererCore: React.FC<
         </div>
       ) : (
         <>
-          <div
+          <MarkdownTableScrollArea
             className={cn(
-              "overflow-x-auto border border-border rounded-lg shadow-sm",
+              "border border-border rounded-lg shadow-sm",
               isEditingEnabled && "border-dashed border-red-500 border-2",
               isMobile && "-mx-1",
             )}
@@ -1007,7 +1008,7 @@ const StreamingTableRendererCore: React.FC<
                 </div>
               </div>
             )}
-          </div>
+          </MarkdownTableScrollArea>
 
           {/* Structural editing toolbar — only when in edit mode (and stream complete) */}
           {tableIsComplete && isEditingEnabled && (
