@@ -74911,6 +74911,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      provider_account_verify: {
+        Args: {
+          p_account_id: string
+          p_auth_method?: string
+          p_external_account_id: string
+          p_issuer?: string
+          p_login_identity: string
+          p_login_url?: string
+          p_safe_notes?: string
+          p_verified_at?: string
+          p_workspace_name?: string
+        }
+        Returns: undefined
+      }
       provision_mcp_server: {
         Args: {
           p_auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
