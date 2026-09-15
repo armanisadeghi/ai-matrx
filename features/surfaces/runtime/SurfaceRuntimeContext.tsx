@@ -25,6 +25,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -445,8 +446,9 @@ const SurfaceRuntimeDepthContext = createContext(0);
 
 /**
  * Page-tree registration. Renders children unchanged aside from the depth
- * context; `getScope` is held in a ref so identity churn does not thrash the
- * registry.
+ * context. The registered getter is stable, while its scope-builder ref is
+ * refreshed during render so a chrome read between commit and passive effects
+ * cannot observe a previous account's closure.
  */
 export function SurfaceRuntimeProvider({
   children,
@@ -458,10 +460,17 @@ export function SurfaceRuntimeProvider({
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const getScopeRef = useRef(getScope);
+  // This is a local ref assignment, not a registry mutation. Registration
+  // remains effect-owned, but its already-registered callback sees the current
+  // render immediately (before passive effects have a chance to run).
+  // This ref is intentionally the commit-visible bridge for an already-
+  // registered external callback.
+  // eslint-disable-next-line react-hooks/refs
+  getScopeRef.current = getScope;
+  const stableGetScope = useCallback(() => getScopeRef.current(), []);
   const beforeExecuteRef = useRef(beforeExecute);
   const getWriteHandlersRef = useRef(getWriteHandlers);
   useEffect(() => {
-    getScopeRef.current = getScope;
     beforeExecuteRef.current = beforeExecute;
     getWriteHandlersRef.current = getWriteHandlers;
   });
@@ -471,17 +480,17 @@ export function SurfaceRuntimeProvider({
       {
         surfaceName,
         isEditable,
-        getScope: () => getScopeRef.current(),
+        getScope: stableGetScope,
         beforeExecute: (input) => beforeExecuteRef.current?.(input),
         getWriteHandlers: () => getWriteHandlersRef.current?.() ?? {},
       },
       depth,
     );
-  }, [surfaceName, isEditable, depth]);
+  }, [surfaceName, isEditable, depth, stableGetScope]);
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>
-      <AlchemySurfaceBridge surfaceName={surfaceName} getScope={getScope}>
+      <AlchemySurfaceBridge surfaceName={surfaceName} getScope={stableGetScope}>
         {children}
       </AlchemySurfaceBridge>
     </SurfaceRuntimeDepthContext.Provider>

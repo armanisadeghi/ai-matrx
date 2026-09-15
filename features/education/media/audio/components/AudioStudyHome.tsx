@@ -9,7 +9,6 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -39,8 +38,8 @@ import {
   createEducationAudioStudyScope,
   type AudioLibraryEntry,
 } from "@/features/surfaces/manifests/education-audio-study.manifest";
-import { studyMediaService } from "../../service";
 import { authenticatedStudyMediaLoadKey } from "../../authLoad";
+import { useStudyMediaLibrary } from "../../useStudyMediaLibrary";
 import type { StudyMediaRow } from "../../types";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -63,15 +62,16 @@ export function AudioStudyHome() {
     userId,
     accessToken,
   });
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const library = useStudyMediaLibrary("audio", loadKey);
+  const rows = library.rows;
+  const loading = !authReady || library.loading;
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
     createEducationAudioStudyScope({
       view: "list",
-      library_loaded: !loading,
-      ...(loading
+      library_loaded: library.loaded,
+      ...(!library.loaded
         ? {}
         : {
             audio_count: rows.length,
@@ -86,19 +86,6 @@ export function AudioStudyHome() {
             ),
           }),
     });
-
-  useEffect(() => {
-    if (!loadKey) return;
-    let active = true;
-    studyMediaService.listByKind("audio").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [loadKey]);
 
   if (authReady && !loadKey) {
     return (
@@ -138,6 +125,8 @@ export function AudioStudyHome() {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : library.error ? (
+        <LibraryError error={library.error} onRetry={library.retry} />
       ) : rows.length === 0 ? (
         <EmptyState onNew={() => router.push("/education/audio-study/new")} />
       ) : (
@@ -149,6 +138,16 @@ export function AudioStudyHome() {
       )}
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <p className="text-sm text-muted-foreground">Could not load audio studies right now.</p>
+      <Button size="sm" onClick={onRetry}>Try again</Button>
+    </div>
   );
 }
 
