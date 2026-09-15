@@ -20,12 +20,29 @@
  *
  * Order of speech, therefore:
  *   1. wired to something → say what, with its real state, worst first;
- *   2. wired to nothing   → the suggestion strip keeps the line (it is a
- *      reminder, and there is nothing truer to show).
+ *   2. wired to nothing   → say THAT, and keep the one click to the picker
+ *      that changes it.
  *
  * Every chip is the run's truth, never a hope: `mcpChipPresentation` is the
  * same pure decision the Tools picker uses, so a checkmark here means attached
  * AND connected AND nothing in this run saying otherwise.
+ *
+ * 🚨 THE RAIL IS SCOPED TO THIS CONVERSATION — NOTHING ACCOUNT-WIDE RIDES IT.
+ * Until 2026-09-15 the "wired to nothing" branch fell back to
+ * `ChatConnectorStrip`, an ACCOUNT-level randomized rotation of the person's
+ * live integrations. The vision interview's room voices carry no MCP servers,
+ * so that branch is exactly the one they take, and the room's composer wore
+ * "Reducto Public Documentation / Kestra Public Documentation / Firecrawl
+ * Documentation / More" — three documentation connectors belonging to another
+ * feature entirely, pinned above the box where a subject-matter expert is
+ * describing their vision (census W1, 2026-09-15; reproduced live the same day
+ * as "Fireflies Documentation / Pipedream Documentation / Meta Ads / More").
+ * This component is mounted by `SmartAgentInput` under EVERY composer on the
+ * platform, so that fallback leaked into every embedded chat surface at once,
+ * not just this one. The suggestion strip is not wrong — it is just not about
+ * this conversation, and it keeps its own homes (the `/chat/new` greeting and
+ * the live-integrations window). Never reintroduce an account-wide or
+ * user-wide source here.
  */
 
 import { useState } from "react";
@@ -34,7 +51,6 @@ import { BottomSheet } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { selectChatConnections } from "@/features/connectors/chat-connections";
 import {
   indexRunMcpAttachments,
@@ -97,12 +113,6 @@ export function ChatConnectionsStrip({
       })
     : [];
 
-  // Nothing wired to this chat: the suggestion reminder keeps the line. It is
-  // the honest thing to show when there is no attachment to report.
-  if (connections.length === 0) {
-    return <ChatConnectorStrip className={className} />;
-  }
-
   const broken = connections.filter((c) => c.state !== "connected").length;
 
   const openPicker = () => {
@@ -115,6 +125,54 @@ export function ChatConnectionsStrip({
     }
     openRunControlsWindow({ conversationId, initialTab: "tools" });
   };
+
+  // The mobile picker rides BOTH states — an empty rail whose only control
+  // does nothing on a phone is a dead control (law 4).
+  const mobilePicker =
+    isMobile && conversationId ? (
+      <BottomSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        title="Tools"
+        size="full"
+        surface="solid"
+      >
+        <RunToolPicker conversationId={conversationId} />
+      </BottomSheet>
+    ) : null;
+
+  // Nothing is wired to this chat. The honest line says so and stays one click
+  // from the picker that changes it — it never borrows another scope's items
+  // to look busy. With no conversation there is no picker to open, and nothing
+  // truthful to say, so the line is absent rather than dead.
+  if (connections.length === 0) {
+    if (!conversationId) return null;
+    return (
+      <>
+        <div
+          className={cn(
+            "flex h-4 w-full items-center gap-1 overflow-x-auto scrollbar-hide",
+            className,
+          )}
+        >
+          <button
+            type="button"
+            onClick={openPicker}
+            title="Nothing is connected to this chat — open the Tools picker to add a service"
+            aria-label="Nothing is connected to this chat. Open the Tools picker to add a service."
+            className="group flex shrink-0 items-center gap-1 rounded-full pr-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <Server className="h-3 w-3 text-muted-foreground" aria-hidden />
+            <span className="uppercase tracking-wide">Connections</span>
+            <span className="font-normal normal-case tracking-normal">
+              none for this chat
+            </span>
+          </button>
+        </div>
+        {mobilePicker}
+      </>
+    );
+  }
 
   return (
     <>
@@ -187,17 +245,7 @@ export function ChatConnectionsStrip({
         })}
       </div>
 
-      {isMobile && conversationId && (
-        <BottomSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          title="Tools"
-          size="full"
-          surface="solid"
-        >
-          <RunToolPicker conversationId={conversationId} />
-        </BottomSheet>
-      )}
+      {mobilePicker}
     </>
   );
 }

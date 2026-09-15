@@ -576,6 +576,24 @@ export interface RoleBinding {
   /** The live agent the bound version was cut from (equal to agentId when not a version). */
   definitionAgentId: string;
   conversationId: string;
+  /**
+   * Does `chat.conversation` HOLD `conversationId` right now?
+   *
+   * The id is a RESERVATION: aidream mints it so a stage tab is stable per
+   * role per session, and the row is written lazily by the first turn. Until
+   * 2026-09-15 nothing said which of the two you were holding, so the room
+   * reopened an unwritten row, `useConversationResume` classified it as a
+   * conversation the server was supposed to have, and every freshly opened
+   * interview wore "Couldn't load this conversation… your sign-in lost access
+   * to it" over a Try-again button that could never succeed (census W1).
+   *
+   * The server answers it per `/roles` call and never persists it — see
+   * aidream `services/vision_interview/agents.py`. Absent on a server that
+   * predates the field, which reads as `false`: a reservation is the safe
+   * assumption, because calling a real record a reservation costs an honest
+   * banner, while calling a reservation a record IS the bug.
+   */
+  conversationStarted: boolean;
 }
 
 function asString(value: unknown): string | null {
@@ -603,6 +621,7 @@ export function roleBinding(
     isVersion: entry["is_version"] === true,
     definitionAgentId: asString(entry["definition_agent_id"]) ?? agentId,
     conversationId,
+    conversationStarted: entry["conversation_started"] === true,
   };
 }
 

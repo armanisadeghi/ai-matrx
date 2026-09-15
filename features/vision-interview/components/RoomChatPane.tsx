@@ -409,6 +409,14 @@ export function RoomChatPane({
                 agentId={binding.agentId}
                 conversationId={binding.conversationId}
                 variablesPanelStyle="hidden"
+                /* The binding's conversation id is a RESERVATION until someone
+                   speaks in this room — the server writes `chat.conversation`
+                   on the first turn and tells us here which of the two this
+                   is. Saying so is what stops an unwritten room from wearing
+                   "Couldn't load this conversation" forever (census W1). */
+                conversationMaterialization={
+                  binding.conversationStarted ? "existing" : "reserved"
+                }
               />
               <PendingAnswersRider conversationId={binding.conversationId} />
               {/* A finished exchange is reported to the Scribe from here —

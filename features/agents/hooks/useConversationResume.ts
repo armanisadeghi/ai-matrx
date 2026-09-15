@@ -72,6 +72,27 @@ export interface UseConversationResumeOptions {
    * function, so this is an earlier read of one truth, never a second one.
    */
   sandboxSeed?: ConversationSandboxBinding | null;
+  /**
+   * Does the SERVER certainly already hold a row for this conversation?
+   *
+   * Left undefined, the hook infers it from "nothing about this id is in
+   * memory" — right for a route that resumes a conversation from a URL or a
+   * history row, and WRONG for a surface holding a RESERVATION: an id the
+   * server minted so the surface has a stable room, whose `chat.conversation`
+   * row is written lazily by the first turn. The inference cannot tell those
+   * apart, so it called an unwritten row a failed read and the vision
+   * interview room wore "Couldn't load this conversation… your sign-in lost
+   * access to it" over a Try-again that could never succeed, on every fresh
+   * session (census W1, 2026-09-15; 0 of 8 bindings on that session had a row).
+   *
+   * A surface that KNOWS which of the two it is holding says so here, and an
+   * empty room then reads as empty instead of broken. A surface that does not
+   * know must leave it undefined: the inference is the honest default, because
+   * the cost of wrongly expecting a row is one truthful banner, while the cost
+   * of wrongly NOT expecting one is a real failed read rendering as an empty
+   * conversation — a screen that lies (law 4).
+   */
+  expectMaterialized?: boolean;
 }
 
 export interface UseConversationResumeResult {
@@ -89,6 +110,7 @@ export function useConversationResume({
   messageLimit = 12,
   onSettled,
   sandboxSeed = null,
+  expectMaterialized,
 }: UseConversationResumeOptions): UseConversationResumeResult {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -200,7 +222,11 @@ export function useConversationResume({
             // conversation the SERVER is supposed to have. A bundle with no
             // row is then a failed read, not a fresh mint, and the transcript
             // must say so instead of rendering an empty room.
-            expectMaterialized: !exists,
+            //
+            // Unless the caller KNOWS otherwise — a reservation has no row yet
+            // by design, and an empty read of one is not a failure (see the
+            // option's own doc).
+            expectMaterialized: expectMaterialized ?? !exists,
           }),
         ).unwrap();
         if (ctrl.signal.aborted) return;
@@ -243,6 +269,7 @@ export function useConversationResume({
     agentId,
     surfaceKey,
     messageLimit,
+    expectMaterialized,
     dispatch,
     store,
   ]);

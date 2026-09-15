@@ -141,6 +141,21 @@ interface ChatRoomClientProps {
    * user's shared default) while two round-trips land.
    */
   sandboxBinding?: ConversationSandboxBinding | null;
+  /**
+   * What `conversationId` IS, when the host knows:
+   *
+   *  - `"existing"` (default) — a conversation the server already holds. An
+   *    empty read is a failed read and the transcript says so.
+   *  - `"reserved"` — an id the server minted for this room whose row is
+   *    written lazily by the first turn (the vision interview's per-role
+   *    bindings). An empty read is simply an empty room.
+   *
+   * Without it the room has to guess, and the guess ("not in memory ⇒ the
+   * server has it") put a permanent "Couldn't load this conversation" banner,
+   * plus a Try-again that could never succeed, on every freshly opened vision
+   * interview (census W1, 2026-09-15).
+   */
+  conversationMaterialization?: "existing" | "reserved";
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -172,6 +187,7 @@ export function ChatRoomClient({
   mandateKey,
   variablesPanelStyle,
   sandboxBinding = null,
+  conversationMaterialization = "existing",
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -303,6 +319,10 @@ export function ChatRoomClient({
     enabled: !isInitializing && authReady,
     messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
     sandboxSeed: sandboxBinding,
+    // A reservation has no row until the first turn writes one, so an empty
+    // bundle is the truth about it, not a failure to read it.
+    expectMaterialized:
+      conversationMaterialization === "reserved" ? false : undefined,
   });
 
   // The other direction: a run can bind a box SERVER-side (aidream's
