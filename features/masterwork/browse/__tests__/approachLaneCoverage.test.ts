@@ -263,6 +263,46 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     intakeQuery: { teachBack: "1" },
     launchHref: null,
   },
+  {
+    // THE CAPTURE PLAN — a PROGRAM over the other Approaches rather than a
+    // lane of its own, live 2026-09-15 by
+    // `aidream/db/migrations/0744_the_capture_plan_is_a_program.sql`. It is a
+    // NEW Approach, not one of the twenty Arman named on 2026-08-17, so its row
+    // carries no `catalog_number`.
+    //
+    // Its `mandate_key` is the literal string `none` and its metadata carries
+    // `runs_no_agent: true` — deliberately, and guarded by
+    // `features/masterwork/capture-plan/__tests__/registry-posture.test.ts`.
+    // Every other row names the agent that runs its lane; this one runs no
+    // agent at all (the planner is arithmetic over the yield ledger) and every
+    // session it opens credits the lane's own mandate on that lane's own
+    // screen. Naming a plausible mandate here would declare an AI integration
+    // that is never invoked.
+    key: "capture_plan",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { plan: "1" },
+    launchHref: null,
+  },
+  {
+    // THE DAILY DRIP — one short question a day about the work the Expert
+    // actually did, by text, email or in-app, answered by talking into one
+    // field on their phone. Live 2026-09-15 by
+    // `aidream/scripts/seed_daily_drip_approach.py` (the row and its five knobs
+    // are DATA, written through the ORM — there is no migration in this lane,
+    // and the run kind needs none either since 0727 made the Masterwork
+    // operation vocabulary a seeded table rather than a hand-typed CHECK).
+    //
+    // A NEW Approach, not one of the twenty Arman named on 2026-08-17, so its
+    // row carries no `catalog_number` — claiming a number it was never given
+    // would be the catalog lying about its own provenance. Its metadata says
+    // `introduced: "2026-09-15"` instead.
+    key: "daily_drip",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { drip: "1" },
+    launchHref: null,
+  },
 ];
 
 function describe_(row: RegistryRow): string {

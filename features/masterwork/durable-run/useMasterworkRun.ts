@@ -140,7 +140,12 @@ export type MasterworkRunSurface =
   // sets `running` itself, stages and the terminal event are handled without a
   // run id — and the DOOR says so in the server's own sentence before the
   // person spends. It is never papered over.
-  | "bench";
+  | "bench"
+  // THE DAILY DRIP (`/masterworks/ingest-drip`) — a run of one-question-a-day
+  // answers, each anchored to the morning it was asked. Its own surface +
+  // pointer: a drip distillation is not a source ingest, and a reload must
+  // never rejoin one as the other.
+  | "drip";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
@@ -186,6 +191,9 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // The prediction-ledger lane appends draft rules exactly as the other
   // ingest lanes do, so it shares their terminal event — and nothing else.
   prediction: "masterwork_ingest_complete",
+  // The Daily Drip appends draft rules exactly as the other ingest lanes do,
+  // so it shares their terminal event — but never their pointer.
+  drip: "masterwork_ingest_complete",
   // The red-pen lane appends draft rules exactly as the other ingest lanes
   // do, so it shares their terminal event — and nothing else.
   red_pen: "masterwork_ingest_complete",
@@ -226,6 +234,12 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
  * entirely past three times it. Re-measure these when a pipeline changes.
  */
 const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
+  // THE DAILY DRIP distils ONE batch of short answers in a single mandate
+  // call — a run of days is an atom, so there is no per-chunk multiplier. It
+  // sits below `ingest` because the whole corpus is a handful of paragraphs
+  // rather than a document. Estimated until this lane has runs of its own on
+  // the ledger; re-measure then, as the header of this table requires.
+  drip: 45_000,
   build: 60_000,
   ingest: 160_000,
   chat: 25_000,
