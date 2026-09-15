@@ -71,9 +71,11 @@ jest.mock("next/dynamic", () => {
 // The rich (WYSIWYG) editor, reduced to its one contract that matters here:
 // `getCurrentMarkdown()` can hold words its onChange has not delivered yet.
 let richLiveMarkdown = "";
+let richOnChange: ((value: string) => void) | null = null;
 jest.mock("@/components/mardown-display/chat-markdown/tui/TuiEditorContent", () => {
   const ReactModule = jest.requireActual<typeof import("react")>("react");
-  const Tui = ReactModule.forwardRef(function Tui(_props: unknown, ref: React.Ref<unknown>) {
+  const Tui = ReactModule.forwardRef(function Tui(props: { onChange?: (value: string) => void }, ref: React.Ref<unknown>) {
+    richOnChange = props.onChange ?? null;
     ReactModule.useImperativeHandle(ref, () => ({ getCurrentMarkdown: () => richLiveMarkdown }));
     return ReactModule.createElement("div", { "data-testid": "rich-editor" });
   });
@@ -174,7 +176,11 @@ describe("MobileNoteEditor writes through the canonical path", () => {
     });
     expect(container.querySelector("[data-testid='rich-editor']")).not.toBeNull();
 
-    // Words typed in the rich editor that its onChange has not reported yet.
+    // The user types in rich mode; onChange reports part of it...
+    await act(async () => {
+      richOnChange?.("base, plus the last");
+    });
+    // ...and the words typed after that have not been reported yet.
     richLiveMarkdown = "base, plus the last sentence typed before tapping Back";
     await unmount();
 
@@ -182,6 +188,22 @@ describe("MobileNoteEditor writes through the canonical path", () => {
       "base, plus the last sentence typed before tapping Back",
     );
     expect(store.getState().notes.notes[ID]._dirty).toBe(true);
+    richLiveMarkdown = "";
+  });
+
+  it("opening a note in rich mode and leaving WITHOUT editing writes nothing, even if the rich editor re-serializes it", async () => {
+    const store = makeStore();
+    store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
+    const { unmount } = await mount(store, "wysiwyg");
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    // The rich editor's own serialization differs from the stored text.
+    richLiveMarkdown = "base\n";
+    await unmount();
+    expect(store.getState().notes.notes[ID].content).toBe("base");
+    expect(store.getState().notes.notes[ID]._dirty).toBe(false);
     richLiveMarkdown = "";
   });
 

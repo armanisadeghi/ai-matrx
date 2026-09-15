@@ -265,9 +265,14 @@ export default function MobileNoteEditor({
     effectiveModeRef.current = effectiveMode;
   }, [effectiveMode]);
   const unmountSnapshotRef = useRef<string | null>(null);
+  /** Set by the rich editor's own onChange. Its re-serialized markdown can
+   *  differ from the stored text (list markers, escapes, a trailing newline)
+   *  with no edit at all, so the unmount snapshot is taken ONLY when the user
+   *  actually typed in rich mode — merely opening a note must never write it. */
+  const richEditedRef = useRef(false);
   useLayoutEffect(
     () => () => {
-      if (effectiveModeRef.current !== "wysiwyg") return;
+      if (effectiveModeRef.current !== "wysiwyg" || !richEditedRef.current) return;
       try {
         const markdown = tuiRef.current?.getCurrentMarkdown?.();
         if (typeof markdown === "string") unmountSnapshotRef.current = markdown;
@@ -280,6 +285,8 @@ export default function MobileNoteEditor({
 
   useEffect(() => {
     setNoteLiveContent(noteId, localContentRef.current);
+    // A fresh note has not been edited in rich mode yet.
+    richEditedRef.current = false;
     return () => {
       setNoteLiveContent(noteId, null);
       if (syncTimerRef.current) {
@@ -410,6 +417,13 @@ export default function MobileNoteEditor({
           </button>
         </div>
       )}
+      {/* Desktop parity: a reviewed save refused AFTER the decision cleared (e.g. the
+          editor changed before phase two) is said out loud, never swallowed. */}
+      {conflict.conflictError && !conflict.conflictDecision && (
+        <div role="alert" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {conflict.conflictError}
+        </div>
+      )}
       {conflict.conflictWindowProps != null && (
         <NoteConflictWindow {...conflict.conflictWindowProps} />
       )}
@@ -484,7 +498,10 @@ export default function MobileNoteEditor({
             <TuiEditorContent
               ref={tuiRef}
               content={localContent}
-              onChange={(val: string) => handleChange(val)}
+              onChange={(val: string) => {
+                richEditedRef.current = true;
+                handleChange(val);
+              }}
               isActive={true}
               editMode="wysiwyg"
               className="w-full"

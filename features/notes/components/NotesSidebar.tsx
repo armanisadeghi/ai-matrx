@@ -39,6 +39,7 @@ import type { FolderReference, Note, NoteFilters, NoteSortConfig } from '../type
 import { noteFolderReference } from '../types';
 import { filterNotes, sortNotes, groupNotesByFolder } from '../utils/noteUtils';
 import { useAppDispatch } from '@/lib/redux/hooks';
+import { toast } from '@/lib/toast';
 import { ensureNoteBodiesLoaded } from '../redux/thunks';
 import { useNoteContentSearch } from '../hooks/useNoteContentSearch';
 import { getFolderIconAndColor } from '../utils/folderUtils';
@@ -326,7 +327,13 @@ export function NotesSidebar({
             description: 'Download as markdown',
             action: async () => {
                 // A list row carries only a preview (audit N-24): read the body first.
-                const [full] = await dispatch(ensureNoteBodiesLoaded([note.id])).unwrap();
+                let full: Note | undefined;
+                try {
+                    [full] = await dispatch(ensureNoteBodiesLoaded([note.id])).unwrap();
+                } catch {
+                    toast.error('Could not load this note to export it. Try again.');
+                    return;
+                }
                 const blob = new Blob([full?.content ?? note.content ?? ''], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');

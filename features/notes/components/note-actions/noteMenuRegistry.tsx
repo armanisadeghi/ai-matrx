@@ -110,8 +110,19 @@ async function duplicateNoteAction(ctx: NoteMenuContext): Promise<void> {
  * Soft-delete a note (confirm unless empty) + undo toast. Shared by both
  * menus. Mirrors useNoteDelete's UX.
  */
-async function deleteNoteAction(ctx: NoteMenuContext): Promise<void> {
-  if (!isNoteContentEmpty(ctx.content)) {
+export async function deleteNoteAction(ctx: NoteMenuContext): Promise<void> {
+  // A sidebar row carries only a preview (audit N-24), so `ctx.content` is null
+  // for any note not yet opened. "Empty, delete without asking" is judged on
+  // the BODY: read it first, and never skip the confirmation on a guess.
+  let body = ctx.content;
+  try {
+    const [full] = await ctx.dispatch(ensureNoteBodiesLoaded([ctx.noteId])).unwrap();
+    body = full?.content ?? ctx.content;
+  } catch {
+    toast.error("Could not load this note to check it before deleting. Try again.");
+    return;
+  }
+  if (!isNoteContentEmpty(body)) {
     const ok = await confirm({
       title: "Delete note?",
       description: (
@@ -293,6 +304,9 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
                     label: ctx.label,
                     content: full?.content ?? ctx.content,
                   });
+                })
+                .catch(() => {
+                  toast.error("Could not load this note to export it. Try again.");
                 });
             },
           },

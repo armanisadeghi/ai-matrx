@@ -184,9 +184,15 @@ export function NoteSidebarBulkBar({
 
     // "Empty" is judged on the BODY; list rows carry only a preview (audit
     // N-24), so read the bodies before deciding to skip the confirmation.
-    const withBodies = await dispatch(
-      ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
-    ).unwrap();
+    let withBodies: NoteRecord[];
+    try {
+      withBodies = await dispatch(
+        ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
+      ).unwrap();
+    } catch {
+      toast.error("Could not load these notes to check them before deleting. Try again.");
+      return;
+    }
     const allEmpty = withBodies.every((n) => isNoteContentEmpty(n.content));
     if (!allEmpty) {
       const ok = await confirm({
