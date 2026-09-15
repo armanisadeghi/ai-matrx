@@ -12,3 +12,10 @@ test("rejects a late generation view and retains a user dismissal across polling
   const late = reducer(state, applyView({ actorId, generation: state.generation - 1, view: { ...view, message: "late" } }));
   expect(late.views[0].message).toBe("done");
 });
+
+test("marks hydrated receipts as restored and consumes that marker on the first server view", () => {
+  let state = reducer(undefined, hydrateActor({ actorId, receipts: [receipt] }));
+  expect(state.views[0].restored).toBe(true);
+  state = reducer(state, applyView({ actorId, generation: state.generation, view: { ...view, dismissed: true } }));
+  expect(state.views[0]).toEqual(expect.objectContaining({ restored: false, dismissed: true, state: "success" }));
+});
