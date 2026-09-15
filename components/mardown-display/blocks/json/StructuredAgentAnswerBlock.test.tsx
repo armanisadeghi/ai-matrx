@@ -149,7 +149,7 @@ describe("schema-bound assistant JSON answer", () => {
     expect(html).toContain("Completed in one pass.");
   });
 
-  it("keeps the reader projection outside a closed complete-raw Details control", async () => {
+  it("keeps the complete DONE projection outside a closed complete-raw Details control", async () => {
     const captured = capturedSandboxAnswers[0];
     const rawContent = JSON.stringify(captured);
     const parsed = parseStructuredAgentAnswer(
@@ -184,7 +184,43 @@ describe("schema-bound assistant JSON answer", () => {
     expect(visible.textContent).toContain("Next step");
     expect(visible.textContent).toContain("Commands Run");
     expect(visible.textContent).toContain("Tools Failed");
+    expect(visible.textContent).toContain(captured.commands_run[0]);
+    expect(visible.textContent).toContain("shell_execute");
+    expect(visible.textContent).toContain("Command exited with code 1.");
+    expect(visible.textContent).not.toContain('"tools_failed"');
     expect(details?.textContent).toContain(rawContent);
-    root.unmount();
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps the NEEDS_USER answer, state, and next step outside Details", async () => {
+    const captured = capturedSandboxAnswers[1];
+    const rawContent = JSON.stringify(captured);
+    const parsed = parseStructuredAgentAnswer(rawContent, sandboxSpecialistSchema);
+    if (!parsed) throw new Error("captured needs-user payload did not parse");
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <StructuredAgentAnswerBlock
+          value={parsed}
+          rawContent={rawContent}
+          renderMarkdown={(text) => <p>{text}</p>}
+        />,
+      );
+    });
+    const details = host.querySelector("details");
+    const visible = host.cloneNode(true) as HTMLElement;
+    visible.querySelector("details")?.remove();
+    expect(details?.hasAttribute("open")).toBe(false);
+    expect(visible.textContent).toContain(captured.answer);
+    expect(visible.textContent).toContain("Needs User");
+    expect(visible.textContent).toContain(captured.next_step);
+    expect(visible.textContent).not.toContain('"next_step"');
+    expect(details?.textContent).toContain(rawContent);
+    await act(async () => {
+      root.unmount();
+    });
   });
 });
