@@ -74,7 +74,19 @@ export type ApproachLane =
    * `timeline` registry row carries `{"ingest":"timeline"}` and still goes to
    * the ingest dialog, so the two doors never fight over one row.
    */
-  | { kind: "unfolding" };
+  | { kind: "unfolding" }
+  /**
+   * THE PREDICTION LEDGER — calls recorded on real open cases before the
+   * answer is known, scored when it arrives. Reached by
+   * `intake_query.predictions = "1"`.
+   *
+   * It is a door of its own and NOT a mode of the ingest dialog: every ingest
+   * lane takes something that already exists (a document, a recording, a
+   * chat) and reads expertise out of it. This one CREATES the record, over
+   * weeks, in two sittings — the call and the outcome — and nothing in the
+   * ingest dialog's one-shot shape can hold that.
+   */
+  | { kind: "prediction" };
 
 /**
  * Resolve a registry row to the lane it opens, or `null` when the product has
@@ -95,6 +107,7 @@ export function resolveApproachLane(
   if (q.dump === "1") return { kind: "dump" };
   if (q.conduct === "1") return { kind: "conduct" };
   if (q.intake === "timeline") return { kind: "unfolding" };
+  if (q.predictions === "1") return { kind: "prediction" };
   return null;
 }
 

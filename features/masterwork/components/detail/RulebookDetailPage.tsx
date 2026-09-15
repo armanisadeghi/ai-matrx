@@ -101,6 +101,9 @@ import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { IngestTimelineDialog } from "./IngestTimelineDialog";
+import { PredictionLedgerDialog } from "@/features/masterwork/prediction/PredictionLedgerDialog";
+import { CalibrationReadout } from "@/features/masterwork/prediction/CalibrationReadout";
+import { ledgerOf } from "@/features/masterwork/prediction/service";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -865,6 +868,32 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setTimelineOpen(true);
   }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
 
+  // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
+  // ?predictions=1 — the ledger dialog IS the next step. The registry row
+  // carries the same `{"predictions":"1"}` in its `intake_query`, so the deep
+  // link and the in-page picker can never drift apart.
+  //
+  // 🚨 A LEDGER SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest
+  // and unfolding already live by: this page instance is REUSED across
+  // Rulebooks, and a bare `useState` would leave a half-typed call about one
+  // Expert's open case on screen after navigating to another Rulebook — and
+  // then write it there.
+  const predictionSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const predictionOpen = predictionSession.open;
+  const setPredictionOpen = predictionSession.setOpen;
+  const predictionDeepLink = searchParams.get("predictions") === "1";
+  const predictionDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!predictionDeepLink || predictionDeepLinkRef.current || !rulebook?.id)
+      return;
+    predictionDeepLinkRef.current = true;
+    setPredictionOpen(true);
+  }, [predictionDeepLink, rulebook?.id, setPredictionOpen]);
+  // Read straight off the Rulebook already in hand — the ledger lives on
+  // `metadata.prediction_ledger`, so the page owes it no query of its own.
+  const predictionEntries = rulebook ? ledgerOf(rulebook).entries : [];
+  const predictionEntryCount = predictionEntries.length;
+
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
    * page. A row's `intake_query` is the same contract the deep links use, so
@@ -922,9 +951,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "unfolding":
           setTimelineOpen(true);
           return;
+        // THE PREDICTION LEDGER — calls on live cases, scored when the answer
+        // arrives. A registry row reaches it with `intake_query.predictions="1"`.
+        case "prediction":
+          setPredictionOpen(true);
+          return;
       }
     },
-    [router, openIngestLane],
+    [router, openIngestLane, setPredictionOpen, setTimelineOpen],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -2344,6 +2378,33 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             </div>
           ) : null}
 
+          {/* THE PREDICTION LEDGER — what she called before she knew, and how
+          close those calls land. Renders only once there is a ledger: a
+          Rulebook built any other way shows nothing here, which is the true
+          state. With calls recorded but no outcomes yet, the readout says so
+          in words and draws no chart — an empty plot would read as "you are
+          calibrated at nothing" rather than "we do not know yet". */}
+          {predictionEntryCount > 0 ? (
+            <div
+              className="space-y-2"
+              data-surface-value="prediction_ledger"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Calls you made before you knew
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPredictionOpen(true)}
+                >
+                  Open your calls
+                </Button>
+              </div>
+              <CalibrationReadout entries={predictionEntries} />
+            </div>
+          ) : null}
+
           {/* THE COHERENCE PARTNER (D11 · UNPARTNERED CAPTURE) — the questions
           only the Expert can settle, sitting directly above the rules they are
           about. Renders nothing when there are none, which is the normal and
@@ -2784,6 +2845,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onOpenChange={setTimelineOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
+          />
+          <PredictionLedgerDialog
+            // The ledger session, its half-typed call and its run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the
+            // unfolding dialog above.
+            key={`prediction-${rulebook.id}`}
+            open={predictionOpen}
+            onOpenChange={setPredictionOpen}
+            rulebook={rulebook}
+            canEdit={canEdit}
+            onChanged={() => void reloadRulebook()}
           />
           {/* Keyed on the lane so `chat_import` and `matrx_conversations` —
               two registry rows, ONE dialog — each open on their own tab. A

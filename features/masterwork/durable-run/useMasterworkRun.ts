@@ -96,6 +96,12 @@ export type MasterworkRunSurface =
   | "compare_two"
   | "checkup"
   | "clean_corpus"
+  // THE PREDICTION LEDGER (`/masterworks/ingest-predictions`) — the Expert's
+  // own resolved calls on real open cases, distilled into rules from the WHYS
+  // behind the ones she called right and boundary findings from the ones she
+  // did not. Its own surface + pointer: a ledger distillation is not a source
+  // ingest, and a reload must never rejoin one as the other.
+  | "prediction"
   // THE TRIAL BENCH (`/masterworks/{rulebook_id}/bench/runs`) — six arms, a
   // blind panel, and a verdict. Its own surface and pointer: a Bench trial is
   // not an Audition and must never rejoin one.
@@ -150,6 +156,9 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // paid pass the Expert asks for, so it gets its own surface and pointer and
   // is visible in the run ledger like every other Masterwork operation.
   clean_corpus: "masterwork_corpus_cleaned",
+  // The prediction-ledger lane appends draft rules exactly as the other
+  // ingest lanes do, so it shares their terminal event — and nothing else.
+  prediction: "masterwork_ingest_complete",
   bench: "masterwork_bench_verdict",
 };
 
@@ -204,6 +213,12 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   unfolding: 90_000,
   // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
   triage: 90_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. It distils a handful of one-line reasons rather than a
+  // whole document, so it opens on the measured `chat` figure (25 s) doubled
+  // rather than on a source ingest's 160 s.
+  prediction: 50_000,
   // ESTIMATE, not a measurement — this lane has no runs of its own on the
   // ledger yet, and the header of this table demands it be re-measured the
   // moment it does. A trial runs SIX arms (A0/A1/A2/B/C/GT), one of which is

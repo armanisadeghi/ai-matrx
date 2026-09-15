@@ -186,10 +186,21 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     launchHref: null,
   },
   {
+    // THE PREDICTION LEDGER — "call it before you know". The door exists in
+    // this repo as of 2026-09-15: `{kind:"prediction"}` in `approachLane.ts`,
+    // `PredictionLedgerDialog` on `/masterwork/[id]`, the `?predictions=1`
+    // deep link, and the on-page calibration readout.
+    //
+    // The live row was flipped by the SERVER half on 2026-09-15 (it carries the
+    // distillation lane, `POST /masterworks/ingest-predictions`, and owns the
+    // registry write — the same discipline as the `monologue` flip, made
+    // through the platform's own write path rather than by hand from a
+    // client). Verified live from this checkout the same day: enabled=true,
+    // intake_query={"predictions":"1"}, availability=available.
     key: "prediction_ledger",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { predictions: "1" },
     launchHref: null,
   },
 ];
@@ -234,6 +245,17 @@ describe("every promised Distillation Approach has a lane", () => {
     expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
       kind: "ingest",
       lane: "monologue",
+    });
+  });
+
+  it("opens the prediction_ledger Approach on the ledger door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find(
+      (r) => r.key === "prediction_ledger",
+    );
+    expect(row).toBeDefined();
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "prediction",
     });
   });
 
@@ -342,4 +364,52 @@ describe("the LIVE platform.approach registry", () => {
       REGISTRY_SNAPSHOT_2026_09_12.map(norm).sort(),
     );
   }, 30_000);
+});
+
+/**
+ * THE OTHER HALF OF THE DEAD END. `resolveApproachLane` returning a lane is
+ * only half a door: the `timeline` defect of census row 3 was a registry row
+ * that resolved fine and then fell through the detail page's dispatch. So this
+ * reads BOTH source files and asserts that every `ApproachLane` variant
+ * declared in `approachLane.ts` has a `case` in `RulebookDetailPage`'s
+ * `launchApproach` switch.
+ *
+ * THE BREAK IT CATCHES: add a `| { kind: "x" }` variant (or a new registry row
+ * that resolves to one) and forget the `case "x":` — the card opens nothing,
+ * silently, exactly as `timeline` did. TypeScript does not catch it: the
+ * switch's callback returns `void`, so a missing case is not a type error.
+ *
+ * Proven red before green (2026-09-15): with `case "prediction":` removed from
+ * `RulebookDetailPage.tsx`, this fails naming `prediction`.
+ */
+describe("every lane variant is dispatched by the Rulebook detail page", () => {
+  it("has a case in launchApproach for each ApproachLane kind", () => {
+    const laneSource = readFileSync(
+      resolve(__dirname, "../approachLane.ts"),
+      "utf8",
+    );
+    const pageSource = readFileSync(
+      resolve(__dirname, "../../components/detail/RulebookDetailPage.tsx"),
+      "utf8",
+    );
+    // The variants of the exported `ApproachLane` union, read from its own
+    // declaration — never a hand-kept second list, which would drift.
+    const union = laneSource.slice(
+      laneSource.indexOf("export type ApproachLane ="),
+    );
+    const kinds = [
+      ...new Set(
+        [...union.matchAll(/\{\s*kind:\s*"([a-zA-Z_]+)"/g)].map((m) => m[1]),
+      ),
+    ];
+    expect(kinds).toContain("prediction");
+    expect(kinds.length).toBeGreaterThanOrEqual(8);
+    const undispatched = kinds.filter(
+      (kind) => !pageSource.includes(`case "${kind}":`),
+    );
+    expect(
+      // A kind here is a live Approach card that opens nothing at all.
+      undispatched.join(", "),
+    ).toBe("");
+  });
 });

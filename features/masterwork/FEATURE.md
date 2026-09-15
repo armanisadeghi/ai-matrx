@@ -147,6 +147,31 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `prediction/` — **THE PREDICTION LEDGER** Approach (`prediction_ledger`, `?predictions=1`).
+  The Expert calls live cases in her own work before the answer is known — the call, how sure she
+  is, ONE line of why, and a due date — and enters the outcome when it lands.
+  `scoring.ts` is the pure arithmetic and is the TWIN of
+  `aidream/aidream/services/masterworks/prediction_ledger.py`: change one, change the other in the
+  same session, or the screen and the distiller score the same call differently. The ledger lives
+  on `platform.rulebook.metadata.prediction_ledger` and stores RAW FACTS ONLY — `correct`, the
+  Brier score and every calibration bucket are derived on read, so the data can never disagree with
+  itself. `service.ts` writes it with a compare-and-swap on `version` that deliberately does NOT
+  bump it (a call on an open case is not a change to the rules). `PredictionLedgerDialog.tsx` is
+  the one door — "Call it" and "What happened" side by side, voice on both free-text fields under
+  knob `masterwork_prediction_ledger.voice_default_on` — and "Turn the answered ones into rules"
+  posts to `POST /masterworks/ingest-predictions`, whose "not enough outcomes yet" refusal is shown
+  verbatim rather than as a generic failure. `CalibrationReadout.tsx` draws predicted-vs-realized
+  through `components/ui/chart.tsx` and, with ZERO resolved entries, draws no chart at all: it says
+  how many calls are waiting and when the first is due, because an empty plot reads as "you are
+  calibrated at nothing" and a Brier score of 0 reads as perfect. Knobs (feature
+  `masterwork_prediction_ledger`, seeded by the server half): `reminder_cadence_hours` — also the
+  width of "coming up" on the open list, `min_resolved_to_distill` (5), `voice_default_on` (true);
+  a missing knob row is announced in place with its remedy, never swallowed. Guards:
+  `prediction/__tests__/scoring.test.ts` (the `>=` boundary at 0.5, the Brier table, the deciles),
+  `prediction/__tests__/zeroResolved.test.tsx` (the honest empty state), and the new second half of
+  `browse/__tests__/approachLaneCoverage.test.ts` — every `ApproachLane` variant has a `case` in
+  `RulebookDetailPage`'s `launchApproach`, which is the half of the `timeline` dead end that
+  resolving a lane never covered.
 - `sourceSections.ts` — WHAT EACH PART OF A SOURCE PRODUCED, read off the live rules
   (`source_ref.section_index` / `section_label` / `section_words`, stamped by aidream's
   `services/distillation/source_structure.py`). Mirrors the server's source identities
@@ -304,6 +329,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-15` — **THE PREDICTION LEDGER — calling it before you know.** A new Approach and a new
+  door (`features/masterwork/prediction/`): the Expert records predictions on real open cases in
+  her own work with a confidence, a one-line why and a due date, by voice or typing, and enters
+  the outcome when it arrives. The whys behind well-called predictions become rule candidates; the
+  whys behind the misses are boundary findings. The ledger is raw facts on
+  `metadata.prediction_ledger` with every score derived on read; the on-page readout plots what she
+  said against what happened, and renders an honest waiting state instead of a chart until at
+  least one outcome exists. `resolveApproachLane` grew `{kind:"prediction"}` from
+  `intake_query.predictions === "1"` — deliberately NOT an ingest-dialog lane, because every ingest
+  lane reads expertise out of something that already exists while this one CREATES the record over
+  weeks in two sittings. The registry row was flipped live by the server half the same day.
 - `2026-09-15` — **"YES, THAT'S MINE" — the ownership review, the agenda it produces, and the
   signature on a result.** Three things, one derivation each, no parallel system. (1) The rule
   review speaks the Expert's words under knob `masterwork.review.vocabulary`; mine→approved,
