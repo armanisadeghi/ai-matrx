@@ -969,8 +969,15 @@ reference or a division by zero renders `#ERROR` with the reason as its tooltip.
 read-only (double-click, Enter, typing and the agent's `cell_value` all refuse), and paste /
 clear / fill down skip formula cells and say so. Not sortable or filterable server-side
 (`udt_column_facets` / the paginated RPC never see the value) — documented limitation.
-**No expression editor UI yet:** the Table Settings column card does not expose the `formula`
-format's expression (the format picker owns that surface; next step).
+**Expression editor:** [`components/FormulaExpressionEditor.tsx`](./components/FormulaExpressionEditor.tsx)
+— a popover beside the format picker in Table Settings AND in the new-column form (so a
+formula column can never be created without a way to write its expression): live parse
+status with the error position, the table's other columns as `{Display Name}` chips, the
+function list, and "result shows as". It sits in `features/` because the language does and
+the picker is a `lib/` module that must not import upward. Not yet exercised live: the shared
+preview server was held by another checkout when this landed, so the editor has unit
+coverage of the language only — open Table Settings on any table, set a column's format to
+Formula, and the editor button appears under it.
 
 ## Validation rules in the grid (2026-09-14)
 

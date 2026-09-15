@@ -13,6 +13,7 @@ import {
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
 import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
+import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
 import {
   parseValidationRules,
   serializeValidationRules,
@@ -833,6 +834,35 @@ export default function TableConfigModal({
                           setHasChanges(true);
                         }}
                       />
+
+                      {/* A formula column's expression — the one place it is
+                          written. Only rendered when the format is `formula`,
+                          so every other column card keeps its shape. */}
+                      {(formatChanges[field.id] ??
+                        resolveFieldFormat(field.data_type, field.metadata)).id ===
+                        "formula" && (
+                        <FormulaExpressionEditor
+                          className="col-span-full"
+                          value={
+                            formatChanges[field.id] ??
+                            resolveFieldFormat(field.data_type, field.metadata)
+                          }
+                          siblingFields={fields
+                            .filter((f) => f.field_name !== field.field_name)
+                            .map((f) => ({
+                              field_name: f.field_name,
+                              display_name: f.display_name,
+                            }))}
+                          disabled={loading}
+                          onChange={(next) => {
+                            setFormatChanges((prev) => ({
+                              ...prev,
+                              [field.id]: next,
+                            }));
+                            setHasChanges(true);
+                          }}
+                        />
+                      )}
 
                       {/* What this column ACCEPTS, next to what it stores and
                           what it shows as — the third question about a column,

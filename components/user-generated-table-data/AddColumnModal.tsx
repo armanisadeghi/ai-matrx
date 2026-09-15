@@ -22,6 +22,7 @@ import { supabase } from '@/utils/supabase/client';
 import { addColumn, VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { setFieldFormat } from '@/features/data-tables/service';
+import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import { defaultFormatForBase } from '@/lib/field-formats/registry';
@@ -38,9 +39,11 @@ interface AddColumnModalProps {
    * at and after this order by one once the column exists.
    */
   insertAtOrder?: number;
+  /** The table's existing columns — offered as references by the formula editor. */
+  siblingFields?: { field_name: string; display_name: string }[];
 }
 
-export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, insertAtOrder }: AddColumnModalProps) {
+export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, insertAtOrder, siblingFields = [] }: AddColumnModalProps) {
   const [displayName, setDisplayName] = useState('');
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
@@ -200,6 +203,14 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
               onChange={setFormat}
               triggerClassName="h-9 w-full text-sm"
             />
+            {format.id === "formula" && (
+              <FormulaExpressionEditor
+                value={format}
+                onChange={setFormat}
+                siblingFields={siblingFields}
+                disabled={loading}
+              />
+            )}
             <p className="text-xs text-muted-foreground">
               How this column is displayed and edited. The stored data type stays exactly as chosen above.
             </p>

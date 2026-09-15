@@ -473,6 +473,9 @@ export default function TableToolbar({
             isOpen={showAddColumnModal}
             onClose={() => setShowAddColumnModal(false)}
             insertAtOrder={addColumnInsertAtOrder}
+            siblingFields={(fields as { field_name: string; display_name: string }[]).map(
+              (f) => ({ field_name: f.field_name, display_name: f.display_name }),
+            )}
             onSuccess={() => {
               void Promise.resolve(onColumnAdded?.()).finally(() =>
                 loadTableData(true),
