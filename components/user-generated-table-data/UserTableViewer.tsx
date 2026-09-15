@@ -42,6 +42,7 @@ import {
   Redo2,
   ChevronLeft,
   ChevronRight,
+  Paintbrush,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -80,8 +81,26 @@ import {
   getCompleteTable,
   getTableMetadata,
   listUserTables,
+  renumberFields,
+  setTableStyle,
   upsertCell,
 } from "@/features/data-tables/service";
+import {
+  CELL_TINT_CLASS,
+  ROW_TINT_CLASS,
+  applyStylePath,
+  colorForChoice,
+  parseTableStyle,
+  resolveCellColor,
+  resolveRowColor,
+  stylePath,
+  tableStyleFromMetadata,
+  type ChoiceColorLookup,
+  type StylePath,
+  type TableStyle,
+} from "@/features/data-tables/table-style";
+import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
+import { isChoiceFormat } from "@/lib/field-formats/choices";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   isBulkOpError,
@@ -187,6 +206,8 @@ export interface TableInfo {
   row_ordering_config?: RowOrderingConfig;
   /** `permissive` | `strict` — read by TableConfigModal's Strict Validation switch. */
   validation_mode?: string;
+  /** The full `udt_datasets.metadata` blob; `metadata.style` is the table's colors (`table-style.ts`). */
+  metadata?: unknown;
 }
 
 interface UserTable {
@@ -442,8 +463,22 @@ const UserTableViewer = ({
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
+  const [showColorsDialog, setShowColorsDialog] = useState(false);
+  /**
+   * The table's colors, patched locally the moment a write is sent so the grid
+   * repaints without a round trip. Keyed on the metadata object identity: a
+   * reload brings a new `tableInfo.metadata` and the local patch retires in
+   * favour of what the server holds (which includes the write).
+   */
+  const [localStyle, setLocalStyle] = useState<{
+    base: unknown;
+    style: TableStyle;
+  } | null>(null);
+  /** Right-click "Insert column left/right" — where the next new column lands. */
+  const [pendingColumnInsert, setPendingColumnInsert] = useState<{
+    order: number;
+  } | null>(null);
   const [showPasteRowsDialog, setShowPasteRowsDialog] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showTableConfigModal, setShowTableConfigModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
 
@@ -764,6 +799,48 @@ const UserTableViewer = ({
       format: resolveFieldFormat(field.data_type, field.metadata),
     })),
   );
+
+  // ─── Colors (table-style.ts) ─────────────────────────────────────────────
+  const serverStyle = tableStyleFromMetadata(tableInfo?.metadata);
+  const tableStyle: TableStyle =
+    localStyle && localStyle.base === tableInfo?.metadata
+      ? localStyle.style
+      : serverStyle;
+
+  /** A choice column's option color for a value — what color-by paints with. */
+  const choiceColorFor: ChoiceColorLookup = (fieldName, value) =>
+    colorForChoice(choiceMap.get(fieldName)?.choices, value);
+
+  /** Write ONE style path: optimistic repaint, then the server's answer wins. */
+  const writeStylePath = async (path: StylePath, value: unknown) => {
+    if (isReadOnly) return;
+    const before = tableStyle;
+    const base = tableInfo?.metadata;
+    setLocalStyle({ base, style: applyStylePath(before, path, value) });
+    const result = await setTableStyle({ tableId, path, value });
+    if (isServiceFailure(result)) {
+      setLocalStyle({ base, style: before });
+      toast({
+        title: "Could not save the color",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    setLocalStyle({ base, style: parseTableStyle(result.data.style) });
+  };
+
+  const rowTintClass = (row: TableDataRow): string | undefined => {
+    const color = resolveRowColor(tableStyle, row, choiceColorFor);
+    return color ? ROW_TINT_CLASS[color] : undefined;
+  };
+  const cellTintClass = (row: TableDataRow, fieldName: string): string | undefined => {
+    const color = resolveCellColor(tableStyle, row, fieldName, choiceColorFor);
+    return color ? CELL_TINT_CLASS[color] : undefined;
+  };
+  const fieldCanColorBy = (field: TableField): boolean =>
+    field.data_type === "boolean" ||
+    isChoiceFormat(resolveFieldFormat(field.data_type, field.metadata).id);
 
   // --- Column filtering -------------------------------------------------
 
@@ -2514,7 +2591,14 @@ const UserTableViewer = ({
     buildGridCellMenuSection({
       cell:
         menuTarget.cell && menuField
-          ? { address: menuTarget.cell, displayName: menuField.display_name }
+          ? {
+              address: menuTarget.cell,
+              displayName: menuField.display_name,
+              highlight:
+                tableStyle.cells?.[menuTarget.cell.rowId]?.[
+                  menuTarget.cell.fieldName
+                ] ?? null,
+            }
           : null,
       readOnly: isReadOnly,
       on: {
@@ -2522,6 +2606,11 @@ const UserTableViewer = ({
         paste: (address) => void grid.pasteIntoCell(address),
         clear: (address) => void handleClearCell(address),
         edit: (address) => grid.beginEdit(address),
+        highlight: (address, color) =>
+          void writeStylePath(
+            stylePath.cell(address.rowId, address.fieldName),
+            color,
+          ),
       },
     }),
     buildGridRowMenuSection({
@@ -2533,10 +2622,14 @@ const UserTableViewer = ({
                 .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
                 .find(Boolean)
                 ?.slice(0, 40) ?? "row",
+            highlight: tableStyle.rows?.[menuRow.id] ?? null,
           }
         : null,
       readOnly: isReadOnly,
       on: {
+        add: () => setShowAddRowModal(true),
+        highlight: (rowId, color) =>
+          void writeStylePath(stylePath.row(rowId), color),
         edit: (rowId) => {
           const row = displayRows.find((r) => r.id === rowId);
           if (row) handleEditRow(row.id, row.data);
@@ -2560,11 +2653,30 @@ const UserTableViewer = ({
             fieldName: menuField.field_name,
             displayName: menuField.display_name,
             sortedBy: sortField === menuField.field_name ? sortDirection : null,
+            highlight: tableStyle.columns?.[menuField.field_name] ?? null,
+            canColorBy: fieldCanColorBy(menuField),
+            isColorBy: tableStyle.colorBy?.field === menuField.field_name,
           }
         : null,
       readOnly: isReadOnly,
       isOnlyColumn: fields.length <= 1,
       on: {
+        insert: (fieldName, side) => {
+          const field = fields.find((f) => f.field_name === fieldName);
+          if (!field) return;
+          setPendingColumnInsert({
+            order: side === "left" ? field.field_order : field.field_order + 1,
+          });
+          setShowAddColumnModal(true);
+        },
+        highlight: (fieldName, color) =>
+          void writeStylePath(stylePath.column(fieldName), color),
+        colorBy: (fieldName, on) =>
+          void writeStylePath(
+            stylePath.colorBy(),
+            on ? { field: fieldName, target: "row" } : null,
+          ),
+        colors: () => setShowColorsDialog(true),
         sortAsc: (fieldName) => void handleSort(fieldName, "asc"),
         sortDesc: (fieldName) => void handleSort(fieldName, "desc"),
         clearSort,
@@ -2700,7 +2812,6 @@ const UserTableViewer = ({
         showDeleteModal={showDeleteModal}
         showAddColumnModal={showAddColumnModal}
         showAddRowModal={showAddRowModal}
-        showExportModal={showExportModal}
         showTableConfigModal={showTableConfigModal}
         showReferenceOverlay={showReferenceOverlay}
         showRowOrderingModal={showRowOrderingModal}
@@ -2708,9 +2819,48 @@ const UserTableViewer = ({
         // Modal visibility state setters
         setShowEditModal={setShowEditModal}
         setShowDeleteModal={setShowDeleteModal}
-        setShowAddColumnModal={setShowAddColumnModal}
+        setShowAddColumnModal={(show) => {
+          // Opening from the toolbar appends; only the right-click insert
+          // carries a position, and it is consumed once the modal closes.
+          if (!show) setPendingColumnInsert(null);
+          setShowAddColumnModal(show);
+        }}
         setShowAddRowModal={setShowAddRowModal}
-        setShowExportModal={setShowExportModal}
+        addColumnInsertAtOrder={pendingColumnInsert?.order}
+        onColumnAdded={async () => {
+          const insert = pendingColumnInsert;
+          setPendingColumnInsert(null);
+          if (!insert) return;
+          // The new column already sits AT `order`; shift the columns that
+          // held that slot or a later one so no two share a position.
+          const result = await renumberFields({
+            tableId,
+            updates: fields
+              .filter((f) => f.field_order >= insert.order)
+              .map((f) => ({ id: f.id, field_order: f.field_order + 1 })),
+          });
+          if (isServiceFailure(result)) {
+            toast({
+              title: "Column added at the end instead",
+              description: `It could not be moved into place: ${result.error}. Drag it in Table Settings.`,
+              variant: "destructive",
+            });
+          }
+        }}
+        colorsControl={
+          !isReadOnly ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowColorsDialog(true)}
+              className="whitespace-nowrap"
+              title="Color rows by a column, or add color rules"
+            >
+              <Paintbrush className="h-3.5 w-3.5 md:mr-1.5" />
+              <span className="hidden md:inline">Colors</span>
+            </Button>
+          ) : undefined
+        }
         setShowTableConfigModal={setShowTableConfigModal}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
@@ -2764,15 +2914,24 @@ const UserTableViewer = ({
           setAllSortedData(null);
           loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
-        copyControls={
+        copyControls={(onChooseReference) => (
           <TableCopyControls
             tableId={tableId}
             tableName={tableInfo.table_name}
             fields={fields}
+            hiddenColumns={hiddenColumns}
             selectedRowIds={selectedRowIds}
             loadRows={loadRowsForCopy}
+            loadAllRows={async () => {
+              const complete = await getCompleteTable({ tableId, sortField, sortDirection });
+              if (isServiceFailure(complete)) throw new Error(complete.error);
+              return sortField
+                ? smartSort(complete.data.rows, sortField, sortDirection, getFieldDataType(sortField))
+                : complete.data.rows;
+            }}
+            onChooseReference={onChooseReference}
           />
-        }
+        )}
         mobileViewControls={
           <div className="space-y-2">
             {sortField && !isReadOnly ? (
@@ -3024,6 +3183,25 @@ const UserTableViewer = ({
         onFillDown={handleFillDown}
       />
 
+      {/* Table colors — color-by a column + rules (table-style.ts). */}
+      <ColorRulesDialog
+        open={showColorsDialog}
+        onOpenChange={setShowColorsDialog}
+        fields={fields}
+        style={tableStyle}
+        choicesByField={Object.fromEntries(
+          [...choiceMap.entries()].map(([fieldName, resolved]) => [
+            fieldName,
+            resolved.choices.map((c) => ({
+              value: c.value,
+              label: c.label,
+              color: c.color,
+            })),
+          ]),
+        )}
+        onSetPath={(path, value) => writeStylePath(path, value)}
+      />
+
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
           keeps the legacy content-sized cap. */}
@@ -3198,11 +3376,21 @@ const UserTableViewer = ({
                 <TableRow
                   key={row.id}
                   {...{ [GRID_ROW_DOM_ATTR]: row.id }}
-                  className={`
-                    ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
-                    ${selectedRowIdSet.has(row.id) ? "bg-primary/5" : ""}
-                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
-                  `}
+                  // Zebra → color tint (table-style.ts) → selection. `cn`
+                  // (tailwind-merge) keeps the LAST background, so a tinted
+                  // row shows its tint and a selected row still reads selected.
+                  className={cn(
+                    index % 2 === 0
+                      ? "bg-white dark:bg-gray-950"
+                      : "bg-gray-50 dark:bg-gray-900",
+                    selectedRowIdSet.has(row.id) && "bg-primary/5",
+                    // The tint is LAST so a colored row stays colored while
+                    // selected — the checkbox already says it is selected.
+                    rowTintClass(row),
+                    !rowTintClass(row) &&
+                      "hover:bg-gray-100 dark:hover:bg-gray-800",
+                    "transition-colors",
+                  )}
                 >
                   <TableCell
                     className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
@@ -3326,6 +3514,9 @@ const UserTableViewer = ({
                             "bg-primary/5 ring-2 ring-inset ring-primary/70",
                           grid.isEditing(row.id, field.field_name) &&
                             "bg-primary/10 ring-[3px] ring-inset ring-primary",
+                          // Tint LAST: the ring says "selected", the tint says
+                          // "highlighted", and both must survive together.
+                          cellTintClass(row, field.field_name),
                         )}
                         onClick={() => {
                           grid.select({

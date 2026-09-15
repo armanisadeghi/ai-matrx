@@ -30,7 +30,9 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  BookOpen,
 } from "lucide-react";
+import { listExampleTables } from "@/features/data-tables/service";
 import Link from "next/link";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import CreateTableModal from "./CreateTableModal";
@@ -208,6 +210,29 @@ export default function TableCards() {
 
   // Shared section collapse state
   const [isSharedSectionOpen, setIsSharedSectionOpen] = useState(true);
+
+  // EXAMPLES — the platform's own tables (Matrx System org), read-only for
+  // everyone, there so a user can see what a table can do before making one.
+  // Loaded separately from `get_user_tables`, which stays "my tables".
+  const [exampleTables, setExampleTables] = useState<UserTable[]>([]);
+  const [examplesError, setExamplesError] = useState<string | null>(null);
+  const [isExamplesSectionOpen, setIsExamplesSectionOpen] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    void listExampleTables().then((result) => {
+      if (!alive) return;
+      if (!result.success) {
+        setExamplesError(result.error);
+        return;
+      }
+      setExamplesError(null);
+      setExampleTables(result.data as unknown as UserTable[]);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -808,6 +833,59 @@ export default function TableCards() {
                   </div>
                 )}
               </>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Examples — read-only platform tables that show what a table can do. */}
+      {(exampleTables.length > 0 || examplesError) && (
+        <Collapsible
+          open={isExamplesSectionOpen}
+          onOpenChange={setIsExamplesSectionOpen}
+          className="mt-8"
+        >
+          <CollapsibleTrigger className="flex items-center gap-2 w-full group mb-4 hover:opacity-80 transition-opacity">
+            <div className="flex items-center gap-2">
+              {isExamplesSectionOpen ? (
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              )}
+              <BookOpen className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Examples
+              </h2>
+              <Badge
+                variant="secondary"
+                className="font-normal py-0.25 px-1.5 text-xs"
+              >
+                {exampleTables.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground ml-2">
+                Read-only tables that show what a table can do
+              </span>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            {examplesError ? (
+              <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/30">
+                <p className="text-muted-foreground">
+                  The example tables could not be loaded: {examplesError}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {exampleTables
+                  .filter(
+                    (table) =>
+                      !searchTerm ||
+                      table.table_name
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()),
+                  )
+                  .map((table) => renderTableCard(table, isOwner(table) === true))}
+              </div>
             )}
           </CollapsibleContent>
         </Collapsible>

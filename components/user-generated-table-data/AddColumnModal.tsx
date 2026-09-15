@@ -32,9 +32,15 @@ interface AddColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /**
+   * Insert the new column at this `field_order` instead of appending — the
+   * right-click "Insert column left / right". The caller shifts the columns
+   * at and after this order by one once the column exists.
+   */
+  insertAtOrder?: number;
 }
 
-export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: AddColumnModalProps) {
+export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, insertAtOrder }: AddColumnModalProps) {
   const [displayName, setDisplayName] = useState('');
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
@@ -84,7 +90,8 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
         displayName,
         dataType,
         isRequired,
-        defaultValue: defaultValue || null
+        defaultValue: defaultValue || null,
+        ...(typeof insertAtOrder === "number" ? { fieldOrder: insertAtOrder } : {}),
       });
       
       if (!result.success) {

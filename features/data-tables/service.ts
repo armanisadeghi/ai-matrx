@@ -485,6 +485,89 @@ export async function setFieldFormat(
   return { success: true, data: { field_id: envelope.field_id ?? args.fieldId } };
 }
 
+// ─── udt_set_table_style ─────────────────────────────────────────────────────
+
+export type SetTableStyleArgs = {
+  tableId: string;
+  /** One of the `stylePath.*` builders in `table-style.ts`. */
+  path: readonly string[];
+  /** `null` deletes the key. */
+  value: unknown;
+};
+
+/**
+ * Write ONE path of the table's color style (`metadata.style`). Surgical by
+ * design — see `table-style.ts` and the migration `udt_table_style_and_example_tables`.
+ */
+export async function setTableStyle(
+  args: SetTableStyleArgs,
+): Promise<ServiceResult<{ style: unknown }>> {
+  const { data, error } = await supabase.rpc("udt_set_table_style", {
+    p_table_id: args.tableId,
+    p_path: [...args.path],
+    p_value: (args.value ?? null) as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as {
+    success?: boolean;
+    error?: string;
+    style?: unknown;
+  } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to save colors" };
+  }
+  return { success: true, data: { style: envelope.style } };
+}
+
+// ─── update_user_table_config (field_order only) ─────────────────────────────
+
+/**
+ * Renumber columns — the second half of "insert column left / right". The new
+ * column is created AT the target order by `add_column_to_user_table`; this
+ * shifts every column that already held that order or a later one by +1, so
+ * two columns never share a slot. `update_user_table_config` is the existing
+ * column-editing RPC (Table Settings uses it); only `field_order` is sent.
+ */
+export async function renumberFields(args: {
+  tableId: string;
+  updates: { id: string; field_order: number }[];
+}): Promise<ServiceResult<{ updated: number }>> {
+  if (args.updates.length === 0) return { success: true, data: { updated: 0 } };
+  const { data, error } = await supabase.rpc("update_user_table_config", {
+    p_table_id: args.tableId,
+    p_field_updates: args.updates as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to reorder columns" };
+  }
+  return { success: true, data: { updated: args.updates.length } };
+}
+
+// ─── udt_list_example_tables ─────────────────────────────────────────────────
+
+/**
+ * The platform's EXAMPLE tables — datasets owned by the Matrx System org,
+ * readable by every signed-in user (RLS decides; the RPC is SECURITY
+ * INVOKER). Distinct from `listUserTables`, which stays "my own tables".
+ */
+export async function listExampleTables(): Promise<
+  ServiceResult<UserTableListItem[]>
+> {
+  const { data, error } = await supabase.rpc("udt_list_example_tables");
+  if (error) return { success: false, error: error.message };
+  if (!isRecord(data) || data.success !== true) {
+    return { success: false, error: "Invalid response from udt_list_example_tables" };
+  }
+  return {
+    success: true,
+    data: Array.isArray(data.tables)
+      ? (data.tables as unknown as UserTableListItem[])
+      : [],
+  };
+}
+
 // ─── update_user_table_metadata ──────────────────────────────────────────────
 
 export type UpdateTableMetadataArgs = {

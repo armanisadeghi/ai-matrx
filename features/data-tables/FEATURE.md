@@ -211,6 +211,8 @@ creates workbook UI and duplicate internal editor documents.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
+- `features/data-tables/table-style.ts` (colors model: color-by / rules / highlights, pure) +
+  `components/ColorRulesDialog.tsx` (the Colors dialog) + `scripts/seed-udt-example-tables.ts`.
 - `features/data-tables/grid-clipboard.ts` (TSV parse / serialize + `planPaste`, pure) and
   `features/data-tables/grid-context-menu.ts` (the grid's cell / row / column menu sections +
   the DOM-anchor resolver, pure `build*`) — consumed by `UserTableViewer` + `useGridSelection`.
@@ -764,7 +766,69 @@ surface's window it resolves the host). The surface's `current_cell_value` /
 `current_column_name` / `current_row_id` now follow the SELECTED cell, not only
 an open editor.
 
+## Colors — color-by, rules, manual highlights (2026-09-14)
+
+**The Airtable line, not the Excel line** (Arman, 2026-09-14: "do what the best do and
+just do it better, not get crazy with features"). A typed dataset is not a canvas —
+Workbooks already are — so color here carries MEANING and never touches the data:
+
+1. **Color by a column.** A choice / multi-choice / boolean column tints the row (or
+   only that column's cells) with each option's own chip color. An option that never
+   declared a color gets a stable palette color by position (`colorForChoice`), so
+   "color rows by Status" always paints something. Booleans tint checked rows green.
+   Right-click a column header → "Color rows by this column", or the toolbar **Colors**
+   dialog.
+2. **Rules.** "When Budget > 50000 tint the cell amber", "when Status is Blocked tint the
+   row red" — evaluated live on the client, first matching rule wins, top to bottom.
+   Edited in the **Colors** dialog ([`components/ColorRulesDialog.tsx`](./components/ColorRulesDialog.tsx)).
+3. **Manual highlights.** A cell, a row or a column from the right-click menu
+   ("Highlight cell / row / column ▸"), the same seven-color palette the choice chips
+   use. Manual always wins over rules; a cell tint paints over a row tint.
+
+**Where it lives.** `udt_datasets.metadata.style` — one blob per table, read with the
+table's own metadata (`get_full_table` → `tableInfo.metadata`, zero extra requests),
+written by PATH through `public.udt_set_table_style(p_table_id, p_path text[], p_value)`
+(migration `udt_table_style_and_example_tables.sql`; editor-gated by
+`workbench.udt_dataset_access`; a null value deletes the key and prunes empty parents).
+Surgical paths are what let two editors highlight different cells without clobbering
+each other. Model, parsing, precedence and class maps: [`table-style.ts`](./table-style.ts)
+(tests in `__tests__/table-style.test.ts`). The grid patches its local copy optimistically
+and adopts the server's returned style on success. Copy, export, the agent scope and the
+row data never see colors. Realtime does NOT yet push style changes to other viewers
+(the viewer subscribes to rows only) — a reload shows them.
+
+## Examples — the platform's read-only showcase tables
+
+`/data` gains an **Examples** section: datasets owned by the Matrx System organization,
+listed by `public.udt_list_example_tables()` (SECURITY INVOKER — RLS decides; every
+signed-in user is a viewer through the platform-global tier, super admins can edit).
+`get_user_tables` is untouched and still means "my tables". The content is seeded by
+`scripts/seed-udt-example-tables.ts` (three tables: Project Tracker — every column
+format, color-by Status, a rule, manual highlights; Product Catalog — rules on stock;
+Team Directory — color-by Department on cells; plus one shared pick list for the
+dependent Team column). ⚠️ Seeding needs the seeding admin to be a MEMBER of the system
+org: `udt_datasets.std_insert` requires `iam.has_org_access(organization_id)`, which is
+pure membership, and the system org had zero members on 2026-09-14. Add the membership
+through the super-admin API (`POST /api/admin/users/organizations`) first.
+
+## Right-click menu additions (2026-09-14, second pass)
+
+Row: **Add row…**, **Highlight row ▸**. Column: **Insert column left / right…** (the
+add-column modal takes `insertAtOrder`; after the column lands, `renumberFields` shifts
+the columns at and after that slot by one), **Highlight column ▸**, **Color rows by this
+column** / **Stop coloring…** (disabled with the reason on non-choice columns), **Table
+colors…**. Cell: **Highlight cell ▸**. Highlights show a ✓ on the color already applied.
+
+**Documented, not built (talk first):** multi-cell RANGE selection (shift-click / drag /
+shift-arrows → copy, clear, fill, paste over a range — the Excel gesture; also the
+natural "send these cells to an agent" scope), and ROW / COLUMN selection by clicking the
+row number or header (today rows select via checkboxes and columns have no selection).
+Both change `grid-selection.ts` from a single address to an anchor+focus range and are
+a day of careful work each; the selection model was deliberately left single-cell here.
+
 ## Change log
+
+- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. NOT done: the example tables are not seeded yet (system-org membership, above); realtime for style changes.
 
 - `2026-09-14` — **Copy / cut / paste on a selected cell (spreadsheet blocks included), choice cells select-then-open, and the grid's first right-click menu.** See § Grid clipboard + right-click menu. Verified live on `/data/[id]` in the isolated browser: Cmd-C on a plain and on a choice cell wrote the cell text; a native paste event over a cell wrote it and Cmd-Z restored it; a two-row block on the last row raised the "Add 1 new row?" confirm, Skip wrote the fitting cell; the menu opened with the Cell / Row / Column sections and no INERT / VALUE MAPPING scream. Not verifiable in the isolated browser (it denies clipboard read and fires no native clipboard events): the Cmd-V async fallback was proven with a stubbed `readText`; the real-browser prompt path is untested.
 

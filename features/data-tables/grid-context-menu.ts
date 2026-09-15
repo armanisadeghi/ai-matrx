@@ -36,7 +36,12 @@ import {
   EyeOff,
   History,
   Link,
+  Paintbrush,
+  Palette,
+  PanelLeft,
+  PanelRight,
   Pencil,
+  Plus,
   Scissors,
   Settings2,
   Trash2,
@@ -53,6 +58,11 @@ import {
 } from "@/features/context-menu-v3/utils/availability";
 
 import type { CellAddress } from "./grid-selection";
+import {
+  STYLE_COLORS,
+  STYLE_COLOR_LABELS,
+  type StyleColor,
+} from "./table-style";
 
 // ─── DOM anchors ────────────────────────────────────────────────────────────
 //
@@ -118,14 +128,59 @@ export function resolveGridMenuTarget(
 
 const VIEW_ONLY = "View-only table — ask the owner for edit access";
 
+/**
+ * The manual-highlight palette as a submenu: one row per color plus Clear.
+ * `current` marks the color already applied so the user sees what they have.
+ * Colors are the choice-chip palette (`table-style.ts`), never a picker.
+ */
+export function buildHighlightSubmenu(opts: {
+  id: string;
+  label: string;
+  current: StyleColor | null | undefined;
+  disabled?: boolean;
+  onPick: (color: StyleColor | null) => void;
+}): ContextMenuExtraItem {
+  const children: ContextMenuExtraItem[] = STYLE_COLORS.map((color) => ({
+    kind: "item",
+    id: `${opts.id}-${color}`,
+    label: STYLE_COLOR_LABELS[color],
+    icon: Palette,
+    hint: opts.current === color ? "✓" : undefined,
+    onSelect: () => opts.onPick(color),
+  }));
+  children.push({ kind: "separator", id: `${opts.id}-sep` });
+  children.push({
+    kind: "item",
+    id: `${opts.id}-clear`,
+    label: "Clear highlight",
+    icon: Eraser,
+    disabled: !opts.current,
+    onSelect: () => opts.onPick(null),
+  });
+  return {
+    kind: "submenu",
+    id: opts.id,
+    label: opts.label,
+    icon: Paintbrush,
+    disabled: opts.disabled,
+    children,
+  };
+}
+
 export function buildGridCellMenuSection(opts: {
-  cell: { address: CellAddress; displayName: string } | null;
+  cell: {
+    address: CellAddress;
+    displayName: string;
+    /** The manual highlight this cell carries, if any. */
+    highlight?: StyleColor | null;
+  } | null;
   readOnly: boolean;
   on: {
     cut: (address: CellAddress) => void;
     paste: (address: CellAddress) => void;
     clear: (address: CellAddress) => void;
     edit: (address: CellAddress) => void;
+    highlight: (address: CellAddress, color: StyleColor | null) => void;
   };
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
@@ -166,6 +221,12 @@ export function buildGridCellMenuSection(opts: {
       hint: "↵",
       onSelect: () => address && on.edit(address),
     },
+    buildHighlightSubmenu({
+      id: "grid-cell-highlight",
+      label: "Highlight cell",
+      current: cell?.highlight,
+      onPick: (color) => address && on.highlight(address, color),
+    }),
   ];
 
   return withAvailability(
@@ -181,21 +242,25 @@ export function buildGridCellMenuSection(opts: {
       "grid-cell-paste": gate,
       "grid-cell-clear": gate,
       "grid-cell-edit": gate,
+      "grid-cell-highlight": gate,
       ...opts.unavailable,
     },
   );
 }
 
 export function buildGridRowMenuSection(opts: {
-  row: { id: string; label: string } | null;
+  row: { id: string; label: string; highlight?: StyleColor | null } | null;
   readOnly: boolean;
   on: {
+    /** Open the new-row form. Rows are unordered, so there is no above/below. */
+    add: () => void;
     edit: (rowId: string) => void;
     duplicate: (rowId: string) => void;
     copy: (rowId: string) => void;
     history: (rowId: string) => void;
     reference: (rowId: string) => void;
     remove: (rowId: string) => void;
+    highlight: (rowId: string, color: StyleColor | null) => void;
   };
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
@@ -205,6 +270,13 @@ export function buildGridRowMenuSection(opts: {
   const writeGate = noRow ?? (readOnly ? VIEW_ONLY : undefined);
 
   const items: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "grid-row-add",
+      label: "Add row…",
+      icon: Plus,
+      onSelect: () => on.add(),
+    },
     {
       kind: "item",
       id: "grid-row-edit",
@@ -240,6 +312,12 @@ export function buildGridRowMenuSection(opts: {
       icon: Link,
       onSelect: () => id && on.reference(id),
     },
+    buildHighlightSubmenu({
+      id: "grid-row-highlight",
+      label: "Highlight row",
+      current: row?.highlight,
+      onPick: (color) => id && on.highlight(id, color),
+    }),
     {
       kind: "item",
       id: "grid-row-delete",
@@ -259,11 +337,13 @@ export function buildGridRowMenuSection(opts: {
       items,
     },
     {
+      "grid-row-add": readOnly ? VIEW_ONLY : undefined,
       "grid-row-edit": writeGate,
       "grid-row-duplicate": writeGate,
       "grid-row-copy": noRow,
       "grid-row-history": noRow,
       "grid-row-reference": noRow,
+      "grid-row-highlight": writeGate,
       "grid-row-delete": writeGate,
       ...opts.unavailable,
     },
@@ -276,6 +356,12 @@ export function buildGridColumnMenuSection(opts: {
     displayName: string;
     /** Direction the grid is sorted by THIS column, or null. */
     sortedBy: "asc" | "desc" | null;
+    /** The manual highlight the whole column carries, if any. */
+    highlight?: StyleColor | null;
+    /** True for a choice / multi-choice / boolean column — one that can drive color-by. */
+    canColorBy: boolean;
+    /** True when the table is currently colored BY this column. */
+    isColorBy: boolean;
   } | null;
   readOnly: boolean;
   /** The table has one column left — it cannot be removed. */
@@ -287,6 +373,13 @@ export function buildGridColumnMenuSection(opts: {
     hide: (fieldName: string) => void;
     configure: (fieldName: string) => void;
     remove: (fieldName: string) => void;
+    /** Open the new-column form so the column lands beside this one. */
+    insert: (fieldName: string, side: "left" | "right") => void;
+    highlight: (fieldName: string, color: StyleColor | null) => void;
+    /** Color rows by this column's option colors, or stop (`false`). */
+    colorBy: (fieldName: string, on: boolean) => void;
+    /** Open the table-wide Colors dialog (color-by + rules). */
+    colors: () => void;
   };
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
@@ -296,6 +389,21 @@ export function buildGridColumnMenuSection(opts: {
   const writeGate = noColumn ?? (readOnly ? VIEW_ONLY : undefined);
 
   const items: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "grid-col-insert-left",
+      label: "Insert column left…",
+      icon: PanelLeft,
+      onSelect: () => name && on.insert(name, "left"),
+    },
+    {
+      kind: "item",
+      id: "grid-col-insert-right",
+      label: "Insert column right…",
+      icon: PanelRight,
+      onSelect: () => name && on.insert(name, "right"),
+    },
+    { kind: "separator", id: "grid-col-sep-insert" },
     {
       kind: "item",
       id: "grid-col-sort-asc",
@@ -324,6 +432,30 @@ export function buildGridColumnMenuSection(opts: {
       icon: EyeOff,
       onSelect: () => name && on.hide(name),
     },
+    { kind: "separator", id: "grid-col-sep-color" },
+    buildHighlightSubmenu({
+      id: "grid-col-highlight",
+      label: "Highlight column",
+      current: column?.highlight,
+      onPick: (color) => name && on.highlight(name, color),
+    }),
+    {
+      kind: "item",
+      id: "grid-col-color-by",
+      label: column?.isColorBy
+        ? "Stop coloring rows by this column"
+        : "Color rows by this column",
+      icon: Palette,
+      onSelect: () => name && on.colorBy(name, !column?.isColorBy),
+    },
+    {
+      kind: "item",
+      id: "grid-col-colors",
+      label: "Table colors…",
+      icon: Paintbrush,
+      onSelect: () => on.colors(),
+    },
+    { kind: "separator", id: "grid-col-sep-settings" },
     {
       kind: "item",
       id: "grid-col-configure",
@@ -350,11 +482,20 @@ export function buildGridColumnMenuSection(opts: {
       items,
     },
     {
+      "grid-col-insert-left": writeGate,
+      "grid-col-insert-right": writeGate,
       "grid-col-sort-asc": noColumn,
       "grid-col-sort-desc": noColumn,
       "grid-col-clear-sort":
         noColumn ?? (column && !column.sortedBy ? "Not sorted by this column" : undefined),
       "grid-col-hide": noColumn,
+      "grid-col-highlight": writeGate,
+      "grid-col-color-by":
+        writeGate ??
+        (column && !column.canColorBy
+          ? "Works on a choice or checkbox column"
+          : undefined),
+      "grid-col-colors": readOnly ? VIEW_ONLY : undefined,
       "grid-col-configure": writeGate,
       "grid-col-delete":
         writeGate ?? (isOnlyColumn ? "A table keeps at least one column" : undefined),

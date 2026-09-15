@@ -97,6 +97,11 @@ export interface AddColumnParams {
   dataType: string;
   isRequired: boolean;
   defaultValue?: string | number | boolean | null;
+  /**
+   * Where the column lands. Omit to append at the end; pass an existing
+   * column's order to insert THERE (the caller renumbers the columns after it).
+   */
+  fieldOrder?: number;
 }
 
 export interface AddColumnResult {
@@ -302,6 +307,9 @@ export async function addColumn(
       p_data_type: normalizedDataType,
       p_is_required: isRequired,
       p_default_value: formattedDefaultValue,
+      ...(typeof params.fieldOrder === "number"
+        ? { p_field_order: params.fieldOrder }
+        : {}),
     });
 
     if (error) {
