@@ -3,7 +3,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import reducer, { applyView, hydrateActor } from "@/lib/redux/slices/sandboxLifecycleSlice";
+import reducer, { applyView, hydrateActor, upsertReceipt } from "@/lib/redux/slices/sandboxLifecycleSlice";
 import { SandboxLifecycleController } from "./SandboxLifecycleController";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,7 +16,9 @@ jest.mock("@/lib/toast", () => ({ toast: { success: (message: unknown, options?:
 
 const actorId = "11111111-1111-4111-8111-111111111111";
 const receipt = { schema_version: 1 as const, row_id: "22222222-2222-4222-8222-222222222222", operation_id: "33333333-3333-4333-8333-333333333333", kind: "stop" as const, observation: "accepted" as const };
+const receiptB = { ...receipt, row_id: "44444444-4444-4444-8444-444444444444", operation_id: "55555555-5555-4555-8555-555555555555", kind: "delete" as const };
 const response = (state: "running" | "succeeded" | "failed") => ({ ok: true, status: 200, json: async () => ({ row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state }) }) as Response;
+const receiptResponse = (item: typeof receipt | typeof receiptB, state: "running" | "succeeded", message: string) => ({ ok: true, status: 200, json: async () => ({ row_id: item.row_id, sandbox_id: item === receipt ? "runtime-a" : "runtime-b", operation_id: item.operation_id, kind: item.kind, state, error: message }) }) as Response;
 const makeStore = () => configureStore({ reducer: { sandboxLifecycle: reducer } });
 function mount(store: ReturnType<typeof makeStore>) {
   const container = document.createElement("div");
@@ -97,6 +99,43 @@ describe("mounted sandbox lifecycle observer", () => {
     await act(async () => { resolveFetch?.(response("succeeded")); await Promise.resolve(); });
     expect(store.getState().sandboxLifecycle.views).toEqual([]);
     expect(mockToastSuccess).not.toHaveBeenCalled();
+    mounted.unmount();
+  });
+
+  it("adds B while A is pending without restarting A, resetting its budget, or re-toasting its unchanged view", async () => {
+    const store = makeStore();
+    store.dispatch(hydrateActor({ actorId, receipts: [receipt] }));
+    jest.mocked(global.fetch).mockImplementation(async (input) => String(input).includes(receiptB.operation_id) ? receiptResponse(receiptB, "succeeded", "B terminal") : receiptResponse(receipt, "running", "A pending"));
+    const mounted = mount(store);
+    await act(async () => { await jest.advanceTimersByTimeAsync(15_000); });
+    const aCallsBeforeB = jest.mocked(global.fetch).mock.calls.filter(([input]) => String(input).includes(receipt.operation_id)).length;
+    const aToastsBeforeB = mockToastWarning.mock.calls.filter(([message]) => message === "A pending").length;
+
+    act(() => { store.dispatch(upsertReceipt(receiptB)); });
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(jest.mocked(global.fetch).mock.calls.filter(([input]) => String(input).includes(receipt.operation_id))).toHaveLength(aCallsBeforeB);
+    expect(mockToastWarning.mock.calls.filter(([message]) => message === "A pending")).toHaveLength(aToastsBeforeB);
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(285_000); });
+    expect(jest.mocked(global.fetch).mock.calls.filter(([input]) => String(input).includes(receipt.operation_id))).toHaveLength(24);
+    expect(store.getState().sandboxLifecycle.views.find((view) => view.operation_id === receipt.operation_id)).toEqual(expect.objectContaining({ message: "Still in progress; automatic status checks paused. Check status." }));
+    mounted.unmount();
+  });
+
+  it("adds B after A is terminal without rechecking, dismissing, or re-toasting A", async () => {
+    const store = makeStore();
+    store.dispatch(hydrateActor({ actorId, receipts: [receipt] }));
+    store.dispatch(applyView({ actorId, generation: store.getState().sandboxLifecycle.generation, view: { operation_id: receipt.operation_id, state: "pending", message: "A starting", sandboxId: "runtime-a", action: "check", dismissed: false } }));
+    jest.mocked(global.fetch).mockImplementation(async (input) => String(input).includes(receiptB.operation_id) ? receiptResponse(receiptB, "succeeded", "B terminal") : receiptResponse(receipt, "succeeded", "A terminal"));
+    const mounted = mount(store);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(mockToastSuccess.mock.calls.filter(([message]) => message === "A terminal")).toHaveLength(1);
+
+    act(() => { store.dispatch(upsertReceipt(receiptB)); });
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(jest.mocked(global.fetch).mock.calls.filter(([input]) => String(input).includes(receipt.operation_id))).toHaveLength(1);
+    expect(mockToastSuccess.mock.calls.filter(([message]) => message === "A terminal")).toHaveLength(1);
+    expect(mockToastDismiss).not.toHaveBeenCalledWith("success-toast");
     mounted.unmount();
   });
 });

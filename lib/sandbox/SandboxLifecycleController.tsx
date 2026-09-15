@@ -15,6 +15,10 @@ function isTerminalState(state: SandboxLifecycleView["state"]): boolean {
   return state === "success" || state === "failure" || state === "refused";
 }
 
+function receiptIdentity(receipt: SandboxOperationReceipt): string {
+  return `${receipt.row_id}:${receipt.operation_id}:${receipt.kind}`;
+}
+
 export type LifecycleControllerEnvironment = {
   visible: () => boolean;
   online: () => boolean;
@@ -137,16 +141,47 @@ export function SandboxLifecycleController() {
   const lifecycle = useAppSelector((state) => state.sandboxLifecycle);
   const current = useRef({ actorId: lifecycle.actorId, generation: lifecycle.generation });
   const controllers = useRef<Map<string, SandboxLifecycleReceiptController>>(new Map());
+  const controllerReceiptKeys = useRef<Map<string, string>>(new Map());
   const toastIds = useRef<Map<string, string | number>>(new Map());
+  const toastSignatures = useRef<Map<string, string>>(new Map());
   useEffect(() => { current.current = { actorId: lifecycle.actorId, generation: lifecycle.generation }; }, [lifecycle.actorId, lifecycle.generation]);
+
+  // Actor generations own controller and notification identity. Receipt-list
+  // updates reconcile below and must never reset unrelated observers.
   useEffect(() => {
     for (const controller of controllers.current.values()) controller.stop();
     controllers.current.clear();
+    controllerReceiptKeys.current.clear();
     for (const id of toastIds.current.values()) toast.dismiss(id);
     toastIds.current.clear();
+    toastSignatures.current.clear();
+    return () => {
+      for (const controller of controllers.current.values()) controller.stop();
+      controllers.current.clear();
+      controllerReceiptKeys.current.clear();
+      for (const id of toastIds.current.values()) toast.dismiss(id);
+      toastIds.current.clear();
+      toastSignatures.current.clear();
+    };
+  }, [lifecycle.actorId, lifecycle.generation]);
+
+  useEffect(() => {
     if (!lifecycle.actorId) return;
     const actorId = lifecycle.actorId; const generation = lifecycle.generation;
+    const desired = new Map(lifecycle.receipts.map((receipt) => [receipt.operation_id, receipt]));
+    for (const [operationId, controller] of controllers.current) {
+      const next = desired.get(operationId);
+      if (next && controllerReceiptKeys.current.get(operationId) === receiptIdentity(next)) continue;
+      controller.stop();
+      controllers.current.delete(operationId);
+      controllerReceiptKeys.current.delete(operationId);
+      const toastId = toastIds.current.get(operationId);
+      if (toastId !== undefined) toast.dismiss(toastId);
+      toastIds.current.delete(operationId);
+      toastSignatures.current.delete(operationId);
+    }
     for (const receipt of lifecycle.receipts) {
+      if (controllers.current.has(receipt.operation_id)) continue;
       const adapter = createSandboxLifecycleOperationAdapter(fetch, {
         admission: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations`,
         status: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}`,
@@ -154,24 +189,29 @@ export function SandboxLifecycleController() {
       });
       const restored = lifecycle.views.find((view) => view.operation_id === receipt.operation_id)?.restored === true;
       const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, silenceInitialTerminal: restored, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => dispatch(applyView({ actorId, generation, view })) });
-      controllers.current.set(receipt.operation_id, controller); controller.start();
+      controllers.current.set(receipt.operation_id, controller);
+      controllerReceiptKeys.current.set(receipt.operation_id, receiptIdentity(receipt));
+      controller.start();
     }
-    return () => { for (const controller of controllers.current.values()) controller.stop(); controllers.current.clear(); };
-  }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.receipts]);
+  }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.receipts, lifecycle.views]);
 
   useEffect(() => {
     if (!lifecycle.actorId) return;
     const actorId = lifecycle.actorId;
     const generation = lifecycle.generation;
+    const receiptIds = new Set(lifecycle.receipts.map((receipt) => receipt.operation_id));
     for (const view of lifecycle.views) {
-      if (view.dismissed) { const id = toastIds.current.get(view.operation_id); if (id !== undefined) toast.dismiss(id); toastIds.current.delete(view.operation_id); continue; }
+      if (view.dismissed || !receiptIds.has(view.operation_id)) { const id = toastIds.current.get(view.operation_id); if (id !== undefined) toast.dismiss(id); toastIds.current.delete(view.operation_id); toastSignatures.current.delete(view.operation_id); continue; }
       const currentToast = toastIds.current.get(view.operation_id);
+      const signature = JSON.stringify([view.state, view.message, view.sandboxId, view.action]);
+      if (currentToast !== undefined && toastSignatures.current.get(view.operation_id) === signature) continue;
       const controller = controllers.current.get(view.operation_id);
       const terminal = isTerminalState(view.state);
       const action = view.action === "recover" ? { label: "Recover", onClick: () => void controller?.recover() } : view.action === "retry" ? { label: "Retry request", onClick: () => void controller?.retry() } : view.action === "check" ? { label: "Check status", onClick: () => void controller?.check(true) } : undefined;
       const emit = view.state === "success" ? toast.success : view.state === "failure" ? toast.error : toast.warning;
       toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: terminal ? undefined : Infinity, action, onDismiss: () => dispatch(dismissView({ actorId, generation, operationId: view.operation_id })) }));
+      toastSignatures.current.set(view.operation_id, signature);
     }
-  }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.views]);
+  }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.receipts, lifecycle.views]);
   return null;
 }
