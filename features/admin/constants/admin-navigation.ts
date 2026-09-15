@@ -520,6 +520,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/applications/configuration"),
           destination("/administration/applications/catalogs"),
           destination("/administration/applications/installations"),
+          destination("/administration/applications/sync"),
           destination("/administration/applications/history"),
         ],
       },

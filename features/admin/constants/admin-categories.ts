@@ -632,6 +632,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Folder Sync Health",
+        description:
+          "Fleet health for folder sync: accounts over quota, mappings that stopped, and devices that went quiet. States and counts only — never a local path.",
+        iconName: "FolderSync",
+        link: "/administration/applications/sync",
+        isNew: true,
+      },
+      {
         title: "Application History",
         description:
           "Review the unified configuration and catalog audit timeline for shipped applications.",
