@@ -5,6 +5,7 @@ import { ChevronLeft, FileText, Loader2, AlertCircle, ExternalLink, File, Globe 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { parseYouTubeUrl } from "@/lib/media/youtube";
 
 interface FileUrlResourcePickerProps {
     onBack: () => void;
@@ -32,7 +33,10 @@ function detectUrlType(url: string): 'youtube' | 'image' | 'webpage' | 'file' {
     try {
         const urlObj = new URL(normalizeUrl(url));
 
-        if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        // ONE canonical YouTube detector — `lib/media/youtube.ts`. The
+        // hostname copy that used to live here could not tell a watch URL
+        // from a channel page.
+        if (parseYouTubeUrl(urlObj.toString())) {
             return 'youtube';
         }
 
