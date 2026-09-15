@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
 import {
   directSource,
   type Payload,
@@ -57,7 +57,7 @@ const ROWS: DemoRow[] = [
     title: "Archived launch note",
     status: "Archived",
     owner: "Operations",
-    notes: "Kept as an honest sample.",
+    notes: "Previous launch notes.",
   },
 ];
 
@@ -79,13 +79,6 @@ const COLUMNS: MatrxColumnDef<DemoRow>[] = [
   { accessorKey: "owner", header: "Owner", filter: "select" },
   { accessorKey: "notes", header: "Notes" },
 ];
-
-const ROW_COLUMNS = [
-  { id: "title", label: "Title", path: "/title", visible: true },
-  { id: "status", label: "Status", path: "/status", visible: true },
-  { id: "owner", label: "Owner", path: "/owner", visible: true },
-  { id: "notes", label: "Notes", path: "/notes", visible: true },
-] as const;
 
 function DemoCard({
   title,
@@ -171,24 +164,6 @@ function AlchemyExamples() {
         selected_sample_rows: selectedRows,
       },
     });
-
-  const tableSource = sourceFrom(
-    "alchemy-demo:rows",
-    "Sample content records",
-    (scope) => {
-      const rows =
-        scope === "selected"
-          ? selectedRows
-          : scope === "loaded"
-            ? ROWS
-            : visibleRows;
-      return {
-        kind: "rows",
-        rows,
-        columns: [...ROW_COLUMNS],
-      };
-    },
-  );
 
   return (
     <SurfaceRuntimeProvider
@@ -297,7 +272,7 @@ function AlchemyExamples() {
                 label="Release evidence"
                 preferences={{
                   limits: {
-                    maxDepth: 3,
+                    maxDepth: 6,
                     maxStringChars: 120,
                     maxArrayItems: 2,
                   },
@@ -310,12 +285,12 @@ function AlchemyExamples() {
 
           <DemoCard
             title="Selectable tabular data"
-            description="MatrxDataTable supplies the selection; the package offers selected rows, the filtered view, and all loaded rows as explicit capture scopes."
+            description="The table provides its own row, filtered-view, and selection menus. Change filters or select rows, then open its Alchemy menu."
           >
               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="alchemy-row-filter">
-                    Honest sample filter
+                    Sample status
                   </Label>
                   <select
                     id="alchemy-row-filter"
@@ -336,22 +311,12 @@ function AlchemyExamples() {
                     {selectedRows.length} selected · {visibleRows.length} in
                     view
                   </span>
-                  <ContentTransferMenu
-                    source={tableSource}
-                    capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
-                    label="Sample content records"
-                    table={{
-                      availableScopes: ["selected", "view", "loaded"],
-                      initialScope: "view",
-                    }}
-                    triggerVariant="transparent"
-                    icon="portal"
-                  />
                 </div>
               </div>
               <div className="max-h-[28rem] overflow-auto rounded-md border">
                 <MatrxDataTable
                   data={visibleRows}
+                  toolbar={{ title: "Sample content records" }}
                   columns={COLUMNS}
                   getRowId={(row) => row.id}
                   pageSize={10}
