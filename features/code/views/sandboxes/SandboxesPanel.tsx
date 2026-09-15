@@ -77,7 +77,11 @@ import {
   setActiveSandboxId,
   setActiveSandboxProxyUrl,
 } from "../../redux/codeWorkspaceSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAuthReady,
+  selectIsSuperAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 import {
@@ -109,6 +113,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const activeId = useAppSelector(selectActiveSandboxId);
   const activeProxyUrl = useAppSelector(selectActiveSandboxProxyUrl);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);
   const { setFilesystem, setProcess } = useCodeWorkspace();
 
@@ -119,6 +125,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [creatingRequest, setCreatingRequest] = useState<{
     generation: number;
     organizationId: string;
+    userId: string | null;
+    authReady: boolean;
   } | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -140,8 +148,14 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const didMountReconcileRef = useRef(false);
   const mountedRef = useRef(false);
   const currentOrganizationIdRef = useRef(organizationId);
+  const currentUserIdRef = useRef(userId);
+  const currentAuthReadyRef = useRef(authReady);
   const createRequestGenerationRef = useRef(0);
-  const creating = creatingRequest?.organizationId === organizationId;
+  const creating =
+    creatingRequest?.organizationId === organizationId &&
+    creatingRequest.userId === userId &&
+    creatingRequest.authReady === authReady &&
+    authReady;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -152,11 +166,13 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   useEffect(() => {
     currentOrganizationIdRef.current = organizationId;
+    currentUserIdRef.current = userId;
+    currentAuthReadyRef.current = authReady;
     // A scope switch invalidates its old request's UI ownership. `creating`
     // is scoped to the request's organization, so the new scope is usable
     // immediately while an old completion cannot clear a newer create.
     createRequestGenerationRef.current += 1;
-  }, [organizationId]);
+  }, [authReady, organizationId, userId]);
 
   const refresh = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -264,17 +280,24 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const createSandbox = useCallback(
     (request: SandboxCreateRequest): void => {
       const requestedOrganizationId = request.organization_id;
+      const requestedUserId = userId;
+      const requestedAuthReady = authReady;
       const requestGeneration = ++createRequestGenerationRef.current;
       const toastId = toast.loading("Requesting sandbox creation");
       setCreatingRequest({
         generation: requestGeneration,
         organizationId: requestedOrganizationId,
+        userId: requestedUserId,
+        authReady: requestedAuthReady,
       });
       setError(null);
       void (async () => {
         const isCurrentSurface = () =>
           mountedRef.current &&
           currentOrganizationIdRef.current === requestedOrganizationId &&
+          currentUserIdRef.current === requestedUserId &&
+          currentAuthReadyRef.current === requestedAuthReady &&
+          requestedAuthReady &&
           createRequestGenerationRef.current === requestGeneration;
         try {
           const explicitOrganizationId = requireMatchingSandboxOrganization(
@@ -338,7 +361,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         }
       })();
     },
-    [organizationId, refresh],
+    [authReady, organizationId, refresh, userId],
   );
 
   const stopSandbox = useCallback(
