@@ -879,6 +879,58 @@ export interface MasterworkAuditionVerdictData {
   verdict_sentence?: string | null;
 }
 
+export interface MasterworkBenchArmData {
+  type?: "masterwork_bench_arm";
+  rulebook_id: string;
+  trial_id: string;
+  arm: string;
+  label: string;
+  ran?: boolean;
+  error?: string;
+  cost_usd?: number;
+  seconds?: number;
+  priced?: boolean;
+  model?: string;
+  note?: string;
+}
+
+export interface MasterworkBenchProgressData {
+  type?: "masterwork_bench_progress";
+  rulebook_id: string;
+  trial_id: string;
+  stage: string;
+  message: string;
+  arm?: string;
+}
+
+export interface MasterworkBenchVerdictData {
+  type?: "masterwork_bench_verdict";
+  rulebook_id: string;
+  trial_id: string;
+  passed?: boolean;
+  void?: boolean;
+  not_scored?: boolean;
+  void_reason?: string;
+  not_scored_reason?: string;
+  win_claimed?: string | null;
+  win_rationale?: string;
+  arm?: string;
+  budget_multiple?: number | null;
+  panel_winner?: string | null;
+  panel_votes?: number;
+  gt_in_pool?: boolean;
+  gt_won?: boolean;
+  c_cost_usd?: number | null;
+  c_seconds?: number | null;
+  total_cost_usd?: number;
+  record_path?: string | null;
+  report_path?: string | null;
+  row_id?: string | null;
+  stored?: boolean;
+  storage_note?: string;
+  headline?: string;
+}
+
 export interface MasterworkBuildCompleteData {
   type?: "masterwork_build_complete";
   workflow_id: string;
@@ -1041,6 +1093,7 @@ export interface MasterworkIngestCompleteData {
   followup_seed?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled[];
   replaced_rules?: number;
+  narrowed_rules?: number;
   corpus_item_id?: string | null;
   sealed?: boolean;
   timeline_steps?: number;
@@ -1101,6 +1154,26 @@ export interface MasterworkPairwiseVerdictData {
   verdict_sentence?: string | null;
 }
 
+export interface MasterworkProbeRoundData {
+  type?: "masterwork_probe_round";
+  rulebook_id: string;
+  rulebook_version?: number;
+  round_index?: number;
+  round_count?: number;
+  done?: boolean;
+  done_reason?: string;
+  example_title?: string;
+  example_body?: string;
+  probe_label?: string;
+  rules_added?: number;
+  rule_ids?: string[];
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  answered_rounds?: number;
+}
+
 export interface MasterworkRunData {
   type?: "masterwork_run";
   run_id: string;
@@ -1158,6 +1231,29 @@ export interface MasterworkShortlistData {
   type?: "masterwork_shortlist";
   selected?: MasterworkShortlistItem[];
   considered?: number;
+}
+
+export interface MasterworkTriad {
+  id: string;
+  prompt: string;
+  items?: MasterworkTriadItem[];
+  mode?: string;
+}
+
+export interface MasterworkTriadItem {
+  key: string;
+  text: string;
+  note?: string;
+}
+
+export interface MasterworkTriadsReadyData {
+  type?: "masterwork_triads_ready";
+  rulebook_id: string;
+  triads?: MasterworkTriad[];
+  mode?: string;
+  requested?: number;
+  repeats_dropped?: number;
+  voice_default_on?: boolean;
 }
 
 export interface MasterworkTriageDecision {
@@ -1953,6 +2049,9 @@ export type TypedDataPayload =
   | MasterworkAuditionOutcomeVerdictData
   | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
+  | MasterworkBenchArmData
+  | MasterworkBenchProgressData
+  | MasterworkBenchVerdictData
   | MasterworkBuildCompleteData
   | MasterworkBuildProgressData
   | MasterworkCheckupCompleteData
@@ -1965,12 +2064,14 @@ export type TypedDataPayload =
   | MasterworkIngestCompleteData
   | MasterworkIngestProgressData
   | MasterworkPairwiseVerdictData
+  | MasterworkProbeRoundData
   | MasterworkRunCancelledData
   | MasterworkRunData
   | MasterworkRunFailedData
   | MasterworkRunSnapshotData
   | MasterworkSealedCaseDisclosureData
   | MasterworkShortlistData
+  | MasterworkTriadsReadyData
   | MasterworkTriageCompleteData
   | MasterworkTriageProgressData
   | MediaBlockData
