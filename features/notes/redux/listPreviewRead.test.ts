@@ -6,6 +6,8 @@
  * ensureNoteBodiesLoaded.
  */
 import { ENSURE_BODIES_CHUNK, ensureNoteBodiesLoaded, fetchNotesList } from "./thunks";
+import { enableMapSet } from "immer";
+import notesReducer, { upsertNotesFromServer } from "./slice";
 import { supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -93,5 +95,23 @@ describe("ensureNoteBodiesLoaded", () => {
     const dispatch = jest.fn((action) => action);
     await ensureNoteBodiesLoaded(["a", "b"])(dispatch, () => ({ notes: { notes: { a: { id: "a", _fetchStatus: "full" }, b: { id: "b", _fetchStatus: "full" } } } }) as never, undefined);
     expect(chain.in).not.toHaveBeenCalled();
+  });
+});
+
+describe("a list-built record keeps the preview (regression: the builder once dropped it)", () => {
+  it("carries content_preview and a null body", () => {
+    enableMapSet();
+    const state = notesReducer(
+      undefined,
+      upsertNotesFromServer({
+        upserts: [{
+          note: { id: "n1", label: "Chemistry", content_preview: "Balance the equation...", organization_id: "org-1", version: 3 },
+          fetchStatus: "list" as const,
+        }],
+      }) as Parameters<typeof notesReducer>[1],
+    );
+    expect(state.notes.n1.content).toBeNull();
+    expect(state.notes.n1.content_preview).toBe("Balance the equation...");
+    expect(state.notes.n1._fetchStatus).toBe("list");
   });
 });

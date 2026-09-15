@@ -15,7 +15,7 @@ import { ItemRow } from "@/components/official/item/ItemRow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { cn } from "@/lib/utils";
 import type { ContentSource } from "@/features/rich-document/types";
-import { saveNoteField } from "../redux/thunks";
+import { saveNoteField, ensureNoteBodiesLoaded } from "../redux/thunks";
 import {
   buildNoteMenu,
   buildNoteContextSections,
@@ -83,6 +83,12 @@ export function NoteSidebarRow({
       draggable={draggable && !selectionMode}
       onDragStart={draggable ? onDragStart : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
+      // A list row carries only a preview (audit N-24). The right-click menu's
+      // copy / export / agent-context actions need the BODY, so the moment the
+      // menu is asked for, the body is read.
+      onContextMenuCapture={() => {
+        if (note._fetchStatus !== "full") void dispatch(ensureNoteBodiesLoaded([note.id]));
+      }}
       className={cn("flex items-center gap-0.5", isDragging && "opacity-40")}
     >
       {/*

@@ -26,7 +26,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { removeInstanceTab } from "../redux/slice";
-import { selectNoteIsDirtyById } from "../redux/selectors";
+import { selectNoteFetchStatus, selectNoteIsDirtyById } from "../redux/selectors";
 import { deleteNote, noteHasUnsavedEdits, restoreNote } from "../redux/thunks";
 import { isNoteContentEmpty } from "../utils/noteUtils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -58,6 +58,7 @@ export function useNoteDelete({
 }: UseNoteDeleteOptions) {
   const dispatch = useAppDispatch();
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
+  const fetchStatus = useAppSelector(selectNoteFetchStatus(noteId));
   // Not a dialog's open state any more — the dialog belongs to the package.
   // This is "a confirmation is on screen right now", which the notes tab strip
   // reads to keep its idle auto-move parked while the user decides.
@@ -101,7 +102,9 @@ export function useNoteDelete({
   }, [dispatch, instanceId, noteId, noteLabel, closeTab, onDeleted]);
 
   const requestDelete = useCallback(async () => {
-    if (isNoteContentEmpty(content)) {
+    // "Empty" is judged on the BODY, which a list row does not carry (audit
+    // N-24): only a fully read note may skip the confirmation.
+    if (fetchStatus === "full" && isNoteContentEmpty(content)) {
       await performDelete();
       return;
     }
@@ -129,7 +132,7 @@ export function useNoteDelete({
     if (!ok) return;
 
     await performDelete();
-  }, [content, isDirty, noteId, noteLabel, performDelete]);
+  }, [content, fetchStatus, isDirty, noteId, noteLabel, performDelete]);
 
   return {
     /** True while the confirmation is on screen. Not a dialog you render. */

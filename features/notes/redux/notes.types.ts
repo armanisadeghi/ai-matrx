@@ -570,6 +570,9 @@ export function createBlankNoteRecordFromPartial(
     id: partial.id,
     label: partial.label ?? "New Note",
     content: partial.content ?? null,
+    // The server-maintained preview a list row carries (audit N-24); a full
+    // read carries it too. Never written by a client.
+    content_preview: partial.content_preview ?? null,
     folder_name: partial.folder_name ?? null,
     folder_id: partial.folder_id ?? null,
     tags: partial.tags ?? null,

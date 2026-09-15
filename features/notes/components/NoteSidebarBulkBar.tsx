@@ -182,7 +182,12 @@ export function NoteSidebarBulkBar({
   const handleDelete = async () => {
     if (!hasAny || busyKind) return;
 
-    const allEmpty = selectedNotes.every((n) => isNoteContentEmpty(n.content));
+    // "Empty" is judged on the BODY; list rows carry only a preview (audit
+    // N-24), so read the bodies before deciding to skip the confirmation.
+    const withBodies = await dispatch(
+      ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
+    ).unwrap();
+    const allEmpty = withBodies.every((n) => isNoteContentEmpty(n.content));
     if (!allEmpty) {
       const ok = await confirm({
         title: `Delete ${count} note${count === 1 ? "" : "s"}?`,
