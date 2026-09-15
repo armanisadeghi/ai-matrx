@@ -11,6 +11,10 @@ const MAX_TRANSPORT_FAILURES = 3;
 const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
 const MAX_PENDING_POLLS = 23; // 1+2+4+8 then 19×15 seconds: five visible minutes.
 
+function isTerminalState(state: SandboxLifecycleView["state"]): boolean {
+  return state === "success" || state === "failure" || state === "refused";
+}
+
 export type LifecycleControllerEnvironment = {
   visible: () => boolean;
   online: () => boolean;
@@ -57,7 +61,7 @@ export class SandboxLifecycleReceiptController {
   }
 
   private unsubscribe: (() => void) | null = null;
-  stop(): void { this.stopped = true; this.abort?.abort(); if (this.timer) clearTimeout(this.timer); this.unsubscribe?.(); this.unsubscribe = null; }
+  stop(): void { this.stopped = true; this.abort?.abort(); if (this.timer) clearTimeout(this.timer); this.timer = null; this.unsubscribe?.(); this.unsubscribe = null; }
 
   async check(manual = false): Promise<void> {
     const environment = this.options.environment ?? browserEnvironment;
@@ -75,9 +79,11 @@ export class SandboxLifecycleReceiptController {
       this.failures = 0;
       this.latestState = result.state;
       this.latestSandboxId = result.sandbox_id ?? this.latestSandboxId;
-      const silenceTerminal = this.firstStatusResult && this.options.silenceInitialTerminal === true && (result.state === "success" || result.state === "failure");
+      const terminal = isTerminalState(result.state);
+      const silenceTerminal = this.firstStatusResult && this.options.silenceInitialTerminal === true && terminal;
       this.firstStatusResult = false;
-      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: this.latestSandboxId, action: result.state === "attention" ? "recover" : response.status === 404 ? "retry" : "check", dismissed: silenceTerminal });
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: this.latestSandboxId, action: terminal ? null : result.state === "attention" ? "recover" : response.status === 404 ? "retry" : "check", dismissed: silenceTerminal });
+      if (terminal) { this.stop(); return; }
       if (result.state === "pending") this.schedule();
     } catch (error) {
       if (this.stopped || !this.options.isCurrent() || (error instanceof DOMException && error.name === "AbortError")) return;
@@ -113,7 +119,9 @@ export class SandboxLifecycleReceiptController {
       const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
       if (this.stopped || !this.options.isCurrent()) return;
       this.latestState = result.state;
-      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: result.state === "attention" ? "recover" : result.state === "unknown" && method === "admit" ? "retry" : "check", dismissed: false });
+      const terminal = isTerminalState(result.state);
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: terminal ? null : result.state === "attention" ? "recover" : result.state === "unknown" && method === "admit" ? "retry" : "check", dismissed: false });
+      if (terminal) { this.stop(); return; }
       if (result.state === "pending") this.schedule();
     } catch { if (!this.stopped && this.options.isCurrent()) this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: method === "admit" ? "retry" : "check", dismissed: false }); }
     finally { this.performing = false; }
@@ -159,9 +167,10 @@ export function SandboxLifecycleController() {
       if (view.dismissed) { const id = toastIds.current.get(view.operation_id); if (id !== undefined) toast.dismiss(id); toastIds.current.delete(view.operation_id); continue; }
       const currentToast = toastIds.current.get(view.operation_id);
       const controller = controllers.current.get(view.operation_id);
-      const action = view.action === "recover" ? { label: "Recover", onClick: () => void controller?.recover() } : view.action === "retry" ? { label: "Retry request", onClick: () => void controller?.retry() } : { label: "Check status", onClick: () => void controller?.check(true) };
+      const terminal = isTerminalState(view.state);
+      const action = view.action === "recover" ? { label: "Recover", onClick: () => void controller?.recover() } : view.action === "retry" ? { label: "Retry request", onClick: () => void controller?.retry() } : view.action === "check" ? { label: "Check status", onClick: () => void controller?.check(true) } : undefined;
       const emit = view.state === "success" ? toast.success : view.state === "failure" ? toast.error : toast.warning;
-      toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: Infinity, action, onDismiss: () => dispatch(dismissView({ actorId, generation, operationId: view.operation_id })) }));
+      toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: terminal ? undefined : Infinity, action, onDismiss: () => dispatch(dismissView({ actorId, generation, operationId: view.operation_id })) }));
     }
   }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.views]);
   return null;

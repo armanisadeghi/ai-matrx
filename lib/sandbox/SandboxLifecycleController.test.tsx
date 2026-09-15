@@ -16,7 +16,7 @@ jest.mock("@/lib/toast", () => ({ toast: { success: (message: unknown, options?:
 
 const actorId = "11111111-1111-4111-8111-111111111111";
 const receipt = { schema_version: 1 as const, row_id: "22222222-2222-4222-8222-222222222222", operation_id: "33333333-3333-4333-8333-333333333333", kind: "stop" as const, observation: "accepted" as const };
-const response = (state: "running" | "succeeded") => ({ ok: true, status: 200, json: async () => ({ row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state }) }) as Response;
+const response = (state: "running" | "succeeded" | "failed") => ({ ok: true, status: 200, json: async () => ({ row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state }) }) as Response;
 const makeStore = () => configureStore({ reducer: { sandboxLifecycle: reducer } });
 function mount(store: ReturnType<typeof makeStore>) {
   const container = document.createElement("div");
@@ -57,6 +57,30 @@ describe("mounted sandbox lifecycle observer", () => {
     await act(async () => { await jest.advanceTimersByTimeAsync(0); });
     expect(store.getState().sandboxLifecycle.views[0]).toEqual(expect.objectContaining({ state: "success", dismissed: true, restored: false }));
     expect(mockToastSuccess).not.toHaveBeenCalled();
+    mounted.unmount();
+  });
+
+  it("refreshes an initially restored failure without creating an error toast", async () => {
+    const store = makeStore();
+    store.dispatch(hydrateActor({ actorId, receipts: [receipt] }));
+    jest.mocked(global.fetch).mockResolvedValue(response("failed"));
+    const mounted = mount(store);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(store.getState().sandboxLifecycle.views[0]).toEqual(expect.objectContaining({ state: "failure", dismissed: true, restored: false }));
+    expect(mockToastError).not.toHaveBeenCalled();
+    mounted.unmount();
+  });
+
+  it("renders a newly observed terminal result as a finite dismissible toast with no action", async () => {
+    const store = makeStore();
+    store.dispatch(hydrateActor({ actorId, receipts: [receipt] }));
+    store.dispatch(applyView({ actorId, generation: store.getState().sandboxLifecycle.generation, view: { operation_id: receipt.operation_id, state: "pending", message: "Stopping.", sandboxId: "runtime-a", action: "check", dismissed: false } }));
+    jest.mocked(global.fetch).mockResolvedValue(response("succeeded"));
+    const mounted = mount(store);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(mockToastSuccess).toHaveBeenCalledTimes(1);
+    const options = mockToastSuccess.mock.calls[0][1] as { action?: unknown; duration?: number; onDismiss?: unknown };
+    expect(options).toEqual(expect.objectContaining({ action: undefined, duration: undefined, onDismiss: expect.any(Function) }));
     mounted.unmount();
   });
 

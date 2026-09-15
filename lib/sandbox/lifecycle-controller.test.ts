@@ -67,6 +67,53 @@ describe("sandbox lifecycle controller", () => {
     controller.stop();
   });
 
+  it.each([
+    ["succeeded", "success", "focus"],
+    ["succeeded", "success", "online"],
+    ["succeeded", "success", "visibilitychange"],
+    ["failed", "failure", "focus"],
+  ] as const)("keeps validated %s as %s terminal when %s fires later", async (wireState, expectedState, eventName) => {
+    jest.useFakeTimers();
+    const listeners = new Map<string, () => void>();
+    const status = jest
+      .fn<Promise<Response>, []>()
+      .mockResolvedValueOnce(wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: wireState }))
+      .mockResolvedValue(wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "failed" }));
+    const views: Array<{ state: string; action: string | null }> = [];
+    const controller = new SandboxLifecycleReceiptController({ actorId: "33333333-3333-4333-8333-333333333333", generation: 1, isCurrent: () => true, receipt, adapter: { admit: jest.fn(), recover: jest.fn(), status }, onView: (view) => views.push(view), environment: { visible: () => true, online: () => true, addEventListener: (name, listener) => listeners.set(name, listener), removeEventListener: (name) => listeners.delete(name) } });
+
+    controller.start();
+    await jest.advanceTimersByTimeAsync(0);
+    const staleListener = listeners.get(eventName);
+    staleListener?.();
+    await jest.advanceTimersByTimeAsync(60_000);
+
+    expect(status).toHaveBeenCalledTimes(1);
+    expect(views).toEqual([expect.objectContaining({ state: expectedState, action: null })]);
+    expect(listeners.size).toBe(0);
+  });
+
+  it("stops automatic observation after a validated recovery refusal", async () => {
+    jest.useFakeTimers();
+    const listeners = new Map<string, () => void>();
+    const status = jest.fn(async () => wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "recovery_required" }));
+    const recover = jest.fn(async () => wire(409, { error: "conflict" }));
+    const views: Array<{ state: string; action: string | null }> = [];
+    const controller = new SandboxLifecycleReceiptController({ actorId: "33333333-3333-4333-8333-333333333333", generation: 1, isCurrent: () => true, receipt, adapter: { admit: jest.fn(), recover, status }, onView: (view) => views.push(view), environment: { visible: () => true, online: () => true, addEventListener: (name, listener) => listeners.set(name, listener), removeEventListener: (name) => listeners.delete(name) } });
+
+    controller.start();
+    await jest.advanceTimersByTimeAsync(0);
+    await controller.recover();
+    const staleFocus = listeners.get("focus");
+    staleFocus?.();
+    await jest.advanceTimersByTimeAsync(60_000);
+
+    expect(status).toHaveBeenCalledTimes(1);
+    expect(recover).toHaveBeenCalledTimes(1);
+    expect(views).toEqual([expect.objectContaining({ state: "attention", action: "recover" }), expect.objectContaining({ state: "refused", action: null })]);
+    expect(listeners.size).toBe(0);
+  });
+
   it("uses 1/2/4/8/15 second polling then pauses at five minutes without losing known pending identity", async () => {
     jest.useFakeTimers();
     const status = jest.fn(async () => wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "running" }));

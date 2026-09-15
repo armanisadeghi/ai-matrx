@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { SandboxOperationReceipt } from "@/lib/durable-run/sandbox-operation-receipt";
 
-export type SandboxLifecycleView = { operation_id: string; state: "pending" | "success" | "failure" | "attention" | "unknown" | "refused"; message: string; sandboxId: string | null; action: "check" | "retry" | "recover"; dismissed: boolean; restored?: boolean };
+export type SandboxLifecycleView = { operation_id: string; state: "pending" | "success" | "failure" | "attention" | "unknown" | "refused"; message: string; sandboxId: string | null; action: "check" | "retry" | "recover" | null; dismissed: boolean; restored?: boolean };
 export type SandboxLifecycleCacheState = { actorId: string | null; generation: number; receipts: SandboxOperationReceipt[]; views: SandboxLifecycleView[] };
 const initialState: SandboxLifecycleCacheState = { actorId: null, generation: 0, receipts: [], views: [] };
 const slice = createSlice({ name: "sandboxLifecycle", initialState, reducers: {
