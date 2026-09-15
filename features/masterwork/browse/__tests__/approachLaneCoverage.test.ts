@@ -536,6 +536,48 @@ describe("the LIVE platform.approach registry", () => {
 });
 
 /**
+ * THE THIRD HALF OF THE DEAD END — the one census row 3 taught us THREE times.
+ *
+ * `resolveApproachLane` resolving and `launchApproach` dispatching are both
+ * only reached when somebody picks an Approach ON the Rulebook page. The GUIDED
+ * START does not: it creates the Rulebook and lands on
+ * `/masterwork/<id>?<intake_query>` with nobody having picked anything. So a
+ * lane whose `intake_query` key the detail page never READS is a card that is
+ * live, resolvable, dispatchable — and still drops the Expert on a bare
+ * Rulebook page when she comes through the funnel.
+ *
+ * It happened to `timeline` (2026-09-12), to `bad_example_probe` (2026-09-15),
+ * and to `sorting_table` the same afternoon, each found only by a human driving
+ * the funnel by hand. This asserts it mechanically instead: every key in every
+ * promised row's `intake_query` is read by `RulebookDetailPage`.
+ *
+ * Proven red before green (2026-09-15): with the `searchParams.get("sort")`
+ * handoff removed, this fails naming `sorting_table -> sort`.
+ */
+describe("the guided start's deep link reaches every promised lane", () => {
+  it("has the detail page reading every intake_query key", () => {
+    const pageSource = readFileSync(
+      resolve(__dirname, "../../components/detail/RulebookDetailPage.tsx"),
+      "utf8",
+    );
+    const unread: string[] = [];
+    for (const row of REGISTRY_SNAPSHOT_2026_09_12) {
+      if (!promisesALane(row as DistillationApproach)) continue;
+      for (const key of Object.keys(row.intakeQuery)) {
+        if (!pageSource.includes(`searchParams.get("${key}")`)) {
+          unread.push(`${row.key} -> ${key}`);
+        }
+      }
+    }
+    expect(
+      // A row here is a card the funnel can start and then abandon the Expert
+      // on. Give the key a `searchParams.get(...)` handoff in the detail page.
+      unread.join(", "),
+    ).toBe("");
+  });
+});
+
+/**
  * THE OTHER HALF OF THE DEAD END. `resolveApproachLane` returning a lane is
  * only half a door: the `timeline` defect of census row 3 was a registry row
  * that resolved fine and then fell through the detail page's dispatch. So this
