@@ -210,6 +210,34 @@ function formatClock(seconds: number): string {
   return formatDurationSeconds(seconds, { style: "clock" });
 }
 
+/**
+ * A time range with no `granularity` (a rule distilled before W10) reads as
+ * a real moment only when it's short enough to plausibly be one — anything
+ * wider is almost certainly an un-stamped chunk range. A few sentences of
+ * speech rarely runs past a minute and a half.
+ */
+const NARROW_UNSTAMPED_RANGE_SECONDS = 90;
+
+/**
+ * Render a recording rule's time anchor per its granularity (W10, aidream
+ * `dd86f564d`): "segment" (or an absent-but-narrow range, for rules
+ * distilled before the field existed) is a real moment — "at 2:54–3:30".
+ * "chunk" is honest about being a whole ingestion chunk, not a moment —
+ * "somewhere in 0:00–34:38".
+ */
+export function formatTimeAnchor(timeRange: NonNullable<RuleSourceRef["time_range"]>): string {
+  const startLabel = formatClock(timeRange.start);
+  if (timeRange.end == null) {
+    return `at ${startLabel}`;
+  }
+  const endLabel = formatClock(timeRange.end);
+  const granularity = timeRange.granularity;
+  const isChunk =
+    granularity === "chunk" ||
+    (granularity == null && timeRange.end - timeRange.start > NARROW_UNSTAMPED_RANGE_SECONDS);
+  return isChunk ? `somewhere in ${startLabel}–${endLabel}` : `at ${startLabel}–${endLabel}`;
+}
+
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   const pages = sourceRef.source_pages?.length
     ? formatPages(sourceRef.source_pages)
@@ -219,9 +247,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   // The recording lane's anchor — where in the audio the expert said it.
   const time =
     sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
-      ? sourceRef.time_range.end != null
-        ? `at ${formatClock(sourceRef.time_range.start)}–${formatClock(sourceRef.time_range.end)}`
-        : `at ${formatClock(sourceRef.time_range.start)}`
+      ? formatTimeAnchor(sourceRef.time_range)
       : null;
   const label =
     sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
