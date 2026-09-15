@@ -524,10 +524,12 @@ export function ProviderConversationTranscript({
           up. `refreshNow` is the live hook's forced one-shot read: it applies
           the durable, attributed rows the server just wrote, including on a
           conversation whose provider session settled long ago (plain
-          `checkNow` would return before reading anything there). */}
+          `checkNow` would return before reading anything there).
+          The composer's own sentence is the SERVER's — it reads who answers
+          from `GET /coding-sessions/conversations/{id}/responder`, so this
+          page passes no provider label and no agent. */}
       <AiMatrxReplyComposer
         conversationId={conversation.id}
-        providerLabel={provider}
         onAnswered={live.refreshNow}
       />
     </div>

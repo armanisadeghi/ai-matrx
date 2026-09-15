@@ -2,9 +2,14 @@
  * The reply composer's guards.
  *
  * Each test fails if the behaviour is removed, not if the markup is restyled:
- *   * the boundary sentence is asserted VERBATIM against the rendered text, so
- *     softening it, hiding it behind hover, or dropping the provider
- *     substitution fails;
+ *   * the visible sentence is asserted to be the SERVER's `composer_label` and
+ *     nothing else — a different agent name in the mocked report must be the
+ *     name on screen, so any client-side sentence, template or fallback fails;
+ *   * the announced stand-in is asserted to reach the SCREEN, and only when
+ *     the server says the platform default is standing in;
+ *   * `can_reply: false` must disable the field AND show the reason;
+ *   * before the report lands, and when the read fails, the composer must name
+ *     nobody;
  *   * the send test drives the real component (type, click) and asserts the
  *     exact request body, so a changed slug, a dropped `initiation`, or a
  *     client-chosen agent fails;
@@ -19,6 +24,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 jest.mock("@/lib/api/call-api", () => ({
   callConversationContinue: jest.fn(),
+  callApi: jest.fn(),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   // The real dispatch executes a thunk; here the door itself is the mock, so
@@ -26,11 +32,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
 }));
 
-import { callConversationContinue } from "@/lib/api/call-api";
-import {
-  AiMatrxReplyComposer,
-  replyBoundarySentence,
-} from "./AiMatrxReplyComposer";
+import { callApi, callConversationContinue } from "@/lib/api/call-api";
+import { AiMatrxReplyComposer } from "./AiMatrxReplyComposer";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -51,6 +54,41 @@ const door = callConversationContinue as unknown as jest.Mock<
   [DoorOptions]
 >;
 
+/**
+ * `GET /coding-sessions/conversations/{id}/responder` — the read that decides
+ * every word this composer shows about who answers. Typed loosely on purpose:
+ * the component must render the SERVER's sentence whatever it says.
+ */
+type ResponderResult = {
+  data?: unknown;
+  error?: { type: string; message: string; status?: number };
+};
+const responderDoor = callApi as unknown as jest.Mock<
+  Promise<ResponderResult>,
+  [{ path: string; method: string; pathParams?: Record<string, string> }]
+>;
+
+/** A server report, with only the parts a test cares about spelled out. */
+function report(overrides: Record<string, unknown> = {}) {
+  return {
+    schema_version: 1,
+    conversation_id: "conv-1",
+    is_coding_session_mirror: true,
+    provider: "claude_code",
+    origin: "independent_hook",
+    composer_label:
+      "Coding Session Responder is answering — Claude Code will not see this reply",
+    can_reply: true,
+    responder: {
+      agent_id: "agent-1",
+      agent_name: "Coding Session Responder",
+      setting_key: "coding_session.conversation_responder",
+      used_platform_default: false,
+    },
+    ...overrides,
+  };
+}
+
 async function mount(
   props: Partial<React.ComponentProps<typeof AiMatrxReplyComposer>> = {},
 ) {
@@ -62,7 +100,6 @@ async function mount(
     root.render(
       <AiMatrxReplyComposer
         conversationId="conv-1"
-        providerLabel="Claude Code"
         onAnswered={onAnswered}
         {...props}
       />,
@@ -110,26 +147,145 @@ describe("AiMatrxReplyComposer", () => {
   beforeEach(() => {
     door.mockReset();
     door.mockResolvedValue({});
+    responderDoor.mockReset();
+    responderDoor.mockResolvedValue({ data: report() });
   });
 
-  it("always shows the exact boundary sentence, naming the provider it is shown on", async () => {
-    const claude = await mount();
-    expect(claude.text()).toContain(
-      "AI Matrx is answering — Claude Code will not see this reply",
+  it("shows the SERVER's sentence, naming the agent the server resolved", async () => {
+    responderDoor.mockResolvedValue({ data: report() });
+    const bound = await mount();
+    expect(responderDoor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/coding-sessions/conversations/{conversation_id}/responder",
+        method: "GET",
+        pathParams: { conversation_id: "conv-1" },
+      }),
     );
-    await claude.unmount();
+    expect(bound.text()).toContain(
+      "Coding Session Responder is answering — Claude Code will not see this reply",
+    );
+    await bound.unmount();
 
-    const codex = await mount({ providerLabel: "Codex" });
-    expect(codex.text()).toContain(
-      "AI Matrx is answering — Codex will not see this reply",
+    // A DIFFERENT agent, and a differently worded server sentence: the screen
+    // must say what the server said, so no client-side sentence survives.
+    responderDoor.mockResolvedValue({
+      data: report({
+        composer_label:
+          "Session Scribe is answering — Codex will not see this reply.",
+        responder: {
+          agent_id: "agent-2",
+          agent_name: "Session Scribe",
+          setting_key: "coding_session.conversation_responder",
+          used_platform_default: false,
+        },
+      }),
+    });
+    const other = await mount();
+    expect(other.text()).toContain(
+      "Session Scribe is answering — Codex will not see this reply.",
     );
-    // Only the provider name is substituted — nothing else in the sentence.
-    expect(codex.text()).not.toContain("Claude Code");
-    await codex.unmount();
+    expect(other.text()).not.toContain("Coding Session Responder");
+    expect(other.text()).not.toContain("AI Matrx is answering");
+    await other.unmount();
+  });
 
-    expect(replyBoundarySentence("Cursor")).toBe(
-      "AI Matrx is answering — Cursor will not see this reply",
+  it("names nobody before the report lands, and says so when the read fails", async () => {
+    let land: ((result: ResponderResult) => void) | null = null;
+    responderDoor.mockImplementation(
+      () =>
+        new Promise<ResponderResult>((resolve) => {
+          land = resolve;
+        }),
     );
+    const pending = await mount();
+    expect(pending.text()).not.toContain("is answering —");
+    expect(pending.text()).toContain("Checking who answers here…");
+    // No guess is offered while the truth is in flight.
+    expect(pending.sendButton.hasAttribute("disabled")).toBe(true);
+    await act(async () => {
+      land?.({ data: report() });
+    });
+    expect(pending.text()).toContain("Coding Session Responder is answering");
+    await pending.unmount();
+
+    responderDoor.mockResolvedValue({
+      error: { type: "server_error", message: "Responder lookup failed." },
+    });
+    const failed = await mount();
+    expect(failed.text()).toContain("could not be loaded");
+    expect(failed.text()).toContain("Responder lookup failed.");
+    // Never an invented answerer behind a failed read.
+    expect(failed.text()).not.toContain("is answering —");
+    await failed.unmount();
+  });
+
+  it("shows the stand-in notice on screen ONLY when the platform default stands in", async () => {
+    const standIn =
+      "No agent is chosen for coding-conversation replies, so Matrx Chat — the agent a new AI Matrx chat opens with — is answering.";
+    responderDoor.mockResolvedValue({
+      data: report({
+        composer_label:
+          "Matrx Chat is answering — the AI Matrx default, because no agent is chosen for coding-conversation replies yet. Claude Code will not see this reply.",
+        responder: {
+          agent_id: "agent-default",
+          agent_name: "Matrx Chat",
+          setting_key: "coding_session.conversation_responder",
+          used_platform_default: true,
+        },
+        stand_in_notice: standIn,
+      }),
+    });
+    const stood = await mount();
+    expect(stood.text()).toContain("Matrx Chat is answering — the AI Matrx default");
+    expect(stood.text()).toContain(standIn);
+    await stood.unmount();
+
+    // The same field absent from a normal, bound resolution.
+    responderDoor.mockResolvedValue({ data: report() });
+    const bound = await mount();
+    expect(bound.text()).not.toContain(standIn);
+    expect(bound.text()).not.toContain("No agent is chosen");
+    await bound.unmount();
+  });
+
+  it("refuses to invite a reply it cannot answer, with the server's reason in sight", async () => {
+    const refusal =
+      "No AI Matrx agent is available to answer here yet, so a reply cannot be answered. An admin binds one by pointing 'coding_session.conversation_responder' at an agent in the Mandate admin.";
+    responderDoor.mockResolvedValue({
+      data: report({
+        composer_label: refusal,
+        can_reply: false,
+        responder: undefined,
+      }),
+    });
+    const view = await mount();
+    const textarea = view.host.querySelector("textarea");
+    expect(textarea?.hasAttribute("disabled")).toBe(true);
+    expect(view.sendButton.hasAttribute("disabled")).toBe(true);
+    // Disabled AND explained — the reason is the server's sentence, in the
+    // page, not a tooltip.
+    expect(view.text()).toContain(refusal);
+    expect(view.text()).toContain("This reply cannot be sent");
+    expect(door).not.toHaveBeenCalled();
+    await view.unmount();
+  });
+
+  it("carries no label at all on a conversation the server says is not a mirror", async () => {
+    responderDoor.mockResolvedValue({
+      data: {
+        schema_version: 1,
+        conversation_id: "conv-1",
+        is_coding_session_mirror: false,
+        composer_label: "",
+        can_reply: true,
+      },
+    });
+    const view = await mount();
+    expect(view.text()).not.toContain("is answering —");
+    expect(view.text()).not.toContain("could not be loaded");
+    const textarea = view.host.querySelector("textarea");
+    expect(textarea?.hasAttribute("disabled")).toBe(false);
+    await view.unmount();
   });
 
   it("sends the reply on the continuation route with the exact frozen body", async () => {
