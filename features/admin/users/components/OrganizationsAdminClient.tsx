@@ -790,6 +790,7 @@ export function OrganizationsAdminClient() {
       </div>
 
       <Dialog
+        modal={false}
         open={addOpen}
         onOpenChange={(open) => {
           setAddOpen(open);
@@ -799,7 +800,7 @@ export function OrganizationsAdminClient() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add organization member</DialogTitle>
             <DialogDescription>
