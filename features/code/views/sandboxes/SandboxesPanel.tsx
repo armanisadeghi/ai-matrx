@@ -76,7 +76,6 @@ import {
   selectActiveSandboxProxyUrl,
   setActiveSandboxId,
   setActiveSandboxProxyUrl,
-  setActiveView,
 } from "../../redux/codeWorkspaceSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -136,8 +135,22 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didMountReconcileRef = useRef(false);
+  const mountedRef = useRef(false);
+  const currentOrganizationIdRef = useRef(organizationId);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    currentOrganizationIdRef.current = organizationId;
+  }, [organizationId]);
 
   const refresh = useCallback(async () => {
+    if (!mountedRef.current) return;
     setLoading(true);
     setError(null);
     try {
@@ -145,11 +158,11 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
-      setInstances(data.instances ?? []);
+      if (mountedRef.current) setInstances(data.instances ?? []);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      if (mountedRef.current) setError(extractErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
@@ -211,7 +224,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
    * probe; callers are expected to gate this on whatever readiness check
    * makes sense for their entry point.
    */
-  const { connect, connectingId, wireInstance } = useSandboxWorkspaceConnection(
+  const { connect, connectingId } = useSandboxWorkspaceConnection(
     {
       onError: setError,
       onConnected: () => setError(null),
@@ -240,59 +253,71 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   }, [activeId, dispatch, setFilesystem, setProcess]);
 
   const createSandbox = useCallback(
-    async (
-      request: SandboxCreateRequest,
-    ): Promise<SandboxInstance | undefined> => {
+    (request: SandboxCreateRequest): void => {
+      const requestedOrganizationId = request.organization_id;
+      const toastId = toast.loading("Requesting sandbox creation");
       setCreating(true);
       setError(null);
-      try {
-        const explicitOrganizationId = requireMatchingSandboxOrganization(
-          request.organization_id,
-          organizationId,
-        );
-        const resp = await fetch("/api/sandbox", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...request,
-            organization_id: explicitOrganizationId,
-          }),
-        });
-        const data = (await resp.json()) as
-          SandboxDetailResponse | { error?: string };
-        if (!resp.ok) {
-          const err = "error" in data ? data.error : undefined;
-          throw new Error(err ?? `Create failed (${resp.status})`);
+      void (async () => {
+        const isCurrentSurface = () =>
+          mountedRef.current &&
+          currentOrganizationIdRef.current === requestedOrganizationId;
+        try {
+          const explicitOrganizationId = requireMatchingSandboxOrganization(
+            requestedOrganizationId,
+            organizationId,
+          );
+          const resp = await fetch("/api/sandbox", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...request,
+              organization_id: explicitOrganizationId,
+            }),
+          });
+          const data = (await resp.json().catch(() => null)) as
+            | SandboxDetailResponse
+            | { error?: string }
+            | null;
+          if (!resp.ok) {
+            const message = data && "error" in data ? data.error : undefined;
+            if (resp.status >= 400 && resp.status < 500) {
+              const refusal = message ?? `Creation refused (${resp.status})`;
+              if (isCurrentSurface()) {
+                setError(refusal);
+                toast.dismiss(toastId);
+                toast.error(refusal);
+              }
+              return;
+            }
+            throw new Error("creation outcome unknown");
+          }
+          if (!data || !("instance" in data) || !data.instance) {
+            throw new Error("creation outcome unknown");
+          }
+          if (!isCurrentSurface()) return;
+          setInstances((current) => {
+            const remaining = (current ?? []).filter(
+              (instance) => instance.id !== data.instance.id,
+            );
+            return [data.instance, ...remaining];
+          });
+          toast.dismiss(toastId);
+          toast.success("Sandbox creation requested. It may still be starting.");
+        } catch {
+          if (isCurrentSurface()) {
+            const unknown = "Could not confirm creation; check sandbox list before retrying";
+            setError(unknown);
+            toast.dismiss(toastId);
+            toast.warning(unknown);
+          }
+        } finally {
+          if (isCurrentSurface()) setCreating(false);
+          else toast.dismiss(toastId);
         }
-        await refresh();
-        // DON'T wire the instance yet — the modal will run diagnostics first
-        // and only call back to wire it (via onReady) once aidream is up.
-        // Return the instance so the modal knows which sandbox to diagnose.
-        if ("instance" in data && data.instance) {
-          return data.instance;
-        }
-        return undefined;
-      } catch (err) {
-        const message = extractErrorMessage(err);
-        setError(message);
-        throw err;
-      } finally {
-        setCreating(false);
-      }
+      })();
     },
     [organizationId, refresh],
-  );
-
-  // Called by the diagnostics modal once aidream reports overall_ok=true.
-  // This is what wireInstance + setActiveView used to happen synchronously
-  // inside createSandbox above — now deferred to verified state.
-  const handleSandboxReady = useCallback(
-    (instance: SandboxInstance) => {
-      wireInstance(instance);
-      dispatch(setActiveView("explorer"));
-      setCreateModalOpen(false);
-    },
-    [dispatch, wireInstance],
   );
 
   const stopSandbox = useCallback(
@@ -535,7 +560,6 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         busy={creating}
         onClose={() => setCreateModalOpen(false)}
         onCreate={createSandbox}
-        onReady={handleSandboxReady}
       />
       <ConfirmDialog
         open={!!deleteTarget}
