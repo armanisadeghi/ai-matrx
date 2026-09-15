@@ -53,17 +53,21 @@ import {
   LayoutTemplate,
   ListChecks,
   ListOrdered,
+  ListTree,
   MailCheck,
   Megaphone,
   ListTodo,
   MessagesSquare,
   Mic,
+  Network,
   NotebookText,
   RefreshCw,
   Sheet,
+  SlidersHorizontal,
   Shapes,
   Table,
   Tag,
+  Tags,
   Target,
   Webhook,
   Workflow,
@@ -564,6 +568,24 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FlaskConical,
     labelPlural: "SEO Changes",
     hrefFor: (id) => `/marketing/changes/${id}`,
+  },
+  // Topical map: no hrefFor yet. The share registry's /marketing/topical-maps/{id}
+  // has no route in app/, and a link to nowhere is worse than no link.
+  seo_topical_map: {
+    Icon: Network,
+    labelPlural: "Topical maps",
+  },
+  seo_map_topic: {
+    Icon: ListTree,
+    labelPlural: "Topical map topics",
+  },
+  seo_map_facet: {
+    Icon: SlidersHorizontal,
+    labelPlural: "Topical map facets",
+  },
+  seo_map_facet_value: {
+    Icon: Tags,
+    labelPlural: "Topical map facet values",
   },
 
   // ─── Container display metadata ───────────────────────────────────────────
