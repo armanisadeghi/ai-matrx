@@ -3,7 +3,7 @@ type: Reference
 title: "agent-review-queue — review, claim, and repair"
 description: "Browser isolation, the one-item-per-run review worker, atomic claim and ownership handoff SQL, and PASS/FAIL/repair evidence; the skill sends you here before reviewing, claiming, verifying, or repairing a review-queue row. Companion to the agent-review-queue skill."
 tags: [agent-review-queue, skills, review-worker]
-timestamp: 2026-09-13T00:00:00Z
+timestamp: 2026-09-15T00:00:00Z
 ---
 
 # agent-review-queue — review, claim, and repair
@@ -54,13 +54,13 @@ he is using, and close only the tabs/groups you created.
   on success, failure, or blockage. Never close a tab that predates the run.
 
 Production review does not require a localhost preview. Start or reuse the managed preview
-only when a repair needs local testing, after reading the repository's preview rules and
-checking its status. A running PID/root identifies a process, not its task owner. Coordinate
-with the active owner before reuse or restart; repair a proven orphan through the managed
-lifecycle. `preview:start` can reuse a same-root server and is not a task-level Browser lock.
-Never stop another task's preview. On exit close only this run's tabs, restore changed viewport
-settings, and stop a preview only if this run owns it; check cleanup without demanding another
-owner's preview disappear.
+only when a repair needs local testing, after checking its status and the repository's lifecycle.
+Routine managed stop/install/start is pre-authorized even when another task started the server;
+do it yourself without asking Arman or waking peer tasks. Preserve source edits and application
+data. Arman's 2026-09-15 ruling supersedes the former ban on restarting another task's preview:
+“you can always restart” and “Never do that again!!!!!!!!!!” about stopping work for permission.
+On exit close only this run's tabs and restore changed viewport settings. Do not stop a healthy
+shared preview merely for cleanup.
 
 Follow the browser selection rule above and prove the admin session before claiming a review row. While
 recovering access, continue safe prerequisite repair; do not label routine authentication
