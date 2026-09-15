@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { MatrxDataTableProvider } from "@ai-matrx/design-system/data-table/host";
 
 import {
   MatrxDataTable,
@@ -210,7 +209,7 @@ export function SandboxInstancesTable({
       header: field.replaceAll("_", " "),
     }));
     return (
-      <MatrxDataTableProvider value={{}}>
+      <>
         <MatrxDataTable
           data={instances}
           columns={defaultColumns}
@@ -219,7 +218,7 @@ export function SandboxInstancesTable({
           toolbar={{ title: "Sandboxes — package defaults" }}
           isLoading={loading}
         />
-      </MatrxDataTableProvider>
+      </>
     );
   }
   const columns: MatrxColumnDef<SandboxInstance>[] = [

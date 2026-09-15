@@ -4,6 +4,7 @@
 // and row-window contents belong to the design-system package. No startup IO.
 // Table UI feedback: /Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/TABLE-UI-ISSUES.md
 // Read and update that checklist before fixing table UI feedback in any host.
+import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -51,6 +52,7 @@ function TableWindowPanel(props: TableWindowPanelProps) {
   return <WindowPanel {...props} />;
 }
 const ports: TableHost = {
+  JsonViewer,
   Link,
   CopyControls: CopyButtons,
   ToolbarAction: TableToolbarAction,
