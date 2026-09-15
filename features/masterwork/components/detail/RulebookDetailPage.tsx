@@ -2461,7 +2461,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <TriageDraftsDialog
             // Her purpose, her preview choice and the run being rejoined all
             // belong to THIS Rulebook — see `triageSession.ts`.
-            key={rulebook.id}
+            // The key is NAMESPACED: these dialogs are siblings in one children
+            // array, so a bare record id collides with another sibling's key and
+            // React reconciles the whole region by destroying and recreating it
+            // — which unmounts an open dialog mid-typing.
+            key={`triage-${rulebook.id}`}
             open={triageOpen}
             onOpenChange={setTriageOpen}
             rulebookId={rulebook.id}
@@ -2575,7 +2579,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <IngestTimelineDialog
             // The unfolding session, its form and its run pointer all belong to
             // THIS Rulebook — see `durable-run/rulebookDialogSession.ts`.
-            key={rulebook.id}
+            // Namespaced for the same reason as TriageDraftsDialog above.
+            key={`timeline-${rulebook.id}`}
             open={timelineOpen}
             onOpenChange={setTimelineOpen}
             rulebook={rulebook}

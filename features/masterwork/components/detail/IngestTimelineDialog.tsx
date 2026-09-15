@@ -54,6 +54,10 @@ import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
+import {
+  durableRunDialogOnOpenChange,
+  shouldReopenForRun,
+} from "@/lib/durable-run/durableRunDialogClose";
 
 /**
  * Served by `aidream/services/distillation/unfolding_ingest.py`.
@@ -286,12 +290,17 @@ export function IngestTimelineDialog({
   // armed, and the Expert would pay for the same unfold twice. The sibling
   // ingest dialogs already clear it on the same edge (Bugbot, 2026-09-13).
   const reopenedRef = useRef(false);
+  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!run.running) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
+    // A run the user deliberately closed out of stays closed — otherwise an
+    // honest close is instantly undone by this latch and the dialog cannot be
+    // dismissed at all. The NEXT run still surfaces.
+    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
@@ -319,11 +328,20 @@ export function IngestTimelineDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          if (!next && running) dismissedRunIdRef.current = run.runId;
+          onOpenChange(next);
+        },
+        runLabel: "Reading your case",
+      })}
     >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>

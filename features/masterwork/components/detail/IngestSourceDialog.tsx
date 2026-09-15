@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileUp, X } from "lucide-react";
+import { FileUp, RotateCcw, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { AgentCredit } from "../AgentCredit";
@@ -38,6 +38,11 @@ import {
   describeDistillWait,
 } from "../../record/MonologueRecorder";
 import { recordPastedSource } from "../../record/pastedSource";
+import {
+  durableRunDialogOnOpenChange,
+  shouldReopenForRun,
+} from "@/lib/durable-run/durableRunDialogClose";
+import { useTextDraft } from "@/lib/drafts/useTextDraft";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -316,6 +321,18 @@ export function IngestSourceDialog({
     setRecordedSeconds(null);
   };
 
+  // A DIALOG NEVER LOSES TYPED TEXT. On 2026-09-15 a non-technical Expert
+  // pasted an ~8,000-character transcript into this exact field and watched it
+  // vanish twice when the dialog was torn down underneath her. The sibling key
+  // collision that tore it down is fixed and guarded — this is the net under
+  // every OTHER way a dialog can go away (a reload, a crash, a stray click).
+  const draft = useTextDraft(
+    `ingest-text:${rulebook.id}:${timeline ? "timeline" : "source"}`,
+    text,
+    setText,
+    open,
+  );
+
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
   // ONCE PER COMPLETED RUN, never once per render: the page hands a fresh
@@ -323,7 +340,11 @@ export function IngestSourceDialog({
   // dialog, so firing on the callback's identity looped forever (Bugbot,
   // PR #222). One primitive owns it — `useRunResultOnce`, the same one the
   // three sibling ingest dialogs use.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    // Only once the server has actually accepted the text is it safe to drop.
+    draft.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -342,12 +363,17 @@ export function IngestSourceDialog({
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
   const reopenedRef = useRef(false);
+  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!run.running) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
+    // A run the user deliberately closed out of stays closed — otherwise an
+    // honest close is instantly undone by this latch and the dialog cannot be
+    // dismissed at all. The NEXT run still surfaces.
+    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
@@ -470,11 +496,20 @@ export function IngestSourceDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          if (!next && running) dismissedRunIdRef.current = run.runId;
+          onOpenChange(next);
+        },
+        runLabel: "Reading your source",
+      })}
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
@@ -773,10 +808,42 @@ export function IngestSourceDialog({
               <Label htmlFor="ingest-text">
                 {timeline ? "The case, in the order it happened" : "The source material"}
               </Label>
+              {/* A restore is never silent, and neither is a browser that
+                  refuses to keep the draft — the user has to know which of the
+                  two they are in before they paste an hour of work. */}
+              {draft.restored ? (
+                <p className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                  <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    We kept what you had typed here last time and put it back.{" "}
+                    <button
+                      type="button"
+                      className="underline underline-offset-2"
+                      onClick={() => {
+                        setText("");
+                        draft.forget();
+                      }}
+                    >
+                      Clear it
+                    </button>{" "}
+                    to start over.
+                  </span>
+                </p>
+              ) : null}
+              {!draft.available ? (
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  This browser will not let us keep a copy of what you type
+                  here, so nothing is saved until you press Distill. Copy long
+                  text somewhere safe first.
+                </p>
+              ) : null}
               <ProTextarea
                 id="ingest-text"
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  draft.remember(e.target.value);
+                }}
                 placeholder={
                   timeline
                     ? "Paste the case in order — what was known at the start, what happened next, what you did about it, and how it ended."

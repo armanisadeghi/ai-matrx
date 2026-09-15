@@ -476,7 +476,11 @@
     "check:knob-database-consumers": "tsx scripts/generate-knob-database-consumers.ts --check",
     "check:knob-database-consumers:self-test": "tsx scripts/generate-knob-database-consumers.ts --self-test",
     "check:udt-history": "tsx scripts/check-udt-history-honesty.ts",
-    "check:udt-history:self-test": "tsx scripts/check-udt-history-honesty.ts --self-test"
+    "check:udt-history:self-test": "tsx scripts/check-udt-history-honesty.ts --self-test",
+    "check:jsx-key-collisions": "tsx scripts/check-jsx-key-collisions.ts",
+    "check:jsx-key-collisions:self-test": "tsx scripts/check-jsx-key-collisions.ts --self-test",
+    "check:durable-run-dialog-close": "tsx scripts/check-durable-run-dialog-close.ts",
+    "check:durable-run-dialog-close:self-test": "tsx scripts/check-durable-run-dialog-close.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

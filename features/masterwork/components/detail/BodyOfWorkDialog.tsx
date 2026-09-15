@@ -34,6 +34,10 @@ import {
   DurableRunStopped,
 } from "@/lib/durable-run/DurableRunStop";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
+import {
+  durableRunDialogOnOpenChange,
+  shouldReopenForRun,
+} from "@/lib/durable-run/durableRunDialogClose";
 
 /**
  * "Everything you've published" — the `body_of_work` Distillation Approach.
@@ -211,12 +215,17 @@ export function BodyOfWorkDialog({
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
   const reopenedRef = useRef(false);
+  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!run.running) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
+    // A run the user deliberately closed out of stays closed — otherwise an
+    // honest close is instantly undone by this latch and the dialog cannot be
+    // dismissed at all. The NEXT run still surfaces.
+    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
@@ -578,11 +587,20 @@ export function BodyOfWorkDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          if (!next && running) dismissedRunIdRef.current = run.runId;
+          onOpenChange(next);
+        },
+        runLabel: "Reading your published work",
+      })}
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
