@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectRunsFetchError,
@@ -38,10 +38,10 @@ export function useTaskRuns(taskId: string | null | undefined, limit = 20) {
     });
   }, [dispatch, taskId, limit, requestAttempt]);
 
-  const retry = useCallback(() => {
+  const retry = () => {
     if (!taskId) return;
     setRequestAttempt((attempt) => attempt + 1);
-  }, [taskId]);
+  };
 
   return { runs, status, error, retry };
 }

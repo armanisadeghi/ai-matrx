@@ -137,6 +137,40 @@ import { toast } from "@/lib/toast";
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
+ * A deliberately narrow, browser-reviewable failure fixture for the My Cloud
+ * route. It never reaches a provider or changes Redux: its only purpose is to
+ * let a clean preview prove the terminal error and the normal manual retry
+ * path when request interception is unavailable.
+ */
+export function isForcedCloudImagesLoadError(
+  pathname: string,
+  search: string,
+): boolean {
+  return (
+    pathname === "/images/my-cloud" &&
+    new URLSearchParams(search).get("data") === "error"
+  );
+}
+
+export function clearForcedCloudImagesLoadError(
+  pathname: string,
+  search: string,
+): string {
+  const params = new URLSearchParams(search);
+  params.delete("data");
+  const nextSearch = params.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+}
+
+function readForcedCloudImagesLoadError(): boolean {
+  if (typeof window === "undefined") return false;
+  return isForcedCloudImagesLoadError(
+    window.location.pathname,
+    window.location.search,
+  );
+}
+
+/**
  * Style prefs for this gallery (synced across devices via `userPreferences`).
  * The cozy grid is this surface's own default — the platform default is table,
  * which this surface does not offer.
@@ -254,6 +288,12 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
+  // `?data=error` is a visible test scenario, not a transport failure. The
+  // state is local so one manual retry immediately returns to the live tree
+  // request without reloading or invalidating the authenticated session.
+  const [forcedLoadError, setForcedLoadError] = useState(
+    readForcedCloudImagesLoadError,
+  );
 
   // Hydrate the tree the first time the tab opens. The realtime provider
   // also fires this when mounted at the layout level, but inside a modal
@@ -465,6 +505,19 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
 
   const isLoading = treeStatus === "loading" || treeStatus === "idle";
   const handleRetryTree = () => {
+    if (forcedLoadError) {
+      setForcedLoadError(false);
+      if (typeof window !== "undefined") {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          clearForcedCloudImagesLoadError(
+            window.location.pathname,
+            window.location.search,
+          ),
+        );
+      }
+    }
     if (userId) {
       void dispatch(loadUserFileTree({ userId }));
     }
@@ -641,8 +694,17 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                   </h4>
                 ) : null}
 
-                {treeStatus === "error" ? (
+                {forcedLoadError || treeStatus === "error" ? (
                   <div className="rounded-md border border-destructive/40 bg-destructive/5">
+                    {forcedLoadError ? (
+                      <p
+                        className="border-b border-destructive/20 px-4 py-2 text-xs text-muted-foreground"
+                        role="status"
+                      >
+                        Test scenario: simulated image-library load error. Try
+                        again returns to your live library.
+                      </p>
+                    ) : null}
                     <EmptyStateCard
                       title="Couldn’t load your images"
                       description="The image library could not be refreshed. Check your connection, then try again."

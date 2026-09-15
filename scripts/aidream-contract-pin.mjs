@@ -27,8 +27,8 @@ const PROJECT_ROOT = resolve(__dirname, '..');
 export const AIDREAM_ROOT = resolve(PROJECT_ROOT, '../aidream');
 const CONTRACT_PIN_PATH = resolve(__dirname, 'aidream-contract-pin.json');
 
-export function readContractPin() {
-    return JSON.parse(readFileSync(CONTRACT_PIN_PATH, 'utf-8'));
+export function readContractPin(path = CONTRACT_PIN_PATH) {
+    return JSON.parse(readFileSync(path, 'utf-8'));
 }
 
 function commitKnown(sha, aidreamRoot = AIDREAM_ROOT) {
@@ -85,8 +85,8 @@ export function checkCheckoutMeetsContractPin(aidreamRoot = AIDREAM_ROOT, pin = 
         `The aidream checkout is at ${checkoutSha}, which contains the pinned ${minimum}.` };
 }
 
-export function assertCheckoutMeetsContractPin(aidreamRoot = AIDREAM_ROOT) {
-    const result = checkCheckoutMeetsContractPin(aidreamRoot);
+export function assertCheckoutMeetsContractPin(aidreamRoot = AIDREAM_ROOT, pin = readContractPin()) {
+    const result = checkCheckoutMeetsContractPin(aidreamRoot, pin);
     if (result.ok) {
         console.log(`  ✓ ${result.message}\n`);
         return result;

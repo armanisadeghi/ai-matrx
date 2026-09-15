@@ -178,7 +178,9 @@ export function recoverEmbeddedKindJsonBlocks(
     }
 
     const pieces = splitAroundEmbeddedKindJson(block.content, {
-      excludeLiteralContexts: block.metadata?.genericXmlContainer === true,
+      excludeLiteralContexts:
+        block.metadata?.genericXmlContainer === true ||
+        block.language === "xml",
     });
     if (pieces.length === 1 && pieces[0]?.type === "container") {
       recovered.push(block);

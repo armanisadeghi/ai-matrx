@@ -134,6 +134,26 @@ const XML = `<custom_response>
 | Ada | 42 |
 </custom_response>`;
 
+const XML_WITH_LITERAL_KIND = `<report>
+  **Core tables** contain \`identity\` data.
+
+  | Table | Purpose |
+  | --- | --- |
+  | \`users\` | **Identity** |
+
+  <relationships>
+    - one user has many sessions
+    - one session belongs to a user
+  </relationships>
+
+  \`\`\`xml
+  <artifact><script>alert("never execute")</script></artifact>
+  {"__kind":"artifact","content":"stays literal"}
+  \`\`\`
+  <!-- comment with <unparsed> tags -->
+  <![CDATA[<opaque><still-not-a-tag /></opaque>]]>
+</report>`;
+
 function expectRichXmlFallback(container: HTMLElement) {
   const xmlBlock = container.querySelector('[data-block-type="code"]');
   expect(xmlBlock?.getAttribute("data-language")).toBe("xml");
@@ -186,6 +206,28 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
     });
 
     expectRichXmlFallback(container);
+  });
+
+  it("renders fenced kind-looking JSON as one lossless XML block", async () => {
+    await act(async () => {
+      root.render(
+        <EnhancedChatMarkdownInternal
+          content={XML_WITH_LITERAL_KIND}
+          hideCopyButton
+        />,
+      );
+    });
+
+    const xmlBlocks = container.querySelectorAll(
+      '[data-block-type="code"][data-language="xml"]',
+    );
+    expect(xmlBlocks).toHaveLength(1);
+    expect(container.querySelectorAll('[aria-label="Copy XML"]')).toHaveLength(
+      1,
+    );
+    expect(xmlBlocks[0]?.textContent).toContain(
+      '{"__kind":"artifact","content":"stays literal"}',
+    );
   });
 
   it("plumbs the message-bound output schema to every rendered block", async () => {
