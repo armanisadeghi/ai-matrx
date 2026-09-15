@@ -19,6 +19,7 @@ import {
   BottomSheetBody,
 } from "@ai-matrx/design-system";
 import {
+  Link,
   Search,
   X,
   Pencil,
@@ -340,6 +341,7 @@ export default function TableToolbar({
           {colorsControl}
 
           {!isMobile ? copyControls?.(chooseReference) : null}
+          {!isMobile ? <Button variant="outline" size="icon" className="h-7 w-7" aria-label="Get reference" title="Get reference" onClick={chooseReference}><Link className="h-4 w-4" /></Button> : null}
 
           <ShareButton
             resourceType="dataset"
@@ -442,6 +444,7 @@ export default function TableToolbar({
               )}
             </>
           )}
+          {isMobile ? <MobileActionRow icon={Link} label="Get reference" onClick={chooseReference} /> : null}
           {isMobile && copyControls ? (
             <div className="border-t border-border px-2 py-2 [&_button]:min-h-11">
               {copyControls(chooseReference)}

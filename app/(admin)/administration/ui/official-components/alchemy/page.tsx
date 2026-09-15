@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -226,145 +225,93 @@ function AlchemyExamples() {
           </div>
         </div>
 
-        <Tabs defaultValue="inputs" className="space-y-3">
-          <TabsList>
-            <TabsTrigger value="inputs">Inputs</TabsTrigger>
-            <TabsTrigger value="table">Rows and surface</TabsTrigger>
-            <TabsTrigger value="usage">Public API</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="inputs" className="space-y-3">
-            <div className="grid gap-3 lg:grid-cols-2">
-              <DemoCard
-                title="Plain text"
-                description="A click-time source unlocks plain, formatted, JSON, download, and provider-supplied preparation choices."
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="alchemy-plain">Editable sample text</Label>
-                  <Textarea
-                    id="alchemy-plain"
-                    value={plainText}
-                    onChange={(event) => setPlainText(event.target.value)}
-                  />
-                  <div className="flex items-center justify-between rounded-md border p-2">
-                    <span className="text-sm text-muted-foreground">
-                      Open after editing to capture the latest value.
-                    </span>
-                    <ContentTransferMenu
-                      source={sourceFrom(
-                        "alchemy-demo:plain",
-                        "Editable sample text",
-                        () => ({ kind: "text", text: plainText }),
-                      )}
-                      label="Editable sample text"
-                      icon="portal"
-                    />
-                  </div>
-                </div>
-              </DemoCard>
-
-              <DemoCard
-                title="Markdown"
-                description="A Markdown payload unlocks rich copy and a plain-text fallback through the same menu."
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="alchemy-markdown">Editable Markdown</Label>
-                  <Textarea
-                    id="alchemy-markdown"
-                    value={markdown}
-                    onChange={(event) => setMarkdown(event.target.value)}
-                    className="font-mono text-xs"
-                  />
-                  <div className="flex items-center justify-between rounded-md border p-2">
-                    <span className="text-sm text-muted-foreground">
-                      No Markdown serializer is recreated here.
-                    </span>
-                    <ContentTransferMenu
-                      source={sourceFrom(
-                        "alchemy-demo:markdown",
-                        "Editable Markdown",
-                        () => ({ kind: "markdown", text: markdown }),
-                      )}
-                      label="Editable Markdown"
-                      triggerVariant="transparent"
-                      icon="portal"
-                    />
-                  </div>
-                </div>
-              </DemoCard>
-
-              <DemoCard
-                title="Nested JSON"
-                description="Structured payloads unlock JSON and compact JSON. Native preparation applies its own depth and size limits."
-              >
-                <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-                  <code className="min-w-0 truncate text-xs">{`{ release: { owner: "Platform", evidence: [...] } }`}</code>
-                  <ContentTransferMenu
-                    source={sourceFrom(
-                      "alchemy-demo:json",
-                      "Release evidence",
-                      () => ({
-                        kind: "json",
-                        value: {
-                          release: {
-                            owner: "Platform",
-                            status: "ready",
-                            evidence: [
-                              { kind: "source", checked: true },
-                              { kind: "review", checked: false },
-                            ],
-                          },
-                          notes: ["Nested values are sample data only."],
-                        },
-                      }),
-                    )}
-                    label="Release evidence"
-                    icon="portal"
-                  />
-                </div>
-              </DemoCard>
-
-              <DemoCard
-                title="Trigger parity"
-                description="Package defaults: glass for headers, transparent for content, and outline for compact button toolbars."
-              >
-                <div className="flex flex-wrap items-center gap-5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">Glass header</span>
-                    <ContentTransferMenu
-                      source={{ kind: "text", text: "Header example" }}
-                      label="Header example"
-                      triggerVariant="glass"
-                      icon="portal"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">Transparent content</span>
-                    <ContentTransferMenu
-                      source={{ kind: "text", text: "Content example" }}
-                      label="Content example"
-                      triggerVariant="transparent"
-                      icon="portal"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">Compact toolbar</span>
-                    <ContentTransferMenu
-                      source={{ kind: "text", text: "Toolbar example" }}
-                      label="Toolbar example"
-                      triggerVariant="outline"
-                    />
-                  </div>
-                </div>
-              </DemoCard>
+        <div className="grid gap-3 xl:grid-cols-2">
+          <DemoCard
+            title="Editable prose and Markdown draft"
+            description="The source is captured when Alchemy opens, so the preparation workspace starts with the current prose and Markdown rather than a stale copy."
+          >
+            <div className="space-y-2">
+              <Label htmlFor="alchemy-plain">Draft prose</Label>
+              <Textarea
+                id="alchemy-plain"
+                value={plainText}
+                onChange={(event) => setPlainText(event.target.value)}
+              />
+              <Label htmlFor="alchemy-markdown">Draft Markdown</Label>
+              <Textarea
+                id="alchemy-markdown"
+                value={markdown}
+                onChange={(event) => setMarkdown(event.target.value)}
+                className="font-mono text-xs"
+              />
+              <div className="flex items-center justify-between gap-3 rounded-md border p-2">
+                <span className="text-sm text-muted-foreground">
+                  Edit either field, then open the package workspace to copy,
+                  download, or prepare the current draft.
+                </span>
+                <ContentTransferMenu
+                  source={sourceFrom(
+                    "alchemy-demo:draft",
+                    "Release draft",
+                    () => ({
+                      kind: "markdown",
+                      text: `${plainText}\n\n${markdown}`,
+                    }),
+                  )}
+                  label="Release draft"
+                  triggerVariant="glass"
+                  icon="portal"
+                />
+              </div>
             </div>
-          </TabsContent>
+          </DemoCard>
 
-          <TabsContent value="table" className="space-y-3">
-            <DemoCard
-              title="Rows with declared columns, filter, and selection"
-              description="The table is the default MatrxDataTable. The Portal menu receives selected rows, the current filtered view, or all loaded sample rows at capture time."
-            >
+          <DemoCard
+            title="Nested JSON with native trimming"
+            description="This is a structured source, not a hand-built preview. Alchemy applies the declared limits, and its Detail and Custom controls expose the same native JSON reduction workflow."
+          >
+            <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+              <code className="min-w-0 truncate text-xs">{`{ release: { evidence: { sources: [...] } } }`}</code>
+              <ContentTransferMenu
+                source={sourceFrom(
+                  "alchemy-demo:json",
+                  "Release evidence",
+                  () => ({
+                    kind: "json",
+                    value: {
+                      release: {
+                        owner: "Platform",
+                        status: "ready",
+                        evidence: {
+                          sources: [
+                            { kind: "source", checked: true, detail: "Release notes matched the tracked change." },
+                            { kind: "review", checked: false, detail: "Independent review is still pending." },
+                            { kind: "canary", checked: true, detail: "The sample canary completed." },
+                          ],
+                        },
+                      },
+                      notes: ["Nested values are sample data only.", "The limits are enforced by the package."],
+                    },
+                  }),
+                )}
+                label="Release evidence"
+                preferences={{
+                  limits: {
+                    maxDepth: 3,
+                    maxStringChars: 120,
+                    maxArrayItems: 2,
+                  },
+                }}
+                triggerVariant="outline"
+                icon="portal"
+              />
+            </div>
+          </DemoCard>
+
+          <DemoCard
+            title="Selectable tabular data"
+            description="MatrxDataTable supplies the selection; the package offers selected rows, the filtered view, and all loaded rows as explicit capture scopes."
+          >
               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="alchemy-row-filter">
@@ -420,63 +367,28 @@ function AlchemyExamples() {
                   }}
                 />
               </div>
-            </DemoCard>
+          </DemoCard>
 
-            <DemoCard
-              title="Declared live surface"
-              description="With no source prop, Alchemy reads the nearest mounted, declared SurfaceRuntimeProvider. The package captures scope at click time; this page adds no destinations or transfer callbacks."
-            >
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    Official Components detail scope
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Current component metadata and the editable samples above are
-                    supplied through the existing surface declaration.
-                  </p>
-                </div>
-                <ContentTransferMenu
-                  label="Official Components detail scope"
-                  icon="portal"
-                />
+          <DemoCard
+            title="Declared multi-section surface"
+            description="With no source prop, Alchemy reads the mounted Official Components surface declaration. Its native Sections control lets the user include or omit the declared component detail and gallery values at capture time."
+          >
+            <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+              <div className="min-w-0">
+                <p className="font-medium">Official Components detail scope</p>
+                <p className="text-sm text-muted-foreground">
+                  Component metadata, editable draft state, and the current
+                  table selection are supplied by the existing provider.
+                </p>
               </div>
-            </DemoCard>
-          </TabsContent>
-
-          <TabsContent value="usage" className="space-y-3">
-            <DemoCard
-              title="Direct payload"
-              description="Import the public React entry and pass data. The menu owns its internal formatting and UI."
-            >
-              <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs">
-                <code>{`import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
-
-const payload = { kind: "markdown", text: "## Release brief" } as const;
-
-<ContentTransferMenu source={payload} icon="portal" triggerVariant="glass" />;`}</code>
-              </pre>
-            </DemoCard>
-            <DemoCard
-              title="Click-time source"
-              description="Use a stable source ID and capture the current input only after the user opens Alchemy."
-            >
-              <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs">
-                <code>{`import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
-import { directSource } from "@ai-matrx/alchemy/core";
-
-<ContentTransferMenu source={{
-  id: "brief:current",
-  label: "Release brief",
-  capture: async ({ signal }) => {
-    signal.throwIfAborted();
-    return directSource({ kind: "text", text: draft });
-  },
-}} icon="portal" />;`}</code>
-              </pre>
-            </DemoCard>
-          </TabsContent>
-        </Tabs>
+              <ContentTransferMenu
+                label="Official Components detail scope"
+                triggerVariant="transparent"
+                icon="portal"
+              />
+            </div>
+          </DemoCard>
+        </div>
       </main>
     </SurfaceRuntimeProvider>
   );
