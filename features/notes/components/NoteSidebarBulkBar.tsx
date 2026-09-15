@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { removeInstanceTab } from "../redux/slice";
-import { deleteNote, moveNoteToFolder, moveNoteToNewFolder, restoreNote } from "../redux/thunks";
+import { deleteNote, moveNoteToFolder, moveNoteToNewFolder, restoreNote, ensureNoteBodiesLoaded } from "../redux/thunks";
 import { ingestSource } from "@/features/rag/api/ingest";
 import { isNoteContentEmpty } from "../utils/noteUtils";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
@@ -163,11 +163,15 @@ export function NoteSidebarBulkBar({
 
   const handleExport = async () => {
     if (!hasAny) return;
-    if (singleNote) {
-      downloadNoteAsMarkdown(singleNote);
+    // List rows carry only a preview (audit N-24): read the bodies first.
+    const full = await dispatch(
+      ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
+    ).unwrap();
+    if (full.length === 1) {
+      downloadNoteAsMarkdown(full[0]);
       return;
     }
-    await downloadNotesAsMarkdownZip(selectedNotes, "notes-export.zip");
+    await downloadNotesAsMarkdownZip(full, "notes-export.zip");
   };
 
   const handleShare = () => {

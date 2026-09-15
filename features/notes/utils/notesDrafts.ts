@@ -20,6 +20,13 @@ import { getNoteLiveContent } from "./noteLiveContent";
 
 export const NOTES_DRAFT_NAMESPACE = "note";
 
+/**
+ * Capture reason recorded when a note is deleted while it still holds text the
+ * database does not (audit N-21). `NoteDraftRecoveryBanner` maps it to the
+ * sentence the user reads; `deleteNote` is the only writer.
+ */
+export const NOTE_DELETED_DRAFT_REASON = "note-deleted";
+
 type StateWithNotes = {
   notes?: NotesSliceState;
   userAuth?: { id?: string | null };

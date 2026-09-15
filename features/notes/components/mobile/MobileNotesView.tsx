@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
 import { NoteReferenceCopyButton } from "../NoteReferenceCopyButton";
+import { NoteSyncStatusStrip } from "../NoteSyncStatusStrip";
 import { NoteCleanupButton } from "../cleanup/NoteCleanupButton";
 import {
   DEFAULT_FILTER_STATE,
@@ -335,15 +336,20 @@ export default function MobileNotesView({
       <div className="h-full w-full bg-background overflow-hidden relative">
         {/* List view */}
         <div
-          className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
+          className={`absolute inset-0 flex flex-col transition-transform duration-300 ease-in-out ${
             currentView === "list" ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <MobileNotesList
-            onNoteSelect={handleNoteSelect}
-            filters={filters}
-            onFiltersChange={setFilters}
-          />
+          {/* Same realtime honesty as the desktop sidebar — this is the
+              surface the reported user was on (audit N-05). */}
+          <NoteSyncStatusStrip />
+          <div className="min-h-0 flex-1">
+            <MobileNotesList
+              onNoteSelect={handleNoteSelect}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
+          </div>
         </div>
 
         {/* Editor view — split into scrollable content + fixed dock outside transform */}

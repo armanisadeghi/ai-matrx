@@ -28,6 +28,7 @@ function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
   return {
     id: NOTE_ID,
     content: "before",
+    content_preview: "before",
     content_hash: null,
     created_at: "2026-09-12T00:00:00.000Z",
     created_by: "user-1",

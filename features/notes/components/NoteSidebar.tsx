@@ -88,6 +88,7 @@ import {
 } from "../redux/thunks";
 import { useDraftInitializationControl } from "../hooks/useDraftInitializationControl";
 import { useNewNoteOrganization } from "../hooks/useNewNoteOrganization";
+import { useNoteContentSearch } from "../hooks/useNoteContentSearch";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   selectAllNotesList,
@@ -114,6 +115,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { NoteSidebarRow } from "./NoteSidebarRow";
 import { NoteSidebarBulkBar } from "./NoteSidebarBulkBar";
+import { NoteSyncStatusStrip } from "./NoteSyncStatusStrip";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type {
@@ -399,18 +401,22 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     return Array.from(new Set(contextFiltered.map(noteFolderIdentityKey)));
   }, [contextFiltered]);
 
-  // Filter notes by search (operates on context-filtered set)
+  // Filter notes by search (operates on context-filtered set). Titles, tags,
+  // ids and the 240-char preview match locally; the BODY is matched by the
+  // database (`useNoteContentSearch`) because list rows no longer carry it.
+  const bodySearch = useNoteContentSearch(searchQuery);
   const filteredNotes = useMemo(() => {
     if (!searchQuery) return contextFiltered;
     const q = searchQuery.toLowerCase();
     return contextFiltered.filter(
       (n) =>
         n.label.toLowerCase().includes(q) ||
-        n.content?.toLowerCase().includes(q) ||
+        (n.content ?? n.content_preview ?? "").toLowerCase().includes(q) ||
         n.tags?.some((t) => t.toLowerCase().includes(q)) ||
-        idMatchesQuery(n, q),
+        idMatchesQuery(n, q) ||
+        bodySearch.ids.has(n.id),
     );
-  }, [contextFiltered, searchQuery]);
+  }, [contextFiltered, searchQuery, bodySearch.ids]);
 
   // Sort function
   const sortNotes = useCallback(
@@ -893,6 +899,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // ── Render ─────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full min-h-0">
+      {/* Realtime honesty: silent while the channel is live, one quiet line
+          while it retries, and a loud line with a Reload once it gives up. */}
+      <NoteSyncStatusStrip />
       {draftControl.error && draftControl.organizationRequired && (
         <div className="shrink-0 max-h-[50%] overflow-y-auto border-b border-border">
           <OrganizationRequiredNotice

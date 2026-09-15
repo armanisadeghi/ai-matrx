@@ -3,6 +3,7 @@
 import React, { useRef, useState, useMemo } from "react";
 import { draftInitializationErrorMessage } from "../../redux/thunks";
 import { selectNotesListError, selectNotesListStatus } from "../../redux/selectors";
+import { useNoteContentSearch } from "../../hooks/useNoteContentSearch";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   FolderOpen,
@@ -66,6 +67,8 @@ export default function MobileNotesList({
   const deletedNotes = useAppSelector(selectDeletedNotesList);
 
   const [searchQuery, setSearchQuery] = useState("");
+  // Bodies are matched by the database (list rows carry only a preview).
+  const bodySearch = useNoteContentSearch(searchQuery);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sharedOpen, setSharedOpen] = useState(true);
   const [trashOpen, setTrashOpen] = useState(false);
@@ -142,7 +145,8 @@ export default function MobileNotesList({
       result = result.filter(
         (n) =>
           n.label.toLowerCase().includes(q) ||
-          (n.content ?? "").toLowerCase().includes(q) ||
+          (n.content ?? n.content_preview ?? "").toLowerCase().includes(q) ||
+          bodySearch.ids.has(n.id) ||
           n.tags?.some((t) => t.toLowerCase().includes(q)) ||
           idMatchesQuery(n, q),
       );
@@ -154,7 +158,7 @@ export default function MobileNotesList({
       const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return filters.sortOrder === "asc" ? cmp : -cmp;
     });
-  }, [uniqueNotes, sharedNotes, filters, searchQuery]);
+  }, [uniqueNotes, sharedNotes, filters, searchQuery, bodySearch.ids]);
 
   const handleCreateNote = async () => {
     try {
@@ -333,7 +337,7 @@ export default function MobileNotesList({
                         {note.label || "Untitled Note"}
                       </h3>
                       <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                        {getPreviewText(note.content)}
+                        {getPreviewText(note.content ?? note.content_preview)}
                       </p>
                       <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                         <div className="flex items-center gap-1">

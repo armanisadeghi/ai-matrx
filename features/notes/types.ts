@@ -20,7 +20,13 @@ export interface NoteContextLinks {
     task_id: string | null;
 }
 
-export type Note = NoteRow & NoteContextLinks;
+// `content_preview` is a database-maintained projection of `content` (a stored
+// generated column, audit N-24): the server writes it, a client never does, and
+// a full row read carries it while a locally minted record does not — so it is
+// optional on the app-side shape.
+export type Note = Omit<NoteRow, "content_preview"> &
+  { content_preview?: string | null } &
+  NoteContextLinks;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
 // `metadata` is a Json column — the generated type is `unknown`. Consumers use

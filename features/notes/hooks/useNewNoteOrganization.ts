@@ -39,10 +39,6 @@ import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPrefere
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { pickActiveOrganization } from "@/features/organizations/hooks/useActiveOrganizationAutoSelect";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
-import {
-  isOrganizationPickerAvailable,
-  requestOrganizationContextChoice,
-} from "@/lib/organization/organization-gate";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -134,12 +130,11 @@ export async function resolveNewNoteOrganization(
         continue;
       }
       if (!nameable) {
-        // Nothing can be named from Redux. Ask the person, through the ONE
-        // organization chooser, when it is mounted; otherwise refuse with the
-        // kernel's error so the surface renders the honest picker notice.
-        if (isOrganizationPickerAvailable()) {
-          return await requestOrganizationContextChoice();
-        }
+        // Nothing can be named from Redux. Refuse with the kernel's error so
+        // the surface renders the ONE honest screen for it — the organization
+        // notice with the picker inside. (Not the modal chooser: its
+        // registration is module-global and outlives the surface that mounted
+        // it, so a later click could wait forever on a chooser nobody sees.)
         throw new OrganizationContextError(
           "organization_context_required",
           "Choose the organization this note belongs to.",

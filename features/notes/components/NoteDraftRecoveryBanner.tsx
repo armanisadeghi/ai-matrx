@@ -51,6 +51,7 @@ function whenLabel(at: number): string {
 
 const REASON_LABELS: Record<string, string> = {
   "auth-identity-drift": "the tab had to reload",
+  "note-deleted": "the note was deleted",
   "note-save-failures": "saving kept failing",
   "signed-out": "the session ended",
   unload: "the page closed before the save finished",

@@ -100381,6 +100381,7 @@ export type Database = {
         Row: {
           content: string | null
           content_hash: string | null
+          content_preview: string | null
           created_at: string | null
           created_by: string | null
           deleted_at: string | null
@@ -100405,6 +100406,7 @@ export type Database = {
         Insert: {
           content?: string | null
           content_hash?: string | null
+          content_preview?: string | null
           created_at?: string | null
           created_by?: string | null
           deleted_at?: string | null
@@ -100429,6 +100431,7 @@ export type Database = {
         Update: {
           content?: string | null
           content_hash?: string | null
+          content_preview?: string | null
           created_at?: string | null
           created_by?: string | null
           deleted_at?: string | null

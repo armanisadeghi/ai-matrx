@@ -375,6 +375,22 @@ export interface NotesSliceState {
 
   // ── Realtime ───────────────────────────────────────────────
   realtimeConnected: boolean;
+  /**
+   * THE HONEST SYNC STATE (audit N-05, connection half). `realtimeConnected`
+   * alone cannot tell a screen whether the package's backoff is still working
+   * (say so, quietly) or has given up (say so, loudly, with a way out), so a
+   * boolean could only ever produce a banner that lies in one direction. The
+   * status comes from `@ai-matrx/realtime`'s `onStatusChange`; `idle` is the
+   * pre-subscription state and must never draw a banner.
+   */
+  realtimeStatus: NotesRealtimeStatus;
+  /**
+   * Consecutive failed connect attempts as the package counts them, read from
+   * its diagnostics snapshot. The package does NOT push this (its status
+   * callback is edge-triggered and stays on "reconnecting" for the whole
+   * ladder), so the middleware polls for it while the channel is down.
+   */
+  realtimeFailedAttempts: number;
   // ── Presence ───────────────────────────────────────────────
   /** Live editor attribution per note, derived from realtime `updated_by`
    *  (the DB `_stamp_actor` trigger stamps it — no presence channel needed).
@@ -387,6 +403,19 @@ export interface NotesSliceState {
   noteScopeAssignments: NoteScopeAssignment[];
   noteScopesLoaded: boolean;
 }
+
+/**
+ * The notes channel's connection state, as the realtime package reports it,
+ * plus `idle` for "this client has never opened the channel" (logged out, or
+ * before the first list load). `connecting` means a first join is failing;
+ * `reconnecting` means a join that once succeeded is failing.
+ */
+export type NotesRealtimeStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected";
 
 export interface NoteEditorPresence {
   userId: string;
