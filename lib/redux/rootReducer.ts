@@ -25,6 +25,7 @@ import userProfileReducer from "./slices/userProfileSlice";
 import entitlementsReducer from "@/features/entitlements/state/entitlementsSlice";
 
 import userPreferencesReducer from "./preferences/userPreferencesSlice";
+import sandboxLifecycleReducer from "./slices/sandboxLifecycleSlice";
 import flashcardChatReducer from "./slices/flashcardChatSlice";
 import adminDebugReducer from "./preferences/adminDebugSlice";
 import creatorDebugReducer from "./preferences/creatorDebugSlice";
@@ -194,6 +195,7 @@ export const slimReducerMap = {
   userProfile: userProfileReducer,
   entitlements: entitlementsReducer,
   userPreferences: userPreferencesReducer,
+  sandboxLifecycle: sandboxLifecycleReducer,
 
   adminDebug: adminDebugReducer,
   creatorDebug: creatorDebugReducer,
