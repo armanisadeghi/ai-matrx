@@ -113,6 +113,7 @@ export function DesktopPresenceIndicator({
               onClick={() => applyBinding(null)}
               className="text-muted-foreground hover:text-destructive"
               title="Disconnect"
+              aria-label={`Disconnect ${boundView.name}`}
             >
               <Unplug className="h-3.5 w-3.5" />
             </button>

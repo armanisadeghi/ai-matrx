@@ -19,7 +19,11 @@ export function UninitializedShell({
           style={{ minHeight: 20, maxHeight: 20 }}
           rows={1}
         />
-        <Button disabled className={sendBtnClass}>
+        <Button
+          disabled
+          className={sendBtnClass}
+          aria-label="Send message (still initializing)"
+        >
           <ArrowUp className="w-4 h-4" />
         </Button>
       </div>
@@ -38,7 +42,11 @@ export function UninitializedShell({
         />
       </div>
       <div className="flex items-center justify-end px-2 pb-2">
-        <Button disabled className={sendBtnClass}>
+        <Button
+          disabled
+          className={sendBtnClass}
+          aria-label="Send message (still initializing)"
+        >
           <ArrowUp className="w-5 h-5" />
         </Button>
       </div>
