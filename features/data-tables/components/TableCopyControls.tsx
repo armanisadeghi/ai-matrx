@@ -104,16 +104,16 @@ export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = 
     },
   };
   const references: ContentTransferReference[] = [
-    { id: "table", label: "Copy table reference", noun: "table", items: [{ table_id: tableId, table_name: tableName }] },
+    { id: "table", label: "Copy table reference", noun: "dataset", items: [{ id: tableId, label: tableName }] },
     { id: "schema", label: "Copy schema reference", noun: "table_schema", items: [{ table_id: tableId, table_name: tableName }] },
-    ...(selectedRowIds.length ? [{ id: "selected", label: `Copy references to ${selectedRowIds.length} selected rows`, noun: "table_row", items: selectedRowIds.map((row_id) => ({ table_id: tableId, table_name: tableName, row_id })) }] : []),
+    ...(selectedRowIds.length ? [{ id: "selected", label: `Copy ${selectedRowIds.length === 1 ? "reference" : "references"} to ${selectedRowIds.length} selected ${selectedRowIds.length === 1 ? "row" : "rows"}`, noun: "table_row", items: selectedRowIds.map((row_id) => ({ table_id: tableId, table_name: tableName, row_id })) }] : []),
   ];
   return <ContentTransferMenu
     source={source}
     label={tableName}
     triggerVariant="outline"
     className={className}
-    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Current filtered view (all matching rows)", target: "Entire table (no filters)", selected: "Selected rows in this view" } }}
+    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Filtered view (all rows)", target: "Entire table", selected: "Selected rows" } }}
     capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
     references={references}
     referenceActions={[{ id: "choose-reference", label: "Choose a row, column or cell reference", run: onChooseReference }]}
