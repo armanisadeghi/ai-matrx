@@ -281,7 +281,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
   - `udt_upsert_cell(p_table_id, p_row_id, p_field_name, p_value)` — surgical `jsonb_set` write.
   - `udt_bulk_write(p_table_id, p_operations jsonb[])` — one txn; ops `insert|update|cell|delete`.
   - `udt_change_field_type(p_table_id, p_field_id, p_new_type, p_strategy)` — rewrites every
-    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`.
+    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`. 🚨 **A value that
+    cannot become the new type goes to the row's history WITH the reason before its cell is
+    emptied** (`reason = 'type_change:<from>→<to>'`, Data Doctrine Rule 3), in the same
+    transaction; the call RAISES and changes nothing if fewer values reach history than it is
+    about to empty. Returns `values_moved_to_history` + `history_reason` — every screen that
+    runs a type change MUST say the number and the way back (DD-244).
+  - `udt_cast_jsonb_value(p_value, p_new_type)` — the ONE cast rule (SQL NULL = does not fit),
+    so "does this fit?" and "what does it become?" can never disagree.
 
 **Key types**
 - Generated Supabase types: `types/database.types.ts` (regenerate with `pnpm db-types`).
@@ -309,9 +316,15 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 **3. Change a column's type**
 - Trigger: user changes a field from `string` to `integer` in the column editor.
 - Path: `udt_change_field_type(table_id, field_id, 'integer', 'cast_or_null')`.
-- Walks every row, rewrites the JSONB cell (regex-validates then casts; un-castable → null or
-  skip per strategy), then flips `udt_dataset_fields.data_type`.
-- Exit: `{ field_id, new_type, strategy, rows_rewritten }`.
+- Walks every row, rewrites the JSONB cell (`udt_cast_jsonb_value`; un-castable → emptied or
+  left in place per strategy), then flips `udt_dataset_fields.data_type`.
+- Under `cast_or_null`, every un-castable value is first written to that row's history carrying
+  `reason = 'type_change:string→integer'` — the history row is the ONLY surviving copy, and the
+  call refuses outright (rolling back) if it cannot prove the history landed.
+- Exit: `{ field_id, new_type, strategy, rows_rewritten, rows_skipped, rows_total,
+  values_moved_to_history, history_reason }`. `TableConfigModal` shows the count, says the values
+  are in each row's history, and names Restore as the way back; `VersionHistoryViewer` badges that
+  version "Column type changed (string→integer)".
 
 **4. Validation enforcement (opt-in)**
 - Trigger: a dataset is set to `validation_mode='strict'` (new imports may default to strict).
@@ -392,8 +405,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 - **Realtime fanout.** `udt_dataset_rows` is in the `supabase_realtime` publication — a 10k-row
   import emits 10k events. Importers MUST batch via `udt_bulk_write`, and only the UI viewing a
   given dataset should subscribe. Do not subscribe app-wide.
-- **Version table growth.** Every cell edit appends to `udt_dataset_row_versions`. No retention
-  policy yet (P2). Heavy agent traffic will grow it quickly — budget for archival.
+- **Version retention is a knob, per organization, raise-only.** `udt_dataset_row_versions_trim_scoped`
+  (the weekly `udt_dataset_row_versions_trim_weekly` cron calls the zero-arg wrapper) keeps the
+  latest 2 versions of every row plus everything newer than that organization's
+  `extensibility.user_tables.history_retention_floor_days` — **default 30 days, `raise_only`**
+  (Data Doctrine Rule 10). It was a hardcoded platform-wide **14 days** until DD-244, which
+  together with `cast_or_null` meant the only copy of a value a type change could not keep was
+  deleted two weeks later. Heavy agent traffic still grows the table — budget for archival.
+  Guard: `pnpm check:udt-history` (`scripts/check-udt-history-honesty.ts`).
 - **`udt_change_field_type` validates against the *pre-change* type** during the row rewrite
   (rows are rewritten before the field's `data_type` flips). Run type changes on permissive
   datasets; on strict datasets with un-castable required values it can conflict. Documented
@@ -940,6 +959,8 @@ failure § Column shape exists to prevent. A real count needs its own RPC and is
 not in this pass.
 
 ## Change log
+
+- `2026-09-14` — **DD-244: the grid's live data-loss path is closed.** A column type change no longer empties a cell without keeping the value, and row history is no longer trimmed below Arman's ruled 30-day floor. Migration `migrations/dd244_udt_history_reason_and_retention_floor.sql` (applied + ledgered `2026-09-15 03:57:51+00`, checksum `051bc808…`): new `workbench.udt_dataset_row_versions.reason`; `udt_log_row_version` stamps it from the transaction-local `matrx.udt_version_reason`; new `udt_cast_jsonb_value` is the ONE cast rule; `udt_change_field_type` counts un-castable values, stamps `type_change:<from>→<to>`, PROVES the history landed (and raises, rolling back, if it did not) and returns `values_moved_to_history` + `history_reason`; new knob `extensibility.user_tables.history_retention_floor_days` (30 days, `raise_only`, organization-overridable); `udt_dataset_row_versions_trim_scoped` reads it per organization and the cron's zero-arg wrapper delegates (cron job 13 untouched). UI: `TableConfigModal` says the count and names Restore as the way back (and its pre-change confirm no longer claims values just "become null"); `VersionHistoryViewer` badges that version "Column type changed (string→integer)". Guard `pnpm check:udt-history` / `:self-test` (`scripts/check-udt-history-honesty.ts`) — proven RED on the pre-fix bodies (`column "reason" does not exist`), GREEN on all five checks after. Verified: the live functions by SELECT; a lowering override refused live (`must be >= 30`); `pnpm db-types` regenerated; `pnpm check:parse` + `tsc --noEmit` clean for every touched file. NOT verified by me: the live browser dialog on production (a separate verifier owns that), and the weekly cron's next real run.
 
 - `2026-09-14` — **Column validation rules.** See § Validation rules. New: `features/data-tables/validation.ts` (the ONE rule model), `features/data-tables/components/ColumnValidationEditor.tsx` (the Rules popover on each Table Settings column card), `migrations/udt_validation_rules_strict_enforcement.sql` (new pure helper `public.udt_validate_cell_rules`; `public.udt_validate_row` consults it under strict mode only). Enforced client-side in `EditableCell`, `AddRowModal`, `EditRowModal` and the agent `cell_value` write target regardless of `validation_mode`; existing violating values render in the format system's existing amber. Verified: `npx jest features/data-tables/__tests__/validation.test.ts` 39/39 green; the migration's in-transaction DO block 26/26 (it cannot apply otherwise); applied and ledgered at `2026-09-15 03:46:40+00`, checksum `10db619e…`; `public.udt_validate_cell_rules` called live as the `authenticated` role returned `Must be at most 100` / `Must be one of: Red, Blue` / `null` for an empty value; `npx tsc --noEmit -p tsconfig.typecheck.json` clean for every touched file. NOT verified: the live browser — the grid, the row modals and the Rules popover were not exercised on `/data/[id]`, and the strict-mode trigger has not been tripped by a real row write. NOT wired (the viewer is owned by another session this turn): `UserTableViewer` still has to pass `validationRules` / `existingValues` to `EditableCell`, `validationRules` to `FormattedFieldValue`, and `validationRules` on each `surfaceFields` entry — until it does, the grid cell, the amber and the agent's `column_list.validation` are inert. The `EditRowModal`, `AddRowModal`, agent `cell_value`, Table Settings and database paths are complete.
 

@@ -544,7 +544,11 @@ export default function TableConfigModal({
           .join("\n");
         const ok = await confirm({
           title: `Convert ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}?`,
-          description: `${summary}\n\nExisting cell values will be coerced to the new type. Values that cannot be converted will become null.`,
+          // DD-244: it used to say values "will become null" and stop there,
+          // which read as destruction. They are emptied from the grid AND kept
+          // in each row's history, restorable — say both, and say the count
+          // afterwards (the toast does).
+          description: `${summary}\n\nExisting cell values are converted to the new type. A value that cannot be converted is emptied from the grid and saved in that row's history — open the row and choose Restore in its history to bring it back. You will be told how many.`,
           confirmLabel: "Convert",
           variant: "destructive",
         });
@@ -597,6 +601,10 @@ export default function TableConfigModal({
       // SECURITY DEFINER RPC. cast_or_null is the safer default — un-castable
       // values become null rather than silently keeping the old shape.
       let totalRewritten = 0;
+      // DD-244: a value that cannot become the new type is emptied from the
+      // grid, and its only surviving copy is the row's history. The screen says
+      // so, with the number and the way back — never a silent null.
+      let totalMovedToHistory = 0;
       const typeFailures: string[] = [];
       for (const change of typeChanges) {
         const res = await changeFieldType({
@@ -609,6 +617,7 @@ export default function TableConfigModal({
           typeFailures.push(`${change.displayName}: ${res.error}`);
         } else {
           totalRewritten += res.data.rows_rewritten;
+          totalMovedToHistory += res.data.values_moved_to_history ?? 0;
         }
       }
 
@@ -637,6 +646,19 @@ export default function TableConfigModal({
             title: "Some columns could not be converted",
             description: typeFailures.join("\n"),
             variant: "destructive",
+          });
+        } else if (totalMovedToHistory > 0) {
+          toast({
+            title: `Converted ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`} — ${totalMovedToHistory} value${totalMovedToHistory === 1 ? "" : "s"} moved to row history`,
+            description:
+              `${totalRewritten} row${totalRewritten === 1 ? "" : "s"} rewritten. ` +
+              `${totalMovedToHistory} value${totalMovedToHistory === 1 ? " did" : "s did"} not fit the new type and ` +
+              `${totalMovedToHistory === 1 ? "was" : "were"} emptied — ` +
+              `${totalMovedToHistory === 1 ? "it is" : "they are"} saved in each row's history. ` +
+              `Open the row and choose Restore in its history to bring ` +
+              `${totalMovedToHistory === 1 ? "it" : "them"} back.`,
+            variant: "default",
+            duration: 15000,
           });
         } else {
           toast({

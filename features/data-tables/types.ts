@@ -199,6 +199,17 @@ export type ChangeFieldTypeResponse = {
   rows_rewritten: number;
   rows_skipped: number;
   rows_total: number;
+  /**
+   * How many values could NOT become the new type and were emptied from the
+   * grid. Every one of them is in that row's history under `history_reason`,
+   * written in the same transaction that emptied the cell — the type change
+   * refuses outright rather than empty a cell whose only copy would be lost
+   * (DD-244). A screen that shows a type-change result MUST show this number
+   * and where the values went.
+   */
+  values_moved_to_history: number;
+  /** The reason stamped on those history rows, e.g. `type_change:string→integer`. */
+  history_reason: string;
 };
 
 // ─── Validation modes (mirrors the CHECK constraint on udt_datasets) ─────────
