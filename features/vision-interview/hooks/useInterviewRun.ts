@@ -83,6 +83,16 @@ export interface ResumeInput {
   done?: boolean;
 }
 
+/**
+ * What the room says when the run ENDED without finishing — including the
+ * case where the server never sent a terminal event at all and the follower
+ * had to read the run row to find out (wall W9's second half: the room sat on
+ * "Handing the interview to the room… Working…" over a run that was already
+ * errored). A sentence AND a remedy; never a spinner over a dead run.
+ */
+export const RUN_ENDED_MESSAGE =
+  "The room's run ended on the server before it finished. Nothing you have said is lost — the interview, its questions and its document are saved; press Finish again to start a fresh run over the same interview.";
+
 /** The honest sentence for a start stream that ended having said nothing. */
 export const SILENT_START_MESSAGE =
   "The room never started — the server took the request but no run came back. Nothing you have said is lost; try Finish again.";
@@ -208,8 +218,8 @@ export function useInterviewRun(sessionId: string) {
           runFailed({
             message:
               (typeof event.error_message === "string" &&
-                event.error_message) ||
-              "The interview run failed.",
+                event.error_message.trim()) ||
+              RUN_ENDED_MESSAGE,
           }),
         );
         break;

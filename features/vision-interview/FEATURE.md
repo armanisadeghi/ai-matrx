@@ -225,6 +225,25 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- **2026-09-15** — **And it can no longer sit on "Working…" over a run that is
+  already DEAD (wall W9, second half).** A run's terminal STATUS and its
+  terminal EVENT are written by two different places: `run_store.apply_status`
+  flips `workflow.run.status`, and the scheduler separately emits `run_failed`
+  / `run_errored` / `run_cancelled`. Every path that ends a run outside that
+  emit — a lease or recovery sweep, `force-fail`, a worker killed between the
+  two writes — leaves a dead row and a silent feed, and the room, which
+  believed only the feed, spun forever. Fixed in the ONE canonical workflow-run
+  client, so every consumer inherits it: `followWorkflowRunStream` now
+  reconciles with the run ROW at every boundary — a clean `end`, a dropped
+  socket, a stall, and reconnects exhausted — reading `GET /runs/{run_id}` and
+  delivering the terminal event the feed owed (`reconcileEventFromRunRow`,
+  exported and pure). A failed row read is never a new failure surface: it just
+  keeps reconnecting. The room's own sentence now names the remedy
+  (`RUN_ENDED_MESSAGE`). Forcing guard:
+  `features/agents/redux/execution-system/thunks/__tests__/follow-workflow-run-row-reconcile.test.ts`
+  drives the real thunk over a real SSE replay that omits the terminal event
+  with the row already `errored` — red against the old follower, green now.
+
 - **2026-09-15** — **The room can no longer sit on "Working…" over a run that
   does not exist (wall W9).** `handleInlineEvent` returned on every non-`data`
   event, so the server's `fatal_error` envelope — the ONE thing the inline
