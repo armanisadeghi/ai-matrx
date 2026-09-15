@@ -1,4 +1,9 @@
-import { modelFiltersToColumns, modelQueryToTab } from "../canonicalTableQuery";
+import {
+  modelFiltersToColumns,
+  modelQueryToTab,
+  modelQueryExtras,
+  parseModelQueryExtras,
+} from "../canonicalTableQuery";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table";
 
 const base: MatrxDataTableQueryState = {
@@ -39,7 +44,11 @@ test("clear really removes the active-only default and numeric filters", () => {
   expect(modelQueryToTab({ ...base, search: "", sort: null }).filters).toEqual(
     {},
   );
-  const merged = { is_deprecated: false, provider: "Anthropic", ...modelQueryToTab(base).filters };
+  const merged = {
+    is_deprecated: false,
+    provider: "Anthropic",
+    ...modelQueryToTab(base).filters,
+  };
   expect(modelFiltersToColumns(merged)).toEqual({});
   expect(modelFiltersToColumns({})).toEqual({});
   expect(modelFiltersToColumns({ is_deprecated: false })).toEqual({
@@ -56,4 +65,33 @@ test("does not turn arbitrary text filters into legacy capability restrictions",
       },
     }).filters,
   ).toEqual({});
+});
+
+test("extended query survives URL serialization without duplicating legacy filters", () => {
+  const query: MatrxDataTableQueryState = {
+    ...base,
+    searchScope: "name",
+    searchMatchMode: "whole_words",
+    anyOf: "image",
+    columnFilters: {
+      is_deprecated: { kind: "boolean", value: false },
+      name: { kind: "text", value: "kling", negated: true },
+    },
+    layeredFilters: [
+      { id: "first", field: "name", operator: "contains", value: "kling" },
+    ],
+  };
+  const extra = modelQueryExtras(query);
+  expect(extra.columnFilters).toEqual({
+    name: { kind: "text", value: "kling", negated: true },
+  });
+  expect(parseModelQueryExtras(JSON.stringify(extra))).toEqual(extra);
+});
+test("malformed URL state cannot inject invalid filters", () => {
+  expect(parseModelQueryExtras("not json")).toBeUndefined();
+  expect(
+    parseModelQueryExtras(
+      JSON.stringify({ anyOf: "", columnFilters: { name: { kind: "bad" } } }),
+    ),
+  ).toBeUndefined();
 });

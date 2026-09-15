@@ -1,3 +1,4 @@
+import { parseTableViewSnapshot } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
@@ -70,4 +71,63 @@ export function modelQueryToTab(
     perPage: query.pageSize,
     filters,
   };
+}
+
+export type ModelQueryExtras = Pick<
+  MatrxDataTableQueryState,
+  | "anyOf"
+  | "columnFilters"
+  | "layeredFilters"
+  | "searchScope"
+  | "searchMatchMode"
+>;
+
+export function modelQueryExtras(
+  query: MatrxDataTableQueryState,
+): ModelQueryExtras {
+  const columnFilters = Object.fromEntries(
+    Object.entries(query.columnFilters).filter(
+      ([key]) =>
+        ![
+          "maker",
+          "input_capability",
+          "output_capability",
+          "is_deprecated",
+          "is_primary",
+          "is_premium",
+          "context_window",
+          "max_tokens",
+        ].includes(key),
+    ),
+  );
+  return {
+    anyOf: query.anyOf,
+    columnFilters,
+    layeredFilters: query.layeredFilters,
+    searchScope: query.searchScope,
+    searchMatchMode: query.searchMatchMode,
+  };
+}
+
+/** Reuse the package's persisted-query validator for tab URL extensions. */
+export function parseModelQueryExtras(
+  raw: string | null,
+): ModelQueryExtras | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      return undefined;
+    const snapshot = parseTableViewSnapshot({
+      __kind: "matrx-table-view",
+      version: 1,
+      query: { search: "", pageSize: 25, sort: null, ...parsed },
+      columns: { order: [], hidden: [] },
+    });
+    return snapshot
+      ? modelQueryExtras({ ...snapshot.query, page: 1 })
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }

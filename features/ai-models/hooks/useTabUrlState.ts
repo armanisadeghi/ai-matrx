@@ -1,12 +1,9 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { historyModeForParamChange } from "@ai-matrx/kit/url-state";
-import {
-  isContentType,
-  type ContentType,
-} from "../capabilities/types";
+import { isContentType, type ContentType } from "../capabilities/types";
 
 export type AiModelFilters = {
   provider?: string;
@@ -21,7 +18,13 @@ export type AiModelFilters = {
   max_tokens_max?: number;
 };
 
+import {
+  parseModelQueryExtras,
+  type ModelQueryExtras,
+} from "../utils/canonicalTableQuery";
+
 export type TabState = {
+  tableQuery?: ModelQueryExtras;
   id: string;
   label: string;
   q: string;
@@ -96,6 +99,9 @@ function serializeDeprecatedFilterParam(
 
 function serializeTabState(params: URLSearchParams, tab: TabState) {
   const p = tab.id;
+  if (tab.tableQuery)
+    params.set(`${p}.tableQuery`, JSON.stringify(tab.tableQuery));
+  else params.delete(`${p}.tableQuery`);
   if (tab.q) params.set(`${p}.q`, tab.q);
   else params.delete(`${p}.q`);
   if (tab.sort !== DEFAULT_TAB.sort) params.set(`${p}.sort`, tab.sort);
@@ -142,6 +148,7 @@ function deserializeTabState(params: URLSearchParams, id: string): TabState {
   const p = id;
   return {
     id,
+    tableQuery: parseModelQueryExtras(params.get(`${p}.tableQuery`)),
     label: params.get(`${p}.label`) ?? labelForId(id),
     q: params.get(`${p}.q`) ?? "",
     sort: params.get(`${p}.sort`) ?? DEFAULT_TAB.sort,
@@ -178,7 +185,6 @@ function generateTabId(existing: string[]): string {
 }
 
 export function useTabUrlState() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -218,10 +224,12 @@ export function useTabUrlState() {
       const textKeys = tabIds.flatMap((id) => [`${id}.q`, `${id}.label`]);
       const mode = historyModeForParamChange(current, params, textKeys);
       const href = `${pathname}?${params.toString()}`;
-      if (mode === "replace") router.replace(href, { scroll: false });
-      else router.push(href, { scroll: false });
+      // These parameters only drive this client-owned catalog. Next integrates
+      // native history with useSearchParams; avoid a server navigation per keypress.
+      if (mode === "replace") window.history.replaceState(null, "", href);
+      else window.history.pushState(null, "", href);
     },
-    [router, pathname, searchParams, tabIds],
+    [pathname, searchParams, tabIds],
   );
 
   const setActiveTab = useCallback(
