@@ -165,7 +165,9 @@ export function BadExampleProbe({
       index === rounds.length - 1 ? { ...round, critique: critique.trim() } : round,
     );
     setRounds(outgoing);
-    run.reset();
+    // No `reset()` first: `launch` already retires the previous receipt, clears
+    // the pointer and re-enters `running`. A reset beside it is a second state
+    // flip over the same fields for no gain.
     await run.launch(
       buildProbeRequest({
         rulebookId: rulebook.id,

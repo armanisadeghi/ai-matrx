@@ -293,6 +293,27 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   2026-09-12: the picker advertised `.txt,.md,.rtf,.epub,.doc` and the server
   read none of them, so a person's own 599-byte `.txt` was invited by the file
   dialog and refused by the backend. Never hand-type an accept string here.
+- `probe/` — **THE BAD EXAMPLE PROBE** (`bad_example_probe`), boundary hunting on its own page
+  `/masterwork/[id]/probe`. The system writes a version of the Expert's own work that looks right
+  and is not; they say what is wrong with it; their answer becomes draft rules AND steers the next
+  variant. `service.ts` holds the wire shape, the ONE request builder, the terminal parser and the
+  sentences; `BadExampleProbe.tsx` is the screen, on `RulebookLaneRoute`, with `ProTextarea` for
+  the catch. Server half: `aidream/services/distillation/probe.py`.
+  🚨 **THE SESSION LIVES ON THE CLIENT.** One HTTP call per round, carrying the rounds so far,
+  because the screen is the only thing that knows what the Expert has actually seen — which is what
+  makes a probe resumable through the ordinary durable-run pointer rather than a bespoke session
+  row nothing else in Masterwork has.
+  🚨 **`probe_label` IS NEVER RENDERED.** The generator names the boundary it probed so the next
+  round cannot re-probe covered ground; it rides the wire as session state and is not a caption. A
+  probe whose answer is on the screen is not a probe. The example is labelled as OURS above the
+  work itself, and "Round 3 of 5" is the server's own `round_index`/`round_count` — the cap is the
+  org knob (`masterwork.bad_example_probe.rounds`) and the screen has no opinion about it.
+  🚨 **The funnel's deep link is a lane of its own.** `launchApproach` only runs when the Expert
+  picks an Approach ON the Rulebook page; a Rulebook the guided start created arrives at
+  `?probe=1` with nobody having picked anything, so `RulebookDetailPage` carries a `probeDeepLink`
+  effect that routes to the page. Without it the card was a real door all the way through and the
+  Expert still landed on a bare Rulebook — the `timeline` census-row-3 defect, one step further in
+  (found by driving the funnel end to end, 2026-09-15).
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its
