@@ -107,7 +107,8 @@ function useAgentBuilderDefaultModel(enabled: boolean): {
   const execution = useAppSelector((state) =>
     agentId ? selectAgentCustomExecutionPayload(state, agentId) : null,
   );
-  const [unavailable, setUnavailable] = useState(false);
+  const [failedIdentity, setFailedIdentity] = useState<string | null>(null);
+  const readIdentity = agentId ?? "shortcut";
 
   useEffect(() => {
     if (!enabled || shortcut) return;
@@ -115,12 +116,12 @@ function useAgentBuilderDefaultModel(enabled: boolean): {
     void dispatch(ensureShortcutLoaded(AGENT_GENERATOR_SHORTCUT_ID))
       .unwrap()
       .catch(() => {
-        if (!cancelled) setUnavailable(true);
+        if (!cancelled) setFailedIdentity(readIdentity);
       });
     return () => {
       cancelled = true;
     };
-  }, [dispatch, enabled, shortcut]);
+  }, [dispatch, enabled, shortcut, readIdentity]);
 
   useEffect(() => {
     if (!enabled || !agentId || execution?.isReady) return;
@@ -128,12 +129,22 @@ function useAgentBuilderDefaultModel(enabled: boolean): {
     void dispatch(fetchAgentExecutionFull(agentId))
       .unwrap()
       .catch(() => {
-        if (!cancelled) setUnavailable(true);
+        if (!cancelled) setFailedIdentity(readIdentity);
       });
     return () => {
       cancelled = true;
     };
-  }, [dispatch, enabled, agentId, execution?.isReady]);
+  }, [dispatch, enabled, agentId, execution?.isReady, readIdentity]);
+
+  // Do not leave a broken or incomplete reader looking like a perpetual
+  // loading state. A loaded shortcut without an agent, or an execution record
+  // without a model, is an honest unavailable default. The identity-qualified
+  // failure vanishes when a newly loaded shortcut points to another agent.
+  const unavailable =
+    enabled &&
+    (failedIdentity === readIdentity ||
+      (Boolean(shortcut) && !agentId) ||
+      Boolean(execution?.isReady && !execution.modelId));
 
   return { modelId: execution?.modelId ?? null, unavailable };
 }
@@ -414,10 +425,12 @@ function ModelField({
       : null;
   // Basic chat has a canonical, catalog-backed runtime default. Show that
   // concrete model when the ladder's stored answer deliberately means
-  // "platform default". The authoring key intentionally defers to its
-  // builder, whose selected model is not exposed to this screen.
+  // "platform default". The authoring key reads its generator's configured
+  // model through the same read path that prepares the generator itself.
   const platformTextModelId = useAppSelector(selectPlatformDefaultTextModelId);
-  const builderDefault = useAgentBuilderDefaultModel(isBuilderKey);
+  const builderDefault = useAgentBuilderDefaultModel(
+    isBuilderKey && !configuredValue,
+  );
   const value =
     configuredValue ??
     (knob.full_key === "agents.model_prefs.chat_default_model"
@@ -440,10 +453,10 @@ function ModelField({
       inputModalities={[]}
       outputModalities={["text"]}
       placeholder={
-        isBuilderDefault
-          ? "Agent builder's default model"
-          : builderDefault.unavailable
-            ? "Agent builder model is unavailable"
+        builderDefault.unavailable
+          ? "Agent builder model is unavailable"
+          : isBuilderDefault
+            ? "Loading agent builder's model…"
             : "Loading current model…"
       }
       disabled={disabled}
