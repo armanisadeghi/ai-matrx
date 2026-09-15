@@ -100,6 +100,7 @@ async function mount(
     root.render(
       <AiMatrxReplyComposer
         conversationId="conv-1"
+        conversationOrganizationId="org-1"
         onAnswered={onAnswered}
         {...props}
       />,
@@ -159,6 +160,11 @@ describe("AiMatrxReplyComposer", () => {
         path: "/coding-sessions/conversations/{conversation_id}/responder",
         method: "GET",
         pathParams: { conversation_id: "conv-1" },
+        // The conversation's OWN organization rides the read. The JWT lane is
+        // fail-closed on the organization header, so a session that has not
+        // picked one would otherwise be told the label could not be loaded
+        // while the server knew the answer (live on aimatrx.com, 2026-09-15).
+        scopeOverrides: { organization_id: "org-1" },
       }),
     );
     expect(bound.text()).toContain(

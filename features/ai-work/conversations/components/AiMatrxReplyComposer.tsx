@@ -62,9 +62,12 @@ function nextStepFor(status: number | undefined): string {
 
 export function AiMatrxReplyComposer({
   conversationId,
+  conversationOrganizationId,
   onAnswered,
 }: {
   conversationId: string;
+  /** The conversation's own durable organization, when the page knows it. */
+  conversationOrganizationId?: string | null;
   onAnswered: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -72,7 +75,11 @@ export function AiMatrxReplyComposer({
   // Read before the person types. This component only ever mounts on a
   // coding-session transcript, so the read is never made on a page that
   // already knows the conversation is not a mirror.
-  const responder = useCodingReplyResponder({ conversationId, enabled: true });
+  const responder = useCodingReplyResponder({
+    conversationId,
+    organizationId: conversationOrganizationId,
+    enabled: true,
+  });
   const report = responder.report;
   // A conversation that is not a mirror gets the ordinary composer with no
   // label at all — exactly what it had before this control existed.
