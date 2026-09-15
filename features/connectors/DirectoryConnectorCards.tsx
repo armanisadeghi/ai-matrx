@@ -190,7 +190,22 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
 
               <div className="flex items-center gap-2 mt-3">
                 {connected ? (
-                  connector.manageHref ? (
+                  id === "google-workspace" || id === "gmail" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+                      onClick={() =>
+                        openGoogleConnect({
+                          mode: "overview",
+                          initialConnectionId: connection.id,
+                        })
+                      }
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Manage
+                    </Button>
+                  ) : connector.manageHref ? (
                     <Button
                       variant="outline"
                       size="sm"

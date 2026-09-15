@@ -18,6 +18,10 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   selected-file registration, Drive-import, Picker-broker, and reviewed-Gmail
   consent flow. `GoogleConnectWindow` supplies only WindowPanel chrome, so the
   same body can compose into the Workspace overview and settings surfaces.
+- `GoogleWorkspaceOverviewBody.tsx` renders the same compact account inspector
+  in Settings and the singleton window. It combines direct-RLS account/resource
+  inventory with typed `GET /api/google-integrations/capabilities` metadata;
+  product rollout, account permission, and selected-resource state stay distinct.
 
 ## Authorization contract
 
@@ -116,11 +120,14 @@ attachment it cannot open. Server half:
 
 ## Invariants
 
-- The settings surface leads with a compact account inventory: every personal
-  connection shows its Docs/Sheets grant, Gmail-send grant, connection health,
-  and current browser Picker session. Selecting the account name or Manage
-  action opens that account's controls; Add account starts the existing OAuth
-  path.
+- The Settings and window overview share one compact account inspector. An
+  explicit requested account that is unavailable stays unavailable until the
+  user chooses another reachable account; ordinary no-target inspection may
+  start with the first reachable account.
+- The capability catalog renders every typed descriptor, including unavailable
+  and internal-test entries. It reports rollout admission, healthy account
+  permission, and selected resources separately; it never offers selective
+  consent or assignment controls before their contracts exist.
 - **Account-scoped work never silently takes the first connection.** Distinct
   Google identities remain explicit choices in Chat attachments, Picker,
   Drive import, Workspace management, and reviewed Gmail sending. The browser
@@ -155,6 +162,10 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-15: Added the shared Google overview and typed capability catalog to
+  Settings and the singleton connect window. The inspector preserves exact
+  account selection, keeps unavailable requested accounts explicit, and routes
+  only existing Workspace or Marketing management actions.
 - 2026-09-15: Moved the shared Google connect/select/import body and state from
   `GoogleConnectWindow` into `GoogleWorkspaceConnectBody`; the window is now a
   thin WindowPanel composition and no OAuth, Picker, broker, Vault, callback,

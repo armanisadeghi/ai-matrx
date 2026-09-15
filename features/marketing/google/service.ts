@@ -6,6 +6,7 @@ import type {
   GoogleConnectionInventory,
   GoogleConnectionOwner,
   GoogleConnectionResult,
+  GoogleCapabilityMetadata,
   YouTubeChannelPreview,
   GoogleAdsCustomerInventory,
   GoogleAdsReport,
@@ -334,6 +335,43 @@ export async function postGoogleBackend(
       : error;
   }
   return response;
+}
+
+export async function getGoogleBackend(
+  path: string,
+  fallback: string,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Sign in to manage Google.");
+  const response = await fetch(`${backendBase()}${path}`, {
+    method: "GET",
+    headers: organizationContextHeaders({
+      Authorization: `Bearer ${session.access_token}`,
+    }),
+    signal,
+  });
+  if (!response.ok) {
+    const error = await parseHttpError(response);
+    throw error.message === `Request failed (${response.status})`
+      ? new Error(fallback, { cause: error })
+      : error;
+  }
+  return response;
+}
+
+export async function listGoogleCapabilities(
+  signal?: AbortSignal,
+): Promise<GoogleCapabilityMetadata[]> {
+  const response = await getGoogleBackend(
+    "/api/google-integrations/capabilities",
+    "Unable to load Google capability availability.",
+    signal,
+  );
+  return (await response.json()) as GoogleCapabilityMetadata[];
 }
 
 export async function connectGoogle(
