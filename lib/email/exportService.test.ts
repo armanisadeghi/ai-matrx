@@ -14,23 +14,32 @@ beforeEach(() => {
   sendEmail.mockResolvedValue({ success: true });
 });
 
-test("preserves the full artifact while escaping its label in email HTML", async () => {
-  const content = `# Export\n\n${"x".repeat(50_001)}`;
+test("attaches the full UTF-8 artifact while escaping its label in email HTML", async () => {
+  const content = "name,formula\nZoë,\"'=SUM(1,1)\"\n";
 
   await expect(
     emailTableExport({
       to: "owner@matrx.test",
       tableName: "My <edited> table",
-      format: "markdown",
+      format: "csv",
       content,
     }),
   ).resolves.toMatchObject({ success: true });
 
-  const [mail] = sendEmail.mock.calls[0] as [{ html: string; text: string }];
+  const [mail] = sendEmail.mock.calls[0] as [{
+    html: string;
+    text: string;
+    attachments: Array<{ filename: string; content: Buffer; contentType: string }>;
+  }];
   expect(mail.html).toContain("My &lt;edited&gt; table");
   expect(mail.html).not.toContain("My <edited> table");
   expect(mail.text).toContain(content);
-  expect(mail.text).not.toContain("... (truncated)");
+  expect(mail.attachments).toHaveLength(1);
+  expect(mail.attachments[0]).toMatchObject({
+    filename: "My-edited-table.csv",
+    contentType: "text/csv; charset=utf-8",
+  });
+  expect(mail.attachments[0].content.toString("utf8")).toBe(content);
 });
 
 export {};

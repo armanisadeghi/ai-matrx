@@ -11,7 +11,7 @@ type EmailFormat = (typeof EMAIL_FORMATS)[number];
  * request below 1 MiB so an untrusted request cannot force unbounded buffering;
  * oversized exports must use the download destination instead.
  */
-export const MAX_EMAIL_EXPORT_REQUEST_BYTES = 1_000_000;
+const MAX_EMAIL_EXPORT_REQUEST_BYTES = 1_000_000;
 
 class RequestBodyTooLargeError extends Error {}
 
