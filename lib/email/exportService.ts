@@ -113,18 +113,19 @@ export async function emailTableExport(options: {
   const { to, tableName, format, content, rowCount } = options;
   
   const subject = `Your table export: ${tableName}`;
+  const safeTableName = escapeHtml(tableName);
   const formatLabel = format === 'csv' ? 'CSV' : format === 'json' ? 'JSON' : 'Markdown';
   
-  // For small exports, include in body. For large, note that it's truncated
-  const isLargeExport = content.length > 50000;
-  const displayContent = isLargeExport ? content.substring(0, 50000) + '\n\n... (truncated)' : content;
+  // The route enforces its documented transport cap before this service runs.
+  // Do not truncate: an emailed artifact must be the revision the person chose.
+  const displayContent = content;
   
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px; border-radius: 8px 8px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 24px;">Table Export</h1>
         <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0 0; font-size: 14px;">
-          ${tableName}
+          ${safeTableName}
         </p>
       </div>
       <div style="background: #ffffff; border-radius: 0 0 8px 8px; padding: 24px; border: 1px solid #e5e7eb; border-top: none;">
@@ -141,11 +142,6 @@ export async function emailTableExport(options: {
         <div style="background: #f9fafb; border-radius: 8px; padding: 16px; overflow-x: auto;">
           <pre style="margin: 0; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; color: #1f2937;">${escapeHtml(displayContent)}</pre>
         </div>
-        ${isLargeExport ? `
-          <p style="color: #f59e0b; font-size: 12px; margin-top: 12px;">
-            Note: This export was truncated for email. For the full data, please use the download option.
-          </p>
-        ` : ''}
       </div>
       <div style="margin-top: 24px; text-align: center;">
         <p style="color: #9ca3af; font-size: 12px;">
@@ -371,5 +367,4 @@ export const notificationTemplates = {
     };
   },
 };
-
 
