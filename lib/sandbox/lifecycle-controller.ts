@@ -37,5 +37,15 @@ export async function submitSandboxLifecycleOperation(args: {
 
 /** User-triggered only: reuses precisely the receipt's UUID, row, and kind. */
 export async function retryExactSandboxLifecycleOperation(args: Parameters<typeof submitSandboxLifecycleOperation>[0]): Promise<LifecycleControllerState | null> {
-  return submitSandboxLifecycleOperation({ ...args, receipt: { ...args.receipt, observation: "dispatched" } });
+  // A repeated admission can race the original request, including after reload.
+  // A 409 here is never proof that the original request was refused.
+  const { actorId, actorGeneration, isCurrentActorGeneration, storage, receipt, sandboxId, adapter } = args;
+  const dispatched = { ...receipt, observation: "dispatched" as const };
+  const refreshRecoveryAvailable = writeSandboxOperationReceipt(storage, actorId, dispatched);
+  try {
+    const response = await adapter.admit(dispatched);
+    if (!isCurrentActorGeneration(actorGeneration)) return null;
+    const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: receipt.row_id, sandbox_id: sandboxId, operation_id: receipt.operation_id, kind: receipt.kind }, true);
+    return { ...result, receipt: dispatched, refreshRecoveryAvailable };
+  } catch { return isCurrentActorGeneration(actorGeneration) ? unknown(dispatched, refreshRecoveryAvailable) : null; }
 }
