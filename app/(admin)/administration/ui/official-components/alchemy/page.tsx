@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
+import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
 import {
   directSource,
   type Payload,
@@ -326,7 +326,7 @@ function AlchemyExamples() {
 
               <DemoCard
                 title="Trigger parity"
-                description="The package owns both controls. Glass is for a header action; transparent is for content-local actions."
+                description="Package defaults: glass for headers, transparent for content, and outline for compact button toolbars."
               >
                 <div className="flex flex-wrap items-center gap-5">
                   <div className="flex items-center gap-2">
@@ -345,6 +345,14 @@ function AlchemyExamples() {
                       label="Content example"
                       triggerVariant="transparent"
                       icon="portal"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Compact toolbar</span>
+                    <ContentTransferMenu
+                      source={{ kind: "text", text: "Toolbar example" }}
+                      label="Toolbar example"
+                      triggerVariant="outline"
                     />
                   </div>
                 </div>
@@ -383,6 +391,7 @@ function AlchemyExamples() {
                   </span>
                   <ContentTransferMenu
                     source={tableSource}
+                    capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
                     label="Sample content records"
                     table={{
                       availableScopes: ["selected", "view", "loaded"],
@@ -441,7 +450,7 @@ function AlchemyExamples() {
               description="Import the public React entry and pass data. The menu owns its internal formatting and UI."
             >
               <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs">
-                <code>{`import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
+                <code>{`import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
 
 const payload = { kind: "markdown", text: "## Release brief" } as const;
 
@@ -453,7 +462,7 @@ const payload = { kind: "markdown", text: "## Release brief" } as const;
               description="Use a stable source ID and capture the current input only after the user opens Alchemy."
             >
               <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs">
-                <code>{`import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
+                <code>{`import { ContentTransferMenu, tableDataFormat, tableSchemaFormat } from "@ai-matrx/alchemy/react";
 import { directSource } from "@ai-matrx/alchemy/core";
 
 <ContentTransferMenu source={{

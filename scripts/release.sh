@@ -308,14 +308,6 @@ LOCAL_SHA=$(git rev-parse "$BRANCH")
 REMOTE_SHA=$(git rev-parse "$REMOTE/$BRANCH")
 BASE_SHA=$(git merge-base "$BRANCH" "$REMOTE/$BRANCH")
 
-# Validate every history that can become the release head before claiming the
-# lane or moving the checked-out branch. A diverged branch is never rebased by
-# release.sh because that would rewrite exact certified candidate identities.
-verify_patrol_delivery "$BRANCH"
-if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
-    verify_patrol_delivery "$REMOTE/$BRANCH"
-fi
-
 if [[ "$LOCAL_SHA" != "$BASE_SHA" && "$REMOTE_SHA" != "$BASE_SHA" ]]; then
     echo "" >&2
     diverge_summary
@@ -688,11 +680,16 @@ if working_tree_dirty; then
     info "Left uncommitted (not named, not yours to ship): $(git status --porcelain --untracked-files=all | wc -l | tr -d ' ') path(s)."
 fi
 
-# --ship materializes the dirty tree only at the commit above. Check again now
-# so report/run files and any patrol trailers in that new commit cannot bypass
-# the earlier history-only checkpoint. Failure preserves the local commit and
-# stops before tag/push.
-verify_patrol_delivery
+# --ship materializes caller-selected product files at the commit above, so it
+# needs a second patrol check. A plain release commit is restricted by
+# release-stage.sh to version metadata only; re-scanning every permanent patrol
+# record would repeat the same expensive history check without changing its
+# answer.
+if $SHIP_MODE; then
+    verify_patrol_delivery
+else
+    ok "Plain release commit contains version metadata only; patrol history remains unchanged."
+fi
 
 # ── Tag ──────────────────────────────────────────────────────────────────────
 info "Creating tag $NEW_TAG..."

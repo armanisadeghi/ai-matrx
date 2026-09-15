@@ -3,6 +3,7 @@
  * Supabase Auth email uses Resend SMTP with a separate key — see features/email/FEATURE.md.
  */
 import { Resend } from "resend";
+import type { Attachment } from "resend";
 
 // Lazy initialization to avoid build-time errors when API key is not available
 let resend: Resend | null = null;
@@ -76,6 +77,7 @@ interface SendEmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
+  attachments?: Attachment[];
 }
 
 /**
@@ -83,7 +85,7 @@ interface SendEmailOptions {
  * Requires RESEND_API_KEY and EMAIL_FROM environment variables
  */
 export async function sendEmail(options: SendEmailOptions) {
-  const { to, subject, html, text, from, replyTo } = options;
+  const { to, subject, html, text, from, replyTo, attachments } = options;
 
   const senderAddress = from || process.env.EMAIL_FROM;
 
@@ -101,6 +103,7 @@ export async function sendEmail(options: SendEmailOptions) {
       html,
       text,
       replyTo,
+      attachments,
     });
 
     if (error) {
