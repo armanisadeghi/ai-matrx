@@ -1,6 +1,4 @@
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
-
 export interface ProviderAccountRegistryRow {
   id: string;
   providerKey: string;
@@ -8,6 +6,7 @@ export interface ProviderAccountRegistryRow {
   issuer: string | null;
   accountKind: string;
   loginIdentity: string | null;
+  loginIdentityStatus: "verified" | "needs_verification" | "not_applicable";
   displayName: string;
   workspaceName: string | null;
   externalAccountId: string | null;
@@ -16,7 +15,6 @@ export interface ProviderAccountRegistryRow {
   loginUrl: string | null;
   lastVerifiedAt: string | null;
   safeNotes: string | null;
-  metadata: Json;
   credentialCount: number;
   primaryCredentialPresent: boolean;
 }
@@ -25,7 +23,9 @@ function textOrNull(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-export function parseProviderAccount(value: unknown): ProviderAccountRegistryRow {
+export function parseProviderAccount(
+  value: unknown,
+): ProviderAccountRegistryRow {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Provider account registry returned an invalid row.");
   }
@@ -35,6 +35,9 @@ export function parseProviderAccount(value: unknown): ProviderAccountRegistryRow
     typeof row.provider_key !== "string" ||
     typeof row.environment_key !== "string" ||
     typeof row.account_kind !== "string" ||
+    !["verified", "needs_verification", "not_applicable"].includes(
+      String(row.login_identity_status),
+    ) ||
     typeof row.display_name !== "string" ||
     typeof row.status !== "string" ||
     typeof row.auth_method !== "string"
@@ -48,6 +51,8 @@ export function parseProviderAccount(value: unknown): ProviderAccountRegistryRow
     issuer: textOrNull(row.issuer),
     accountKind: row.account_kind,
     loginIdentity: textOrNull(row.login_identity),
+    loginIdentityStatus:
+      row.login_identity_status as ProviderAccountRegistryRow["loginIdentityStatus"],
     displayName: row.display_name,
     workspaceName: textOrNull(row.workspace_name),
     externalAccountId: textOrNull(row.external_account_id),
@@ -56,7 +61,6 @@ export function parseProviderAccount(value: unknown): ProviderAccountRegistryRow
     loginUrl: textOrNull(row.login_url),
     lastVerifiedAt: textOrNull(row.last_verified_at),
     safeNotes: textOrNull(row.safe_notes),
-    metadata: (row.metadata ?? {}) as Json,
     credentialCount:
       typeof row.credential_count === "number" ? row.credential_count : 0,
     primaryCredentialPresent: row.primary_credential_present === true,

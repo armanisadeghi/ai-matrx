@@ -51,7 +51,9 @@ const columns: MatrxColumnDef<ProviderAccountRegistryRow>[] = [
           {row.workspaceName ? ` · ${row.workspaceName}` : ""}
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          Login: {row.loginIdentity ?? "Unknown — verification required"}
+          {row.loginIdentityStatus === "not_applicable"
+            ? "No interactive login — machine credential"
+            : `Login: ${row.loginIdentity ?? "Unknown — verification required"}`}
         </div>
       </div>
     ),
@@ -185,11 +187,7 @@ export function ProviderAccountsSection({
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
         <p className="text-sm text-destructive">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refresh}
-        >
+        <Button variant="outline" size="sm" onClick={refresh}>
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
         </Button>
       </div>

@@ -10,6 +10,7 @@ describe("parseProviderAccount", () => {
         issuer: null,
         account_kind: "developer",
         login_identity: "developer@example.com",
+        login_identity_status: "verified",
         display_name: "Google Cloud",
         workspace_name: "AI Matrx",
         external_account_id: "project-name",
@@ -18,7 +19,6 @@ describe("parseProviderAccount", () => {
         login_url: "https://console.cloud.google.com/",
         last_verified_at: "2026-09-14T00:00:00Z",
         safe_notes: null,
-        metadata: {},
         credential_count: 2,
         primary_credential_present: true,
       }),
@@ -26,6 +26,7 @@ describe("parseProviderAccount", () => {
       id: "account-1",
       providerKey: "google",
       loginIdentity: "developer@example.com",
+      loginIdentityStatus: "verified",
       credentialCount: 2,
       primaryCredentialPresent: true,
     });
