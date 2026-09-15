@@ -15,38 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D325 — `live-ingest-lane.test.tsx` has been red for ~12 hours: 7 rejoin cases fail after the dialog-key/close change (2026-09-15)
-
-**Not mine, and not stale-test noise — these assert real behaviour.** Found while running the
-whole `features/masterwork` suite after an unrelated build. `features/masterwork/durable-run/__tests__/live-ingest-lane.test.tsx`
-fails 7 of its cases, all of them about a reloaded Rulebook page rejoining a live run:
-
-```
-rejoins a live timeline run — the case cannot be started twice
-rejoins a live ingest run on the ingest lane
-never mounts on the ingest surface first when a case is the live run
-lets the newer live run win when both pointers are in flight
-carries nothing from one Rulebook to the next
-keeps the rejoined timeline dialog on screen when the run settles
-clears the latch on close, so the next open resolves again
-```
-
-Shape of the failure: `expect(opened).toContain(true)` receives `[]` — the dialog the rejoin
-should OPEN is never opened, while `mounted.at(-1)?.surface` is still correct. So the run is
-found and the surface is right; the open flag no longer follows.
-
-**Where it came from.** `6d424b231d` ("fix(masterwork): a dialog never loses typed text, and a
-close always closes", ~12h before filing) moved these dialogs onto `useRulebookDialogSession(...)`
-and gave each a per-dialog key namespace. The rejoin path in `RulebookDetailPage` sets the open
-flag; the new session-scoped flag is what these tests watch.
-
-**Why it is filed rather than fixed:** the fix is a behavioural call inside that commit's own
-subject (when a rejoin may force a dialog open versus when a close must stay closed), and
-guessing it would likely undo the thing that commit set out to fix. It belongs to whoever owns
-that change. The same commit also left `triage-session-per-rulebook.test.tsx` asserting the old
-literal key — that half IS fixed (the guard now asserts the key VARIES WITH THE RULEBOOK, and is
-proven still red against a fixed key).
-
 ### D324 — EVERY release is blocked: `@ai-matrx/associations` is installed twice, and the remedy needs an install the shared preview refuses (2026-09-15)
 
 **Live release blocker, not mine, and it blocks the `Matrx frontend release watch` automation too** —
@@ -3425,6 +3393,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D325 — `live-ingest-lane.test.tsx`'s 7 red rejoin cases: every assertion was RIGHT, the FAKE was lying.** The suite's `useMasterworkRun` mock returned a hand-written subset of `MasterworkRunHandle` with no `runId` — a state the real hook cannot produce on a rejoin (`rejoinDurableRun` writes `runId: pointer.runId` in the same `setState` that sets `status: "rejoining"`). When `6d424b231d` made the close honest, the reopen latch started asking `shouldReopenForRun(run.runId, dismissed)`, which correctly refuses to reopen a run it cannot identify — so the seven cases failed against the fake's impossible state, not the product. **No product code was wrong and no assertion was rewritten.** The fake is now typed `MasterworkRunHandle<IngestSummary>`, so a forgotten field is a type error instead of a twelve-hour read (it immediately caught a second lie: the settled result was missing `alreadyDistilled`). Three guards added for the behaviour nothing asserted, each proven failing-then-passing against a mutation: a close during a live rejoined run really closes and survives a reconnect flicker; Stop is drawn only over a run in flight and reaches the real handle; and `useDurableRun.cancel.test.tsx` proves a stopped run clears its pointer so a reload rejoins nothing. Live on the preview as admin@admin.com: started a source ingest on a disposable Rulebook, reloaded mid-run, the dialog reopened itself on the right lane showing "Source split into 1 chunk(s). Distilling rules from each…" / "Picking this back up — it kept working while you were away." with a live Stop. 2026-09-15.
 
 - **D311 — the associations boot probe INVOKED 26 RPCs (14 of them writes) on every page load; 25 answered 400.** `AssociationsProvider`'s default `probeSchema` runs the package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it with sentinel args. Its "dev only" gate was `process.env.NODE_ENV`, which esbuild bakes to `true` under `platform:"browser"`, so it ran in production too. Switched off at the host, then closed at the class: **@ai-matrx/associations 0.9.0 deletes the probe and the `probeSchema` knob** — a write RPC is never invoked to ask whether it exists, and PGRST202 at real call sites already screams `demanded_schema_violation` with the same remedy. Guard `features/scopes/host/__tests__/noBootRpcProbe.test.tsx` plus the package's own pair; live 25→0 on `/administration/billing/spend`, 0 on `/administration`. 2026-09-12.
 

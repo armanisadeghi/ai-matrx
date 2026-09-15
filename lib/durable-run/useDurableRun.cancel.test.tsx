@@ -230,6 +230,72 @@ describe("Cancel stops the run on the server, and a stop is not a failure", () =
   });
 
   /**
+   * 🚨 A STOPPED RUN IS NEVER RESURRECTED BY A REJOIN (D325, 2026-09-15).
+   *
+   * `cancel` clears the durable pointer, and nothing asserted it. That pointer
+   * is the ONLY thing a reload reads: leave it behind and the next mount finds
+   * a "live" run, goes to `rejoining`, and the ingest dialog's reopen latch
+   * pulls a dialog back onto the screen for work the person deliberately
+   * stopped — with a Stop button over a run that is already dead. This drives
+   * the real hook: stop it, throw the component away, mount a fresh one, and
+   * prove it rejoins nothing.
+   */
+  it("leaves nothing for a reload to rejoin once the person has stopped it", async () => {
+    mockDispatch.mockImplementation(async (request: StreamRequest) => {
+      if (request.path === LAUNCH_PATH) {
+        request.onStreamEvent?.({
+          event: "data",
+          data: { type: "masterwork_run", run_id: RUN_ID },
+        });
+        return new Promise(() => {});
+      }
+      if (request.path === CANCEL_PATH) {
+        return {
+          data: { run_id: RUN_ID, status: "cancelled", cancelled: true },
+          error: null,
+        };
+      }
+      return { data: null, error: null };
+    });
+
+    const probe = await renderIngestDialog();
+    await act(async () => {
+      void probe.run().launch({ rulebook_id: "rb" }, "Everything I've published");
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+    // The launch really did leave a rejoin receipt behind — otherwise the
+    // assertion below would pass for the wrong reason.
+    const pointerKey = `${MASTERWORK_RUN_WIRE.pointerPrefix}corpus:${RUN_ID}`;
+    expect(localStorage.getItem(pointerKey)).not.toBeNull();
+
+    await act(async () => {
+      buttonLabelled(probe.container, "Stop this run")?.click();
+    });
+    expect(probe.run().status).toBe("stopped");
+    expect(localStorage.getItem(pointerKey)).toBeNull();
+
+    // The reload: this component is gone, and a brand new one mounts.
+    await probe.unmount();
+    const reloaded = await renderIngestDialog();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Nothing to pick up: idle, not running, and no Stop drawn over a corpse.
+    expect(reloaded.run().status).toBe("idle");
+    expect(reloaded.run().running).toBe(false);
+    expect(reloaded.run().runId).toBeNull();
+    expect(reloaded.run().cancel).toBeNull();
+    expect(mockDispatch.mock.calls.some(
+      ([request]: [StreamRequest]) => request.path === REJOIN_PATH,
+    )).toBe(false);
+
+    await reloaded.unmount();
+  });
+
+  /**
    * The same run stopped from somewhere else — another tab, another device, or
    * the server's own reply landing on the live stream. Every follower must stop
    * saying "working", and none of them may call it a failure.
