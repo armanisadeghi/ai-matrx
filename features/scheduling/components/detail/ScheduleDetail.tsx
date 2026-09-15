@@ -71,7 +71,16 @@ export function ScheduleDetail({ taskId }: Props) {
   const dispatch = useAppDispatch();
   const { task } = useTaskDetail(taskId);
   const { tasks, status, error } = useScheduledTasks();
-  const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
+  const requiredRunIds = [
+    task?.metadata.auto_suspended?.run_id,
+    ...(task?.metadata.auto_suspended_history?.map((entry) => entry.run_id) ??
+      []),
+  ].filter((id): id is string => typeof id === "string");
+  const {
+    runs,
+    status: runsStatus,
+    error: runsError,
+  } = useTaskRuns(taskId, 20, requiredRunIds);
   const getSchedulesScope = () =>
     createSchedulesScope({
       ...buildScheduleRosterValues(tasks, status, error),
@@ -146,7 +155,16 @@ function ScheduleDetailBody({ taskId }: Props) {
   const { tasks } = useScheduledTasks();
   // Same hook RunHistoryCard mounts — it no-ops when the runs are already
   // loaded, so reading them here for the record payload adds no fetch.
-  const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
+  const requiredRunIds = [
+    task?.metadata.auto_suspended?.run_id,
+    ...(task?.metadata.auto_suspended_history?.map((entry) => entry.run_id) ??
+      []),
+  ].filter((id): id is string => typeof id === "string");
+  const {
+    runs,
+    status: runsStatus,
+    error: runsError,
+  } = useTaskRuns(taskId, 20, requiredRunIds);
   const [running, setRunning] = useState(false);
   const [flipping, setFlipping] = useState(false);
   const isAdmin = useAppSelector(selectIsAdmin);
@@ -228,7 +246,8 @@ function ScheduleDetailBody({ taskId }: Props) {
       // otherwise the sentence about when it will run goes missing exactly on
       // the rows this dialog exists for.
       const nextDue = task.nextDueAt ?? task.triggers[0]?.nextDueAt ?? null;
-      const overdue = nextDue !== null && new Date(nextDue).getTime() < Date.now();
+      const overdue =
+        nextDue !== null && new Date(nextDue).getTime() < Date.now();
       const failures = suspended?.consecutive_failures;
       const ok = await confirm({
         title: isSystemTask
@@ -317,7 +336,11 @@ function ScheduleDetailBody({ taskId }: Props) {
               ]
             : [
                 { name: "View", href: `/schedules/${task.id}`, icon: Eye },
-                { name: "Edit", href: `/schedules/${task.id}/edit`, icon: Pencil },
+                {
+                  name: "Edit",
+                  href: `/schedules/${task.id}/edit`,
+                  icon: Pencil,
+                },
                 { name: "New", href: "/schedules/new", icon: Plus },
               ]
         }
@@ -356,11 +379,7 @@ function ScheduleDetailBody({ taskId }: Props) {
       <div className="space-y-4" data-surface-value="open_schedule">
         <SuspensionCard
           task={task}
-          onRestore={
-            canFlip
-              ? () => void handleSetEnabled(true)
-              : undefined
-          }
+          onRestore={canFlip ? () => void handleSetEnabled(true) : undefined}
           restoring={flipping}
         />
         {/* Record-level copy. The plain click is the what-I-see payload (spec +
