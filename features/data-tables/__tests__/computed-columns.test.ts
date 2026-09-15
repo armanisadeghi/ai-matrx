@@ -74,6 +74,18 @@ describe("withComputedColumns", () => {
     expect(result.rows.map((r) => r.data.doubled)).toEqual([60, 20]);
   });
 
+  it("treats a column the row never stored as BLANK, not as a missing column", () => {
+    // A new row is saved with only the cells someone typed; the rest have no
+    // key at all. That is an empty cell (0 in arithmetic), never #ERROR.
+    const sparse = [{ id: "new", data: {} as Record<string, unknown> }];
+    const result = withComputedColumns(sparse, [price, qty, formula("{Price} * 2")]);
+    expect(result.errors.size).toBe(0);
+    expect(result.rows[0].data.total).toBe(0);
+    // ...and a reference that matches NO column is still the misspelling error.
+    const bad = withComputedColumns(sparse, [price, formula("{Prize} * 2")]);
+    expect(bad.errors.get("new::total")).toMatch(/Prize/);
+  });
+
   it("records a per-cell error, keyed rowId::field, and leaves the cell null", () => {
     const result = withComputedColumns(rows, [price, qty, formula("{Nope} + 1")]);
     expect(result.rows.every((r) => r.data.total === null)).toBe(true);

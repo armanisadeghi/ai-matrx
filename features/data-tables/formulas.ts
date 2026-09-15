@@ -1267,15 +1267,27 @@ export function withComputedColumns<
   if (columns.length === 0) {
     return { rows: rows as R[], errors, formulaFieldNames };
   }
-  const byDisplayName = new Map(
-    fields.map((f) => [f.display_name.toLowerCase(), f.field_name] as const),
-  );
+  // A reference resolves against the table's COLUMNS, never against the keys a
+  // particular row happens to carry: a row saved with only some of its cells
+  // (every new row, every sparse import) has no key for the rest, and that is
+  // BLANK — not "no such column", which is the #ERROR the engine reserves for
+  // a misspelt reference.
+  const fieldNameByReference = new Map<string, string>();
+  for (const f of fields) {
+    fieldNameByReference.set(f.display_name.toLowerCase(), f.field_name);
+  }
+  for (const f of fields) {
+    // Machine names win over a display name that happens to collide.
+    fieldNameByReference.set(f.field_name.toLowerCase(), f.field_name);
+  }
   const computed = rows.map((row) => {
     const data: Record<string, unknown> = { ...(row.data ?? {}) };
-    const resolve: ResolveCell = (name) =>
-      name in data
-        ? data[name]
-        : data[byDisplayName.get(name.toLowerCase()) ?? ""];
+    const resolve: ResolveCell = (name) => {
+      if (name in data) return data[name];
+      const fieldName = fieldNameByReference.get(name.toLowerCase());
+      if (fieldName === undefined) return undefined; // truly no such column
+      return data[fieldName] ?? null;
+    };
     for (const { field, parsed } of columns) {
       if (!parsed.ok) {
         data[field.field_name] = null;
