@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
+import { GoogleAgentToolsSection } from "@/features/google-workspace/GoogleAgentToolsSection";
 import { isGoogleAuthorizationActionDisabled } from "@/features/google-workspace/authorizationReadiness";
 import {
   useConnectGoogle,
@@ -182,6 +183,7 @@ function GoogleWorkspaceOverviewBodyContent({
             onManageWorkspace={onManageWorkspace}
           />
         )}
+        <GoogleAgentToolsSection />
       </div>
     </div>
   );
