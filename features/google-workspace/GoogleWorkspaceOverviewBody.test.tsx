@@ -15,19 +15,40 @@ import type {
 const mockInventory = jest.fn();
 const mockCapabilities = jest.fn();
 const mockConnect = jest.fn();
+const mockRequestAuthorizationCode = jest.fn();
+const mockStartAuthorizationCodeRedirect = jest.fn();
+const mockReduxState = {
+  authReady: true,
+  userId: "user-1" as string | null,
+  organizationId: "org-1" as string | null,
+};
 
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleConnectionInventory: () => mockInventory(),
   useGoogleCapabilities: () => mockCapabilities(),
   useConnectGoogle: () => mockConnect(),
 }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => true }));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: (selector: (state: typeof mockReduxState) => unknown) =>
+    selector(mockReduxState),
+}));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  selectAuthReady: (state: typeof mockReduxState) => state.authReady,
+  selectUserId: (state: typeof mockReduxState) => state.userId,
+}));
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  selectOrganizationId: (state: typeof mockReduxState) => state.organizationId,
+}));
 jest.mock("@/providers/google-provider/LazyGoogleAPIProvider", () => ({
   LazyGoogleAPIProvider: ({ children }: { children: ReactNode }) => children,
 }));
 jest.mock("@/providers/google-provider/GoogleApiProvider", () => ({
   isGoogleAuthorizationCancelled: () => false,
-  useGoogleAPI: () => ({ isGoogleLoaded: true }),
+  useGoogleAPI: () => ({
+    isGoogleLoaded: true,
+    requestAuthorizationCode: mockRequestAuthorizationCode,
+    startAuthorizationCodeRedirect: mockStartAuthorizationCodeRedirect,
+  }),
 }));
 jest.mock("@/features/google-workspace/GoogleAccountSelect", () => ({
   GoogleAccountSelect: ({
@@ -178,6 +199,11 @@ describe("GoogleWorkspaceOverviewBody", () => {
       refetch: jest.fn(),
     });
     mockConnect.mockReturnValue({ mutateAsync: jest.fn() });
+    mockRequestAuthorizationCode.mockReset();
+    mockStartAuthorizationCodeRedirect.mockReset();
+    mockReduxState.authReady = true;
+    mockReduxState.userId = "user-1";
+    mockReduxState.organizationId = "org-1";
   });
   afterEach(() => {
     act(() => root.unmount());
@@ -243,6 +269,195 @@ describe("GoogleWorkspaceOverviewBody", () => {
     renderOverview();
     expect(host.textContent).toContain("Account permission: Needed");
     expect(host.textContent).not.toContain("Account permission: Granted");
+  });
+
+  it("enables an admitted internal-test capability on the selected healthy account", async () => {
+    const refetch = jest.fn().mockResolvedValue({});
+    const connect = {
+      mutateAsync: jest.fn().mockResolvedValue({ connectionId: first.id }),
+    };
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "contacts"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: "contacts-scope",
+                  provider_classification: "verified_sensitive",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockInventory.mockReturnValue({
+      data: { ...inventory, connections: [{ ...first, scopes: ["scope-a"] }] },
+      isLoading: false,
+      isError: false,
+      refetch,
+    });
+    mockConnect.mockReturnValue(connect);
+    mockRequestAuthorizationCode.mockResolvedValue("google-code");
+    renderOverview();
+
+    await act(async () => {
+      Array.from(host.querySelectorAll("button"))
+        .find(
+          (button) => button.textContent === "Enable Google Contacts import",
+        )
+        ?.click();
+    });
+
+    expect(mockRequestAuthorizationCode).toHaveBeenCalledWith(
+      ["scope-a", "contacts-scope"],
+      "one@example.com",
+      { forceConsent: true },
+    );
+    expect(connect.mutateAsync).toHaveBeenCalledWith({
+      code: "google-code",
+      owner: { type: "user" },
+      connectionPurpose: "google_capability",
+      options: {
+        targetConnectionId: "connection-one",
+        capabilityKey: "contacts",
+        organizationContextId: "org-1",
+        expectedUserId: "user-1",
+      },
+    });
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the initiating user and organization when consent outlives a context change", async () => {
+    let resolveAuthorizationCode: (code: string) => void = () => undefined;
+    const connect = {
+      mutateAsync: jest.fn().mockResolvedValue({ connectionId: first.id }),
+    };
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "contacts"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: "contacts-scope",
+                  provider_classification: "verified_sensitive",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn().mockResolvedValue({}),
+    });
+    mockConnect.mockReturnValue(connect);
+    mockRequestAuthorizationCode.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveAuthorizationCode = resolve;
+        }),
+    );
+    renderOverview();
+
+    act(() => {
+      Array.from(host.querySelectorAll("button"))
+        .find(
+          (button) => button.textContent === "Enable Google Contacts import",
+        )
+        ?.click();
+    });
+    mockReduxState.userId = "user-2";
+    mockReduxState.organizationId = "org-2";
+    await act(async () => {
+      resolveAuthorizationCode("google-code");
+    });
+
+    expect(connect.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: {
+          targetConnectionId: "connection-one",
+          capabilityKey: "contacts",
+          organizationContextId: "org-1",
+          expectedUserId: "user-1",
+        },
+      }),
+    );
+  });
+
+  it("keeps capability consent unavailable for an ineligible or unhealthy descriptor", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "contacts"
+          ? {
+              ...capability,
+              eligible: false,
+              required_scopes: [
+                {
+                  scope: "contacts-scope",
+                  provider_classification: "verified_sensitive",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockInventory.mockReturnValue({
+      data: {
+        ...inventory,
+        connections: [{ ...first, health: "revoked" as const }],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    renderOverview();
+    expect(host.textContent).not.toContain("Enable Google Contacts import");
+    expect(host.textContent).not.toContain("Continue in this tab");
+  });
+
+  it("starts redirect consent with the selected account and capability frozen in pending state", async () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "contacts"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: "contacts-scope",
+                  provider_classification: "verified_sensitive",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockStartAuthorizationCodeRedirect.mockResolvedValue(undefined);
+    renderOverview();
+
+    await act(async () => {
+      Array.from(host.querySelectorAll("button"))
+        .find((button) => button.textContent === "Continue in this tab")
+        ?.click();
+    });
+
+    expect(mockStartAuthorizationCodeRedirect).toHaveBeenCalledWith(
+      ["scope-a", "contacts-scope"],
+      expect.objectContaining({
+        connectionPurpose: "google_capability",
+        targetConnectionId: "connection-one",
+        capabilityKey: "contacts",
+      }),
+    );
   });
 
   it("renders loading and retries actual inventory and capability failures", () => {

@@ -12,11 +12,16 @@ jest.mock("@/features/marketing/google/service", () => ({
   connectGoogle: jest.fn(),
 }));
 jest.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+  Button: ({ children }: { children: React.ReactNode }) => (
+    <button>{children}</button>
+  ),
 }));
-jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
-  OrganizationRequiredNotice: () => <div>Organization required</div>,
-}));
+jest.mock(
+  "@/features/organizations/components/OrganizationRequiredNotice",
+  () => ({
+    OrganizationRequiredNotice: () => <div>Organization required</div>,
+  }),
+);
 
 const mockConnectGoogle = jest.mocked(connectGoogle);
 const STATE = "callback-state";
@@ -49,6 +54,24 @@ function seedPending() {
   return pending;
 }
 
+function seedCapabilityPending() {
+  const pending = buildGoogleOAuthRedirectPending(
+    STATE,
+    {
+      initiatingUserId: USER,
+      returnTo: "/settings/integrations",
+      owner: { type: "user" },
+      organizationContextId: ORG,
+      connectionPurpose: "google_capability",
+      targetConnectionId: "connection-contacts",
+      capabilityKey: "contacts",
+    },
+    window.location.origin,
+  );
+  storeGoogleOAuthRedirectPending(window.sessionStorage, pending);
+  return pending;
+}
+
 async function renderCallback() {
   await act(async () => {
     root.render(
@@ -63,7 +86,9 @@ async function renderCallback() {
 }
 
 beforeEach(() => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  (
+    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  ).IS_REACT_ACT_ENVIRONMENT = true;
   window.sessionStorage.clear();
   mockConnectGoogle.mockReset();
   mockFetch = jest.fn();
@@ -132,9 +157,7 @@ it.each([
 
 it("clears pending state and exchanges exactly once after same-user validation", async () => {
   seedPending();
-  mockFetch.mockResolvedValue(
-    jsonResponse({ valid: true, userId: USER }, 200),
-  );
+  mockFetch.mockResolvedValue(jsonResponse({ valid: true, userId: USER }, 200));
   mockConnectGoogle.mockImplementation(() => new Promise(() => undefined));
   await renderCallback();
   expect(mockConnectGoogle).toHaveBeenCalledTimes(1);
@@ -155,6 +178,25 @@ it("clears pending state and exchanges exactly once after same-user validation",
       window.location.origin,
     ),
   ).toBeNull();
+});
+
+it("passes the stored capability target to the canonical exchange", async () => {
+  seedCapabilityPending();
+  mockFetch.mockResolvedValue(jsonResponse({ valid: true, userId: USER }, 200));
+  mockConnectGoogle.mockImplementation(() => new Promise(() => undefined));
+  await renderCallback();
+  expect(mockConnectGoogle).toHaveBeenCalledWith(
+    "google-code",
+    { type: "user" },
+    "google_capability",
+    {
+      redirectUri: window.location.origin,
+      organizationContextId: ORG,
+      expectedUserId: USER,
+      targetConnectionId: "connection-contacts",
+      capabilityKey: "contacts",
+    },
+  );
 });
 
 it("consumes a confirmed foreign-user continuation without exchanging", async () => {
