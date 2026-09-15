@@ -74852,6 +74852,65 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: Json
       }
+      provider_account_attach_credential: {
+        Args: {
+          p_account_id: string
+          p_credential_item_id: string
+          p_credential_role: string
+        }
+        Returns: string
+      }
+      provider_account_create: {
+        Args: {
+          p_account_kind: string
+          p_auth_method: string
+          p_display_name: string
+          p_environment_key: string
+          p_issuer: string
+          p_login_identity: string
+          p_login_url: string
+          p_metadata?: Json
+          p_organization_id: string
+          p_primary_credential_item_id?: string
+          p_provider_key: string
+          p_provisional_dedupe_key: string
+          p_safe_notes?: string
+          p_workspace_name: string
+        }
+        Returns: string
+      }
+      provider_account_list: {
+        Args: { p_organization_id: string }
+        Returns: {
+          account_kind: string
+          auth_method: string
+          credential_count: number
+          display_name: string
+          environment_key: string
+          external_account_id: string
+          id: string
+          issuer: string
+          last_verified_at: string
+          login_identity: string
+          login_url: string
+          metadata: Json
+          primary_credential_present: boolean
+          provider_key: string
+          safe_notes: string
+          status: string
+          workspace_name: string
+        }[]
+      }
+      provider_account_set_status: {
+        Args: {
+          p_account_id: string
+          p_duplicate_of_id?: string
+          p_external_account_id?: string
+          p_last_verified_at?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       provision_mcp_server: {
         Args: {
           p_auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
