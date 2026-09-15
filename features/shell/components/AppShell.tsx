@@ -57,7 +57,7 @@ export default function AppShell({
   const settingsRoute = isUserSettingsPath(pathname);
   return (
     <Providers initialReduxState={initialReduxState}>
-      <SettingsRouteProvider active={settingsRoute}>
+      <SettingsRouteProvider>
         <div
           className="shell-root"
           data-pathname={pathname}

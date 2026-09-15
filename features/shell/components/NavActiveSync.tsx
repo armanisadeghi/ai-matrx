@@ -26,11 +26,19 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 
 function syncNav() {
   const pathname = window.location.pathname;
   const root = document.querySelector<HTMLElement>(".shell-root");
-  if (root) root.dataset.pathname = pathname;
+  if (!root) return;
+
+  root.dataset.pathname = pathname;
+  if (isUserSettingsPath(pathname)) {
+    root.setAttribute("data-settings-route", "");
+  } else {
+    root.removeAttribute("data-settings-route");
+  }
 }
 
 export default function NavActiveSync() {

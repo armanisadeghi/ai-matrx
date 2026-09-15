@@ -1082,12 +1082,20 @@ button.shell-nav-flyout-item {
 }
 
 .shell-sidebar-settings-home {
-  display: flex;
+  display: none;
   min-width: 0;
   align-items: center;
   gap: 0.5rem;
   color: var(--shell-nav-text);
   text-decoration: none;
+}
+
+.shell-root[data-settings-route] .shell-sidebar-settings-home {
+  display: flex;
+}
+
+.shell-root[data-settings-route] .shell-sidebar-brand-toggle-control {
+  display: none;
 }
 
 .shell-sidebar-brand-toggle-static {
