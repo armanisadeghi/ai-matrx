@@ -396,6 +396,13 @@ export function ChatImportDialog({
           path: SHORTLIST_PATH,
           method: "POST",
           body: body as never,
+          // 🚨 WITHOUT THIS FLAG THE HANDLER BELOW NEVER RUNS (found live
+          // 2026-09-15 by the Triad lane, which had the same omission). The
+          // server streamed `masterwork_shortlist`, `callApi` buffered the body
+          // instead of parsing events, `found` stayed null — and this dialog
+          // told the Expert "No standout conversations found", after paying for
+          // the pass that did find them.
+          stream: true,
           onStreamEvent: (event) => {
             const data = (event as { data?: Record<string, unknown> }).data;
             if (

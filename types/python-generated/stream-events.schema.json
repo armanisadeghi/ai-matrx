@@ -7541,6 +7541,11 @@
         "title": "Replaced Rules",
         "type": "integer"
       },
+      "narrowed_rules": {
+        "default": 0,
+        "title": "Narrowed Rules",
+        "type": "integer"
+      },
       "corpus_item_id": {
         "anyOf": [
           {
@@ -7650,6 +7655,271 @@
       }
     },
     "title": "MasterworkShortlistData",
+    "type": "object"
+  },
+  "MasterworkTriadsReadyData": {
+    "$defs": {
+      "MasterworkTriad": {
+        "description": "THREE short items and the one question put to the Expert.\n\nThe repertory-grid unit (``platform.approach`` key ``triad_game``): the\ntriad is the EVIDENCE, the Expert's one-line reason is the rule candidate.\n``id`` is the provenance every rule distilled from this triad cites\n(``source_ref.triad`` and ``source_ref.source = \"triad:<id>\"``).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/MasterworkTriadItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "mode": {
+            "default": "best_one",
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "prompt"
+        ],
+        "title": "MasterworkTriad",
+        "type": "object"
+      },
+      "MasterworkTriadItem": {
+        "description": "ONE of the three short items the Expert reacts to in a Triad.\n\nDeliberately tiny: a candidate answer, a way of opening an email, a bid.\n``key`` is ``\"a\"`` / ``\"b\"`` / ``\"c\"`` — the stable handle the pick names,\nnever the position on screen.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "text"
+        ],
+        "title": "MasterworkTriadItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/triads — the deck for one session.\n\nNothing is written to the Rulebook by this call: a generated triad is a\nQUESTION, and only the Expert's answer to it is ever distilled.",
+    "properties": {
+      "type": {
+        "const": "masterwork_triads_ready",
+        "default": "masterwork_triads_ready",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "triads": {
+        "items": {
+          "$ref": "#/$defs/MasterworkTriad"
+        },
+        "title": "Triads",
+        "type": "array"
+      },
+      "mode": {
+        "default": "best_one",
+        "title": "Mode",
+        "type": "string"
+      },
+      "requested": {
+        "default": 0,
+        "title": "Requested",
+        "type": "integer"
+      },
+      "repeats_dropped": {
+        "default": 0,
+        "title": "Repeats Dropped",
+        "type": "integer"
+      },
+      "voice_default_on": {
+        "default": true,
+        "title": "Voice Default On",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "rulebook_id"
+    ],
+    "title": "MasterworkTriadsReadyData",
+    "type": "object"
+  },
+  "MasterworkProbeRoundData": {
+    "$defs": {
+      "MasterworkSourceAlreadyDistilled": {
+        "description": "This source has ALREADY produced rules in this Rulebook.\n\nThe named field that makes a repeat press honest (2026-09-12: a link was\ndistilled twice into one Rulebook — 115 rules then 123 more — and the\nduplicate check reported 0, because rule-level dedupe cannot answer a\nsource-level question). ``message`` is the sentence to show; ``can_replace``\nsays whether offering \"Distil again and replace\" is meaningful (it is not\nwhen every earlier rule has already been approved by the Expert, since a\nmachine never removes those).",
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
+          },
+          "rules": {
+            "default": 0,
+            "title": "Rules",
+            "type": "integer"
+          },
+          "draft_rules": {
+            "default": 0,
+            "title": "Draft Rules",
+            "type": "integer"
+          },
+          "approved_rules": {
+            "default": 0,
+            "title": "Approved Rules",
+            "type": "integer"
+          },
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Run Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "can_replace": {
+            "default": true,
+            "title": "Can Replace",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "message"
+        ],
+        "title": "MasterworkSourceAlreadyDistilled",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/probe — ONE round of the Bad\nExample probe.\n\nTwo things in one payload, because one call does two things: whatever the\nExpert's critique of the PREVIOUS round produced (``rules_added`` and the\nids, so the screen can say what their catch was worth), and the NEXT\nplausible-but-wrong piece of work for them to attack.\n\n🚨 ``done`` is not derived on the client. A probe ends because the Expert\nsaid \"I'd never see that\" or because the organization's round knob ran out,\nand ``done_reason`` says which in the Expert's own terms — a screen that\nguessed would eventually guess wrong.",
+    "properties": {
+      "type": {
+        "const": "masterwork_probe_round",
+        "default": "masterwork_probe_round",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "default": 0,
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "round_index": {
+        "default": 0,
+        "title": "Round Index",
+        "type": "integer"
+      },
+      "round_count": {
+        "default": 0,
+        "title": "Round Count",
+        "type": "integer"
+      },
+      "done": {
+        "default": false,
+        "title": "Done",
+        "type": "boolean"
+      },
+      "done_reason": {
+        "default": "",
+        "title": "Done Reason",
+        "type": "string"
+      },
+      "example_title": {
+        "default": "",
+        "title": "Example Title",
+        "type": "string"
+      },
+      "example_body": {
+        "default": "",
+        "title": "Example Body",
+        "type": "string"
+      },
+      "probe_label": {
+        "default": "",
+        "title": "Probe Label",
+        "type": "string"
+      },
+      "rules_added": {
+        "default": 0,
+        "title": "Rules Added",
+        "type": "integer"
+      },
+      "rule_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Rule Ids",
+        "type": "array"
+      },
+      "duplicates_skipped": {
+        "default": 0,
+        "title": "Duplicates Skipped",
+        "type": "integer"
+      },
+      "quotes_verified": {
+        "default": 0,
+        "title": "Quotes Verified",
+        "type": "integer"
+      },
+      "quotes_unverified": {
+        "default": 0,
+        "title": "Quotes Unverified",
+        "type": "integer"
+      },
+      "already_distilled": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSourceAlreadyDistilled"
+        },
+        "title": "Already Distilled",
+        "type": "array"
+      },
+      "answered_rounds": {
+        "default": 0,
+        "title": "Answered Rounds",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "rulebook_id"
+    ],
+    "title": "MasterworkProbeRoundData",
     "type": "object"
   },
   "MasterworkTriageProgressData": {
@@ -9034,6 +9304,310 @@
       "rulebook_version"
     ],
     "title": "MasterworkCorpusCleanedData",
+    "type": "object"
+  },
+  "MasterworkBenchProgressData": {
+    "additionalProperties": false,
+    "description": "One stage of a Trial Bench run (`POST /masterworks/{id}/bench/runs`).\n\nThe Bench is the PROOF: six arms, a blind panel the expert's own withheld\nwork has to win, dollars and seconds on every row. It runs for minutes and\nspends real money on every arm, so it narrates itself — a spinner over a\npaid six-arm trial is the silent-failure defect with a price tag.\n\n``message`` is the sentence the SERVER wrote for this person; a surface\nrenders it and never translates a stage name into copy of its own.\n``arm`` is \"\" for a stage that belongs to no single arm (the corpus screen,\nthe blinding, the extraction, the calibration leg, the panel).",
+    "properties": {
+      "type": {
+        "const": "masterwork_bench_progress",
+        "default": "masterwork_bench_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "trial_id": {
+        "title": "Trial Id",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "arm": {
+        "default": "",
+        "title": "Arm",
+        "type": "string"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "trial_id",
+      "stage",
+      "message"
+    ],
+    "title": "MasterworkBenchProgressData",
+    "type": "object"
+  },
+  "MasterworkBenchArmData": {
+    "additionalProperties": false,
+    "description": "One ARM of a Trial Bench run, the moment it finishes — with its price.\n\nPart III §4.1 puts quality, dollars and seconds on every row, and a screen\nthat shows the verdict without them is showing a claim with its evidence\nremoved. So each arm lands here as it completes rather than all six at the\nend: the person watching a run that costs money can see what it has cost.\n\n``ran`` false with a non-empty ``error`` is an arm that did not produce an\nanswer — a fact about the trial, never hidden and never rendered as a zero.",
+    "properties": {
+      "type": {
+        "const": "masterwork_bench_arm",
+        "default": "masterwork_bench_arm",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "trial_id": {
+        "title": "Trial Id",
+        "type": "string"
+      },
+      "arm": {
+        "title": "Arm",
+        "type": "string"
+      },
+      "label": {
+        "title": "Label",
+        "type": "string"
+      },
+      "ran": {
+        "default": false,
+        "title": "Ran",
+        "type": "boolean"
+      },
+      "error": {
+        "default": "",
+        "title": "Error",
+        "type": "string"
+      },
+      "cost_usd": {
+        "default": 0.0,
+        "title": "Cost Usd",
+        "type": "number"
+      },
+      "seconds": {
+        "default": 0.0,
+        "title": "Seconds",
+        "type": "number"
+      },
+      "priced": {
+        "default": true,
+        "title": "Priced",
+        "type": "boolean"
+      },
+      "model": {
+        "default": "",
+        "title": "Model",
+        "type": "string"
+      },
+      "note": {
+        "default": "",
+        "title": "Note",
+        "type": "string"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "trial_id",
+      "arm",
+      "label"
+    ],
+    "title": "MasterworkBenchArmData",
+    "type": "object"
+  },
+  "MasterworkBenchVerdictData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/{rulebook_id}/bench/runs.\n\nTHREE terminal shapes, and they are not interchangeable:\n\n* ``void`` — the expert's own artifact was in the blind pool and did not win\n  it. The trial proves NOTHING and is never banked as a result.\n* ``not_scored`` — the panel failed its own calibration leg, so its votes\n  decide nothing. Not a pass, not a fail, not a void: a void would blame the\n  trial's inputs for a defect in the bench.\n* ``passed`` true/false — a real result, with ``win_claimed`` naming which\n  of the three §4.2 wins (ceiling | quality | efficiency) was earned, or\n  null for the honest \"no win claimed\".\n\n``headline`` is the server's own sentence for the screen; it is derived from\nthis record and travels with it so no client re-writes the claim.\n``stored`` says whether the trial reached ``platform.masterwork_run``, and\n``storage_note`` says WHY when it did not — a trial that could not be\npersisted is never a trial that quietly was not.",
+    "properties": {
+      "type": {
+        "const": "masterwork_bench_verdict",
+        "default": "masterwork_bench_verdict",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "trial_id": {
+        "title": "Trial Id",
+        "type": "string"
+      },
+      "passed": {
+        "default": false,
+        "title": "Passed",
+        "type": "boolean"
+      },
+      "void": {
+        "default": false,
+        "title": "Void",
+        "type": "boolean"
+      },
+      "not_scored": {
+        "default": false,
+        "title": "Not Scored",
+        "type": "boolean"
+      },
+      "void_reason": {
+        "default": "",
+        "title": "Void Reason",
+        "type": "string"
+      },
+      "not_scored_reason": {
+        "default": "",
+        "title": "Not Scored Reason",
+        "type": "string"
+      },
+      "win_claimed": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Win Claimed"
+      },
+      "win_rationale": {
+        "default": "",
+        "title": "Win Rationale",
+        "type": "string"
+      },
+      "arm": {
+        "default": "a2",
+        "title": "Arm",
+        "type": "string"
+      },
+      "budget_multiple": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Budget Multiple"
+      },
+      "panel_winner": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Panel Winner"
+      },
+      "panel_votes": {
+        "default": 0,
+        "title": "Panel Votes",
+        "type": "integer"
+      },
+      "gt_in_pool": {
+        "default": false,
+        "title": "Gt In Pool",
+        "type": "boolean"
+      },
+      "gt_won": {
+        "default": false,
+        "title": "Gt Won",
+        "type": "boolean"
+      },
+      "c_cost_usd": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "C Cost Usd"
+      },
+      "c_seconds": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "C Seconds"
+      },
+      "total_cost_usd": {
+        "default": 0.0,
+        "title": "Total Cost Usd",
+        "type": "number"
+      },
+      "record_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Record Path"
+      },
+      "report_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Report Path"
+      },
+      "row_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Row Id"
+      },
+      "stored": {
+        "default": false,
+        "title": "Stored",
+        "type": "boolean"
+      },
+      "storage_note": {
+        "default": "",
+        "title": "Storage Note",
+        "type": "string"
+      },
+      "headline": {
+        "default": "",
+        "title": "Headline",
+        "type": "string"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "trial_id"
+    ],
+    "title": "MasterworkBenchVerdictData",
     "type": "object"
   },
   "MasterworkCheckupProgressData": {

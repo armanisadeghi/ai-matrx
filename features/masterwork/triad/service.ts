@@ -60,6 +60,17 @@ export async function dealTriads(
     callApi({
       path: TRIAD_DEAL_PATH,
       method: "POST",
+      // 🚨 `stream: true` IS WHAT MAKES `onStreamEvent` EXIST. Without it
+      // `callApi` buffers the body and never calls the handler, so the deck
+      // arrives on the wire, is thrown away, and the screen says the cards did
+      // not come back — a lie, after a paid call. Found live 2026-09-15 and
+      // guarded by `lib/api/__tests__/stream-handlers-need-the-stream-flag.test.ts`.
+      stream: true,
+      // 🚨 `stream: true` IS WHAT MAKES `onStreamEvent` EXIST. Without it
+      // `callApi` buffers the body and never calls the handler, so the deck
+      // arrives on the wire, is thrown away, and the screen says the cards did
+      // not come back — a lie, after a paid call. Found live 2026-09-15 and
+      // guarded by `lib/api/__tests__/stream-handlers-need-the-stream-flag.test.ts`.
       body: {
         rulebook_id: rulebookId,
         ...(count ? { count } : {}),
@@ -102,6 +113,8 @@ export async function ingestTriadAnswer(
     callApi({
       path: TRIAD_INGEST_PATH,
       method: "POST",
+      // Same law as the deal above: no flag, no events, no receipt.
+      stream: true,
       body: {
         rulebook_id: rulebookId,
         triad: {

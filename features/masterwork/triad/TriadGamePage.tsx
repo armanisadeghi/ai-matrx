@@ -210,7 +210,7 @@ export function TriadGamePage({
   // ── the start screen ─────────────────────────────────────────────────────
   if (!deck) {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 px-4 pb-safe pt-6 sm:px-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 overflow-y-auto px-4 pb-safe pt-6 sm:px-6">
         <div className="space-y-3 text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
             <Shuffle className="h-7 w-7" />
@@ -293,7 +293,7 @@ export function TriadGamePage({
   if (!card) {
     const failures = Object.values(saveStates).filter((s) => s.kind === "failed");
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-5 px-4 pb-safe pt-6 sm:px-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-5 overflow-y-auto px-4 pb-safe pt-6 sm:px-6">
         <div className="space-y-2 text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
             <Check className="h-7 w-7" />
@@ -362,18 +362,23 @@ export function TriadGamePage({
       rulebookId={rulebookId}
       rulebookName={rulebookName}
     >
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 pb-safe pt-4 sm:px-6">
+      {/* 🚨 ONE SCROLL REGION, AND THE FOOTER IS NOT IN IT (found live on a
+          phone, 2026-09-15). The lane frame is `overflow-hidden`, so a column
+          that simply grew put the third item and the whole "why?" box below the
+          fold with NO way to reach them — a forced choice you cannot answer.
+          The card body scrolls; the progress line and the footer do not. */}
+      <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-4 sm:px-6">
         {/* Where you are, and what the last card did. Both are facts, so both
             are on screen — a progress bar that hides the save state is the
             screen telling half the truth. */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3">
           <span className="text-sm font-medium text-muted-foreground">
             Card {index + 1} of {deck.triads.length}
           </span>
           <LastCardStatus state={lastState} />
         </div>
         <div
-          className="h-1 w-full overflow-hidden rounded-full bg-muted"
+          className="mt-2 h-1 w-full shrink-0 overflow-hidden rounded-full bg-muted"
           role="presentation"
         >
           <div
@@ -388,7 +393,7 @@ export function TriadGamePage({
           onTouchEnd={onTouchEnd}
           style={dragX ? { transform: `translateX(${dragX}px)` } : undefined}
           className={cn(
-            "flex flex-1 flex-col gap-4",
+            "flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain py-4",
             dragX === 0 && "transition-transform duration-200",
           )}
         >
@@ -456,7 +461,7 @@ export function TriadGamePage({
           )}
         </div>
 
-        <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-background/95 pb-safe pt-3 backdrop-blur sm:flex-row-reverse">
+        <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-background/95 pb-safe pt-3 backdrop-blur sm:flex-row-reverse">
           <Button
             size="lg"
             className="min-h-12 flex-1 text-base"
