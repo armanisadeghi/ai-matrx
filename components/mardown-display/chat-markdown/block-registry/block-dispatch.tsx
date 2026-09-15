@@ -160,7 +160,7 @@ export type BlockRenderFn = (
 
 /** Language for ``` fences with no info string (plain text / notes / prose). */
 export const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
-const JSON_CODE_LANGUAGES = new Set(["json", "jsonc", "json5"]);
+const JSON_CODE_LANGUAGES = new Set(["json"]);
 
 /**
  * Best-effort MIME type for an audio URL parsed from a markdown link, derived

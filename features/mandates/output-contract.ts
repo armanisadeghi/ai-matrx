@@ -118,21 +118,22 @@ export async function fetchAgentOutputSchemas(
   }
 
   const supabase = createClient();
-  const query = supabase
-    .schema("agent")
-    .from("definition")
-    .select("id, output_schema")
-    .in("id", misses)
-    .then(({ data, error }) => {
-      if (error) throw error;
-      const byId = new Map(
-        (data ?? []).map((row) => [
-          row.id,
-          (row as { output_schema?: unknown }).output_schema ?? null,
-        ]),
-      );
-      return misses.map((id) => ({ id, value: byId.get(id) ?? null }));
-    });
+  const query = Promise.resolve(
+    supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, output_schema")
+      .in("id", misses),
+  ).then(({ data, error }) => {
+    if (error) throw error;
+    const byId = new Map(
+      (data ?? []).map((row) => [
+        row.id,
+        (row as { output_schema?: unknown }).output_schema ?? null,
+      ]),
+    );
+    return misses.map((id) => ({ id, value: byId.get(id) ?? null }));
+  });
   for (const id of misses) {
     inFlight.set(
       id,

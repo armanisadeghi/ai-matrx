@@ -1,4 +1,5 @@
-import React from "react";
+import React, { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   isRenderableStructuredAgentAnswer,
@@ -146,5 +147,44 @@ describe("schema-bound assistant JSON answer", () => {
     );
     expect(html.match(new RegExp(fallbackAnswer, "g"))?.length).toBe(2);
     expect(html).toContain("Completed in one pass.");
+  });
+
+  it("keeps the reader projection outside a closed complete-raw Details control", async () => {
+    const captured = capturedSandboxAnswers[0];
+    const rawContent = JSON.stringify(captured);
+    const parsed = parseStructuredAgentAnswer(
+      rawContent,
+      sandboxSpecialistSchema,
+    );
+    if (!parsed) throw new Error("captured payload did not parse");
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    await act(async () => {
+      root.render(
+        <StructuredAgentAnswerBlock
+          value={parsed}
+          rawContent={rawContent}
+          renderMarkdown={(text) => <p>{text}</p>}
+        />,
+      );
+    });
+    const details = host.querySelector("details");
+    expect(details).not.toBeNull();
+    expect(details?.hasAttribute("open")).toBe(false);
+    expect(details?.querySelector("summary")?.classList.contains("min-h-11")).toBe(true);
+    const visible = host.cloneNode(true) as HTMLElement;
+    visible.querySelector("details")?.remove();
+    expect(visible.textContent).toContain(captured.answer);
+    expect(visible.textContent).toContain("Done");
+    expect(visible.textContent).toContain("Next step");
+    expect(visible.textContent).toContain("Commands Run");
+    expect(visible.textContent).toContain("Tools Failed");
+    expect(details?.textContent).toContain(rawContent);
+    root.unmount();
   });
 });

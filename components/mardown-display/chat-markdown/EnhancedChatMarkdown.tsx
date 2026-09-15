@@ -963,6 +963,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
       taskId,
       replaceBlockContent,
       handleOpenEditor,
+      outputSchema,
     ],
   );
 

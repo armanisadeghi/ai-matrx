@@ -53,4 +53,23 @@ describe("fetchAgentOutputSchemas", () => {
       { "agent-1": { schema: { properties: { answer: {} } } } },
     ]);
   });
+
+  it("clears a failed in-flight read so a later mount retries once", async () => {
+    inCalls
+      .mockResolvedValueOnce({ data: null, error: { message: "offline" } })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: "agent-1",
+            output_schema: { schema: { properties: { answer: {} } } },
+          },
+        ],
+        error: null,
+      });
+    await expect(fetchAgentOutputSchemas(["agent-1"])).resolves.toEqual({});
+    await expect(fetchAgentOutputSchemas(["agent-1"])).resolves.toEqual({
+      "agent-1": { schema: { properties: { answer: {} } } },
+    });
+    expect(inCalls).toHaveBeenCalledTimes(2);
+  });
 });

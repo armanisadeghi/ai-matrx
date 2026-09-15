@@ -99,10 +99,7 @@ interface CrosswalkRow {
   name: string;
   sources: string[];
   classification:
-    | "shape"
-    | "protocol"
-    | "scalar_generic"
-    | "intentionally_opaque";
+    "shape" | "protocol" | "scalar_generic" | "intentionally_opaque";
 }
 
 const crosswalkPath = path.resolve(
@@ -171,12 +168,12 @@ describe("block-dispatch registry", () => {
     };
     const content = '{"__kind":"flashcard_set","title":"Water cycle"}';
 
-    expect(
-      isBlockLoading({ content, metadata: { __ir: streaming } }),
-    ).toBe(true);
-    expect(
-      isBlockLoading({ content, metadata: { __ir: complete } }),
-    ).toBe(false);
+    expect(isBlockLoading({ content, metadata: { __ir: streaming } })).toBe(
+      true,
+    );
+    expect(isBlockLoading({ content, metadata: { __ir: complete } })).toBe(
+      false,
+    );
   });
 
   it("covers every render-block vocabulary item in the crosswalk", () => {
@@ -191,8 +188,7 @@ describe("block-dispatch registry", () => {
     const mismatches: string[] = [];
     for (const row of renderBlockRows) {
       const bucket = BLOCK_DISPATCH_CLASSIFICATION[row.classification] as
-        | readonly string[]
-        | undefined;
+        readonly string[] | undefined;
       if (!bucket?.includes(row.name)) {
         mismatches.push(
           `${row.name}: crosswalk says "${row.classification}" but the registry files it elsewhere`,
@@ -376,4 +372,55 @@ describe("block-dispatch registry", () => {
 
     expect(rendered?.props).toMatchObject({ language: "typescript" });
   });
+
+  it.each([
+    ["active stream", true, undefined],
+    ["loading block", false, { isComplete: false }],
+  ])(
+    "keeps a settled schema payload at JsonBlock while %s",
+    (_caseName, isStreamActive, metadata) => {
+      const rendered = resolveBlockDispatch("code")?.({
+        block: {
+          type: "code",
+          content: JSON.stringify({
+            answer: "Wait for completion.",
+            state: "done",
+          }),
+          language: "json",
+          metadata,
+          isStreamingBlock: metadata ? true : undefined,
+        },
+        index: 0,
+        isStreamActive,
+        hideReasoning: false,
+        hideToolResults: false,
+        outputSchema: { schema: { properties: { answer: {}, state: {} } } },
+        replaceBlockContent: jest.fn(),
+        renderBasicMarkdown: (text) => React.createElement("p", null, text),
+      });
+      expect(
+        (rendered?.type as React.ComponentType & { displayName?: string })
+          .displayName,
+      ).toBe("JsonBlock");
+    },
+  );
+
+  it.each(["jsonc", "json5"])(
+    "keeps %s on the existing JSON renderer",
+    (language) => {
+      const rendered = resolveBlockDispatch("code")?.({
+        block: { type: "code", content: '{"answer":"not parsed"}', language },
+        index: 0,
+        hideReasoning: false,
+        hideToolResults: false,
+        outputSchema: { schema: { properties: { answer: {} } } },
+        replaceBlockContent: jest.fn(),
+        renderBasicMarkdown: (text) => React.createElement("p", null, text),
+      });
+      expect(
+        (rendered?.type as React.ComponentType & { displayName?: string })
+          .displayName,
+      ).toBe("JsonBlock");
+    },
+  );
 });
