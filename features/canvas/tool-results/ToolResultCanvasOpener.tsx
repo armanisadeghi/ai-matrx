@@ -39,7 +39,10 @@ import {
   readToolResultCanvasOffer,
   type ToolResultCanvasOffer,
 } from "./toolResultCanvasRegistry";
-import { decideToolResultCanvasAction } from "./decideToolResultCanvasAction";
+import {
+  canvasHoldsOtherContent,
+  decideToolResultCanvasAction,
+} from "./decideToolResultCanvasAction";
 
 /** How many records from one conversation may sit in the switcher at once. */
 const MAX_OFFERED = 8;
@@ -115,13 +118,19 @@ export function ToolResultCanvasOpener({
   }, [records, live, conversationId]);
 
   const items = useAppSelector(selectCanvasItems);
+  /**
+   * WHAT the canvas holds, as a stable string — never the `items` array.
+   * Offering a record that is already on the canvas replaces its `content`
+   * with an equal-but-new object, so `items` gets a new reference on every
+   * offer; depending on it here would re-run this effect, which dispatches,
+   * forever. The identities are what the rules actually read.
+   */
+  const canvasSourceKey = items
+    .map((item) => item.sourceMessageId ?? item.id)
+    .join("|");
   const offeredSourceIds = useMemo(
     () => new Set(offers.map((o) => o.sourceId)),
     [offers],
-  );
-  const canvasHasOtherContent = items.some(
-    (item) =>
-      !item.sourceMessageId || !offeredSourceIds.has(item.sourceMessageId),
   );
 
   const memoryRef = useRef(new Map<string, ReturnType<typeof memory.read>>());
@@ -151,13 +160,20 @@ export function ToolResultCanvasOpener({
     if (!isCanvasAvailable) return;
 
     const newestId = offers[offers.length - 1].sourceId;
+    const present = canvasSourceKey ? canvasSourceKey.split("|") : [];
     for (const offer of offers) {
       const remembered = readMemory(offer.sourceId);
       const action = decideToolResultCanvasAction({
         autoOpen,
         alreadyAutoOpened: remembered.autoOpened,
         userClosed: remembered.userClosed,
-        canvasHasOtherContent,
+        // "Other content" is PER OFFER — anything in the canvas that is not
+        // this record's own pane. Measured live on 2026-09-15: computing it
+        // once against every offer of the conversation made a canvas already
+        // showing the FIRST document read as empty, and the second document
+        // took the pane out from under it. A document the user is reading is
+        // something else, exactly like the sandbox or the browser.
+        canvasHasOtherContent: canvasHoldsOtherContent(present, offer.sourceId),
         isNewest: offer.sourceId === newestId,
       });
       if (action === "none") continue;
@@ -171,7 +187,7 @@ export function ToolResultCanvasOpener({
   }, [
     offers,
     autoOpen,
-    canvasHasOtherContent,
+    canvasSourceKey,
     isCanvasAvailable,
     dispatch,
     readMemory,

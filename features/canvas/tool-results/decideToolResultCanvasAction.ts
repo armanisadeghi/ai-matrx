@@ -51,3 +51,22 @@ export function decideToolResultCanvasAction({
   if (!isNewest) return "offer";
   return "open";
 }
+
+/**
+ * Is the canvas showing something OTHER than this record's own pane?
+ *
+ * Per record, never per conversation. Measured live on production
+ * 2026-09-15: computed once against every offer of the conversation, a canvas
+ * already showing the FIRST document read as empty, and the second document
+ * the agent created took the pane out from under it. A document the user is
+ * reading is "something else", exactly like the sandbox or the browser.
+ *
+ * @param presentSourceIds the canvas identities currently on the canvas
+ * @param sourceId         this record's own canvas identity
+ */
+export function canvasHoldsOtherContent(
+  presentSourceIds: readonly string[],
+  sourceId: string,
+): boolean {
+  return presentSourceIds.some((id) => id !== sourceId);
+}

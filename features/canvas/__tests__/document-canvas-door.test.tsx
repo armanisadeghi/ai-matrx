@@ -53,7 +53,10 @@ import {
   readToolResultCanvasOffer,
   registeredToolResultCanvasKeys,
 } from "@/features/canvas/tool-results/toolResultCanvasRegistry";
-import { decideToolResultCanvasAction } from "@/features/canvas/tool-results/decideToolResultCanvasAction";
+import {
+  canvasHoldsOtherContent,
+  decideToolResultCanvasAction,
+} from "@/features/canvas/tool-results/decideToolResultCanvasAction";
 import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
 import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
@@ -319,6 +322,33 @@ describe("the canvas is never hijacked", () => {
     expect(decideToolResultCanvasAction({ ...base, isNewest: false })).toBe(
       "offer",
     );
+  });
+
+  it("a SECOND document never takes the pane from the first", () => {
+    // Measured live on production, 2026-09-15: the first document opened, the
+    // agent made a second, and the canvas jumped to it. The rule had been
+    // computed ONCE against every offer of the conversation, so a canvas
+    // already showing the first document read as empty. "Other content" is
+    // per-record: anything on the canvas that is not THIS record's own pane.
+    const first = "udt-document:11111111-1111-4111-8111-111111111111";
+    const second = "udt-document:22222222-2222-4222-8222-222222222222";
+    expect(canvasHoldsOtherContent([first], second)).toBe(true);
+    expect(
+      decideToolResultCanvasAction({
+        ...base,
+        canvasHasOtherContent: canvasHoldsOtherContent([first], second),
+      }),
+    ).toBe("offer");
+    // …while the record's OWN pane sitting there is not "something else".
+    expect(canvasHoldsOtherContent([second], second)).toBe(false);
+    expect(
+      decideToolResultCanvasAction({
+        ...base,
+        canvasHasOtherContent: canvasHoldsOtherContent([second], second),
+      }),
+    ).toBe("open");
+    // An empty canvas holds nothing.
+    expect(canvasHoldsOtherContent([], second)).toBe(false);
   });
 
   it("the reducer itself refuses to steal a pane the user is reading", () => {
