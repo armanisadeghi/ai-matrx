@@ -361,13 +361,21 @@ async function probe(client: pg.Client, selfTest: boolean): Promise<void> {
           display_name: "Amount (USD)",
         };
         if (preflipDeclaredType) fieldUpdate["data_type"] = "integer";
-        await client.query(
-          `select public.update_user_table_config(p_table_id := $1, p_field_updates := $2::jsonb)`,
-          [tid, JSON.stringify([fieldUpdate])],
-        );
+        let raised: string | null = null;
+        try {
+          await client.query(
+            `select public.update_user_table_config(p_table_id := $1, p_field_updates := $2::jsonb)`,
+            [tid, JSON.stringify([fieldUpdate])],
+          );
+        } catch (err) {
+          // The FIRST door refusing is the better outcome: nothing is written, so
+          // the table cannot be left declared one type over rows of another.
+          raised = err instanceof Error ? err.message : String(err);
+          await client.query("ROLLBACK TO SAVEPOINT ui_order");
+          return { raised, reason: null };
+        }
 
         // ...then the row rewrite, exactly as the dialog does it.
-        let raised: string | null = null;
         try {
           await client.query(
             `select public.udt_change_field_type($1, $2, 'integer', 'cast_or_null')`,
@@ -419,7 +427,9 @@ async function probe(client: pg.Client, selfTest: boolean): Promise<void> {
         "flipping the declared type first is refused, never recorded as a lie",
         `a caller that wrote data_type through update_user_table_config BEFORE calling udt_change_field_type was accepted, and the row history now reads ${JSON.stringify(preflipped.reason)}. The from-type is unrecoverable at that point, so the only honest answer is to refuse (DD-260).`,
       );
-    } else if (!/already declared/i.test(preflipped.raised)) {
+    } else if (
+      !/already declared|refusing to change column/i.test(preflipped.raised)
+    ) {
       fail(
         "flipping the declared type first is refused, never recorded as a lie",
         `it raised, but not with the DD-260 refusal naming the cause and the remedy: ${preflipped.raised}`,
@@ -427,7 +437,7 @@ async function probe(client: pg.Client, selfTest: boolean): Promise<void> {
     } else {
       ok(
         "flipping the declared type first is refused, never recorded as a lie",
-        "udt_change_field_type raises on a field already declared the target type",
+        "the declared type has one writer: the pre-flip is refused at the door",
       );
     }
 
