@@ -72,7 +72,7 @@ import {
 } from "./scoring";
 
 /**
- * Served by `aidream/aidream/services/masterworks/prediction_ledger.py`.
+ * Served by `aidream/aidream/services/distillation/prediction_ledger.py`.
  *
  * Cast pending the OpenAPI type sync, the same precedent the unfolding lane
  * set: `pnpm sync-types` needs a machine with database access. Until it runs,

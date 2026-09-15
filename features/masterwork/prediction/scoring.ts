@@ -2,7 +2,7 @@
 //
 // THE PREDICTION LEDGER's arithmetic, in ONE pure module.
 //
-// 🚨 TWIN FILE: `aidream/aidream/services/masterworks/prediction_ledger.py`
+// 🚨 TWIN FILE: `aidream/aidream/services/distillation/prediction_ledger.py`
 // mirrors every function below, line for line. The server scores the same
 // entries when it distils them; if the two ever disagree the Expert is shown
 // one number on screen and a different one is used to pick which of her

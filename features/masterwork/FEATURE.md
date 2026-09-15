@@ -151,7 +151,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   The Expert calls live cases in her own work before the answer is known — the call, how sure she
   is, ONE line of why, and a due date — and enters the outcome when it lands.
   `scoring.ts` is the pure arithmetic and is the TWIN of
-  `aidream/aidream/services/masterworks/prediction_ledger.py`: change one, change the other in the
+  `aidream/aidream/services/distillation/prediction_ledger.py`: change one, change the other in the
   same session, or the screen and the distiller score the same call differently. The ledger lives
   on `platform.rulebook.metadata.prediction_ledger` and stores RAW FACTS ONLY — `correct`, the
   Brier score and every calibration bucket are derived on read, so the data can never disagree with
@@ -255,6 +255,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `LiveRunProgress`; result carries doors + `TryMasterworkBox`). Openers:
   `features/overlays/openers/masterworkBuildWindow.tsx`; run + progress
   translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
+- `components/detail/RedPenDialog.tsx` — THE RED-PEN LANE (`red_pen`, live
+  2026-09-15). Somebody else's work goes in (paste, or a plain-text/Markdown
+  upload read in the browser — a PDF or a recording is the file card's job and
+  the door says so); the Expert highlights a passage and says what is wrong and
+  what they would do instead, TYPED OR SPOKEN through `ProTextarea`'s microphone
+  (the platform's one dictation primitive). Each correction is span + words +
+  moment, and all three land on every rule's `source_ref.span`. Posts to
+  `/masterworks/ingest-markup`; own run surface `red_pen` and own pointer — a
+  review is not a source ingest. The work piece is kept as a source the same way
+  every paste lane keeps one (`record/pastedSource.ts`, approach `red_pen`), so
+  the note the rules cite is listed in Resources. Two KNOB MIRRORS at the top of
+  the file (`min_corrections_before_distilling` 3, `markup_voice_default_on`
+  true); the server is the authority on the minimum and refuses a short run by
+  name before spending. Guard: the card-is-a-real-door case in
+  `browse/__tests__/approachLaneCoverage.test.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
 - `components/detail/IngestTimelineDialog.tsx` — "From a case that unfolded", the TIMELINE
