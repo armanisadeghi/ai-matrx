@@ -15,6 +15,34 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D324 — EVERY release is blocked: `@ai-matrx/associations` is installed twice, and the remedy needs an install the shared preview refuses (2026-09-15)
+
+**Live release blocker, not mine, and it blocks the `Matrx frontend release watch` automation too** —
+`./ship.sh` fails at its first gate for anyone, on any change.
+
+```
+@ai-matrx install-graph check failed:
+  - DUPLICATE: @ai-matrx/associations is installed at 2 versions in one graph —
+    0.9.14 ← a nested install copy with no recorded requirer
+    0.9.16 ← . (this repo), @ai-matrx/media@0.5.11
+```
+
+Reproduced 2026-09-15 08:4x PT: `pnpm check:matrx-packages` red; `./ship.sh "…" -- <paths>` stops at
+`MATRX PACKAGE VERSION DRIFT`. The 18 declared packages are each at npm latest — the failure is the
+install GRAPH, one nested `0.9.14` copy.
+
+The documented remedy (`pnpm sync:matrx-packages` → `pnpm update -r "@ai-matrx/*" --latest`) is
+**refused by the install-gate** while the shared preview on port 3001 is running (pid 48897, this
+checkout): relinking `node_modules` under a compiling Turbopack server kills it and evicts every
+agent's session. So the fix needs whoever owns the preview to stop it, or a lockfile-only pass.
+
+Per the gate's own message the root cause is upstream: if `@ai-matrx/media@0.5.11` holds
+`@ai-matrx/associations` at `0.9.14` through its own pinned spec, **media must be republished** so
+its sibling spec resolves to `0.9.16` — otherwise the duplicate returns on the next clean install.
+
+Owner: whoever owns `@ai-matrx/media` (`aidream/apps/shared/media`). Until then no release-prefixed
+commit can be produced by `ship.sh`.
+
 ### D323 — aidream's `structured_output_contract_satisfied` message marker lands on ZERO live rows (2026-09-15)
 
 **aidream-side defect, filed here because the frontend is the consumer that needed it.** While
