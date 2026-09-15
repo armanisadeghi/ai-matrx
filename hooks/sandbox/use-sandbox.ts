@@ -8,7 +8,6 @@ import type {
   SandboxCreateRequest,
   SandboxExecRequest,
   SandboxExecResponse,
-  SandboxActionRequest,
   SandboxAccessResponse,
 } from "@/types/sandbox";
 import { notifyComputeTargetsChanged } from "./use-compute-targets";
@@ -363,22 +362,28 @@ export function useSandboxInstances(projectId?: string) {
     async (id: string, additionalSeconds = 3600) => {
       setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${id}`, {
-          method: "PUT",
+        const resp = await fetch(`/api/sandbox/${id}/extend`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "extend",
-            ttl_seconds: additionalSeconds,
-          } satisfies SandboxActionRequest),
+          body: JSON.stringify({ ttl_seconds: additionalSeconds }),
         });
 
         if (!resp.ok) {
+          if (resp.status >= 500) {
+            throw new Error("Could not confirm extension; refresh sandbox list before retrying");
+          }
           throw new Error(
             await extractSandboxError(resp, "Failed to extend sandbox"),
           );
         }
 
         const { instance }: SandboxDetailResponse = await resp.json();
+        if (
+          !instance || instance.id !== id || !instance.expires_at ||
+          !Number.isFinite(Date.parse(instance.expires_at))
+        ) {
+          throw new Error("Could not confirm extension; refresh sandbox list before retrying");
+        }
         setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
         return instance;
       } catch (err) {
