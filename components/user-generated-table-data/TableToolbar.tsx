@@ -8,7 +8,6 @@ import EditRowModal from "./EditRowModal";
 import DeleteRowModal from "./DeleteRowModal";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import TableConfigModal from "./TableConfigModal";
-import ExportTableModal from "./ExportTableModal";
 import TableReferenceOverlay from "./TableReferenceOverlay";
 import RowOrderingModal from "./RowOrderingModal";
 import PasteRowsDialog from "./PasteRowsDialog";
@@ -22,12 +21,10 @@ import {
 import {
   Search,
   X,
-  Download,
   Pencil,
   Trash,
   Settings,
   Plus,
-  Link,
   ArrowUpDown,
   GripVertical,
   Eye,
@@ -88,7 +85,6 @@ interface TableToolbarProps {
   showDeleteModal: boolean;
   showAddColumnModal: boolean;
   showAddRowModal: boolean;
-  showExportModal: boolean;
   showTableConfigModal: boolean;
   showReferenceOverlay: boolean;
   showRowOrderingModal: boolean;
@@ -99,7 +95,6 @@ interface TableToolbarProps {
   setShowDeleteModal: (show: boolean) => void;
   setShowAddColumnModal: (show: boolean) => void;
   setShowAddRowModal: (show: boolean) => void;
-  setShowExportModal: (show: boolean) => void;
   setShowTableConfigModal: (show: boolean) => void;
   setShowReferenceOverlay: (show: boolean) => void;
   setShowRowOrderingModal: (show: boolean) => void;
@@ -129,7 +124,7 @@ interface TableToolbarProps {
   /** Optional trailing controls in the toolbar row (e.g. chat artifact revert). */
   toolbarTrailing?: React.ReactNode;
   /** Shared direct Copy / Copy for AI controls for the current table view. */
-  copyControls?: React.ReactNode;
+  copyControls?: (onChooseReference: () => void) => React.ReactNode;
   /** Mobile-only view controls (sort, saved views, columns) hosted in the same drawer. */
   mobileViewControls?: React.ReactNode;
 }
@@ -154,7 +149,6 @@ export default function TableToolbar({
   showDeleteModal,
   showAddColumnModal,
   showAddRowModal,
-  showExportModal,
   showTableConfigModal,
   showReferenceOverlay,
   showRowOrderingModal,
@@ -165,7 +159,6 @@ export default function TableToolbar({
   setShowDeleteModal,
   setShowAddColumnModal,
   setShowAddRowModal,
-  setShowExportModal,
   setShowTableConfigModal,
   setShowReferenceOverlay,
   setShowRowOrderingModal,
@@ -205,6 +198,10 @@ export default function TableToolbar({
   };
 
   const [showMobileActions, setShowMobileActions] = useState(false);
+  const chooseReference = () => {
+    setShowMobileActions(false);
+    setShowReferenceOverlay(true);
+  };
 
   const handleReorderClick = () => {
     if (!rowOrderingEnabled && enableRowOrdering) {
@@ -332,29 +329,7 @@ export default function TableToolbar({
           {/* Bulk cell cleanup — the caller's <CellCleanupButton>. */}
           {cleanupControl}
 
-          {!isMobile ? copyControls : null}
-
-          {/* Reference - always available (read-only action) */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowReferenceOverlay(true)}
-            className="h-7 w-7 p-0"
-            title="Create Table Reference"
-          >
-            <Link className="h-3.5 w-3.5" />
-          </Button>
-
-          {/* Export - always available (read-only action) */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowExportModal(true)}
-            className="h-7 w-7 p-0"
-            title="Export table"
-          >
-            <Download className="h-3.5 w-3.5" />
-          </Button>
+          {!isMobile ? copyControls?.(chooseReference) : null}
 
           <ShareButton
             resourceType="dataset"
@@ -454,27 +429,11 @@ export default function TableToolbar({
               )}
             </>
           )}
-          <MobileActionRow
-            icon={Link}
-            label="Create Table Reference"
-            onClick={() => {
-              setShowMobileActions(false);
-              setShowReferenceOverlay(true);
-            }}
-          />
           {isMobile && copyControls ? (
             <div className="border-t border-border px-2 py-2 [&_button]:min-h-11">
-              {copyControls}
+              {copyControls(chooseReference)}
             </div>
           ) : null}
-          <MobileActionRow
-            icon={Download}
-            label="Export Table"
-            onClick={() => {
-              setShowMobileActions(false);
-              setShowExportModal(true);
-            }}
-          />
           {!isReadOnly && (
             <MobileActionRow
               icon={Settings}
@@ -552,15 +511,6 @@ export default function TableToolbar({
       )}
 
       {/* Read-only modals - Export and Reference are always available */}
-      <ExportTableModal
-        tableId={tableId}
-        tableName={tableInfo?.table_name || "table"}
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        searchTerm={searchTerm}
-      />
       <TableReferenceOverlay
         isOpen={showReferenceOverlay}
         onClose={() => setShowReferenceOverlay(false)}
