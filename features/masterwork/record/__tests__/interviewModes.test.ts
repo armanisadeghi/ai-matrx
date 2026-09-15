@@ -161,6 +161,11 @@ describe("every probe style reaches the interviewer", () => {
     expect(value).not.toContain("boundary_hunting");
   });
 
+  it("carries the narrative and hindsight styles the same way as the rest", () => {
+    const value = rendered(["story_time", "rewind"]);
+    expect(value).toBe("story_time, rewind");
+  });
+
   it("never sends an empty instruction when the list is somehow empty", () => {
     expect(rendered([])).toBe("adaptive");
   });
@@ -211,12 +216,20 @@ describe("the screen's own copy", () => {
     }
   });
 
-  it("offers the five acquisition probes plus adaptive, each with a sentence", () => {
-    expect(INTERVIEW_PROBES).toHaveLength(6);
+  it("offers every probe style with a sentence, and no codenames on screen", () => {
+    expect(INTERVIEW_PROBES).toHaveLength(8);
     for (const option of INTERVIEW_PROBES) {
       expect(option.sentence.trim().length).toBeGreaterThan(30);
       expect(option.title.trim().length).toBeGreaterThan(0);
+      // The id is what the interviewer is told; the Expert never reads it.
+      expect(`${option.title} ${option.sentence}`).not.toContain(option.id);
     }
+  });
+
+  it("offers the narrative and the hindsight probe by name", () => {
+    const ids = INTERVIEW_PROBES.map((probe) => probe.id);
+    expect(ids).toContain("story_time");
+    expect(ids).toContain("rewind");
   });
 });
 
