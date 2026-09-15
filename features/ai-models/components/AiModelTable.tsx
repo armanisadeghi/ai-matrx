@@ -1,6 +1,18 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  MatrxDataTable,
+  type MatrxDataTableQueryState,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import {
+  ViewTapButton,
+  PencilTapButton,
+  CopyTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -57,7 +69,11 @@ import { parseCapabilities } from "../capabilities/parse";
 import { isContentType, type ContentType } from "../capabilities/types";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { aiProviderHref } from "../doors";
+import { aiModelHref, aiProviderHref } from "../doors";
+import {
+  modelFiltersToColumns,
+  modelQueryToTab,
+} from "../utils/canonicalTableQuery";
 import {
   ProviderPriceCell,
   type ProviderPriceField,
@@ -922,7 +938,16 @@ export interface AiModelTableProps {
   onRefresh: () => void;
 }
 
-export default function AiModelTable({
+export default function AiModelTable(props: AiModelTableProps) {
+  const searchParams = useSearchParams();
+  return searchParams.get("tablePreview") === "canonical" ? (
+    <CanonicalAiModelTable key={props.tabState.id} {...props} />
+  ) : (
+    <CurrentAiModelTable {...props} />
+  );
+}
+
+function CurrentAiModelTable({
   models,
   providers,
   isLoading,
@@ -1165,5 +1190,205 @@ export default function AiModelTable({
         />
       </div>
     </div>
+  );
+}
+
+/** Comparison surface: same complete source and domain cells, package-owned table. */
+function CanonicalAiModelTable(props: AiModelTableProps) {
+  const {
+    models,
+    providers,
+    isLoading,
+    selectedId,
+    onSelect,
+    onEdit,
+    onDelete,
+    onDuplicate,
+    onCreate,
+    onRefresh,
+  } = props;
+  const [extraQuery, setExtraQuery] = React.useState<
+    Partial<MatrxDataTableQueryState>
+  >({});
+  const { tabState, onUpdateTabState } = props;
+  const state: MatrxDataTableQueryState = {
+    ...extraQuery,
+    search: tabState.q,
+    page: tabState.page,
+    pageSize: tabState.perPage,
+    sort: tabState.sort
+      ? {
+          id: tabState.sort === "provider" ? "maker" : tabState.sort,
+          direction: tabState.dir,
+        }
+      : null,
+    anyOf: extraQuery.anyOf ?? "",
+    columnFilters: {
+      ...extraQuery.columnFilters,
+      ...modelFiltersToColumns(tabState.filters),
+    },
+  };
+  const providerMap = Object.fromEntries(
+    providers.map((provider) => [provider.id, provider.name ?? provider.id]),
+  );
+  const columns: MatrxColumnDef<AiModel>[] = COLUMNS.map((column) => ({
+    id: column.key,
+    header: column.header,
+    width: Number(column.width.match(/w-\[(\d+)px\]/)?.[1] ?? 140),
+    sortable: column.sortable,
+    ...(column.key === "maker" ||
+    column.key === "input_capability" ||
+    column.key === "output_capability"
+      ? { filter: "select" as const, filterSingle: true }
+      : {}),
+    accessorFn: (model) => {
+      if (
+        column.key === "input_price" ||
+        column.key === "cached_input_price" ||
+        column.key === "output_price"
+      )
+        return model.preferred_pricing?.[column.key];
+      if (
+        column.key === "input_capability" ||
+        column.key === "output_capability"
+      ) {
+        const capabilities = parseCapabilities(model.capabilities, {
+          modelId: model.id,
+          modelName: model.name,
+        });
+        return column.key === "input_capability"
+          ? capabilities.input
+          : capabilities.output;
+      }
+      return model[column.key as keyof AiModel];
+    },
+    ...(column.className === "text-right" ? { align: "right" as const } : {}),
+    cell: (model) =>
+      column.key === "id" ? (
+        <MatrxUuidCell
+          value={model.id}
+          label="Model ID"
+          href={aiModelHref(model.id)}
+          onOpen={() => onSelect(model)}
+        />
+      ) : (
+        column.render(model, providerMap)
+      ),
+  }));
+  return (
+    <MatrxDataTable<AiModel>
+      tableId="ai/models-canonical"
+      data={models}
+      columns={columns}
+      getRowId={(model) => model.id}
+      query={{
+        mode: "controlled-local",
+        state,
+        onStateChange: (next) => {
+          const additionalFilters = Object.fromEntries(
+            Object.entries(next.columnFilters).filter(
+              ([key]) =>
+                ![
+                  "maker",
+                  "input_capability",
+                  "output_capability",
+                  "is_deprecated",
+                  "is_primary",
+                  "is_premium",
+                  "context_window",
+                  "max_tokens",
+                ].includes(key),
+            ),
+          );
+          setExtraQuery({ ...next, columnFilters: additionalFilters });
+          onUpdateTabState(modelQueryToTab(next));
+        },
+      }}
+      isLoading={isLoading && models.length === 0}
+      isFetching={isLoading && models.length > 0}
+      selectedId={selectedId}
+      onRowOpen={onSelect}
+      detail={{ enabled: false }}
+      toolbar={{
+        title: "AI Models",
+        intelligentSearch: {},
+        refresh: { onRefresh },
+        add: { onAdd: onCreate },
+      }}
+      rowActions={(model) => (
+        <CanonicalModelActions
+          model={model}
+          onSelect={onSelect}
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
+      )}
+    />
+  );
+}
+
+function CanonicalModelActions({
+  model,
+  onSelect,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: {
+  model: AiModel;
+  onSelect: (model: AiModel) => void;
+  onEdit: (model: AiModel) => void;
+  onDuplicate: (model: AiModel) => void;
+  onDelete: (model: AiModel) => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  return (
+    <>
+      <ViewTapButton
+        variant="transparent"
+        ariaLabel="View model"
+        onClick={() => onSelect(model)}
+      />
+      <PencilTapButton
+        variant="transparent"
+        ariaLabel="Edit model"
+        onClick={() => onEdit(model)}
+      />
+      <CopyTapButton
+        variant="transparent"
+        ariaLabel="Duplicate model"
+        onClick={() => onDuplicate(model)}
+      />
+      <TrashTapButton
+        variant="transparent"
+        iconColor="text-destructive"
+        ariaLabel="Delete model"
+        onClick={() => setConfirmDelete(true)}
+      />
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete &quot;{model.common_name || model.name}&quot;?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes this model. Prompts or builtins using it
+              will lose their reference. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmDelete(false);
+                onDelete(model);
+              }}
+            >
+              Delete Model
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
