@@ -14,7 +14,11 @@
  *      appears BEFORE the start control, not after the money is gone.
  *   3. Hiding the arms behind a spinner. Each arm's cost and seconds appear as
  *      it lands.
- *   4. THE TWO VERDICTS THAT ARE NOT RESULTS. A void trial proves nothing and
+ *   4. Printing a corpus count the server never took. The read half does not
+ *      assemble the corpus (that scrapes pages and reads documents), so the
+ *      count is null there — and a null rendered as "0 sources" is a
+ *      fabricated fact, not a rounding.
+ *   5. THE TWO VERDICTS THAT ARE NOT RESULTS. A void trial proves nothing and
  *      must render no win at all; a panel that failed calibration means the
  *      trial was NOT SCORED — which is not a fail.
  *
@@ -136,9 +140,12 @@ const FORM: BenchRunFormWire = {
   cheap_model: "claude-haiku-4-5",
   masterwork_id: "mw-1",
   masterwork_name: "Watson on shoes",
-  corpus_sources: 12,
+  // null is what the READ half actually sends — counting the corpus costs
+  // money, so it is not counted until a trial starts.
+  corpus_sources: null,
   corpus_note:
-    "12 pre-engagement sources on this Rulebook feed arms A1 and A2.",
+    "The frontier arms get this Rulebook's own pre-engagement material. The " +
+    "sources are gathered when you start it, and the run says how many it found.",
   durable: false,
   durable_note: NOT_DURABLE_NOTE,
 };
@@ -241,6 +248,34 @@ describe("the Bench door never lies about what it can do", () => {
     expect(noteIndex).toBeLessThan(startIndex);
     // And the consequence of the click is named, not a generic "are you sure".
     expect(text).toContain("real, paid model calls across all six arms");
+  });
+
+  it("an uncounted corpus says the rule, never \"0 sources\"", () => {
+    render(CAN_RUN);
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const text = host.textContent ?? "";
+    // The READ half does not assemble the corpus (it would scrape and read
+    // documents just to draw a page), so the count is null there — and a null
+    // rendered as a number would be a fabricated fact.
+    expect(text).toContain(FORM.corpus_note);
+    expect(text).not.toContain("0 pre-engagement");
+    expect(text).not.toContain("null");
+
+    // With a real count — which only a started trial produces — it is shown.
+    act(() => {
+      root.render(
+        <RunTheBench
+          rulebookId="rb-1"
+          bench={{
+            ...CAN_RUN,
+            form: { ...FORM, corpus_sources: 12 },
+          }}
+        />,
+      );
+    });
+    expect(host.textContent ?? "").toContain("12 pre-engagement sources");
   });
 
   it("while running, each finished arm shows what it is, what it cost and how long it took", () => {

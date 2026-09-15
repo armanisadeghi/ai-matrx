@@ -266,7 +266,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - `encore/RunTheBench.tsx` — **the Trial Bench's door in the product**, beside the quick check on
   the Encore run page. The form the server sent (`form` on `GET /masterworks/{rulebook_id}/bench`)
   drives it: task brief, optional case input, the expert's real answer, the budget multiple with
-  the server's own sentence for where that number came from, and a read-only line naming the judge
+  the server's own sentence for where that number came from (plus `corpus_note` always, and a
+  source count only when `corpus_sources` is not null), and a read-only line naming the judge
   model, the frontier and cheap arms and the Masterwork arm C will run. Streams
   `POST /masterworks/{rulebook_id}/bench/runs` on its own durable-run surface `bench`
   (terminal event `masterwork_bench_verdict`). `encore/benchFacts.ts` builds the panel/cost/void
@@ -294,9 +295,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `headline` is rendered, never re-written; a **void** trial says it proves nothing and renders NO
   win, and a **not scored** trial says the panel was not calibrated and that this is neither a pass
   nor a fail. Then the panel re-reads `GET .../bench` so the banked record replaces the live one.
-  Guard: `encore/__tests__/RunTheBench.honest-states.test.tsx` — five legs (cannot-run reason
+  🚨 **THE CORPUS COUNT IS NOT TAKEN ON THE READ** (aidream 864b37a49): assembling a Rulebook's
+  pre-engagement corpus scrapes pages and reads documents, so counting it every time the Encore run
+  page loads would make LOOKING at a Masterwork cost money. `form.corpus_sources` is therefore
+  `number | null` and comes back null from `GET .../bench`, with `corpus_note` carrying the rule
+  instead; the real count arrives in the `masterwork_bench_progress` stage line at stage `corpus`
+  once a trial starts. The form renders the note always and a count only when one exists — a null
+  printed as "0 sources" is a fabricated fact.
+  Guard: `encore/__tests__/RunTheBench.honest-states.test.tsx` — six legs (cannot-run reason
   verbatim with zero controls · the not-rejoinable sentence positioned above the start control ·
-  per-arm cost and seconds · void renders no win · not-scored never reads as a fail), each proven
+  an uncounted corpus never printed as zero · per-arm cost and seconds · void renders no win ·
+  not-scored never reads as a fail), each proven
   red against a mutated component and green against the real one.
 
 - `2026-09-15` — 🚨 **A TWO-ARM COMPARISON IS NEVER THE PROOF.** `encore/AuditionProof.tsx` rendered

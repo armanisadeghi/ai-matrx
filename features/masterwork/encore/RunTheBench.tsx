@@ -444,7 +444,17 @@ export function RunTheBench({
                   </span>{" "}
                   — the same way the product runs it.
                 </p>
-                <p className="mt-0.5">{form.corpus_note}</p>
+                {/* The note always; the COUNT only when the server actually
+                    counted. It does not on this read (see `corpus_sources`) —
+                    the number arrives in the stage line once a trial starts. */}
+                <p className="mt-0.5">
+                  {form.corpus_sources !== null
+                    ? `${form.corpus_sources} pre-engagement ${
+                        form.corpus_sources === 1 ? "source" : "sources"
+                      }. `
+                    : ""}
+                  {form.corpus_note}
+                </p>
               </div>
 
               {/* A REFRESH LOSES THE VIEW OF A RUN THAT KEEPS SPENDING. The

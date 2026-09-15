@@ -81,8 +81,24 @@ export interface BenchRunFormWire {
   /** The built Masterwork arm C will run — the product's real run path. */
   masterwork_id: string;
   masterwork_name: string;
-  /** Pre-engagement sources found on the Rulebook, and one honest sentence. */
-  corpus_sources: number;
+  /**
+   * How many pre-engagement sources the corpus holds — **null on the READ
+   * half, and that is the point.** Assembling a Rulebook's pre-engagement
+   * corpus scrapes web pages and reads uploaded documents, so counting it on
+   * every load of the Encore run page would make LOOKING at a Masterwork cost
+   * money and seconds, for a button nobody pressed. The real count exists only
+   * once a trial starts, and arrives in the `masterwork_bench_progress` stage
+   * line at stage `"corpus"` (aidream 864b37a49).
+   *
+   * 🚨 A NULL IS NEVER PRINTED AS ZERO. "0 sources" from an unasked question
+   * is the exact lie this split exists to avoid: render a count only when this
+   * is a number, and let `corpus_note` speak the rest of the time.
+   */
+  corpus_sources: number | null;
+  /**
+   * One honest sentence about that corpus — the RULE when there is no count
+   * yet, the description when there is. Always rendered.
+   */
   corpus_note: string;
   /**
    * False = the run is FILES-ONLY: no `platform.masterwork_run` row, no
