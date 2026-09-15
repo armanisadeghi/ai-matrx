@@ -33,6 +33,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { listExampleTables } from "@/features/data-tables/service";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import Link from "next/link";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import CreateTableModal from "./CreateTableModal";
@@ -217,6 +218,29 @@ export default function TableCards() {
   const [exampleTables, setExampleTables] = useState<UserTable[]>([]);
   const [examplesError, setExamplesError] = useState<string | null>(null);
   const [isExamplesSectionOpen, setIsExamplesSectionOpen] = useState(true);
+  // The global system org owns every example table. The account that seeded
+  // them (admin@admin.com — the account every agent signs in as) still gets
+  // them back from `get_user_tables`, so WITHOUT this they reappear under
+  // "My Tables" carrying the rename and delete controls the Examples section
+  // deliberately withholds. Found on independent review 2026-09-15: removing
+  // the controls from one of the two cards is not removing them.
+  const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    resolveSystemOrgId()
+      .then((id) => {
+        if (!cancelled) setSystemOrgId(id);
+      })
+      .catch((err) => {
+        console.error("Could not resolve the system organization:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  /** A platform example table — read-only for everyone, its seeder included. */
+  const isExampleTable = (table: UserTable) =>
+    systemOrgId !== null && table.organization_id === systemOrgId;
 
   useEffect(() => {
     let alive = true;
@@ -409,7 +433,11 @@ export default function TableCards() {
   };
 
   // Render a single table card
-  const renderTableCard = (table: UserTable, owned: boolean) => {
+  const renderTableCard = (table: UserTable, ownedArg: boolean) => {
+    // An example table is never "owned" for the purpose of card controls, no
+    // matter which list it is being rendered from. The seed script is its only
+    // writer, so rename and delete must be absent on EVERY card of it.
+    const owned = ownedArg && !isExampleTable(table);
     const isNavigating = navigatingId === table.id;
     const isDisabled = isNavigating || navigatingId !== null;
 
@@ -716,7 +744,9 @@ export default function TableCards() {
                   <TableListItem
                     key={table.id}
                     {...table}
-                    isOwned={true}
+                    // Same rule as the cards: an example table is never
+                    // "owned" for the purpose of rename/delete controls.
+                    isOwned={!isExampleTable(table)}
                     onNavigate={handleNavigate}
                     onEdit={(id) => {
                       const t = tables.find((t) => t.id === id);

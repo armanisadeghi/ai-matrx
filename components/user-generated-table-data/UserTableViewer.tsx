@@ -3984,7 +3984,15 @@ const UserTableViewer = ({
                             });
                             return;
                           }
-                          if (isReadOnly) return;
+                          // A double-click that opens nothing and says nothing
+                          // reads as a broken grid. Say why the editor did not
+                          // open — for an example table the notice names it as
+                          // one. (Found on independent review 2026-09-15: this
+                          // was a silent return.)
+                          if (isReadOnly) {
+                            showReadOnlyToast();
+                            return;
+                          }
                           grid.beginEdit({
                             rowId: row.id,
                             fieldName: field.field_name,
