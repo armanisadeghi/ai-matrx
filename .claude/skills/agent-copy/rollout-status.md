@@ -63,6 +63,10 @@
   the data/knowledge remainder (`docs/handoffs/agent-copy-data-knowledge-cluster.md`).
 - Pages: sandbox admin / user-list / detail; `administration/admins` (admins +
   audit); `administration/ai-tasks`; `administration/invitation-requests`;
+  `administration/billing/spend` (each compact 80% concentration card exposes
+  its exact rendered rows, total, Everything else aggregate, selected window,
+  active filters, and shared leading KPI strings through the canonical Alchemy
+  menu);
   `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer
   reference page); relationships hub — all tabs; the planner is the
   what-I-see reference (`access-planner/copy.ts`).

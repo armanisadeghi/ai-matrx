@@ -297,6 +297,20 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-14 (surface contract wired)** — The dashboard is now the
+  `matrx-admin/billing-spend` surface, with its route mapping, registered
+  manifest, canonical `Billing Spend` label, and a live
+  `SurfaceRuntimeProvider`. Its scope names the overview's loading/error
+  honesty, fixed-cost and alarm-knob state, headline fields plus their natural
+  composite, daily series, cost-ledger/gap/print-order reference data, and the
+  two folded-tail states. The browser-mounted explorer and batch-savings panel
+  publish their own live slices through scope contributions: URL window and
+  filters, knob/read status, breakdown/totals/dimensions/signals/requests, and
+  batch summary/status/open state. The surface is deliberately read-only: no
+  role, fixed AI job, write target, bespoke agent UI, or custom context menu was
+  added. The DB mirror is synced and the live route is browser-proven; readiness
+  stays `partial` until the complete independent S1–S18 surface certification.
+
 - **2026-09-14 (batch is first-class)** — Batch spend lands on
   `runtime.global_execution` (aidream 0679: 32 items, $0.0323 backfilled), so the
   headline and explorer include it once. The registry's `batch.work_item` became
@@ -399,6 +413,14 @@ Registered in `features/admin/constants/admin-categories.ts` +
   outer admin shell structurally non-scrollable; `ClientAdminLayout` is now the
   sole page scroller regardless of alarm height, while tables retain horizontal
   overflow only. Browser-verified on the real spend data at localhost.
+- **2026-09-14 (compact-card Alchemy)** — Added the canonical Alchemy menu to
+  every 80% concentration card. Each source mirrors exactly what the card
+  renders: dimension, displayed rows, shares, costs, full window total, and the
+  aggregated Everything else row. Every card payload also carries the selected
+  window, active filters, and the same six leading KPI strings rendered by the
+  shared totals formatter, so a section copy retains its page context. The
+  standard tables continue to use their built-in Alchemy menus; no parallel
+  copy control was added to them.
 - **2026-09-12 (evening, round 2)** — Independent review (Opus, adversarial):
   every money number reconciled to the ledger exactly, filters exact, gating
   and injection probes refused. Fixed from its findings: per-request

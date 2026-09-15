@@ -24,6 +24,9 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { count, usdPrecise } from "@/features/admin/spend/format";
+import { buildBillingBatchSavingsScope } from "@/features/admin/spend/spend-surface-scope";
+import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { fetchBatchSavings } from "./service";
 import type { BatchSavingsRow, BatchSavingsSummary } from "./types";
@@ -176,6 +179,19 @@ export function BatchSavingsPanel({
   }, [fromIso, toIso, organizationId, refreshKey]);
 
   const scope = `${windowLabel}${data ? ` · ${count(data.items)} batch ${data.items === 1 ? "item" : "items"}` : ""}`;
+
+  useSurfaceScopeContribution(
+    ADMIN_BILLING_SPEND_SURFACE_NAME,
+    "BatchSavingsPanel",
+    () =>
+      buildBillingBatchSavingsScope({
+        loading,
+        error,
+        data,
+        breakdownOpen: open,
+        ignoredFilters,
+      }),
+  );
 
   return (
     <section className="flex min-w-0 flex-col gap-2" aria-busy={loading}>
