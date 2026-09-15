@@ -8,7 +8,7 @@ const dispatch = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
-  useAppSelector: () => null,
+  useAppSelector: () => "22222222-2222-4222-8222-222222222222",
 }));
 jest.mock("../../CodeWorkspaceProvider", () => ({
   useCodeWorkspace: () => ({ setFilesystem: jest.fn(), setProcess: jest.fn() }),
@@ -19,7 +19,28 @@ jest.mock("./useSandboxWorkspaceConnection", () => ({
 jest.mock("@/features/overlays/openers/sandboxManagementWindow", () => ({
   useOpenSandboxManagementWindow: () => jest.fn(),
 }));
-jest.mock("./CreateSandboxModal", () => ({ CreateSandboxModal: () => null }));
+jest.mock("./useSandboxCreate", () => ({
+  TIER_GUIDANCE: { ec2: "EC2", hosted: "Hosted" },
+  useSandboxCreate: () => ({
+    tier: "ec2",
+    setTier: jest.fn(),
+    templateId: "bare",
+    setTemplateId: jest.fn(),
+    templateVersion: "",
+    templates: [],
+    loadingTemplates: false,
+    templateError: null,
+    resources: { enabled: false, cpu: 2, memoryMb: 2048, diskMb: 4096 },
+    setResources: jest.fn(),
+    persistChoices: jest.fn(),
+    buildRequest: () => ({
+      organization_id: "22222222-2222-4222-8222-222222222222",
+      tier: "ec2",
+      template: "bare",
+      ttl_seconds: 3600,
+    }),
+  }),
+}));
 jest.mock("./SandboxVersionHealthCard", () => ({ SandboxVersionHealthCard: () => null }));
 jest.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -33,7 +54,14 @@ jest.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuSeparator: () => null,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock("@/lib/toast", () => ({ toast: { warning: jest.fn() } }));
+const toast = {
+  loading: jest.fn(() => "create-toast"),
+  dismiss: jest.fn(),
+  success: jest.fn(),
+  error: jest.fn(),
+  warning: jest.fn(),
+};
+jest.mock("@/lib/toast", () => ({ toast }));
 
 const { SandboxesPanel }: typeof import("./SandboxesPanel") = require("./SandboxesPanel");
 
@@ -80,6 +108,19 @@ async function settle() {
   await act(async () => { for (let i = 0; i < 8; i += 1) await Promise.resolve(); });
 }
 
+async function openCreateModal(container: HTMLDivElement) {
+  const trigger = [...container.querySelectorAll("button")].find(
+    (button) => button.title === "New sandbox",
+  );
+  if (!trigger) throw new Error("new sandbox control was not rendered");
+  await act(async () => trigger.click());
+  const create = [...document.querySelectorAll("button")].find(
+    (button) => button.textContent?.trim() === "Create",
+  );
+  if (!create) throw new Error("create form was not rendered");
+  return create;
+}
+
 describe("SandboxesPanel deletion", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -122,5 +163,102 @@ describe("SandboxesPanel deletion", () => {
     expect(refresh.disabled).toBe(false);
     await act(async () => refresh.click());
     expect(global.fetch).toHaveBeenCalledWith("/api/sandbox");
+  });
+});
+
+describe("SandboxesPanel non-blocking creation", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
+
+  it("closes the real modal before a held create response and keeps Escape and page controls usable", async () => {
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return new Promise(() => {});
+      if (url === "/api/sandbox") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    const create = await openCreateModal(container);
+    await act(async () => create.click());
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.style.pointerEvents).not.toBe("none");
+    expect(toast.loading).toHaveBeenCalledWith("Requesting sandbox creation");
+    const refresh = [...container.querySelectorAll("button")].find((button) => button.title?.startsWith("Refresh sandbox status"));
+    if (!refresh) throw new Error("unrelated refresh control was not rendered");
+    expect(refresh.disabled).toBe(false);
+    await act(async () => refresh.click());
+    expect(global.fetch).toHaveBeenCalledWith("/api/sandbox");
+    // Reopening during the held request is safe: Escape still closes its
+    // disabled form and cannot launch a second create request.
+    await openCreateModal(container);
+    const close = document.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+    if (!close) throw new Error("modal close control was not rendered");
+    await act(async () => close.click());
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    const createPosts = (global.fetch as jest.Mock).mock.calls.filter(
+      ([url, init]) => url === "/api/sandbox" && init?.method === "POST",
+    );
+    expect(createPosts).toHaveLength(1);
+  });
+
+  it("renders a 201 creating row without claiming it is ready", async () => {
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return Promise.resolve(response({ instance: { ...instance, status: "creating" } }, 201));
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    const create = await openCreateModal(container);
+    await act(async () => create.click());
+    await settle();
+
+    expect(container.textContent).toContain("Creating");
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.textContent).not.toContain("Sandbox ready");
+  });
+
+  it("reports a definitive 429 as a refusal rather than an unknown outcome", async () => {
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return Promise.resolve(response({ error: "Quota reached" }, 429));
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    await settle();
+
+    expect(container.textContent).toContain("Quota reached");
+    expect(toast.error).toHaveBeenCalledWith("Quota reached");
+    expect(toast.warning).not.toHaveBeenCalled();
+  });
+
+  it("reports a lost create response as unknown and does not retry", async () => {
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return Promise.reject(new TypeError("network lost"));
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    await settle();
+
+    expect(container.textContent).toContain("Could not confirm creation; check sandbox list before retrying");
+    expect(toast.warning).toHaveBeenCalledWith("Could not confirm creation; check sandbox list before retrying");
+    const postCalls = (global.fetch as jest.Mock).mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(postCalls).toHaveLength(2); // create plus reconcile, never an automatic create retry
   });
 });
