@@ -6,6 +6,10 @@ export interface DataTableCopyField {
   display_name: string;
   /** Present on UDT fields; optional so generic callers can stay lightweight. */
   data_type?: string;
+  field_order?: number;
+  is_required?: boolean;
+  default_value?: unknown;
+  validation_rules?: unknown;
 }
 
 export interface DataTableCopyRow {

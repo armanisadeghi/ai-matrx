@@ -69,7 +69,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
               key={visual.label}
               href={artifact.href}
               className={cn(
-                "flex min-h-10 min-w-0 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold",
+                "flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold",
                 artifactTile(visual),
               )}
             >
@@ -81,7 +81,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
         {present.length > 4 && (
           <Link
             href={href}
-            className="col-span-2 flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-3 text-xs font-semibold text-foreground"
+            className="col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-3 text-xs font-semibold text-foreground"
           >
             Open all {present.length} study aids
             <ArrowRight className="h-3.5 w-3.5" />
@@ -124,7 +124,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
                 key={option.target}
                 href={option.href}
                 className={cn(
-                  "inline-flex min-h-10 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors hover:brightness-110 sm:min-h-7",
+                  "inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors hover:brightness-110 sm:min-h-7",
                   artifactTile(option.visual),
                 )}
               >

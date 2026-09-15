@@ -111,7 +111,7 @@ export function MakeMoreFromKit({
     <>
       <Button
         size="sm"
-        className="gap-1.5"
+        className="min-h-11 gap-1.5 sm:min-h-0"
         disabled={busy}
         onClick={() => void openDialog()}
       >

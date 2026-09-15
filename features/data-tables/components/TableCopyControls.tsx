@@ -1,199 +1,121 @@
 "use client";
 
-/**
- * TableCopyControls — the user-data-table copy control. The canonical
- * `CopyButtons` chrome. Every row read is ASYNC here (`loadRows` fetches the
- * COMPLETE table, never the loaded page), and `CopyButtons`' `human` /
- * `json` / `agent` seams are synchronous, so every action is an `AiVariant`
- * with an async `build` (AiCopyMenu awaits it) or an export with an async
- * `onSelect`. Menu order: Copy table (Markdown) · Copy JSON · Current table
- * view for AI · the selected rows (only when a selection exists) · "Filter &
- * sort before copying…" (the copy-subset door over the complete table) ·
- * downloads.
- *
- * The copy-subset window receives the loader, so loading / error / retry
- * live there and the origin viewer is never touched.
- */
-
-import { Braces, Copy } from "lucide-react";
-
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import type { AiVariant } from "@/components/agent-copy/AiCopyMenu";
-import type {
-  CopySubsetColumn,
-  CopySubsetSource,
-} from "@/components/agent-copy/copy-subset/types";
-import { useCopySubsetVariant } from "@/components/agent-copy/copy-subset/useCopySubsetVariant";
-import {
-  downloadFile,
-  exportFilename,
-  rowsToCsv,
-} from "@/components/agent-copy/export";
-import {
-  buildDataTableAgentInput,
-  dataTableRowsToMarkdown,
-  projectDataTableRows,
-  type DataTableCopyField,
-  type DataTableCopyRow,
-} from "@/features/data-tables/table-copy";
+import { ContentTransferMenu, tableDataFormat, tableSchemaFormat, type ContentTransferReference } from "@ai-matrx/design-system/content-transfer";
+import { directSource, normalizeTransferJson, type Json, type Source } from "@ai-matrx/kit/content-transfer";
+import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
+import type { DataTableCopyField, DataTableCopyRow } from "@/features/data-tables/table-copy";
 
 export interface TableCopyControlsProps {
   tableId: string;
   tableName: string;
   fields: DataTableCopyField[];
+  hiddenColumns?: string[];
   selectedRowIds: string[];
   loadRows: () => Promise<DataTableCopyRow[]>;
+  loadAllRows: () => Promise<DataTableCopyRow[]>;
+  onChooseReference: () => void;
   className?: string;
 }
 
-function subsetColumns(
+const ROW_ID_COLUMN_BASE = "__matrx_row_id";
+
+function escapeJsonPointerSegment(value: string): string {
+  return value.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+/** Reserve a transfer-only column ID without colliding with a real field. */
+export function tableRowIdColumnId(fields: DataTableCopyField[]): string {
+  const fieldNames = new Set(fields.map((field) => field.field_name));
+  let candidate = ROW_ID_COLUMN_BASE;
+  let suffix = 2;
+  while (fieldNames.has(candidate)) {
+    candidate = `${ROW_ID_COLUMN_BASE}_${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+/** Keep the database row ID distinct from a user-owned `data.id` cell. */
+export function normalizeTableTransferRows(
+  rows: DataTableCopyRow[],
   fields: DataTableCopyField[],
-): CopySubsetColumn<DataTableCopyRow>[] {
-  return fields.map((field) => ({
-    id: field.id,
-    header: field.display_name,
-    accessorFn: (row) => row.data[field.field_name],
-    filter:
-      field.data_type === "number" || field.data_type === "integer"
-        ? "number"
-        : "auto",
+): Record<string, Json>[] {
+  return rows.map((row) => ({
+    id: row.id,
+    data: Object.fromEntries(
+      fields.map((field) => [
+        field.field_name,
+        normalizeTransferJson(row.data[field.field_name] ?? null),
+      ]),
+    ) as Record<string, Json>,
   }));
 }
 
-export function TableCopyControls({
-  tableId,
-  tableName,
-  fields,
-  selectedRowIds,
-  loadRows,
-  className,
-}: TableCopyControlsProps) {
-  const copySubset = useCopySubsetVariant();
-  const selectedSet = new Set(selectedRowIds);
-  const selectedRows = async () =>
-    (await loadRows()).filter((row) => selectedSet.has(row.id));
+export function tableTransferColumns(
+  fields: DataTableCopyField[],
+  hiddenColumns: string[],
+) {
+  return [
+    {
+      id: tableRowIdColumnId(fields),
+      label: "Row ID",
+      path: "/id",
+      visible: true,
+      exportable: true,
+      schema: { dataType: "text", order: -1, required: true },
+    },
+    ...fields.map((field, order) => ({
+      id: field.field_name,
+      label: field.display_name,
+      path: `/data/${escapeJsonPointerSegment(field.field_name)}`,
+      visible: !hiddenColumns.includes(field.field_name),
+      exportable: true,
+      schema: {
+        dataType: field.data_type ?? "text",
+        metadata: { fieldId: field.id },
+        order: field.field_order ?? order,
+        required: field.is_required ?? false,
+        ...(field.default_value === undefined
+          ? {}
+          : { defaultValue: normalizeTransferJson(field.default_value) }),
+        ...(field.validation_rules === undefined
+          ? {}
+          : { validation: normalizeTransferJson(field.validation_rules) }),
+      },
+    })),
+  ];
+}
 
-  const subsetSource = (): CopySubsetSource<DataTableCopyRow> => ({
+/** The page declares identity and loaders; all output UI and serialization are package-owned. */
+export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = [], selectedRowIds, loadRows, loadAllRows, onChooseReference, className }: TableCopyControlsProps) {
+  useAlchemyDisclosure(true);
+  const source: Source = {
+    id: `dataset:${tableId}`,
     label: tableName,
-    location: "AI Matrx — Data Table",
-    kind: "user-data-table",
-    rows: loadRows,
-    columns: subsetColumns(fields),
-    getRowId: (row) => row.id,
-    initialSelectedIds: selectedRowIds,
-    serializer: (rows, columns) => {
-      const chosen = new Set(columns.map((column) => column.id));
-      return buildDataTableAgentInput({
-        tableId,
-        tableName,
-        rows,
-        fields: fields.filter((field) => chosen.has(field.id)),
-        scope: "custom",
+    capture: async ({ scope, signal }) => {
+      const all = await (scope === "target" ? loadAllRows() : loadRows());
+      signal.throwIfAborted();
+      const rows = scope === "selected" ? all.filter((row) => selectedRowIds.includes(row.id)) : all;
+      const columns = tableTransferColumns(fields, hiddenColumns);
+      return directSource({ kind: "rows", columns, rows: normalizeTableTransferRows(rows, fields) }, {
+        sourceId: `dataset:${tableId}`,
+        label: `${tableName} — ${scope === "target" ? "entire table" : scope === "selected" ? "selected rows" : "filtered view"}`,
       });
     },
-  });
-
-  const viewVariants: AiVariant[] = [
-    {
-      id: "view-markdown",
-      label: "Copy table",
-      hint: "Markdown table of the complete current view",
-      icon: Copy,
-      section: "copy",
-      ariaLabel: `Copy ${tableName}`,
-      successMessage: `${tableName} copied`,
-      build: async () =>
-        dataTableRowsToMarkdown(tableName, await loadRows(), fields),
-    },
-    {
-      id: "json",
-      label: "Copy JSON",
-      hint: "Pretty-printed rows with friendly column names",
-      icon: Braces,
-      section: "copy",
-      successMessage: `${tableName} JSON copied to clipboard`,
-      build: async () =>
-        JSON.stringify(projectDataTableRows(await loadRows(), fields), null, 2),
-    },
-    {
-      id: "copy-for-ai",
-      label: "Current table view",
-      hint: "Every row and column with table context — never lossy",
-      section: "ai",
-      ariaLabel: `Copy ${tableName} for AI`,
-      successMessage: `${tableName} copied for AI agent`,
-      build: async () =>
-        buildDataTableAgentInput({
-          tableId,
-          tableName,
-          rows: await loadRows(),
-          fields,
-          scope: "view",
-        }),
-    },
+  };
+  const references: ContentTransferReference[] = [
+    { id: "table", label: "Copy table reference", noun: "table", items: [{ table_id: tableId, table_name: tableName }] },
+    { id: "schema", label: "Copy schema reference", noun: "table_schema", items: [{ table_id: tableId, table_name: tableName }] },
+    ...(selectedRowIds.length ? [{ id: "selected", label: `Copy references to ${selectedRowIds.length} selected rows`, noun: "table_row", items: selectedRowIds.map((row_id) => ({ table_id: tableId, table_name: tableName, row_id })) }] : []),
   ];
-
-  const selectedVariants: AiVariant[] =
-    selectedRowIds.length === 0
-      ? []
-      : [
-          {
-            id: "selected-ai",
-            label: `Selected ${selectedRowIds.length === 1 ? "row" : "rows"} (${selectedRowIds.length})`,
-            hint: "Only the ticked rows, with table context",
-            section: "ai",
-            successMessage: `${tableName} — selected rows copied for AI`,
-            build: async () =>
-              buildDataTableAgentInput({
-                tableId,
-                tableName,
-                rows: await selectedRows(),
-                fields,
-                scope: "selected",
-              }),
-          },
-        ];
-
-  return (
-    <CopyButtons
-      size="icon"
-      label={tableName}
-      className={className}
-      aiVariants={[
-        ...viewVariants,
-        ...selectedVariants,
-        copySubset(subsetSource, {
-          hint: "Open the complete table, shape rows and columns, then copy",
-        }),
-      ]}
-      export={{
-        items: [
-          {
-            id: "json",
-            label: "JSON (rows)",
-            onSelect: async () =>
-              downloadFile(
-                exportFilename(tableName, "json"),
-                JSON.stringify(
-                  projectDataTableRows(await loadRows(), fields),
-                  null,
-                  2,
-                ),
-                "application/json",
-              ),
-          },
-          {
-            id: "csv",
-            label: "CSV",
-            onSelect: async () =>
-              downloadFile(
-                exportFilename(tableName, "csv"),
-                rowsToCsv(projectDataTableRows(await loadRows(), fields)),
-                "text/csv",
-              ),
-          },
-        ],
-      }}
-    />
-  );
+  return <ContentTransferMenu
+    source={source}
+    label={tableName}
+    triggerVariant="outline"
+    className={className}
+    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Current filtered view (all matching rows)", target: "Entire table (no filters)", selected: "Selected rows in this view" } }}
+    capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
+    references={references}
+    referenceActions={[{ id: "choose-reference", label: "Choose a row, column or cell reference", run: onChooseReference }]}
+  />;
 }
