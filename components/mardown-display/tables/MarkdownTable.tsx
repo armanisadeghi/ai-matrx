@@ -44,6 +44,7 @@ import { RowActionsMenu } from "./editing/RowActionsMenu";
 import { ColumnActionsMenu } from "./editing/ColumnActionsMenu";
 import { useTableUndo } from "./editing/useTableUndo";
 import { useDoubleClickEdit } from "./editing/useDoubleClickEdit";
+import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
 import {
   appendRow,
   appendColumn,
@@ -690,10 +691,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           </Button>
         </div>
       ) : (
-        <div
+        <MarkdownTableScrollArea
           className={cn(
             isEditingEnabled ? editingBorderStyle : normalBorderStyle,
-            "overflow-x-auto",
             isMobile && "-mx-1",
           )}
         >
@@ -823,7 +823,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
               ))}
             </tbody>
           </table>
-        </div>
+        </MarkdownTableScrollArea>
       )}
       {/* Structural editing toolbar — only when in edit mode (and not streaming) */}
       {!isStreamActive && isEditingEnabled && (
