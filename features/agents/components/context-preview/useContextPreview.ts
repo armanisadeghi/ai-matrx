@@ -84,10 +84,15 @@ export function useContextPreview(opts: {
       if (seq !== requestSeq.current) return; // superseded
       if (result.error) {
         setStatus("error");
-        setError(
-          extractErrorMessage(result.error.serverDetail) ||
-            result.error.message,
-        );
+        // `extractErrorMessage` answers the string "Unknown error" for an
+        // absent detail — truthy — so an `||` chain could never reach the
+        // server's own message, and every failure without a `detail` body
+        // rendered as "Unknown error" with the real sentence one property
+        // away. Ask it only when there IS a detail.
+        const detail = result.error.serverDetail
+          ? extractErrorMessage(result.error.serverDetail)
+          : "";
+        setError(detail || result.error.message || "Unknown error");
         return;
       }
       setData((result.data ?? null) as ContextPreviewResponse | null);
