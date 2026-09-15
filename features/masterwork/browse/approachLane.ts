@@ -65,8 +65,31 @@ export type ApproachLane =
   | { kind: "chatImport"; tab: "upload" | "matrx" }
   /** The Sources panel's dump staging area. */
   | { kind: "dump" }
+  /**
+   * THE MEETING SCAVENGER (2026-09-15). Its own door, not an ingest lane: the
+   * Expert first picks MEETINGS (ours, an uploaded transcript, or a paste) and
+   * then says which VOICE in them is theirs — a question no other lane has,
+   * because no other source has more than one person in it.
+   */
+  | { kind: "meeting" }
   /** The Conductor conversation. */
   | { kind: "conduct" }
+  /**
+   * THE TRIAD GAME's own page (`/masterwork/[id]/triad`). Not an ingest lane
+   * and not a dialog: a phone-first forced-choice game needs the whole screen,
+   * a sticky thumb-reachable footer and a swipe that nothing else is listening
+   * for. Reached by `intake_query.triad = "1"`.
+   */
+  | { kind: "triad" }
+  /**
+   * THE RED-PEN LANE (`red_pen`, 2026-09-15): a piece of somebody else's work
+   * the Expert marks up, correction by correction. It is a lane of its own and
+   * not an `ingest` mode because the source is material the Expert DISAGREES
+   * with — there is no "is it the finished work?" question, no paste-or-upload
+   * choice once the work is in, and the capture surface is a highlighter and a
+   * microphone rather than a text box.
+   */
+  | { kind: "redPen" }
   /**
    * Trial 7's UNFOLDING-CASE dialog — the one door that can SEAL a case as a
    * held-out exam (`role: "heldout"`), which the `timeline` ingest lane has no
@@ -75,6 +98,19 @@ export type ApproachLane =
    * the ingest dialog, so the two doors never fight over one row.
    */
   | { kind: "unfolding" }
+  /**
+   * THE BAD EXAMPLE PROBE (`bad_example_probe`, 2026-09-15) — boundary
+   * hunting. The system writes a plausible-but-wrong version of the Expert's
+   * own work and asks what is wrong with it; each answer steers the next
+   * variant. Reached by `intake_query.probe = "1"`.
+   *
+   * A door of its own and NOT an `ingest` mode: every ingest lane reads
+   * expertise out of something that already exists, and this one MANUFACTURES
+   * the stimulus round by round, so the Expert brings nothing at all. It is
+   * also not a dialog — a session is minutes of back-and-forth and gets a real
+   * URL like the interview and the Conductor.
+   */
+  | { kind: "probe" }
   /**
    * THE PREDICTION LEDGER — calls recorded on real open cases before the
    * answer is known, scored when it arrives. Reached by
@@ -86,7 +122,20 @@ export type ApproachLane =
    * weeks, in two sittings — the call and the outcome — and nothing in the
    * ingest dialog's one-shot shape can hold that.
    */
-  | { kind: "prediction" };
+  | { kind: "prediction" }
+  /**
+   * SHADOW-THE-INBOX (`shadow_inbox`, 2026-09-15) — the Expert's real mail,
+   * diffed against the reply a competent generalist would have written.
+   * Reached by `intake_query.shadowInbox = "1"`.
+   *
+   * A door of its own and NOT a `chatImport` tab, even though both read
+   * transcripts: the chat lane mines what the Expert said to an AI, and this
+   * one MANUFACTURES a baseline first (a blind generic reply) and distils the
+   * distance between it and what they actually sent. It also has a second,
+   * provider-gated door the chat lane has no notion of — and that door is
+   * ABSENT, never dead, until the mailbox grant exists.
+   */
+  | { kind: "shadowInbox" };
 
 /**
  * Resolve a registry row to the lane it opens, or `null` when the product has
@@ -105,9 +154,14 @@ export function resolveApproachLane(
   if (q.chatImport === "1")
     return { kind: "chatImport", tab: q.tab === "matrx" ? "matrx" : "upload" };
   if (q.dump === "1") return { kind: "dump" };
+  if (q.meeting === "1") return { kind: "meeting" };
   if (q.conduct === "1") return { kind: "conduct" };
+  if (q.triad === "1") return { kind: "triad" };
+  if (q.shadowInbox === "1") return { kind: "shadowInbox" };
+  if (q.red_pen === "1") return { kind: "redPen" };
   if (q.intake === "timeline") return { kind: "unfolding" };
   if (q.predictions === "1") return { kind: "prediction" };
+  if (q.probe === "1") return { kind: "probe" };
   return null;
 }
 

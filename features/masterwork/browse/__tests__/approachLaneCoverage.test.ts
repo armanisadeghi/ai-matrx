@@ -151,38 +151,69 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     launchHref: "/chat",
   },
   {
+    // THE MEETING SCAVENGER, opened 2026-09-15. The row sat `coming_soon` while
+    // the platform already stored every word of every meeting it hosts
+    // (`communication.meet_transcript_segments`, speaker-attributed and
+    // timestamped) — the lane was missing, not the data. Flipped through the
+    // registry's own write path (`aidream/scripts/set_approach_enabled.py`).
     key: "meeting_scavenger",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { meeting: "1" },
     launchHref: null,
   },
   {
+    // Flipped coming_soon -> live on 2026-09-15 by
+    // `aidream/db/migrations/0716_shadow_the_inbox_is_live.sql`, whose parity
+    // block refuses the write unless the row ends up enabled, available AND
+    // carrying a lane key — the `timeline` defect (census row 3) cannot recur
+    // through this row. The lane: the Expert's real mail diffed against a
+    // blind generic reply (`features/masterwork/components/detail/ShadowInboxDialog.tsx`).
     key: "shadow_inbox",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { shadowInbox: "1" },
     launchHref: null,
   },
   {
+    // Flipped coming_soon -> live on 2026-09-15 through the platform's own
+    // registry write path (`aidream/scripts/set_approach_enabled.py`, the Matrx
+    // ORM ApproachManager), in the same wave as the lane behind it: the markup
+    // dialog (`components/detail/RedPenDialog.tsx`), the server lane
+    // (`aidream/services/distillation/markup_ingest.py`) and the mandate
+    // `masterwork.markup_distiller`. The card was a static coming-soon tile for
+    // as long as the product had no door for it — never because the idea was
+    // unfinished.
     key: "red_pen",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { red_pen: "1" },
     launchHref: null,
   },
   {
+    // Flipped coming_soon -> live on 2026-09-15 in the same wave as the lane
+    // behind it: the probe page (`app/(core)/masterwork/[id]/probe/page.tsx`),
+    // the server lane (`aidream/services/distillation/probe.py`,
+    // `POST /masterworks/probe`) and the two mandates
+    // `masterwork.bad_example_probe` + `masterwork.critique_distiller`. The
+    // registry write, the three `masterwork.bad_example_probe` knobs and the
+    // durable-run operation vocabulary all land in ONE ledgered migration
+    // (`aidream/db/migrations/0714_bad_example_probe_is_live.sql`) whose parity
+    // block refuses to commit a row that is enabled with no lane key.
     key: "bad_example_probe",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { probe: "1" },
     launchHref: null,
   },
   {
+    // THE TRIAD GAME, opened 2026-09-15 by its own lane build (this row is
+    // recorded here so the shared snapshot matches the live registry; the lane
+    // itself resolves `{triad:"1"}` in approachLane.ts).
     key: "triad_game",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { triad: "1" },
     launchHref: null,
   },
   {
@@ -238,6 +269,15 @@ describe("every promised Distillation Approach has a lane", () => {
     });
   });
 
+  it("opens the Meeting Scavenger on its own door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find(
+      (r) => r.key === "meeting_scavenger",
+    );
+    expect(row).toBeDefined();
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({ kind: "meeting" });
+  });
+
   it("opens the monologue Approach on the voice-first ingest lane", () => {
     const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "monologue");
     expect(row).toBeDefined();
@@ -257,6 +297,38 @@ describe("every promised Distillation Approach has a lane", () => {
     expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
       kind: "prediction",
     });
+  });
+
+  it("opens the red_pen Approach on the markup door — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "red_pen");
+    expect(row).toBeDefined();
+    // THE CARD IS NOT A POSTER. Before 2026-09-15 this row was
+    // `enabled=false`, `availability="coming_soon"`, `intake_query={}` — a tile
+    // rendering `aria-disabled="true"` with `cursor: not-allowed` and no link,
+    // logged as such in two consecutive censuses. A live card that resolves to
+    // null would be worse (an Expert can select it and the product cannot open
+    // it), so both halves are asserted here: the row PROMISES a lane, and the
+    // lane exists.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({ kind: "redPen" });
+  });
+
+  it("opens the bad_example_probe Approach on the probe page — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find(
+      (r) => r.key === "bad_example_probe",
+    );
+    expect(row).toBeDefined();
+    // THE CARD IS NOT A POSTER. Before 2026-09-15 this row was
+    // `enabled=false`, `availability="coming_soon"`, `intake_query={}` — a tile
+    // rendering `aria-disabled="true"` with `cursor: not-allowed` and no link,
+    // logged as such in two consecutive censuses (2026-09-12 and 2026-09-15).
+    // A live card that resolved to null would be WORSE than the poster: an
+    // Expert could select it and the product could not open it. Both halves are
+    // asserted here — the row PROMISES a lane, and the lane exists.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({ kind: "probe" });
   });
 
   it("returns null — never a guess — for a row the product has no door for", () => {

@@ -99,7 +99,10 @@ import {
 import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
+import { MeetingScavengerDialog } from "./MeetingScavengerDialog";
+import { ShadowInboxDialog } from "./ShadowInboxDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { RedPenDialog } from "./RedPenDialog";
 import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { PredictionLedgerDialog } from "@/features/masterwork/prediction/PredictionLedgerDialog";
 import { CalibrationReadout } from "@/features/masterwork/prediction/CalibrationReadout";
@@ -276,7 +279,16 @@ export function RuleProvenanceMoment({ rule }: { rule: RulebookRule }) {
     sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
       ? formatTimeAnchor(sourceRef.time_range)
       : null;
+  // A meeting rule's moment is WHO plus WHEN: "Dana Whitfield, at 4:12". The
+  // clock alone cannot answer the only question the Expert is being asked —
+  // was that me? — because a meeting has several people in it.
+  const spoken = sourceRef.speaker
+    ? time
+      ? `${sourceRef.speaker}, ${time}`
+      : sourceRef.speaker
+    : null;
   const where =
+    spoken ??
     time ??
     (sourceRef.source_pages?.length
       ? formatPages(sourceRef.source_pages)
@@ -318,7 +330,19 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
     <div className="space-y-1 text-xs text-muted-foreground">
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <span>From the source:</span>
-        {sourceRef.entity ? (
+        {sourceRef.meeting_slug ? (
+          // THE DOOR LAW: the meeting is a real record with a durable link —
+          // the rule's origin opens the room, never sits as dead prose.
+          <Link
+            href={`/meet/${sourceRef.meeting_slug}`}
+            target="_blank"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {sourceRef.meeting_title ?? label}
+          </Link>
+        ) : sourceRef.meeting_title && !sourceRef.file_id ? (
+          <span>{sourceRef.meeting_title}</span>
+        ) : sourceRef.entity ? (
           // The dump Approach: the rule came from an ATTACHED entity — the
           // registry renders its name and its doors (open in new tab + peek).
           <EntityRef
@@ -361,6 +385,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
           <span>{label}</span>
         )}
         {pages ? <span>· {pages}</span> : null}
+        {sourceRef.speaker ? <span>· said by {sourceRef.speaker}</span> : null}
         {time ? <span>· {time}</span> : null}
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
         {sourceRef.approach ? (
@@ -780,6 +805,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [conductorOpen, setConductorOpen] = useState(
     searchParams.get("conduct") === "1",
   );
+  // THE MEETING SCAVENGER lands here with ?meeting=1 — its dialog IS the next
+  // step (`intake_query = {"meeting":"1"}` on the registry row).
+  const [meetingOpen, setMeetingOpen] = useState(
+    searchParams.get("meeting") === "1",
+  );
+  // 🚨 THE TRIAD GAME'S DEEP LINK. The guided start (`/masterwork/new?approach=
+  // triad_game`) creates the Rulebook and then appends the registry row's own
+  // `intake_query` to this page's URL — `?triad=1`. Every other lane's query
+  // opens a dialog HERE; this one's lane is a whole route, so the only honest
+  // thing this page can do with it is hand the Expert straight on to it.
+  // Without this the card would be live, selectable, and land her on a bare
+  // Rulebook page with no game and no error — census row 3's exact defect, the
+  // one `approachLane.ts` exists to stop happening a second time.
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpParam = searchParams.get("dump") === "1";
@@ -832,6 +870,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const dumpFocus = dumpParam || dumpRequested;
   const router = useRouter();
 
+  const triadParam = searchParams.get("triad") === "1";
+  const triadHandoff = useRef(false);
+  useEffect(() => {
+    if (!triadParam || triadHandoff.current || !rulebook?.id) return;
+    triadHandoff.current = true;
+    router.replace(`/masterwork/${rulebook.id}/triad`);
+  }, [triadParam, rulebook?.id, router]);
+
+
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
   const [corpusOpen, setCorpusOpen] = useState(
@@ -843,6 +890,27 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [chatImportOpen, setChatImportOpen] = useState(
     searchParams.get("chatImport") === "1",
   );
+  // SHADOW-THE-INBOX ("Shadow your inbox") lands here with ?shadowInbox=1 —
+  // the inbox dialog IS the next step. The registry row carries the same
+  // `{"shadowInbox":"1"}` in its `intake_query`, so the deep link and the
+  // in-page picker can never drift apart. Full page: /masterwork/[id]/inbox.
+  //
+  // 🚨 AN INBOX SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest,
+  // unfolding, the ledger and the red pen already live by: this page instance
+  // is REUSED across Rulebooks, and a bare `useState` would leave one Expert's
+  // pasted mail thread — their real correspondence — on screen after
+  // navigating to another Rulebook, and then distil it there.
+  const shadowInboxSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const shadowInboxOpen = shadowInboxSession.open;
+  const setShadowInboxOpen = shadowInboxSession.setOpen;
+  const shadowInboxDeepLink = searchParams.get("shadowInbox") === "1";
+  const shadowInboxDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!shadowInboxDeepLink || shadowInboxDeepLinkRef.current || !rulebook?.id)
+      return;
+    shadowInboxDeepLinkRef.current = true;
+    setShadowInboxOpen(true);
+  }, [shadowInboxDeepLink, rulebook?.id, setShadowInboxOpen]);
   // The TIMELINE Approach ("a case that unfolded") lands here with
   // ?intake=timeline — the unfolding dialog IS the next step. The registry row
   // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
@@ -889,6 +957,27 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     predictionDeepLinkRef.current = true;
     setPredictionOpen(true);
   }, [predictionDeepLink, rulebook?.id, setPredictionOpen]);
+  // THE RED-PEN LANE ("Mark it up here instead") lands here with ?red_pen=1 —
+  // the markup dialog IS the next step. The registry row carries the same
+  // `{"red_pen":"1"}` in its `intake_query`, so the deep link and the in-page
+  // picker can never drift apart.
+  //
+  // 🚨 A MARKUP SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest,
+  // unfolding and the ledger already live by: this page instance is REUSED
+  // across Rulebooks, and a bare `useState` would leave one Expert's
+  // half-marked draft on screen after navigating to another Rulebook — and
+  // then distil it there.
+  const redPenSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const redPenOpen = redPenSession.open;
+  const setRedPenOpen = redPenSession.setOpen;
+  const redPenDeepLink = searchParams.get("red_pen") === "1";
+  const redPenDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!redPenDeepLink || redPenDeepLinkRef.current || !rulebook?.id) return;
+    redPenDeepLinkRef.current = true;
+    setRedPenOpen(true);
+  }, [redPenDeepLink, rulebook?.id, setRedPenOpen]);
+
   // Read straight off the Rulebook already in hand — the ledger lives on
   // `metadata.prediction_ledger`, so the page owes it no query of its own.
   const predictionEntries = rulebook ? ledgerOf(rulebook).entries : [];
@@ -942,8 +1031,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "dump":
           setDumpRequested(true);
           return;
+        case "meeting":
+          setMeetingOpen(true);
+          return;
         case "conduct":
           setConductorOpen(true);
+          return;
+        // THE TRIAD GAME has no dialog on this page on purpose: it takes the
+        // whole screen, on a phone, with a sticky footer and a swipe. The
+        // picker sends the Expert to its route instead of half-rendering it
+        // inside a Rulebook panel.
+        case "triad":
+          router.push(`/masterwork/${rulebookId}/triad`);
           return;
         // Trial 7's UNFOLDING-CASE door — the dialog that can also SEAL a case
         // as a held-out exam, which the `timeline` ingest lane has no notion
@@ -956,9 +1055,35 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "prediction":
           setPredictionOpen(true);
           return;
+        // THE RED-PEN LANE — somebody else's work, marked up correction by
+        // correction. A registry row reaches it with `intake_query.red_pen="1"`.
+        case "redPen":
+          setRedPenOpen(true);
+          return;
+        // THE BAD EXAMPLE PROBE — boundary hunting. Its own PAGE, not a dialog
+        // or a panel: a probe is minutes of back-and-forth (a bad example, a
+        // dictated catch, the next bad example), which is a working mode and
+        // therefore owed a real URL like the interview and the Conductor.
+        case "probe":
+          router.push(`/masterwork/${rulebookId}/probe`);
+          return;
+        // SHADOW-THE-INBOX — the Expert's real mail, diffed against the reply
+        // a competent generalist would have written. A registry row reaches it
+        // with `intake_query.shadowInbox="1"`.
+        case "shadowInbox":
+          setShadowInboxOpen(true);
+          return;
       }
     },
-    [router, openIngestLane, setPredictionOpen, setTimelineOpen],
+    [
+      router,
+      rulebookId,
+      openIngestLane,
+      setPredictionOpen,
+      setRedPenOpen,
+      setShadowInboxOpen,
+      setTimelineOpen,
+    ],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -2857,6 +2982,31 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             canEdit={canEdit}
             onChanged={() => void reloadRulebook()}
           />
+          <RedPenDialog
+            // The marked-up work, its corrections and its run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the
+            // ledger dialog above.
+            key={`red-pen-${rulebook.id}`}
+            open={redPenOpen}
+            onOpenChange={setRedPenOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          <ShadowInboxDialog
+            // The pasted thread, the picked threads and the run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the red-pen
+            // dialog above. Sharper here than anywhere else: the staged content
+            // is the Expert's real correspondence.
+            key={`shadow-inbox-${rulebook.id}`}
+            open={shadowInboxOpen}
+            onOpenChange={setShadowInboxOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+            onFollowupSeed={(seed) => {
+              setInterviewSeed(seed);
+              setInterviewOpen(true);
+            }}
+          />
           {/* Keyed on the lane so `chat_import` and `matrx_conversations` —
               two registry rows, ONE dialog — each open on their own tab. A
               key remount is the idiomatic reset; the dialog reads initialTab
@@ -2872,6 +3022,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewSeed(seed);
               setInterviewOpen(true);
             }}
+          />
+          <MeetingScavengerDialog
+            key={`meeting-${rulebook.id}`}
+            open={meetingOpen}
+            onOpenChange={setMeetingOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+            onFollowupSeed={(seed) => setInterviewSeed(seed)}
           />
           <ConductorPanel
             rulebookId={rulebook.id}

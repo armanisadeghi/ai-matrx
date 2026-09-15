@@ -18,5 +18,10 @@
     "file": "features/surfaces/manifests/content-plan.manifest.ts",
     "key": "seo.strategy.site_brief.generate",
     "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate \u2014 the site brief writer); its mandate.definition row lands with that deploy + mandate sync, and @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
+  },
+  {
+    "file": "features/masterwork/components/detail/MeetingScavengerDialog.tsx",
+    "key": "masterwork.meeting_scavenger",
+    "reason": "The Meeting Scavenger's mandate, registered 2026-09-15 (mandate.definition row, enabled, holder bound to the builtin seeded by aidream/scripts/seed_meeting_scavenger_agent.py). The installed @ai-matrx/agents predates it, so the generated key union cannot carry it yet. Swap the literal for MANDATE_KEYS.masterwork__meeting_scavenger on the first change here after the package republishes."
   }
 ]

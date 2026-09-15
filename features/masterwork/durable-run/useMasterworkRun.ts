@@ -102,6 +102,26 @@ export type MasterworkRunSurface =
   // did not. Its own surface + pointer: a ledger distillation is not a source
   // ingest, and a reload must never rejoin one as the other.
   | "prediction"
+  // THE RED-PEN LANE (`/masterworks/ingest-markup`) — a piece of somebody
+  // else's work the Expert marked up, correction by correction. Its own
+  // surface + pointer: a review is not a source ingest, and a reload must
+  // never rejoin one as the other.
+  | "red_pen"
+  // THE BAD EXAMPLE PROBE (`/masterworks/probe`) — one round: distil what the
+  // Expert said was wrong with the last plausible-but-wrong example, then
+  // write the next one. Its own surface + pointer, and its own terminal event,
+  // because a probe round's answer is a NEW QUESTION as well as a rule count.
+  | "probe"
+  // SHADOW-THE-INBOX (`/masterworks/ingest-inbox`) — the Expert's real mail,
+  // diffed against a blind generic reply. Its own surface + pointer: it is not
+  // a source ingest and must never rejoin one, and its run makes TWO paid calls
+  // per thread rather than one.
+  | "shadow_inbox"
+  // THE MEETING SCAVENGER (`/masterworks/ingest-meeting`) — the meetings the
+  // Expert already has, mined for the moments THEY made a call. Its own
+  // surface + pointer: a meeting scavenge is not a chat import and a reload
+  // must never rejoin one as the other.
+  | "meeting"
   // THE TRIAL BENCH (`/masterworks/{rulebook_id}/bench/runs`) — six arms, a
   // blind panel, and a verdict. Its own surface and pointer: a Bench trial is
   // not an Audition and must never rejoin one.
@@ -159,6 +179,18 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // The prediction-ledger lane appends draft rules exactly as the other
   // ingest lanes do, so it shares their terminal event — and nothing else.
   prediction: "masterwork_ingest_complete",
+  // The red-pen lane appends draft rules exactly as the other ingest lanes
+  // do, so it shares their terminal event — and nothing else.
+  red_pen: "masterwork_ingest_complete",
+  // The probe is the one lane whose terminal payload is not an ingest summary:
+  // it carries the next bad example as well as what the last answer produced.
+  probe: "masterwork_probe_round",
+  // Shadow-the-inbox appends draft rules exactly as the other ingest lanes do,
+  // so it shares their terminal event — and nothing else.
+  shadow_inbox: "masterwork_ingest_complete",
+  // The Meeting Scavenger (`/masterworks/ingest-meeting`) — same terminal
+  // event as every ingest lane, its own surface so the pointers never cross.
+  meeting: "masterwork_ingest_complete",
   bench: "masterwork_bench_verdict",
 };
 
@@ -219,6 +251,31 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   // whole document, so it opens on the measured `chat` figure (25 s) doubled
   // rather than on a source ingest's 160 s.
   prediction: 50_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. It distils a handful of short corrections rather than a
+  // whole document, in one or two batches, so it opens on the prediction
+  // lane's figure rather than on a source ingest's 160 s.
+  red_pen: 50_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. One round is TWO paid calls in sequence: distilling a
+  // short spoken critique (the measured `chat` shape, ~25 s) and then writing
+  // a whole work product with a reasoning model (nearer a build's 60 s).
+  probe: 90_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. Per thread it makes TWO paid calls in sequence: a
+  // generalist drafting one email blind (shorter than a `chat` distillation,
+  // ~20 s) and then the transcript distiller reading the correction log (the
+  // measured `chat` shape, ~25 s). Threads run concurrently, so the promise is
+  // the serial depth of one thread plus headroom, not a multiple of the count.
+  shadow_inbox: 60_000,
+  // The scavenger reads one portion per meeting-sized batch of the Expert's own
+  // turns — far less text than a source ingest, and a single paid call for most
+  // meetings. Seeded at the chat lane's measured median until this lane has
+  // runs of its own on `platform.masterwork_run`; re-measure then.
+  meeting: 40_000,
   // ESTIMATE, not a measurement — this lane has no runs of its own on the
   // ledger yet, and the header of this table demands it be re-measured the
   // moment it does. A trial runs SIX arms (A0/A1/A2/B/C/GT), one of which is

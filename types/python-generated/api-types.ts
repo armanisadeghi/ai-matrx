@@ -3346,6 +3346,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/conversations/{conversation_id}/responder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coding Reply Responder
+         * @description Who answers a reply on this conversation — read BEFORE the turn.
+         *
+         *     Owner-scoped: a conversation that is not a coding-session mirror belonging to the
+         *     caller answers `is_coding_session_mirror: false` and nothing else, which is what
+         *     every ordinary conversation gets.
+         */
+        get: operations["coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coding-sessions/sessions": {
         parameters: {
             query?: never;
@@ -5776,7 +5800,7 @@ export interface paths {
         put?: never;
         /**
          * Catalog Refresh
-         * @description Force the server-wide tool catalog sync without touching user auth.
+         * @description Force the server-wide tool catalog sync using this admin's connection.
          */
         post: operations["catalog_refresh_mcp_connections__server_id__catalog_refresh_post"];
         delete?: never;
@@ -5971,29 +5995,6 @@ export interface paths {
         put?: never;
         /** Google Calendar Agenda */
         post: operations["google_calendar_agenda_google_integrations_calendar_agenda_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/google-integrations/capabilities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Google Capabilities
-         * @description Typed Google product metadata for the authenticated caller.
-         *
-         *     The catalog is static capability and rollout information only. It does not
-         *     inventory connections, selected resources, Vault values, or provider data.
-         */
-        get: operations["google_capabilities_google_integrations_capabilities_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -24426,6 +24427,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-markup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Markup
+         * @description THE RED-PEN LANE (`red_pen`): a piece of someone else's work the Expert
+         *     marked up. Each correction is a struck-through passage plus the Expert's own
+         *     words — typed or dictated — on what is wrong and what they would do instead,
+         *     and the rule comes out of the DISAGREEMENT. Every rule's `source_ref.span`
+         *     cites the passage that provoked it and the moment the Expert said so.
+         */
+        post: operations["ingest_rulebook_markup_masterworks_ingest_markup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Predictions
+         * @description The `prediction_ledger` Approach: the Expert's own calls on real open
+         *     cases, made before the outcome existed and now scored against what actually
+         *     happened. The whys behind calls that HELD become rules carrying the
+         *     prediction and its outcome as evidence; the whys behind calls that MISSED
+         *     become boundary findings the Expert is asked about, never rules written
+         *     over their head.
+         *
+         *     A ledger still waiting on the world is not an empty success: below the
+         *     `min_resolved_to_distill` knob this refuses with the real counts and the
+         *     real remedy (`masterwork_prediction_not_enough_outcomes`).
+         */
+        post: operations["ingest_rulebook_predictions_masterworks_ingest_predictions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Prediction Ledger
+         * @description The ledger's calibration readout and this organization's knob values.
+         *
+         *     The ENTRIES themselves are not returned: the client already holds them —
+         *     it wrote them direct to `platform.rulebook.metadata` through supabase-js,
+         *     which is the platform's normal path for a pure UI↔DB write. This endpoint
+         *     exists for the two things the client cannot compute for itself: the
+         *     organization-scoped knob values, and the server's own reading of the same
+         *     ledger, so a drift between the two derivations is visible rather than
+         *     silent.
+         */
+        get: operations["read_prediction_ledger_masterworks__rulebook_id__predictions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/triage": {
         parameters: {
             query?: never;
@@ -24598,6 +24680,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/triads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deal Rulebook Triads
+         * @description The Triad game's DEAL: three short items per card, drawn from this
+         *     Rulebook's own craft, for the Expert to choose between.
+         *
+         *     Not a durable run, deliberately. Nothing here is written to the Rulebook —
+         *     a generated card is a QUESTION, and a lost deck costs one cheap call and is
+         *     re-dealt by pressing the button again. Only an ANSWERED card is distilled,
+         *     and that door (`/masterworks/ingest-triad`) is the one that writes.
+         */
+        post: operations["deal_rulebook_triads_masterworks_triads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-triad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Triad
+         * @description ONE played Triad card into DRAFT rules: the three items, which one the
+         *     Expert chose, and the one line she said about why.
+         *
+         *     The reason is the rule candidate and the triad is the evidence, so the
+         *     quote is verified against HER words and never against an item the platform
+         *     wrote. One card per call — submitted the moment she swipes, so the rules
+         *     appear while she is still playing and a session abandoned after three cards
+         *     keeps all three.
+         */
+        post: operations["ingest_rulebook_triad_masterworks_ingest_triad_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Masterwork Bad Example Probe
+         * @description The Bad Example probe: ONE round. Distil what the Expert said was wrong
+         *     with the last plausible-but-wrong example we showed them, then write the
+         *     next one — probing a boundary of their judgment no earlier round reached.
+         *     Stops when they say "I'd never see that" or the round knob runs out.
+         */
+        post: operations["masterwork_bad_example_probe_masterworks_probe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-chat": {
         parameters: {
             query?: never;
@@ -24635,6 +24793,121 @@ export interface paths {
          *     (chat.message, strict owner scope) into DRAFT rules.
          */
         post: operations["ingest_rulebook_conversations_masterworks_ingest_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/meeting/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Meeting Transcripts
+         * @description The Meeting Scavenger's picker: read the chosen meetings (ours, an
+         *     uploaded transcript, or a paste) and list the VOICES in them, so the Expert
+         *     can say which one is them. Deterministic — no AI, no writes; meetings are
+         *     read under the caller's own RLS.
+         */
+        post: operations["preview_meeting_transcripts_masterworks_meeting_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-meeting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Meeting
+         * @description THE MEETING SCAVENGER (`meeting_scavenger` Approach): the meetings the
+         *     Expert already has — ours, uploaded or pasted — scavenged for the moments
+         *     THEY made a call, corrected someone, or held a disagreement, each draft rule
+         *     carrying the speaker and the moment it was said. Zero new minutes.
+         */
+        post: operations["ingest_rulebook_meeting_masterworks_ingest_meeting_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/inbox/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inbox Connection
+         * @description SHADOW-THE-INBOX's connected door: is there a mailbox whose threads this
+         *     person's replies can actually be read from?
+         *
+         *     `connected=false` is the ANSWER, never an error — the surface renders no
+         *     picker at all (an absent control, not a dead one) and shows
+         *     `how_to_connect`. Deterministic: no AI, no writes, no provider call.
+         */
+        get: operations["inbox_connection_masterworks_inbox_connection_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/inbox/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Inbox Threads
+         * @description Parse a pasted/uploaded mail export and list its threads, each saying
+         *     whether there is anything of the Expert's to shadow in it — before a single
+         *     paid call. Deterministic; access-gated on the file.
+         */
+        post: operations["preview_inbox_threads_masterworks_inbox_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Inbox
+         * @description The Shadow-the-inbox Approach: diff what the Expert actually replied
+         *     against what a competent generalist would have written (drafted blind), and
+         *     distill the difference into DRAFT rules anchored to the thread.
+         */
+        post: operations["ingest_rulebook_inbox_masterworks_ingest_inbox_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24761,6 +25034,73 @@ export interface paths {
         get: operations["read_expert_corpus_masterworks__rulebook_id__corpus_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/bench": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Bench Proof
+         * @description THE PROOF — the latest five-arm Bench trial for this Rulebook, or an
+         *     honest no.
+         *
+         *     The Audition is a quick fidelity check against the Expert's published work
+         *     and can never establish a win (doctrine CORE.md §6/§9). This is where a
+         *     screen asks whether the thing that CAN — a logged Bench run naming the arm
+         *     and the budget — exists. No record means ``reason`` says so in one sentence;
+         *     it never means an empty success.
+         */
+        get: operations["read_bench_proof_masterworks__rulebook_id__bench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/bench/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Bench Run
+         * @description THE DOOR — start a Trial Bench run for this Rulebook, streamed arm by arm.
+         *
+         *     The Bench is the PROOF the Audition cannot be (doctrine CORE.md §6/§9): six
+         *     arms, a blind panel the expert's own withheld answer has to win, and dollars
+         *     and seconds on every row. It runs for minutes and spends real money on every
+         *     arm, so it streams — the arms land with their price as they finish, not all
+         *     at once at the end.
+         *
+         *     🚨 DURABLE WHEN THE VOCABULARY ALLOWS IT, HONEST WHEN IT DOES NOT. A bench
+         *     trial is shaped exactly like a ``platform.masterwork_run`` row, but
+         *     ``operation`` is closed by the CHECK constraint
+         *     ``masterwork_run_operation_valid`` and ``bench_trial`` is not in it yet
+         *     (``bench/persistence.py`` has the two-part change; the migration is Arman's
+         *     to authorise). Claiming the row anyway would fail the INSERT and kill the run
+         *     before its first arm, and filing it under another operation's name would
+         *     corrupt that operation's trend line. So while the word is absent this runs
+         *     outside the run ledger — the same work, the same stream, the files and the
+         *     bench index as the record — and the service SAYS SO in the stream rather
+         *     than letting a person believe a refresh is safe. The moment the migration
+         *     lands, the same request becomes a durable, rejoinable run with no code
+         *     change but this branch's own condition.
+         */
+        post: operations["start_bench_run_masterworks__rulebook_id__bench_runs_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25884,11 +26224,7 @@ export interface paths {
         put?: never;
         /**
          * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
+         * @description Mint a real Supabase Auth session for the given user id.
          */
         post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
@@ -38403,7 +38739,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.ably.com
@@ -38441,7 +38777,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -38624,7 +38960,7 @@ export interface components {
              * Result Class
              * @enum {string}
              */
-            result_class: "blocked" | "browser" | "conflict" | "navigation" | "not_found" | "ok" | "timeout" | "validation";
+            result_class: "ok" | "not_found" | "timeout" | "navigation" | "browser" | "validation" | "blocked" | "conflict";
             /** Error Code */
             error_code?: string | null;
             /** Capture Suppressed Reason */
@@ -38752,7 +39088,7 @@ export interface components {
              * @default unknown
              * @enum {string}
              */
-            status?: "active" | "moved" | "stale" | "unknown";
+            status?: "active" | "stale" | "moved" | "unknown";
             /**
              * Window Days
              * @default 30
@@ -38815,7 +39151,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -38866,7 +39202,7 @@ export interface components {
              * @default member
              * @enum {string}
              */
-            role?: "admin" | "member";
+            role?: "member" | "admin";
         };
         /** AddItemsResponse */
         AddItemsResponse: {
@@ -38918,7 +39254,7 @@ export interface components {
             /** Title */
             title?: string | null;
             /** Source Type */
-            source_type?: ("file" | "manual" | "pdf" | "web" | "youtube") | null;
+            source_type?: ("web" | "youtube" | "pdf" | "file" | "manual") | null;
         };
         /** AddYouTubeVideosRequest */
         AddYouTubeVideosRequest: {
@@ -39269,7 +39605,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "advanced" | "excluded" | "refused" | "reverted";
+            status: "advanced" | "reverted" | "refused" | "excluded";
             /** Reason */
             reason?: string | null;
             /** Prior Pinned Version Id */
@@ -39354,7 +39690,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_agent_app
@@ -39476,7 +39812,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /** Store */
             store: boolean;
             /**
@@ -39666,7 +40002,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_agent
@@ -39719,7 +40055,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /** Store */
             store: boolean;
             /**
@@ -40056,7 +40392,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "forbidden" | "not_found" | "ok";
+            status: "ok" | "not_found" | "forbidden";
             scope: components["schemas"]["ScopeContext"];
             /** Chunk */
             chunk: {
@@ -40227,7 +40563,7 @@ export interface components {
              * @default inline
              * @enum {string}
              */
-            result_mode?: "inline" | "inline_once" | "reference";
+            result_mode?: "inline" | "reference" | "inline_once";
             /**
              * Handoff
              * @description Agent-as-Router (Pattern 1): a successful call ENDS the caller's loop — the child's answer streams to the client and persists as the conversation's own assistant response; control returns to the caller only on error. Mutually exclusive with result_mode != 'inline' (a handoff answer IS the response, never a descriptor).
@@ -40555,7 +40891,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -40851,7 +41187,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.airbrake.io
@@ -40892,7 +41228,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -40929,7 +41265,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -40966,7 +41302,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -41000,7 +41336,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -41034,7 +41370,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -41097,7 +41433,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -41250,7 +41586,7 @@ export interface components {
              * @description Where this one asset stands.
              * @enum {string}
              */
-            status: "completed" | "failed" | "pending" | "skipped";
+            status: "completed" | "pending" | "failed" | "skipped";
             /**
              * Action
              * @description What the client can do about it: regenerate, or none when unaddressable.
@@ -41438,7 +41774,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -41788,7 +42124,7 @@ export interface components {
              * Holder Kind
              * @enum {string}
              */
-            holder_kind: "binding" | "mandate_default";
+            holder_kind: "mandate_default" | "binding";
             /**
              * Row Id
              * Format: uuid
@@ -41862,7 +42198,7 @@ export interface components {
              * Requirement
              * @enum {string}
              */
-            requirement: "every_message" | "none" | "sampled";
+            requirement: "every_message" | "sampled" | "none";
             /** Required For This Message */
             required_for_this_message: boolean;
             /** Sample Percent */
@@ -42277,7 +42613,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -42314,7 +42650,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -42331,7 +42667,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /**
              * Folder
              * @description Logical folder containing the asset master.
@@ -42394,7 +42730,7 @@ export interface components {
          */
         AssetPatchRequest: {
             /** Visibility */
-            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Share With */
             share_with?: string[] | null;
             /**
@@ -42402,7 +42738,7 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level?: "admin" | "read" | "write";
+            share_level?: "read" | "write" | "admin";
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -42524,7 +42860,7 @@ export interface components {
              * Format
              * @enum {string}
              */
-            format: "avif" | "jpeg" | "png" | "webp";
+            format: "jpeg" | "png" | "webp" | "avif";
             /**
              * Quality
              * @description None when format='png'
@@ -42536,12 +42872,12 @@ export interface components {
              */
             size: number;
             /** Fit */
-            fit?: ("contain" | "cover" | "inside") | null;
+            fit?: ("cover" | "contain" | "inside") | null;
             /**
              * Position
              * @description Echoed when fit='cover'. None for contain/inside.
              */
-            position?: ("attention" | "bottom" | "bottom-left" | "bottom-right" | "center" | "entropy" | "left" | "right" | "top" | "top-left" | "top-right") | components["schemas"]["FocalPoint"] | null;
+            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"] | null;
             /**
              * Notes
              * @description Soft warnings (e.g. 'anchor entropy unsupported, used center', 'exif-transpose failed'). Empty when nothing notable.
@@ -42778,7 +43114,7 @@ export interface components {
              * Initiation
              * @description How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Stream
              * @description Stream the agent's tokens as they are produced.
@@ -42969,7 +43305,7 @@ export interface components {
          * AssignmentItemStatus
          * @enum {string}
          */
-        AssignmentItemStatus: "cancelled" | "completed" | "leased" | "pending" | "retryable_failed" | "running" | "terminal_failed";
+        AssignmentItemStatus: "pending" | "leased" | "running" | "completed" | "retryable_failed" | "terminal_failed" | "cancelled";
         /**
          * AssignmentOrder
          * @enum {string}
@@ -43001,7 +43337,7 @@ export interface components {
          * AssignmentSessionStatus
          * @enum {string}
          */
-        AssignmentSessionStatus: "cancelled" | "completed" | "failed" | "partially_failed" | "pending" | "running";
+        AssignmentSessionStatus: "pending" | "running" | "completed" | "partially_failed" | "failed" | "cancelled";
         /** AssignmentSessionSummary */
         AssignmentSessionSummary: {
             /**
@@ -43101,7 +43437,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://attentive.statuspage.io
@@ -43197,7 +43533,7 @@ export interface components {
          * AudioStyle
          * @enum {string}
          */
-        AudioStyle: "Educational Podcast" | "Podcast Interview" | "پادکست خبری ایران";
+        AudioStyle: "Podcast Interview" | "Educational Podcast" | "پادکست خبری ایران";
         /** AudioboomServiceStatus */
         AudioboomServiceStatus: {
             /**
@@ -43222,7 +43558,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.audioboom.com
@@ -43272,13 +43608,22 @@ export interface components {
         };
         /**
          * AuditionCompareRequest
-         * @description Judge a Masterwork against a reference. TWO modes, one endpoint.
+         * @description Judge a Masterwork against a reference. THREE modes, one endpoint.
+         *
+         *     🚨 EVERY MODE HERE IS A QUICK CHECK, NOT A PROOF. Each one compares at most
+         *     two or three arms against one reference. Proof under the doctrine
+         *     (``common-docs/systems/masterwork/doctrine/CORE.md`` §6, and §9's standing
+         *     verdict of 2026-09-14 that the shipped Audition's "Expert match" score is
+         *     not proof) is a logged five-arm Bench run — A0/A1/A2/B/C/GT, blind panel,
+         *     dollars and seconds per arm, naming the arm and the budget
+         *     (``aidream/services/masterworks/bench/``). No sentence produced by these
+         *     modes claims a win, and none of them says "beat".
          *
          *     ``mode="reference"`` (the default, and the only shape that existed before
          *     2026-09-12): our Masterwork's output vs the Expert's real published exemplar
-         *     for the same inputs — comparison verdict citing rulebook rule ids, gaps
-         *     optionally landing as DRAFT rules. Every request written for that mode stays
-         *     valid byte-for-byte.
+         *     for the same inputs — a rule-by-rule fidelity comparison citing rulebook rule
+         *     ids, gaps optionally landing as DRAFT rules. Every request written for that
+         *     mode stays valid byte-for-byte.
          *
          *     ``mode="elicitation"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or
          *     two Masterwork DESKS each hold a real conversation with a sealed, reactive
@@ -43319,7 +43664,7 @@ export interface components {
              * @default reference
              * @enum {string}
              */
-            mode?: "elicitation" | "reference" | "unfolding";
+            mode?: "reference" | "unfolding" | "elicitation";
             /**
              * Candidate Text
              * @description reference mode: our Masterwork's output for the shared inputs.
@@ -43542,7 +43887,7 @@ export interface components {
              * Deterministic Cannibalization Risk
              * @enum {string}
              */
-            deterministic_cannibalization_risk: "high" | "low" | "medium" | "none";
+            deterministic_cannibalization_risk: "none" | "low" | "medium" | "high";
             /** Reasons */
             reasons?: string[];
         };
@@ -43656,12 +44001,12 @@ export interface components {
              * Topical Relevance
              * @enum {string}
              */
-            topical_relevance: "conflict" | "moderate" | "strong" | "weak";
+            topical_relevance: "strong" | "moderate" | "weak" | "conflict";
             /**
              * Cannibalization Risk
              * @enum {string}
              */
-            cannibalization_risk: "high" | "low" | "medium" | "none";
+            cannibalization_risk: "none" | "low" | "medium" | "high";
             /** Cannibalization Reason */
             cannibalization_reason?: string | null;
             /** Evidence */
@@ -43822,7 +44167,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -43892,7 +44237,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.axiom.co/
@@ -44243,7 +44588,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -44271,7 +44616,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.bandwidth.com
@@ -44303,7 +44648,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.baremetrics.com
@@ -44444,7 +44789,7 @@ export interface components {
              */
             typical_angle?: string;
             /** Campaign Fit */
-            campaign_fit?: ("moderate" | "none" | "strong" | "weak") | null;
+            campaign_fit?: ("strong" | "moderate" | "weak" | "none") | null;
             /** Campaign Fit Reason */
             campaign_fit_reason?: string | null;
             /** Campaign Context */
@@ -44502,7 +44847,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -44530,13 +44875,228 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://www.beehiivstatus.com
              * @constant
              */
             status_page?: "https://www.beehiivstatus.com";
+        };
+        /**
+         * BenchProof
+         * @description One finished Bench trial, as a screen shows it. Every field is copied
+         *     from the record; nothing here is derived, and nothing is optimistic.
+         */
+        BenchProof: {
+            /** Record Id */
+            record_id: string;
+            /** Trial Id */
+            trial_id: string;
+            /**
+             * Subject
+             * @default
+             */
+            subject?: string;
+            /**
+             * Domain
+             * @default
+             */
+            domain?: string;
+            /**
+             * Finished At
+             * @default
+             */
+            finished_at?: string;
+            /**
+             * Passed
+             * @default false
+             */
+            passed?: boolean;
+            /**
+             * Void
+             * @default false
+             */
+            void?: boolean;
+            /**
+             * Void Reason
+             * @default
+             */
+            void_reason?: string;
+            /** Win Claimed */
+            win_claimed?: string | null;
+            /**
+             * Win Rationale
+             * @default
+             */
+            win_rationale?: string;
+            /**
+             * Arm
+             * @default a2
+             */
+            arm?: string;
+            /** Budget Multiple */
+            budget_multiple?: number | null;
+            /** Panel Winner */
+            panel_winner?: string | null;
+            /**
+             * Gt In Pool
+             * @default false
+             */
+            gt_in_pool?: boolean;
+            /**
+             * Gt Won
+             * @default false
+             */
+            gt_won?: boolean;
+            /**
+             * Panel Votes
+             * @default 0
+             */
+            panel_votes?: number;
+            /** C Cost Usd */
+            c_cost_usd?: number | null;
+            /** C Seconds */
+            c_seconds?: number | null;
+            /** Spec Sha256 */
+            spec_sha256?: string | null;
+            /** Corpus Sha256 */
+            corpus_sha256?: string | null;
+            /** Record Path */
+            record_path?: string | null;
+            /** Report Path */
+            report_path?: string | null;
+            /**
+             * Source
+             * @default file index
+             */
+            source?: string;
+            /**
+             * Headline
+             * @description The one sentence a screen leads with — never a win without a record.
+             *
+             *     A COMPUTED FIELD, so the wire carries it: the sentence and the record it
+             *     is derived from travel together, and no client re-writes it.
+             */
+            readonly headline: string;
+        };
+        /**
+         * BenchProofResponse
+         * @description What the run page asks for: the proof, whether one can be STARTED here,
+         *     and — when it can — every number the form will actually run with.
+         *
+         *     The two halves are independent on purpose. A Masterwork can have no proof
+         *     and still be able to run one (the common case), or carry a proof and no
+         *     longer be runnable (its Masterwork was deleted). A screen that collapsed
+         *     them would show a dead button in one direction and hide a working one in the
+         *     other.
+         */
+        BenchProofResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            proof?: components["schemas"]["BenchProof"] | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Can Run Here
+             * @default false
+             */
+            can_run_here?: boolean;
+            /**
+             * How To Run
+             * @default You can run one from here: six arms, a blind panel the expert's own answer has to win, and dollars and seconds on every row.
+             */
+            how_to_run?: string;
+            form?: components["schemas"]["BenchRunForm"] | null;
+            /** Searched */
+            searched?: string[];
+        };
+        /**
+         * BenchRunForm
+         * @description What the screen needs to show a form that does not lie.
+         *
+         *     Every field is a fact the server already knows: the numbers it will actually
+         *     run with, the models it will actually call, the corpus it actually found, and
+         *     whether the run it starts can be rejoined. A form that prefilled a default
+         *     the server would then ignore would be the quiet kind of dishonest.
+         */
+        BenchRunForm: {
+            /** Budget Multiple */
+            budget_multiple: number;
+            /** Budget Multiple Source */
+            budget_multiple_source: string;
+            /** Judge Model */
+            judge_model: string;
+            /** Frontier Model */
+            frontier_model: string;
+            /** Cheap Model */
+            cheap_model: string;
+            /** Masterwork Id */
+            masterwork_id: string;
+            /** Masterwork Name */
+            masterwork_name: string;
+            /** Corpus Sources */
+            corpus_sources: number | null;
+            /** Corpus Note */
+            corpus_note: string;
+            /** Durable */
+            durable: boolean;
+            /** Durable Note */
+            durable_note: string;
+        };
+        /**
+         * BenchRunRequest
+         * @description What the person typed, and nothing else.
+         *
+         *     Deliberately small. Everything a trial needs that is NOT a judgement call by
+         *     the person running it — the corpus, the models, the judge, the panel, the
+         *     thresholds — comes from the Rulebook and the declared defaults, so two
+         *     people running the Bench on the same Masterwork run the same trial.
+         *
+         *     🚨 INHERITS ``AcceptsInjectedScope`` BECAUSE IT FORBIDS EXTRAS. The
+         *     frontend's ``callApi`` merges ``organization_id`` / ``project_id`` /
+         *     ``task_id`` onto every POST body from the active app context, so a
+         *     ``extra="forbid"`` model that omits them 422s the moment the person has an
+         *     organization selected — the 2026-07-15 ``/skills/ingest`` incident class.
+         *     Guard: ``scripts/check_request_accepts_org_scope.py``.
+         */
+        BenchRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @default
+             */
+            rulebook_id?: string;
+            /** Task Prompt */
+            task_prompt: string;
+            /**
+             * Case Input
+             * @default
+             */
+            case_input?: string;
+            /**
+             * Ground Truth Text
+             * @default
+             */
+            ground_truth_text?: string;
+            /** Budget Multiple */
+            budget_multiple?: number | null;
+            /** Masterwork Id */
+            masterwork_id?: string | null;
         };
         /**
          * BettermodeServiceStatus
@@ -44565,7 +45125,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.bettermode.com
@@ -44580,7 +45140,7 @@ export interface components {
              * @default u2net
              * @enum {string}
              */
-            model?: "birefnet-general" | "birefnet-portrait" | "isnet-anime" | "isnet-general-use" | "silueta" | "u2net" | "u2net_cloth_seg" | "u2net_human_seg" | "u2netp";
+            model?: "u2net" | "u2netp" | "u2net_human_seg" | "u2net_cloth_seg" | "silueta" | "isnet-general-use" | "isnet-anime" | "birefnet-general" | "birefnet-portrait";
             /**
              * Alpha Matting
              * @default false
@@ -44646,7 +45206,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "global" | "org" | "user";
+            principal_type: "user" | "org" | "global";
             /** Subject User Id */
             subject_user_id?: string | null;
             /** Organization Id */
@@ -44842,7 +45402,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.bird.com
@@ -44964,7 +45524,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -45001,7 +45561,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -45052,7 +45612,7 @@ export interface components {
          *     exists to make answerable. Mirrors the ``blocker_kind`` CHECK constraint.
          * @enum {string}
          */
-        BlockerKind: "approval" | "dependency" | "external_data" | "human_decision" | "manual_hold" | "quota" | "rate_limit" | "schedule" | "upstream_failure";
+        BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
         /** BloomreachServiceStatus */
         BloomreachServiceStatus: {
             /**
@@ -45201,7 +45761,7 @@ export interface components {
              * Scan State
              * @enum {string}
              */
-            scan_state: "unverified" | "verified";
+            scan_state: "verified" | "unverified";
             last_complete_candidate: components["schemas"]["BoardScanSummary"] | null;
             last_complete_deployed: components["schemas"]["BoardScanSummary"] | null;
             /** Finding Counts */
@@ -45361,7 +45921,7 @@ export interface components {
              * @default public
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /**
              * Share With
              * @description Comma-separated user IDs (legacy)
@@ -45372,7 +45932,7 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level?: "admin" | "read" | "write";
+            share_level?: "read" | "write" | "admin";
             /**
              * Include Social Baseline
              * @description Override preset baseline default
@@ -45405,7 +45965,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /**
              * Share With
              * @description Comma-separated user IDs
@@ -45416,7 +45976,7 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            share_level?: "admin" | "read" | "write";
+            share_level?: "read" | "write" | "admin";
             /** Change Summary */
             change_summary?: string | null;
             /**
@@ -45735,7 +46295,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.brandwatch.com
@@ -45875,7 +46435,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -45906,7 +46466,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.brevo.com/
@@ -45960,7 +46520,7 @@ export interface components {
          *     counters.
          * @enum {string}
          */
-        BridgeAction: "append_native" | "capabilities" | "delete" | "health" | "list_native" | "load_native" | "observe_hook";
+        BridgeAction: "observe_hook" | "append_native" | "load_native" | "list_native" | "delete" | "health" | "capabilities";
         /** BridgeCapabilities */
         BridgeCapabilities: {
             /** Native Resume */
@@ -45975,12 +46535,12 @@ export interface components {
              * Stable Hook Ids
              * @enum {string}
              */
-            stable_hook_ids: "full" | "none" | "partial";
+            stable_hook_ids: "full" | "partial" | "none";
             /**
              * Tool Payload Fidelity
              * @enum {string}
              */
-            tool_payload_fidelity: "full" | "none" | "partial";
+            tool_payload_fidelity: "full" | "partial" | "none";
         };
         /**
          * BridgeCapabilityReport
@@ -46073,7 +46633,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "accepted" | "completed" | "in_flight" | "refused";
+            status: "completed" | "accepted" | "in_flight" | "refused";
             runtime?: components["schemas"]["BridgeRuntimeKind"] | null;
             capabilities?: components["schemas"]["BridgeCapabilityReport"] | null;
             /** Detail */
@@ -46225,7 +46785,7 @@ export interface components {
          *     here, reported by every runtime descriptor in the same change.
          * @enum {string}
          */
-        BridgeOperation: "cancel" | "export" | "fork_native" | "handoff" | "list" | "mirror" | "open" | "resume_native" | "send" | "start" | "stream";
+        BridgeOperation: "start" | "send" | "stream" | "cancel" | "resume_native" | "fork_native" | "list" | "mirror" | "export" | "open" | "handoff";
         /**
          * BridgeOrigin
          * @enum {string}
@@ -46299,7 +46859,7 @@ export interface components {
          * BridgeRefusalCode
          * @enum {string}
          */
-        BridgeRefusalCode: "unimplemented_action" | "unknown_action" | "unsupported_runtime";
+        BridgeRefusalCode: "unknown_action" | "unimplemented_action" | "unsupported_runtime";
         /** BridgeResponse */
         BridgeResponse: {
             /**
@@ -46599,7 +47159,7 @@ export interface components {
              * Tier Policy
              * @enum {string}
              */
-            tier_policy: "guest" | "mid" | "none";
+            tier_policy: "none" | "guest" | "mid";
             /** Scopes */
             scopes?: string[];
             /** Expires At */
@@ -46755,7 +47315,7 @@ export interface components {
              * @default host
              * @enum {string}
              */
-            uri_match_mode?: "domain" | "exact" | "host" | "never";
+            uri_match_mode?: "host" | "domain" | "exact" | "never";
             /** Notes */
             notes?: string | null;
             /** Field Values */
@@ -47144,7 +47704,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "other" | "recipe_wrong" | "secret_exposed" | "wrong_verdict";
+            kind: "secret_exposed" | "wrong_verdict" | "recipe_wrong" | "other";
             /** Where */
             where: string;
             /** Attempt Id */
@@ -47183,7 +47743,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "authenticated" | "captcha_or_takeover" | "credentials_rejected" | "needs_mfa" | "no_matching_login" | "selection_required" | "unknown" | "unsafe_destination";
+            status: "authenticated" | "needs_mfa" | "captcha_or_takeover" | "credentials_rejected" | "selection_required" | "no_matching_login" | "unsafe_destination" | "unknown";
             /** Page Url */
             page_url?: string | null;
             /** Tool Invocation Id */
@@ -47282,7 +47842,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cookie_present" | "selector_absent" | "selector_present" | "text_present" | "url_prefix";
+            kind: "selector_present" | "selector_absent" | "url_prefix" | "cookie_present" | "text_present";
             /** Value */
             value: string;
             /**
@@ -47322,7 +47882,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.bubble.io/
@@ -47498,7 +48058,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -47698,7 +48258,7 @@ export interface components {
              * Op
              * @enum {string}
              */
-            op: "delete" | "move" | "restore" | "share" | "visibility";
+            op: "move" | "delete" | "restore" | "visibility" | "share";
             /** Args */
             args?: {
                 [key: string]: unknown;
@@ -47882,7 +48442,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "blocklisted" | "budget_exhausted" | "duplicate_in_sheet" | "enriched" | "failed" | "no_candidates" | "unusable";
+            verdict: "enriched" | "no_candidates" | "blocklisted" | "duplicate_in_sheet" | "unusable" | "budget_exhausted" | "failed";
             /**
              * Why
              * @default
@@ -47928,7 +48488,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "accept_as_is" | "content_mismatch" | "dead_link" | "gated" | "ignored" | "mark_complete" | "retry";
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
             /** Notes */
             notes?: string | null;
         };
@@ -47972,7 +48532,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -48064,7 +48624,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.buttondown.com/
@@ -48307,7 +48867,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://calendlystatus.com/
@@ -48340,7 +48900,7 @@ export interface components {
              * @default insufficient_data
              * @enum {string}
              */
-            band?: "insufficient_data" | "not_usable" | "production" | "usable";
+            band?: "insufficient_data" | "not_usable" | "usable" | "production";
             /** Confusion */
             confusion?: {
                 [key: string]: {
@@ -48555,7 +49115,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.capsulecrm.com
@@ -48590,7 +49150,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "degraded" | "operational" | "under_maintenance";
+            state: "operational" | "degraded" | "under_maintenance";
             /**
              * Status Page
              * @default https://status.captivate.fm
@@ -48656,7 +49216,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "cancelled" | "captured" | "expired";
+            status: "captured" | "cancelled" | "expired";
             /** Credential Item Id */
             credential_item_id?: string | null;
         };
@@ -48694,17 +49254,17 @@ export interface components {
              * Queue State
              * @enum {string}
              */
-            queue_state: "closed" | "draining" | "open";
+            queue_state: "open" | "draining" | "closed";
             /**
              * Run Mode
              * @enum {string}
              */
-            run_mode: "automation_only" | "handoff_capable";
+            run_mode: "handoff_capable" | "automation_only";
             /**
              * Worker Health
              * @enum {string}
              */
-            worker_health: "browser_crashed" | "degraded" | "healthy" | "starting" | "stopped" | "stopping";
+            worker_health: "starting" | "healthy" | "degraded" | "browser_crashed" | "stopping" | "stopped";
             /** Chromium Version */
             chromium_version: string;
             /** Worker Version */
@@ -48787,7 +49347,7 @@ export interface components {
              * @default
              * @enum {string}
              */
-            text_source?: "" | "anchor" | "image_alt";
+            text_source?: "anchor" | "image_alt" | "";
             /** Rel */
             rel?: string | null;
             /**
@@ -48800,7 +49360,7 @@ export interface components {
              * @default external
              * @enum {string}
              */
-            link_type?: "external" | "internal" | "subdomain";
+            link_type?: "internal" | "subdomain" | "external";
             /**
              * Region
              * @default body
@@ -48831,7 +49391,7 @@ export interface components {
              * @default front
              * @enum {string}
              */
-            face?: "back" | "front";
+            face?: "front" | "back";
         };
         /**
          * CarryoverCalcResponse
@@ -49472,7 +50032,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -49551,16 +50111,16 @@ export interface components {
             /** Version From */
             version_from?: number | null;
             /** Version From Confidence */
-            version_from_confidence?: ("inferred" | "recorded") | null;
+            version_from_confidence?: ("recorded" | "inferred") | null;
             /** Restored Version */
             restored_version?: number | null;
             /**
              * Change Role
              * @enum {string}
              */
-            change_role: "apply" | "edit" | "revert";
+            change_role: "apply" | "revert" | "edit";
             /** Actor Tier */
-            actor_tier?: ("ai" | "code" | "human") | null;
+            actor_tier?: ("code" | "ai" | "human") | null;
             /** Actor System */
             actor_system?: string | null;
             /** Actor Id */
@@ -49568,7 +50128,7 @@ export interface components {
             /** Finding Id */
             finding_id?: string | null;
             /** Finding Lever */
-            finding_lever?: ("architecture" | "instructions" | "resources" | "stopping_condition" | "tools") | null;
+            finding_lever?: ("instructions" | "resources" | "tools" | "architecture" | "stopping_condition") | null;
             /** Finding Title */
             finding_title?: string | null;
             /** Finding Status */
@@ -49602,7 +50162,7 @@ export interface components {
              * @default replace
              * @enum {string}
              */
-            reducer?: "append" | "last_writer_wins" | "merge" | "replace" | "sum" | "topic_map";
+            reducer?: "replace" | "append" | "merge" | "sum" | "last_writer_wins" | "topic_map";
             /** Description */
             description?: string | null;
             /** Default */
@@ -49665,7 +50225,7 @@ export interface components {
              * Gender
              * @enum {string}
              */
-            gender: "Female" | "Genderless" | "Male" | "unknown";
+            gender: "Female" | "Male" | "Genderless" | "unknown";
             /** Origin Name */
             origin_name: string;
             /** Location Name */
@@ -49695,7 +50255,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.chargebee.com
@@ -49776,7 +50336,7 @@ export interface components {
          */
         ChatMessageInput: {
             /** Role */
-            role: ("assistant" | "developer" | "system" | "tool" | "user") | string;
+            role: ("system" | "user" | "assistant" | "tool" | "developer") | string;
             /** Content */
             content?: string | components["schemas"]["JsonValue"][] | null;
             /** Name */
@@ -49803,15 +50363,15 @@ export interface components {
             /** Top K */
             top_k?: number | null;
             /** Tool Choice */
-            tool_choice?: ("auto" | "none" | "required") | null;
+            tool_choice?: ("none" | "auto" | "required") | null;
             /** Parallel Tool Calls */
             parallel_tool_calls?: boolean | null;
             /** Reasoning Effort */
-            reasoning_effort?: ("auto" | "high" | "low" | "max" | "medium" | "minimal" | "none" | "xhigh") | null;
+            reasoning_effort?: ("auto" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max") | null;
             /** Reasoning Summary */
-            reasoning_summary?: ("always" | "auto" | "concise" | "detailed" | "never") | null;
+            reasoning_summary?: ("concise" | "detailed" | "never" | "auto" | "always") | null;
             /** Thinking Level */
-            thinking_level?: ("high" | "low" | "medium" | "minimal") | null;
+            thinking_level?: ("minimal" | "low" | "medium" | "high") | null;
             /** Include Thoughts */
             include_thoughts?: boolean | null;
             /** Thinking Budget */
@@ -49834,9 +50394,9 @@ export interface components {
             /** Previous Interaction Id */
             previous_interaction_id?: string | null;
             /** Task */
-            task?: ("edit" | "image_to_video" | "reference_to_video" | "text_to_video") | null;
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
-            verbosity?: ("high" | "low" | "medium") | null;
+            verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
             internal_web_search?: boolean | null;
             /** Internal Url Context */
@@ -49844,7 +50404,7 @@ export interface components {
             /** Internal X Search */
             internal_x_search?: boolean | null;
             /** Aspect Ratio */
-            aspect_ratio?: ("16:9" | "1:1" | "21:9" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16") | null;
+            aspect_ratio?: ("1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "16:9" | "21:9") | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -49852,7 +50412,7 @@ export interface components {
             /** Count */
             count?: number | null;
             /** Render Quality */
-            render_quality?: ("auto" | "high" | "low" | "medium") | null;
+            render_quality?: ("low" | "medium" | "high" | "auto") | null;
             /** Background */
             background?: ("auto" | "opaque" | "transparent") | null;
             /** Output Compression */
@@ -49864,17 +50424,17 @@ export interface components {
             /** Partial Images */
             partial_images?: number | null;
             /** Style */
-            style?: ("natural" | "vivid") | null;
+            style?: ("vivid" | "natural") | null;
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
             tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
-            audio_format?: ("aac" | "alaw" | "flac" | "mp3" | "mulaw" | "ogg" | "opus" | "pcm" | "wav") | null;
+            audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
-            resolution?: ("1080p" | "1K" | "2K" | "480p" | "4K" | "4k" | "720p") | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "1K" | "2K" | "4K") | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -49888,7 +50448,7 @@ export interface components {
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
-            output_format?: ("base64" | "jpeg" | "json_object" | "json_schema" | "png" | "text" | "url" | "webp") | null;
+            output_format?: ("jpeg" | "png" | "webp" | "base64" | "url" | "text" | "json_object" | "json_schema") | null;
             /** Frame Images */
             frame_images?: components["schemas"]["MediaRef"][] | null;
             /** Reference Images */
@@ -49908,7 +50468,7 @@ export interface components {
             last_frame_image?: components["schemas"]["MediaRef"] | null;
             video_input?: components["schemas"]["MediaRef"] | null;
             /** Video Action */
-            video_action?: ("edit" | "extend" | "generate") | null;
+            video_action?: ("generate" | "edit" | "extend") | null;
             /** Custom Tools */
             custom_tools?: components["schemas"]["CustomTool"][] | null;
             /** Mcp Servers */
@@ -49920,7 +50480,7 @@ export interface components {
             } | null;
             dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
-            tts_quality?: ("fast" | "high_quality") | null;
+            tts_quality?: ("high_quality" | "fast") | null;
             /**
              * Organization Id
              * @description Required organization explicitly selected for this new AI conversation.
@@ -49962,7 +50522,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Target Instance Id
              * @description Specific connected desktop instance allowed to claim delegated local tools.
@@ -50105,7 +50665,7 @@ export interface components {
              * @deprecated
              * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
              */
-            quality?: ("auto" | "high" | "low" | "medium") | null;
+            quality?: ("low" | "medium" | "high" | "auto") | null;
             /**
              * Output Quality
              * @deprecated
@@ -50249,7 +50809,7 @@ export interface components {
             /** Checks */
             checks: components["schemas"]["CheckRecord"][];
             /** Changed Status To */
-            changed_status_to?: ("disabled" | "draft" | "paused" | "ready" | "verifying" | "warming") | null;
+            changed_status_to?: ("draft" | "verifying" | "warming" | "ready" | "paused" | "disabled") | null;
         };
         /**
          * CheckpointPreview
@@ -50391,7 +50951,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -50479,7 +51039,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.circleci.com
@@ -50742,7 +51302,7 @@ export interface components {
          * ClaudeManagedAction
          * @enum {string}
          */
-        ClaudeManagedAction: "fork" | "resume" | "start";
+        ClaudeManagedAction: "start" | "resume" | "fork";
         /** ClaudeManagedCancelResponse */
         ClaudeManagedCancelResponse: {
             /** Runtime Id */
@@ -50917,7 +51477,7 @@ export interface components {
          * Clearance
          * @enum {string}
          */
-        Clearance: "internal" | "privileged" | "public" | "restricted";
+        Clearance: "public" | "internal" | "restricted" | "privileged";
         /**
          * ClevelandPublicArtwork
          * @description Safe bounded projection of one public CMA artwork record.
@@ -51027,7 +51587,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.clicksend.com
@@ -51123,7 +51683,7 @@ export interface components {
             /** Mcp */
             mcp?: string[];
             /** Apply Policy */
-            apply_policy?: ("ask" | "auto" | "off") | null;
+            apply_policy?: ("auto" | "ask" | "off") | null;
         };
         /** ClientToolResult */
         ClientToolResult: {
@@ -51215,7 +51775,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -51341,7 +51901,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -51476,13 +52036,13 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "adopt" | "map" | "realize" | "retire";
+            action: "realize" | "adopt" | "map" | "retire";
             /** Node Id */
             node_id?: string | null;
             /** Page Id */
             page_id?: string | null;
             /** Resolve */
-            resolve?: ("cms_yields" | "none" | "plan_yields") | null;
+            resolve?: ("plan_yields" | "cms_yields" | "none") | null;
             /** Note */
             note?: string | null;
             /**
@@ -51730,7 +52290,7 @@ export interface components {
              */
             include_review?: boolean;
             /** Effort Tier */
-            effort_tier?: ("advanced" | "quick" | "standard" | "thorough") | null;
+            effort_tier?: ("quick" | "standard" | "thorough" | "advanced") | null;
             /**
              * Overwrite
              * @default false
@@ -51775,7 +52335,7 @@ export interface components {
              * @default none
              * @enum {string}
              */
-            status?: "cancelled" | "completed" | "failed" | "none" | "pending" | "processing";
+            status?: "none" | "pending" | "processing" | "completed" | "failed" | "cancelled";
             /**
              * Total
              * @default 0
@@ -52310,7 +52870,7 @@ export interface components {
              * Severity
              * @enum {string}
              */
-            severity: "block" | "warning";
+            severity: "warning" | "block";
             /** Fix Hint */
             fix_hint: string;
         };
@@ -52383,12 +52943,12 @@ export interface components {
              * Source System
              * @enum {string}
              */
-            source_system: "aidream" | "matrx-ai";
+            source_system: "matrx-ai" | "aidream";
             /**
              * Ref Kind
              * @enum {string}
              */
-            ref_kind: "agent" | "builtin" | "version";
+            ref_kind: "version" | "agent" | "builtin";
             /** Agent Version Id */
             agent_version_id?: string | null;
             /** Agent Id */
@@ -52527,7 +53087,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -52703,7 +53263,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -52737,7 +53297,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -52771,9 +53331,55 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * CodingReplyResponder
+         * @description Who will answer a reply typed here, resolved before the person types.
+         */
+        CodingReplyResponder: {
+            /** Agent Id */
+            agent_id: string;
+            /** Agent Name */
+            agent_name?: string | null;
+            /** Setting Key */
+            setting_key: string;
+            /** Used Platform Default */
+            used_platform_default: boolean;
+        };
+        /**
+         * CodingReplyResponderReport
+         * @description What the reply composer labels itself with.
+         *
+         *     The sentence is composed on the SERVER (`composer_label`) so the label and the
+         *     resolution that decides it cannot disagree, and so binding the mandate to another
+         *     agent changes the label with no client release. V-XT/V3 (2026-09-15): the composer
+         *     said "AI Matrx is answering" while, on production, neither mandate was bound and
+         *     every reply was silently taking the platform-default stand-in.
+         */
+        CodingReplyResponderReport: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is Coding Session Mirror */
+            is_coding_session_mirror: boolean;
+            /** Provider */
+            provider?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /** Composer Label */
+            composer_label: string;
+            /** Can Reply */
+            can_reply: boolean;
+            responder?: components["schemas"]["CodingReplyResponder"] | null;
+            /** Stand In Notice */
+            stand_in_notice?: string | null;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -52934,7 +53540,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.cognitoforms.com
@@ -52977,7 +53583,7 @@ export interface components {
          * CollectionTrigger
          * @enum {string}
          */
-        CollectionTrigger: "backfill" | "on_demand" | "scheduled" | "test";
+        CollectionTrigger: "scheduled" | "on_demand" | "backfill" | "test";
         /** CombinedPromptCatalogResponse */
         CombinedPromptCatalogResponse: {
             /** Prompts */
@@ -53003,7 +53609,7 @@ export interface components {
             /** Impairment Number */
             impairment_number?: string | null;
             /** Side */
-            side?: ("default" | "left" | "right") | null;
+            side?: ("left" | "right" | "default") | null;
             /** Wpi */
             wpi?: number | null;
             /** Pain */
@@ -53072,17 +53678,17 @@ export interface components {
              * Queue State
              * @enum {string}
              */
-            queue_state: "closed" | "draining" | "open";
+            queue_state: "open" | "draining" | "closed";
             /**
              * Run Mode
              * @enum {string}
              */
-            run_mode: "automation_only" | "handoff_capable";
+            run_mode: "handoff_capable" | "automation_only";
             /**
              * Worker Health
              * @enum {string}
              */
-            worker_health: "browser_crashed" | "degraded" | "healthy" | "starting" | "stopped" | "stopping";
+            worker_health: "starting" | "healthy" | "degraded" | "browser_crashed" | "stopping" | "stopped";
             /** Chromium Version */
             chromium_version: string;
             /** Worker Version */
@@ -53133,7 +53739,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -53179,7 +53785,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            mode?: "system" | "user";
+            mode?: "user" | "system";
             /**
              * Cascade Tool Pairs
              * @default true
@@ -53272,7 +53878,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -53346,7 +53952,7 @@ export interface components {
              * Threat Level
              * @enum {string}
              */
-            threat_level: "critical" | "high" | "low" | "medium";
+            threat_level: "critical" | "high" | "medium" | "low";
             /** Why They Win */
             why_they_win: string;
             /** Defensibility */
@@ -53646,7 +54252,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "creating" | "expired" | "failed" | "offline" | "online" | "ready" | "running" | "shutting_down" | "starting" | "stopped";
+            status: "ready" | "running" | "starting" | "creating" | "shutting_down" | "stopped" | "failed" | "expired" | "online" | "offline";
             /** Is Online */
             is_online: boolean;
             /**
@@ -53743,7 +54349,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major";
             /** Operational */
             operational: boolean;
         };
@@ -53899,7 +54505,7 @@ export interface components {
          * ConformanceState
          * @enum {string}
          */
-        ConformanceState: "dynamic" | "full" | "non_conformant" | "partial";
+        ConformanceState: "full" | "dynamic" | "partial" | "non_conformant";
         /**
          * ConnectableMailbox
          * @description A mailbox the signed-in user could turn into a sending identity.
@@ -54150,7 +54756,7 @@ export interface components {
              * @default unverified
              * @enum {string}
              */
-            verification_status?: "invalid" | "risky" | "unverified" | "verified";
+            verification_status?: "unverified" | "verified" | "invalid" | "risky";
             /** Mx Valid */
             mx_valid?: boolean | null;
             /** Verified At */
@@ -54191,7 +54797,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "author_profile" | "byline" | "credentialed_author" | "editor" | "mention" | "quote";
+            kind: "byline" | "editor" | "author_profile" | "credentialed_author" | "quote" | "mention";
             /** Detail */
             detail: string;
         };
@@ -54277,7 +54883,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "degraded" | "operational" | "under_maintenance";
+            state: "operational" | "degraded" | "under_maintenance";
             /**
              * Status Page
              * @default https://status.contentstudio.io
@@ -54289,7 +54895,7 @@ export interface components {
          * ContentType
          * @enum {string}
          */
-        ContentType: "conversation" | "document" | "generic" | "transcript";
+        ContentType: "generic" | "transcript" | "conversation" | "document";
         /**
          * ContentfulServiceStatus
          * @description Safe aggregate status projection for Contentful's fixed status page.
@@ -54346,7 +54952,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.contentsquare.com
@@ -54569,7 +55175,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -54746,13 +55352,13 @@ export interface components {
              * Tier
              * @enum {string}
              */
-            tier: "context_item" | "overview" | "scope" | "scope_type";
+            tier: "overview" | "scope" | "scope_type" | "context_item";
             /**
              * Variation
              * @default a1
              * @enum {string}
              */
-            variation?: "a1" | "a2" | "d_attributes" | "d_elements" | "fk_a" | "fk_b";
+            variation?: "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
             /** Scope Slug */
             scope_slug?: string | null;
             /** Scope Type Slug */
@@ -54791,7 +55397,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "agent_control" | "failed" | "handoff_requested" | "human_control" | "provisioning" | "resume_pending" | "stopped" | "stopping";
+            state: "provisioning" | "agent_control" | "handoff_requested" | "human_control" | "resume_pending" | "stopping" | "stopped" | "failed";
             /**
              * Controller Kind
              * @enum {string}
@@ -54854,7 +55460,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -55057,7 +55663,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "already_cached" | "cached";
+            status: "cached" | "already_cached";
             /** Conversation Id */
             conversation_id: string;
         };
@@ -55114,7 +55720,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -55130,6 +55736,8 @@ export interface components {
              * @default false
              */
             overwrite?: boolean;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /**
          * CopyInfo
@@ -55146,7 +55754,7 @@ export interface components {
             /** Folder */
             folder?: string | null;
             /** Visibility */
-            visibility?: ("internal" | "link" | "personal" | "public") | null;
+            visibility?: ("personal" | "internal" | "link" | "public") | null;
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -55299,7 +55907,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.courier.com
@@ -55404,7 +56012,7 @@ export interface components {
             /** Interior Page Count */
             interior_page_count: number;
             /** Unit */
-            unit?: ("inch" | "mm" | "pt") | null;
+            unit?: ("pt" | "mm" | "inch") | null;
         };
         /**
          * CoverDimensionsResult
@@ -55435,7 +56043,7 @@ export interface components {
              * Unit
              * @enum {string}
              */
-            unit: "inch" | "mm" | "pt";
+            unit: "pt" | "mm" | "inch";
         };
         /** CoverageFeed */
         CoverageFeed: {
@@ -55568,7 +56176,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            response_format?: "json" | "json_schema" | "text";
+            response_format?: "text" | "json" | "json_schema";
             /**
              * Output Schema
              * @description Required when response_format='json_schema'. Validated against provider rules.
@@ -55689,7 +56297,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -55871,7 +56479,7 @@ export interface components {
              * @default viewer
              * @enum {string}
              */
-            permission_level?: "editor" | "viewer";
+            permission_level?: "viewer" | "editor";
             /** Expires At */
             expires_at?: string | null;
             /** Max Uses */
@@ -55943,7 +56551,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cron" | "event" | "manual" | "webhook";
+            kind: "cron" | "webhook" | "manual" | "event";
             /**
              * Cron Expression
              * @description Required when kind='cron'. Standard 5-field syntax.
@@ -55997,7 +56605,7 @@ export interface components {
              * @default internal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal";
+            visibility?: "personal" | "internal" | "link";
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
@@ -56099,7 +56707,7 @@ export interface components {
          * CredentialReferenceKind
          * @enum {string}
          */
-        CredentialReferenceKind: "integration_connection" | "platform_secret";
+        CredentialReferenceKind: "platform_secret" | "integration_connection";
         /** CredentialUpdateRequest */
         CredentialUpdateRequest: {
             /**
@@ -56213,7 +56821,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -56322,7 +56930,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -56339,7 +56947,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "ambiguous_boundary" | "incoherent_cluster" | "insufficient_argument_coverage" | "insufficient_holdout" | "no_trajectories" | "not_diverse" | "plan_rejected_by_gate" | "reviewer_declined" | "reviewer_unavailable" | "too_few_conversations" | "too_few_trajectories" | "trajectories_too_short";
+            reason: "no_trajectories" | "insufficient_argument_coverage" | "trajectories_too_short" | "too_few_trajectories" | "too_few_conversations" | "not_diverse" | "ambiguous_boundary" | "incoherent_cluster" | "insufficient_holdout" | "reviewer_declined" | "reviewer_unavailable" | "plan_rejected_by_gate";
             /** Detail */
             detail: string;
             /** Measured */
@@ -56361,7 +56969,7 @@ export interface components {
              * @default refused
              * @enum {string}
              */
-            status?: "error" | "not_admitted" | "proposed" | "refused";
+            status?: "proposed" | "refused" | "not_admitted" | "error";
             /**
              * Subject Id
              * @default
@@ -56646,7 +57254,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -57059,7 +57667,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.databox.com
@@ -57229,7 +57837,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "notes" | "organizations" | "projects" | "tasks";
+            table: "notes" | "tasks" | "projects" | "organizations";
             /**
              * Label
              * @default
@@ -57304,7 +57912,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "notes" | "organizations" | "projects" | "tasks";
+            table: "notes" | "tasks" | "projects" | "organizations";
             /**
              * Label
              * @default
@@ -57342,7 +57950,7 @@ export interface components {
              * Table
              * @enum {string}
              */
-            table: "notes" | "organizations" | "projects" | "tasks";
+            table: "notes" | "tasks" | "projects" | "organizations";
             /**
              * Label
              * @default
@@ -57533,7 +58141,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "created" | "replaced" | "reused";
+            outcome: "created" | "reused" | "replaced";
             /** Id */
             id: string;
             /** Derivation Kind */
@@ -57618,6 +58226,42 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DefinitionListPage
+         * @description A page of workflow definitions PLUS the size of the scope it came from.
+         *
+         *     🚨 A PAGE IS NOT A TOTAL. Measured on production 2026-09-15: admin's
+         *     Workspace held 98 active + 18 archived workflows, and the studio's
+         *     "Active + archived" header said *"Showing 100 active and archived
+         *     workflows."* over 100 cards. This route returned a bare
+         *     ``list[DefinitionRecord]`` capped at ``limit``, the studio never sent a
+         *     limit, and the page then counted the array it happened to receive — so
+         *     sixteen workflows were absent and the sentence stated the page size as
+         *     the total. Both sub-workflow pickers read the same list, so those
+         *     sixteen could not be *picked* either.
+         *
+         *     The same class the admin dashboard guards with ``check:list-page-size``
+         *     (``ADMIN_LIST_MAX_PAGE_SIZE = 2000`` was a lie), and the same rule
+         *     ``@ai-matrx/data``'s ``readAllRows`` enforces: a list reader either pages
+         *     to completeness or the screen states the truncation honestly, and the
+         *     count comes from the SERVER'S total — never from the length of one page.
+         *     An envelope makes that unskippable: there is no shape a caller can read
+         *     that hands it rows without also handing it ``total`` and ``has_more``.
+         */
+        DefinitionListPage: {
+            /** Items */
+            items: components["schemas"]["DefinitionRecord"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Has More */
+            has_more: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -57753,7 +58397,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -57829,7 +58473,7 @@ export interface components {
              * Slot
              * @enum {string}
              */
-            slot: "declared_sample" | "last_live_output" | "last_test_output";
+            slot: "declared_sample" | "last_test_output" | "last_live_output";
         };
         /** DeleteTriggerResponse */
         DeleteTriggerResponse: {
@@ -57896,7 +58540,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -57933,7 +58577,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -57970,7 +58614,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -58082,7 +58726,7 @@ export interface components {
              * Derivation Kind
              * @enum {string}
              */
-            derivation_kind: "agent_extract" | "agent_structured_json" | "agent_summary" | "manual_curation" | "page_image_caption";
+            derivation_kind: "agent_extract" | "agent_summary" | "agent_structured_json" | "page_image_caption" | "manual_curation";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version */
@@ -58168,7 +58812,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "json" | "markdown" | "text";
+            kind: "text" | "markdown" | "json";
             /** Label */
             label: string;
             value?: components["schemas"]["JsonValue"] | null;
@@ -58238,7 +58882,7 @@ export interface components {
              * Confidence
              * @enum {string}
              */
-            confidence: "inferred" | "linked";
+            confidence: "linked" | "inferred";
         };
         /**
          * DescendRef
@@ -58249,7 +58893,7 @@ export interface components {
              * Unit Kind
              * @enum {string}
              */
-            unit_kind: "agent_request" | "assistant_message" | "wf_node_outcome";
+            unit_kind: "assistant_message" | "agent_request" | "wf_node_outcome";
             /** Unit Id */
             unit_id: string;
         };
@@ -58262,7 +58906,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "agent_request" | "assistant_message" | "wf_node_outcome";
+            kind: "assistant_message" | "agent_request" | "wf_node_outcome";
             /** Id */
             id: string;
             /** Conversation Id */
@@ -58300,7 +58944,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.descript.com/
@@ -58404,7 +59048,7 @@ export interface components {
              * @default standard
              * @enum {string}
              */
-            mode?: "relaxed" | "standard";
+            mode?: "standard" | "relaxed";
         };
         /** DetectRepeatedRegionsRequest */
         DetectRepeatedRegionsRequest: {
@@ -58726,7 +59370,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -58975,7 +59619,7 @@ export interface components {
              * @default variable
              * @enum {string}
              */
-            deliver?: "context" | "variable";
+            deliver?: "variable" | "context";
         };
         /** DirectiveApplyResult */
         DirectiveApplyResult: {
@@ -59150,7 +59794,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "already_applied" | "applied" | "failed";
+            status: "applied" | "already_applied" | "failed";
             /** Resource Kind */
             resource_kind: string;
             /** Resource Ids */
@@ -59214,7 +59858,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "already_applied" | "applied" | "failed" | "not_implemented";
+            status: "applied" | "already_applied" | "not_implemented" | "failed";
             /** Resource Ids */
             resource_ids?: string[];
             /**
@@ -59320,7 +59964,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.disco.co
@@ -59656,7 +60300,7 @@ export interface components {
              * @description Block kind: 'heading'/'paragraph'/'bullet'/'numbered'/'quote' render `text`; 'table' renders `rows`; 'page_break' starts a new page and uses no other field.
              * @enum {string}
              */
-            type: "bullet" | "heading" | "numbered" | "page_break" | "paragraph" | "quote" | "table";
+            type: "heading" | "paragraph" | "bullet" | "numbered" | "table" | "page_break" | "quote";
             /**
              * Text
              * @description Body text for heading/paragraph/quote blocks, or ONE list line for a bullet/numbered block (one block per line). Ignored by table/page_break.
@@ -59931,7 +60575,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_document
@@ -60051,7 +60695,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "backlink" | "link_gap" | "reputation" | "serp_prospect";
+            source: "backlink" | "reputation" | "link_gap" | "serp_prospect";
             /** Site Id */
             site_id: string;
             /** Organization Id */
@@ -60129,7 +60773,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
             /**
@@ -60418,7 +61062,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.drip.com
@@ -60467,7 +61111,7 @@ export interface components {
              * Rung
              * @enum {string}
              */
-            rung: "global" | "org" | "system" | "user";
+            rung: "system" | "global" | "org" | "user";
             /** Binding Id */
             binding_id?: string | null;
             /** Organization Id */
@@ -60508,7 +61152,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "pruned" | "satisfied" | "unknowable" | "unsatisfied";
+            state: "satisfied" | "unsatisfied" | "pruned" | "unknowable";
             /** Slot Used */
             slot_used?: string | null;
             /** @description For a conditional connection: its `condition` TRIED against the payload the source's sample would deliver (W57). */
@@ -60520,7 +61164,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "blocked" | "ready" | "unknowable";
+            state: "ready" | "blocked" | "unknowable";
             /** Missing Required */
             missing_required?: components["schemas"]["MissingBinding"][];
             /** Mapping Issues */
@@ -60597,7 +61241,7 @@ export interface components {
              * @description Which §7 data slot fed each node's design-time sample (last_live_output > last_test_output > declared_sample).
              */
             samples_used?: {
-                [key: string]: "declared_sample" | "last_live_output" | "last_test_output";
+                [key: string]: "declared_sample" | "last_test_output" | "last_live_output";
             };
         };
         /**
@@ -60687,7 +61331,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "critical" | "major" | "minor" | "none";
+            status: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.dub.co/
@@ -60719,7 +61363,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.duda.co
@@ -60914,7 +61558,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -61011,7 +61655,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.ecwid.com
@@ -61174,7 +61818,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -61202,7 +61846,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.elev.io
@@ -61273,7 +61917,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -61304,7 +61948,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.emailoctopus.com/
@@ -61321,7 +61965,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "inline" | "text" | "uri";
+            type: "text" | "uri" | "inline";
             /** Text */
             text?: string | null;
             /** Uri */
@@ -61442,7 +62086,7 @@ export interface components {
              * Wiring Mode
              * @enum {string}
              */
-            wiring_mode: "chained" | "default" | "explicit" | "parallel" | "unwired";
+            wiring_mode: "explicit" | "chained" | "parallel" | "default" | "unwired";
             /** Chained From */
             chained_from?: {
                 [key: string]: string;
@@ -61487,7 +62131,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.emplifi.io/
@@ -61525,7 +62169,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -61621,7 +62265,7 @@ export interface components {
              * Engram State
              * @enum {string}
              */
-            engram_state: "compiled" | "demoted" | "improvised" | "provisional";
+            engram_state: "improvised" | "provisional" | "compiled" | "demoted";
             /** Confirmed Success Count */
             confirmed_success_count: number;
             /** Required K */
@@ -61679,7 +62323,7 @@ export interface components {
              * Goal
              * @enum {string}
              */
-            goal: "authenticated" | "comments" | "download" | "expand" | "rendered_dom" | "screenshot" | "structured" | "transcript" | "xhr_json";
+            goal: "rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json";
             /** Reason */
             reason?: string | null;
             hints?: components["schemas"]["EnrichHints"] | null;
@@ -61748,7 +62392,7 @@ export interface components {
              * Subject Kind
              * @enum {string}
              */
-            subject_kind: "agent" | "environment" | "orchestra" | "tool" | "workflow" | "workflow_node";
+            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
             /** Subject Id */
             subject_id?: string | null;
             /** Subject Ref */
@@ -61770,7 +62414,7 @@ export interface components {
              * @default since_watermark
              * @enum {string}
              */
-            window_mode?: "last_n_runs" | "since_watermark";
+            window_mode?: "since_watermark" | "last_n_runs";
             /** Window N */
             window_n?: number | null;
             /**
@@ -61778,7 +62422,7 @@ export interface components {
              * @default with_context
              * @enum {string}
              */
-            lens_visibility?: "unit_only" | "with_context";
+            lens_visibility?: "with_context" | "unit_only";
             /** Status */
             status: string;
             /** Example Watermark At */
@@ -61844,13 +62488,13 @@ export interface components {
              */
             task_id?: string | null;
             /** Window Mode */
-            window_mode?: ("last_n_runs" | "since_watermark") | null;
+            window_mode?: ("since_watermark" | "last_n_runs") | null;
             /** Window N */
             window_n?: number | null;
             /** Lens Visibility */
-            lens_visibility?: ("unit_only" | "with_context") | null;
+            lens_visibility?: ("with_context" | "unit_only") | null;
             /** Status */
-            status?: ("active" | "archived" | "paused") | null;
+            status?: ("active" | "paused" | "archived") | null;
             /** Review Every N */
             review_every_n?: number | null;
             /** Max Examples Per Review */
@@ -62199,7 +62843,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -62233,7 +62877,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -62272,19 +62916,19 @@ export interface components {
              * @description Whether the episode script has been written.
              * @enum {string}
              */
-            script: "completed" | "failed" | "pending" | "skipped";
+            script: "completed" | "pending" | "failed" | "skipped";
             /**
              * Audio
              * @description Whether the episode audio has been produced.
              * @enum {string}
              */
-            audio: "completed" | "failed" | "pending" | "skipped";
+            audio: "completed" | "pending" | "failed" | "skipped";
             /**
              * Episode
              * @description Whether the publishable episode row exists.
              * @enum {string}
              */
-            episode: "completed" | "failed" | "pending" | "skipped";
+            episode: "completed" | "pending" | "failed" | "skipped";
         };
         /**
          * EuropePmcPublicPublication
@@ -62430,7 +63074,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -62440,7 +63084,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "ai_citation" | "ai_claim" | "backlink" | "brand_fact" | "competitor" | "competitor_opportunity" | "crawl_capture" | "other" | "rag_chunk" | "referring_domain";
+            source_kind: "backlink" | "referring_domain" | "competitor" | "competitor_opportunity" | "ai_citation" | "ai_claim" | "brand_fact" | "rag_chunk" | "crawl_capture" | "other";
             /** Source Id */
             source_id?: string | null;
             /** Url */
@@ -62692,7 +63336,7 @@ export interface components {
          * @description Append-only lifecycle-log entries (one per transition + checkpoints).
          * @enum {string}
          */
-        ExecutionEventKind: "cancelled" | "checkpoint_saved" | "completed" | "created" | "failed" | "note" | "paused" | "resumed" | "started" | "waiting_input";
+        ExecutionEventKind: "created" | "started" | "paused" | "resumed" | "waiting_input" | "completed" | "failed" | "cancelled" | "checkpoint_saved" | "note";
         /** ExecutionEventsResponse */
         ExecutionEventsResponse: {
             /** Execution Id */
@@ -62712,7 +63356,7 @@ export interface components {
          *     in the structured `error`, never here.
          * @enum {string}
          */
-        ExecutionStatus: "cancelled" | "completed" | "failed" | "paused" | "pending" | "running" | "waiting_input";
+        ExecutionStatus: "pending" | "running" | "paused" | "waiting_input" | "completed" | "failed" | "cancelled";
         /**
          * ExecutionTree
          * @description A request's whole execution tree in one read — the observability primitive.
@@ -62826,7 +63470,7 @@ export interface components {
              * Rule
              * @enum {string}
              */
-            rule: "contains_marker" | "excludes_marker" | "judge" | "matches" | "max_items" | "min_items" | "path_absent" | "path_equals" | "path_not_equals" | "path_present" | "routes_exist";
+            rule: "contains_marker" | "excludes_marker" | "routes_exist" | "path_present" | "path_absent" | "path_equals" | "path_not_equals" | "min_items" | "max_items" | "matches" | "judge";
             /**
              * Title
              * @default
@@ -62879,7 +63523,7 @@ export interface components {
              * Result
              * @enum {string}
              */
-            result: "error" | "fail" | "pass";
+            result: "pass" | "fail" | "error";
             /** Reason */
             reason: string;
             /**
@@ -62915,7 +63559,7 @@ export interface components {
              * Tier
              * @enum {string}
              */
-            tier: "probable" | "strong" | "weak";
+            tier: "strong" | "probable" | "weak";
             /** Credentials */
             credentials?: string[];
             /** Headline */
@@ -62978,7 +63622,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "authored" | "expert_opinion" | "mention" | "quote";
+            kind: "quote" | "expert_opinion" | "authored" | "mention";
             /**
              * Detail
              * @default
@@ -63051,7 +63695,7 @@ export interface components {
              * Delivery State
              * @enum {string}
              */
-            delivery_state: "acknowledged" | "failed" | "generated" | "sent" | "superseded";
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
             /**
              * Acknowledged At
              * Format: date-time
@@ -63096,7 +63740,7 @@ export interface components {
              * @default file
              * @enum {string}
              */
-            mode?: "api" | "file";
+            mode?: "file" | "api";
             /**
              * Binding Id
              * @description Required when mode='api'; names the live provider binding to push through.
@@ -63137,7 +63781,7 @@ export interface components {
              * Delivery State
              * @enum {string}
              */
-            delivery_state: "acknowledged" | "failed" | "generated" | "sent" | "superseded";
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
             /** Failure Reason */
             failure_reason: string;
         };
@@ -63159,14 +63803,14 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "adp_csv" | "generic_csv" | "gusto_csv" | "json" | "quickbooks_iif" | "quickbooks_online";
+            key: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
             /** Label */
             label: string;
             /**
              * Delivery
              * @description `api` appears only where a LIVE provider binding exists for this format, so the shape does not change when a binding appears (§4.3).
              */
-            delivery: ("api" | "file")[];
+            delivery: ("file" | "api")[];
             /** Media Type */
             media_type: string;
             /** Columns */
@@ -63226,7 +63870,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "complete" | "content_mismatch" | "dead_link" | "failed" | "gated" | "ignored" | "manual" | "pending" | "skipped" | "success" | "thin";
+            status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /** Source Id */
             source_id: string;
             /**
@@ -63270,7 +63914,7 @@ export interface components {
             media?: components["schemas"]["ExtensionMedia"] | null;
             structured?: components["schemas"]["ExtensionStructured"] | null;
             /** Enrich Goal */
-            enrich_goal?: ("authenticated" | "comments" | "download" | "expand" | "rendered_dom" | "screenshot" | "structured" | "transcript" | "xhr_json") | null;
+            enrich_goal?: ("rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json") | null;
         };
         /**
          * ExtensionMeasuredImage
@@ -63385,7 +64029,7 @@ export interface components {
              * Scrape Status
              * @enum {string}
              */
-            scrape_status: "complete" | "content_mismatch" | "dead_link" | "failed" | "gated" | "ignored" | "manual" | "pending" | "skipped" | "success" | "thin";
+            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /**
              * Is Included
              * @default true
@@ -63403,7 +64047,7 @@ export interface components {
              * @default scrape
              * @enum {string}
              */
-            task_kind?: "enrich" | "scrape";
+            task_kind?: "scrape" | "enrich";
             enrich?: components["schemas"]["EnrichDirective"] | null;
             /** Last Attempt At */
             last_attempt_at?: string | null;
@@ -63473,7 +64117,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "box" | "dropbox" | "google_drive" | "onedrive";
+            provider: "google_drive" | "onedrive" | "dropbox" | "box";
             /** Connection Id */
             connection_id: string;
             /** Source Ref */
@@ -63495,7 +64139,7 @@ export interface components {
              * @default updated
              * @enum {string}
              */
-            kind?: "added" | "deleted" | "updated";
+            kind?: "added" | "updated" | "deleted";
             /**
              * Occurred At
              * Format: date-time
@@ -63812,7 +64456,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -63864,7 +64508,7 @@ export interface components {
              * Op Type
              * @enum {string}
              */
-            op_type: "delete" | "insert" | "update";
+            op_type: "insert" | "update" | "delete";
             /** Request Id */
             request_id: string | null;
             /** User Id */
@@ -63916,7 +64560,7 @@ export interface components {
              * Op Type
              * @enum {string}
              */
-            op_type: "delete" | "insert" | "update";
+            op_type: "insert" | "update" | "delete";
             /** Request Id */
             request_id: string | null;
             /** User Id */
@@ -63983,7 +64627,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -64053,7 +64697,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.feature.fm
@@ -64187,7 +64831,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -64234,7 +64878,7 @@ export interface components {
              * @default string
              * @enum {string}
              */
-            data_type?: "array" | "boolean" | "date" | "datetime" | "integer" | "json" | "number" | "string";
+            data_type?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
             /**
              * Is Required
              * @default false
@@ -64268,7 +64912,7 @@ export interface components {
              * @default string
              * @enum {string}
              */
-            data_type?: "array" | "boolean" | "date" | "datetime" | "integer" | "json" | "number" | "string";
+            data_type?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array";
             /**
              * Is Required
              * @default false
@@ -64299,7 +64943,7 @@ export interface components {
              * @default revealable
              * @enum {string}
              */
-            handling?: "revealable" | "sealed" | "visible";
+            handling?: "visible" | "revealable" | "sealed";
             /**
              * Editable
              * @default true
@@ -64364,7 +65008,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -64422,7 +65066,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "abandoned" | "complete" | "failed" | "not_applicable" | "partial" | "pending" | "running";
+            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable" | "abandoned";
             /** Analyzer Version */
             analyzer_version: string;
             /**
@@ -64492,7 +65136,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "failed" | "skipped" | "success";
+            status: "success" | "skipped" | "failed";
             /**
              * Text Sources
              * @default []
@@ -64599,7 +65243,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "active" | "deleted" | "excluded";
+            status: "active" | "excluded" | "deleted";
             /** Excluded Reason */
             excluded_reason?: string | null;
             /** Excluded At */
@@ -64618,7 +65262,7 @@ export interface components {
              * Text Source
              * @enum {string}
              */
-            text_source: "mixed" | "native" | "none" | "ocr" | "unknown";
+            text_source: "native" | "ocr" | "mixed" | "unknown" | "none";
             /** Ocr Confidence */
             ocr_confidence?: number | null;
             /** Thumbnail Url */
@@ -64670,7 +65314,7 @@ export interface components {
          */
         FilePatchRequest: {
             /** Visibility */
-            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -64732,11 +65376,11 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "cancelled" | "completed" | "failed" | "not_scheduled" | "running" | "scheduled";
+            state: "not_scheduled" | "scheduled" | "running" | "completed" | "failed" | "cancelled";
             /** Job Id */
             job_id?: string | null;
             /** Trigger Source */
-            trigger_source?: ("auto" | "on_demand" | "refresh" | "upload_flag") | null;
+            trigger_source?: ("auto" | "upload_flag" | "on_demand" | "refresh") | null;
             /** Scheduled For */
             scheduled_for?: string | null;
             /** Started At */
@@ -64870,7 +65514,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
             /** File Name */
             file_name?: string | null;
             /** Mime Type */
@@ -65111,7 +65755,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "invalid" | "risky" | "unverified" | "verified";
+            status: "unverified" | "verified" | "invalid" | "risky";
             /** Mx Valid */
             mx_valid?: boolean | null;
             /**
@@ -65144,6 +65788,8 @@ export interface components {
             actual_size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /** FindContactsRequest */
         FindContactsRequest: {
@@ -65275,7 +65921,7 @@ export interface components {
              * Lever
              * @enum {string}
              */
-            lever: "architecture" | "instructions" | "resources" | "stopping_condition" | "tools";
+            lever: "instructions" | "resources" | "tools" | "architecture" | "stopping_condition";
             /** Organization Id */
             organization_id?: string | null;
             /**
@@ -65408,7 +66054,7 @@ export interface components {
              * Lever
              * @enum {string}
              */
-            lever: "architecture" | "instructions" | "resources" | "tools";
+            lever: "instructions" | "resources" | "tools" | "architecture";
             /**
              * Snapshots Pinned
              * @default 0
@@ -65440,7 +66086,7 @@ export interface components {
              * @default assistant_message
              * @enum {string}
              */
-            unit_kind?: "agent_request" | "assistant_message" | "wf_node_outcome";
+            unit_kind?: "assistant_message" | "agent_request" | "wf_node_outcome";
             /** Unit Id */
             unit_id: string;
             /** Hops */
@@ -65454,7 +66100,7 @@ export interface components {
             /** Reasoning */
             reasoning?: string | null;
             /** Lever */
-            lever?: ("architecture" | "instructions" | "resources" | "tools") | null;
+            lever?: ("instructions" | "resources" | "tools" | "architecture") | null;
             /** Snapshot Ids */
             snapshot_ids?: string[];
         };
@@ -65473,7 +66119,7 @@ export interface components {
              * Lever
              * @enum {string}
              */
-            lever: "architecture" | "instructions" | "resources" | "stopping_condition" | "tools";
+            lever: "instructions" | "resources" | "tools" | "architecture" | "stopping_condition";
             /** Title */
             title: string;
             /** Reasoning */
@@ -65685,7 +66331,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -65722,7 +66368,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66004,7 +66650,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -66184,7 +66830,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "maintenance" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical" | "maintenance";
             /**
              * Status Page
              * @default https://status.formassembly.com
@@ -66216,7 +66862,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.123formbuilder.com
@@ -66254,7 +66900,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66367,7 +67013,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.freeagent.com
@@ -66399,7 +67045,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.freshbooks.com
@@ -66437,7 +67083,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66540,7 +67186,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.fullstory.com
@@ -66581,7 +67227,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66672,7 +67318,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.geckoboard.com
@@ -66742,7 +67388,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66778,7 +67424,7 @@ export interface components {
              * @default square
              * @enum {string}
              */
-            size?: "landscape" | "portrait" | "square" | "tall" | "wide";
+            size?: "square" | "portrait" | "landscape" | "wide" | "tall";
             /**
              * Style
              * @description Optional style hint (e.g. 'editorial illustration'); folded into the prompt.
@@ -66942,7 +67588,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -66976,7 +67622,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67351,7 +67997,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67388,7 +68034,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67422,7 +68068,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67537,55 +68183,6 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
-        /**
-         * GoogleCapabilityMetadata
-         * @description Descriptor plus the verified caller's current rollout eligibility.
-         */
-        GoogleCapabilityMetadata: {
-            /**
-             * Key
-             * @enum {string}
-             */
-            key: "drive_files" | "docs" | "sheets" | "gmail_send" | "search_console" | "analytics" | "youtube" | "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
-            /** Title */
-            title: string;
-            /** User Outcome */
-            user_outcome: string;
-            /** Required Scopes */
-            required_scopes: components["schemas"]["GoogleCapabilityScope"][];
-            /** Eligible Resource Types */
-            eligible_resource_types: string[];
-            /**
-             * Rollout Phase
-             * @enum {string}
-             */
-            rollout_phase: "available" | "internal_test";
-            /** Native Tool Actions */
-            native_tool_actions: string[];
-            /** Mcp Tool Actions */
-            mcp_tool_actions: string[];
-            /** Limitation */
-            limitation: string;
-            /** Remedy */
-            remedy: string;
-            /** Eligible */
-            eligible: boolean;
-            /** Admission Error */
-            admission_error?: string | null;
-        };
-        /**
-         * GoogleCapabilityScope
-         * @description One required scope and Google's exact classification for that scope.
-         */
-        GoogleCapabilityScope: {
-            /** Scope */
-            scope: string;
-            /**
-             * Provider Classification
-             * @enum {string}
-             */
-            provider_classification: "verified_sensitive" | "non_sensitive";
-        };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
             /** Refresh Token */
@@ -67626,7 +68223,7 @@ export interface components {
              * @default general
              * @enum {string}
              */
-            connection_purpose?: "contacts_import" | "general" | "google_ads_isolated" | "read_only_sweep";
+            connection_purpose?: "general" | "google_ads_isolated" | "read_only_sweep" | "contacts_import";
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
@@ -67763,7 +68360,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.gorgias.com
@@ -67832,7 +68429,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67866,7 +68463,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -67879,13 +68476,13 @@ export interface components {
              * @default read
              * @enum {string}
              */
-            level?: "admin" | "read" | "write";
+            level?: "read" | "write" | "admin";
             /**
              * Grantee Type
              * @default user
              * @enum {string}
              */
-            grantee_type?: "group" | "user";
+            grantee_type?: "user" | "group";
             /** Expires At */
             expires_at?: string | null;
         };
@@ -68011,7 +68608,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68045,7 +68642,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68073,7 +68670,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.groovehq.com
@@ -68203,7 +68800,7 @@ export interface components {
              * @default incremental
              * @enum {string}
              */
-            mode?: "backfill" | "incremental";
+            mode?: "incremental" | "backfill";
         };
         /**
          * GuestRecordAccess
@@ -68259,7 +68856,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68293,7 +68890,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68551,7 +69148,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68585,7 +69182,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68668,7 +69265,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68728,7 +69325,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.heap.io
@@ -68780,7 +69377,7 @@ export interface components {
              * @default ran
              * @enum {string}
              */
-            status?: "errored" | "ran" | "skipped_for_budget";
+            status?: "ran" | "errored" | "skipped_for_budget";
             /** Run Id */
             run_id?: string | null;
             /** Definition Id */
@@ -68822,7 +69419,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.helpscout.com
@@ -68860,7 +69457,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -68888,7 +69485,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.helpshift.com
@@ -68920,7 +69517,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.helpwise.io
@@ -69041,7 +69638,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69075,7 +69672,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69142,7 +69739,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69176,7 +69773,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69213,7 +69810,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69273,7 +69870,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.hiverhq.com
@@ -69311,7 +69908,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69389,7 +69986,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -69417,7 +70014,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.honeybadger.io
@@ -69449,7 +70046,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.honeycomb.io
@@ -69484,7 +70081,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.hootsuite.com
@@ -69516,7 +70113,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.hotjar.com
@@ -69638,7 +70235,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "account_selection_required" | "agent_requested" | "captcha_required" | "credentials_missing" | "credentials_rejected" | "destructive_change_approval" | "mfa_required" | "operator_requested" | "payment_approval" | "provider_consent_required" | "push_approval_required" | "sensitive_action_approval" | "session_revoked_by_provider" | "totp_unavailable" | "unrecognized_page" | "user_requested" | "webauthn_required";
+            reason: "credentials_missing" | "credentials_rejected" | "mfa_required" | "totp_unavailable" | "push_approval_required" | "webauthn_required" | "captcha_required" | "provider_consent_required" | "account_selection_required" | "sensitive_action_approval" | "payment_approval" | "destructive_change_approval" | "unrecognized_page" | "session_revoked_by_provider" | "agent_requested" | "user_requested" | "operator_requested";
             /**
              * Detected By
              * @enum {string}
@@ -69691,7 +70288,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -70045,7 +70642,7 @@ export interface components {
              * @default png
              * @enum {string}
              */
-            format?: "avif" | "jpeg" | "png" | "webp";
+            format?: "png" | "jpeg" | "webp" | "avif";
             /**
              * Quality
              * @description Encoder quality from 1 to 100 for lossy output formats.
@@ -70305,7 +70902,7 @@ export interface components {
              * Grade
              * @enum {string}
              */
-            grade: "green" | "identical" | "orange" | "red";
+            grade: "identical" | "green" | "orange" | "red";
             /** Message */
             message: string;
             /** Field */
@@ -70319,7 +70916,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "global" | "org" | "user";
+            kind: "org" | "user" | "global";
             /** Organization Id */
             organization_id: string;
             /** Subject User Id */
@@ -70396,7 +70993,7 @@ export interface components {
              * Holder Kind
              * @enum {string}
              */
-            holder_kind: "binding" | "mandate_default";
+            holder_kind: "mandate_default" | "binding";
             /** Row Id */
             row_id: string;
             /** Mandate Key */
@@ -70420,9 +71017,9 @@ export interface components {
              * Grade
              * @enum {string}
              */
-            grade: "green" | "identical" | "orange" | "red";
+            grade: "identical" | "green" | "orange" | "red";
             /** Blocker */
-            blocker?: ("set_aside" | "tracks_latest" | "unreachable" | "unsupported_holder") | null;
+            blocker?: ("unreachable" | "unsupported_holder" | "set_aside" | "tracks_latest") | null;
             /** Set Aside Reason */
             set_aside_reason?: string | null;
             /** Findings */
@@ -70576,7 +71173,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "blocklisted" | "duplicate_in_list" | "existing" | "new" | "unusable";
+            verdict: "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
             /** Why */
             why: string;
         };
@@ -70591,7 +71188,7 @@ export interface components {
         InboundClassification: {
             label: components["schemas"]["InboundLabel"];
             /** Bounce Type */
-            bounce_type?: ("block" | "complaint" | "hard" | "soft") | null;
+            bounce_type?: ("soft" | "hard" | "block" | "complaint") | null;
             /** Ooo Return At */
             ooo_return_at?: string | null;
             /** Matched Phrase */
@@ -70603,7 +71200,7 @@ export interface components {
          * InboundLabel
          * @enum {string}
          */
-        InboundLabel: "bounce" | "interested" | "not_interested" | "ooo" | "other" | "unsubscribe";
+        InboundLabel: "bounce" | "unsubscribe" | "ooo" | "interested" | "not_interested" | "other";
         /**
          * InboundOutcome
          * @description What G6 hands the sequence runner and the inbox — the exported contract.
@@ -70619,7 +71216,7 @@ export interface components {
             thread_id?: string | null;
             classification: components["schemas"]["InboundClassification"];
             /** Sequence Branch */
-            sequence_branch?: ("bounce" | "click_no_reply" | "no_response" | "ooo" | "reply") | null;
+            sequence_branch?: ("reply" | "ooo" | "click_no_reply" | "no_response" | "bounce") | null;
             /**
              * Correlated
              * @default false
@@ -70649,6 +71246,29 @@ export interface components {
             detail?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * InboxConnectionResponse
+         * @description Is the connected door open? A `False` here means the surface renders no
+         *     picker at all — an ABSENT control, never a dead one — plus the sentence in
+         *     `how_to_connect`.
+         */
+        InboxConnectionResponse: {
+            /**
+             * Connected
+             * @default false
+             */
+            connected?: boolean;
+            /** Provider */
+            provider?: string | null;
+            /** Account Email */
+            account_email?: string | null;
+            /** Connection Id */
+            connection_id?: string | null;
+            /** Days Back Default */
+            days_back_default?: number | null;
+            /** How To Connect */
+            how_to_connect?: string | null;
         };
         /** InboxEditRequest */
         InboxEditRequest: {
@@ -70695,7 +71315,7 @@ export interface components {
              * @default user_message
              * @enum {string}
              */
-            kind?: "system_message" | "user_message";
+            kind?: "user_message" | "system_message";
             /**
              * Text
              * @description The message text to inject.
@@ -70775,6 +71395,107 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * InboxPreviewRequest
+         * @description Parse a mail export and list its threads — no AI, no writes.
+         */
+        InboxPreviewRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted email thread — your reply plus what you were answering.
+             */
+            text?: string | null;
+            /**
+             * Connection Id
+             * @description users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so.
+             */
+            connection_id?: string | null;
+            /**
+             * Expert Email
+             * @description WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name.
+             */
+            expert_email?: string | null;
+            /**
+             * Own Replies Only
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             */
+            own_replies_only?: boolean | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** InboxPreviewResponse */
+        InboxPreviewResponse: {
+            /** Threads */
+            threads?: components["schemas"]["InboxThreadPreview"][];
+            /**
+             * Expert Email
+             * @default
+             */
+            expert_email?: string;
+            /**
+             * Skipped Files
+             * @default 0
+             */
+            skipped_files?: number;
+            /** Notes */
+            notes?: string[];
+        };
+        /** InboxThreadPreview */
+        InboxThreadPreview: {
+            /** Key */
+            key: string;
+            /** Subject */
+            subject: string;
+            /** Participants */
+            participants?: string[];
+            /**
+             * Messages
+             * @default 0
+             */
+            messages?: number;
+            /** Last At */
+            last_at?: string | null;
+            /**
+             * Snippet
+             * @default
+             */
+            snippet?: string;
+            /**
+             * You Replied
+             * @default false
+             */
+            you_replied?: boolean;
+            /**
+             * Has Given Draft
+             * @default false
+             */
+            has_given_draft?: boolean;
+            /** Nothing To Shadow */
+            nothing_to_shadow?: string | null;
+            /**
+             * Your Words
+             * @default 0
+             */
+            your_words?: number;
+        };
         /** IncidentIoServiceStatus */
         IncidentIoServiceStatus: {
             /**
@@ -70799,7 +71520,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.incident.io/
@@ -70934,7 +71655,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.infobip.com
@@ -71093,7 +71814,7 @@ export interface components {
              * @default exemplar
              * @enum {string}
              */
-            mode?: "exemplar" | "instructional";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this body of work is from ('my blog, 2019-2026').
@@ -71147,7 +71868,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode?: "exemplar" | "instructional";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this dump came from ('everything about my SEO method').
@@ -71212,7 +71933,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode?: "exemplar" | "instructional";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this came from ('Chapter 3', 'the 2024 handbook').
@@ -71243,6 +71964,261 @@ export interface components {
              * @enum {string}
              */
             redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestInboxRequest
+         * @description Distill the difference between the Expert's real replies and the reply a
+         *     competent generalist would have written, into DRAFT rules.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestInboxRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted email thread — your reply plus what you were answering.
+             */
+            text?: string | null;
+            /**
+             * Connection Id
+             * @description users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so.
+             */
+            connection_id?: string | null;
+            /**
+             * Expert Email
+             * @description WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name.
+             */
+            expert_email?: string | null;
+            /**
+             * Own Replies Only
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             */
+            own_replies_only?: boolean | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Thread Keys
+             * @description Thread keys to shadow (from the preview). None = every thread found.
+             */
+            thread_keys?: string[] | null;
+            /**
+             * Days Back
+             * @description Connected door only: how far back to look for threads you replied to (knob `masterwork.shadow_inbox.days_back`, default 30).
+             */
+            days_back?: number | null;
+            /**
+             * Source Note
+             * @description Where this came from ('the Northline quote thread, Sept 2026').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestMarkupRequest
+         * @description THE RED-PEN LANE: a piece of someone else's work plus the Expert's
+         *     corrections on it, distilled into DRAFT rules.
+         *
+         *     The `red_pen` Approach. Unlike every other lane, the source is material the
+         *     Expert DISAGREES with — the rule lives in the disagreement, so the unit
+         *     distilled is the correction (span + the Expert's words + the moment), never
+         *     a window of the work's own words.
+         *
+         *     Human-first invariant, identical to every other lane: draft only.
+         */
+        IngestMarkupRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Work Text
+             * @description The piece of work being reviewed, verbatim.
+             */
+            work_text: string;
+            /**
+             * Corrections
+             * @description The Expert's corrections, in the order they made them. The FLOOR is the `min_corrections_before_distilling` knob, enforced server-side; this bound only refuses an empty list.
+             */
+            corrections: components["schemas"]["WorkCorrection"][];
+            /**
+             * Source Note
+             * @description What the work is ('Dan's draft launch email', 'the Q3 proposal').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestMeetingRequest
+         * @description Scavenge meetings for the Expert's own judgment moments.
+         *
+         *     The two knobs (`masterwork_distillation.meeting_own_turns_only` and
+         *     `.meeting_min_moment_words`) supply the org's standing answer; a field left
+         *     None here means "use it". A value overrides it FOR THIS RUN only — the knob
+         *     row stays the authority for the next one.
+         */
+        IngestMeetingRequest: {
+            /**
+             * Meeting Ids
+             * @description communication.meet_meetings ids the caller may read.
+             */
+            meeting_ids?: string[] | null;
+            /**
+             * File Id
+             * @description files.files id of an uploaded transcript or recording.
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted meeting transcript.
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Speaker Keys
+             * @description Which voices are the Expert (from /masterworks/meeting/preview). Required when own_turns_only resolves true and the source cannot prove which speaker the caller is.
+             */
+            speaker_keys?: string[] | null;
+            /**
+             * Own Turns Only
+             * @description Scavenge only the Expert's own turns (the default), or every speaker in the room. None = this organization's knob value.
+             */
+            own_turns_only?: boolean | null;
+            /**
+             * Min Moment Words
+             * @description The shortest continuous turn read as a judgment moment. None = this organization's knob value.
+             */
+            min_moment_words?: number | null;
+            /**
+             * Source Note
+             * @description Optional label ('the Tuesday supplier reviews').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestPredictionsRequest
+         * @description Distil the Expert's own SCORED predictions into rules and boundaries.
+         *
+         *     The `prediction_ledger` Approach. The Expert called real open cases in
+         *     their work — "this claim is fraudulent", "this candidate will accept" —
+         *     with a confidence and one line of why, before the outcome existed. This
+         *     reads the calls whose outcomes are now IN: the whys behind calls that held
+         *     become rules carrying the prediction and its outcome as evidence, and the
+         *     whys behind calls that missed become boundary findings the Expert is asked
+         *     about.
+         *
+         *     The ledger itself lives on `platform.rulebook.metadata.prediction_ledger`
+         *     and is written by the client direct (a pure UI↔DB write, no Python hop) —
+         *     this request only names WHICH Rulebook, and optionally which entries.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestPredictionsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Entry Ids
+             * @description Which ledger entries to read. Omitted (the normal case) means every RESOLVED entry no run has read yet — a run never re-reads a call it already distilled.
+             */
+            entry_ids?: string[] | null;
+            /**
+             * Source Note
+             * @description What these calls are about ('Q3 fraud queue', 'autumn hiring round').
+             */
+            source_note?: string | null;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'prediction_ledger'.
+             */
+            approach?: string | null;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** IngestReport */
         IngestReport: {
@@ -71347,7 +72323,7 @@ export interface components {
              * @default instructional
              * @enum {string}
              */
-            mode?: "exemplar" | "instructional";
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this came from ('Chapter 3', 'recorded call, Aug 10').
@@ -71463,6 +72439,50 @@ export interface components {
             redistill?: "refuse" | "replace";
         };
         /**
+         * IngestTriadRequest
+         * @description Distill ONE played Triad card into DRAFT rules.
+         *
+         *     Submitted the moment the Expert swipes, one card at a time, so a session
+         *     abandoned after three cards keeps all three. Human-first invariant,
+         *     identical to every other lane: drafts only.
+         */
+        IngestTriadRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            triad: components["schemas"]["TriadPayload"];
+            /**
+             * Pick
+             * @description Which item the Expert chose (best one, or odd one out).
+             * @enum {string}
+             */
+            pick: "a" | "b" | "c";
+            /**
+             * Reason
+             * @description The Expert's own one line about why — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be verified against.
+             */
+            reason: string;
+            /**
+             * Source Note
+             * @description Where this card came from; defaults to the card's own question.
+             */
+            source_note?: string | null;
+        };
+        /**
          * IngestUnfoldingRequest
          * @description Read a narrative that UNFOLDS IN TIME as a serial-observation timeline.
          *
@@ -71520,7 +72540,7 @@ export interface components {
              * @default teaching
              * @enum {string}
              */
-            role?: "heldout" | "teaching";
+            role?: "teaching" | "heldout";
             /** @description Licence, link, publication date and external id of the case. */
             source_meta?: components["schemas"]["TimelineSourceMeta"] | null;
             /**
@@ -71545,7 +72565,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "invisible" | "side_by_side";
+            mode: "side_by_side" | "invisible";
             /** Original User Request */
             original_user_request: string;
             /** Initial Agent Id */
@@ -71594,7 +72614,7 @@ export interface components {
              */
             industrial?: number;
             /** Side */
-            side?: ("default" | "left" | "right") | null;
+            side?: ("left" | "right" | "default") | null;
             /**
              * Ag
              * @default false
@@ -71616,7 +72636,7 @@ export interface components {
             /** Industrial */
             industrial?: number | null;
             /** Side */
-            side?: ("default" | "left" | "right") | null;
+            side?: ("left" | "right" | "default") | null;
             /** Ag */
             ag?: boolean | null;
         };
@@ -71663,7 +72683,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.inngest.com/
@@ -71678,7 +72698,7 @@ export interface components {
              * @default telea
              * @enum {string}
              */
-            method?: "ns" | "telea";
+            method?: "telea" | "ns";
             /**
              * Radius
              * @default 3
@@ -71689,7 +72709,7 @@ export interface components {
          * InputDataType
          * @enum {string}
          */
-        InputDataType: "file_url" | "full_content" | "partial_content" | "topic";
+        InputDataType: "topic" | "partial_content" | "full_content" | "file_url";
         /** InsertPagesRequest */
         InsertPagesRequest: {
             /** Output Mode */
@@ -71773,7 +72793,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.insightly.com
@@ -71851,7 +72871,7 @@ export interface components {
              * Ruling
              * @enum {string}
              */
-            ruling: "brand" | "educational" | "mismatch" | "money";
+            ruling: "money" | "educational" | "brand" | "mismatch";
             /**
              * Reasoning
              * @default
@@ -72228,7 +73248,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.iterable.com
@@ -72280,7 +73300,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "invisible" | "side_by_side";
+            mode: "side_by_side" | "invisible";
             /** Original User Request */
             original_user_request: string;
             /** Accumulated Feedback */
@@ -72307,7 +73327,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "invisible" | "side_by_side";
+            mode: "side_by_side" | "invisible";
             /** Original User Request */
             original_user_request: string;
             /** Accumulated Feedback */
@@ -72384,7 +73404,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -72418,7 +73438,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -72488,7 +73508,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -72727,7 +73747,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.justcall.io
@@ -72768,7 +73788,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -72898,7 +73918,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -72926,7 +73946,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.kayako.com
@@ -73323,7 +74343,7 @@ export interface components {
              * @default cheap
              * @enum {string}
              */
-            tier?: "advanced" | "cheap" | "thorough";
+            tier?: "cheap" | "thorough" | "advanced";
         };
         /** KeywordStrategyEstimate */
         KeywordStrategyEstimate: {
@@ -73340,7 +74360,7 @@ export interface components {
              * Tier
              * @enum {string}
              */
-            tier: "advanced" | "cheap" | "thorough";
+            tier: "cheap" | "thorough" | "advanced";
             /** Label */
             label: string;
             /** Pages */
@@ -73499,7 +74519,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74068,7 +75088,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74096,7 +75116,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.knock.app/
@@ -74195,7 +75215,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74214,15 +75234,15 @@ export interface components {
             /** Top K */
             top_k?: number | null;
             /** Tool Choice */
-            tool_choice?: ("auto" | "none" | "required") | null;
+            tool_choice?: ("none" | "auto" | "required") | null;
             /** Parallel Tool Calls */
             parallel_tool_calls?: boolean | null;
             /** Reasoning Effort */
-            reasoning_effort?: ("auto" | "high" | "low" | "max" | "medium" | "minimal" | "none" | "xhigh") | null;
+            reasoning_effort?: ("auto" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max") | null;
             /** Reasoning Summary */
-            reasoning_summary?: ("always" | "auto" | "concise" | "detailed" | "never") | null;
+            reasoning_summary?: ("concise" | "detailed" | "never" | "auto" | "always") | null;
             /** Thinking Level */
-            thinking_level?: ("high" | "low" | "medium" | "minimal") | null;
+            thinking_level?: ("minimal" | "low" | "medium" | "high") | null;
             /** Include Thoughts */
             include_thoughts?: boolean | null;
             /** Thinking Budget */
@@ -74242,9 +75262,9 @@ export interface components {
             /** Previous Interaction Id */
             previous_interaction_id?: string | null;
             /** Task */
-            task?: ("edit" | "image_to_video" | "reference_to_video" | "text_to_video") | null;
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
-            verbosity?: ("high" | "low" | "medium") | null;
+            verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
             internal_web_search?: boolean | null;
             /** Internal Url Context */
@@ -74252,7 +75272,7 @@ export interface components {
             /** Internal X Search */
             internal_x_search?: boolean | null;
             /** Aspect Ratio */
-            aspect_ratio?: ("16:9" | "1:1" | "21:9" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16") | null;
+            aspect_ratio?: ("1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "16:9" | "21:9") | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -74260,7 +75280,7 @@ export interface components {
             /** Count */
             count?: number | null;
             /** Render Quality */
-            render_quality?: ("auto" | "high" | "low" | "medium") | null;
+            render_quality?: ("low" | "medium" | "high" | "auto") | null;
             /** Background */
             background?: ("auto" | "opaque" | "transparent") | null;
             /** Output Compression */
@@ -74272,17 +75292,17 @@ export interface components {
             /** Partial Images */
             partial_images?: number | null;
             /** Style */
-            style?: ("natural" | "vivid") | null;
+            style?: ("vivid" | "natural") | null;
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
             tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
-            audio_format?: ("aac" | "alaw" | "flac" | "mp3" | "mulaw" | "ogg" | "opus" | "pcm" | "wav") | null;
+            audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
-            resolution?: ("1080p" | "1K" | "2K" | "480p" | "4K" | "4k" | "720p") | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "1K" | "2K" | "4K") | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -74296,7 +75316,7 @@ export interface components {
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
-            output_format?: ("base64" | "jpeg" | "json_object" | "json_schema" | "png" | "text" | "url" | "webp") | null;
+            output_format?: ("jpeg" | "png" | "webp" | "base64" | "url" | "text" | "json_object" | "json_schema") | null;
             /** Frame Images */
             frame_images?: components["schemas"]["MediaRef"][] | null;
             /** Reference Images */
@@ -74316,7 +75336,7 @@ export interface components {
             last_frame_image?: components["schemas"]["MediaRef"] | null;
             video_input?: components["schemas"]["MediaRef"] | null;
             /** Video Action */
-            video_action?: ("edit" | "extend" | "generate") | null;
+            video_action?: ("generate" | "edit" | "extend") | null;
             /** Custom Tools */
             custom_tools?: components["schemas"]["CustomTool"][] | null;
             /** Mcp Servers */
@@ -74328,7 +75348,7 @@ export interface components {
             } | null;
             dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
-            tts_quality?: ("fast" | "high_quality") | null;
+            tts_quality?: ("high_quality" | "fast") | null;
             /**
              * Max Tokens
              * @deprecated
@@ -74358,7 +75378,7 @@ export interface components {
              * @deprecated
              * @description Deprecated input alias for `render_quality`. The server normalizes this name before validation and dispatch; new callers should send `render_quality`.
              */
-            quality?: ("auto" | "high" | "low" | "medium") | null;
+            quality?: ("low" | "medium" | "high" | "auto") | null;
             /**
              * Output Quality
              * @deprecated
@@ -74491,7 +75511,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.landingi.com
@@ -74523,7 +75543,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.landr.com
@@ -74636,7 +75656,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74670,7 +75690,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74679,7 +75699,7 @@ export interface components {
          * @description Why a branch of a contract is considered untyped.
          * @enum {string}
          */
-        LeakRule: "acknowledged_dynamic" | "any" | "bare_container" | "extra_allow" | "object" | "unbound_typevar" | "unknown_type";
+        LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type" | "acknowledged_dynamic";
         /** LearnAmpServiceStatus */
         LearnAmpServiceStatus: {
             /**
@@ -74710,7 +75730,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -74744,7 +75764,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -75035,7 +76055,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -75532,7 +76552,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.lightdash.com
@@ -75570,7 +76590,7 @@ export interface components {
              * Relation
              * @enum {string}
              */
-            relation: "duplicated_from" | "self";
+            relation: "self" | "duplicated_from";
         };
         /** LineageTree */
         LineageTree: {
@@ -75628,7 +76648,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.linkfire.com
@@ -75905,7 +76925,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.livechat.com/
@@ -76004,7 +77024,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -76191,7 +77211,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.logrocket.com
@@ -76283,7 +77303,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "cancel" | "complete" | "pause" | "resume";
+            action: "pause" | "resume" | "complete" | "cancel";
             /** Reason */
             reason?: string | null;
         };
@@ -76292,7 +77312,7 @@ export interface components {
          * @description The loop's own narrative vocabulary — NOT a mirror of workflow events.
          * @enum {string}
          */
-        LoopEventType: "cycle_advanced" | "loop_cancelled" | "loop_completed" | "loop_paused" | "loop_resumed" | "loop_started" | "stage_blocked" | "stage_completed" | "stage_entered" | "stage_escalated" | "stage_failed" | "stage_skipped" | "stage_unblocked" | "supervisor_decision" | "supervisor_quarantined" | "supervisor_recovered" | "wf_run_attached" | "wf_run_detached";
+        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached" | "supervisor_decision" | "supervisor_quarantined" | "supervisor_recovered";
         /** LoopEventView */
         LoopEventView: {
             /** Id */
@@ -76333,7 +77353,7 @@ export interface components {
          *     lists are ONE list — changing it is a coordinated change across all three.
          * @enum {string}
          */
-        LoopStage: "analyze" | "brief" | "crawl" | "fill" | "measure" | "plan" | "publish" | "realize" | "research" | "serve" | "suggest" | "writeback";
+        LoopStage: "research" | "plan" | "brief" | "realize" | "fill" | "publish" | "serve" | "crawl" | "measure" | "analyze" | "suggest" | "writeback";
         /**
          * LoopStateView
          * @description THE observable: one loop, its stage, its blocker, how to continue.
@@ -76389,7 +77409,7 @@ export interface components {
          * @description The LOOP's lifecycle — deliberately coarser than any stage's status.
          * @enum {string}
          */
-        LoopStatus: "active" | "blocked" | "cancelled" | "completed" | "paused";
+        LoopStatus: "active" | "blocked" | "paused" | "completed" | "cancelled";
         /**
          * LoopsServiceStatus
          * @description Safe aggregate status projection for Loops' fixed status page.
@@ -76417,7 +77437,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.loops.so
@@ -76487,7 +77507,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -76518,7 +77538,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.luckyorange.com
@@ -76588,7 +77608,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -76689,7 +77709,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.mailersend.com/
@@ -76721,7 +77741,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.mailgun.com
@@ -76785,7 +77805,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.make.com
@@ -76823,7 +77843,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -76834,7 +77854,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "global" | "org" | "user";
+            principal_type?: "user" | "org" | "global";
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -76846,7 +77866,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "global" | "org" | "user";
+            principal_type: "user" | "org" | "global";
             /** Removed */
             removed: boolean;
         };
@@ -76857,7 +77877,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "global" | "org" | "user";
+            principal_type?: "user" | "org" | "global";
             /**
              * Holder Type
              * @default agent
@@ -76913,7 +77933,7 @@ export interface components {
              * @default current
              * @enum {string}
              */
-            selection?: "agent" | "current" | "latest" | "mandate_pinned" | "version";
+            selection?: "current" | "mandate_pinned" | "latest" | "agent" | "version";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -77186,7 +78206,7 @@ export interface components {
              * Rung
              * @enum {string}
              */
-            rung: "organization" | "system" | "user";
+            rung: "system" | "organization" | "user";
             /** Holder Type */
             holder_type: string | null;
             /** Holder Name */
@@ -77217,7 +78237,7 @@ export interface components {
              * Surface Source
              * @enum {string}
              */
-            surface_source: "holder" | "mandate_inputs" | "none" | "provision";
+            surface_source: "provision" | "mandate_inputs" | "holder" | "none";
             /** Holder Name */
             holder_name?: string | null;
             /**
@@ -77248,7 +78268,7 @@ export interface components {
              * Audience
              * @enum {string}
              */
-            audience: "admins" | "everyone" | "organization";
+            audience: "everyone" | "organization" | "admins";
             /** Live */
             live: boolean;
             /** Detail */
@@ -77292,7 +78312,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "code" | "migration" | "unknown" | "user";
+            kind: "code" | "migration" | "user" | "unknown";
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -77481,7 +78501,7 @@ export interface components {
              * Provenance
              * @enum {string}
              */
-            provenance: "global" | "org" | "run" | "system" | "user";
+            provenance: "system" | "global" | "org" | "user" | "run";
             /** Freshness */
             freshness: string;
             /** Provision Key */
@@ -77566,7 +78586,7 @@ export interface components {
              * Sourcing
              * @enum {string}
              */
-            sourcing: "ask" | "optional" | "require";
+            sourcing: "ask" | "require" | "optional";
             /** Variant */
             variant?: string | null;
             default?: components["schemas"]["JsonValue"] | null;
@@ -77595,7 +78615,7 @@ export interface components {
              * @default field
              * @enum {string}
              */
-            origin?: "binding_prompt" | "field" | "holder" | "mandate_input" | "provision" | "variable";
+            origin?: "field" | "variable" | "provision" | "mandate_input" | "holder" | "binding_prompt";
             /**
              * Example
              * @default
@@ -77692,7 +78712,7 @@ export interface components {
              * Selection
              * @enum {string}
              */
-            selection: "agent" | "current" | "latest" | "mandate_pinned" | "version";
+            selection: "current" | "mandate_pinned" | "latest" | "agent" | "version";
         };
         /** MandateTestPrincipal */
         MandateTestPrincipal: {
@@ -77774,7 +78794,7 @@ export interface components {
              * @default unresolved
              * @enum {string}
              */
-            provenance?: "agent" | "global" | "latest" | "mandate-pinned" | "org" | "run" | "system" | "unresolved" | "user" | "version";
+            provenance?: "system" | "global" | "org" | "user" | "run" | "mandate-pinned" | "latest" | "agent" | "version" | "unresolved";
             /** Applied Config Overrides */
             applied_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -77964,7 +78984,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "inline" | "registered";
+            kind: "registered" | "inline";
             /** Delegate */
             delegate: boolean;
         };
@@ -78161,7 +79181,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -78174,7 +79194,7 @@ export interface components {
              * @default reversible
              * @enum {string}
              */
-            mode?: "annotation" | "destructive" | "reversible";
+            mode?: "reversible" | "destructive" | "annotation";
             /**
              * Substitute Style
              * @default bracket
@@ -78200,7 +79220,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "annotation" | "destructive" | "reversible";
+            mode: "reversible" | "destructive" | "annotation";
             /** Mapping Count */
             mapping_count: number;
             /** Session Key B64 */
@@ -78323,7 +79343,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -78402,7 +79422,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -78430,7 +79450,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.maze.co/
@@ -78811,7 +79831,7 @@ export interface components {
              * Media Type
              * @enum {string}
              */
-            media_type: "audio" | "document" | "image" | "video";
+            media_type: "image" | "video" | "document" | "audio";
             /** Url */
             url: string;
             /** Alt Text */
@@ -78948,6 +79968,87 @@ export interface components {
             /** Ended At */
             ended_at: string;
         };
+        /** MeetingPreviewItem */
+        MeetingPreviewItem: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Origin */
+            origin: string;
+            /** Slug */
+            slug?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Turns */
+            turns: number;
+            /** Speakers */
+            speakers: components["schemas"]["MeetingSpeakerPreview"][];
+        };
+        /**
+         * MeetingPreviewRequest
+         * @description Read the transcript(s) and list the voices — no AI, no writes.
+         */
+        MeetingPreviewRequest: {
+            /**
+             * Meeting Ids
+             * @description communication.meet_meetings ids the caller may read.
+             */
+            meeting_ids?: string[] | null;
+            /**
+             * File Id
+             * @description files.files id of an uploaded transcript or recording.
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted meeting transcript.
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** MeetingPreviewResponse */
+        MeetingPreviewResponse: {
+            /** Meetings */
+            meetings?: components["schemas"]["MeetingPreviewItem"][];
+            /** Notes */
+            notes?: string[];
+        };
+        /**
+         * MeetingSpeakerPreview
+         * @description One voice in the room, so the Expert can say which one is them.
+         */
+        MeetingSpeakerPreview: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Turns */
+            turns: number;
+            /** Words */
+            words: number;
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Is You
+             * @default false
+             */
+            is_you?: boolean;
+        };
         /**
          * MemServiceStatus
          * @description Safe aggregate status projection for Mem's fixed status page.
@@ -78981,7 +80082,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -79107,7 +80208,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.memberful.com
@@ -79494,7 +80595,7 @@ export interface components {
         /** MicrosoftAuthorizationRequest */
         MicrosoftAuthorizationRequest: {
             /** Campaigns */
-            campaigns: ("identity" | "onedrive_files_read" | "outlook_calendar_basic" | "outlook_mail_basic" | "sharepoint_selected" | "teams_personal_read")[];
+            campaigns: ("identity" | "outlook_mail_basic" | "outlook_calendar_basic" | "onedrive_files_read" | "sharepoint_selected" | "teams_personal_read")[];
         };
         /** MicrosoftAuthorizationResponse */
         MicrosoftAuthorizationResponse: {
@@ -79597,7 +80698,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -79631,7 +80732,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -79662,7 +80763,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "critical" | "major" | "minor" | "none";
+            status: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.minds.com
@@ -79686,7 +80787,7 @@ export interface components {
              * @default web_panel
              * @enum {string}
              */
-            client_kind?: "desktop" | "other" | "web_panel";
+            client_kind?: "web_panel" | "desktop" | "other";
             /**
              * Takeover
              * @default false
@@ -79737,7 +80838,7 @@ export interface components {
              * Tier Policy
              * @enum {string}
              */
-            tier_policy: "guest" | "mid" | "none";
+            tier_policy: "none" | "guest" | "mid";
             /** Ttl Seconds */
             ttl_seconds?: number | null;
             /** Model */
@@ -79769,7 +80870,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.mintlify.com/
@@ -79807,7 +80908,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -79822,7 +80923,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "mapping_unresolvable" | "no_source_data" | "var_missing";
+            reason: "no_source_data" | "mapping_unresolvable" | "var_missing";
             /**
              * Message
              * @default
@@ -79847,7 +80948,7 @@ export interface components {
              * @default missing
              * @enum {string}
              */
-            reason?: "invalid" | "missing";
+            reason?: "missing" | "invalid";
             /** Message */
             message?: string | null;
             /** Json Schema */
@@ -80078,13 +81179,13 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
             /**
              * Interaction
              * @default turn
              * @enum {string}
              */
-            interaction?: "extraction" | "realtime" | "turn";
+            interaction?: "turn" | "realtime" | "extraction";
             /** Features */
             features?: string[];
             /** Native Tools */
@@ -80193,7 +81294,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
         };
         /**
@@ -80319,7 +81420,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://molin.statuspage.io
@@ -80357,7 +81458,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -80380,7 +81481,7 @@ export interface components {
              * Site Key
              * @enum {string}
              */
-            site_key: "sandbox" | "school";
+            site_key: "school" | "sandbox";
             /** Site Url */
             site_url: string;
             /** Site Name */
@@ -80503,7 +81604,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -80540,7 +81641,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -80803,7 +81904,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -80829,7 +81930,7 @@ export interface components {
              * Verification Status
              * @enum {string}
              */
-            verification_status: "contradicted" | "opinion" | "partially_verified" | "unknown" | "unverified" | "verified";
+            verification_status: "verified" | "partially_verified" | "unverified" | "contradicted" | "opinion" | "unknown";
             /** Prevalence */
             prevalence: string;
             /** Severity */
@@ -80932,7 +82033,7 @@ export interface components {
              * @default load
              * @enum {string}
              */
-            wait_until?: "domcontentloaded" | "load" | "networkidle";
+            wait_until?: "load" | "domcontentloaded" | "networkidle";
             /**
              * Timeout Ms
              * @default 30000
@@ -81207,7 +82308,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -81417,7 +82518,7 @@ export interface components {
              * Slot
              * @enum {string}
              */
-            slot: "declared_sample" | "last_live_output" | "last_test_output";
+            slot: "declared_sample" | "last_test_output" | "last_live_output";
             /** Value */
             value?: unknown;
             /** Emissions */
@@ -81473,7 +82574,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "effective_output_schema" | "input_schema" | "kind";
+            source: "input_schema" | "effective_output_schema" | "kind";
             /** Json Schema */
             json_schema?: {
                 [key: string]: unknown;
@@ -81510,7 +82611,7 @@ export interface components {
              * @default none
              * @enum {string}
              */
-            provenance?: "none" | "seed" | "static" | "upstream";
+            provenance?: "upstream" | "static" | "seed" | "none";
             /** Source Node Id */
             source_node_id?: string | null;
             /** Value */
@@ -81570,7 +82671,7 @@ export interface components {
             /** Slots */
             slots: components["schemas"]["NodeDataSlotPayload"][];
             /** Best */
-            best?: ("declared_sample" | "last_live_output" | "last_test_output") | null;
+            best?: ("declared_sample" | "last_test_output" | "last_live_output") | null;
         };
         /** NodeSlotsResponse */
         NodeSlotsResponse: {
@@ -81584,7 +82685,7 @@ export interface components {
              * Best
              * @description The best available sample among the present slots: the NEWER of last_live_output / last_test_output by captured_at (live wins a tie or missing timestamp), else declared_sample.
              */
-            best?: ("declared_sample" | "last_live_output" | "last_test_output") | null;
+            best?: ("declared_sample" | "last_test_output" | "last_live_output") | null;
         };
         /**
          * NodeStateAtCheckpoint
@@ -81602,7 +82703,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "completed" | "failed" | "pending" | "skipped";
+            state: "pending" | "completed" | "failed" | "skipped";
             /**
              * Attempt
              * @default 1
@@ -81763,12 +82864,12 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "document_block" | "document_char" | "document_page" | "grounding" | "search_result" | "web";
+            kind: "document_char" | "document_page" | "document_block" | "search_result" | "web" | "grounding";
             /**
              * Provider
              * @enum {string}
              */
-            provider: "anthropic" | "google" | "openai" | "xai";
+            provider: "anthropic" | "openai" | "google" | "xai";
             /** Cited Text */
             cited_text?: string | null;
             /** Title */
@@ -81829,7 +82930,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -81940,27 +83041,27 @@ export interface components {
              * Reference
              * @enum {string}
              */
-            reference: "no" | "planned" | "yes";
+            reference: "yes" | "planned" | "no";
             /**
              * View
              * @enum {string}
              */
-            view: "no" | "planned" | "yes";
+            view: "yes" | "planned" | "no";
             /**
              * Create
              * @enum {string}
              */
-            create: "no" | "planned" | "yes";
+            create: "yes" | "planned" | "no";
             /**
              * Update
              * @enum {string}
              */
-            update: "no" | "planned" | "yes";
+            update: "yes" | "planned" | "no";
             /**
              * Delete
              * @enum {string}
              */
-            delete: "no" | "planned" | "yes";
+            delete: "yes" | "planned" | "no";
             /**
              * Label
              * @default
@@ -82041,7 +83142,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -82376,9 +83477,9 @@ export interface components {
              * @default variable
              * @enum {string}
              */
-            deliver?: "context" | "variable";
+            deliver?: "variable" | "context";
             /** When Absent */
-            when_absent?: ("fail" | "skip" | "use_default") | null;
+            when_absent?: ("skip" | "use_default" | "fail") | null;
             default?: components["schemas"]["JsonValue"] | null;
         };
         /**
@@ -82588,7 +83689,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -82621,7 +83722,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.olark.com
@@ -82724,7 +83825,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.onesignal.com/
@@ -82904,7 +84005,7 @@ export interface components {
              * Pacing
              * @enum {string}
              */
-            pacing: "instructor" | "self";
+            pacing: "self" | "instructor";
             /** Mobile Available */
             mobile_available: boolean;
             /** Invitation Only */
@@ -83147,9 +84248,9 @@ export interface components {
             /** Context Length */
             context_length: number;
             /** Input Modalities */
-            input_modalities: ("audio" | "file" | "image" | "text" | "video")[];
+            input_modalities: ("text" | "image" | "audio" | "file" | "video")[];
             /** Output Modalities */
-            output_modalities: ("audio" | "image" | "text")[];
+            output_modalities: ("text" | "image" | "audio")[];
             /** Supports Tools */
             supports_tools: boolean;
             /** Supports Structured Outputs */
@@ -83519,7 +84620,7 @@ export interface components {
              * Opportunity Type
              * @enum {string}
              */
-            opportunity_type: "backlink_acquisition" | "consolidation" | "create_page" | "create_supporting_content" | "internal_linking" | "monitor" | "schema" | "technical" | "upgrade_page";
+            opportunity_type: "upgrade_page" | "create_page" | "create_supporting_content" | "internal_linking" | "backlink_acquisition" | "schema" | "consolidation" | "technical" | "monitor";
             /** Competitor Domain */
             competitor_domain: string;
             /** Competitor Url */
@@ -83546,12 +84647,12 @@ export interface components {
              * Impact
              * @enum {string}
              */
-            impact: "high" | "low" | "medium";
+            impact: "high" | "medium" | "low";
             /**
              * Effort
              * @enum {string}
              */
-            effort: "high" | "low" | "medium";
+            effort: "high" | "medium" | "low";
             /** Confidence */
             confidence: number;
             /** Evidence */
@@ -83771,12 +84872,12 @@ export interface components {
              * @default unset
              * @enum {string}
              */
-            default_preference_status?: "malformed" | "stale" | "unavailable" | "unset" | "valid";
+            default_preference_status?: "unset" | "valid" | "stale" | "malformed" | "unavailable";
             /**
              * Warnings
              * @default []
              */
-            warnings?: ("membership_organization_missing" | "organization_preference_unavailable")[];
+            warnings?: ("organization_preference_unavailable" | "membership_organization_missing")[];
             /**
              * Missing Organization Count
              * @default 0
@@ -83807,7 +84908,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
         };
@@ -83835,7 +84936,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /**
              * Inject Into Sandbox
              * @default true
@@ -83907,7 +85008,7 @@ export interface components {
              * Sync Status
              * @enum {string}
              */
-            sync_status: "current" | "not_linked" | "out_of_sync" | "source_deleted";
+            sync_status: "not_linked" | "current" | "out_of_sync" | "source_deleted";
             /** Can Manage */
             can_manage: boolean;
             /** Grant User Ids */
@@ -83945,7 +85046,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
             /** Is Active */
@@ -84045,7 +85146,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -84063,7 +85164,7 @@ export interface components {
              * Tier
              * @enum {string}
              */
-            tier: "probable" | "strong" | "weak";
+            tier: "strong" | "probable" | "weak";
             /** Why */
             why?: string[];
             /** Evidence */
@@ -84480,7 +85581,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "approved" | "denied" | "exceeded_without_approval" | "none" | "requested";
+            state: "none" | "requested" | "approved" | "denied" | "exceeded_without_approval";
             /** Workflow Instance Id */
             workflow_instance_id?: string | null;
             /** Approved Hours */
@@ -84645,7 +85746,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -84921,7 +86022,7 @@ export interface components {
              * @default full
              * @enum {string}
              */
-            content_scope?: "full" | "main";
+            content_scope?: "main" | "full";
             /** Links To Target */
             links_to_target?: components["schemas"]["CapturedLink"][];
             /** Screenshot File Id */
@@ -85111,14 +86212,14 @@ export interface components {
         /** PagePerformanceRegressionOut */
         PagePerformanceRegressionOut: {
             /** Strategy */
-            strategy?: ("desktop" | "mobile") | null;
+            strategy?: ("mobile" | "desktop") | null;
             /** Metric */
             metric: string;
             /**
              * Data Kind
              * @enum {string}
              */
-            data_kind: "field" | "lab";
+            data_kind: "lab" | "field";
             /**
              * Previous Observed At
              * Format: date-time
@@ -85175,7 +86276,7 @@ export interface components {
              * Strategy
              * @enum {string}
              */
-            strategy: "desktop" | "mobile";
+            strategy: "mobile" | "desktop";
             /**
              * Observed At
              * Format: date-time
@@ -85265,7 +86366,7 @@ export interface components {
              * @default mobile
              * @enum {string}
              */
-            strategy?: "both" | "desktop" | "mobile";
+            strategy?: "mobile" | "desktop" | "both";
             /** Request Id */
             request_id?: string | null;
         };
@@ -85355,7 +86456,7 @@ export interface components {
              * @default preference
              * @enum {string}
              */
-            mode?: "faithfulness" | "preference";
+            mode?: "preference" | "faithfulness";
             candidate_one: components["schemas"]["PairwiseCandidate"];
             candidate_two: components["schemas"]["PairwiseCandidate"];
             /**
@@ -85627,7 +86728,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -85655,7 +86756,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.parabola.io
@@ -85693,7 +86794,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -85737,7 +86838,7 @@ export interface components {
              */
             folder_path?: string | null;
             /** Visibility */
-            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
+            visibility?: ("personal" | "internal" | "link" | "public" | "shared" | "private") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -85833,7 +86934,7 @@ export interface components {
              * Export Format
              * @enum {string}
              */
-            export_format: "adp_csv" | "generic_csv" | "gusto_csv" | "json" | "quickbooks_iif" | "quickbooks_online";
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
             /**
              * Idempotency Key
              * @description The DOMAIN key — unique (organization_id, idempotency_key) on hr.payroll_export. §1.4: where the domain already owns the key, the domain wins; it is checked FIRST, before the platform claim matters.
@@ -85880,7 +86981,7 @@ export interface components {
              * Export Format
              * @enum {string}
              */
-            export_format: "adp_csv" | "generic_csv" | "gusto_csv" | "json" | "quickbooks_iif" | "quickbooks_online";
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
             /**
              * Include Adjustments
              * @default true
@@ -85933,12 +87034,12 @@ export interface components {
              * Export Format
              * @enum {string}
              */
-            export_format: "adp_csv" | "generic_csv" | "gusto_csv" | "json" | "quickbooks_iif" | "quickbooks_online";
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
             /**
              * Delivery State
              * @enum {string}
              */
-            delivery_state: "acknowledged" | "failed" | "generated" | "sent" | "superseded";
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
             /** Line Count */
             line_count: number;
             /** Total Hours */
@@ -86270,7 +87371,7 @@ export interface components {
              * Operation
              * @enum {string}
              */
-            operation: "compress" | "crop_pages" | "delete_pages" | "duplicate_pages" | "extract_pages" | "extract_tables" | "extract_text" | "full_pipeline" | "insert_pages" | "merge" | "render_all" | "render_page" | "render_thumbnail" | "reorder_pages" | "rotate_pages" | "split";
+            operation: "render_page" | "render_all" | "render_thumbnail" | "extract_pages" | "crop_pages" | "rotate_pages" | "delete_pages" | "reorder_pages" | "insert_pages" | "duplicate_pages" | "merge" | "split" | "compress" | "extract_text" | "extract_tables" | "full_pipeline";
             /** Params */
             params?: {
                 [key: string]: unknown;
@@ -86279,7 +87380,7 @@ export interface components {
              * Output Kind
              * @enum {string}
              */
-            output_kind: "archive" | "csv" | "image" | "json" | "pdf" | "text";
+            output_kind: "pdf" | "image" | "text" | "csv" | "json" | "archive";
             /** Spec */
             spec?: string | null;
             /** Tags */
@@ -86612,7 +87713,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -86646,7 +87747,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -86884,7 +87985,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -86893,7 +87994,7 @@ export interface components {
          * @description The three pipes. A stage attempt is carried by exactly one of them.
          * @enum {string}
          */
-        Pipe: "ai" | "code" | "human";
+        Pipe: "code" | "human" | "ai";
         /**
          * PipePolicy
          * @description Per-stage three-pipes configuration for one loop run.
@@ -86934,7 +88035,7 @@ export interface components {
          *     itself is G-HUMAN-TIMEOUT and is deliberately not implemented here.
          * @enum {string}
          */
-        PipeRequest: "ai" | "ai_then_human" | "any" | "code" | "human" | "human_then_ai";
+        PipeRequest: "code" | "human" | "ai" | "human_then_ai" | "ai_then_human" | "any";
         /** PipedreamServiceStatus */
         PipedreamServiceStatus: {
             /**
@@ -86959,7 +88060,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.pipedream.com
@@ -86997,7 +88098,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -87573,7 +88674,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "input_shape" | "notes" | "output_shape" | "recommend_type";
+            action: "notes" | "input_shape" | "output_shape" | "recommend_type";
             /**
              * Instruction
              * @description The user's rough input for the agent (dictated braindump, shape description, or empty to work from what the plan already holds).
@@ -88005,7 +89106,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -88039,7 +89140,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -88136,7 +89237,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.plivo.com
@@ -88204,7 +89305,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://pluvo.statuspage.io
@@ -88216,7 +89317,7 @@ export interface components {
          * PodcastAudioProvider
          * @enum {string}
          */
-        PodcastAudioProvider: "elevenlabs" | "google";
+        PodcastAudioProvider: "google" | "elevenlabs";
         /** PodcastCastPreview */
         PodcastCastPreview: {
             /** Host Count */
@@ -88268,7 +89369,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -88485,7 +89586,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -88522,7 +89623,7 @@ export interface components {
              * @description running = genuinely alive, keep observing. completed = essential work was done and has now been stamped. resumed = essential work was pending and the server restarted it from its checkpoint. failed = terminal and unrecoverable.
              * @enum {string}
              */
-            outcome: "completed" | "failed" | "resumed" | "running";
+            outcome: "running" | "completed" | "resumed" | "failed";
             /**
              * Status
              * @description The run's status in the database after this call.
@@ -88614,7 +89715,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -88726,7 +89827,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -88741,7 +89842,7 @@ export interface components {
          * PostPrepOption
          * @enum {string}
          */
-        PostPrepOption: "expansion" | "fact_checking" | "none" | "summarization" | "translation";
+        PostPrepOption: "none" | "translation" | "summarization" | "expansion" | "fact_checking";
         /**
          * PostmarkSandboxResult
          * @description Safe receipt for the official API_TEST non-delivery operation.
@@ -88813,7 +89914,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "assert" | "branch" | "edge" | "filter";
+            kind: "filter" | "assert" | "branch" | "edge";
             /** Expression */
             expression: string;
             /**
@@ -88896,12 +89997,74 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "dropped" | "error" | "failed" | "kept" | "passed";
+            verdict: "kept" | "dropped" | "passed" | "failed" | "error";
             /**
              * Error
              * @description The sandbox's own reason when this item raised.
              */
             error?: string | null;
+        };
+        /**
+         * PredictionLedgerResponse
+         * @description What a surface needs to render the Prediction Ledger honestly.
+         *
+         *     Every number here is DERIVED from the entries on
+         *     `platform.rulebook.metadata.prediction_ledger` at read time — nothing about
+         *     a score is stored, so the readout can never disagree with the facts it came
+         *     from (`services/distillation/prediction_ledger.py`).
+         */
+        PredictionLedgerResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Resolved */
+            resolved: number;
+            /** Open */
+            open: number;
+            /** Overdue */
+            overdue: number;
+            /** Correct */
+            correct: number;
+            /** Brier */
+            brier?: number | null;
+            /**
+             * Buckets
+             * @default []
+             */
+            buckets?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Earliest Open Due At
+             * @default
+             */
+            earliest_open_due_at?: string;
+            /**
+             * Ready To Distill
+             * @default 0
+             */
+            ready_to_distill?: number;
+            /**
+             * Min Resolved To Distill
+             * @default 5
+             */
+            min_resolved_to_distill?: number;
+            /**
+             * Reminder Cadence Hours
+             * @default 24
+             */
+            reminder_cadence_hours?: number;
+            /**
+             * Voice Default On
+             * @default true
+             */
+            voice_default_on?: boolean;
+            /**
+             * Boundaries
+             * @default []
+             */
+            boundaries?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
         };
         /** PrefectServiceStatus */
         PrefectServiceStatus: {
@@ -88927,7 +90090,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.prefect.io/
@@ -89049,6 +90212,8 @@ export interface components {
              * @description Logical path the file will live at in cloud_files
              */
             file_path: string;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
             /** Content Type */
             content_type?: string | null;
             /** Expected Size Bytes */
@@ -89058,7 +90223,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            visibility?: "personal" | "internal" | "link" | "public" | "shared" | "private";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -89117,7 +90282,7 @@ export interface components {
              * Trigger Type
              * @enum {string}
              */
-            trigger_type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            trigger_type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -89178,7 +90343,7 @@ export interface components {
              * @default webp
              * @enum {string}
              */
-            format?: "avif" | "jpeg" | "png" | "webp";
+            format?: "jpeg" | "png" | "webp" | "avif";
             /**
              * Quality
              * @description Ignored for png
@@ -89190,13 +90355,13 @@ export interface components {
              * @default cover
              * @enum {string}
              */
-            fit?: "contain" | "cover" | "inside";
+            fit?: "cover" | "contain" | "inside";
             /**
              * Position
              * @description Used when fit='cover'. Pass a named anchor string or {x, y} focal point. 'entropy' / 'attention' are smart-crop modes (energy-based, face-based).
              * @default center
              */
-            position?: ("attention" | "bottom" | "bottom-left" | "bottom-right" | "center" | "entropy" | "left" | "right" | "top" | "top-left" | "top-right") | components["schemas"]["FocalPoint"];
+            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"];
             /**
              * Background Color
              * @description Hex color (#rgb / #rrggbb / #rrggbbaa). Used to flatten alpha on jpeg/avif outputs and to pad letterbox when fit='contain' / 'inside'.
@@ -89237,7 +90402,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -89252,7 +90417,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            type?: "organization" | "user";
+            type?: "user" | "organization";
             /** Organization Id */
             organization_id?: string | null;
         } & {
@@ -89361,7 +90526,7 @@ export interface components {
              * Shipping Option
              * @enum {string}
              */
-            shipping_option: "EXPEDITED" | "EXPRESS" | "GROUND" | "GROUND_BUS" | "GROUND_HD" | "MAIL" | "PRIORITY_MAIL";
+            shipping_option: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
         };
         /**
          * PrintJob
@@ -89448,7 +90613,7 @@ export interface components {
              * Shipping Level
              * @enum {string}
              */
-            shipping_level: "EXPEDITED" | "EXPRESS" | "GROUND" | "GROUND_BUS" | "GROUND_HD" | "MAIL" | "PRIORITY_MAIL";
+            shipping_level: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
             /** Contact Email */
             contact_email: string;
             /** Production Delay */
@@ -89591,7 +90756,7 @@ export interface components {
          */
         PrintJobStatus: {
             /** Name */
-            name: ("CANCELED" | "CREATED" | "ERROR" | "IN_PRODUCTION" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_DELAYED" | "PRODUCTION_READY" | "REJECTED" | "SHIPPED" | "UNPAID") | string;
+            name: ("CREATED" | "REJECTED" | "UNPAID" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_READY" | "PRODUCTION_DELAYED" | "IN_PRODUCTION" | "ERROR" | "SHIPPED" | "CANCELED") | string;
             /** Changed */
             changed?: string | null;
             /** Message */
@@ -89617,7 +90782,7 @@ export interface components {
             /** Print Job Id */
             print_job_id: number;
             /** Name */
-            name: ("CANCELED" | "CREATED" | "ERROR" | "IN_PRODUCTION" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_DELAYED" | "PRODUCTION_READY" | "REJECTED" | "SHIPPED" | "UNPAID") | string;
+            name: ("CREATED" | "REJECTED" | "UNPAID" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_READY" | "PRODUCTION_DELAYED" | "IN_PRODUCTION" | "ERROR" | "SHIPPED" | "CANCELED") | string;
             /** Changed */
             changed?: string | null;
             /** Message */
@@ -89716,7 +90881,7 @@ export interface components {
              * Shipping Level
              * @enum {string}
              */
-            shipping_level: "EXPEDITED" | "EXPRESS" | "GROUND" | "GROUND_BUS" | "GROUND_HD" | "MAIL" | "PRIORITY_MAIL";
+            shipping_level: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
             /** Production Delay */
             production_delay?: number | null;
             /** Success Url */
@@ -89778,7 +90943,7 @@ export interface components {
              * @description Derived from LULU_API_BASE: 'live' is api.lulu.com, 'test' is a sandbox host.
              * @enum {string}
              */
-            lulu_environment: "live" | "test" | "unconfigured" | "unknown";
+            lulu_environment: "test" | "live" | "unknown" | "unconfigured";
             /**
              * Lulu Api Base
              * @description The Lulu base URL in use. Not a secret.
@@ -89789,7 +90954,7 @@ export interface components {
              * @description Derived from the STRIPE_SECRET_KEY prefix. Never the key itself.
              * @enum {string}
              */
-            payment_mode: "live" | "test" | "unconfigured" | "unknown";
+            payment_mode: "test" | "live" | "unknown" | "unconfigured";
             /**
              * Pairing Ok
              * @description True only when both providers are configured and in the SAME mode.
@@ -89950,6 +91115,98 @@ export interface components {
              */
             status_page?: "https://status.prismic.io/";
         };
+        /**
+         * ProbeRound
+         * @description ONE round of the Bad Example probe, as the client holds it.
+         *
+         *     The client is the only thing that knows what is on screen, so the session
+         *     rides the request instead of a server-side session row — the same reason
+         *     the Triad submits one card at a time. Every field here was either produced
+         *     by the server (the example) or typed/dictated by the Expert (the critique);
+         *     nothing is derived.
+         */
+        ProbeRound: {
+            /**
+             * Example Title
+             * @default
+             */
+            example_title?: string;
+            /**
+             * Example Body
+             * @description The plausible-but-wrong work exactly as it was shown.
+             * @default
+             */
+            example_body?: string;
+            /**
+             * Probe Label
+             * @description The boundary this variant probed, as the generator named it. Carried back so the next round cannot re-probe ground already covered.
+             * @default
+             */
+            probe_label?: string;
+            /**
+             * Critique
+             * @description The Expert's own words about what is wrong with this example and what they would do instead — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be anchored in. Empty means they have not answered this round yet.
+             * @default
+             */
+            critique?: string;
+        };
+        /**
+         * ProbeRoundRequest
+         * @description Run ONE round of the Bad Example probe.
+         *
+         *     Two things happen in one call, in this order: the Expert's critique of the
+         *     LAST round (the final entry of ``rounds``) is distilled into draft rules,
+         *     and then the next variant is written — unless ``finish`` is set or the
+         *     round cap is reached, in which case the call only distils and reports.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only, never
+         *     auto-activated.
+         */
+        ProbeRoundRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Case Brief
+             * @description What kind of work to fake, in the Expert's own words — the case, task or deliverable they handle. The one thing the Expert has to supply.
+             */
+            case_brief: string;
+            /**
+             * Rounds
+             * @description Every round of this session so far, oldest first. Empty starts the probe. The LAST entry is the one whose critique is distilled by this call.
+             */
+            rounds?: components["schemas"]["ProbeRound"][];
+            /**
+             * Finish
+             * @description The Expert said 'I'd never see that' — distil the last answer and stop instead of writing another variant.
+             * @default false
+             */
+            finish?: boolean;
+            /**
+             * Round Cap
+             * @description Lower the number of rounds for THIS session only. Never raises the organization's `masterwork.probe.rounds` knob — the knob is the ceiling.
+             */
+            round_cap?: number | null;
+            /**
+             * Source Note
+             * @description A short label for this probe; defaults to the case brief.
+             */
+            source_note?: string | null;
+        };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
             /**
@@ -90011,7 +91268,7 @@ export interface components {
              * @default auto
              * @enum {string}
              */
-            clean_dispatch?: "auto" | "batch" | "live";
+            clean_dispatch?: "auto" | "live" | "batch";
             /**
              * Force Ocr
              * @default false
@@ -90079,7 +91336,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "agent" | "context_policy" | "cx_request" | "message" | "pending_injection" | "request_snapshot" | "tool_call" | "user" | "wf_node_outcome" | "workflow_node" | "workflow_run";
+            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_policy" | "user" | "workflow_node" | "wf_node_outcome" | "workflow_run";
             /** Id */
             id?: string | null;
             descend_ref?: components["schemas"]["DescendRef"] | null;
@@ -90087,7 +91344,7 @@ export interface components {
              * Confidence
              * @enum {string}
              */
-            confidence: "inferred" | "linked";
+            confidence: "linked" | "inferred";
         };
         /** ProducerYieldOut */
         ProducerYieldOut: {
@@ -90223,7 +91480,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -90260,7 +91517,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -90311,7 +91568,7 @@ export interface components {
              * Owner Type
              * @enum {string}
              */
-            owner_type: "organization" | "user";
+            owner_type: "user" | "organization";
             /** Organization Id */
             organization_id: string;
             /** Status */
@@ -90341,7 +91598,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_project
@@ -90392,7 +91649,7 @@ export interface components {
          * ProjectionStatus
          * @enum {string}
          */
-        ProjectionStatus: "error" | "pending" | "projected" | "skipped";
+        ProjectionStatus: "pending" | "projected" | "skipped" | "error";
         /**
          * PromoteExpertsRequest
          * @description The candidate keys a human accepted, from the CURRENT extraction.
@@ -90519,7 +91776,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /** Store */
             store: boolean;
             /**
@@ -90604,7 +91861,7 @@ export interface components {
              * @default variable
              * @enum {string}
              */
-            deliver?: "context" | "variable";
+            deliver?: "variable" | "context";
         };
         /** PromptWarmRequest */
         PromptWarmRequest: {
@@ -90727,13 +91984,13 @@ export interface components {
              * @default unprovable
              * @enum {string}
              */
-            status?: "failed" | "proven" | "unprovable";
+            status?: "proven" | "unprovable" | "failed";
             /**
              * Evidence Class
              * @default none
              * @enum {string}
              */
-            evidence_class?: "loop_iteration" | "none" | "same_unit_regression";
+            evidence_class?: "loop_iteration" | "same_unit_regression" | "none";
             /** Snapshot Id */
             snapshot_id?: string | null;
             /** Replay Group Id */
@@ -91016,7 +92273,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "blocklisted" | "existing" | "new" | "unusable";
+            verdict: "new" | "existing" | "blocklisted" | "unusable";
             /** Why */
             why: string;
             prior_relationship?: components["schemas"]["PriorRelationship"] | null;
@@ -91157,7 +92414,7 @@ export interface components {
              * Seam
              * @enum {string}
              */
-            seam: "background_check" | "benefits" | "esign" | "everify" | "payroll";
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
             /** Provider Key */
             provider_key: string;
             /** Display Name */
@@ -91166,7 +92423,7 @@ export interface components {
              * Connector Kind
              * @enum {string}
              */
-            connector_kind: "file" | "manual" | "mcp" | "rest";
+            connector_kind: "rest" | "mcp" | "file" | "manual";
             /** Is Active */
             is_active: boolean;
             /** Capabilities */
@@ -91229,7 +92486,7 @@ export interface components {
              * Seam
              * @enum {string}
              */
-            seam: "background_check" | "benefits" | "esign" | "everify" | "payroll";
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
             subject: components["schemas"]["SubjectRefBody"];
             /**
              * Provider Key
@@ -91285,7 +92542,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "failed" | "missing_key" | "no_provider_row" | "refreshed";
+            status: "refreshed" | "missing_key" | "no_provider_row" | "failed";
             /**
              * Model Count
              * @default 0
@@ -91324,7 +92581,7 @@ export interface components {
              * Seam
              * @enum {string}
              */
-            seam: "background_check" | "benefits" | "esign" | "everify" | "payroll";
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
             subject: components["schemas"]["SubjectRefBody"];
             /** External Status */
             external_status: string;
@@ -91334,7 +92591,7 @@ export interface components {
              * Result Summary
              * @enum {string}
              */
-            result_summary: "clear" | "consider" | "incomplete" | "ineligible";
+            result_summary: "clear" | "consider" | "ineligible" | "incomplete";
             /** Artifact File Id */
             artifact_file_id?: string | null;
             /**
@@ -91432,7 +92689,7 @@ export interface components {
              * Seam
              * @enum {string}
              */
-            seam: "background_check" | "benefits" | "esign" | "everify" | "payroll";
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
             /** Binding Id */
             binding_id?: string | null;
             /** Subject Ids */
@@ -91646,7 +92903,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.pubnub.com
@@ -91774,7 +93031,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "failed" | "published" | "skipped_no_changes" | "would_publish";
+            status: "published" | "would_publish" | "skipped_no_changes" | "failed";
             /** Reason */
             reason?: string | null;
             /** Live Url */
@@ -91838,7 +93095,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.pusher.com
@@ -91899,7 +93156,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -91958,7 +93215,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -92025,7 +93282,7 @@ export interface components {
          * QueryVariant
          * @enum {string}
          */
-        QueryVariant: "advanced_operator" | "hot_off_press" | "keyword" | "listicle" | "resource_page";
+        QueryVariant: "keyword" | "advanced_operator" | "resource_page" | "listicle" | "hot_off_press";
         /** QueueRefreshResult */
         QueueRefreshResult: {
             /**
@@ -92162,7 +93419,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -92285,7 +93542,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -92470,7 +93727,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -92502,7 +93759,7 @@ export interface components {
              * @default serpapi
              * @enum {string}
              */
-            provider?: "brave" | "dataforseo" | "serpapi";
+            provider?: "brave" | "serpapi" | "dataforseo";
             /**
              * Include Raw
              * @description Also stream the raw provider payload (the second projection). Off by default.
@@ -92792,7 +94049,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -93002,7 +94259,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "critical" | "major" | "minor" | "none";
+            status: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.rebrandly.com
@@ -93050,7 +94307,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -93285,7 +94542,7 @@ export interface components {
              * @default node_error
              * @enum {string}
              */
-            surface?: "checkpoint" | "node_error" | "node_inputs" | "node_output" | "raw_value" | "run_summary" | "stream_log" | "validation_issue";
+            surface?: "node_error" | "node_output" | "node_inputs" | "checkpoint" | "run_summary" | "validation_issue" | "stream_log" | "raw_value";
             /** Workflow Id */
             workflow_id: string;
             /** Run Id */
@@ -93342,7 +94599,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.recurly.com/
@@ -93607,7 +94864,7 @@ export interface components {
              * @default operator
              * @enum {string}
              */
-            reason?: "breaking_change" | "deploy" | "operator";
+            reason?: "deploy" | "breaking_change" | "operator";
             /** Title */
             title?: string | null;
             /** Body */
@@ -93704,7 +94961,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            extraction_kind?: "image" | "table" | "text";
+            extraction_kind?: "text" | "table" | "image";
         };
         /** RegionExtractResponse */
         RegionExtractResponse: {
@@ -93715,7 +94972,7 @@ export interface components {
              * Extraction Kind
              * @enum {string}
              */
-            extraction_kind: "image" | "table" | "text";
+            extraction_kind: "text" | "table" | "image";
             /** Text */
             text?: string | null;
             /** Text Source */
@@ -93878,7 +95135,7 @@ export interface components {
              * @default human_click
              * @enum {string}
              */
-            origin?: "finding" | "human_click" | "sweep" | "walk";
+            origin?: "human_click" | "finding" | "walk" | "sweep";
             /** Origin Finding Id */
             origin_finding_id?: string | null;
             /** Corrected Output Ref */
@@ -94165,7 +95422,7 @@ export interface components {
              * @default png
              * @enum {string}
              */
-            fmt?: "jpeg" | "jpg" | "png" | "tiff" | "webp";
+            fmt?: "png" | "jpg" | "jpeg" | "webp" | "tiff";
             /**
              * Jpeg Quality
              * @default 85
@@ -94200,7 +95457,7 @@ export interface components {
              * @default png
              * @enum {string}
              */
-            fmt?: "jpeg" | "jpg" | "png" | "tiff" | "webp";
+            fmt?: "png" | "jpg" | "jpeg" | "webp" | "tiff";
             /**
              * Jpeg Quality
              * @default 85
@@ -94283,7 +95540,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.render.com
@@ -94317,7 +95574,7 @@ export interface components {
              * @default jpeg
              * @enum {string}
              */
-            fmt?: "jpeg" | "jpg" | "png" | "webp";
+            fmt?: "png" | "jpg" | "jpeg" | "webp";
             /**
              * Jpeg Quality
              * @default 80
@@ -94522,7 +95779,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Verdict */
-            verdict?: ("better" | "regressed" | "same" | "worse") | null;
+            verdict?: ("better" | "same" | "worse" | "regressed") | null;
             /** Judge */
             judge?: {
                 [key: string]: unknown;
@@ -94604,7 +95861,7 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status?: "completed" | "failed" | "queued";
+            status?: "queued" | "completed" | "failed";
             /** Verdict */
             verdict?: string | null;
             /** Reason */
@@ -94640,7 +95897,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -94747,7 +96004,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "deduped" | "failed" | "filed";
+            status: "filed" | "deduped" | "failed";
             /** File Path */
             file_path: string;
             /** Feedback Id */
@@ -94853,7 +96110,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "ai_citation" | "backlink" | "brand_gap" | "competitor_intersection" | "directory_listing" | "media_coverage" | "other";
+            source_kind: "backlink" | "ai_citation" | "competitor_intersection" | "media_coverage" | "directory_listing" | "brand_gap" | "other";
             /** Source Id */
             source_id?: string | null;
             /** Source Url */
@@ -94866,17 +96123,17 @@ export interface components {
              * Case Type
              * @enum {string}
              */
-            case_type: "citation_opportunity" | "correction_needed" | "negative_risk" | "neutral_monitoring" | "positive_opportunity" | "relationship_opportunity";
+            case_type: "positive_opportunity" | "negative_risk" | "correction_needed" | "relationship_opportunity" | "citation_opportunity" | "neutral_monitoring";
             /**
              * Sentiment
              * @enum {string}
              */
-            sentiment: "mixed" | "negative" | "neutral" | "positive" | "unknown";
+            sentiment: "positive" | "negative" | "neutral" | "mixed" | "unknown";
             /**
              * Verdict
              * @enum {string}
              */
-            verdict: "correct" | "investigate" | "leave_alone" | "monitor" | "pitch" | "protect" | "request_update" | "respond" | "strengthen";
+            verdict: "protect" | "correct" | "respond" | "request_update" | "leave_alone" | "pitch" | "strengthen" | "monitor" | "investigate";
             /** Headline */
             headline: string;
             /** Summary */
@@ -94885,7 +96142,7 @@ export interface components {
              * Controllability
              * @enum {string}
              */
-            controllability: "direct" | "likely" | "possible" | "unknown" | "unlikely";
+            controllability: "direct" | "likely" | "possible" | "unlikely" | "unknown";
             /** Priority */
             priority: number;
             /** Confidence */
@@ -95061,7 +96318,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -95223,7 +96480,7 @@ export interface components {
              * Media Type
              * @enum {string}
              */
-            media_type: "audio" | "document" | "image" | "video";
+            media_type: "image" | "video" | "document" | "audio";
             /** Url */
             url: string;
             /** File Id */
@@ -95235,7 +96492,7 @@ export interface components {
             /** Height */
             height?: number | null;
             /** Enrich Goal */
-            enrich_goal?: ("authenticated" | "comments" | "download" | "expand" | "rendered_dom" | "screenshot" | "structured" | "transcript" | "xhr_json") | null;
+            enrich_goal?: ("rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json") | null;
         };
         /**
          * ResolveBatchRequest
@@ -95375,7 +96632,7 @@ export interface components {
              * @default person
              * @enum {string}
              */
-            kind?: "organization" | "person";
+            kind?: "person" | "organization";
             /** Display Name */
             display_name: string;
             /** Source */
@@ -95461,7 +96718,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "civitai" | "direct" | "huggingface";
+            source: "huggingface" | "civitai" | "direct";
             /** Canonical Url */
             canonical_url: string;
             /** Name */
@@ -95686,7 +96943,7 @@ export interface components {
              * @description Per-input provenance claims for `inputs` — same contract as run start.
              */
             input_sources?: {
-                [key: string]: "caller" | "human";
+                [key: string]: "human" | "caller";
             };
             /**
              * Initial Variables
@@ -95747,7 +97004,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.retool.com
@@ -95956,7 +97213,7 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status?: "completed" | "failed" | "skipped";
+            status?: "completed" | "skipped" | "failed";
             /** Reason */
             reason?: string | null;
             /**
@@ -96124,7 +97381,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -96152,7 +97409,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.riverside.fm
@@ -96193,7 +97450,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -96227,7 +97484,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -96363,6 +97620,11 @@ export interface components {
             definition_agent_id: string;
             /** Conversation Id */
             conversation_id: string;
+            /**
+             * Conversation Started
+             * @default false
+             */
+            conversation_started?: boolean;
         };
         /**
          * RolesReadyPayload
@@ -96403,7 +97665,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.rollbar.com/
@@ -96555,7 +97817,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -96677,7 +97939,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.rudderstack.com
@@ -97149,7 +98411,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "cancelled" | "claimed" | "failed" | "interrupted" | "queued" | "running" | "skipped" | "success";
+            status: "queued" | "claimed" | "running" | "success" | "failed" | "cancelled" | "skipped" | "interrupted";
             /** Surface */
             surface?: string | null;
             /** Queue */
@@ -97280,22 +98542,22 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "agent_control" | "failed" | "failed_persistence" | "handoff_requested" | "human_control" | "provisioning" | "resume_pending" | "stopped" | "stopping";
+            state: "provisioning" | "agent_control" | "handoff_requested" | "human_control" | "resume_pending" | "stopping" | "stopped" | "failed" | "failed_persistence";
             /**
              * Mode
              * @enum {string}
              */
-            mode: "automation_only" | "handoff_capable";
+            mode: "handoff_capable" | "automation_only";
             /**
              * Execution Target
              * @enum {string}
              */
-            execution_target: "browser_fleet" | "local_surface" | "sandbox";
+            execution_target: "browser_fleet" | "sandbox" | "local_surface";
             /**
              * Controller Kind
              * @enum {string}
              */
-            controller_kind: "agent" | "human" | "none" | "system";
+            controller_kind: "none" | "agent" | "human" | "system";
             /** Controller User Id */
             controller_user_id: string | null;
             /**
@@ -97337,7 +98599,7 @@ export interface components {
              * @description Per-input provenance claims for `inputs`. Default 'caller'. 'human' is accepted ONLY from the human-facing form path (a human-attached session) — a programmatic caller claiming it is REFUSED with error=human_provenance_forbidden, never normalized (THE source=human invariant). 'pinned'/'mandate'/'default' are server-stamped and can never be claimed.
              */
             input_sources?: {
-                [key: string]: "caller" | "human";
+                [key: string]: "human" | "caller";
             };
             /**
              * Node Inputs
@@ -97422,7 +98684,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "lost" | "owned" | "terminal";
+            outcome: "owned" | "lost" | "terminal";
         };
         /**
          * RuntimeOpenRequest
@@ -97527,7 +98789,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -97582,7 +98844,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -97616,7 +98878,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -97672,7 +98934,7 @@ export interface components {
              * @default sandbox
              * @enum {string}
              */
-            target_kind?: "local_machine" | "sandbox";
+            target_kind?: "sandbox" | "local_machine";
         };
         /**
          * SandboxBindingState
@@ -98185,7 +99447,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -98259,7 +99521,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.scoutapm.com
@@ -98451,7 +99713,7 @@ export interface components {
              * @default down
              * @enum {string}
              */
-            direction?: "bottom" | "down" | "top" | "up";
+            direction?: "up" | "down" | "top" | "bottom";
             /**
              * Pixels
              * @default 500
@@ -98891,7 +100153,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -99021,7 +100283,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -99087,7 +100349,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "disabled" | "draft" | "paused" | "ready" | "verifying" | "warming";
+            status: "draft" | "verifying" | "warming" | "ready" | "paused" | "disabled";
             /** Domain Verified */
             domain_verified: boolean;
             /** Spf Pass */
@@ -99099,7 +100361,7 @@ export interface components {
             warmup?: components["schemas"]["WarmupProgress"] | null;
             health?: components["schemas"]["IdentityHealth"] | null;
             /** Paused By Kind */
-            paused_by_kind?: ("human" | "system") | null;
+            paused_by_kind?: ("system" | "human") | null;
             /** Pause Reason */
             pause_reason?: string | null;
             /** Last Send At */
@@ -99183,7 +100445,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "disabled" | "draft" | "paused" | "ready" | "verifying" | "warming";
+            status: "draft" | "verifying" | "warming" | "ready" | "paused" | "disabled";
             /** Domain Verified */
             domain_verified: boolean;
             /** Spf Pass */
@@ -99195,7 +100457,7 @@ export interface components {
             warmup?: components["schemas"]["WarmupProgress"] | null;
             health?: components["schemas"]["IdentityHealth"] | null;
             /** Paused By Kind */
-            paused_by_kind?: ("human" | "system") | null;
+            paused_by_kind?: ("system" | "human") | null;
             /** Pause Reason */
             pause_reason?: string | null;
             /** Last Send At */
@@ -99231,7 +100493,7 @@ export interface components {
             /** Disabled Reason */
             disabled_reason?: string | null;
             /** Disabled By Kind */
-            disabled_by_kind?: ("human" | "system") | null;
+            disabled_by_kind?: ("system" | "human") | null;
             /** Notes */
             notes?: string | null;
             /**
@@ -99258,7 +100520,7 @@ export interface components {
              * Fix Action
              * @enum {string}
              */
-            fix_action: "check_authentication" | "check_domain" | "choose_another_identity" | "connect_mailbox" | "enable_org_outreach" | "none" | "publish_dns_record" | "reconnect_mailbox" | "review_and_resume" | "start_warmup" | "upgrade_plan" | "verify_recipient_address" | "wait_for_pacing" | "wait_for_quiet_hours" | "wait_for_warmup";
+            fix_action: "upgrade_plan" | "connect_mailbox" | "publish_dns_record" | "check_domain" | "check_authentication" | "start_warmup" | "wait_for_warmup" | "wait_for_pacing" | "wait_for_quiet_hours" | "review_and_resume" | "enable_org_outreach" | "verify_recipient_address" | "choose_another_identity" | "reconnect_mailbox" | "none";
             /** Fix Detail */
             fix_detail?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -99273,7 +100535,7 @@ export interface components {
          * SeoCapability
          * @enum {string}
          */
-        SeoCapability: "backlinks" | "competitors" | "keyword_metrics" | "page_performance" | "raw_provider" | "search_performance" | "serp_rank" | "web_analytics";
+        SeoCapability: "serp_rank" | "keyword_metrics" | "search_performance" | "web_analytics" | "page_performance" | "backlinks" | "competitors" | "raw_provider";
         /** SeoRunListResponse */
         SeoRunListResponse: {
             /** Organization Id */
@@ -99494,7 +100756,7 @@ export interface components {
              * Sourcing
              * @enum {string}
              */
-            sourcing: "ask" | "optional" | "require";
+            sourcing: "ask" | "require" | "optional";
             /** Variant */
             variant?: string | null;
             /** Default */
@@ -99608,7 +100870,7 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "articulate" | "capture" | "done" | "enhance" | "ground" | "revisit" | "shape" | "stress";
+            stage: "capture" | "ground" | "enhance" | "articulate" | "stress" | "shape" | "revisit" | "done";
             /** Current Round */
             current_round: number;
             /** Run Id */
@@ -99728,7 +100990,7 @@ export interface components {
              * @default front
              * @enum {string}
              */
-            face?: "back" | "front";
+            face?: "front" | "back";
             /** Limit */
             limit?: number | null;
             /**
@@ -99846,7 +101108,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "clamped" | "const" | "dropped" | "effort_ceiling" | "mapped" | "omitted" | "to_default" | "unsupported_value";
+            action: "dropped" | "omitted" | "mapped" | "clamped" | "const" | "effort_ceiling" | "unsupported_value" | "to_default";
             canonical_value?: components["schemas"]["JsonValue"] | null;
             sent_value?: components["schemas"]["JsonValue"] | null;
             /** Reason */
@@ -99874,7 +101136,7 @@ export interface components {
              * Change
              * @enum {string}
              */
-            change: "added" | "changed" | "removed";
+            change: "added" | "removed" | "changed";
             before?: components["schemas"]["JsonValue"] | null;
             after?: components["schemas"]["JsonValue"] | null;
         };
@@ -99962,7 +101224,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -100389,7 +101651,7 @@ export interface components {
              * Severity
              * @enum {string}
              */
-            severity: "page" | "site";
+            severity: "site" | "page";
             /** Message */
             message: string;
         };
@@ -100502,7 +101764,7 @@ export interface components {
              * @default USD
              * @enum {string}
              */
-            currency?: "AUD" | "CAD" | "EUR" | "GBP" | "USD";
+            currency?: "USD" | "GBP" | "EUR" | "AUD" | "CAD";
             /** Options */
             options?: components["schemas"]["ShippingOption"][];
         };
@@ -100539,7 +101801,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -100687,7 +101949,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.simplecast.com
@@ -100752,7 +102014,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -100813,7 +102075,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.sinch.com
@@ -101041,7 +102303,7 @@ export interface components {
              * Strategy
              * @enum {string}
              */
-            strategy: "desktop" | "mobile";
+            strategy: "mobile" | "desktop";
             /** Previous Performance Score */
             previous_performance_score: number;
             /** Current Performance Score */
@@ -101157,12 +102419,12 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "content_changed" | "never_measured" | "refresh_due";
+            reason: "never_measured" | "content_changed" | "refresh_due";
             /**
              * Tier
              * @enum {string}
              */
-            tier: "critical" | "high" | "low" | "normal";
+            tier: "critical" | "high" | "normal" | "low";
         };
         /** SitePipeline */
         SitePipeline: {
@@ -101207,7 +102469,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "attention" | "complete" | "in_progress" | "not_started";
+            state: "complete" | "in_progress" | "attention" | "not_started";
             /**
              * Done
              * @default 0
@@ -101342,7 +102604,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -101379,7 +102641,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -101617,7 +102879,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -101779,7 +103041,7 @@ export interface components {
              * @default title_content
              * @enum {string}
              */
-            layout?: "blank" | "section" | "title" | "title_content";
+            layout?: "title" | "title_content" | "section" | "blank";
         };
         /**
          * SlidoStatusResult
@@ -101814,7 +103076,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -101887,7 +103149,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -101921,7 +103183,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -102004,7 +103266,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://smtp2gostatus.com
@@ -102209,7 +103471,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -102257,7 +103519,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "exclude" | "include" | "mark_complete" | "mark_stale" | "scrape";
+            action: "include" | "exclude" | "mark_stale" | "mark_complete" | "scrape";
         };
         /** SourceContentResponse */
         SourceContentResponse: {
@@ -102282,12 +103544,12 @@ export interface components {
              */
             is_good_scrape?: boolean;
             /** Quality Override */
-            quality_override?: ("bad" | "complete" | "good") | null;
+            quality_override?: ("good" | "bad" | "complete") | null;
             /**
              * Capture Method
              * @enum {string}
              */
-            capture_method: "auto" | "chrome_extension" | "file_upload" | "manual_edit" | "manual_paste" | "policy_skipped" | "residential_ip" | "server_browser" | "transcript_link";
+            capture_method: "auto" | "manual_paste" | "chrome_extension" | "residential_ip" | "manual_edit" | "file_upload" | "transcript_link" | "policy_skipped" | "server_browser";
             /** Failure Reason */
             failure_reason?: string | null;
             /** Published At */
@@ -102415,7 +103677,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "created" | "duplicate" | "evaluate_failed" | "evaluation_deferred" | "rescored" | "screened_out";
+            outcome: "created" | "duplicate" | "rescored" | "screened_out" | "evaluate_failed" | "evaluation_deferred";
             /** Request Id */
             request_id?: string | null;
             /**
@@ -102503,12 +103765,12 @@ export interface components {
              * Source Type
              * @enum {string}
              */
-            source_type: "file" | "manual" | "pdf" | "web" | "youtube";
+            source_type: "web" | "youtube" | "pdf" | "file" | "manual";
             /**
              * Origin
              * @enum {string}
              */
-            origin: "file_upload" | "link_extraction" | "manual_add" | "search";
+            origin: "search" | "manual_add" | "link_extraction" | "file_upload";
             /** Rank */
             rank?: number | null;
             /** Page Age */
@@ -102531,7 +103793,7 @@ export interface components {
              * Scrape Status
              * @enum {string}
              */
-            scrape_status: "complete" | "content_mismatch" | "dead_link" | "failed" | "gated" | "ignored" | "manual" | "pending" | "skipped" | "success" | "thin";
+            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /** Discovered At */
             discovered_at: string;
             /** Last Seen At */
@@ -102634,7 +103896,7 @@ export interface components {
             /** Is Stale */
             is_stale?: boolean | null;
             /** Scrape Status */
-            scrape_status?: ("complete" | "content_mismatch" | "dead_link" | "failed" | "gated" | "ignored" | "manual" | "pending" | "skipped" | "success" | "thin") | null;
+            scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch") | null;
         };
         /** SpacebringServiceStatus */
         SpacebringServiceStatus: {
@@ -102666,7 +103928,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -102737,7 +103999,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -102765,7 +104027,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.sparkpost.com
@@ -103006,7 +104268,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -103027,7 +104289,7 @@ export interface components {
              * Resource Type
              * @enum {string}
              */
-            resource_type: "album" | "artist" | "episode" | "playlist" | "show" | "track";
+            resource_type: "track" | "album" | "artist" | "playlist" | "episode" | "show";
             /** Resource Id */
             resource_id: string;
             /** Title */
@@ -103094,7 +104356,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -103403,7 +104665,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -103445,13 +104707,13 @@ export interface components {
          *     detail and the authority.
          * @enum {string}
          */
-        StageRefKind: "agent_run" | "agent_usage" | "analysis_result" | "assist" | "chat_request" | "cms_fill_job" | "cms_page" | "crawl_session" | "finding" | "research_topic" | "runtime_execution" | "sch_run" | "seo_collection_run" | "workflow_run";
+        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_page" | "cms_fill_job" | "seo_collection_run" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
         /**
          * StageRunStatus
          * @description Processing outcome of one stage attempt. One meaning per status column.
          * @enum {string}
          */
-        StageRunStatus: "cancelled" | "completed" | "failed" | "pending" | "running" | "skipped" | "waiting";
+        StageRunStatus: "pending" | "running" | "waiting" | "completed" | "failed" | "skipped" | "cancelled";
         /**
          * StageRunView
          * @description One stage attempt, as read.
@@ -103649,13 +104911,13 @@ export interface components {
              * @default handoff_capable
              * @enum {string}
              */
-            mode?: "automation_only" | "handoff_capable";
+            mode?: "handoff_capable" | "automation_only";
             /**
              * Execution Target
              * @default browser_fleet
              * @enum {string}
              */
-            execution_target?: "browser_fleet" | "local_surface" | "sandbox";
+            execution_target?: "browser_fleet" | "sandbox" | "local_surface";
             /** Activation Key */
             activation_key: string;
             /** Runtime Execution Id */
@@ -103833,7 +105095,7 @@ export interface components {
             /** Wpi */
             wpi?: number | null;
             /** Side */
-            side?: ("default" | "left" | "right") | null;
+            side?: ("left" | "right" | "default") | null;
         };
         /** StatelessInjuryOut */
         StatelessInjuryOut: {
@@ -103886,7 +105148,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.statuscake.com
@@ -104008,7 +105270,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "personal" | "internal" | "link" | "public";
         };
         /** StorageUsageResponse */
         StorageUsageResponse: {
@@ -104238,7 +105500,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "accepted" | "developing" | "dismissed" | "landed" | "pitched";
+            status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
             /** Note */
             note?: string | null;
         };
@@ -104253,7 +105515,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "accepted" | "developing" | "dismissed" | "landed" | "pitched";
+            status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
         /** StoryXpressServiceStatus */
         StoryXpressServiceStatus: {
@@ -104279,7 +105541,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://storyxpress.statuspage.io
@@ -104352,7 +105614,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -104505,7 +105767,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.getstream.io
@@ -104658,7 +105920,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -104792,7 +106054,7 @@ export interface components {
             /** Preset Id */
             preset_id?: string | null;
             /** Operation */
-            operation?: ("render_all" | "render_page" | "render_thumbnail") | null;
+            operation?: ("render_page" | "render_all" | "render_thumbnail") | null;
             params?: components["schemas"]["JsonValue"] | null;
             overrides?: components["schemas"]["JsonValue"] | null;
         };
@@ -105029,7 +106291,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -105162,7 +106424,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -105190,7 +106452,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.survicate.com/
@@ -105222,7 +106484,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.svix.com
@@ -105236,7 +106498,7 @@ export interface components {
              * Change Type
              * @enum {string}
              */
-            change_type: "context_item" | "organization" | "scope" | "scope_type";
+            change_type: "context_item" | "scope" | "scope_type" | "organization";
             /**
              * Organization Id
              * @description Defaults to the user's personal org.
@@ -105263,7 +106525,7 @@ export interface components {
              * @default manual
              * @enum {string}
              */
-            trigger_type?: "batch" | "manual";
+            trigger_type?: "manual" | "batch";
         };
         /** SweepResult */
         SweepResult: {
@@ -105334,7 +106596,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -105462,7 +106724,7 @@ export interface components {
              * Scope
              * @enum {string}
              */
-            scope: "custom" | "keyword" | "tag" | "topic";
+            scope: "keyword" | "topic" | "tag" | "custom";
             /** Agent Type */
             agent_type: string;
             /** Agent Id */
@@ -105848,7 +107110,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106198,7 +107460,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106232,7 +107494,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106488,7 +107750,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.tawk.to
@@ -106656,7 +107918,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106693,7 +107955,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106727,7 +107989,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106761,7 +108023,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106788,7 +108050,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level?: "auto" | "manual" | "semi";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -106881,7 +108143,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level?: "auto" | "manual" | "semi";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -106960,7 +108222,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -106988,7 +108250,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.temporal.io
@@ -107096,7 +108358,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -107180,7 +108442,7 @@ export interface components {
              */
             id?: string;
             /** Provider */
-            provider?: ("anthropic" | "cerebras" | "generic_openai" | "google" | "groq" | "moonshot" | "openai" | "together" | "xai") | null;
+            provider?: ("openai" | "anthropic" | "google" | "cerebras" | "moonshot" | "together" | "groq" | "xai" | "generic_openai") | null;
             /** Signature */
             signature?: string | null;
             /** Signature Encoding */
@@ -107250,7 +108512,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -107338,7 +108600,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -107366,7 +108628,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.tidio.com
@@ -107451,7 +108713,7 @@ export interface components {
              * Day Of Week
              * @enum {string}
              */
-            day_of_week: "Friday" | "Monday" | "Saturday" | "Sunday" | "Thursday" | "Tuesday" | "Wednesday";
+            day_of_week: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
             /** Dst Active */
             dst_active: boolean;
             /** Utc Offset Seconds */
@@ -107541,7 +108803,7 @@ export interface components {
              * Format
              * @enum {string}
              */
-            format: "csv" | "pdf";
+            format: "pdf" | "csv";
         };
         /** TinybirdServiceStatus */
         TinybirdServiceStatus: {
@@ -107567,7 +108829,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.tinybird.co/
@@ -107608,7 +108870,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -107706,7 +108968,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -108274,7 +109536,7 @@ export interface components {
              * @default semi
              * @enum {string}
              */
-            autonomy_level?: "auto" | "manual" | "semi";
+            autonomy_level?: "auto" | "semi" | "manual";
             /** Template Id */
             template_id?: string | null;
             /**
@@ -108386,7 +109648,7 @@ export interface components {
              * Autonomy Level
              * @enum {string}
              */
-            autonomy_level: "auto" | "manual" | "semi";
+            autonomy_level: "auto" | "semi" | "manual";
             /**
              * Default Search Provider
              * @enum {string}
@@ -108450,7 +109712,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "analyzing" | "complete" | "curating" | "draft" | "scraping" | "searching";
+            status: "draft" | "searching" | "scraping" | "curating" | "analyzing" | "complete";
             /** Template Id */
             template_id?: string | null;
             /** Agent Config */
@@ -108476,7 +109738,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Autonomy Level */
-            autonomy_level?: ("auto" | "manual" | "semi") | null;
+            autonomy_level?: ("auto" | "semi" | "manual") | null;
             /** Default Search Provider */
             default_search_provider?: ("brave" | "google") | null;
             /** Default Search Params */
@@ -108551,7 +109813,7 @@ export interface components {
             /** Tool Name */
             tool_name: string;
             /** Kind */
-            kind?: ("DELEGATE" | "SERVER") | null;
+            kind?: ("SERVER" | "DELEGATE") | null;
             /** Duration Ms */
             duration_ms?: number | null;
             args?: components["schemas"]["JsonValue"] | null;
@@ -108672,7 +109934,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -108804,7 +110066,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_transcript
@@ -108838,7 +110100,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_transcript_session
@@ -109059,7 +110321,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -109132,6 +110394,89 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.tresorit.com";
+        };
+        /**
+         * TriadGenerateRequest
+         * @description Deal one session's deck of Triad cards. Writes nothing.
+         *
+         *     The `triad_game` Approach (`triad_ingest.py`). Every value here is an
+         *     OVERRIDE of an org knob for THIS session only — omitted means "whatever the
+         *     organization decided", which is the shape a knob must have if turning it is
+         *     to mean anything.
+         */
+        TriadGenerateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Count
+             * @description How many cards to deal. Omitted → the org knob `masterwork.triad_game.triads_per_session` (10).
+             */
+            count?: number | null;
+            /**
+             * Mode
+             * @description 'best_one' (which would you actually use?) or 'odd_one_out' (which two are alike?). Omitted → the org knob `masterwork.triad_game.default_mode` (best_one).
+             */
+            mode?: ("best_one" | "odd_one_out") | null;
+            /**
+             * Seen Prompts
+             * @description The card questions this session has already played, verbatim. The game never asks the same thing twice in one sitting, and the session is the only thing that knows what it has shown.
+             */
+            seen_prompts?: string[];
+        };
+        /**
+         * TriadItemPayload
+         * @description One of the three items exactly as it was shown to the Expert.
+         */
+        TriadItemPayload: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "a" | "b" | "c";
+            /** Text */
+            text: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
+         * TriadPayload
+         * @description The card, played back to the server exactly as it was dealt.
+         *
+         *     The deck is never stored server-side: a triad is a QUESTION, and only an
+         *     ANSWERED one is worth anything. So the answer carries its own card, and the
+         *     card's `id` is the provenance every rule it produces cites.
+         */
+        TriadPayload: {
+            /** Id */
+            id: string;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Mode
+             * @default best_one
+             * @enum {string}
+             */
+            mode?: "best_one" | "odd_one_out";
+            /** Items */
+            items: components["schemas"]["TriadItemPayload"][];
         };
         /**
          * TriageDraftsRequest
@@ -109207,7 +110552,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -109229,7 +110574,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -109258,7 +110603,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "claimed" | "dead" | "fired" | "pending";
+            status: "pending" | "claimed" | "fired" | "dead";
             /** Claim At */
             claim_at?: string | null;
             /**
@@ -109309,7 +110654,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "failed" | "queued";
+            status: "queued" | "failed";
             /** Error Type */
             error_type?: string | null;
             /** Error Message */
@@ -109325,7 +110670,7 @@ export interface components {
         /** TriggerPatchRequest */
         TriggerPatchRequest: {
             /** Type */
-            type?: ("context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot") | null;
+            type?: ("one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency") | null;
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -109392,7 +110737,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -109484,7 +110829,7 @@ export interface components {
              * Difficulty
              * @enum {string}
              */
-            difficulty: "easy" | "hard" | "medium";
+            difficulty: "easy" | "medium" | "hard";
             /** Question */
             question: string;
             /** Correct Answer */
@@ -109708,7 +111053,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "" | "live";
+            type: "live" | "";
             /**
              * Title
              * @default
@@ -109887,7 +111232,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.uxcam.com
@@ -109919,7 +111264,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.ucraft.com
@@ -109985,7 +111330,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.unbounce.com
@@ -110559,7 +111904,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Origin */
-            origin?: ("external" | "matrx") | null;
+            origin?: ("matrx" | "external") | null;
             /** File Id */
             file_id?: string | null;
             /** Url */
@@ -110745,7 +112090,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Origin */
-            origin?: ("external" | "matrx") | null;
+            origin?: ("matrx" | "external") | null;
             /** File Id */
             file_id?: string | null;
             /** Url */
@@ -110794,7 +112139,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Origin */
-            origin?: ("external" | "matrx") | null;
+            origin?: ("matrx" | "external") | null;
             /** File Id */
             file_id?: string | null;
             /** Url */
@@ -110852,7 +112197,7 @@ export interface components {
             /** Remove */
             remove?: string[];
             /** Apply Policy */
-            apply_policy?: ("ask" | "auto" | "off") | null;
+            apply_policy?: ("auto" | "ask" | "off") | null;
         };
         /** UserPromptCatalogResponse */
         UserPromptCatalogResponse: {
@@ -110881,7 +112226,7 @@ export interface components {
             /** Env Text */
             env_text: string;
             /** Default Category */
-            default_category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            default_category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /**
              * Inject Into Sandbox
              * @default true
@@ -110919,7 +112264,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /**
              * Inject Into Sandbox
              * @default true
@@ -111000,7 +112345,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Inject Into Sandbox */
@@ -111036,7 +112381,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -111047,7 +112392,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Origin */
-            origin?: ("external" | "matrx") | null;
+            origin?: ("matrx" | "external") | null;
             /** File Id */
             file_id?: string | null;
             /** Url */
@@ -111113,7 +112458,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.uservoice.com
@@ -111181,7 +112526,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -111330,7 +112675,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -111529,7 +112874,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -111660,7 +113005,7 @@ export interface components {
          * VariableVerdictKind
          * @enum {string}
          */
-        VariableVerdictKind: "default_used" | "dropped" | "intentionally_blank" | "missing_from_code" | "ok" | "renamed" | "required_unmapped" | "spilled_to_user_input" | "type_mismatch";
+        VariableVerdictKind: "ok" | "renamed" | "default_used" | "intentionally_blank" | "spilled_to_user_input" | "dropped" | "missing_from_code" | "required_unmapped" | "type_mismatch";
         /**
          * VaultAssignRequest
          * @description **Create for someone**: the item is born owned by the recipient.
@@ -111673,7 +113018,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("domain" | "exact" | "host" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -111774,7 +113119,7 @@ export interface components {
              * @default revealable
              * @enum {string}
              */
-            handling?: "revealable" | "sealed" | "visible";
+            handling?: "visible" | "revealable" | "sealed";
             /**
              * Value Version
              * @default 1
@@ -111816,7 +113161,7 @@ export interface components {
             /** File Name */
             file_name?: string | null;
             /** Handling */
-            handling?: ("revealable" | "sealed" | "visible") | null;
+            handling?: ("visible" | "revealable" | "sealed") | null;
         } & {
             [key: string]: unknown;
         };
@@ -111900,7 +113245,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "invalid" | "not_found" | "reachable" | "responded" | "unreachable";
+            state: "reachable" | "not_found" | "responded" | "unreachable" | "invalid";
             /** Http Status */
             http_status?: number | null;
         };
@@ -111939,7 +113284,7 @@ export interface components {
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
             /** Handling */
-            handling?: ("revealable" | "sealed" | "visible") | null;
+            handling?: ("visible" | "revealable" | "sealed") | null;
             /** Editable */
             editable?: boolean | null;
             /** Env Key */
@@ -112188,7 +113533,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("domain" | "exact" | "host" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -112326,7 +113671,7 @@ export interface components {
             /** Login Urls */
             login_urls?: string[] | null;
             /** Uri Match Mode */
-            uri_match_mode?: ("domain" | "exact" | "host" | "never") | null;
+            uri_match_mode?: ("host" | "domain" | "exact" | "never") | null;
             /** Notes */
             notes?: string | null;
             /** Non Secret Fields */
@@ -112577,7 +113922,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.veed.io/
@@ -112591,7 +113936,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "accept_as_is" | "content_mismatch" | "dead_link" | "gated" | "ignored" | "mark_complete" | "retry";
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
             /** Notes */
             notes?: string | null;
         };
@@ -112603,12 +113948,12 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "accept_as_is" | "content_mismatch" | "dead_link" | "gated" | "ignored" | "mark_complete" | "retry";
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
             /**
              * Scrape Status
              * @enum {string}
              */
-            scrape_status: "complete" | "content_mismatch" | "dead_link" | "failed" | "gated" | "ignored" | "manual" | "pending" | "skipped" | "success" | "thin";
+            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /** User Verdict At */
             user_verdict_at: string;
             /** Is Terminal */
@@ -113075,7 +114420,7 @@ export interface components {
              * Visibility
              * @enum {string}
              */
-            visibility: "internal" | "link" | "personal";
+            visibility: "personal" | "internal" | "link";
         };
         /**
          * VisibilityResponse
@@ -113163,7 +114508,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -113194,7 +114539,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.vistasocial.com/
@@ -113249,7 +114594,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.volusion.com
@@ -113273,7 +114618,7 @@ export interface components {
              * @default visible
              * @enum {string}
              */
-            state?: "attached" | "detached" | "hidden" | "visible";
+            state?: "visible" | "attached" | "detached" | "hidden";
             /**
              * Timeout Ms
              * @default 10000
@@ -113692,7 +115037,7 @@ export interface components {
             /** Name */
             name: string;
             /** Finger Type */
-            finger_type?: ("index" | "little" | "middle" | "ring" | "thumb") | null;
+            finger_type?: ("index" | "middle" | "ring" | "little" | "thumb") | null;
             attributes: components["schemas"]["ImpairmentAvailableAttributes"];
             /** Search Aliases */
             search_aliases?: string[];
@@ -113733,7 +115078,7 @@ export interface components {
             /** Wpi */
             wpi?: number | null;
             /** Side */
-            side?: ("default" | "left" | "right") | null;
+            side?: ("left" | "right" | "default") | null;
             /** Pain */
             pain?: number | null;
             /** Industrial */
@@ -113982,7 +115327,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114080,7 +115425,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114117,7 +115462,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "degraded" | "operational" | "under_maintenance";
+            state: "operational" | "degraded" | "under_maintenance";
             /** Operational */
             operational: boolean;
         };
@@ -114211,7 +115556,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114548,7 +115893,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.woodpecker.co
@@ -114580,7 +115925,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.woopra.com
@@ -114660,7 +116005,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114688,13 +116033,55 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://workcast.statuspage.io
              * @constant
              */
             status_page?: "https://workcast.statuspage.io";
+        };
+        /**
+         * WorkCorrection
+         * @description ONE red-pen correction: a passage the Expert struck through, what they
+         *     said was wrong with it, and when they said it.
+         *
+         *     The unit of the `red_pen` Approach. All three parts are provenance: the
+         *     span is the evidence, the comment is the judgment, and the moment is when
+         *     the judgment was made (Masterwork doctrine CORE §5 — provenance per rule).
+         */
+        WorkCorrection: {
+            /**
+             * Span
+             * @description The passage the Expert highlighted, VERBATIM from the work. Re-checked against the work server-side; a passage that is not in the work refuses the run rather than anchoring a rule to evidence that does not exist.
+             */
+            span: string;
+            /**
+             * Comment
+             * @description The Expert's own words: what is wrong with that passage and what they would do instead. Typed or dictated — the same field either way, because dictation writes into the same box.
+             */
+            comment: string;
+            /**
+             * Start
+             * @description Character offset of the span in the work, as the client's selection saw it.
+             */
+            start?: number | null;
+            /**
+             * End
+             * @description Character offset of the end of the span in the work.
+             */
+            end?: number | null;
+            /**
+             * Voice
+             * @description True when the Expert spoke this correction rather than typing it.
+             * @default false
+             */
+            voice?: boolean;
+            /**
+             * At
+             * @description ISO-8601 moment the correction was made — the recording moment.
+             */
+            at?: string | null;
         };
         /**
          * WorkFlowyServiceStatus
@@ -114752,7 +116139,7 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
             /** Template */
-            template?: ("compact" | "full" | "minimal") | null;
+            template?: ("full" | "compact" | "minimal") | null;
             /**
              * Type
              * @default input_workbook
@@ -114773,7 +116160,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "access_revoked" | "already_bootstrapped" | "audience_mismatch" | "bootstrap_in_progress" | "browser_controlled_by_human" | "browser_crashed" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_failed" | "checkpoint_in_progress" | "chromium_unclean_exit" | "command_deadline_exceeded" | "command_not_supported" | "controller_transition_conflict" | "credential_expired" | "credential_replayed" | "eval_js_not_permitted" | "illegal_controller_transition" | "invalid_command_arguments" | "lease_expired" | "not_bootstrapped" | "parameter_not_available_on_persistent_run" | "profile_locked_locally" | "profile_mismatch" | "queue_draining" | "reopen_required" | "run_mismatch" | "sequence_conflict" | "sequence_not_permitted" | "sequence_out_of_order" | "sequence_required" | "sequence_too_old" | "stale_fencing_token" | "unauthorized_worker_call" | "unknown_dialog" | "unknown_fencing_revision" | "unknown_page" | "worker_degraded" | "worker_shutting_down";
+            code: "browser_controlled_by_human" | "stale_fencing_token" | "unknown_fencing_revision" | "queue_draining" | "worker_shutting_down" | "not_bootstrapped" | "bootstrap_in_progress" | "already_bootstrapped" | "run_mismatch" | "profile_mismatch" | "lease_expired" | "access_revoked" | "sequence_out_of_order" | "sequence_conflict" | "sequence_too_old" | "sequence_required" | "sequence_not_permitted" | "illegal_controller_transition" | "controller_transition_conflict" | "command_not_supported" | "invalid_command_arguments" | "parameter_not_available_on_persistent_run" | "eval_js_not_permitted" | "unknown_page" | "unknown_dialog" | "command_deadline_exceeded" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_in_progress" | "checkpoint_failed" | "chromium_unclean_exit" | "profile_locked_locally" | "browser_crashed" | "worker_degraded" | "reopen_required" | "unauthorized_worker_call" | "audience_mismatch" | "credential_expired" | "credential_replayed";
             /** Message */
             message: string;
             /** Retryable */
@@ -114903,7 +116290,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114940,7 +116327,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -114974,7 +116361,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -115042,7 +116429,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "incident" | "maintenance" | "stable";
+            indicator: "stable" | "incident" | "maintenance";
             /** Operational */
             operational: boolean;
         };
@@ -115094,7 +116481,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
              * @default https://status.wufoo.com
@@ -115377,13 +116764,13 @@ export interface components {
              * @default any
              * @enum {string}
              */
-            video_dimension?: "2d" | "3d" | "any";
+            video_dimension?: "any" | "2d" | "3d";
             /**
              * Video Duration
              * @default any
              * @enum {string}
              */
-            video_duration?: "any" | "long" | "medium" | "short";
+            video_duration?: "any" | "short" | "medium" | "long";
             /**
              * Video Embeddable
              * @default any
@@ -115545,7 +116932,7 @@ export interface components {
              * @default unprocessed
              * @enum {string}
              */
-            processing_status?: "completed" | "failed" | "partial" | "processing" | "unprocessed";
+            processing_status?: "unprocessed" | "processing" | "completed" | "partial" | "failed";
             /** Enrichment State */
             enrichment_state?: {
                 [key: string]: unknown;
@@ -115804,7 +117191,7 @@ export interface components {
              * Indicator
              * @enum {string}
              */
-            indicator: "critical" | "major" | "minor" | "none";
+            indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
         };
@@ -115856,7 +117243,7 @@ export interface components {
              * Library Type
              * @enum {string}
              */
-            library_type: "groups" | "users";
+            library_type: "users" | "groups";
             /** Library Id */
             library_id: number;
             /** Library Name */
@@ -116274,7 +117661,7 @@ export interface components {
              * Trigger Type
              * @enum {string}
              */
-            trigger_type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            trigger_type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -116545,7 +117932,7 @@ export interface components {
              * Initiation
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
-            initiation?: ("auto" | "user") | null;
+            initiation?: ("user" | "auto") | null;
             /**
              * Store
              * @description Persist request outputs when true; run ephemerally when false.
@@ -116871,16 +118258,16 @@ export interface components {
              */
             task_id?: string | null;
             /** Window Mode */
-            window_mode?: ("last_n_runs" | "since_watermark") | null;
+            window_mode?: ("since_watermark" | "last_n_runs") | null;
             /** Window N */
             window_n?: number | null;
             /** Lens Visibility */
-            lens_visibility?: ("unit_only" | "with_context") | null;
+            lens_visibility?: ("with_context" | "unit_only") | null;
             /**
              * Subject Kind
              * @enum {string}
              */
-            subject_kind: "agent" | "environment" | "orchestra" | "tool" | "workflow" | "workflow_node";
+            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
             /** Subject Id */
             subject_id?: string | null;
             /** Subject Ref */
@@ -117764,7 +119151,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "cld_file" | "code_file" | "cx_message" | "library_doc" | "note" | "project" | "repository" | "research" | "scraped" | "task" | "transcript";
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message" | "research";
             /** Source Id */
             source_id: string;
             /** Field Id */
@@ -118678,7 +120065,7 @@ export interface components {
              * Trigger Type
              * @enum {string}
              */
-            trigger_type: "context-match" | "cron" | "dependency" | "event" | "heartbeat" | "interval" | "manual" | "one-shot";
+            trigger_type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -124255,6 +125642,37 @@ export interface operations {
             };
         };
     };
+    coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodingReplyResponderReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_coding_session_identities_coding_sessions_sessions_get: {
         parameters: {
             query?: {
@@ -128949,26 +130367,6 @@ export interface operations {
             };
         };
     };
-    google_capabilities_google_integrations_capabilities_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleCapabilityMetadata"][];
-                };
-            };
-        };
-    };
     google_calendar_agenda_google_integrations_calendar_agenda_post: {
         parameters: {
             query?: never;
@@ -131040,7 +132438,7 @@ export interface operations {
                 page_count: number;
                 quantity?: number;
                 state_code?: string | null;
-                currency?: "AUD" | "CAD" | "EUR" | "GBP" | "USD";
+                currency?: "USD" | "GBP" | "EUR" | "AUD" | "CAD";
             };
             header?: never;
             path?: never;
@@ -146580,7 +147978,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                site_key: "sandbox" | "school";
+                site_key: "school" | "sandbox";
             };
             cookie?: never;
         };
@@ -146633,7 +148031,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                library_type: "groups" | "users";
+                library_type: "users" | "groups";
                 library_id: number;
             };
             cookie?: never;
@@ -154408,8 +155806,8 @@ export interface operations {
             query?: {
                 unit_token?: ("agent" | "tool" | "workflow") | null;
                 unit_id?: string | null;
-                change_role?: ("apply" | "edit" | "revert") | null;
-                actor_tier?: ("ai" | "code" | "human") | null;
+                change_role?: ("apply" | "revert" | "edit") | null;
+                actor_tier?: ("code" | "ai" | "human") | null;
                 /** @description Only changes a Hindsight finding caused. */
                 with_findings_only?: boolean;
                 limit?: number;
@@ -154446,7 +155844,7 @@ export interface operations {
             query?: {
                 unit_token?: ("agent" | "tool" | "workflow") | null;
                 unit_id?: string | null;
-                lever?: ("architecture" | "instructions" | "resources" | "stopping_condition" | "tools") | null;
+                lever?: ("instructions" | "resources" | "tools" | "architecture" | "stopping_condition") | null;
             };
             header?: never;
             path?: never;
@@ -154902,7 +156300,7 @@ export interface operations {
     descend_review_descend_get: {
         parameters: {
             query: {
-                unit_kind?: "agent_request" | "assistant_message" | "wf_node_outcome";
+                unit_kind?: "assistant_message" | "agent_request" | "wf_node_outcome";
                 unit_id: string;
             };
             header?: never;
@@ -155199,6 +156597,103 @@ export interface operations {
             };
         };
     };
+    ingest_rulebook_markup_masterworks_ingest_markup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestMarkupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_predictions_masterworks_ingest_predictions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestPredictionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_prediction_ledger_masterworks__rulebook_id__predictions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionLedgerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     triage_rulebook_drafts_masterworks_triage_post: {
         parameters: {
             query?: never;
@@ -155430,6 +156925,105 @@ export interface operations {
             };
         };
     };
+    deal_rulebook_triads_masterworks_triads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriadGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_triad_masterworks_ingest_triad_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestTriadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    masterwork_bad_example_probe_masterworks_probe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProbeRoundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ingest_rulebook_chat_masterworks_ingest_chat_post: {
         parameters: {
             query?: never;
@@ -155473,6 +157067,158 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngestConversationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_meeting_transcripts_masterworks_meeting_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_meeting_masterworks_ingest_meeting_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestMeetingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inbox_connection_masterworks_inbox_connection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxConnectionResponse"];
+                };
+            };
+        };
+    };
+    preview_inbox_threads_masterworks_inbox_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_inbox_masterworks_ingest_inbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestInboxRequest"];
             };
         };
         responses: {
@@ -155646,6 +157392,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertCorpusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_bench_proof_masterworks__rulebook_id__bench_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchProofResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_bench_run_masterworks__rulebook_id__bench_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BenchRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -167097,7 +168909,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DefinitionRecord"][];
+                    "application/json": components["schemas"]["DefinitionListPage"];
                 };
             };
             /** @description Validation Error */
@@ -167648,7 +169460,7 @@ export interface operations {
             path: {
                 definition_id: string;
                 node_id: string;
-                slot: "declared_sample" | "last_live_output" | "last_test_output";
+                slot: "declared_sample" | "last_test_output" | "last_live_output";
             };
             cookie?: never;
         };
@@ -168994,7 +170806,7 @@ export interface operations {
         parameters: {
             query?: {
                 definition_id?: string | null;
-                kind?: ("cron" | "event" | "manual" | "webhook") | null;
+                kind?: ("cron" | "webhook" | "manual" | "event") | null;
                 limit?: number;
                 offset?: number;
             };
@@ -172542,7 +174354,7 @@ export interface operations {
     revoke_file_permission_files__file_id__permissions__grantee_id__delete: {
         parameters: {
             query?: {
-                grantee_type?: "group" | "user";
+                grantee_type?: "user" | "group";
             };
             header?: never;
             path: {
@@ -172642,7 +174454,7 @@ export interface operations {
     revoke_folder_permission_folders__folder_id__permissions__grantee_id__delete: {
         parameters: {
             query?: {
-                grantee_type?: "group" | "user";
+                grantee_type?: "user" | "group";
             };
             header?: never;
             path: {
@@ -175651,7 +177463,7 @@ export interface operations {
     list_kind_incidents_admin_kind_incidents_get: {
         parameters: {
             query?: {
-                scope?: "any" | "open" | "resolved";
+                scope?: "open" | "resolved" | "any";
                 kind?: string | null;
                 error_type?: string | null;
                 platform?: string | null;
@@ -175858,9 +177670,9 @@ export interface operations {
     list_failures_admin_persistence_failures_get: {
         parameters: {
             query?: {
-                recovered?: "any" | "no" | "yes";
+                recovered?: "any" | "yes" | "no";
                 table_target?: string | null;
-                op_type?: ("delete" | "insert" | "update") | null;
+                op_type?: ("insert" | "update" | "delete") | null;
                 error_text_contains?: string | null;
                 request_id?: string | null;
                 user_id?: string | null;
@@ -176082,7 +177894,7 @@ export interface operations {
     list_errors_admin_persistence_errors_get: {
         parameters: {
             query?: {
-                resolved?: "any" | "no" | "yes";
+                resolved?: "any" | "yes" | "no";
                 kind?: string | null;
                 route?: string | null;
                 error_text_contains?: string | null;
