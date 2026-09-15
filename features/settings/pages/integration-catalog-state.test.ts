@@ -7,7 +7,7 @@ const githubEntry = {
   name: "GitHub",
   vendor: "Microsoft",
   description: null,
-  category: "developer_tools",
+  category: "developer",
   iconUrl: null,
   color: null,
   websiteUrl: null,
@@ -28,7 +28,7 @@ const githubEntry = {
   lastUsedAt: null,
   transportUsed: null,
   tokenExpiresAt: null,
-} as McpCatalogEntry;
+} satisfies McpCatalogEntry;
 
 describe("catalogConnectionPresentation", () => {
   it("does not let a connected GitHub MCP row override suspended canonical access", () => {
