@@ -54,6 +54,7 @@ import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
 import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
+import { validateCellValue, type ValidationRules } from "../validation";
 import { isServiceFailure, type FieldDataType } from "../types";
 
 type Props = {
@@ -68,6 +69,21 @@ type Props = {
    * coerced before it is stored. Omit for a plain storage-type editor.
    */
   format?: FieldFormatConfig | null;
+  /**
+   * The column's validation rules, when it declares any. A commit that violates
+   * one is REFUSED here, in the browser, whatever the dataset's validation_mode
+   * says — strict mode is a database backstop, not the user's error message.
+   * The cell stays in edit mode with the value the user typed, exactly as it
+   * does when the server refuses a write, because throwing away what they typed
+   * is the one thing worse than not saving it.
+   */
+  validationRules?: ValidationRules | null;
+  /**
+   * Every OTHER row's value for this column, when the grid holds them. Only a
+   * `unique` rule reads this; omit it and `unique` is skipped rather than
+   * guessed.
+   */
+  existingValues?: unknown[];
   /**
    * The whole row. Only DEPENDENT choice columns read it — one whose options
    * narrow to the group another column's cell names. Everything else ignores it.
@@ -109,6 +125,8 @@ export function EditableCell({
   fieldDisplayName,
   dataType,
   format,
+  validationRules,
+  existingValues,
   row,
   value,
   display,
@@ -172,10 +190,34 @@ export function EditableCell({
       : normalizeCellValue(source, dataType);
 
     // Skip the write if nothing actually changed. Still counts as finishing,
-    // so Enter still moves down on a cell the user only looked at.
+    // so Enter still moves down on a cell the user only looked at. Checked
+    // BEFORE the rules, deliberately: re-confirming a value that was already
+    // stored — one that predates the rule, say — must never be turned into a
+    // refusal the user cannot escape.
     if (valuesEqual(normalized, value)) {
       onEndEdit?.(opts?.move);
       return;
+    }
+
+    // The column's own rules, refused in the browser with the reason. Same
+    // treatment as a server refusal: a toast that says what is wrong, and the
+    // editor stays open holding what they typed.
+    if (validationRules) {
+      const verdict = validateCellValue({
+        rules: validationRules,
+        dataType,
+        format,
+        value: normalized,
+        existingValues,
+      });
+      if (!verdict.ok) {
+        toast({
+          title: `${fieldDisplayName}: ${verdict.reason}`,
+          description: "The cell was not saved. Correct it, or press Escape to discard.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setSaving(true);
@@ -204,7 +246,9 @@ export function EditableCell({
     onSaved?.(normalized, typeof storedAt === "string" ? storedAt : undefined);
   }, [
     dataType,
+    existingValues,
     format,
+    validationRules,
     draft,
     fieldDisplayName,
     fieldName,

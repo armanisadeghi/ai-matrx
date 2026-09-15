@@ -58,6 +58,17 @@ const SandboxCanvasBody = dynamic(
     ).then((m) => ({ default: m.SandboxCanvasBody })),
   { ssr: false },
 );
+// A CLOUD DOCUMENT hosted in the canvas pane. The body mounts the canonical
+// `DocumentEditor` (Univer) — heavy and window-dependent, so it stays out of
+// the canvas base chunk until a document pane actually opens. CanvasPane
+// supplies the frame and the document's title; this body renders bare.
+const DocumentCanvasBody = dynamic(
+  () =>
+    import("@/features/data-tables/components/DocumentCanvasBody").then((m) => ({
+      default: m.DocumentCanvasBody,
+    })),
+  { ssr: false },
+);
 const CodeEditErrorCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
@@ -310,6 +321,7 @@ export function getDefaultTitle(type: string): string {
     scratchpad: "Documents",
     cloud_browser: "Cloud Browser",
     sandbox: "Sandbox",
+    udt_document: "Document",
   };
   return titles[type] || "Canvas View";
 }
@@ -450,6 +462,25 @@ function renderContent(content: CanvasContent): React.ReactNode {
               : undefined
           }
           conversationId={content.metadata?.conversationId}
+          className="h-full"
+        />
+      );
+
+    case "udt_document":
+      // `data` is a pointer { documentId }. The row is the truth and the
+      // editor persists itself (udt_document_snapshots), so nothing about the
+      // document is ever carried in the canvas envelope — see
+      // NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <DocumentCanvasBody
+          documentId={
+            typeof data?.documentId === "string" ? data.documentId : ""
+          }
+          fallbackTitle={
+            typeof content.metadata?.title === "string"
+              ? content.metadata.title
+              : undefined
+          }
           className="h-full"
         />
       );

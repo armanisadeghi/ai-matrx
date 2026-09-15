@@ -239,6 +239,16 @@ export interface CodingPreferences {
    */
   sandboxCanvasAutoOpen: boolean;
   /**
+   * Reveal a record a TOOL just created in the Canvas — on by default.
+   *
+   * Same courtesy as the sandbox knob, one level up: when a chat tool creates
+   * a document (or any other canvas-renderable record), the canvas opens on it
+   * the way Claude.ai shows an artifact the moment it is written — but ONLY
+   * into a canvas that is showing nothing else. With this off, the record is
+   * still added to the canvas switcher: available, never on screen uninvited.
+   */
+  toolResultCanvasAutoOpen: boolean;
+  /**
    * Client-side favorite conversations. The `cx_conversation` table has no
    * favorite column yet; we persist ids in preferences so favorites still
    * follow the user across devices (via the user_preferences JSON blob).
@@ -1004,6 +1014,7 @@ export const initializeUserPreferencesState = (
       monacoEnvironmentsEnabled: true,
       activeAgentSandboxBySurface: {},
       sandboxCanvasAutoOpen: true,
+      toolResultCanvasAutoOpen: true,
     },
     sandbox: {
       // "slim" = the full coding env without aidream-built-in. Matches what

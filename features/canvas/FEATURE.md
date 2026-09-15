@@ -23,6 +23,8 @@ the rules an agent editing THIS directory must obey.
 | Unified artifact renderers (chart, table, quiz, mermaid, …)                    | `artifact-types/renderers/*`                                                                     |
 | Type registry — the single source of truth                                     | `artifact-types/artifact-type-registry.ts`                                                       |
 | Materialization primitive + planner + unbind                                   | `materialization/`                                                                               |
+| Tool result → canvas offer wire (registry + pure rules + headless opener)      | `tool-results/`                                                                                  |
+| The switcher-visibility rule, and the remembered reveal decision                | `core/canvasSwitcher.ts`, `revealMemory.ts`                                                      |
 | Markdown export                                                                | `export/exportArtifactMarkdown.ts`                                                               |
 | State                                                                          | `redux/canvasSlice.ts`                                                                           |
 | Library persistence (`canvas_items`)                                           | `services/canvasItemsService.ts`, `services/canvasArtifactService.ts`, `hooks/useCanvasItems.ts` |
@@ -123,6 +125,41 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-15` — **THE DOOR LAW: every record the UI names opens.** An
+  independent reviewer created a document in a chat; the `document` tool
+  succeeded, the row landed in `workbench.udt_documents`, the agent replied
+  *"Created and opened as a document artifact"* — and nothing opened, no card
+  appeared, and no drop notice fired, because **a tool result had no path to
+  the canvas at all**. Three things closed it, all as a CLASS:
+  (1) `udt_document` is now a `CanvasContentType` beside `sandbox` and
+  `cloud_browser` — a pointer `{ documentId }` whose body mounts the canonical
+  `DocumentEditor` (`features/data-tables/components/DocumentCanvasBody.tsx`),
+  NON_PERSISTABLE because the editor owns its own snapshot history, but the
+  first non-persistable type that still offers `Source`: a document's markdown
+  IS what a person means by source, read back from its Univer snapshot by the
+  one reader `features/data-tables/univer-doc-to-markdown.ts`.
+  (2) `tool-results/toolResultCanvasRegistry.ts` is THE one place that answers
+  "did this result create something the canvas can show" — keyed by tool name
+  AND by result kind, so a future record-creating tool inherits the whole
+  behaviour by adding one reader. `ToolResultCanvasOpener` (mounted once in
+  `ChatRoomClient`) offers every such record into the switcher and opens only
+  the newest, only into an EMPTY canvas, only with
+  `coding.toolResultCanvasAutoOpen` on — the rules are the pure
+  `decideToolResultCanvasAction`. A canvas showing something else is never
+  hijacked.
+  (3) The switcher rule moved into `core/canvasSwitcher.ts` and is a decision,
+  not an accident: **two items or more, exactly like Claude.ai's artifact
+  switcher** — one item has nothing to switch to and a `1/1` control that goes
+  nowhere is a dead affordance. The control carries `data-canvas-switcher` and
+  `shrink-0` so a narrow docked column can never squeeze it off screen.
+  The sandbox's reveal memory generalized into `revealMemory.ts` (one
+  implementation, namespaced) so "a pane the user put away stays away" can
+  never drift between panes. Guard:
+  `features/canvas/__tests__/document-canvas-door.test.tsx` (23 tests; six
+  mutations proven RED — the nested `create` shape, the never-hijack guard, the
+  two-item switcher rule, the `CanvasBody` case, the `Source` allowance, and
+  the snapshot reader).
 
 - `2026-09-14` — **the docked canvas' own chrome can never scroll off the top,
   and `Source` shows the item's real source.** The pane header and the

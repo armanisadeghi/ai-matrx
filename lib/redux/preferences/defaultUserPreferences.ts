@@ -114,6 +114,7 @@ export const defaultUserPreferences: UserPreferences = {
     monacoEnvironmentsEnabled: true,
     activeAgentSandboxBySurface: {},
     sandboxCanvasAutoOpen: true,
+    toolResultCanvasAutoOpen: true,
   },
   // Matches the in-slice defaults at
   // lib/redux/preferences/userPreferencesSlice.ts:535 — keep them in sync.

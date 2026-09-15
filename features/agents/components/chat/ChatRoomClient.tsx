@@ -37,6 +37,7 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { CanvasDock } from "@/features/canvas/core/CanvasDock";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
+import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
 import { useConversationSandboxBindingSync } from "@/features/agents/hooks/useConversationSandboxBindingSync";
 import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
 import {
@@ -749,6 +750,11 @@ export function ChatRoomClient({
           works in the box, and merely offers it when the canvas is already
           showing a document or the browser. Renders nothing. */}
       <SandboxCanvasOpener conversationId={conversationId} />
+      {/* THE DOOR LAW: every record the UI names opens. When a tool creates a
+          document (or any other canvas-renderable record), this headless
+          watcher offers it in the canvas switcher and opens it only into a
+          canvas that is showing nothing else. Renders nothing. */}
+      <ToolResultCanvasOpener conversationId={conversationId} />
       {/* ?attachDoc= deep link (fresh routes only) — the working document's
           registry share URL is /chat/new?attachDoc={id}. Own local Suspense:
           useSearchParams requires a boundary, and neither chat page provides

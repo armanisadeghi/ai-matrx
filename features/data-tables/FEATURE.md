@@ -848,7 +848,100 @@ rows" now mean something to an agent.
 color change by another editor lands without a reload (own writes echo harmlessly: the
 row IS what the grid already holds). Publication verified by `pnpm check:realtime-publication`.
 
+## Validation rules — what a column ACCEPTS (2026-09-14)
+
+Three questions can be asked of a column, and the Table Settings card now asks
+all three in one row: what it **Stores** (the storage type), what it **Shows as**
+(the display format), and what its **Rules** accept.
+
+The rules live on `workbench.udt_dataset_fields.validation_rules` (jsonb — a
+column that existed since the v2 backbone and was read by nothing). The model,
+the parser and the judge are ONE pure module: [`validation.ts`](./validation.ts).
+Champions: Excel's data validation (a rule per column; an invalid entry is
+refused *with the reason*) and Airtable (type-level only — we go past it).
+
+```ts
+type ValidationRules = {
+  required?: boolean;     // MIRROR of is_required — never stored, never written
+  min?: number; max?: number;                  // number-ish columns
+  minLength?: number; maxLength?: number;      // text-ish columns
+  pattern?: string; patternHint?: string;      // JS/PG-compatible, anchored by the author
+  allowedValues?: string[];                    // NON-choice columns only
+  unique?: boolean;                            // checked by the caller, never by the trigger
+};
+```
+
+**The four laws.**
+
+1. **`required` is not stored here.** The column already declares `is_required`
+   and the card already has the Req checkbox. `parseValidationRules` never
+   invents the key and `serializeValidationRules` always strips it. One fact,
+   one home.
+2. **An empty value is never a violation.** Emptiness is `is_required`'s
+   question, asked once, by whoever owns the whole row. Otherwise a `min: 0`
+   would quietly make every optional number column mandatory.
+3. **A rule judges what the user is WRITING, never what is already stored.**
+   Existing values that break a new rule are kept, never rewritten, and render
+   in the SAME amber THE FALLBACK LAW already uses for a format mismatch —
+   `<FormattedFieldValue validationRules>`, one amber, one voice. Declaring a
+   rule over existing data is how a user FINDS the values that do not fit,
+   exactly as declaring a choice column's options is.
+4. **`allowedValues` is refused on a choice column.** Its options live in its
+   format, are offered in the picker, and an off-list value there is legal and
+   amber by design. A second list would be a second vocabulary for one column.
+   `validateCellValue` skips the rule when the format is `choice`/`multi_choice`
+   and `ColumnValidationEditor` does not offer it.
+
+**Where it is enforced — the browser first, the database as a backstop.**
+
+| Path | File | What refusal looks like |
+|---|---|---|
+| Inline cell edit | `components/EditableCell.tsx` | Toast with the reason; the editor STAYS OPEN holding what was typed (same as a server refusal) |
+| Add row | `components/user-generated-table-data/AddRowModal.tsx` | Inline red line under that field; the rules print under every field that has them |
+| Edit row | `components/user-generated-table-data/EditRowModal.tsx` | Same |
+| Agent write (`cell_value`) | `hooks/useDataTableWriteHandlers.ts` | THROWS the reason plus every rule the column carries, so the retry is informed |
+| Database | `public.udt_validate_row` → `public.udt_validate_cell_rules` | **`validation_mode='strict'` ONLY** |
+
+Client enforcement is unconditional — it does not consult `validation_mode`,
+because strict mode is a database backstop, not the user's error message. The
+DB half keeps the standing invariant intact: permissive stays a pure
+passthrough (§ Invariants).
+
+**The reason strings are the product, and the two engines must agree on them
+word for word.** `features/data-tables/validation.ts` and
+`public.udt_validate_cell_rules(p_rules jsonb, p_value jsonb, p_data_type text)`
+are twins: `Must be at least 0`, `Must be at most 100`, `Must be at least 3
+characters (this is 2)`, `Must match the pattern ###-####`, `Must be one of:
+Red, Green, Blue`. The TS half is pinned by
+`__tests__/validation.test.ts` (39 cases); the SQL half by a DO block inside
+`migrations/udt_validation_rules_strict_enforcement.sql` (26 cases) that runs
+in the same transaction, so the migration cannot land if the wording drifts.
+
+**`unique` is NOT enforced by the trigger, on purpose.** A cross-row check
+inside a per-row BEFORE trigger cannot see a concurrent insert — it would be a
+guarantee that is not one — and it walks the table on every write. It is checked
+by the caller against the rows it holds (`existingValues`), which catches the
+common mistake honestly; the editor says so in as many words. A real guarantee,
+if one is ever wanted, is a unique expression index, not a trigger.
+
+**Saving.** Rules ride the SAME write every other column property uses —
+`update_user_table_config`'s `p_field_updates` has always accepted
+`validation_rules`. That RPC COALESCEs the column, so `{}` is the only way to
+CLEAR rules; `serializeValidationRules({})` returns exactly that. No new RPC.
+
+**Agents can see the rules.** `column_list` entries gain `validation?: string[]`
+— the same plain-English phrases the row forms print (`describeValidationRules`)
+— so an agent reads the rule instead of discovering it by being refused.
+
+**Not built (said plainly).** The Table Settings card does NOT show "N values
+don't fit". `udt_table_profile` returns `top_values`, not every value, so a
+count derived from it would be a confident number over a partial set — the exact
+failure § Column shape exists to prevent. A real count needs its own RPC and is
+not in this pass.
+
 ## Change log
+
+- `2026-09-14` — **Column validation rules.** See § Validation rules. New: `features/data-tables/validation.ts` (the ONE rule model), `features/data-tables/components/ColumnValidationEditor.tsx` (the Rules popover on each Table Settings column card), `migrations/udt_validation_rules_strict_enforcement.sql` (new pure helper `public.udt_validate_cell_rules`; `public.udt_validate_row` consults it under strict mode only). Enforced client-side in `EditableCell`, `AddRowModal`, `EditRowModal` and the agent `cell_value` write target regardless of `validation_mode`; existing violating values render in the format system's existing amber. Verified: `npx jest features/data-tables/__tests__/validation.test.ts` 39/39 green; the migration's in-transaction DO block 26/26 (it cannot apply otherwise); applied and ledgered at `2026-09-15 03:46:40+00`, checksum `10db619e…`; `public.udt_validate_cell_rules` called live as the `authenticated` role returned `Must be at most 100` / `Must be one of: Red, Blue` / `null` for an empty value; `npx tsc --noEmit -p tsconfig.typecheck.json` clean for every touched file. NOT verified: the live browser — the grid, the row modals and the Rules popover were not exercised on `/data/[id]`, and the strict-mode trigger has not been tripped by a real row write. NOT wired (the viewer is owned by another session this turn): `UserTableViewer` still has to pass `validationRules` / `existingValues` to `EditableCell`, `validationRules` to `FormattedFieldValue`, and `validationRules` on each `surfaceFields` entry — until it does, the grid cell, the amber and the agent's `column_list.validation` are inert. The `EditRowModal`, `AddRowModal`, agent `cell_value`, Table Settings and database paths are complete.
 
 - `2026-09-14` — **Range selection (cells / rows / columns), live colors, wide-table layout.** See § Range selection. Verified live: shift-click made a 3-cell range and Cmd-C wrote "Beijing\nOttawa\nBrasília"; a drag selected a 2×4 block with no text selection; clicking the Capital header selected the column and copied 6 lines; right-click inside the range showed "Cells · 6 selected"; an SQL change to `metadata.style` on the open table repainted the rows within a second with no reload. Wide tables (over eight visible columns) now keep natural column widths and scroll sideways instead of overlapping text (the 26-column example was unreadable). The org lane fix that unblocked the example seed is in `migrations/iam_org_access_platform_admins_manage_global_system_org.sql`. NOT verified in the isolated browser: a real second user's session for the live-color path (the SQL update stood in for it).
 

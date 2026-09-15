@@ -83,9 +83,16 @@ const documentContent: CanvasContent = {
 };
 
 /** The real reducer, driven from its real initial state. */
-function reduce(actions: ReturnType<typeof openCanvas>[]) {
+// Any canvas action, not just `openCanvas` — typing the array by one action
+// creator made every `offerCanvasItem` / `closeCanvas` in this file a type
+// error (5 of them, pre-existing before 2026-09-15).
+function reduce(actions: { type: string; payload?: unknown }[]) {
   return actions.reduce(
-    (state, action) => canvasSlice.reducer(state, action),
+    (state, action) =>
+      canvasSlice.reducer(
+        state,
+        action as Parameters<typeof canvasSlice.reducer>[1],
+      ),
     canvasSlice.reducer(undefined, { type: "@@init" }),
   );
 }
