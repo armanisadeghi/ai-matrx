@@ -30,6 +30,14 @@ code change with tests attached; it is **a proof, staged on a branch, that a hum
    sites that actually exist. Imagined tests prove imagined safety.
 4. **No gap is "probably fine."** Every consumer that would see a change is either made
    compatible or updated in the same change.
+
+> 🚨 **UNRESOLVED CONFLICT — `CFL-057`. Do not build against this section until Arman rules.**
+> **This document says:** a cutover is staged on a branch, fully green, and that branch merges only when the approver says yes.
+> **[`shared-checkout.md`](/policies/shared-checkout.md) (committing continuously; never requesting your own branch) says:** commit and push to main continuously and never hold work in a private branch or worktree, because held-back code goes stale and is lost once its task is checked off.
+> **Why it matters:** it decides where a breaking cutover waits for approval — on a held branch the shared-checkout rules forbid, or somewhere off the live path that still never holds code back from main — and every data-to-kinds cutover waits in exactly that spot.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-057`
+
 5. **Stage, don't ship.** The cutover lands on a branch, fully green, and waits for the human.
 6. **Say what you could not prove.** An honest "this path cannot be tested because X" is worth
    more than a confident sweep. Never round up to "safe".

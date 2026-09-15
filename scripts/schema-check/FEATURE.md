@@ -42,6 +42,14 @@ refresher (`get-current-schema.ts`) writes it to **`scripts/schema-check/current
 `types/database.types.ts` (degraded: FE-scoped, no exposed-schemas). Provenance is
 printed on every run.
 
+**The RPC is granted to `service_role` only** — the refresher must send `SUPABASE_SECRET_KEY`.
+Key choice is by name, never by line order ([`supabase-env.ts`](./supabase-env.ts), test
+`supabase-env.test.ts`): until 2026-09-14 the `.env` scan kept the first key name it met,
+`.env.local` lists the publishable key first, so every refresh got `42501` and silently wrote the
+aidream fallback (919 tables, 0 exposed schemas) — which made `entity-registry-drift` report 17
+live tables as dead. A fallback line ending `via aidream current_schemas.json` is a failed refresh:
+never commit it.
+
 ## The checks (each is one file in `checks/`)
 
 | check | severity | catches |
