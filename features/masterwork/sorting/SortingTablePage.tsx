@@ -814,6 +814,19 @@ export function SortingTablePage({
     const question = questions[questionIndex];
     if (!question) {
       const failures = Object.values(saveStates).filter((s) => s.kind === "failed");
+      // 🚨 "NOTHING DRAFTED" IS A CLAIM, AND IT MUST NOT BE MADE WHILE ANSWERS
+      // ARE STILL IN THE AIR. Found on the real pipe, 2026-09-15: five answers
+      // distilled into five rules server-side while this screen said "Nothing
+      // drafted this round" — the submits were still running when the round
+      // ended (each one is fired and the round moves on, deliberately), and the
+      // summary read a receipt count as a result count. The server finishes a
+      // detached submit whether or not the tab is still listening, so a screen
+      // that reports zero here is not just early, it can be permanently wrong.
+      const inFlight = Object.values(saveStates).filter(
+        (s) => s.kind === "saving",
+      ).length;
+      /** Questions she actually answered — a skipped one is not a silence. */
+      const answeredCount = Object.keys(saveStates).length;
       return (
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-5 overflow-y-auto px-4 pb-safe pt-6 sm:px-6">
           <div className="space-y-2 text-center">
@@ -826,9 +839,21 @@ export function SortingTablePage({
             <p className="text-base text-muted-foreground">
               {rulesThisSitting
                 ? `${rulesThisSitting} rule${rulesThisSitting === 1 ? "" : "s"} drafted from ${sortedCount} sorted cases.`
-                : "Nothing drafted this round."}
+                : inFlight
+                  ? `${sortedCount} cases sorted. Still saving your answers…`
+                  : answeredCount
+                    ? `${sortedCount} cases sorted. Nothing new came out of what you said this time.`
+                    : "Nothing answered this round."}
             </p>
           </div>
+          {inFlight > 0 ? (
+            <p className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+              {inFlight} answer{inFlight === 1 ? " is" : "s are"} still being
+              turned into rules. They finish on our side even if you close this —
+              open the Rulebook in a moment to see them.
+            </p>
+          ) : null}
           {failures.length > 0 ? (
             <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
