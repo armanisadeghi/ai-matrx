@@ -12,8 +12,11 @@ export interface DurableLifecycleResult { state: DurableLifecycleState; message:
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" ? value as Record<string, unknown> : null;
 }
+function sameUuid(left: unknown, right: string): boolean {
+  return typeof left === "string" && left.replaceAll("-", "").toLowerCase() === right.replaceAll("-", "").toLowerCase() && /^[0-9a-f]{32}$/.test(left.replaceAll("-", "").toLowerCase());
+}
 function matches(value: Record<string, unknown> | null, expected: DurableLifecycleIdentity): boolean {
-  return value?.row_id === expected.row_id && value.sandbox_id === expected.sandbox_id && value.operation_id === expected.operation_id && value.kind === expected.kind;
+  return sameUuid(value?.row_id, expected.row_id) && value?.sandbox_id === expected.sandbox_id && sameUuid(value.operation_id, expected.operation_id) && value.kind === expected.kind;
 }
 
 /** Durable contract classifier. Kept separate from the legacy classifier until every caller is migrated. */
@@ -24,14 +27,14 @@ export async function classifyDurableSandboxLifecycleResponse(
 ): Promise<DurableLifecycleResult> {
   let payload: Record<string, unknown> | null = null;
   try { payload = record(await response.json()); } catch { return { state: "unknown", message: "Could not confirm this sandbox operation; check status." }; }
+  if (response.status === 409 && !hadAcceptedReceipt) return { state: "refused", message: "Sandbox lifecycle operation was refused." };
   if (!matches(payload, expected)) return { state: "unknown", message: "Could not confirm this sandbox operation; check status." };
   const message = typeof payload.error === "string" ? payload.error : "Sandbox operation status changed.";
-  const status = payload.status;
-  if (response.status === 202 && (status === "accepted" || status === "running")) return { state: "pending", message };
-  if (response.status === 200 && status === "succeeded") return { state: "success", message };
-  if (response.status === 200 && status === "failed") return { state: "failure", message };
-  if (response.status === 200 && status === "recovery_required") return { state: "attention", message };
-  if (response.status === 409 && !hadAcceptedReceipt) return { state: "refused", message };
+  const state = payload.state;
+  if ((response.status === 200 || response.status === 202) && (state === "accepted" || state === "running")) return { state: "pending", message };
+  if (response.status === 200 && state === "succeeded") return { state: "success", message };
+  if (response.status === 200 && state === "failed") return { state: "failure", message };
+  if (response.status === 200 && state === "recovery_required") return { state: "attention", message };
   return { state: "unknown", message: "Could not confirm this sandbox operation; check status." };
 }
 

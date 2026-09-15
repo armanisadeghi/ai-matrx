@@ -11,7 +11,7 @@ export async function resolveSandboxLifecycleTarget(rowId: string): Promise<Sand
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return { ok: false, status: 401, error: "User not authenticated" };
-  const { data: owned } = await supabase.from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).single();
+  const { data: owned } = await supabase.from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).eq("user_id", user.id).single();
   let row = owned;
   if (!row && await checkIsSuperAdmin(supabase, user.id)) {
     const { data } = await createAdminClient().from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).single();
