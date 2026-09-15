@@ -2,8 +2,22 @@ import { renderHook } from "@/test-utils/renderHook";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useState } from "react";
 
+let identity: {
+  authReady: boolean;
+  userId: string | null;
+  organizationId: string | null;
+} = {
+  authReady: true,
+  userId: "user-1",
+  organizationId: "organization-1",
+};
+
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => "organization-1",
+  useAppSelector: (selector: { name: string }) => {
+    if (selector.name === "selectAuthReady") return identity.authReady;
+    if (selector.name === "selectUserId") return identity.userId;
+    return identity.organizationId;
+  },
 }));
 
 jest.mock("@/hooks/sandbox/use-compute-targets", () => ({
@@ -25,6 +39,11 @@ function listResponse(ids: string[], total: number, hasMore: boolean) {
 }
 
 type TestResponse = ReturnType<typeof listResponse>;
+type ExtensionResponse = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
 
 function installFetch(fetchMock: unknown) {
   Object.defineProperty(globalThis, "fetch", {
@@ -40,6 +59,11 @@ describe("useSandboxInstances list pagination", () => {
   afterEach(() => {
     installFetch(originalFetch);
     jest.restoreAllMocks();
+    identity = {
+      authReady: true,
+      userId: "user-1",
+      organizationId: "organization-1",
+    };
   });
 
   it("starts in loading state until the first list response settles", async () => {
@@ -309,6 +333,89 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     const hook = await renderHook(() => useSandboxInstances());
     await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
     expect(hook.current.error).toBe("Use POST /extend");
+    await hook.unmount();
+  });
+
+  it.each([
+    ["a 5xx response", () => ({ ok: false, status: 503, json: async () => ({ error: "upstream" }) })],
+    ["a network failure", () => Promise.reject(new TypeError("offline"))],
+    ["a malformed success", () => ({ ok: true, status: 200, json: async () => ({ instance: { id: "wrong" } }) })],
+  ])("reports %s as an unknown extension outcome", async (_label, response) => {
+    const fetchMock = jest.fn(async () => response());
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+
+    await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
+
+    expect(hook.current.error).toBe("Could not confirm extension; refresh before retrying");
+    await hook.unmount();
+  });
+
+  it("does not duplicate an in-flight extension for the same target", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    const fetchMock = jest.fn(() => pending);
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    let first: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { first = hook.current.extendInstance("extend-id"); });
+    await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await first; });
+    await hook.unmount();
+  });
+
+  it("does not publish an extension result after the active organization changes", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    const fetchMock = jest.fn(() => pending);
+    installFetch(fetchMock);
+    const hook = await renderHook(() => {
+      const [, refresh] = useState(0);
+      return { ...useSandboxInstances(), refresh: () => refresh((value) => value + 1) };
+    });
+    let extension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { extension = hook.current.extendInstance("extend-id"); });
+    identity = { ...identity, organizationId: "organization-2" };
+    await hook.act(() => { hook.current.refresh(); });
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await extension; });
+
+    expect(hook.current.instances).toEqual([]);
+    expect(hook.current.error).toBeNull();
+    await hook.unmount();
+  });
+
+  it("does not publish an extension result after the same user logs out and back in", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    installFetch(jest.fn(() => pending));
+    const hook = await renderHook(() => {
+      const [, refresh] = useState(0);
+      return { ...useSandboxInstances(), refresh: () => refresh((value) => value + 1) };
+    });
+    let extension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { extension = hook.current.extendInstance("extend-id"); });
+    identity = { ...identity, authReady: false, userId: null };
+    await hook.act(() => { hook.current.refresh(); });
+    identity = { ...identity, authReady: true, userId: "user-1" };
+    await hook.act(() => { hook.current.refresh(); });
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await extension; });
+
+    expect(hook.current.instances).toEqual([]);
+    expect(hook.current.error).toBeNull();
     await hook.unmount();
   });
 });

@@ -42,6 +42,11 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -59,6 +64,7 @@ import {
   sandboxLifecycleTransportUnknown,
 } from "@/lib/sandbox/lifecycle-response";
 import { toast } from "@/lib/toast";
+import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
 import {
   STATUS_BADGE_VARIANT,
   STATUS_LABELS,
@@ -84,6 +90,9 @@ export default function SandboxDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [instance, setInstance] = useState<SandboxInstance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +103,7 @@ export default function SandboxDetailPage() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | null>(null);
+  const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | "extend" | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
@@ -120,6 +129,19 @@ export default function SandboxDetailPage() {
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const extensionGeneration = useRef(0);
+  const extensionIdentity = useRef("");
+  const pendingExtension = useRef<number | null>(null);
+  const currentExtensionIdentity = `${authReady}:${userId ?? ""}:${organizationId ?? ""}:${id}`;
+
+  useEffect(() => {
+    extensionIdentity.current = currentExtensionIdentity;
+    extensionGeneration.current += 1;
+    setLifecycleBusy((busy) => (busy === "extend" ? null : busy));
+    return () => {
+      extensionGeneration.current += 1;
+    };
+  }, [currentExtensionIdentity]);
 
   const fetchInstance = useCallback(async () => {
     try {
@@ -333,29 +355,33 @@ export default function SandboxDetailPage() {
   };
 
   const handleExtend = async (seconds: number) => {
+    const requestGeneration = extensionGeneration.current;
+    const requestIdentity = extensionIdentity.current;
+    if (pendingExtension.current === requestGeneration) return;
+    pendingExtension.current = requestGeneration;
+    const isCurrent = () =>
+      extensionGeneration.current === requestGeneration &&
+      extensionIdentity.current === requestIdentity;
+
+    if (isCurrent()) {
+      setError(null);
+      setLifecycleBusy("extend");
+    }
     try {
-      // Hit the dedicated /extend route so the orchestrator's authoritative
-      // TTL is bumped and mirrored back. The legacy PUT ?action=extend path
-      // was DB-only and silently drifted from the live container.
-      const resp = await fetch(`/api/sandbox/${id}/extend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ttl_seconds: seconds }),
-      });
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => null);
-        if (resp.status >= 400 && resp.status < 500) {
-          throw new Error(body?.error ?? `Extension refused (${resp.status})`);
-        }
-        throw new Error("Could not confirm extension; refresh before retrying");
+      const result = await requestSandboxExtension(id, seconds);
+      if (!isCurrent()) return;
+      if (result.kind === "success") {
+        setInstance(result.instance);
+        return;
       }
-      const data = await resp.json().catch(() => null);
-      if (!data?.instance || data.instance.id !== id || !data.instance.expires_at || !Number.isFinite(Date.parse(data.instance.expires_at))) {
-        throw new Error("Could not confirm extension; refresh before retrying");
+      setError(result.message);
+    } finally {
+      if (pendingExtension.current === requestGeneration) {
+        pendingExtension.current = null;
       }
-      setInstance(data.instance);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to extend");
+      if (isCurrent()) {
+        setLifecycleBusy((busy) => (busy === "extend" ? null : busy));
+      }
     }
   };
 
@@ -1189,33 +1215,10 @@ export default function SandboxDetailPage() {
                         variant="outline"
                         size="sm"
                         className="gap-1.5"
-                        disabled={!!adminActionLoading}
-                        onClick={async () => {
-                          setAdminActionLoading("extend");
-                          try {
-                            // Use the dedicated /extend route — the legacy
-                            // PUT ?action=extend was DB-only AND we were
-                            // sending `seconds` instead of `ttl_seconds`,
-                            // so the orchestrator never saw the bump and the
-                            // mirrored expires_at silently drifted.
-                            const response = await fetch(`/api/sandbox/${id}/extend`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ ttl_seconds: 3600 }),
-                            });
-                            if (!response.ok) {
-                              const body = await response.json().catch(() => null);
-                              throw new Error(response.status >= 400 && response.status < 500 ? (body?.error ?? `Extension refused (${response.status})`) : "Could not confirm extension; refresh before retrying");
-                            }
-                            await fetchInstance();
-                          } catch (err) {
-                            setError(err instanceof Error ? err.message : "Could not confirm extension; refresh before retrying");
-                          } finally {
-                            setAdminActionLoading(null);
-                          }
-                        }}
+                        disabled={!!adminActionLoading || lifecycleBusy !== null}
+                        onClick={() => void handleExtend(3600)}
                       >
-                        {adminActionLoading === "extend" ? (
+                        {lifecycleBusy === "extend" ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Clock className="w-3.5 h-3.5" />

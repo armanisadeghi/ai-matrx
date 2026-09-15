@@ -6,6 +6,7 @@ import type {
   SandboxListResponse,
   SandboxDetailResponse,
   SandboxCreateRequest,
+  SandboxActionRequest,
   SandboxExecRequest,
   SandboxExecResponse,
   SandboxAccessResponse,
@@ -14,7 +15,12 @@ import { notifyComputeTargetsChanged } from "./use-compute-targets";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
 import {
   classifySandboxLifecycleResponse,
   sandboxLifecycleMessage,
@@ -62,6 +68,8 @@ async function extractSandboxError(
 
 export function useSandboxInstances(projectId?: string) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,6 +80,19 @@ export function useSandboxInstances(projectId?: string) {
   const listProjectIdRef = useRef(projectId);
   const listRequestId = useRef(0);
   const listAbortController = useRef<AbortController | null>(null);
+  const extensionGeneration = useRef(0);
+  const extensionIdentity = useRef("");
+  const pendingExtensions = useRef(new Map<string, number>());
+
+  const currentExtensionIdentity = `${authReady}:${userId ?? ""}:${organizationId ?? ""}`;
+
+  useEffect(() => {
+    extensionIdentity.current = currentExtensionIdentity;
+    extensionGeneration.current += 1;
+    return () => {
+      extensionGeneration.current += 1;
+    };
+  }, [currentExtensionIdentity, projectId]);
 
   useEffect(() => {
     return () => {
@@ -360,36 +381,33 @@ export function useSandboxInstances(projectId?: string) {
 
   const extendInstance = useCallback(
     async (id: string, additionalSeconds = 3600) => {
-      setError(null);
+      const requestGeneration = extensionGeneration.current;
+      const requestIdentity = extensionIdentity.current;
+      if (pendingExtensions.current.get(id) === requestGeneration) return null;
+      pendingExtensions.current.set(id, requestGeneration);
+
+      const isCurrent = () =>
+        extensionGeneration.current === requestGeneration &&
+        extensionIdentity.current === requestIdentity;
+
+      if (isCurrent()) setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${id}/extend`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ttl_seconds: additionalSeconds }),
-        });
-
-        if (!resp.ok) {
-          if (resp.status >= 500) {
-            throw new Error("Could not confirm extension; refresh sandbox list before retrying");
-          }
-          throw new Error(
-            await extractSandboxError(resp, "Failed to extend sandbox"),
+        const result = await requestSandboxExtension(id, additionalSeconds);
+        if (!isCurrent()) return null;
+        if (result.kind === "success") {
+          setInstances((prev) =>
+            prev.map((instance) =>
+              instance.id === id ? result.instance : instance,
+            ),
           );
+          return result.instance;
         }
-
-        const { instance }: SandboxDetailResponse = await resp.json();
-        if (
-          !instance || instance.id !== id || !instance.expires_at ||
-          !Number.isFinite(Date.parse(instance.expires_at))
-        ) {
-          throw new Error("Could not confirm extension; refresh sandbox list before retrying");
-        }
-        setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
-        return instance;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        setError(msg);
+        setError(result.message);
         return null;
+      } finally {
+        if (pendingExtensions.current.get(id) === requestGeneration) {
+          pendingExtensions.current.delete(id);
+        }
       }
     },
     [],
