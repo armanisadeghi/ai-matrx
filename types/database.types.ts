@@ -74869,7 +74869,6 @@ export type Database = {
           p_issuer: string
           p_login_identity: string
           p_login_url: string
-          p_metadata?: Json
           p_organization_id: string
           p_primary_credential_item_id?: string
           p_provider_key: string
@@ -74892,8 +74891,8 @@ export type Database = {
           issuer: string
           last_verified_at: string
           login_identity: string
+          login_identity_status: string
           login_url: string
-          metadata: Json
           primary_credential_present: boolean
           provider_key: string
           safe_notes: string
