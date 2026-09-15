@@ -139,6 +139,9 @@ describe("ScannerHealthPage organization admission", () => {
     await renderPage();
 
     expect(getStatus).toHaveBeenCalledTimes(1);
+    expect(getStatus).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+    );
   });
 
   it("requests status again when the selected organization changes", async () => {

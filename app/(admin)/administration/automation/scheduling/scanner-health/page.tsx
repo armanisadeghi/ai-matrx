@@ -141,7 +141,7 @@ export default function ScannerHealthPage() {
     // Button clicks and interval callbacks share this defense-in-depth gate.
     // A disabled button is presentation; the transport boundary must also
     // refuse to run before Redux has admitted an organization.
-    if (!canLoad) return;
+    if (!canLoad || !organizationId) return;
     const generation = ++requestGeneration.current;
     setLoading(true);
     setError(null);
@@ -151,7 +151,10 @@ export default function ScannerHealthPage() {
     // alarms through their own query, refreshed alongside every status poll.
     void queryClient.invalidateQueries({ queryKey: SCHEDULE_ALARMS_QUERY_KEY });
     try {
-      const nextStatus = await getStatus();
+      // Pass the admitted id explicitly. React and the transport can observe
+      // different store instances during app bootstrap; re-reading a singleton
+      // here recreated the exact org-less request this page already gated.
+      const nextStatus = await getStatus(organizationId);
       if (generation === requestGeneration.current) setStatus(nextStatus);
     } catch (err) {
       if (generation === requestGeneration.current) {
@@ -160,7 +163,7 @@ export default function ScannerHealthPage() {
     } finally {
       if (generation === requestGeneration.current) setLoading(false);
     }
-  }, [canLoad, queryClient]);
+  }, [canLoad, organizationId, queryClient]);
 
   // Live status poll — but only while this admin tab is actually visible and
   // Redux has admitted an organization. The transport fails closed before the

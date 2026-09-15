@@ -222,8 +222,10 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 - **2026-09-15** — Scanner Health now waits for explicit organization
   admission before its first status poll and refreshes immediately when the
-  selected organization arrives or changes; a settled missing selection uses
-  `OrganizationRequiredNotice` instead of a false scanner-outage error. Every
+  selected organization arrives or changes, passing that admitted id directly
+  to the scheduler transport so a boot-time store singleton cannot erase it; a
+  settled missing selection uses `OrganizationRequiredNotice` instead of a
+  false scanner-outage error. Every
   prior repeat-guard suspension with a recorded `run_id` now links to that run
   in the schedule history, fetching referenced runs outside the recent page
   and rendering an honest unavailable target if an old run was purged.

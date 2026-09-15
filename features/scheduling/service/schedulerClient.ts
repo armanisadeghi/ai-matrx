@@ -54,7 +54,9 @@ function baseUrl(): string {
   return resolveServiceBaseUrl("aidream");
 }
 
-async function authHeaders(): Promise<HeadersInit> {
+async function authHeaders(
+  explicitOrganizationId?: string,
+): Promise<HeadersInit> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -67,20 +69,28 @@ async function authHeaders(): Promise<HeadersInit> {
   const store = getStoreSingleton();
   const organizationId = requireOrganizationContext(
     store ? selectOrganizationId(store.getState()) : null,
+    explicitOrganizationId,
   );
-  return applyOrganizationContextHeader({
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  }, organizationId);
+  return applyOrganizationContextHeader(
+    {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    organizationId,
+  );
 }
 
 async function request<T>(
   path: string,
   init: RequestInit & { method: string },
+  organizationId?: string,
 ): Promise<T> {
   const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
-    headers: { ...(await authHeaders()), ...(init.headers ?? {}) },
+    headers: {
+      ...(await authHeaders(organizationId)),
+      ...(init.headers ?? {}),
+    },
   });
   if (!res.ok) {
     let detail = "";
@@ -257,8 +267,14 @@ export function computeNextDueAt(
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 
-export function getStatus(): Promise<ScannerStatusResponse> {
-  return request<ScannerStatusResponse>("/scheduler/status", { method: "GET" });
+export function getStatus(
+  organizationId?: string,
+): Promise<ScannerStatusResponse> {
+  return request<ScannerStatusResponse>(
+    "/scheduler/status",
+    { method: "GET" },
+    organizationId,
+  );
 }
 
 // ── System jobs (admin, /scheduling/* prefix) ──────────────────────────────
