@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -153,6 +154,27 @@ export default function SettingTable({
   onCreate,
   onRetry,
 }: SettingTableProps) {
+  const searchParams = useSearchParams();
+  if (searchParams.get("tablePreview") === "defaults") {
+    const fields = Array.from(new Set(settings.flatMap((row) => Object.keys(row))));
+    const defaultColumns: MatrxColumnDef<AiSetting>[] = fields.map((field) => ({
+      accessorKey: field as keyof AiSetting,
+      header: field.replaceAll("_", " "),
+    }));
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {error ? <p role="alert">{error}</p> : null}
+        <MatrxDataTable
+          data={settings}
+          columns={defaultColumns}
+          getRowId={(row) => row.id}
+          tableId="ai-settings/package-defaults"
+          toolbar={{ title: "AI Settings — package defaults" }}
+          isLoading={isLoading}
+        />
+      </div>
+    );
+  }
   const columns: MatrxColumnDef<AiSetting>[] = [
     {
       accessorKey: "key",
