@@ -171,7 +171,12 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     // A scope switch invalidates its old request's UI ownership. `creating`
     // is scoped to the request's organization, so the new scope is usable
     // immediately while an old completion cannot clear a newer create.
-    createRequestGenerationRef.current += 1;
+    const invalidatedGeneration = ++createRequestGenerationRef.current;
+    queueMicrotask(() => {
+      setCreatingRequest((current) =>
+        current && current.generation <= invalidatedGeneration ? null : current,
+      );
+    });
   }, [authReady, organizationId, userId]);
 
   const refresh = useCallback(async () => {
