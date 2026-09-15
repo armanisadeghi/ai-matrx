@@ -6,14 +6,12 @@
 // To pass full error details to the client, we NEVER throw — we return an envelope
 // { data, error } so the error travels as plain return-value data (unsanitized).
 
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
-import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 
 export type ActionResult<T = unknown> =
-  | { data: T; error: null }
-  | { data: null; error: string };
+  { data: T; error: null } | { data: null; error: string };
 
 function formatSupabaseError(error: unknown): string {
   if (typeof error !== "object" || error === null) return String(error);
@@ -65,11 +63,7 @@ export async function getPermissions(): Promise<ActionResult<unknown[]>> {
 
 export async function executeSqlQuery(query: string): Promise<ActionResult> {
   try {
-    // The (admin) route group intentionally admits every admin level. This
-    // Server Action crosses into a service-role client, so it must enforce its
-    // own super-admin boundary before that privileged client exists.
-    await requireSuperAdmin();
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
     const { data, error } = await supabase.rpc("execute_admin_query", {
       query,
     });

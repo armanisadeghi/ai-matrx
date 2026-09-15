@@ -7,10 +7,11 @@
 // no `globalCache`, `EntityKeys`, or `AutomationEntity` types are used.
 //
 // Cache strategy: a module-scoped variable holds the response for 1 hour
-// to keep the visualizer snappy. The CDN also caches via Cache-Control.
+// to keep the visualizer snappy. Every request is authenticated before that
+// process-local cache is read, and responses forbid shared/browser caching.
 
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 import type {
     SchemaColumn,
     SchemaOverview,
@@ -21,6 +22,23 @@ import type {
 // One-hour module-level cache (keyed by deployment instance).
 const CACHE_TTL_MS = 60 * 60 * 1000;
 let cached: { payload: string; expiresAt: number } | null = null;
+
+function authErrorResponse(error: unknown): NextResponse | null {
+    const message = error instanceof Error ? error.message : "";
+    if (message.startsWith("Unauthorized")) {
+        return NextResponse.json({ error: message }, {
+            status: 401,
+            headers: { "Cache-Control": "private, no-store" },
+        });
+    }
+    if (message.startsWith("Forbidden")) {
+        return NextResponse.json({ error: message }, {
+            status: 403,
+            headers: { "Cache-Control": "private, no-store" },
+        });
+    }
+    return null;
+}
 
 interface InformationSchemaTableRow {
     table_schema: string;
@@ -55,8 +73,13 @@ interface PrimaryKeyRow {
     ordinal_position: number;
 }
 
-async function loadOverview(): Promise<SchemaOverview> {
-    const supabase = createAdminClient();
+type PrivilegedDatabaseClient = Awaited<
+    ReturnType<typeof requireSuperAdminDatabaseClient>
+>;
+
+async function loadOverview(
+    supabase: PrivilegedDatabaseClient,
+): Promise<SchemaOverview> {
 
     // 1. List public tables and views.
     const tablesQuery = `
@@ -135,10 +158,8 @@ async function loadOverview(): Promise<SchemaOverview> {
     const columnsByTable = new Map<string, Record<string, SchemaColumn>>();
     for (const row of columnRows) {
         const key = relationKey(row.table_schema, row.table_name);
-        if (!columnsByTable.has(key)) {
-            columnsByTable.set(key, {});
-        }
-        const map = columnsByTable.get(key)!;
+        const map = columnsByTable.get(key) ?? {};
+        columnsByTable.set(key, map);
         map[row.column_name] = {
             column_name: row.column_name,
             data_type: row.data_type,
@@ -152,10 +173,9 @@ async function loadOverview(): Promise<SchemaOverview> {
     const primaryKeysByTable = new Map<string, string[]>();
     for (const row of pkRows) {
         const key = relationKey(row.table_schema, row.table_name);
-        if (!primaryKeysByTable.has(key)) {
-            primaryKeysByTable.set(key, []);
-        }
-        primaryKeysByTable.get(key)!.push(row.column_name);
+        const primaryKeys = primaryKeysByTable.get(key) ?? [];
+        primaryKeys.push(row.column_name);
+        primaryKeysByTable.set(key, primaryKeys);
     }
 
     // ---- Build relationships per table ----
@@ -166,8 +186,9 @@ async function loadOverview(): Promise<SchemaOverview> {
     const relationshipsByTable = new Map<string, SchemaRelationship[]>();
 
     const ensureBucket = (table: string) => {
-        if (!relationshipsByTable.has(table)) relationshipsByTable.set(table, []);
-        return relationshipsByTable.get(table)!;
+        const relationships = relationshipsByTable.get(table) ?? [];
+        relationshipsByTable.set(table, relationships);
+        return relationships;
     };
 
     for (const row of fkRows) {
@@ -199,8 +220,9 @@ async function loadOverview(): Promise<SchemaOverview> {
     const fksBySourceTable = new Map<string, ForeignKeyRow[]>();
     for (const row of fkRows) {
         const key = relationKey(row.table_schema, row.table_name);
-        if (!fksBySourceTable.has(key)) fksBySourceTable.set(key, []);
-        fksBySourceTable.get(key)!.push(row);
+        const sourceForeignKeys = fksBySourceTable.get(key) ?? [];
+        sourceForeignKeys.push(row);
+        fksBySourceTable.set(key, sourceForeignKeys);
     }
 
     for (const [tableName, fks] of fksBySourceTable.entries()) {
@@ -258,18 +280,21 @@ async function loadOverview(): Promise<SchemaOverview> {
 
 export async function GET() {
     try {
+        // Authenticate before consulting the module cache. Otherwise a payload
+        // populated by a super-admin could be returned to any later caller.
+        const supabase = await requireSuperAdminDatabaseClient();
         const now = Date.now();
         if (cached && cached.expiresAt > now) {
             return new NextResponse(cached.payload, {
                 status: 200,
                 headers: {
                     "Content-Type": "application/json",
-                    "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+                    "Cache-Control": "private, no-store",
                 },
             });
         }
 
-        const overview = await loadOverview();
+        const overview = await loadOverview(supabase);
         const payload = JSON.stringify(overview);
 
         cached = {
@@ -281,16 +306,21 @@ export async function GET() {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+                "Cache-Control": "private, no-store",
             },
         });
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
         console.error("[/api/schema-overview] Failed to load schema overview:", error);
         const message =
             error instanceof Error ? error.message : "Unknown error loading schema overview";
         return NextResponse.json(
             { error: message },
-            { status: 500 },
+            {
+                status: 500,
+                headers: { "Cache-Control": "private, no-store" },
+            },
         );
     }
 }

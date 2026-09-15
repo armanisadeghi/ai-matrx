@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 import {
   DatabaseEnum,
   CreateEnumRequest,
@@ -108,7 +108,7 @@ export async function searchEnums({
  */
 export async function createEnum(request: CreateEnumRequest): Promise<boolean> {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     if (!request.values.length) {
       throw new Error("Enum must have at least one value");
@@ -168,7 +168,7 @@ export async function createEnum(request: CreateEnumRequest): Promise<boolean> {
  */
 export async function updateEnum(request: UpdateEnumRequest): Promise<boolean> {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     if (request.valuesToAdd && request.valuesToAdd.length > 0) {
       for (const value of request.valuesToAdd) {
@@ -205,7 +205,7 @@ export async function deleteEnum(
   name: string,
 ): Promise<boolean> {
   try {
-    const supabase = createAdminClient();
+    const supabase = await requireSuperAdminDatabaseClient();
 
     const usage = await getEnumUsage(schema, name);
     if (usage.length > 0) {

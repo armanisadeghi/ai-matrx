@@ -30,6 +30,7 @@ interface SafeBlockRendererProps {
   isLastReasoningBlock?: boolean;
   replaceBlockContent: (original: string, replacement: string) => void;
   handleOpenEditor: () => void;
+  outputSchema?: unknown | null;
 }
 
 /**
@@ -82,6 +83,7 @@ export const SafeBlockRenderer: React.FC<SafeBlockRendererProps> = ({
   isLastReasoningBlock,
   replaceBlockContent,
   handleOpenEditor,
+  outputSchema,
 }) => {
   return (
     <div className="contents" {...blockContextTags(block, index)}>
@@ -102,6 +104,7 @@ export const SafeBlockRenderer: React.FC<SafeBlockRendererProps> = ({
           isLastReasoningBlock={isLastReasoningBlock}
           replaceBlockContent={replaceBlockContent}
           handleOpenEditor={handleOpenEditor}
+          outputSchema={outputSchema}
         />
       </MarkdownErrorBoundary>
     </div>

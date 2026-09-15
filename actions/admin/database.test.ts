@@ -1,12 +1,16 @@
-const requireSuperAdmin = jest.fn<Promise<string>, []>();
-const createAdminClient = jest.fn();
+const requireSuperAdminDatabaseClient = jest.fn();
 
-jest.mock("@/utils/auth/adminUtils", () => ({
-  requireSuperAdmin: () => requireSuperAdmin(),
-}));
+jest.mock(
+  "@/features/administration/database-hub/require-super-admin-database-client",
+  () => ({
+    requireSuperAdminDatabaseClient: () => requireSuperAdminDatabaseClient(),
+  }),
+);
 
 jest.mock("@/utils/supabase/adminClient", () => ({
-  createAdminClient: () => createAdminClient(),
+  createAdminClient: jest.fn(() => {
+    throw new Error("raw service-role client bypassed canonical gate");
+  }),
 }));
 
 jest.mock("@/utils/supabase/server", () => ({
@@ -21,12 +25,11 @@ import { executeSqlQuery } from "./database";
 
 describe("executeSqlQuery authorization boundary", () => {
   beforeEach(() => {
-    requireSuperAdmin.mockReset();
-    createAdminClient.mockReset();
+    requireSuperAdminDatabaseClient.mockReset();
   });
 
   it("refuses a non-super-admin before creating the service-role client", async () => {
-    requireSuperAdmin.mockRejectedValue(
+    requireSuperAdminDatabaseClient.mockRejectedValue(
       new Error("Forbidden: Super Admin required"),
     );
 
@@ -34,7 +37,6 @@ describe("executeSqlQuery authorization boundary", () => {
       data: null,
       error: "Failed to execute SQL query: Forbidden: Super Admin required",
     });
-    expect(createAdminClient).not.toHaveBeenCalled();
   });
 
   it("executes read-only SQL only after the super-admin check succeeds", async () => {
@@ -42,15 +44,13 @@ describe("executeSqlQuery authorization boundary", () => {
       data: [{ one: 1 }],
       error: null,
     });
-    requireSuperAdmin.mockResolvedValue("admin-user-id");
-    createAdminClient.mockReturnValue({ rpc });
+    requireSuperAdminDatabaseClient.mockResolvedValue({ rpc });
 
     await expect(executeSqlQuery("SELECT 1 AS one")).resolves.toEqual({
       data: [{ one: 1 }],
       error: null,
     });
-    expect(requireSuperAdmin).toHaveBeenCalledTimes(1);
-    expect(createAdminClient).toHaveBeenCalledTimes(1);
+    expect(requireSuperAdminDatabaseClient).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith("execute_admin_query", {
       query: "SELECT 1 AS one",
     });

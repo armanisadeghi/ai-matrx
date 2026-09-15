@@ -8,7 +8,7 @@
 // Kept out of the route file so a CLI/cron caller could reuse the SQL runner too.
 
 import { spawn } from "node:child_process";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 import type {
   FileProbe,
   IntegrityFinding,
@@ -19,8 +19,8 @@ import { unwrapRows } from "./unwrap";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 /** SQL runner using the admin client + execute_admin_query RPC. */
-export function createAdminSqlRunner(): SqlRunner {
-  const admin = createAdminClient();
+export async function createAdminSqlRunner(): Promise<SqlRunner> {
+  const admin = await requireSuperAdminDatabaseClient();
   return async (query: string): Promise<IntegrityFinding[]> => {
     const { data, error } = await admin.rpc("execute_admin_query", { query });
     if (error) throw new Error(error.message);

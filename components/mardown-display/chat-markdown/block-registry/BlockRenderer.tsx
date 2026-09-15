@@ -71,6 +71,7 @@ interface BlockRendererProps {
    * provisional value. Never set by an ordinary caller.
    */
   suppressLoadingGate?: boolean;
+  outputSchema?: unknown | null;
 }
 
 /**
@@ -246,6 +247,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
   suppressLoadingGate = false,
+  outputSchema = null,
 }) => {
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
@@ -392,6 +394,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     [index, isStreamActive],
   );
 
+  const blockType = String(block.type);
   const renderBasicMarkdown = useCallback(
     (content: string) => {
       return (
@@ -403,7 +406,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           messageId={messageId}
           showCopyButton={false}
           tableRenderDiagnostic={{
-            blockType: block.type,
+            blockType,
             conversationId,
             messageId,
             requestId,
@@ -417,7 +420,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       onContentChange,
       handleOpenEditor,
       messageId,
-      block.type,
+      blockType,
       conversationId,
       requestId,
     ],
@@ -456,6 +459,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             replaceBlockContent={replaceBlockContent}
             handleOpenEditor={handleOpenEditor}
             suppressLoadingGate
+            outputSchema={outputSchema}
           />
         </ProvisionalKindFrame>
       </ProvisionalKindBoundary>
@@ -598,6 +602,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     hideToolResults,
     replaceBlockContent,
     renderBasicMarkdown,
+    outputSchema,
   };
 
   const dispatch = resolveBlockDispatch(block.type);
