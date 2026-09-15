@@ -1770,7 +1770,10 @@ export class StreamBlockAccumulator {
         ? this.currentBlockContent.trim()
         : this.currentBlockContent;
     const pieces = splitAroundEmbeddedKindJson(recoverySource, {
-      excludeLiteralContexts: this.subState.kind === "generic_xml",
+      excludeLiteralContexts:
+        this.subState.kind === "generic_xml" ||
+        (this.subState.kind === "code_fence" &&
+          normalizeCodeLanguage(this.subState.language) === "xml"),
     });
     if (pieces.length === 1 && pieces[0]?.type === "container") return false;
 

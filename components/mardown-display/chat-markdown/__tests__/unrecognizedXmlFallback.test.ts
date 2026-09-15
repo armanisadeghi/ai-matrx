@@ -256,6 +256,120 @@ describe("unrecognized XML accumulator container boundaries", () => {
       }),
     ]);
   });
+
+  it("keeps kind-looking JSON literal inside a fenced generic XML payload", () => {
+    const source = `<report>
+  **Core tables** contain \`identity\` data.
+
+  | Table | Purpose |
+  | --- | --- |
+  | \`users\` | **Identity** |
+
+  <relationships>
+    - one user has many sessions
+    - one session belongs to a user
+  </relationships>
+
+  \`\`\`xml
+  <artifact><script>alert("never execute")</script></artifact>
+  {"__kind":"artifact","content":"stays literal"}
+  \`\`\`
+  <!-- comment with <unparsed> tags -->
+  <![CDATA[<opaque><still-not-a-tag /></opaque>]]>
+</report>`;
+
+    expect(splitContentIntoBlocksV2(source)).toEqual([
+      expect.objectContaining({
+        type: "code",
+        content: source,
+        language: "xml",
+      }),
+    ]);
+    expect(accumulated(source)).toEqual([
+      expect.objectContaining({
+        type: "code",
+        content: source,
+        language: "xml",
+      }),
+    ]);
+
+    for (const chunks of [[source], source.match(/[\s\S]{1,37}/g) ?? []]) {
+      const latest = new Map<string, RenderBlockPayload>();
+      const accumulator = new StreamBlockAccumulator(
+        "xml-fenced-kind-arrival-shape",
+        (payload) => {
+          latest.set(payload.block.blockId, payload.block);
+          return payload;
+        },
+      );
+      const dispatch = (action: unknown) => action;
+      for (const chunk of chunks) accumulator.ingest(chunk, dispatch);
+      accumulator.finalize(dispatch);
+
+      const blocks = [...latest.values()]
+        .filter((block) => block.content)
+        .sort((a, b) => a.blockIndex - b.blockIndex)
+        .map(renderBlockToContentBlock);
+      expect(blocks).toEqual([
+        expect.objectContaining({
+          type: "code",
+          content: source,
+          language: "xml",
+        }),
+      ]);
+    }
+  });
+
+  it("keeps an inner kind-looking fence literal inside an outer XML fence", () => {
+    const xml = `<report id="touch-proof">
+  <section name="visible">
+**Bold proof** and \`inline-proof\`
+
+| Field | Value |
+| --- | --- |
+| identity | preserved |
+
+\`\`\`xml
+<script>window.__XML_SCRIPT_EXECUTED__ = true;</script>
+<literal-rich-payload />
+{"__kind":"artifact","safe":true}
+\`\`\`
+
+<!-- comment with <unparsed> tags -->
+<![CDATA[<opaque><still-not-a-tag /></opaque>]]>
+  </section>
+</report>`;
+    const source = `\`\`\`\`xml\n${xml}\n\`\`\`\``;
+
+    expect(splitContentIntoBlocksV2(source)).toEqual([
+      expect.objectContaining({
+        type: "code",
+        content: xml,
+        language: "xml",
+      }),
+    ]);
+
+    const latest = new Map<string, RenderBlockPayload>();
+    const accumulator = new StreamBlockAccumulator(
+      "outer-xml-fence-literal-kind",
+      (payload) => {
+        latest.set(payload.block.blockId, payload.block);
+        return payload;
+      },
+    );
+    const dispatch = (action: unknown) => action;
+    for (const chunk of source.match(/[\s\S]{1,29}/g) ?? []) {
+      accumulator.ingest(chunk, dispatch);
+    }
+    accumulator.finalize(dispatch);
+    expect([...latest.values()].filter((block) => block.content)).toEqual([
+      expect.objectContaining({
+        type: "code",
+        content: xml,
+        data: { language: "xml" },
+      }),
+    ]);
+  });
 });
 
 it("keeps same-line trailing prose outside the streamed generic XML block", () => {
