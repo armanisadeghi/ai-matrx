@@ -3,7 +3,7 @@ type: Reference
 title: "data-to-kinds — Stage A (Distill)"
 description: "The Stage A (Distill, aidream) procedure, steps 0-10: blast radius, real captures, shape tables, @kind models, adapters, publish, demo endpoint; read it when you are Stage A of a run. Companion to the data-to-kinds skill."
 tags: [data-to-kinds, skills, stage-a]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-14T00:00:00Z
 ---
 
 # Stage A — Distill (aidream)
@@ -30,7 +30,9 @@ timestamp: 2026-09-10T00:00:00Z
    § four consumer surfaces — **read it, do not improvise this step**. In short: code (all repos)
    is one surface; the others are DB rows (`mandate.definition.output_kind` and
    `mandate.provision.derived_input_kind`, joined on `provision_key` — `agent.mandate` no longer
-   exists, verified live 2026-09-10; `content_ir.kind_component`, `workflow.trigger.kind`), persisted history
+   exists, verified live 2026-09-14; `content_ir.kind_component`; saved `workflow.definition` steps
+   whose `data.trigger_kind` subscribes to a kind — never `workflow.trigger`, whose `kind` column is
+   the trigger TYPE, measured live 2026-09-14 as `cron`/`event`/`webhook` only), persisted history
    (`workflow.node_outcome`, `node_data_slot`, `hindsight.replay_step`, `kind_instance`/
    `kind_example`), and generated artifacts (`.gen.ts`, compiled mirrors, matrx-extend). **And a
    FIFTH, found 2026-08-25 after four were called complete: DATABASE FUNCTIONS AND TRIGGERS** —
