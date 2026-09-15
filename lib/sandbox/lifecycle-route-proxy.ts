@@ -29,12 +29,18 @@ function sameUuid(left: unknown, right: string): boolean {
 
 /** Tombstones cannot start work, but an exact already-issued receipt may rejoin. */
 export async function hasExactLifecycleReceipt(target: SandboxLifecycleTarget, operationId: string, kind: LifecycleKind): Promise<boolean> {
+  return (await readExactLifecycleReceipt(target, operationId, kind)) !== null;
+}
+
+/** Reads the immutable receipt used to authorize recovery; malformed identity fails closed. */
+export async function readExactLifecycleReceipt(target: SandboxLifecycleTarget, operationId: string, kind: LifecycleKind): Promise<{ graceful: boolean } | null> {
   try {
     const response = await fetch(`${target.orchestrator.url}/sandboxes/${target.sandboxId}/lifecycle-operations/${operationId}`, { headers: orchestratorJsonHeaders(target.orchestrator) });
     if (!response.ok) return false;
     const payload: unknown = await response.json();
     if (!payload || typeof payload !== "object") return false;
     const receipt = payload as Record<string, unknown>;
-    return sameUuid(receipt.row_id, target.rowId) && receipt.sandbox_id === target.sandboxId && sameUuid(receipt.operation_id, operationId) && receipt.kind === kind;
-  } catch { return false; }
+    if (!sameUuid(receipt.row_id, target.rowId) || receipt.sandbox_id !== target.sandboxId || !sameUuid(receipt.operation_id, operationId) || receipt.kind !== kind || typeof receipt.graceful !== "boolean") return null;
+    return { graceful: receipt.graceful };
+  } catch { return null; }
 }
