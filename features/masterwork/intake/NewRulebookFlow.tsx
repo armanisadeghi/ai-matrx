@@ -60,6 +60,10 @@ import {
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
@@ -761,14 +765,20 @@ export function NewRulebookFlow() {
                 Back
               </Link>
             </Button>
-            <Button
+            {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+            <GatedActionButton
               onClick={handleContinue}
-              disabled={!goal.trim()}
+              reason={firstBlockingReason([
+                {
+                  when: !goal.trim(),
+                  reason: "Say what you're trying to build to continue",
+                },
+              ])}
               className="min-h-[44px] gap-2 px-6"
             >
               Continue
               <ArrowRight className="h-4 w-4" />
-            </Button>
+            </GatedActionButton>
           </div>
         </div>
       ) : (

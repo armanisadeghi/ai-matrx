@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { Field } from "@/components/official/Field";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -388,17 +393,28 @@ function BuildWindowInner({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="masterwork-name">Masterwork name</Label>
+          {/*
+            THE EMPTY-LOOKS-EMPTY RULE (W2, 2026-09-15). This field's
+            placeholder is a value-shaped suggestion ("<Rulebook> Masterwork"),
+            which is exactly the shape that read as filled-in and left the
+            Build silently disabled. `Field` gets the live value so an empty
+            required field is dashed, italicised and captioned as empty.
+          */}
+          <Field
+            label="Masterwork name"
+            htmlFor="masterwork-name"
+            required
+            value={name}
+          >
             <Input
               id="masterwork-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={fallbackName}
+              placeholder={`e.g. ${fallbackName}`}
               maxLength={255}
               required
             />
-          </div>
+          </Field>
 
           <div className="space-y-2">
             <Label>What will someone give this Masterwork?</Label>
@@ -478,21 +494,34 @@ function BuildWindowInner({
             </Button>
           </>
         ) : (
-          <Button
+          /*
+            A DISABLED PRIMARY ACTION SAYS WHY (W2, 2026-09-15). `running` stays
+            a plain `disabled` — the label already reads "Building…", which is
+            honest about itself. Every state where the EXPERT must do something
+            first becomes a sentence they can act on.
+          */
+          <GatedActionButton
             size="sm"
             className="h-7"
             onClick={build}
-            disabled={
-              running ||
-              !rulebook ||
-              !name.trim() ||
-              approvedCount === 0 ||
-              (chosenKind === "generate" && !deliverableIsValid)
-            }
+            disabled={running}
+            reason={firstBlockingReason([
+              { when: !rulebook, reason: "Still loading this Rulebook" },
+              { when: !name.trim(), reason: "Name your Masterwork to build it" },
+              {
+                when: approvedCount === 0,
+                reason: "Approve at least one rule to build it",
+              },
+              {
+                when: chosenKind === "generate" && !deliverableIsValid,
+                reason: "Say what this Masterwork creates to build it",
+              },
+            ])}
+            reasonClassName="max-w-[18rem] text-right"
           >
             <Hammer className="h-3.5 w-3.5" />
             {running ? "Building…" : "Build the Masterwork"}
-          </Button>
+          </GatedActionButton>
         )}
       </div>
     </div>

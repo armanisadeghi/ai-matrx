@@ -32,6 +32,10 @@
 import { useState } from "react";
 import { Check, HelpCircle, MessagesSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { Badge } from "@/components/ui/badge";
@@ -285,17 +289,24 @@ export function OpenQuestionsCard({
                         className="text-xs"
                       />
                       <div className="flex flex-wrap gap-2">
-                        <Button
+                        {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+                        <GatedActionButton
                           size="sm"
                           className="h-7"
-                          disabled={isBusy || draft.trim().length === 0}
+                          disabled={isBusy}
+                          reason={firstBlockingReason([
+                            {
+                              when: draft.trim().length === 0,
+                              reason: "Write your answer to save it",
+                            },
+                          ])}
                           onClick={() =>
                             void settle(tension, "answered", draft.trim())
                           }
                         >
                           <Check className="h-3.5 w-3.5" />
                           Save my answer
-                        </Button>
+                        </GatedActionButton>
                         <Button
                           size="sm"
                           variant="ghost"

@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { FileUp, RotateCcw, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
@@ -910,13 +914,20 @@ export function IngestSourceDialog({
                 onOpenChange(false);
               }}
             />
-            <Button
+            {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+            <GatedActionButton
               onClick={() => void ingest()}
-              disabled={
-                running ||
-                (monologue && !file) ||
-                (!timeline && !monologue && shape === "file" && !file)
-              }
+              disabled={running}
+              reason={firstBlockingReason([
+                {
+                  when: monologue && !file,
+                  reason: "Record what you'd say (or upload a recording) to distill it",
+                },
+                {
+                  when: !timeline && !monologue && shape === "file" && !file,
+                  reason: "Choose a file to distill",
+                },
+              ])}
             >
               {running
                 ? "Distilling…"
@@ -925,7 +936,7 @@ export function IngestSourceDialog({
                   : monologue
                     ? "Distill what I said"
                     : "Distill rules"}
-            </Button>
+            </GatedActionButton>
           </DialogFooter>
         ) : null}
       </DialogContent>

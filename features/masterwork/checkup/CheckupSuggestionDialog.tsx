@@ -31,6 +31,10 @@ import { BrainCircuit, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -303,9 +307,16 @@ export function CheckupSuggestionDialog({
               Set it aside
             </Button>
           ) : mode === "improve" ? (
-            <Button
+            /* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */
+            <GatedActionButton
               onClick={() => void submitImprove()}
-              disabled={improve.isRunning || !guidance.trim()}
+              disabled={improve.isRunning}
+              reason={firstBlockingReason([
+                {
+                  when: !guidance.trim(),
+                  reason: "Say what should be different to rewrite it",
+                },
+              ])}
             >
               {improve.isRunning ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -313,7 +324,7 @@ export function CheckupSuggestionDialog({
                 <BrainCircuit className="h-4 w-4" />
               )}
               Rewrite it
-            </Button>
+            </GatedActionButton>
           ) : (
             <Button onClick={saveEdit}>Save my version</Button>
           )}

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { ExternalLink, FileUp, BrainCircuit, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AgentCredit } from "../AgentCredit";
 import {
@@ -814,12 +818,19 @@ export function ChatImportDialog({
                 {preparing ? "Reading…" : "Read the export"}
               </Button>
             ) : tab === "paste" ? (
-              <Button
+              /* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */
+              <GatedActionButton
                 onClick={() => void preparePaste()}
-                disabled={running || text.trim().length < 40}
+                disabled={running}
+                reason={firstBlockingReason([
+                  {
+                    when: text.trim().length < 40,
+                    reason: "Paste at least 40 characters to import",
+                  },
+                ])}
               >
                 {preparing ? "Reading…" : "Read the conversation"}
-              </Button>
+              </GatedActionButton>
             ) : null}
           </DialogFooter>
         ) : null}
