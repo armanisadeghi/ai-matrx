@@ -57,6 +57,16 @@ sleep 0.7
 rc=$(q $P --file sut.py --old '"Accept": "json"' --new '"Accept": "xml"' --expect red --must-mention test_site_header_is_sent -- $PT)
 wait
 check "lock serializes, both plants ok, file intact" "$rc/$(cat bg.rc)/$(git status --short sut.py | wc -l | tr -d ' ')" "0/0/0"
+# 6b plants on DIFFERENT files in one repo also serialize (repo-wide lock)
+cat > other.py <<'EOF'
+def other(): return 1
+EOF
+git add other.py && git commit -qm other
+( $P --file other.py --old 'return 1' --new 'return 2' --expect green -- python3 -c "import time; time.sleep(3)" >/dev/null 2>&1 ) &
+sleep 0.7
+out=$($P --file sut.py --old 'if duration_ms <= 0:' --new 'if duration_ms < 0:' --expect red --must-mention test_zero_duration_is_refused -- $PT 2>&1)
+wait
+check "different files in one repo serialize" "$(print -r -- $out | grep -c 'waiting for plant lock')" 1
 # 7 a peer sweep commits the live mutation: exit 5 and logged
 print -r -- "#!/bin/zsh
 git add sut.py && git commit -qm 'wip: peer sweep' >/dev/null
