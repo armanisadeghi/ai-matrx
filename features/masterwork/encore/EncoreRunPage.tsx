@@ -26,6 +26,7 @@ import { runHref } from "@/features/workflow-runtime/run-doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
+import { getBenchProof, type BenchProofState } from "./benchProof";
 import {
   getEncoreMasterwork,
   listMyEncoreRuns,
@@ -61,6 +62,9 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const [runs, setRuns] = useState<EncoreRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  // THE PROOF is a separate question from the quick check, and it is asked out
+  // loud: the panel shows the bench verdict, or says plainly there is none.
+  const [bench, setBench] = useState<BenchProofState>({ status: "loading" });
 
   const refreshRuns = useCallback(() => {
     listMyEncoreRuns(masterworkId)
@@ -97,6 +101,30 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   useEffect(() => {
     refreshRuns();
   }, [refreshRuns]);
+
+  // The Bench is asked for by RULEBOOK, so it can only be asked once the
+  // Masterwork has loaded. A viewer who cannot read the Rulebook gets the
+  // "can't tell from here" sentence rather than a false "no proof".
+  const rulebookId = masterwork?.rulebook?.id ?? null;
+  useEffect(() => {
+    let cancelled = false;
+    if (!rulebookId) {
+      setBench({
+        status: "unavailable",
+        reason:
+          "Only people who can open this Masterwork's Rulebook can see whether a bench trial exists for it.",
+        canRunHere: false,
+      });
+      return;
+    }
+    setBench({ status: "loading" });
+    void getBenchProof(rulebookId).then((state) => {
+      if (!cancelled) setBench(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rulebookId]);
 
   if (loading) {
     return (
@@ -214,6 +242,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
           score={masterwork.auditionScore}
           verdict={masterwork.auditionVerdict}
           auditionedAt={masterwork.auditionedAt}
+          bench={bench}
         />
 
         <div className="mt-4 border-t border-border pt-4">

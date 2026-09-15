@@ -260,6 +260,26 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-15` — 🚨 **A TWO-ARM COMPARISON IS NEVER THE PROOF.** `encore/AuditionProof.tsx` rendered
+  "Expert match {N}/100", called itself THE PROOF in its own header and described the vanilla arm as
+  "the head-to-head against a plain AI"; the Encore run page and the browse list carried the same
+  words. Under the doctrine (`common-docs/systems/masterwork/doctrine/CORE.md` §6, and §9's standing
+  verdict of 2026-09-14 that the shipped Audition's score is *not* proof and is replaced by the
+  bench) proof is a logged five-arm Bench run — A0/A1/A2/B/C/GT, a blind panel the expert's own
+  withheld work must win, dollars and seconds per arm, and a claim naming the arm and the budget.
+  Now: the score reads **"Quick check: N/100 against the expert's published work"** everywhere
+  (panel, card, browse column header), and beside it the component renders the Bench answer — the
+  record's own headline with the arm, the budget multiple, the blind-panel result, our arm's cost
+  and seconds and the report path when one exists, or a plain **"No bench proof yet"** with what a
+  proof is and where the Bench runs when none does. A viewer who cannot read the Rulebook is told
+  "can't tell from here" rather than a false no. NO DEAD CONTROL: the Bench has no screen yet, so
+  the panel says it runs from the command line instead of showing a button that would do nothing.
+  Server half: `GET /masterworks/{rulebook_id}/bench` (aidream
+  `services/masterworks/bench_proof.py`, reading the bench row when the operation vocabulary admits
+  one and the Bench's own file index until then), and every Audition sentence now ends "Not a proof;
+  run the Bench." Guards: `encore/AuditionProof.test.tsx` (five legs, proven red against the pre-fix
+  component) and aidream's `masterworks/tests/test_audition_claims_honest.py`.
+
 - `2026-09-14` — **The `rule_draft` write target has a REGISTERED value contract.** `masterwork_rule_draft`
   (`content_ir.kind_definition` `fc6eba46-709b-4cfd-bde2-a264420f18a8`, active) is registered from the
   ONE shared validator `agent-context/ruleDraftInput.ts` — same single required field (`mode`), same
@@ -401,7 +421,9 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   own answers still arrive through the ONE existing interrupt path; no spinner-only state). The
   desk's terminal `unfolding_ruling` has its own component. The Audition gained the "A case it has
   never seen" tab: desks × sealed cases × an optional vanilla arm told everything at once, scored
-  into a per-case table plus the desk-beats-vanilla headline. Guards: `TryMasterworkBox.test.tsx`
+  into a per-case table plus a desk-vs-plain-model headline (which since 2026-09-15 states that a
+  two- or three-arm comparison is a quick check, never proof — see the entry at the top of this
+  list). Guards: `TryMasterworkBox.test.tsx`
   (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-13` — 🚨 **A triage session belongs to ONE Rulebook (Bugbot MEDIUM).** `RulebookDetailPage` is a single component instance reused as the route param changes — which is exactly why the ingest session drops on an id change — but the sort door kept a bare `useState(false)`, and `TriageDraftsDialog` kept `keep` / `set aside` / the preview switch in its own state at a stable position in the tree. So opening "Sort the drafts" on one Rulebook and moving to another left the dialog on screen holding the purpose she had typed for the Rulebook she left, and starting it there would have sorted THESE drafts against THAT purpose. Two halves. (1) The open flag now lives in `triage/triageSession.ts` (`useTriageDialogSession`), the same shape as `useIngestDialogSession`: stored WITH the id it was opened for and dropped during render the instant they differ — not merely filtered, or coming back would match again and reopen an empty dialog by itself. (2) The dialog is mounted `key={rulebook.id}`. A remount rather than an in-dialog reset, because the form fields are not the only state that carries: `useTriageRun` → `useDurableRun` reads its pointer ONCE per mount (`rejoinedRef`) and never re-reads it when the key changes, so without the remount a sort running on the Rulebook she left kept showing on the one she arrived at while that Rulebook's own run stayed invisible. The pointer key itself was already correct (`triage:<rulebookId>`). Tests in `triage/__tests__/triage-session-per-rulebook.test.tsx`: a purpose typed on Rulebook A is gone (replaced by B's own intake goal) when the sort is reopened on B, the dialog does not reopen itself on returning to A, a live sort shows only on the Rulebook it runs for, plus source-level guards that the page holds no bare boolean and does key the dialog. All five proven RED against the pre-fix shape.

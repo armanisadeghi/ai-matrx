@@ -54,11 +54,14 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
   },
   {
     id: "audition_score",
-    label: "Expert match",
+    // A QUICK CHECK, never "Expert match" and never proof: the Audition is two
+    // arms against one reference (CORE.md §6). The proof is a Bench run, shown
+    // on the run page beside this number.
+    label: "Quick check",
     column: {
       id: "audition_score",
       accessorKey: "auditionScore",
-      header: "Expert match",
+      header: "Quick check",
       filter: false,
       cell: (row) =>
         row.auditionScore !== null ? (

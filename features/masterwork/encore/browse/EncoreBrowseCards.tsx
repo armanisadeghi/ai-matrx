@@ -60,7 +60,7 @@ export function EncoreBrowseCards({
                       variant="outline"
                       className="px-1.5 py-0 text-[10px]"
                     >
-                      Match {Math.round(row.auditionScore)}/100
+                      Quick check {Math.round(row.auditionScore)}/100
                     </Badge>
                   ) : null}
                 </div>
