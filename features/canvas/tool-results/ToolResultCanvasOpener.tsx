@@ -32,6 +32,8 @@ import {
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { createCanvasRevealMemory } from "@/features/canvas/revealMemory";
 import {
   readToolResultCanvasOffer,
@@ -45,25 +47,14 @@ const MAX_OFFERED = 8;
 const memory = createCanvasRevealMemory("matrx.toolResultCanvas.");
 
 /**
- * The result a persisted row carries. `outputPreview` is the structured copy;
- * `output` is the serialized one. Reading both is what keeps a RELOADED
- * conversation's documents reachable instead of only a live turn's.
+ * The result a persisted row carries — read through the SAME converter the
+ * transcript renders from (`cxToolCallToLifecycleEntry`, with `outputPreview`
+ * as the slim-row fallback it already defines). No second parser: a wire whose
+ * idea of "the result" drifts from the card's is how the two disagree about
+ * what a call produced.
  */
-function readPersistedResult(record: {
-  outputPreview?: unknown;
-  output?: unknown;
-}): unknown {
-  if (record.outputPreview && typeof record.outputPreview === "object") {
-    return record.outputPreview;
-  }
-  if (typeof record.output === "string" && record.output.trim().startsWith("{")) {
-    try {
-      return JSON.parse(record.output);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+function readPersistedResult(record: CxToolCallRecord): unknown {
+  return cxToolCallToLifecycleEntry(record).result ?? record.outputPreview ?? null;
 }
 
 export function ToolResultCanvasOpener({
