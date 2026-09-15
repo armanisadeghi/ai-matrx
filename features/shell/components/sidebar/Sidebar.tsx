@@ -15,6 +15,7 @@
 import NavItem from "./NavItem";
 import NavFlyoutGroup from "./NavFlyoutGroup";
 import FavoritesNavGroup from "./FavoritesNavGroup";
+import Link from "next/link";
 import AdminSidebarSection from "./admin-menu/AdminSidebarSection";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
@@ -25,6 +26,8 @@ import {
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
+import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
+import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 
 interface SidebarProps {
   pathname: string;
@@ -33,6 +36,7 @@ interface SidebarProps {
 
 export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
+  const settingsRoute = isUserSettingsPath(pathname);
   return (
     <aside className="shell-sidebar">
       {/* Brand Section — Route header override + default toggle fallback */}
@@ -44,13 +48,27 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
 
         {/* Default: collapse toggle — hidden when route header is active */}
         <div className="shell-sidebar-brand-default">
-          <label
-            htmlFor="shell-sidebar-toggle"
-            className="shell-sidebar-brand-toggle shell-tactile"
-            aria-label="Toggle sidebar"
-          >
-            <ShellIcon name="PanelLeft" size={18} strokeWidth={1.75} />
-          </label>
+          {settingsRoute ? (
+            <Link
+              href={SETTINGS_BASE}
+              className="shell-sidebar-settings-home shell-tactile"
+              aria-current="page"
+              title="Settings"
+            >
+              <span className="shell-sidebar-brand-toggle shell-sidebar-brand-toggle-static">
+                <ShellIcon name="PanelLeft" size={18} strokeWidth={1.75} />
+              </span>
+              <span className="shell-sidebar-brand-logo">Settings</span>
+            </Link>
+          ) : (
+            <label
+              htmlFor="shell-sidebar-toggle"
+              className="shell-sidebar-brand-toggle shell-tactile"
+              aria-label="Toggle sidebar"
+            >
+              <ShellIcon name="PanelLeft" size={18} strokeWidth={1.75} />
+            </label>
+          )}
         </div>
       </div>
 

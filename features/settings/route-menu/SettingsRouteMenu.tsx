@@ -66,15 +66,6 @@ function SettingsDesktopMenu({
 
   return (
     <nav className="settings-route-menu" aria-label="Settings">
-      <Link
-        href={SETTINGS_BASE}
-        className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "settings-route-menu-home", !activeTabId && "shell-active-pill")}
-        aria-current={!activeTabId ? "page" : undefined}
-        title="Settings"
-      >
-        <span className="shell-nav-icon"><Settings size={ROUTE_MENU_ICON_SIZE} strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH} /></span>
-        <span className="shell-nav-label settings-route-menu-label">Settings</span>
-      </Link>
       <SettingsNavigationSearch value={query} onValueChange={setQuery} />
       <div className="settings-route-menu-tree">
         {query && controlResults.length > 0 ? <SettingsControlSearchResults results={controlResults} /> : null}
