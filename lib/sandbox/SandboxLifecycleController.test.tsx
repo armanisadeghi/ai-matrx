@@ -6,6 +6,8 @@ import { createRoot } from "react-dom/client";
 import reducer, { applyView, hydrateActor } from "@/lib/redux/slices/sandboxLifecycleSlice";
 import { SandboxLifecycleController } from "./SandboxLifecycleController";
 
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 const mockToastSuccess = jest.fn<string, [unknown, unknown?]>(() => "success-toast");
 const mockToastWarning = jest.fn<string, [unknown, unknown?]>(() => "warning-toast");
 const mockToastError = jest.fn<string, [unknown, unknown?]>(() => "error-toast");
