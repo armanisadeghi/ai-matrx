@@ -78,6 +78,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { catalogConnectionPresentation } from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
   type ManualHeaderInput,
@@ -136,6 +137,11 @@ const STATUS_CONFIG: Record<
       "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
     icon: <AlertCircle className="h-3 w-3" />,
   },
+  checking: {
+    label: "Checking…",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+  },
   error: {
     label: "Error",
     className: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20",
@@ -189,6 +195,11 @@ export default function IntegrationsPage() {
   // not just the MCP catalog's.
   const github = useGitHubConnection();
   const googleInventory = useGoogleConnectionInventory();
+  const githubStatus = github.loading
+    ? undefined
+    : github.inventory.connection?.status ?? null;
+  const catalogPresentation = (entry: McpCatalogEntry) =>
+    catalogConnectionPresentation(entry, githubStatus, github.loading);
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -211,7 +222,7 @@ export default function IntegrationsPage() {
 
   if (viewFilter === "connected") {
     filtered = filtered.filter(
-      (entry) => entry.connectionStatus === "connected",
+      (entry) => catalogPresentation(entry).connected,
     );
   } else if (viewFilter === "available") {
     filtered = filtered.filter(
@@ -231,8 +242,8 @@ export default function IntegrationsPage() {
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    const aConn = a.connectionStatus === "connected" ? 0 : 1;
-    const bConn = b.connectionStatus === "connected" ? 0 : 1;
+    const aConn = catalogPresentation(a).connected ? 0 : 1;
+    const bConn = catalogPresentation(b).connected ? 0 : 1;
     if (aConn !== bConn) return aConn - bConn;
     if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
     const statusOrder = {
@@ -254,7 +265,7 @@ export default function IntegrationsPage() {
   }
 
   const connectedCount = catalog.filter(
-    (entry) => entry.connectionStatus === "connected",
+    (entry) => catalogPresentation(entry).connected,
   ).length;
 
   const githubConnectedCount =
@@ -639,6 +650,7 @@ export default function IntegrationsPage() {
               <ServerCard
                 key={entry.serverId}
                 entry={entry}
+                connectionPresentation={catalogPresentation(entry)}
                 isExpanded={expandedId === entry.serverId}
                 onToggleExpand={() =>
                   setExpandedId(
@@ -671,6 +683,7 @@ export default function IntegrationsPage() {
 
 interface ServerCardProps {
   entry: McpCatalogEntry;
+  connectionPresentation: ReturnType<typeof catalogConnectionPresentation>;
   isExpanded: boolean;
   onToggleExpand: () => void;
   isConnecting: boolean;
@@ -687,6 +700,7 @@ interface ServerCardProps {
 
 function ServerCard({
   entry,
+  connectionPresentation,
   isExpanded,
   onToggleExpand,
   isConnecting,
@@ -699,12 +713,16 @@ function ServerCard({
 }: ServerCardProps) {
   const isComingSoon = entry.serverStatus === "coming_soon";
   const isCommunity = entry.serverStatus === "community";
-  const isConnected = entry.connectionStatus === "connected";
+  const isConnected = connectionPresentation.connected;
   const isActive =
     entry.serverStatus === "active" || entry.serverStatus === "beta";
   const hasEndpoint = !!entry.endpointUrl;
   const isStdioOnly = entry.transport === "stdio" && !hasEndpoint;
-  const canConnect = (isActive || isCommunity) && hasEndpoint && !isConnected;
+  const canConnect =
+    (isActive || isCommunity) &&
+    hasEndpoint &&
+    !isConnected &&
+    connectionPresentation.state !== "checking";
   const needsOAuth = entry.authStrategy === "oauth_discovery";
   const needsToken =
     entry.authStrategy === "bearer" || entry.authStrategy === "api_key";
@@ -712,8 +730,8 @@ function ServerCard({
 
   const transport = TRANSPORT_META[entry.transport] ?? TRANSPORT_META.http;
   const connectionStatus =
-    entry.connectionStatus && entry.connectionStatus !== "disconnected"
-      ? STATUS_CONFIG[entry.connectionStatus]
+    connectionPresentation.state && connectionPresentation.state !== "disconnected"
+      ? STATUS_CONFIG[connectionPresentation.state]
       : null;
 
   // Inline token form state

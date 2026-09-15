@@ -25,6 +25,7 @@ import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connecti
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 import { invokeMcpServerTool } from "@/features/agents/services/mcp-connections.service";
+import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 
 const EMPTY_MCP_TOOLS: McpToolSchema[] = [];
 
@@ -39,6 +40,10 @@ export function useMcpCatalog() {
   const catalog = useAppSelector(selectMcpCatalog);
   const status = useAppSelector(selectMcpCatalogStatus);
   const organizationId = useAppSelector(selectOrganizationId);
+  const github = useGitHubConnection();
+  const githubStatus = github.loading
+    ? undefined
+    : github.inventory.connection?.status ?? null;
 
   useEffect(() => {
     if (status === "idle") {
@@ -69,11 +74,14 @@ export function useMcpCatalog() {
         truth: deriveMcpConnectionState(entry, {
           availability: availability[entry.slug] ?? null,
           hasFirstPartyPath: mcpConnectionRouteFor(entry) === "github",
-          firstPartyStatus: undefined,
+          firstPartyStatus:
+            mcpConnectionRouteFor(entry) === "github"
+              ? githubStatus
+              : undefined,
         }),
         toolCount: availability[entry.slug]?.tool_count ?? null,
       })),
-    [catalog, availability],
+    [catalog, availability, githubStatus],
   );
 
   /**
@@ -110,6 +118,7 @@ export function useMcpCatalog() {
     serverStates,
     reauthServers,
     availabilityStatus,
+    firstPartyLoading: github.loading,
     refreshAvailability,
     status,
   };
