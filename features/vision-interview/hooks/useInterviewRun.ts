@@ -83,6 +83,51 @@ export interface ResumeInput {
   done?: boolean;
 }
 
+/** The honest sentence for a start stream that ended having said nothing. */
+export const SILENT_START_MESSAGE =
+  "The room never started — the server took the request but no run came back. Nothing you have said is lost; try Finish again.";
+
+/** What the inline start/resume NDJSON stream just told us, or null.
+ *
+ * Pure on purpose: this is the one place the room reads that wire, and the
+ * room's whole "is it working or is it dead" answer hangs off it. */
+export type InlineVerdict =
+  | { kind: "run_started"; runId: string }
+  | { kind: "failed"; message: string };
+
+export function interpretInlineEvent(event: unknown): InlineVerdict | null {
+  const wire = event as {
+    event?: string;
+    data?: {
+      event?: string;
+      run_id?: string;
+      message?: string;
+      user_message?: string;
+    };
+  } | null;
+  if (!wire || typeof wire !== "object") return null;
+  const inner = wire.data;
+  if (wire.event === "data") {
+    if (
+      (inner?.event === "interview_run_started" ||
+        inner?.event === "workflow_run_started") &&
+      typeof inner.run_id === "string" &&
+      inner.run_id
+    ) {
+      return { kind: "run_started", runId: inner.run_id };
+    }
+    return null;
+  }
+  if (wire.event === "error") {
+    const message =
+      inner?.user_message?.trim() ||
+      inner?.message?.trim() ||
+      "The room could not start the run, and the server did not say why.";
+    return { kind: "failed", message };
+  }
+  return null;
+}
+
 export function useInterviewRun(sessionId: string) {
   const dispatch = useAppDispatch();
   const runPhase = useAppSelector(selectRunPhase);
@@ -92,6 +137,10 @@ export function useInterviewRun(sessionId: string) {
   const hydrated = useAppSelector(selectRoomHydrated);
   // A second click while a call is in flight must not start a second run.
   const inFlightRef = useRef(false);
+  // Did THIS start/resume stream tell us anything terminal — a run_id or an
+  // error? A stream that ends having said neither is a silent failure, and the
+  // room says so rather than spinning (see runStream's tail).
+  const sawTerminalRef = useRef(false);
   // The SSE follower for the current run — armed EXACTLY ONCE per run_id and
   // aborted only on unmount or a genuine new run. Re-arming a live follower
   // aborts its SSE connection and replays the feed from seq 0, pushing stale
@@ -246,24 +295,32 @@ export function useInterviewRun(sessionId: string) {
 
   /**
    * Events on the inline NDJSON start/resume stream. It detaches almost
-   * immediately — the only load-bearing signal is the run_id, which arms
-   * the SSE follower.
+   * immediately — the load-bearing signals are the run_id (which arms the SSE
+   * follower) and a `fatal_error` the server sends when the start task crashed
+   * before a run ever existed.
+   *
+   * 🚨 THE ROOM MUST NEVER SIT ON "Working…" (wall W9, 2026-09-15). This
+   * handler used to `return` on every non-`data` event, so the server's
+   * `error` envelope — the ONE thing it sends when `start_session_run` raises
+   * before `run_store.create` — was dropped on the floor. `callApi` resolves
+   * happily (HTTP 200, stream consumed to its end), `runStream` reported the
+   * request ACCEPTED, and the phase stayed `starting` forever: the Finish
+   * dialog showed "Handing the interview to the room… Working…" for nine
+   * minutes over a run that did not exist and never would. The server was
+   * honest; the room deafened itself.
    */
   const handleInlineEvent = (event: TypedStreamEvent) => {
-    const wire = event as unknown as {
-      event?: string;
-      data?: { event?: string; run_id?: string };
-    };
-    if (wire.event !== "data") return;
-    const inner = wire.data;
-    if (
-      (inner?.event === "interview_run_started" ||
-        inner?.event === "workflow_run_started") &&
-      typeof inner.run_id === "string"
-    ) {
-      dispatch(runStarted({ runId: inner.run_id }));
-      startFollowing(inner.run_id);
+    const verdict = interpretInlineEvent(event);
+    if (!verdict) return;
+    if (verdict.kind === "failed") {
+      sawTerminalRef.current = true;
+      dispatch(runFailed({ message: verdict.message }));
+      toastErrorAlreadyCaptured(verdict.message);
+      return;
     }
+    sawTerminalRef.current = true;
+    dispatch(runStarted({ runId: verdict.runId }));
+    startFollowing(verdict.runId);
   };
 
   const adopt = () =>
@@ -300,6 +357,7 @@ export function useInterviewRun(sessionId: string) {
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
     inFlightRef.current = true;
+    sawTerminalRef.current = false;
     dispatch(runStarting());
     try {
       const result = await dispatch(call());
@@ -312,6 +370,15 @@ export function useInterviewRun(sessionId: string) {
           : error.message ?? "The interview run could not start.";
         dispatch(runFailed({ message }));
         toastErrorAlreadyCaptured(message);
+        return false;
+      }
+      // THE BELT. The stream ended cleanly and said nothing terminal — no
+      // run_id, no error. There is no run, so nothing will ever arrive on the
+      // SSE feed and no phase change can come from anywhere else. Say so.
+      if (!sawTerminalRef.current) {
+        const message = SILENT_START_MESSAGE;
+        dispatch(runFailed({ message }));
+        toast.error(message);
         return false;
       }
       return true;
