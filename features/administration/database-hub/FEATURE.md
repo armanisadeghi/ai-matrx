@@ -36,8 +36,11 @@ with operational status and the categorized tool registry.
 - **One SQL execution path:** the enhanced editor and legacy dashboard call
   `useDatabaseAdmin.executeQuery`; the notebook calls the same
   `executeSqlQuery` Server Action directly. Only that action invokes
-  `execute_admin_query`. The surface contract test censuses all three callers
-  and rejects direct client RPCs plus the retired timer/cancel path.
+  `execute_admin_query`. The Server Action requires a freshly verified
+  super-admin before it creates the service-role client; the route group's
+  any-admin admission is never treated as authorization for privileged SQL.
+  The surface contract test censuses all three callers and rejects direct
+  client RPCs plus the retired timer/cancel path.
 - Browser storage entering the notebook is reconstructed only after its blocks,
   variables, and merge configuration pass runtime shape checks. Query result
   rows are narrowed as plain objects, and saved query history is reconstructed
@@ -45,6 +48,8 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-09-15 — Privileged SQL execution now re-checks super-admin authority at
+  the Server Action before creating its service-role database client.
 - 2026-09-14 — The database frame's sole terminal scroll owner now carries
   `scroll-page-end-space`, keeping the final meaningful result clear of fixed
   bottom chrome at every viewport width.

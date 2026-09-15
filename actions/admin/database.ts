@@ -8,6 +8,7 @@
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
+import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult<T = unknown> =
@@ -64,6 +65,10 @@ export async function getPermissions(): Promise<ActionResult<unknown[]>> {
 
 export async function executeSqlQuery(query: string): Promise<ActionResult> {
   try {
+    // The (admin) route group intentionally admits every admin level. This
+    // Server Action crosses into a service-role client, so it must enforce its
+    // own super-admin boundary before that privileged client exists.
+    await requireSuperAdmin();
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("execute_admin_query", {
       query,
