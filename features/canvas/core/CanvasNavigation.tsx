@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isLiveSourcePaneType } from "@/features/canvas/liveSourceReachability";
 
 interface CanvasNavigationProps {
   items: CanvasItem[];
@@ -154,18 +155,27 @@ export function CanvasNavigation({
                     </div>
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(item.id);
-                    }}
-                    aria-label={`Remove ${getItemLabel(item, index)}`}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
+                  {/* A live pane (the Sandbox, the Cloud Browser) is a DOOR
+                      to something still running, not a stored copy — its
+                      surface re-offers it for as long as the box or the
+                      browser exists, so a Remove here would visibly lose its
+                      own fight. Absent, never dead (law 4); the pane header's
+                      "Put away canvas" is the honest way to dismiss one, and
+                      that choice is remembered. */}
+                  {!isLiveSourcePaneType(item.content?.type) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(item.id);
+                      }}
+                      aria-label={`Remove ${getItemLabel(item, index)}`}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
                 </DropdownMenuItem>
               ))}
             </div>

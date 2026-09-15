@@ -24,7 +24,12 @@
 import { useEffect, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectHandoff, selectRun } from "../redux/selectors";
-import { useOpenCloudBrowserCanvas } from "../hooks/useOpenCloudBrowserCanvas";
+import { selectCloudBrowserRunLive } from "../redux/cloudBrowserSlice";
+import {
+  useOfferCloudBrowserCanvas,
+  useOpenCloudBrowserCanvas,
+} from "../hooks/useOpenCloudBrowserCanvas";
+import { keepLiveSourceReachable } from "@/features/canvas/liveSourceReachability";
 
 export function CloudBrowserHandoffCanvasOpener({
   conversationId,
@@ -35,19 +40,52 @@ export function CloudBrowserHandoffCanvasOpener({
 } = {}): null {
   const handoff = useAppSelector(selectHandoff);
   const run = useAppSelector(selectRun);
+  const runIsLive = useAppSelector(selectCloudBrowserRunLive);
   const openCanvas = useOpenCloudBrowserCanvas();
+  const offerCanvas = useOfferCloudBrowserCanvas();
   const openedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!handoff || handoff.state !== "requested") return;
-    if (openedFor.current === handoff.id) return;
-    openedFor.current = handoff.id;
-    openCanvas({
+    const pendingHandoff =
+      handoff && handoff.state === "requested" ? handoff : null;
+    const wantsScreen =
+      !!pendingHandoff && openedFor.current !== pendingHandoff.id;
+
+    // A live browser session is a LIVE SOURCE: nothing in the database can
+    // rebuild its pane, so while the run exists this surface keeps a door to
+    // it in the canvas switcher. Without that, a reload mid-run leaves the
+    // running browser reachable only by starting another one — the same class
+    // that stranded the Sandbox pane on 2026-09-15.
+    // A requested handoff is itself proof the session is live, so a slice that
+    // has the handoff but not yet the run row can still open the pane — this
+    // must never become a new way for the agent-initiated open to go missing.
+    const sourceExists = runIsLive || !!pendingHandoff;
+    const action = keepLiveSourceReachable(
+      wantsScreen ? "open" : "none",
+      sourceExists,
+    );
+    if (action === "none") return;
+
+    const opts = {
       initialProfileId: run?.profileId ?? undefined,
       runId: run?.id ?? undefined,
       conversationId,
-    });
-  }, [handoff, run?.id, run?.profileId, openCanvas, conversationId]);
+    };
+    if (action === "open" && pendingHandoff) {
+      openedFor.current = pendingHandoff.id;
+      openCanvas(opts);
+      return;
+    }
+    offerCanvas(opts);
+  }, [
+    handoff,
+    runIsLive,
+    run?.id,
+    run?.profileId,
+    openCanvas,
+    offerCanvas,
+    conversationId,
+  ]);
 
   return null;
 }

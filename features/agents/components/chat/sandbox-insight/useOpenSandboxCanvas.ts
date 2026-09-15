@@ -30,6 +30,7 @@ import {
   type CanvasContent,
 } from "@/features/canvas/redux/canvasSlice";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
+import { keepLiveSourceReachable } from "@/features/canvas/liveSourceReachability";
 
 export interface OpenSandboxCanvasOptions {
   /** The box to show — `sandbox_instances.id`. */
@@ -123,18 +124,25 @@ export interface SandboxCanvasDecisionInput {
 }
 
 /**
- * What the sandbox surface should do right now. Pure, so the four rules that
- * matter are pinned by tests rather than by reading a component:
+ * What the sandbox surface should do right now. Pure, so the rules that matter
+ * are pinned by tests rather than by reading a component:
  *
  *  1. No bound box → nothing exists. Never a control with nothing behind it.
  *  2. Bound but nothing has run → AVAILABLE, not visible. The canvas stays
  *     closed; the pane is one click away in the switcher.
  *  3. THE USER PUT IT AWAY → it stays away. Offered, never opened — including
  *     after the reload that used to resurrect it.
- *  4. First sandbox tool call, canvas showing nothing else → OPEN, the way
+ *  4. Revealed once already → OFFERED, never opened again. This used to be
+ *     `"none"`, and `"none"` meant the item was not even put in the switcher:
+ *     after a reload (canvas slice not persisted, reveal memory persisted) a
+ *     bound chat that also held a document showed ONLY the document, the
+ *     switcher stayed hidden at one item, and the live box had NO door left
+ *     (independent review, production `528560bbc8`, 2026-09-15). The rule now
+ *     lives once, in `keepLiveSourceReachable`.
+ *  5. First sandbox tool call, canvas showing nothing else → OPEN, the way
  *     Claude Code reveals its terminal the moment it runs a command.
- *  5. Canvas already showing a document / the browser, or the user turned
- *     auto-open off, or we already did it once → OFFER. Never hijack.
+ *  6. Canvas already showing a document / the browser, or the user turned
+ *     auto-open off → OFFER. Never hijack.
  */
 export function decideSandboxCanvasAction({
   bound,
@@ -144,10 +152,31 @@ export function decideSandboxCanvasAction({
   userClosed,
   canvasHasOtherContent,
 }: SandboxCanvasDecisionInput): SandboxCanvasAction {
-  if (!bound) return "none";
+  // A bound box IS the live source. Everything below decides only between
+  // showing the pane and merely offering it; the normalizer guarantees that a
+  // bound conversation can never end up with no Sandbox entry at all, and that
+  // an unbound one never grows a Sandbox entry with nothing behind it.
+  return keepLiveSourceReachable(
+    decideSandboxReveal({
+      toolRan,
+      autoOpen,
+      alreadyAutoOpened,
+      userClosed,
+      canvasHasOtherContent,
+    }),
+    bound,
+  );
+}
+
+/** The sandbox's OWN preference, before the reachability floor is applied. */
+function decideSandboxReveal({
+  toolRan,
+  autoOpen,
+  alreadyAutoOpened,
+  userClosed,
+  canvasHasOtherContent,
+}: Omit<SandboxCanvasDecisionInput, "bound">): SandboxCanvasAction {
   if (!toolRan) return "offer";
-  // Ahead of `alreadyAutoOpened`: a put-away pane must stay reachable in the
-  // switcher, so the answer is "offer", not "none".
   if (userClosed) return "offer";
   if (alreadyAutoOpened) return "none";
   if (!autoOpen) return "offer";

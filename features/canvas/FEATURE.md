@@ -126,6 +126,30 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-15` — **A LIVE PANE IS ALWAYS REACHABLE.** An independent reviewer
+  reloaded a bound chat that also held an agent-created document, clicked
+  Canvas, and got ONLY the document: `[data-canvas-switcher]` absent at one
+  item, and no control anywhere that reached the running Sandbox again
+  (production `528560bbc8`; row 1a4fbff1). Root cause: the canvas slice is
+  deliberately not persisted while the reveal memory IS, so after a reload
+  `alreadyAutoOpened` is true against an empty canvas — and
+  `decideSandboxCanvasAction` answered `"none"`, which meant the item was not
+  even OFFERED. The document took the single restored slot.
+  **The rule now lives once**, in `liveSourceReachability.ts`: a
+  NON_PERSISTABLE pane whose source is still live (`sandbox`, `cloud_browser`)
+  is ALWAYS at least offered, and a pane whose source does not exist is never
+  offered at all. Both the sandbox opener and the cloud-browser opener end
+  their decision in `keepLiveSourceReachable`; the browser pane is now offered
+  for the whole life of a run instead of only on a handoff. Put-away memory and
+  never-hijack are untouched — this forbids only the answer that makes a live
+  pane unreachable. The canvas history no longer offers **Remove** on a live
+  pane (`isLiveSourcePaneType`): its surface would put it straight back, and a
+  control that loses its own fight is the dead affordance law 4 forbids.
+  Guard: `features/canvas/__tests__/live-pane-reachability.test.tsx` (11 tests;
+  three mutations proven RED — no reachability floor, no source floor, and a
+  live pane offered Remove), plus the two stale `"none"` expectations in
+  `sandbox-canvas.test.tsx` corrected to `"offer"`.
+
 - `2026-09-14` — **Mobile presents one pane even when Redux remembers a
   desktop split.** `CanvasPane` now follows the rendered presentation: with
   two or more items a phone keeps the history switcher reachable and hides the

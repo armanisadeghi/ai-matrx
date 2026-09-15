@@ -231,10 +231,15 @@ describe("it opens on demand, and only when nothing else is on the canvas", () =
     );
   });
 
-  it("never re-opens behind the user after the first reveal", () => {
+  it("never re-opens behind the user after the first reveal — but stays OFFERED", () => {
+    // This used to expect "none", and "none" meant the item was never even put
+    // in the switcher. After a reload of a bound chat that also held a document
+    // (canvas slice not persisted, reveal memory persisted) the switcher stayed
+    // hidden at one item and the running box had no door left — independent
+    // review, production 528560bbc8, 2026-09-15.
     expect(
       decideSandboxCanvasAction({ ...base, alreadyAutoOpened: true }),
-    ).toBe("none");
+    ).toBe("offer");
   });
 
   it("fires on the sandbox tools and nothing else", () => {
@@ -324,9 +329,10 @@ describe("a put-away pane STAYS put away, across reloads", () => {
     const sourceId = sandboxCanvasSourceId(CONVERSATION_ID, SANDBOX_ROW_ID);
     writeSandboxCanvasMemory(sourceId, { autoOpened: true });
     expect(readSandboxCanvasMemory(sourceId).autoOpened).toBe(true);
+    // Not a first run — so not OPENED. Still offered, so still reachable.
     expect(
       decideSandboxCanvasAction({ ...base, alreadyAutoOpened: true }),
-    ).toBe("none");
+    ).toBe("offer");
   });
 
   it("re-opening clears the decision, so the pane behaves normally again", () => {
