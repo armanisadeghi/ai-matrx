@@ -14,6 +14,30 @@ interface EmailExportResult {
   error?: string;
 }
 
+const EXPORT_ATTACHMENT_EXTENSION = {
+  csv: "csv",
+  json: "json",
+  markdown: "md",
+} as const;
+
+const EXPORT_ATTACHMENT_CONTENT_TYPE = {
+  csv: "text/csv; charset=utf-8",
+  json: "application/json; charset=utf-8",
+  markdown: "text/markdown; charset=utf-8",
+} as const;
+
+function tableExportFilename(
+  tableName: string,
+  format: keyof typeof EXPORT_ATTACHMENT_EXTENSION,
+): string {
+  const slug = tableName
+    .normalize("NFKD")
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^[._-]+|[._-]+$/g, "")
+    .slice(0, 80);
+  return `${slug || "table-export"}.${EXPORT_ATTACHMENT_EXTENSION[format]}`;
+}
+
 /**
  * Convert markdown content to formatted HTML for email
  */
@@ -156,6 +180,13 @@ export async function emailTableExport(options: {
     subject,
     html: htmlContent,
     text: `Table Export: ${tableName}\nFormat: ${formatLabel}\n\n${displayContent}`,
+    attachments: [
+      {
+        filename: tableExportFilename(tableName, format),
+        content: Buffer.from(content, "utf8"),
+        contentType: EXPORT_ATTACHMENT_CONTENT_TYPE[format],
+      },
+    ],
   });
   
   if (result.success) {
@@ -367,4 +398,3 @@ export const notificationTemplates = {
     };
   },
 };
-
