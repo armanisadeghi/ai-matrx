@@ -88,6 +88,7 @@ export function TaskEditorCopyButtonsForDraft({
   return (
     <CopyButtons
       sourceId={`task:${current.taskId}`}
+      references={current.saved ? [{ id: current.taskId, label: "Copy task reference", noun: "task", items: [{ id: current.taskId, label: current.saved.title ?? "Task" }] }] : []}
       size={size}
       className={className}
       label={current.effective.title || "Task"}

@@ -1,5 +1,7 @@
 "use client";
 
+import { alchemyReferencePort } from "./alchemy-references";
+import { sendAlchemyEmail } from "./alchemy-email";
 import { startTransition, useLayoutEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
@@ -312,11 +314,15 @@ function AlchemyCapabilitiesGate({
         guardedCapability.ai
           ? {
               ...nonAiCapabilities,
+              reference: alchemyReferencePort,
+              ...(userId && orgId ? { email: { send: async (artifact, context) => { assertCurrent(); const outcome = await sendAlchemyEmail(artifact, context); assertCurrent(); return outcome; } } } : {}),
               ai: guardedCapability.ai,
               identityKey: JSON.stringify([userId, orgId]),
             }
           : {
               ...nonAiCapabilities,
+              reference: alchemyReferencePort,
+              ...(userId && orgId ? { email: { send: async (artifact, context) => { assertCurrent(); const outcome = await sendAlchemyEmail(artifact, context); assertCurrent(); return outcome; } } } : {}),
               identityKey: JSON.stringify([userId, orgId]),
             }
       }

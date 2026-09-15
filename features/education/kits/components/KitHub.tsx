@@ -385,7 +385,11 @@ export function KitHub({
       <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
           {materialHref && (
-            <Button asChild variant="outline" className="min-h-10 gap-1.5">
+            <Button
+              asChild
+              variant="outline"
+              className="min-h-11 gap-1.5 sm:min-h-10"
+            >
               <Link href={materialHref}>
                 <MaterialIcon className="h-4 w-4" />
                 Material
