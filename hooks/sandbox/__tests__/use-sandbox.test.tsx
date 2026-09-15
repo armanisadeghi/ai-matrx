@@ -10,6 +10,10 @@ jest.mock("@/hooks/sandbox/use-compute-targets", () => ({
   notifyComputeTargetsChanged: jest.fn(),
 }));
 
+jest.mock("@/lib/knobs/featureKnobs", () => ({
+  knobInt: jest.fn(async () => 50),
+}));
+
 function listResponse(ids: string[], total: number, hasMore: boolean) {
   return {
     ok: true,
@@ -192,6 +196,66 @@ describe("useSandboxInstances list pagination", () => {
       "Sandbox list reported another page but returned no rows.",
     );
 
+    await hook.unmount();
+  });
+});
+
+describe("useSandboxInstances lifecycle outcomes", () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    installFetch(originalFetch);
+    jest.restoreAllMocks();
+  });
+
+  it("keeps an unknown batch delete out of the definitive failures", async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/unknown")) {
+        return {
+          ok: false,
+          json: async () => ({ status: "outcome_unknown", error: "check persisted state" }),
+        };
+      }
+      return { ok: false, json: async () => ({ error: "locked" }) };
+    });
+    installFetch(fetchMock);
+
+    const hook = await renderHook(() => useSandboxInstances());
+    let result: Awaited<ReturnType<typeof hook.current.deleteInstances>> | null = null;
+    await hook.act(async () => {
+      result = await hook.current.deleteInstances(["unknown", "refused"]);
+    });
+
+    expect(result).toEqual({
+      deletedIds: [],
+      failed: ["refused"],
+      unknownIds: ["unknown"],
+    });
+    await hook.unmount();
+  });
+
+  it("reconciles an outcome-unknown stop rather than reporting it as a definitive failure", async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "PUT") {
+        return {
+          ok: false,
+          json: async () => ({ status: "outcome_unknown", error: "check persisted state" }),
+        };
+      }
+      return listResponse(["reconciled"], 1, false);
+    });
+    installFetch(fetchMock);
+
+    const hook = await renderHook(() => useSandboxInstances());
+    let result: Awaited<ReturnType<typeof hook.current.stopInstance>> | null = null;
+    await hook.act(async () => {
+      result = await hook.current.stopInstance("reconciled");
+    });
+
+    expect(result).toBe("outcome_unknown");
+    expect(hook.current.error).toBe("check persisted state");
+    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/reconciled", expect.objectContaining({ method: "PUT" }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox?limit=50&offset=0", expect.any(Object));
     await hook.unmount();
   });
 });

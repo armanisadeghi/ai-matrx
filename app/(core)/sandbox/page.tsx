@@ -67,10 +67,7 @@ export default function SandboxListPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
-  const [deleting, setDeleting] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [ttlHours, setTtlHours] = useState(2);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -203,30 +200,21 @@ export default function SandboxListPage() {
 
   const handleDelete = async (target: SandboxInstance) => {
     const sandboxId = target.sandbox_id;
-    setDeleting(true);
     setDeletingIds((previous) => new Set(previous).add(target.id));
-    setDeleteError(null);
     const ok = await deleteInstance(target.id);
-    setDeleting(false);
     setDeletingIds((previous) => {
       const next = new Set(previous);
       next.delete(target.id);
       return next;
     });
     if (ok === true) {
-      setDeleteSuccess(true);
       toast.success(`Sandbox ${sandboxId} deleted`);
-      setTimeout(() => {
-        setDeleteSuccess(false);
-      }, 700);
     } else if (ok === "outcome_unknown") {
       const msg = "The delete outcome is unknown. Refresh this sandbox while its state is checked.";
-      setDeleteError(msg);
       toast.warning(msg);
       void fetchInstances();
     } else {
       const msg = "Failed to delete sandbox. Please try again.";
-      setDeleteError(msg);
       toast.error(msg);
     }
   };
@@ -265,6 +253,7 @@ export default function SandboxListPage() {
     historyDeleteMode === "all"
       ? historicalInstances.length
       : selectedHistoryCount;
+  const deleteTargetBusy = !!deleteTarget && deletingIds.has(deleteTarget.id);
 
   const handleHistoryBatchDelete = async (
     mode: "selected" | "all",
@@ -533,47 +522,13 @@ export default function SandboxListPage() {
       <Dialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
-          if (!open && !deleting && !deleteSuccess) {
+          if (!open && !deleteTargetBusy) {
             setDeleteTarget(null);
-            setDeleteError(null);
           }
         }}
       >
         <DialogContent>
-          {deleteSuccess ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-lg">Sandbox Deleted</h3>
-                {deleteTarget && (
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {sandboxDisplayName(deleteTarget)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : deleting ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <Loader2 className="w-10 h-10 animate-spin text-destructive" />
-              <div className="text-center">
-                <h3 className="font-semibold text-lg">Deleting Sandbox</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {deleteTarget &&
-                  ["ready", "running"].includes(deleteTarget.status)
-                    ? "Destroying the container and removing the record..."
-                    : "Removing the sandbox record..."}
-                </p>
-                {deleteTarget && (
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {sandboxDisplayName(deleteTarget)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
+          <>
               <DialogHeader>
                 <DialogTitle>Delete Sandbox</DialogTitle>
                 <DialogDescription>
@@ -592,22 +547,16 @@ export default function SandboxListPage() {
                   Stop instead.
                 </DialogDescription>
               </DialogHeader>
-              {deleteError && (
-                <div className="px-1 text-sm text-destructive">
-                  {deleteError}
-                </div>
-              )}
               <DialogFooter>
                 <Button
                   variant="outline"
                   onClick={() => {
                     setDeleteTarget(null);
-                    setDeleteError(null);
                   }}
                 >
                   Cancel
                 </Button>
-                <Button variant="destructive" onClick={() => {
+                <Button variant="destructive" disabled={deleteTargetBusy} onClick={() => {
                   const target = deleteTarget;
                   setDeleteTarget(null);
                   if (target) void handleDelete(target);
@@ -616,8 +565,7 @@ export default function SandboxListPage() {
                   Delete Sandbox
                 </Button>
               </DialogFooter>
-            </>
-          )}
+          </>
         </DialogContent>
       </Dialog>
 
