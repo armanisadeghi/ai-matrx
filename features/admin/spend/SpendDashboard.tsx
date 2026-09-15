@@ -39,7 +39,13 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { SpendExplorer } from "./SpendExplorer";
 import { SpendHeadline } from "./SpendHeadline";
+import { buildBillingSpendDashboardScope } from "./spend-surface-scope";
 import { knobNumber } from "@/lib/knobs/featureKnobs";
+import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
+import {
+  getRegisteredSurfaceScopeContributions,
+  SurfaceRuntimeProvider,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
@@ -100,19 +106,22 @@ function Folded({
   icon: Icon,
   title,
   summary,
+  open,
+  onOpenChange,
   children,
 }: {
   icon: typeof DollarSign;
   title: string;
   summary: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
   return (
     <section className="flex min-w-0 flex-col gap-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => onOpenChange(!open)}
         className="flex min-h-10 min-w-0 items-center gap-2 text-left"
         aria-expanded={open}
       >
@@ -147,6 +156,8 @@ export function SpendDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [costSourcesExpanded, setCostSourcesExpanded] = useState(false);
+  const [printOrdersExpanded, setPrintOrdersExpanded] = useState(false);
 
   const knobsState = useSpendPopoverKnobs();
   const scareThresholdUsd = knobsState.knobs?.scareThresholdUsd ?? null;
@@ -298,7 +309,25 @@ export function SpendDashboard() {
     [];
 
   return (
-    <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_BILLING_SPEND_SURFACE_NAME}
+      getScope={() => ({
+        ...buildBillingSpendDashboardScope({
+          timezone,
+          data,
+          loading,
+          error,
+          fixedMonthly,
+          knobs: knobsState,
+          costSourcesExpanded,
+          printOrdersExpanded,
+        }),
+        ...getRegisteredSurfaceScopeContributions(
+          ADMIN_BILLING_SPEND_SURFACE_NAME,
+        ),
+      })}
+    >
+      <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <div className="font-medium">
@@ -380,6 +409,8 @@ export function SpendDashboard() {
             icon={DollarSign}
             title="Every cost source"
             summary={`${data.ledgers.length} sources · ${gaps.length} unmeasured`}
+            open={costSourcesExpanded}
+            onOpenChange={setCostSourcesExpanded}
           >
             <div className="flex flex-col gap-3">
               <Section icon={AlertTriangle} title="Known gaps">
@@ -420,6 +451,8 @@ export function SpendDashboard() {
             icon={Package}
             title="Print orders"
             summary={`${usd(data.printOrders.revenueUsd)} revenue · ${usd(data.printOrders.marginUsd)} margin`}
+            open={printOrdersExpanded}
+            onOpenChange={setPrintOrdersExpanded}
           >
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -500,6 +533,7 @@ export function SpendDashboard() {
           </Folded>
         </>
       ) : null}
-    </div>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

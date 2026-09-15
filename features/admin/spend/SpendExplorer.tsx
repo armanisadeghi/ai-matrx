@@ -43,6 +43,9 @@ import {
   type ExplorerUrlState,
 } from "./windows";
 import { BatchSavingsPanel } from "@/features/batch-savings/BatchSavingsPanel";
+import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildBillingSpendExplorerScope } from "./spend-surface-scope";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
 const DATABASE_WINDOW_DAY_CAP = 92;
@@ -111,6 +114,22 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
   const [data, setData] = useState<SpendBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  useSurfaceScopeContribution(
+    ADMIN_BILLING_SPEND_SURFACE_NAME,
+    "SpendExplorer",
+    () =>
+      buildBillingSpendExplorerScope({
+        urlState,
+        window,
+        windowLabel,
+        windowTooWide,
+        knobs,
+        loading,
+        error,
+        data,
+      }),
+  );
 
   // The identity of a read: window instants + filters + thresholds. Anything
   // else changing must not refetch (the URL carries table sort state too).
@@ -276,7 +295,11 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
             <DigHerePanel data={data} onDrill={drill} />
 
             <Section icon={Percent} title="80% of spend">
-              <ParetoPanel data={data} onDrill={drill} />
+              <ParetoPanel
+                data={data}
+                windowLabel={windowLabel}
+                onDrill={drill}
+              />
             </Section>
 
             <DimensionTables data={data} onDrill={drill} />
