@@ -43,6 +43,23 @@ export const MASTERWORK_RUN_SUBJECT_TYPE = "workflow_run";
 export const MASTERWORK_MESSAGE_SUBJECT_TYPE = "message";
 
 /**
+ * A DISTILLATION run — `platform.masterwork_run`, token `masterwork_run`.
+ *
+ * 🚨 NOT the same subject as `MASTERWORK_RUN_SUBJECT_TYPE` above, and the two
+ * must never be crossed. That one is a built Masterwork's OUTPUT (a
+ * `workflow.run` — the thing the Expert asked their desk to do). This one is a
+ * round of a CAPTURE lane — the teach-back explaining their method back to them
+ * — and its id lives in a different table. Signing one against the other's
+ * token would write a verdict row pointing at a run that does not exist, and
+ * `countSignedOutputs` reads by token, so the count would silently miss it.
+ *
+ * Used by the Teach-Back's "yes, that's it" (CORE.md §7's release gate), where
+ * the same run id is also stamped onto the rules the signed explanation cited —
+ * so the rule and the verdict row can each be found from the other.
+ */
+export const MASTERWORK_DISTILLATION_RUN_SUBJECT_TYPE = "masterwork_run";
+
+/**
  * The Conductor's answers are ORDINARY CHAT MESSAGES in the canonical column,
  * and that column already carries the platform thumbs — same table, same RPC,
  * plus the Oracle nudge that turns a judged answer into a rule candidate. A
