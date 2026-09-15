@@ -182,7 +182,6 @@ export default function AdminSandboxManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
-  const [deleting, setDeleting] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -265,7 +264,6 @@ export default function AdminSandboxManagementPage() {
   };
 
   const handleDelete = async (target: SandboxInstance) => {
-    setDeleting(true);
     setDeletingIds((previous) => new Set(previous).add(target.id));
     try {
       const resp = await fetch(`/api/admin/sandbox/${target.id}`, {
@@ -288,7 +286,6 @@ export default function AdminSandboxManagementPage() {
       setError(msg);
       if (err instanceof TypeError) toast.warning(msg); else toast.error(msg);
     } finally {
-      setDeleting(false);
       setDeletingIds((previous) => {
         const next = new Set(previous);
         next.delete(target.id);
@@ -383,6 +380,7 @@ export default function AdminSandboxManagementPage() {
   const expandedInstance = expandedRow
     ? instances.find((i) => i.id === expandedRow)
     : undefined;
+  const deleteTargetBusy = !!deleteTarget && deletingIds.has(deleteTarget.id);
 
   const getAdminSandboxScope = () =>
     createAdminSandboxScope({
@@ -835,7 +833,7 @@ export default function AdminSandboxManagementPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
-          if (!open && !deleting) setDeleteTarget(null);
+          if (!open && !deleteTargetBusy) setDeleteTarget(null);
         }}
         title="Delete Sandbox"
         description={
@@ -849,7 +847,7 @@ export default function AdminSandboxManagementPage() {
         }
         confirmLabel="Delete"
         variant="destructive"
-        busy={deleting}
+        busy={deleteTargetBusy}
         onConfirm={() => {
           const target = deleteTarget;
           setDeleteTarget(null);

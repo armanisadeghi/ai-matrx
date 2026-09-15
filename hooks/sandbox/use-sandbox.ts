@@ -310,13 +310,22 @@ export function useSandboxInstances(projectId?: string) {
         body: JSON.stringify({ action: "stop" } satisfies SandboxActionRequest),
       });
 
-      if (!resp.ok) {
-        throw new Error(
-          await extractSandboxError(resp, "Failed to stop sandbox"),
-        );
+      const result = await classifySandboxLifecycleResponse(
+        resp,
+        "Failed to stop sandbox",
+      );
+      if (result.kind === "outcome_unknown") {
+        await fetchInstances();
+        setError(sandboxLifecycleMessage(result));
+        return "outcome_unknown" as const;
       }
-
-      const { instance }: SandboxDetailResponse = await resp.json();
+      if (result.kind === "failure") {
+        throw new Error(sandboxLifecycleMessage(result));
+      }
+      const instance = result.payload?.instance as SandboxInstance | undefined;
+      if (!instance) {
+        throw new Error("Failed to stop sandbox: response did not include an instance.");
+      }
       setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
       return instance;
     } catch (err) {
@@ -434,7 +443,9 @@ export function useSandboxInstances(projectId?: string) {
     );
 
     const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
-    const failed = results.filter((r) => !r.ok).map((r) => r.id);
+    const failed = results
+      .filter((r) => "ok" in r && r.ok === false)
+      .map((r) => r.id);
     const unknownIds = results
       .filter((r) => "kind" in r && r.kind === "outcome_unknown")
       .map((r) => r.id);
