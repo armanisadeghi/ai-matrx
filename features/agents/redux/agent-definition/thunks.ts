@@ -46,12 +46,22 @@ import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { getAgentCatalog } from "@/lib/agents/catalog";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { pgErrorToError } from "@ai-matrx/data";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { withRetry } from "@ai-matrx/data/net";
 import { ConnectTimeoutError } from "@ai-matrx/data/net";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectModelById,
+  type AIModelRecord,
+} from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  resolveModelControls,
+  supportsTools,
+} from "@/features/agents/hooks/useModelControls";
 import {
   compareAgentSyncSnapshots,
   type AgentSyncComparison,
@@ -103,6 +113,147 @@ import {
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
+type AgentToolAssignmentRow = Pick<
+  Database["agent"]["Tables"]["definition"]["Row"],
+  | "id"
+  | "created_by"
+  | "organization_id"
+  | "version"
+  | "tools"
+  | "model_id"
+  | "is_archived"
+>;
+
+export class AgentToolAssignmentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgentToolAssignmentError";
+  }
+}
+
+export class AgentToolAssignmentConflictError extends AgentToolAssignmentError {
+  constructor() {
+    super(
+      "This agent's tools, owner, or model changed while you were editing. Refresh the agent and retry your tool change.",
+    );
+    this.name = "AgentToolAssignmentConflictError";
+  }
+}
+
+function uniqueToolIds(ids: readonly string[], label: string): string[] {
+  const unique = new Set<string>();
+  for (const id of ids) {
+    if (!id.trim()) {
+      throw new AgentToolAssignmentError(
+        `${label} tool IDs must not be empty.`,
+      );
+    }
+    unique.add(id);
+  }
+  return [...unique];
+}
+
+export function assertOwnedLiveAgentToolAssignment(
+  row: AgentToolAssignmentRow,
+  userId: string,
+  organizationId: string,
+): void {
+  if (row.created_by !== userId || row.organization_id !== organizationId) {
+    throw new AgentToolAssignmentError(
+      "Only the agent owner can change its tools in the selected organization.",
+    );
+  }
+  if (row.is_archived) {
+    throw new AgentToolAssignmentError(
+      "Restore this archived agent before changing its tools.",
+    );
+  }
+}
+
+export function assertRegisteredActiveToolAdditions(
+  requestedIds: readonly string[],
+  activeIds: ReadonlySet<string>,
+): void {
+  const invalidId = requestedIds.find((id) => !activeIds.has(id));
+  if (invalidId) {
+    throw new AgentToolAssignmentError(
+      `Tool ${invalidId} is unavailable or inactive. Refresh the tool catalogue and retry.`,
+    );
+  }
+}
+
+export function assertToolAdditionModelCapability(
+  addToolIds: readonly string[],
+  modelId: string | null,
+  modelAvailable: boolean,
+  modelSupportsTools: boolean,
+): void {
+  if (addToolIds.length === 0) return;
+  if (!modelId) {
+    throw new AgentToolAssignmentError(
+      "Choose a tool-capable model before adding tools to this agent.",
+    );
+  }
+  if (!modelAvailable) {
+    throw new AgentToolAssignmentError(
+      "This agent's model is not available. Refresh the model catalogue and retry.",
+    );
+  }
+  if (!modelSupportsTools) {
+    throw new AgentToolAssignmentError(
+      "This agent's model does not support tools. Choose a tool-capable model before adding tools.",
+    );
+  }
+}
+
+/** A tool addition needs a full, active catalog record; an options-only or retired row cannot prove its controls. */
+export function isAvailableToolModel(
+  model: AIModelRecord | undefined,
+): model is AIModelRecord {
+  return (
+    model !== undefined &&
+    model._fetchType === "full" &&
+    model.is_deprecated !== true &&
+    model.deleted_at === null &&
+    model.retired_at === null
+  );
+}
+
+/** Pure delta application so retries always derive from the fresh row, never a stale full array. */
+export function applyAgentToolDelta(
+  currentTools: readonly string[],
+  addToolIds: readonly string[],
+  removeToolIds: readonly string[],
+): string[] {
+  const remove = new Set(removeToolIds);
+  const next = currentTools.filter((id) => !remove.has(id));
+  const seen = new Set(next);
+  for (const id of addToolIds) {
+    if (!seen.has(id)) {
+      next.push(id);
+      seen.add(id);
+    }
+  }
+  return next;
+}
+
+function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+export function isToolAssignmentPhantom(
+  current: AgentToolAssignmentRow,
+  base: AgentToolAssignmentRow,
+): boolean {
+  return (
+    sameStringArray(current.tools, base.tools) &&
+    current.model_id === base.model_id &&
+    current.created_by === base.created_by &&
+    current.organization_id === base.organization_id &&
+    current.is_archived === base.is_archived
+  );
+}
+
 const AGENT_LIST_RPC_PAGE_SIZE = 100;
 
 /**
@@ -123,7 +274,9 @@ const REGISTRY_ACCESS_LEVELS = [
 
 type RegistryAccessLevel = (typeof REGISTRY_ACCESS_LEVELS)[number];
 
-function toRegistryAccessLevel(value: string | null): RegistryAccessLevel | null {
+function toRegistryAccessLevel(
+  value: string | null,
+): RegistryAccessLevel | null {
   return (
     REGISTRY_ACCESS_LEVELS.find(
       (level): level is RegistryAccessLevel => level === value,
@@ -535,6 +688,199 @@ export const fetchAgentVersionSnapshot = createAsyncThunk<
 // ---------------------------------------------------------------------------
 // Write thunks
 // ---------------------------------------------------------------------------
+
+/**
+ * Applies an additive/removal tool assignment to an owned live agent.
+ *
+ * This deliberately does not use `saveAgentField`: a tool picker has a delta,
+ * not authority to replay whichever complete array happened to be in Redux.
+ * Every attempt starts from a fresh RLS-visible row, and a CAS retry recomputes
+ * the delta from the row that actually won the race.
+ */
+export const applyOwnedAgentToolDelta = createAsyncThunk<
+  { tools: string[]; version: number; rebased: boolean; unchanged: boolean },
+  {
+    agentId: string;
+    addToolIds?: readonly string[];
+    removeToolIds?: readonly string[];
+  },
+  ThunkApi
+>(
+  "agentDefinition/applyOwnedToolDelta",
+  async (
+    { agentId, addToolIds = [], removeToolIds = [] },
+    { dispatch, getState },
+  ) => {
+    if (isSyntheticAgentId(agentId)) {
+      throw new AgentToolAssignmentError(
+        "Tool assignments cannot be saved on a synthetic agent.",
+      );
+    }
+
+    const local = selectAgentById(getState(), agentId);
+    if (local?.isVersion) {
+      throw new AgentToolAssignmentError(
+        "Tool assignments cannot be saved on an agent version snapshot.",
+      );
+    }
+
+    const userId = selectUserId(getState());
+    if (!userId)
+      throw new AgentToolAssignmentError(
+        "Sign in again before changing this agent's tools.",
+      );
+    const organizationId = selectOrganizationId(getState());
+    if (!organizationId) {
+      throw new AgentToolAssignmentError(
+        "Choose an organization before changing this agent's tools.",
+      );
+    }
+
+    const add = uniqueToolIds(addToolIds, "Added");
+    const remove = uniqueToolIds(removeToolIds, "Removed");
+    const overlap = add.find((id) => remove.includes(id));
+    if (overlap) {
+      throw new AgentToolAssignmentError(
+        `Tool ${overlap} cannot be added and removed in the same change.`,
+      );
+    }
+
+    const { data: base, error: readError } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select(
+        "id, created_by, organization_id, version, tools, model_id, is_archived",
+      )
+      .eq("id", agentId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (readError) throw pgErrorToError(readError);
+    if (!base) {
+      throw new AgentToolAssignmentError(
+        "This agent is unavailable. Refresh the page and try again.",
+      );
+    }
+    assertOwnedLiveAgentToolAssignment(base, userId, organizationId);
+
+    // Only additions need to be active today. Removal must also be able to
+    // clean up a historical inactive reference already on the agent.
+    if (add.length > 0) {
+      const { data: activeTools, error: toolsError } = await supabase
+        .schema("tool")
+        .from("definition")
+        .select("id")
+        .in("id", add)
+        .eq("is_active", true);
+      if (toolsError) throw pgErrorToError(toolsError);
+      const activeIds = new Set((activeTools ?? []).map((tool) => tool.id));
+      assertRegisteredActiveToolAdditions(add, activeIds);
+    }
+
+    if (add.length > 0) {
+      const selectedModel = base.model_id
+        ? selectModelById(getState(), base.model_id)
+        : undefined;
+      const model = isAvailableToolModel(selectedModel)
+        ? selectedModel
+        : undefined;
+      const { normalizedControls } =
+        model && base.model_id
+          ? resolveModelControls([model], base.model_id)
+          : { normalizedControls: null };
+      assertToolAdditionModelCapability(
+        add,
+        base.model_id,
+        model !== undefined,
+        supportsTools(normalizedControls),
+      );
+    }
+
+    const desiredTools = applyAgentToolDelta(base.tools, add, remove);
+    if (sameStringArray(desiredTools, base.tools)) {
+      dispatch(
+        mergePartialAgent({
+          id: agentId,
+          tools: base.tools,
+          version: base.version,
+        }),
+      );
+      return {
+        tools: base.tools,
+        version: base.version,
+        rebased: false,
+        unchanged: true,
+      };
+    }
+
+    // `guardedUpdate` invokes `isPhantom` immediately before a retry. Keep the
+    // write base mutable so the retry derives the delta from that freshly read
+    // row rather than replaying a captured complete array.
+    let writeBase = base;
+    const result = await guardedUpdate<AgentToolAssignmentRow>({
+      expectedVersion: base.version,
+      applyUpdate: ({ expectedVersion, nextVersion }) =>
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            tools: applyAgentToolDelta(writeBase.tools, add, remove),
+            version: nextVersion,
+          })
+          .eq("id", agentId)
+          .eq("created_by", userId)
+          .eq("organization_id", organizationId)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .eq("is_archived", false)
+          .select(
+            "id, created_by, organization_id, version, tools, model_id, is_archived",
+          )
+          .maybeSingle(),
+      fetchCurrent: () =>
+        supabase
+          .schema("agent")
+          .from("definition")
+          .select(
+            "id, created_by, organization_id, version, tools, model_id, is_archived",
+          )
+          .eq("id", agentId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+      rebase: {
+        isPhantom: (current) => {
+          if (!isToolAssignmentPhantom(current, base)) return false;
+          writeBase = current;
+          return true;
+        },
+      },
+    });
+
+    if (result.status === "not_found") {
+      throw new AgentToolAssignmentError(
+        "This agent is no longer available. Refresh the page and try again.",
+      );
+    }
+    if (result.status === "conflict") {
+      throw new AgentToolAssignmentConflictError();
+    }
+
+    // Merge only the durable receipt. Do not call markAgentSaved: fields the
+    // builder is editing independently must stay dirty.
+    dispatch(
+      mergePartialAgent({
+        id: agentId,
+        tools: result.row.tools,
+        version: result.row.version,
+      }),
+    );
+    return {
+      tools: result.row.tools,
+      version: result.row.version,
+      rebased: result.rebasedFrom !== undefined,
+      unchanged: false,
+    };
+  },
+);
 
 /**
  * Optimistically saves a single field on an agent.
@@ -1215,15 +1561,12 @@ export const initializeChatAgents = createAsyncThunk<
   void,
   { force?: boolean } | void,
   ThunkApi
->(
-  "agentDefinition/initializeChatAgents",
-  async (arg, { dispatch }) => {
-    const force = (arg as { force?: boolean } | undefined)?.force ?? false;
-    const catalog = getAgentCatalog();
-    await catalog.ensureLoaded(force ? { force: true } : undefined);
-    mergeAgentSummaries(dispatch, catalog.getState().rows);
-  },
-);
+>("agentDefinition/initializeChatAgents", async (arg, { dispatch }) => {
+  const force = (arg as { force?: boolean } | undefined)?.force ?? false;
+  const catalog = getAgentCatalog();
+  await catalog.ensureLoaded(force ? { force: true } : undefined);
+  mergeAgentSummaries(dispatch, catalog.getState().rows);
+});
 
 /**
  * Resets a derived agent back to its source agent's current data.
