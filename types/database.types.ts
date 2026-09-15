@@ -53132,6 +53132,17 @@ export type Database = {
             }
             Returns: boolean
           }
+        | {
+            Args: {
+              p_id: string
+              p_include_public: boolean
+              p_path: string[]
+              p_required: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -58881,6 +58892,7 @@ export type Database = {
       }
       association_types: {
         Row: {
+          allows_loops: boolean
           container_side: string
           conveys_max: Database["public"]["Enums"]["permission_level"]
           created_at: string
@@ -58892,6 +58904,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allows_loops?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
@@ -58903,6 +58916,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allows_loops?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
@@ -62129,6 +62143,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "masterwork_run_operation_known"
+            columns: ["operation"]
+            isOneToOne: false
+            referencedRelation: "masterwork_run_kind"
+            referencedColumns: ["operation"]
+          },
+          {
             foreignKeyName: "masterwork_run_rulebook_id_fkey"
             columns: ["rulebook_id"]
             isOneToOne: false
@@ -62136,6 +62157,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      masterwork_run_kind: {
+        Row: {
+          declared_in_code: boolean
+          first_seen_at: string
+          last_seeded_at: string | null
+          operation: string
+          terminal_type: string | null
+        }
+        Insert: {
+          declared_in_code?: boolean
+          first_seen_at?: string
+          last_seeded_at?: string | null
+          operation: string
+          terminal_type?: string | null
+        }
+        Update: {
+          declared_in_code?: boolean
+          first_seen_at?: string
+          last_seeded_at?: string | null
+          operation?: string
+          terminal_type?: string | null
+        }
+        Relationships: []
       }
       matrx_action_ledger: {
         Row: {
@@ -65100,11 +65145,22 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
       }
+      audit_carrying_cycles: { Args: never; Returns: Json }
       backfill_record_names: {
         Args: { p_batch?: number; p_definition_id: string }
         Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      carrying_cycles: {
+        Args: never
+        Returns: {
+          a_id: string
+          a_type: string
+          b_id: string
+          b_type: string
+          shape: string
+        }[]
+      }
       cf_compact_json: { Args: { p_value: Json }; Returns: string }
       cf_count_keys: { Args: { p_value: Json }; Returns: number }
       cf_item_byte_size: { Args: { p_value: Json }; Returns: number }
@@ -65775,6 +65831,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      provision: {
+        Args: {
+          p_applied_via?: string
+          p_lane?: string
+          p_org_id?: string
+          p_spec: Json
+        }
+        Returns: Json
+      }
+      provision_arg_check_findings: {
+        Args: { p_arg_checks: Json; p_args: string; p_function: string }
+        Returns: Json[]
+      }
       provision_base_columns: { Args: never; Returns: string[] }
       provision_check_vocabulary: {
         Args: { p_conname: string; p_relation: unknown }
@@ -65804,6 +65873,11 @@ export type Database = {
       provision_live_vocabulary: { Args: { p_name: string }; Returns: string[] }
       provision_options: {
         Args: { p_kind?: string; p_org_id?: string }
+        Returns: Json
+      }
+      provision_preflight: { Args: never; Returns: Json }
+      provision_restricted: {
+        Args: { p_org_id?: string; p_spec: Json }
         Returns: Json
       }
       provision_validate: {
@@ -71438,10 +71512,19 @@ export type Database = {
           scanned: number
         }[]
       }
-      ensure_folder_chain: {
-        Args: { p_folder_path: string; p_owner_id: string }
-        Returns: string
-      }
+      ensure_folder_chain:
+        | {
+            Args: { p_folder_path: string; p_owner_id: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_folder_path: string
+              p_organization_id: string
+              p_owner_id: string
+            }
+            Returns: string
+          }
       ensure_personal_organization: {
         Args: { p_user_id: string }
         Returns: string
@@ -89234,6 +89317,7 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      _tm_ref: { Args: { p_id: string; p_type: string }; Returns: Json }
       _tm_remove_topics: {
         Args: {
           p_ids: string[]

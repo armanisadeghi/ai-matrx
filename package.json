@@ -482,7 +482,10 @@
     "check:jsx-key-collisions": "tsx scripts/check-jsx-key-collisions.ts",
     "check:jsx-key-collisions:self-test": "tsx scripts/check-jsx-key-collisions.ts --self-test",
     "check:durable-run-dialog-close": "tsx scripts/check-durable-run-dialog-close.ts",
-    "check:durable-run-dialog-close:self-test": "tsx scripts/check-durable-run-dialog-close.ts --self-test"
+    "check:durable-run-dialog-close:self-test": "tsx scripts/check-durable-run-dialog-close.ts --self-test",
+    "check:access-kernel-bounded": "tsx scripts/check-access-kernel-bounded.ts",
+    "check:access-kernel-bounded:strict": "tsx scripts/check-access-kernel-bounded.ts --strict",
+    "check:access-kernel-bounded:self-test": "tsx scripts/check-access-kernel-bounded.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

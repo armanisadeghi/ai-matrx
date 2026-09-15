@@ -228,6 +228,15 @@ insert into platform.association_types (source_type, target_type, label, contain
  ('corpus_private','corpus_home_a',null,'target','admin', true,'AT8 carrying at ADMIN — the top of the ladder', now(), now()),
  ('corpus_item','scope',           null,'none',  'viewer',true,'AT9 assignment, conveys nothing (arm 12 must not borrow arm 13)', now(), now());
 
+-- DD-263: the two halves of the loop are the ONLY relation types on the platform that are ALLOWED
+-- to close one. Since DD-263 `platform.enforce_no_carrying_cycle` refuses a carrying cycle at the
+-- write door unless the relation type declares it, and this corpus exists precisely to ask what the
+-- kernel answers INSIDE a loop — so the loop is declared, deliberately, here and nowhere else.
+update platform.association_types
+   set allows_loops = true
+ where source_type in ('corpus_loop_a','corpus_loop_b')
+   and target_type in ('corpus_loop_a','corpus_loop_b');
+
 -- ---------------------------------------------------------------------------
 -- 6. The records.
 --    DD-171 governs half of this file: containment never carries a `personal`
