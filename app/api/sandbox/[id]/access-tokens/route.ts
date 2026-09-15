@@ -8,6 +8,11 @@ import {
 const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
 const TOKEN_MINT_MAX_ATTEMPTS = 3;
 const TOKEN_MINT_RETRY_MS = 250;
+// Keep all three attempts comfortably inside the serverless handler budget.
+// Without an abortable per-attempt deadline, a black-holed orchestrator socket
+// makes Vercel terminate this route with FUNCTION_INVOCATION_TIMEOUT, which
+// prevents the caller's existing retry/recovery path from running.
+const TOKEN_MINT_ATTEMPT_TIMEOUT_MS = 2_000;
 
 type FetchLike = typeof fetch;
 
@@ -27,17 +32,29 @@ export async function mintAccessTokenWithRetry(
   {
     request = fetch,
     wait = sleep,
-  }: { request?: FetchLike; wait?: (milliseconds: number) => Promise<void> } = {},
+    attemptTimeoutMs = TOKEN_MINT_ATTEMPT_TIMEOUT_MS,
+  }: {
+    request?: FetchLike;
+    wait?: (milliseconds: number) => Promise<void>;
+    attemptTimeoutMs?: number;
+  } = {},
 ): Promise<Response> {
   let response: Response | undefined;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= TOKEN_MINT_MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      attemptTimeoutMs,
+    );
     try {
-      response = await request(url, init);
+      response = await request(url, { ...init, signal: controller.signal });
       if (!TRANSIENT_UPSTREAM_STATUSES.has(response.status)) return response;
     } catch (error) {
       lastError = error;
+    } finally {
+      clearTimeout(timeout);
     }
 
     if (attempt < TOKEN_MINT_MAX_ATTEMPTS) {

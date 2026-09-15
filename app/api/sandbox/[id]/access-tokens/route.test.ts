@@ -34,3 +34,27 @@ test("does not retry an authoritative client refusal", async () => {
   expect(response.status).toBe(403);
   expect(request).toHaveBeenCalledTimes(1);
 });
+
+test("bounds a hung upstream request so the route can return a recoverable error", async () => {
+  const request = jest.fn(
+    (_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new Error("upstream request deadline exceeded")),
+        );
+      }),
+  );
+
+  await expect(
+    mintAccessTokenWithRetry(
+      "https://orchestrator.example.test/sandboxes/sbx-test/access-tokens",
+      { method: "POST" },
+      { request, wait: async () => undefined, attemptTimeoutMs: 10 },
+    ),
+  ).rejects.toThrow("upstream request deadline exceeded");
+
+  expect(request).toHaveBeenCalledTimes(3);
+  for (const [, init] of request.mock.calls) {
+    expect((init as RequestInit).signal?.aborted).toBe(true);
+  }
+});
