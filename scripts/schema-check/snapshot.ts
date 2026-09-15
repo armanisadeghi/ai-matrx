@@ -1,28 +1,22 @@
 /**
  * Load the live-DB truth snapshot the checks diff against — OFFLINE.
  *
- * Priority (first that resolves wins; provenance is reported so the user knows
- * how authoritative the run was):
- *   1. scripts/schema-check/current-schema.json  — this repo's own pull of
- *      public.schema_truth_snapshot() (refresh with `pnpm check:schema:refresh`).
- *   2. ../aidream/db/schema_analysis/current_schemas.json — the SHARED backend
- *      snapshot (same DB, same query). Reused per the cross-repo doctrine: "one
- *      live snapshot, don't invent a second source."
- *   3. types/database.types.ts — DEGRADED last resort. The FE's generated types
- *      ARE a (FE-scoped) view of the live DB; better than nothing when no
- *      snapshot is on disk, but it can't see exposed-schemas and only covers the
- *      schemas the FE generates, so freshness/exposure checks self-disable.
+ * ONE source: scripts/schema-check/current-schema.json, this repo's committed
+ * pull of public.schema_truth_snapshot() (refresh: `pnpm check:schema:snapshot`).
+ * A missing, unparsable, or malformed file THROWS with the file and the remedy.
  *
- * Never throws on a missing/unreachable snapshot — the guard must degrade, not
- * hard-fail, exactly like check:migrations on a network blip.
+ * Until 2026-09-14 this silently fell through to the aidream snapshot, then
+ * types/database.types.ts, then an empty snapshot — so a broken snapshot
+ * degraded every check without saying so. Guard: snapshot-source.test.ts.
+ * The snapshot's generated_at rides in `source`, which check-schema prints once
+ * per run, so a stale snapshot is visible in every report.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseGeneratedTypes } from "./db-types-parse";
 import type { Snapshot, SnapshotProvenance } from "./types";
 
 export const FE_SNAPSHOT_REL = "scripts/schema-check/current-schema.json";
-const AIDREAM_SNAPSHOT = "../aidream/db/schema_analysis/current_schemas.json";
+const REMEDY = "remedy: pnpm check:schema:snapshot (needs SUPABASE_SECRET_KEY in .env.local)";
 
 function toMap(obj: Record<string, string[]> | undefined): Map<string, Set<string>> {
   const m = new Map<string, Set<string>>();
@@ -61,87 +55,39 @@ function finalize(
   };
 }
 
-/** Our own snapshot format (see current-schema.json). */
-function fromFeFormat(raw: any): Snapshot {
+export function loadSnapshot(root: string): Snapshot {
+  const fePath = join(root, FE_SNAPSHOT_REL);
+  if (!existsSync(fePath)) {
+    throw new Error(`schema snapshot MISSING: ${FE_SNAPSHOT_REL} does not exist — ${REMEDY}`);
+  }
+  let raw: { generated_at?: unknown; schemas?: unknown; views?: unknown; exposed_schemas?: unknown };
+  try {
+    raw = JSON.parse(readFileSync(fePath, "utf8"));
+  } catch (err) {
+    throw new Error(`schema snapshot UNPARSABLE: ${FE_SNAPSHOT_REL} (${(err as Error).message}) — ${REMEDY}`);
+  }
+  const isRecord = (v: unknown): v is Record<string, string[]> => !!v && typeof v === "object" && !Array.isArray(v);
+  if (
+    !raw ||
+    typeof raw.generated_at !== "string" ||
+    !isRecord(raw.schemas) ||
+    !isRecord(raw.views) ||
+    !Array.isArray(raw.exposed_schemas)
+  ) {
+    throw new Error(
+      `schema snapshot MALFORMED: ${FE_SNAPSHOT_REL} lacks generated_at / schemas / views / exposed_schemas — ${REMEDY}`,
+    );
+  }
   return finalize(
-    raw.generated_at ?? "unknown",
+    raw.generated_at,
     // The file is a cached pull, not a per-run query — say so, with its age.
     // (A rename applied after the last pull once flagged 11 phantom errors
     // while this label claimed "live".)
-    `schema_truth_snapshot() RPC (cached ${raw.generated_at ?? "unknown"}; refresh: pnpm check:schema:snapshot)`,
+    `schema_truth_snapshot() RPC (cached ${raw.generated_at}; refresh: pnpm check:schema:snapshot)`,
     "rpc",
     toMap(raw.schemas),
     toMap(raw.views),
-    new Set<string>(raw.exposed_schemas ?? []),
-  );
-}
-
-/** aidream's wrapped format: [{ result: { schemas, excluded_schemas } }]. */
-function fromAidreamFormat(raw: any): Snapshot | null {
-  const result = Array.isArray(raw) ? raw[0]?.result : raw?.result;
-  if (!result?.schemas) return null;
-  return finalize(
-    "(aidream snapshot)",
-    "aidream current_schemas.json (shared backend pull)",
-    "aidream",
-    toMap(result.schemas),
-    toMap(result.views), // present in newer aidream pulls; absent → empty
-    new Set<string>(), // aidream tracks excluded, not exposed — exposure check self-disables
-  );
-}
-
-function fromDatabaseTypes(content: string): Snapshot {
-  const { tables, views } = parseGeneratedTypes(content);
-  return finalize(
-    "(derived from types/database.types.ts)",
-    "types/database.types.ts (DEGRADED — generated types, not a live pull)",
-    "db-types",
-    tables,
-    views,
-    new Set<string>(),
-  );
-}
-
-export function loadSnapshot(root: string): Snapshot {
-  const fePath = join(root, FE_SNAPSHOT_REL);
-  if (existsSync(fePath)) {
-    try {
-      const raw = JSON.parse(readFileSync(fePath, "utf8"));
-      // Tolerate either our format or a raw aidream-style blob committed here.
-      if (raw?.schemas) return fromFeFormat(raw);
-      const a = fromAidreamFormat(raw);
-      if (a) return a;
-    } catch {
-      /* fall through */
-    }
-  }
-
-  const aidreamPath = join(root, AIDREAM_SNAPSHOT);
-  if (existsSync(aidreamPath)) {
-    try {
-      const a = fromAidreamFormat(JSON.parse(readFileSync(aidreamPath, "utf8")));
-      if (a) return a;
-    } catch {
-      /* fall through */
-    }
-  }
-
-  const dbTypesPath = join(root, "types/database.types.ts");
-  if (existsSync(dbTypesPath)) {
-    try {
-      return fromDatabaseTypes(readFileSync(dbTypesPath, "utf8"));
-    } catch {
-      /* fall through */
-    }
-  }
-
-  return finalize(
-    "(none)",
-    "no snapshot found",
-    "none",
-    new Map(),
-    new Map(),
-    new Set(),
+    new Set<string>(raw.exposed_schemas as string[]),
   );
 }
 
