@@ -258,4 +258,34 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/sandbox?limit=50&offset=0", expect.any(Object));
     await hook.unmount();
   });
+
+  it("reconciles an outcome-unknown stop against the current project after a project switch", async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "PUT") {
+        return {
+          ok: false,
+          json: async () => ({ status: "outcome_unknown", error: "check persisted state" }),
+        };
+      }
+      return listResponse(["reconciled"], 1, false);
+    });
+    installFetch(fetchMock);
+
+    const hook = await renderHook(() => {
+      const [projectId, setProjectId] = useState("project-one");
+      return { ...useSandboxInstances(projectId), setProjectId };
+    });
+    await hook.act(async () => {
+      hook.current.setProjectId("project-two");
+    });
+    await hook.act(async () => {
+      await hook.current.stopInstance("reconciled");
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sandbox?project_id=project-two&limit=50&offset=0",
+      expect.any(Object),
+    );
+    await hook.unmount();
+  });
 });
