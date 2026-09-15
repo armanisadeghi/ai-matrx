@@ -3881,7 +3881,13 @@ const UserTableViewer = ({
                         className={cn(
                           "group relative max-w-[70vw] py-2 md:max-w-0 md:py-3",
                           "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
-                          !isReadOnly && "cursor-cell",
+                          // A computed cell keeps the default cursor: the
+                          // text-cursor is a promise that you can type here,
+                          // and on a formula column that promise is false.
+                          !isReadOnly &&
+                            (isFormulaField(field.field_name)
+                              ? "cursor-default"
+                              : "cursor-cell"),
                           grid.isSelected(row.id, field.field_name) &&
                             !grid.isEditing(row.id, field.field_name) &&
                             "ring-2 ring-inset ring-primary/70 after:bg-primary/5",
@@ -3929,7 +3935,24 @@ const UserTableViewer = ({
                           // handle their own interaction and stop propagation;
                           // a double-click that reaches here is on a plain
                           // cell and means "edit me".
-                          if (isReadOnly || isFormulaField(field.field_name)) return;
+                          // 🚨 A COMPUTED CELL SAYS NO OUT LOUD. Refusing in
+                          // silence is the same defect as a dead control: the
+                          // cell carries the normal text-cursor, opens nothing,
+                          // and leaves the person to conclude the grid is
+                          // broken rather than that the column is calculated
+                          // (found on live review 2026-09-15). The sentence is
+                          // the one the row forms already use for these
+                          // columns, so the explanation reads the same
+                          // wherever you meet it.
+                          if (isFormulaField(field.field_name)) {
+                            toast({
+                              title: `${field.display_name} is calculated`,
+                              description:
+                                "Calculated from the other columns in this row — it updates on its own. Change its formula in Table settings.",
+                            });
+                            return;
+                          }
+                          if (isReadOnly) return;
                           grid.beginEdit({
                             rowId: row.id,
                             fieldName: field.field_name,
