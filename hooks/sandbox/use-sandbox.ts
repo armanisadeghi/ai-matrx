@@ -243,7 +243,9 @@ export function useSandboxInstances(projectId?: string) {
     },
     [authReady, organizationId, projectId, userId],
   );
-  useSandboxLifecycleTerminalInvalidation(() => fetchInstances());
+  useSandboxLifecycleTerminalInvalidation(async () => {
+    await fetchInstances();
+  });
 
   const showingCurrentProject = listProjectId === projectId;
 
