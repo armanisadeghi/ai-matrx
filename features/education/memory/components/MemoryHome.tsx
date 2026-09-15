@@ -11,10 +11,9 @@
 // runtime — so agents run from the Agents popover here launched with an empty
 // application scope. See education-memory.manifest.ts.
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Brain, Plus } from "lucide-react";
+import { AlertCircle, Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -30,9 +29,8 @@ import {
   createEducationMemoryScope,
   type MemoryLibraryEntry,
 } from "@/features/surfaces/manifests/education-memory.manifest";
-import { studyMediaService } from "@/features/education/media/service";
 import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
-import type { StudyMediaRow } from "@/features/education/media/types";
+import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -47,15 +45,16 @@ export function MemoryHome() {
     userId,
     accessToken,
   });
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const library = useStudyMediaLibrary("memory_aid", loadKey);
+  const rows = library.rows;
+  const loading = !authReady || library.loading;
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
     createEducationMemoryScope({
       view: "list",
-      library_loaded: !loading,
-      ...(loading
+      library_loaded: library.loaded,
+      ...(!library.loaded
         ? {}
         : {
             aid_count: rows.length,
@@ -68,19 +67,6 @@ export function MemoryHome() {
             ),
           }),
     });
-
-  useEffect(() => {
-    if (!loadKey) return;
-    let active = true;
-    studyMediaService.listByKind("memory_aid").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [loadKey]);
 
   if (authReady && !loadKey) {
     return (
@@ -120,6 +106,8 @@ export function MemoryHome() {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : library.error ? (
+        <LibraryError error={library.error} onRetry={library.retry} />
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
           <Brain className="h-8 w-8 text-muted-foreground" />
@@ -165,5 +153,15 @@ export function MemoryHome() {
       )}
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function LibraryError({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <p className="text-sm text-muted-foreground">Could not load memory aids. {error}</p>
+      <Button size="sm" onClick={onRetry}>Try again</Button>
+    </div>
   );
 }
