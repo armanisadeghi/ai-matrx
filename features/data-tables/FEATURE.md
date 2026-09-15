@@ -823,14 +823,34 @@ the columns at and after that slot by one), **Highlight column ▸**, **Color ro
 column** / **Stop coloring…** (disabled with the reason on non-choice columns), **Table
 colors…**. Cell: **Highlight cell ▸**. Highlights show a ✓ on the color already applied.
 
-**Documented, not built (talk first):** multi-cell RANGE selection (shift-click / drag /
-shift-arrows → copy, clear, fill, paste over a range — the Excel gesture; also the
-natural "send these cells to an agent" scope), and ROW / COLUMN selection by clicking the
-row number or header (today rows select via checkboxes and columns have no selection).
-Both change `grid-selection.ts` from a single address to an anchor+focus range and are
-a day of careful work each; the selection model was deliberately left single-cell here.
+## Range selection — cells, rows, columns (2026-09-14, Arman: "go ahead and build those")
+
+A selection is an ANCHOR (the ringed cell) plus an optional FOCUS (`CellRange` in
+`grid-selection.ts`, resolved against the grid's current order so a re-sort cannot
+move it). Gestures: **shift-click** extends; **press-and-drag** across cells sweeps
+(`select-none` on the grid while dragging); **shift+arrows** grow the range;
+**click a header's own surface** (not its sort label / menu) or **Ctrl/Cmd+Space**
+selects the column; **click beside a row's checkbox** or **Shift+Space** selects the
+row; **Cmd/Ctrl+A** selects the page. Escape collapses the range first, then clears.
+Copy / cut / Delete / paste act on the range: copy writes the block as TSV
+(Excel-paste-ready), Delete or cut clears every cell in ONE `udt_bulk_write` with each
+cell on the undo stack, pasting ONE value over a range FILLS it, a block still lands at
+the anchor, and **Cmd-D / "Fill down"** copies the range's first row down. Right-click
+inside the range keeps it and the Cell section becomes "Cells · N selected" (cut / clear /
+paste over / fill down / highlight N cells). The ticked-checkbox rows are a separate
+model (bulk actions) and stay that way. **Agents see both:** `selected_range_tsv` (+
+`selected_range_cell_count`, a header line of machine field names first) and
+`selected_rows_json` on the `matrx-user/data-tables` surface — "these cells" / "these
+rows" now mean something to an agent.
+
+**Live colors.** `useTableRealtime` carries a second binding on the SAME channel —
+`workbench.udt_datasets` UPDATE for this table id — so a rename, a description or a
+color change by another editor lands without a reload (own writes echo harmlessly: the
+row IS what the grid already holds). Publication verified by `pnpm check:realtime-publication`.
 
 ## Change log
+
+- `2026-09-14` — **Range selection (cells / rows / columns), live colors, wide-table layout.** See § Range selection. Verified live: shift-click made a 3-cell range and Cmd-C wrote "Beijing\nOttawa\nBrasília"; a drag selected a 2×4 block with no text selection; clicking the Capital header selected the column and copied 6 lines; right-click inside the range showed "Cells · 6 selected"; an SQL change to `metadata.style` on the open table repainted the rows within a second with no reload. Wide tables (over eight visible columns) now keep natural column widths and scroll sideways instead of overlapping text (the 26-column example was unreadable). The org lane fix that unblocked the example seed is in `migrations/iam_org_access_platform_admins_manage_global_system_org.sql`. NOT verified in the isolated browser: a real second user's session for the live-color path (the SQL update stood in for it).
 
 - `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. The example tables are seeded (see § Examples); realtime for style changes is still open.
 

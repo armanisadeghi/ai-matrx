@@ -1,8 +1,17 @@
 import {
+  allRange,
+  boundsContain,
+  cellsInRange,
   classifyGridKey,
+  columnRange,
   isDirectClickEditor,
+  isSingleCellRange,
   isTypingKey,
   moveSelection,
+  rangeBounds,
+  rangeRows,
+  rangeSize,
+  rowRange,
   sameCell,
   type CellAddress,
 } from "../grid-selection";
@@ -198,5 +207,59 @@ describe("sameCell", () => {
     expect(sameCell({ rowId: "a", fieldName: "b" }, { rowId: "a", fieldName: "c" })).toBe(false);
     expect(sameCell(null, null)).toBe(true);
     expect(sameCell(null, { rowId: "a", fieldName: "b" })).toBe(false);
+  });
+});
+
+describe("ranges", () => {
+  const range = {
+    anchor: { rowId: "r3", fieldName: "count" },
+    focus: { rowId: "r1", fieldName: "status" },
+  };
+
+  it("normalises anchor/focus into an inclusive rectangle whichever way it was dragged", () => {
+    expect(rangeBounds(range, ROWS, COLS)).toEqual({ r0: 0, r1: 2, c0: 1, c1: 2 });
+    expect(rangeSize({ r0: 0, r1: 2, c0: 1, c1: 2 })).toEqual({ rows: 3, cols: 2, cells: 6 });
+  });
+
+  it("lists the cells in reading order and as rows", () => {
+    expect(cellsInRange(range, ROWS, COLS).map((c) => `${c.rowId}.${c.fieldName}`)).toEqual([
+      "r1.status", "r1.count", "r2.status", "r2.count", "r3.status", "r3.count",
+    ]);
+    expect(rangeRows(range, ROWS, COLS).map((r) => r.length)).toEqual([2, 2, 2]);
+  });
+
+  it("is empty when the anchor or focus left the grid", () => {
+    expect(rangeBounds({ anchor: { rowId: "gone", fieldName: "name" }, focus: range.focus }, ROWS, COLS)).toBeNull();
+    expect(cellsInRange({ anchor: range.anchor, focus: { rowId: "r1", fieldName: "hidden" } }, ROWS, COLS)).toEqual([]);
+  });
+
+  it("knows a single-cell range and containment", () => {
+    expect(isSingleCellRange({ anchor: range.anchor, focus: range.anchor })).toBe(true);
+    expect(isSingleCellRange(range)).toBe(false);
+    expect(boundsContain({ r0: 0, r1: 2, c0: 1, c1: 2 }, 1, 1)).toBe(true);
+    expect(boundsContain({ r0: 0, r1: 2, c0: 1, c1: 2 }, 1, 0)).toBe(false);
+  });
+
+  it("builds row, column and whole-page ranges from the grid order", () => {
+    expect(rowRange("r2", COLS)).toEqual({ anchor: { rowId: "r2", fieldName: "name" }, focus: { rowId: "r2", fieldName: "count" } });
+    expect(columnRange("status", ROWS)).toEqual({ anchor: { rowId: "r1", fieldName: "status" }, focus: { rowId: "r3", fieldName: "status" } });
+    expect(allRange(ROWS, COLS)).toEqual({ anchor: { rowId: "r1", fieldName: "name" }, focus: { rowId: "r3", fieldName: "count" } });
+    expect(rowRange("r1", [])).toBeNull();
+    expect(columnRange("name", [])).toBeNull();
+  });
+});
+
+describe("classifyGridKey — ranges", () => {
+  it("extends with Shift+arrow, keeps Shift+Tab a move", () => {
+    expect(classifyGridKey(key({ key: "ArrowDown", shiftKey: true }))).toEqual({ kind: "extend", move: "down" });
+    expect(classifyGridKey(key({ key: "End", shiftKey: true, metaKey: true }))).toEqual({ kind: "extend", move: "gridEnd" });
+    expect(classifyGridKey(key({ key: "Tab", shiftKey: true }))).toEqual({ kind: "move", move: "prevCell" });
+  });
+  it("selects all, a row, a column, and fills down on the Excel chords", () => {
+    expect(classifyGridKey(key({ key: "a", metaKey: true }))).toEqual({ kind: "selectAll" });
+    expect(classifyGridKey(key({ key: " ", shiftKey: true }))).toEqual({ kind: "selectRow" });
+    expect(classifyGridKey(key({ key: " ", ctrlKey: true }))).toEqual({ kind: "selectColumn" });
+    expect(classifyGridKey(key({ key: "d", metaKey: true }))).toEqual({ kind: "fillDown" });
+    expect(classifyGridKey(key({ key: " " }))).toEqual({ kind: "edit" });
   });
 });

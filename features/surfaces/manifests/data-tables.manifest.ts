@@ -135,7 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "column_list",
     label: "Columns",
     description:
-      "Array of `{ name, display_name, type, required, order, format?, choices? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. Empty array when no table is open.",
+      "Array of `{ name, display_name, type, required, order, format?, choices?, validation? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. `validation` lists the column's validation RULES in plain English (`At least 0`, `###-#### pattern`, `One of: Red, Green`, `Unique across rows`) — unlike `choices` these are ENFORCED: a cell_value write that breaks one is refused with the reason, so read them before writing rather than discovering them by failing. Absent on a column that constrains nothing. Empty array when no table is open.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -187,6 +187,40 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 600,
     group: "active_selection",
     sortOrder: 355,
+  },
+
+  {
+    name: "selected_range_tsv",
+    label: "Selected cells (TSV)",
+    description:
+      "The block of cells the user has selected on the grid — shift-click, drag, shift+arrows, a whole row or column, or select-all — as tab-separated rows whose FIRST line is the machine field names of the columns spanned. Present only when the selection covers more than one cell (a single selected cell is current_cell_value). This is what \"these cells\" means when the user points at part of the table.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    group: "active_selection",
+    sortOrder: 360,
+  },
+  {
+    name: "selected_range_cell_count",
+    label: "Selected cell count",
+    description:
+      "How many cells selected_range_tsv spans. Present only alongside it.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    group: "active_selection",
+    sortOrder: 362,
+  },
+  {
+    name: "selected_rows_json",
+    label: "Selected rows",
+    description:
+      "The rows the user ticked with the row checkboxes, as an array of `{ row_id, ...cells }` objects keyed by machine field name — the same shape as full_table_json. Present only while at least one row is ticked. Rows may span several pages; every ticked row is included, not just the visible page.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    group: "active_selection",
+    sortOrder: 365,
   },
 
   // ── Table data (370-399) ──────────────────────────────────────────────
@@ -335,7 +369,7 @@ export const dataTablesManifest: SurfaceManifest = {
 You are on the Data Tables surface: the user is looking at one table they created, at /data/[id] — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
 table_id / table_name / table_description identify the table. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
 The row bodies are visible_data_csv (the page on screen, whose first CSV column is row_id) and, when the viewer has already loaded it, full_table_json. row_count is the total after the user's search. search_term is the user's own filter — read it to know why rows are missing.
-current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection.
+current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection. When the user selected a BLOCK of cells (shift-click, drag, a row, a column), selected_range_tsv carries it with a header line of machine field names and selected_range_cell_count says how big it is — "these cells" means that block. selected_rows_json carries the rows ticked with the row checkboxes — "these rows" / "the selected rows" means those.
 This is the user's real data. You may write ONE cell at a time with cell_value, naming the row and column explicitly from what you have READ, and only for a row on the page currently on screen — that is what lets the user see the change land. You may write table_description. Everything else is theirs: columns and types are a migration that can destroy values, whole-table and whole-row replacement is unreviewable, deletes are human, and search_term is their filter.
 is_read_only tells you whether you may write at all; on a shared table you can read but every write is refused.
 </surface_intro>`,
@@ -375,12 +409,23 @@ export interface DataTableColumnEntry {
    * so an empty list never reads as "this column has no options".
    */
   choices?: string[];
+  /**
+   * The column's VALIDATION RULES, in plain English — the same phrases the row
+   * forms print under the input (`describeValidationRules`). Present because a
+   * `cell_value` write that breaks one is REFUSED, and an agent that cannot see
+   * the rule can only discover it by failing. Omitted when the column
+   * constrains nothing.
+   */
+  validation?: string[];
 }
 
 export function createDataTablesScope(values: {
   selection?: string;
   content?: string;
   context?: Record<string, unknown>;
+  selected_range_tsv?: string;
+  selected_range_cell_count?: number;
+  selected_rows_json?: unknown[];
   table_id?: string;
   table_name?: string;
   table_description?: string;

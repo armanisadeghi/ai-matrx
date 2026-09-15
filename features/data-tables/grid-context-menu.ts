@@ -27,6 +27,7 @@
 
 import {
   ArrowDownAZ,
+  ArrowDownToLine,
   ArrowUpAZ,
   ArrowUpDown,
   ClipboardPaste,
@@ -174,33 +175,48 @@ export function buildGridCellMenuSection(opts: {
     /** The manual highlight this cell carries, if any. */
     highlight?: StyleColor | null;
   } | null;
+  /**
+   * When the right-clicked cell sits inside an extended RANGE, every cell of
+   * that range — the menu then acts on all of them ("Cut 12 cells"). Null or
+   * a single address means the menu acts on the one cell.
+   */
+  rangeCells?: CellAddress[] | null;
   readOnly: boolean;
   on: {
     cut: (address: CellAddress) => void;
     paste: (address: CellAddress) => void;
     clear: (address: CellAddress) => void;
+    clearMany: (addresses: CellAddress[]) => void;
     edit: (address: CellAddress) => void;
+    /** Copy the range's first row down over the rest (Cmd-D). */
+    fillDown: () => void;
     highlight: (address: CellAddress, color: StyleColor | null) => void;
+    highlightMany: (addresses: CellAddress[], color: StyleColor | null) => void;
   };
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
   const { cell, readOnly, on } = opts;
   const address = cell?.address ?? null;
+  const many =
+    opts.rangeCells && opts.rangeCells.length > 1 ? opts.rangeCells : null;
+  const n = many?.length ?? 1;
   const gate = !cell ? needs("a cell") : readOnly ? VIEW_ONLY : undefined;
+  const rowsSpanned = many ? new Set(many.map((c) => c.rowId)).size : 1;
 
   const items: ContextMenuExtraItem[] = [
     {
       kind: "item",
       id: "grid-cell-cut",
-      label: "Cut cell",
+      label: many ? `Cut ${n} cells` : "Cut cell",
       icon: Scissors,
       hint: "⌘X",
+      // `cutCell(address)` acts on the range when the address is inside it.
       onSelect: () => address && on.cut(address),
     },
     {
       kind: "item",
       id: "grid-cell-paste",
-      label: "Paste",
+      label: many ? `Paste over ${n} cells` : "Paste",
       icon: ClipboardPaste,
       hint: "⌘V",
       onSelect: () => address && on.paste(address),
@@ -208,10 +224,19 @@ export function buildGridCellMenuSection(opts: {
     {
       kind: "item",
       id: "grid-cell-clear",
-      label: "Clear cell",
+      label: many ? `Clear ${n} cells` : "Clear cell",
       icon: Eraser,
       hint: "⌫",
-      onSelect: () => address && on.clear(address),
+      onSelect: () =>
+        many ? on.clearMany(many) : address && on.clear(address),
+    },
+    {
+      kind: "item",
+      id: "grid-cell-fill-down",
+      label: "Fill down",
+      icon: ArrowDownToLine,
+      hint: "⌘D",
+      onSelect: () => on.fillDown(),
     },
     {
       kind: "item",
@@ -223,16 +248,21 @@ export function buildGridCellMenuSection(opts: {
     },
     buildHighlightSubmenu({
       id: "grid-cell-highlight",
-      label: "Highlight cell",
-      current: cell?.highlight,
-      onPick: (color) => address && on.highlight(address, color),
+      label: many ? `Highlight ${n} cells` : "Highlight cell",
+      current: many ? null : cell?.highlight,
+      onPick: (color) =>
+        many ? on.highlightMany(many, color) : address && on.highlight(address, color),
     }),
   ];
 
   return withAvailability(
     {
       id: "grid-cell",
-      label: cell ? `Cell · ${cell.displayName}` : "Cell",
+      label: many
+        ? `Cells · ${n} selected`
+        : cell
+          ? `Cell · ${cell.displayName}`
+          : "Cell",
       icon: Pencil,
       anchor: "after-clipboard",
       items,
@@ -241,7 +271,9 @@ export function buildGridCellMenuSection(opts: {
       "grid-cell-cut": gate,
       "grid-cell-paste": gate,
       "grid-cell-clear": gate,
-      "grid-cell-edit": gate,
+      "grid-cell-fill-down":
+        gate ?? (rowsSpanned < 2 ? "Select cells in two or more rows first" : undefined),
+      "grid-cell-edit": gate ?? (many ? "Select one cell to edit it" : undefined),
       "grid-cell-highlight": gate,
       ...opts.unavailable,
     },

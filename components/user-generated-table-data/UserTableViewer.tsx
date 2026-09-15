@@ -72,6 +72,7 @@ import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection"
 import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
 import {
   cellDomKey,
+  rangeRows as rangeRowsOf,
   type CellAddress,
 } from "@/features/data-tables/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
@@ -338,6 +339,13 @@ interface UserTableViewerProps {
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
+
+/**
+ * Up to this many visible columns the desktop grid shares the width evenly
+ * (`table-fixed`); beyond it every column keeps its natural width and the
+ * grid scrolls sideways. Eight 150px columns fill a 1280px viewport.
+ */
+const FIXED_LAYOUT_MAX_COLUMNS = 8;
 
 /** Shared with the saved-view codec so "default page size" means one thing. */
 const SAVED_VIEW_DEFAULTS = { pageSize: 20 } as const;
@@ -1034,7 +1042,26 @@ const UserTableViewer = ({
     [currentPage, limit, sortField, sortDirection, searchTerm],
   );
 
-  useTableRealtime(tableId, handleRealtime);
+  useTableRealtime(tableId, handleRealtime, {
+    // Another editor renamed the table, rewrote its description or changed
+    // its colors: adopt the row. `metadata` arriving as a NEW object is what
+    // retires any optimistic local style patch in favour of the server's.
+    onTableChange: (row) =>
+      setTableInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...(typeof row.table_name === "string"
+                ? { table_name: row.table_name }
+                : {}),
+              ...(row.description !== undefined
+                ? { description: row.description ?? undefined }
+                : {}),
+              ...(row.metadata !== undefined ? { metadata: row.metadata } : {}),
+            }
+          : prev,
+      ),
+  });
 
   useEffect(
     () => () => {
@@ -2042,8 +2069,11 @@ const UserTableViewer = ({
     [readCell],
   );
 
-  const handleCopied = useCallback((_address: CellAddress, text: string) => {
-    toast({ title: "Copied", description: text.slice(0, 80) || "Empty cell" });
+  const handleCopied = useCallback((cells: CellAddress[], text: string) => {
+    toast({
+      title: cells.length > 1 ? `Copied ${cells.length} cells` : "Copied",
+      description: text.slice(0, 80) || "Empty cell",
+    });
   }, []);
 
   /**
@@ -2062,39 +2092,72 @@ const UserTableViewer = ({
     [],
   );
 
-  /** Delete / Backspace on a selected cell. A write, so it is undoable. */
-  const handleClearCell = useCallback(
-    async (address: CellAddress) => {
+  /**
+   * Delete / Backspace on the selection (one cell or a range), and the second
+   * half of a cut. ONE transaction however many cells, each recorded on the
+   * undo stack so Cmd-Z walks the clearing back cell by cell. Cells that are
+   * already empty are skipped — nothing to write, nothing to undo.
+   */
+  const handleClearCells = useCallback(
+    async (addresses: CellAddress[]) => {
       if (isReadOnly) return;
-      const prior = readCell(address);
-      if (prior === null || prior === undefined || prior === "") return;
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const targets = addresses
+        .map((address) => ({ address, prior: readCell(address) }))
+        .filter(
+          ({ prior }) => prior !== null && prior !== undefined && prior !== "",
+        );
+      if (targets.length === 0) return;
 
-      const field = fields.find((f) => f.field_name === address.fieldName);
-      const result = await upsertCell({
-        tableId,
-        rowId: address.rowId,
-        fieldName: address.fieldName,
+      const ops: BulkOp[] = targets.map(({ address }) => ({
+        op: "cell",
+        row_id: address.rowId,
+        field_name: address.fieldName,
         value: null,
-      });
+      }));
+      const result = await bulkWrite({ tableId, operations: ops });
       if (isServiceFailure(result)) {
         toast({
-          title: "Could not clear that cell",
+          title:
+            targets.length === 1
+              ? "Could not clear that cell"
+              : `Could not clear ${targets.length} cells`,
           description: result.error,
           variant: "destructive",
         });
         return;
       }
-      cellUndo.record({
-        tableId,
-        rowId: address.rowId,
-        fieldName: address.fieldName,
-        fieldDisplayName: field?.display_name ?? address.fieldName,
-        priorValue: prior,
-        nextValue: null,
-      });
-      patchLocalCell(address.rowId, address.fieldName, null);
+      const failed = new Set(
+        result.data.results.filter(isBulkOpError).map((r) => r.row_id),
+      );
+      for (const { address, prior } of targets) {
+        if (failed.has(address.rowId)) continue;
+        cellUndo.record({
+          tableId,
+          rowId: address.rowId,
+          fieldName: address.fieldName,
+          fieldDisplayName:
+            fieldByName.get(address.fieldName)?.display_name ?? address.fieldName,
+          priorValue: prior,
+          nextValue: null,
+        });
+        patchLocalCell(address.rowId, address.fieldName, null);
+      }
+      if (failed.size > 0) {
+        toast({
+          title: `Cleared ${targets.length - failed.size} of ${targets.length}`,
+          description: `${failed.size} row${failed.size === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
+          variant: "destructive",
+        });
+      } else if (targets.length > 1) {
+        toast({ title: `Cleared ${targets.length} cells` });
+      }
     },
     [cellUndo, fields, isReadOnly, patchLocalCell, readCell, tableId],
+  );
+  const handleClearCell = useCallback(
+    (address: CellAddress) => handleClearCells([address]),
+    [handleClearCells],
   );
 
   /** Run one bulk transaction and report it honestly. */
@@ -2182,9 +2245,23 @@ const UserTableViewer = ({
    * fall off the right edge are reported after the write lands.
    */
   const handlePasteText = useCallback(
-    async (anchor: CellAddress, text: string) => {
+    async (anchor: CellAddress, text: string, targetCells?: CellAddress[]) => {
       if (isReadOnly) return;
-      const block = parseClipboardGrid(text);
+      let block = parseClipboardGrid(text);
+      // ONE value pasted over a RANGE fills every cell of the range — Excel's
+      // gesture. The single value is tiled into the range's shape so the
+      // normal block planner does the landing.
+      if (
+        targetCells &&
+        targetCells.length > 1 &&
+        block.length === 1 &&
+        block[0].length === 1
+      ) {
+        const value = block[0][0];
+        const rowSet = new Set(targetCells.map((c) => c.rowId));
+        const colSet = new Set(targetCells.map((c) => c.fieldName));
+        block = Array.from(rowSet, () => Array.from(colSet, () => value));
+      }
       const plan = planPaste(anchor, block, rowIdsOnPage, fieldNamesInOrder);
       if (!plan) {
         toast({
@@ -2292,6 +2369,59 @@ const UserTableViewer = ({
     ],
   );
 
+  /**
+   * Cmd-D / "Fill down": copy the range's FIRST row into every row below it,
+   * column by column, in one transaction, each cell undoable.
+   */
+  const handleFillDownRange = useCallback(
+    async (rows: CellAddress[][]) => {
+      if (isReadOnly || rows.length < 2) return;
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const ops: BulkOp[] = [];
+      const priors = new Map<string, unknown>();
+      const source = rows[0];
+      for (let c = 0; c < source.length; c += 1) {
+        const value = readCell(source[c]) ?? null;
+        for (let r = 1; r < rows.length; r += 1) {
+          const target = rows[r][c];
+          const prior = readCell(target) ?? null;
+          if (storedValuesEqual(value, prior)) continue;
+          ops.push({
+            op: "cell",
+            row_id: target.rowId,
+            field_name: target.fieldName,
+            value,
+          });
+          priors.set(`${target.rowId}::${target.fieldName}`, prior);
+        }
+      }
+      if (ops.length === 0) {
+        toast({ title: "Nothing to fill", description: "The rows below already match." });
+        return;
+      }
+      const landed = await runBulkOps(
+        ops,
+        `Filled ${ops.length} cell${ops.length === 1 ? "" : "s"} down`,
+        false,
+      );
+      if (!landed) return;
+      for (const op of ops) {
+        if (op.op !== "cell") continue;
+        patchLocalCell(op.row_id, op.field_name, op.value);
+        cellUndo.record({
+          tableId,
+          rowId: op.row_id,
+          fieldName: op.field_name,
+          fieldDisplayName:
+            fieldByName.get(op.field_name)?.display_name ?? op.field_name,
+          priorValue: priors.get(`${op.row_id}::${op.field_name}`) ?? null,
+          nextValue: op.value,
+        });
+      }
+    },
+    [cellUndo, fields, isReadOnly, patchLocalCell, readCell, runBulkOps, tableId],
+  );
+
   /** Duplicate ONE row from the right-click menu — the bulk-bar action, for one row. */
   const handleDuplicateRow = useCallback(
     async (rowId: string) => {
@@ -2364,11 +2494,14 @@ const UserTableViewer = ({
     editable: !isReadOnly,
     getCellText,
     onCopied: handleCopied,
-    onClearCell: (address) => void handleClearCell(address),
+    onClearCells: (addresses) => void handleClearCells(addresses),
     // A block paste may open a confirm dialog; when it closes the grid must
     // get focus back or the very next Cmd-Z goes nowhere.
-    onPasteText: (address, text) =>
-      void handlePasteText(address, text).finally(() => grid.refocusGrid()),
+    onPasteText: (address, text, targetCells) =>
+      void handlePasteText(address, text, targetCells).finally(() =>
+        grid.refocusGrid(),
+      ),
+    onFillDown: (rows) => void handleFillDownRange(rows),
     onUndo: () => void cellUndo.undo(),
     onRedo: () => void cellUndo.redo(),
   });
@@ -2391,7 +2524,13 @@ const UserTableViewer = ({
     const next = resolveGridMenuTarget(target);
     menuTargetRef.current = next;
     setMenuTarget(next);
-    if (next.cell && !grid.isEditing(next.cell.rowId, next.cell.fieldName)) {
+    // Right-clicking a cell selects it — unless it is already inside the
+    // extended range, which must survive so the menu can act on the range.
+    if (
+      next.cell &&
+      !grid.isEditing(next.cell.rowId, next.cell.fieldName) &&
+      !grid.isInRange(next.cell.rowId, next.cell.fieldName)
+    ) {
       grid.select(next.cell);
     }
     // No per-row entity: a dataset row has no entity token of its own, so the
@@ -2564,8 +2703,24 @@ const UserTableViewer = ({
     };
   });
 
+  // "These cells" / "these rows" for an agent: the range (with a header line
+  // of machine field names) and the checkbox-ticked rows.
+  const selectedRangeTsv =
+    grid.range && grid.selectedCells.length > 1
+      ? [
+          [...new Set(grid.selectedCells.map((c) => c.fieldName))].join("\t"),
+          grid.selectionText(),
+        ].join("\n")
+      : null;
+  const tickedRows = (fullDatasetCache ?? data).filter((row) =>
+    selectedRowIdSet.has(row.id),
+  );
+
   const surfaceScopeSnapshot: DataTableScopeInput = {
     tableId,
+    selectedRangeTsv,
+    selectedRangeCellCount: selectedRangeTsv ? grid.selectedCells.length : 0,
+    selectedRows: tickedRows,
     tableName: tableInfo?.table_name,
     tableDescription: tableInfo?.description,
     isReadOnly: surfacePermissionKnown ? isReadOnly : null,
@@ -2600,17 +2755,40 @@ const UserTableViewer = ({
                 ] ?? null,
             }
           : null,
+      // The right-clicked cell is inside the extended range → the menu acts
+      // on the whole range (cut / clear / fill / highlight every cell).
+      rangeCells:
+        grid.range &&
+        menuTarget.cell &&
+        grid.isInRange(menuTarget.cell.rowId, menuTarget.cell.fieldName)
+          ? grid.selectedCells
+          : null,
       readOnly: isReadOnly,
       on: {
         cut: (address) => grid.cutCell(address),
         paste: (address) => void grid.pasteIntoCell(address),
         clear: (address) => void handleClearCell(address),
+        clearMany: (addresses) => void handleClearCells(addresses),
         edit: (address) => grid.beginEdit(address),
+        fillDown: () => {
+          if (grid.range)
+            void handleFillDownRange(
+              rangeRowsOf(grid.range, rowIdsOnPage, fieldNamesInOrder),
+            );
+        },
         highlight: (address, color) =>
           void writeStylePath(
             stylePath.cell(address.rowId, address.fieldName),
             color,
           ),
+        highlightMany: (addresses, color) => {
+          for (const address of addresses) {
+            void writeStylePath(
+              stylePath.cell(address.rowId, address.fieldName),
+              color,
+            );
+          }
+        },
       },
     }),
     buildGridRowMenuSection({
@@ -3235,13 +3413,28 @@ const UserTableViewer = ({
         // The Edit-menu / browser-native door for copy, cut and paste on the
         // selected cell (`useGridSelection` — THE CLIPBOARD HAS TWO DOORS).
         {...grid.clipboardHandlers}
-        className={
+        // While a drag is extending the range, the browser must not start a
+        // text selection underneath it.
+        className={cn(
           fillHeight
             ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm outline-none [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
-            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
-        }
+            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto",
+          grid.dragging && "select-none",
+        )}
       >
-        <Table className="w-auto min-w-max table-auto md:w-full md:min-w-full md:table-fixed">
+        <Table
+          // A fixed layout divides the width evenly, which is right for a
+          // handful of columns and unreadable past that — the 26-column
+          // example table rendered every cell 40px wide with the text of
+          // neighbouring cells overlapping. Past the cap the grid keeps its
+          // content-driven widths (150px minimum per header) and scrolls
+          // horizontally, exactly as it already does on a phone.
+          className={cn(
+            "w-auto min-w-max table-auto",
+            viewFields.length <= FIXED_LAYOUT_MAX_COLUMNS &&
+              "md:w-full md:min-w-full md:table-fixed",
+          )}
+        >
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-2 dark:bg-gray-800 md:px-3">
@@ -3269,6 +3462,16 @@ const UserTableViewer = ({
                   <TableHead
                     key={field.id}
                     {...{ [GRID_FIELD_DOM_ATTR]: field.field_name }}
+                    // Clicking the header's own surface (not its sort label
+                    // or its menu) selects the whole column — the Excel and
+                    // Sheets gesture. Ctrl/Cmd+Space does the same from the
+                    // keyboard.
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button")) return;
+                      grid.selectColumn(field.field_name);
+                      grid.refocusGrid();
+                    }}
+                    title={`Click to select the ${field.display_name} column`}
                     className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
                   >
                     <div className="flex items-center justify-between gap-1">
@@ -3394,7 +3597,16 @@ const UserTableViewer = ({
                 >
                   <TableCell
                     className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
-                    onClick={(event) => event.stopPropagation()}
+                    // The checkbox ticks the row for bulk actions; the cell
+                    // AROUND it selects the row's cells as a range (Shift+
+                    // Space from the keyboard) — the Sheets row-number gesture.
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if ((event.target as HTMLElement).closest("button")) return;
+                      grid.selectRow(row.id);
+                      grid.refocusGrid();
+                    }}
+                    title="Click beside the checkbox to select this row's cells"
                   >
                     <Checkbox
                       checked={selectedRowIdSet.has(row.id)}
@@ -3514,11 +3726,35 @@ const UserTableViewer = ({
                             "bg-primary/5 ring-2 ring-inset ring-primary/70",
                           grid.isEditing(row.id, field.field_name) &&
                             "bg-primary/10 ring-[3px] ring-inset ring-primary",
+                          // A cell inside the extended range — softer than the
+                          // anchor's ring, so the anchor stays findable.
+                          grid.isInRange(row.id, field.field_name) &&
+                            !grid.isSelected(row.id, field.field_name) &&
+                            "bg-primary/10",
                           // Tint LAST: the ring says "selected", the tint says
                           // "highlighted", and both must survive together.
                           cellTintClass(row, field.field_name),
                         )}
-                        onClick={() => {
+                        // Press starts a drag-select (or, with Shift, extends
+                        // the range to here); sweeping over cells while the
+                        // button is down grows it; release anywhere ends it.
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
+                          const address = { rowId: row.id, fieldName: field.field_name };
+                          if (e.shiftKey) grid.extendTo(address);
+                          else if (!grid.isEditing(row.id, field.field_name))
+                            grid.beginDrag(address);
+                        }}
+                        onPointerEnter={() =>
+                          grid.dragOver({ rowId: row.id, fieldName: field.field_name })
+                        }
+                        onClick={(e) => {
+                          // A shift-click already extended the range on press;
+                          // a plain click after a drag must not collapse it.
+                          if (e.shiftKey || grid.range) {
+                            grid.refocusGrid();
+                            return;
+                          }
                           grid.select({
                             rowId: row.id,
                             fieldName: field.field_name,
