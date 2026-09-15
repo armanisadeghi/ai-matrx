@@ -65,6 +65,13 @@ describe("SandboxListPage deletion ownership", () => {
 
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent === "Delete Sandbox B")?.click());
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    const secondConfirm = [...document.querySelectorAll("button")].find(
+      (button) =>
+        button.textContent === "Delete Sandbox" &&
+        button.closest('[role="dialog"]'),
+    );
+    if (!secondConfirm) throw new Error("second sandbox confirmation was not rendered");
+    expect(secondConfirm.disabled).toBe(false);
     const cancel = [...document.querySelectorAll("button")].find((button) => button.textContent === "Cancel");
     if (!cancel) throw new Error("second sandbox cancel control was not rendered");
     await act(async () => cancel.click());

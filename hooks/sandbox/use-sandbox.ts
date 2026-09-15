@@ -333,7 +333,7 @@ export function useSandboxInstances(projectId?: string) {
       setError(msg);
       return null;
     }
-  }, []);
+  }, [fetchInstances]);
 
   const renameInstance = useCallback(async (id: string, name: string) => {
     setError(null);
