@@ -100,6 +100,7 @@ export default function SandboxDetailPage() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [forceStopOpen, setForceStopOpen] = useState(false);
   const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | "extend" | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -1082,14 +1083,7 @@ export default function SandboxDetailPage() {
                         size="sm"
                         className="gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
                         disabled={!!adminActionLoading}
-                        onClick={async () => {
-                          setAdminActionLoading("stop");
-                          try {
-                            await handleStop(false);
-                          } finally {
-                            setAdminActionLoading(null);
-                          }
-                        }}
+                        onClick={() => setForceStopOpen(true)}
                       >
                         {adminActionLoading === "stop" ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1252,6 +1246,12 @@ export default function SandboxDetailPage() {
               Delete Sandbox
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={forceStopOpen} onOpenChange={setForceStopOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Force stop sandbox?</DialogTitle><DialogDescription>This immediately terminates the running sandbox instead of requesting a graceful stop.</DialogDescription></DialogHeader>
+          <DialogFooter><Button variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button variant="destructive" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       </div>

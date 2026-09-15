@@ -4,6 +4,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
+jest.mock("@/lib/sandbox/useSandboxLifecycleSubmission", () => ({ useSandboxLifecycleSubmission: () => ({ submit: jest.fn(async () => ({ admitted: true, receipt: {}, outcome: null })) }) }));
+jest.mock("@/lib/sandbox/useSandboxLifecycleTerminalInvalidation", () => ({ useSandboxLifecycleTerminalInvalidation: () => {} }));
+
 const dispatch = jest.fn();
 let selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
 let selectedUserId: string | null = "33333333-3333-4333-8333-333333333333";

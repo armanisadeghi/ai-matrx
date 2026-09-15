@@ -2,6 +2,9 @@ import { renderHook } from "@/test-utils/renderHook";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useState } from "react";
 
+jest.mock("@/lib/sandbox/useSandboxLifecycleSubmission", () => ({ useSandboxLifecycleSubmission: () => ({ submit: jest.fn(async () => ({ admitted: true, receipt: {}, outcome: null })) }) }));
+jest.mock("@/lib/sandbox/useSandboxLifecycleTerminalInvalidation", () => ({ useSandboxLifecycleTerminalInvalidation: () => {} }));
+
 let identity: {
   authReady: boolean;
   userId: string | null;
@@ -232,7 +235,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     jest.restoreAllMocks();
   });
 
-  it("keeps an unknown batch delete out of the definitive failures", async () => {
+  it("does not issue a legacy batch delete when no canonical target is loaded", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
       if (String(input).endsWith("/unknown")) {
         return {
@@ -251,14 +254,15 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     });
 
     expect(result).toEqual({
+      queuedIds: [],
       deletedIds: [],
-      failed: ["refused"],
-      unknownIds: ["unknown"],
+      failed: ["unknown", "refused"],
+      unknownIds: [],
     });
     await hook.unmount();
   });
 
-  it("reconciles an outcome-unknown stop rather than reporting it as a definitive failure", async () => {
+  it("never issues a legacy stop request for an unknown target", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "PUT") {
         return {
@@ -276,14 +280,12 @@ describe("useSandboxInstances lifecycle outcomes", () => {
       result = await hook.current.stopInstance("reconciled");
     });
 
-    expect(result).toBe("outcome_unknown");
-    expect(hook.current.error).toBe("check persisted state");
-    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/reconciled", expect.objectContaining({ method: "PUT" }));
-    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox?limit=50&offset=0", expect.any(Object));
+    expect(result).toBeNull();
+    expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PUT")).toBe(false);
     await hook.unmount();
   });
 
-  it("reconciles an outcome-unknown stop against the current project after a project switch", async () => {
+  it("does not use a legacy stop route after a project switch", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "PUT") {
         return {
@@ -306,10 +308,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
       await hook.current.stopInstance("reconciled");
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/sandbox?project_id=project-two&limit=50&offset=0",
-      expect.any(Object),
-    );
+    expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PUT")).toBe(false);
     await hook.unmount();
   });
 

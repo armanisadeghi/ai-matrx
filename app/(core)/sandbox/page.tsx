@@ -207,12 +207,8 @@ export default function SandboxListPage() {
       next.delete(target.id);
       return next;
     });
-    if (ok === true) {
-      toast.success(`Sandbox ${sandboxId} deleted`);
-    } else if (ok === "outcome_unknown") {
-      const msg = "The delete outcome is unknown. Refresh this sandbox while its state is checked.";
-      toast.warning(msg);
-      void fetchInstances();
+    if (ok === "queued") {
+      toast.warning(`Deletion requested for ${sandboxId}. It will disappear after confirmed completion.`);
     } else {
       const msg = "Failed to delete sandbox. Please try again.";
       toast.error(msg);
@@ -266,17 +262,17 @@ export default function SandboxListPage() {
     }
 
     setHistoryDeleting(true);
-    const { deletedIds, failed, unknownIds } = await deleteInstances(ids);
+    const { queuedIds, failed, unknownIds } = await deleteInstances(ids);
     setHistoryDeleting(false);
 
-    if (deletedIds.length > 0) {
+    if (queuedIds.length > 0) {
       setSelectedHistoryIds((prev) => {
         const next = new Set(prev);
-        for (const id of deletedIds) next.delete(id);
+        for (const id of queuedIds) next.delete(id);
         return next;
       });
       toast.success(
-        `Deleted ${deletedIds.length} sandbox record${deletedIds.length === 1 ? "" : "s"}`,
+        `Deletion requested for ${queuedIds.length} sandbox record${queuedIds.length === 1 ? "" : "s"}`,
       );
     }
     if (failed.length > 0) {
