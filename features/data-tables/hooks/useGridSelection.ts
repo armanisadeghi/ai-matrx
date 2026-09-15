@@ -129,6 +129,8 @@ export function useGridSelection(args: {
   rowIds: readonly string[];
   fieldNames: readonly string[];
   editable: boolean;
+  /** Per-cell veto on editing (a computed / formula cell). Defaults to "any cell". */
+  canEdit?: (address: CellAddress) => boolean;
   /** The clipboard text for a cell. Read at copy time, never cached. */
   getCellText: (address: CellAddress) => string;
   /** A copy landed on the clipboard — the caller owns the "Copied" feedback. */
@@ -154,6 +156,7 @@ export function useGridSelection(args: {
     rowIds,
     fieldNames,
     editable,
+    canEdit,
     getCellText,
     onCopied,
     onClearCells,
@@ -260,13 +263,13 @@ export function useGridSelection(args: {
 
   const beginEdit = useCallback(
     (address: CellAddress, seed?: string) => {
-      if (!editable) return;
+      if (!editable || (canEdit && !canEdit(address))) return;
       setSelected(address);
       setFocus(null);
       setEditing(address);
       setEditSeed(seed ?? null);
     },
-    [editable],
+    [canEdit, editable],
   );
 
   const endEdit = useCallback(
