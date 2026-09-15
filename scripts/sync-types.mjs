@@ -40,7 +40,10 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { assertServerMeetsContractPin } from './aidream-contract-pin.mjs';
+import {
+    assertCheckoutMeetsContractPin,
+    assertServerMeetsContractPin,
+} from './aidream-contract-pin.mjs';
 import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -234,7 +237,9 @@ if (fastMode) {
 console.log('  Step 2: Getting the API contract...\n');
 
 // A remote server may be the source only if it already contains the pinned commit.
-if (!useCheckout && !useLocal) {
+if (useCheckout) {
+    assertCheckoutMeetsContractPin(AIDREAM_ROOT);
+} else if (!useLocal) {
     await assertServerMeetsContractPin(backendUrl);
 }
 
