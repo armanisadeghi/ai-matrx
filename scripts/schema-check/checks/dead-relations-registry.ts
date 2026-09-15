@@ -19,7 +19,7 @@ const REL = "scripts/dead-relations.json";
 
 function check(ctx: Context): Finding[] {
   const { snapshot: snap } = ctx;
-  if (snap.provenance === "none" || snap.tables.size === 0) return [];
+  if (snap.tables.size === 0) return [];
   const info = classifyGenerated(REL)!;
   const findings: Finding[] = [];
 

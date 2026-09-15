@@ -25,9 +25,6 @@ const TYPES_REL = "types/database.types.ts";
 
 function check(ctx: Context): Finding[] {
   const { snapshot: snap } = ctx;
-  // Degraded snapshots (derived FROM the types) can't judge the types — skip.
-  if (snap.provenance === "none" || snap.provenance === "db-types") return [];
-
   const typesPath = join(ctx.root, TYPES_REL);
   if (!existsSync(typesPath)) {
     return [

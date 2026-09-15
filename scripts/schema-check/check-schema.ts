@@ -12,7 +12,7 @@
  *
  *   pnpm check:schema             # loud tiered report, exit 0 (non-blocking)
  *   pnpm check:schema:strict      # exit 1 on any error (CI gate)
- *   pnpm check:schema:refresh     # re-pull the live snapshot first, then check
+ *   pnpm check:schema:refresh     # re-pull the live snapshot first, then check; a failed pull exits 1, no check runs
  *   tsx … --warn                  # include warnings
  *   tsx … --verbose               # full per-finding dump (default summarizes big lists)
  *   tsx … --only types-freshness,direct-from-schema
@@ -20,6 +20,7 @@
  * Adding a check is one file in checks/ — see ./FEATURE.md.
  */
 import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -133,11 +134,21 @@ export function main(opts: RunOptions = {}): number {
 
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+  // A REQUESTED refresh that fails stops the run: checking against the committed
+  // (possibly stale) snapshot is what plain `pnpm check:schema` does, knowingly.
+  // Until 2026-09-15 this printed a yellow WARN and ran every check anyway, exit 0.
+  // Guard: snapshot-source.test.ts.
   if (refresh) {
     try {
       execFileSync("npx", ["tsx", resolve(root, "scripts/schema-check/get-current-schema.ts")], { stdio: "inherit" });
-    } catch {
-      console.error(`${C.yellow}[WARN]${C.reset} snapshot refresh failed — using the committed snapshot.`);
+    } catch (err) {
+      const status = (err as { status?: number | null }).status;
+      console.error(
+        `${C.red}${C.bold}[FAIL] check:schema --refresh: snapshot refresh FAILED — no check ran.${C.reset}\n` +
+          `${C.red}       cause: the refresher exited ${status ?? "abnormally"} (its cause is printed above).${C.reset}\n` +
+          `       remedy: fix that cause and re-run \`pnpm check:schema:refresh\`, or run \`pnpm check:schema\` to check against the committed snapshot (its generated_at is printed in the report).`,
+      );
+      return 1;
     }
   }
 
@@ -172,15 +183,11 @@ export function main(opts: RunOptions = {}): number {
     console.log(
       `${C.green}${C.bold}✓ schema-truth-check: code matches the live DB${C.reset} ${C.dim}across ${ran.length} check(s) — ${provenance}.${C.reset}${hiddenWarns}`,
     );
-    if (snap.provenance === "db-types" || snap.provenance === "none")
-      console.log(`${C.yellow}  note:${C.reset} ${C.dim}ran against a DEGRADED snapshot (${snap.source}). Run \`pnpm check:schema:refresh\` for full coverage.${C.reset}`);
     return strict && errors.length ? 1 : 0;
   }
 
   console.error("");
   box(["SCHEMA TRUTH-CHECK — code no longer matches the LIVE database"], C.red);
-  if (snap.provenance === "db-types" || snap.provenance === "none")
-    console.error(`${C.yellow}  snapshot is DEGRADED (${snap.source}) — freshness/exposure checks are limited. Run \`pnpm check:schema:refresh\`.${C.reset}`);
 
   const schemaTier = shown.filter((f) => TIER_SCHEMA.has(f.check));
   const generatedTier = shown.filter((f) => f.generated || TIER_GENERATED.has(f.check));
@@ -213,6 +220,8 @@ export function main(opts: RunOptions = {}): number {
 }
 
 // Run when invoked directly (not when imported by the dead-relations entry).
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Compare REAL paths: invoked through a symlinked path (macOS /var → /private/var)
+// the plain compare was false, main() never ran, and the process exited 0 silently.
+if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) {
   process.exit(main());
 }
