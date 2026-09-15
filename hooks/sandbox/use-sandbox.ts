@@ -77,6 +77,7 @@ export function useSandboxInstances(projectId?: string) {
   const [listProjectId, setListProjectId] = useState(projectId);
   const listProjectIdRef = useRef(projectId);
   const listRequestId = useRef(0);
+  const listScopeGeneration = useRef(0);
   const listAbortController = useRef<AbortController | null>(null);
   const extensionGeneration = useRef(0);
   const extensionIdentity = useRef("");
@@ -86,6 +87,9 @@ export function useSandboxInstances(projectId?: string) {
   const currentExtensionIdentity = `${authReady}:${userId ?? ""}:${organizationId ?? ""}`;
 
   useEffect(() => {
+    listScopeGeneration.current += 1;
+    listRequestId.current += 1;
+    listAbortController.current?.abort();
     extensionIdentity.current = currentExtensionIdentity;
     extensionGeneration.current += 1;
     return () => {
@@ -99,10 +103,11 @@ export function useSandboxInstances(projectId?: string) {
       listAbortController.current?.abort();
       listAbortController.current = null;
     };
-  }, [projectId]);
+  }, [authReady, organizationId, projectId, userId]);
 
   const fetchInstances = useCallback(
     async (opts?: SandboxListOptions) => {
+      const scopeGeneration = listScopeGeneration.current;
       const requestId = listRequestId.current + 1;
       listRequestId.current = requestId;
       listAbortController.current?.abort();
@@ -151,7 +156,7 @@ export function useSandboxInstances(projectId?: string) {
 
           while (hasMore) {
             const page = await fetchPage(pageSize, offset);
-            if (listRequestId.current !== requestId) return null;
+            if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
 
             instances.push(...page.instances);
             total = page.pagination.total;
@@ -181,7 +186,7 @@ export function useSandboxInstances(projectId?: string) {
           };
         }
 
-        if (listRequestId.current !== requestId) return null;
+        if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
 
         // Deduplicate by immutable database ID while preserving the server's
         // descending-created-at sequence across every fetched page.
@@ -205,6 +210,7 @@ export function useSandboxInstances(projectId?: string) {
           ids: uniqueInstances.map((i) => i.id),
         });
 
+        if (listScopeGeneration.current !== scopeGeneration) return null;
         setInstances(uniqueInstances);
         setTotal(data.pagination.total);
         hasFetchedOnce.current = true;
@@ -212,7 +218,7 @@ export function useSandboxInstances(projectId?: string) {
         setListProjectId(projectId);
         return { ...data, instances: uniqueInstances };
       } catch (err) {
-        if (listRequestId.current !== requestId) return null;
+        if (listRequestId.current !== requestId || listScopeGeneration.current !== scopeGeneration) return null;
         if (err instanceof DOMException && err.name === "AbortError") {
           return null;
         }
@@ -226,7 +232,7 @@ export function useSandboxInstances(projectId?: string) {
         setError(msg);
         return null;
       } finally {
-        if (listRequestId.current === requestId) {
+        if (listRequestId.current === requestId && listScopeGeneration.current === scopeGeneration) {
           setLoading(false);
           setRefreshing(false);
           if (listAbortController.current === abortController) {
@@ -235,7 +241,7 @@ export function useSandboxInstances(projectId?: string) {
         }
       }
     },
-    [projectId],
+    [authReady, organizationId, projectId, userId],
   );
   useSandboxLifecycleTerminalInvalidation(() => fetchInstances());
 

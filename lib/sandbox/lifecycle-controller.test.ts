@@ -13,6 +13,13 @@ describe("sandbox lifecycle controller", () => {
     expect(result).toBeNull();
   });
 
+  it("announces unavailable persistence before admitting the same in-memory receipt", async () => {
+    const order: string[] = [];
+    const result = await submitSandboxLifecycleOperation({ actorId: "33333333-3333-4333-8333-333333333333", actorGeneration: 1, isCurrentActorGeneration: () => true, storage, receipt, sandboxId: "runtime-a", onPersistenceUnavailable: () => order.push("warn"), adapter: { admit: async (same) => { order.push("post"); expect(same.operation_id).toBe(receipt.operation_id); return wire(202, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "accepted" }); }, status: jest.fn(), recover: jest.fn() } });
+    expect(order).toEqual(["warn", "post"]);
+    expect(result).toMatchObject({ refreshRecoveryAvailable: false, receipt: expect.objectContaining({ operation_id: receipt.operation_id }) });
+  });
+
   it("reconnects a reload receipt using the returned runtime sandbox id and keeps HTTP 200 running pending", async () => {
     const views: unknown[] = [];
     const controller = new SandboxLifecycleReceiptController({ actorId: "33333333-3333-4333-8333-333333333333", generation: 1, isCurrent: () => true, receipt, adapter: { admit: jest.fn(), recover: jest.fn(), status: async () => wire(200, { row_id: receipt.row_id.replaceAll("-", ""), sandbox_id: "runtime-a", operation_id: receipt.operation_id.replaceAll("-", ""), kind: receipt.kind, state: "running" }) }, onView: (view) => views.push(view), environment: { visible: () => true, online: () => true, addEventListener: () => {}, removeEventListener: () => {} } });
