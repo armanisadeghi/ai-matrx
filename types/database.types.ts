@@ -60592,6 +60592,7 @@ export type Database = {
           lifecycle_enlisted: boolean
           lifecycle_hot_days: number | null
           notes: string | null
+          origin: string
           projects_token: string | null
           reference_candidate_predicates: Json
           reference_category: string | null
@@ -60647,6 +60648,7 @@ export type Database = {
           lifecycle_enlisted?: boolean
           lifecycle_hot_days?: number | null
           notes?: string | null
+          origin?: string
           projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -60702,6 +60704,7 @@ export type Database = {
           lifecycle_enlisted?: boolean
           lifecycle_hot_days?: number | null
           notes?: string | null
+          origin?: string
           projects_token?: string | null
           reference_candidate_predicates?: Json
           reference_category?: string | null
@@ -62856,6 +62859,147 @@ export type Database = {
           },
         ]
       }
+      provision_grant: {
+        Row: {
+          granted_at: string
+          granted_by: string
+          organization_id: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by: string
+          organization_id: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string
+          organization_id?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
+      provision_rule_message: {
+        Row: {
+          field_path: string
+          legal_values: string | null
+          otherwise: string
+          rule_id: string
+          why: string
+        }
+        Insert: {
+          field_path: string
+          legal_values?: string | null
+          otherwise: string
+          rule_id: string
+          why: string
+        }
+        Update: {
+          field_path?: string
+          legal_values?: string | null
+          otherwise?: string
+          rule_id?: string
+          why?: string
+        }
+        Relationships: []
+      }
+      provision_schema: {
+        Row: {
+          description: string
+          name: string
+          schema: Json
+          updated_at: string
+        }
+        Insert: {
+          description: string
+          name: string
+          schema: Json
+          updated_at?: string
+        }
+        Update: {
+          description?: string
+          name?: string
+          schema?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      provision_spec: {
+        Row: {
+          applied_at: string
+          applied_by: string
+          applied_via: string
+          artifacts_status: string
+          origin: string
+          owner_org_id: string | null
+          projection_path: string | null
+          result: Json
+          spec: Json
+          spec_hash: string
+          token: string
+          type: string
+          verb: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by: string
+          applied_via: string
+          artifacts_status?: string
+          origin?: string
+          owner_org_id?: string | null
+          projection_path?: string | null
+          result?: Json
+          spec: Json
+          spec_hash: string
+          token: string
+          type: string
+          verb: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string
+          applied_via?: string
+          artifacts_status?: string
+          origin?: string
+          owner_org_id?: string | null
+          projection_path?: string | null
+          result?: Json
+          spec?: Json
+          spec_hash?: string
+          token?: string
+          type?: string
+          verb?: string
+        }
+        Relationships: []
+      }
+      provision_vocabulary: {
+        Row: {
+          declared: string[]
+          doc_reference: string
+          live_source: string
+          name: string
+          source_kind: string
+        }
+        Insert: {
+          declared: string[]
+          doc_reference: string
+          live_source: string
+          name: string
+          source_kind: string
+        }
+        Update: {
+          declared?: string[]
+          doc_reference?: string
+          live_source?: string
+          name?: string
+          source_kind?: string
+        }
+        Relationships: []
+      }
       purpose: {
         Row: {
           created_at: string
@@ -64641,6 +64785,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_provision_spec_current: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          applied_via: string | null
+          artifacts_status: string | null
+          origin: string | null
+          owner_org_id: string | null
+          projection_path: string | null
+          result: Json | null
+          spec: Json | null
+          spec_hash: string | null
+          token: string | null
+          type: string | null
+          verb: string | null
+        }
+        Relationships: []
+      }
       v_purpose_orphaned: {
         Row: {
           created_at: string | null
@@ -65612,6 +65774,49 @@ export type Database = {
           p_token: string
         }
         Returns: undefined
+      }
+      provision_base_columns: { Args: never; Returns: string[] }
+      provision_check_vocabulary: {
+        Args: { p_conname: string; p_relation: unknown }
+        Returns: string[]
+      }
+      provision_default_menu_ok: {
+        Args: { p_default: Json; p_type: string }
+        Returns: boolean
+      }
+      provision_finding: {
+        Args: {
+          p_field_path?: string
+          p_legal_values?: string
+          p_observed?: string
+          p_rule_id: string
+        }
+        Returns: Json
+      }
+      provision_identifier_ok: { Args: { p_name: string }; Returns: boolean }
+      provision_legal_schemas: {
+        Args: { p_org_id?: string }
+        Returns: {
+          granted: boolean
+          schema_name: string
+        }[]
+      }
+      provision_live_vocabulary: { Args: { p_name: string }; Returns: string[] }
+      provision_options: {
+        Args: { p_kind?: string; p_org_id?: string }
+        Returns: Json
+      }
+      provision_validate: {
+        Args: { p_lane?: string; p_org_id?: string; p_spec: Json }
+        Returns: Json
+      }
+      provision_vocabulary_selftest: {
+        Args: never
+        Returns: {
+          detail: string
+          status: string
+          vocabulary: string
+        }[]
       }
       provisioner_selftest: {
         Args: never
@@ -68329,6 +68534,15 @@ export type Database = {
       admin_set_entity_type_preview: {
         Args: { p_allow: boolean; p_token: string }
         Returns: boolean
+      }
+      admin_set_guest_block: {
+        Args: {
+          p_blocked: boolean
+          p_blocked_until?: string
+          p_guest_id: string
+          p_reason?: string
+        }
+        Returns: Json
       }
       admin_set_share_policy: {
         Args: {
@@ -89029,6 +89243,14 @@ export type Database = {
         }
         Returns: Json
       }
+      _tm_site: {
+        Args: {
+          p_denied: string
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_site_id: string
+        }
+        Returns: undefined
+      }
       _tm_topic_facets_all: {
         Args: { p_map_id: string }
         Returns: {
@@ -89074,6 +89296,10 @@ export type Database = {
           slug: string
           value_id: string
         }[]
+      }
+      _tm_visible_sites: {
+        Args: { p_denied?: string; p_map_id: string; p_site_id: string }
+        Returns: string[]
       }
       adopt_starter_pack: {
         Args: {
