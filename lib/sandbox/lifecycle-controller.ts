@@ -25,7 +25,7 @@ export async function submitSandboxLifecycleOperation(args: {
   try {
     const response = await adapter.admit(dispatched);
     if (!isCurrentActorGeneration(actorGeneration)) return null;
-    const identity: DurableLifecycleIdentity = { row_id: receipt.row_id, sandbox_id: sandboxId, operation_id: receipt.operation_id, kind: receipt.kind };
+    const identity: DurableLifecycleIdentity = { row_id: receipt.row_id, sandbox_id: sandboxId, operation_id: receipt.operation_id, kind: receipt.kind, graceful: receipt.graceful ?? true };
     const result = await classifyDurableSandboxLifecycleResponse(response, identity, receipt.observation === "accepted");
     const observed = result.state === "pending" ? { ...receipt, observation: "accepted" as const } : dispatched;
     if (result.state === "pending") refreshRecoveryAvailable = writeSandboxOperationReceipt(storage, actorId, observed) && refreshRecoveryAvailable;
@@ -45,7 +45,7 @@ export async function retryExactSandboxLifecycleOperation(args: Parameters<typeo
   try {
     const response = await adapter.admit(dispatched);
     if (!isCurrentActorGeneration(actorGeneration)) return null;
-    const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: receipt.row_id, sandbox_id: sandboxId, operation_id: receipt.operation_id, kind: receipt.kind }, true);
+    const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: receipt.row_id, sandbox_id: sandboxId, operation_id: receipt.operation_id, kind: receipt.kind, graceful: receipt.graceful ?? true }, true);
     return { ...result, receipt: dispatched, refreshRecoveryAvailable };
   } catch { return isCurrentActorGeneration(actorGeneration) ? unknown(dispatched, refreshRecoveryAvailable) : null; }
 }

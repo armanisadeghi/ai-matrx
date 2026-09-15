@@ -4,7 +4,7 @@ import type { ReceiptStorage } from "@/lib/durable-run/sandbox-operation-receipt
 
 const receipt = { schema_version: 1 as const, row_id: "11111111-1111-4111-8111-111111111111", operation_id: "22222222-2222-4222-8222-222222222222", kind: "stop" as const, observation: "prepared" as const };
 const storage: ReceiptStorage = { length: 0, key: () => null, getItem: () => null, setItem: jest.fn(), removeItem: jest.fn() };
-const wire = (status: number, payload: object) => ({ ok: status >= 200 && status < 300, status, json: async () => payload }) as Response;
+const wire = (status: number, payload: object) => ({ ok: status >= 200 && status < 300, status, json: async () => ({ graceful: true, ...payload }) }) as Response;
 describe("sandbox lifecycle controller", () => {
   afterEach(() => { jest.useRealTimers(); });
 

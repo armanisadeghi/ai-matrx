@@ -6,6 +6,7 @@ export interface DurableLifecycleIdentity {
   sandbox_id: string;
   operation_id: string;
   kind: SandboxOperationKind;
+  graceful?: boolean;
 }
 export interface DurableLifecycleResult { state: DurableLifecycleState; message: string; sandbox_id?: string; }
 
@@ -18,7 +19,7 @@ function sameUuid(left: unknown, right: string): boolean {
 function matches(value: Record<string, unknown> | null, expected: DurableLifecycleIdentity): boolean {
   return sameUuid(value?.row_id, expected.row_id) &&
     (expected.sandbox_id === "" || value?.sandbox_id === expected.sandbox_id) &&
-    sameUuid(value?.operation_id, expected.operation_id) && value?.kind === expected.kind;
+    sameUuid(value?.operation_id, expected.operation_id) && value?.kind === expected.kind && value?.graceful === (expected.graceful ?? true);
 }
 
 /** Durable contract classifier. Kept separate from the legacy classifier until every caller is migrated. */
@@ -51,7 +52,7 @@ export interface SandboxLifecycleOperationAdapter {
 
 /** URL ownership stays with the route layer; this inactive bridge accepts explicit paths and never touches legacy traffic. */
 export function createSandboxLifecycleOperationAdapter(fetcher: typeof fetch, paths: { admission: (receipt: SandboxOperationReceipt) => string; status: (receipt: SandboxOperationReceipt) => string; recovery: (receipt: SandboxOperationReceipt) => string; }): SandboxLifecycleOperationAdapter {
-  const body = (receipt: SandboxOperationReceipt) => JSON.stringify({ row_id: receipt.row_id, operation_id: receipt.operation_id, kind: receipt.kind });
+  const body = (receipt: SandboxOperationReceipt) => JSON.stringify({ row_id: receipt.row_id, operation_id: receipt.operation_id, kind: receipt.kind, graceful: receipt.graceful ?? true });
   return {
     admit: (receipt, signal) => fetcher(paths.admission(receipt), { method: "POST", headers: { "Content-Type": "application/json" }, body: body(receipt), signal }),
     status: (receipt, signal) => fetcher(`${paths.status(receipt)}?kind=${receipt.kind}`, { method: "GET", signal }),

@@ -17,7 +17,7 @@ function isTerminalState(state: SandboxLifecycleView["state"]): boolean {
 }
 
 function receiptIdentity(receipt: SandboxOperationReceipt): string {
-  return `${receipt.row_id}:${receipt.operation_id}:${receipt.kind}`;
+  return `${receipt.row_id}:${receipt.operation_id}:${receipt.kind}:${receipt.graceful ?? true}`;
 }
 
 export type LifecycleControllerEnvironment = {
@@ -79,7 +79,7 @@ export class SandboxLifecycleReceiptController {
       const response = await this.options.adapter.status(this.options.receipt, this.abort.signal);
       if (this.stopped || !this.options.isCurrent()) return;
       // GET status is never a first admission: a conflict cannot prove refusal.
-      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, sandbox_id: "" }, true);
+      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, true);
       if (this.stopped || !this.options.isCurrent()) return;
       this.failures = 0;
       this.latestState = result.state;
@@ -121,7 +121,7 @@ export class SandboxLifecycleReceiptController {
     try {
       const response = await this.options.adapter[method](this.options.receipt, this.abort.signal);
       if (this.stopped || !this.options.isCurrent()) return;
-      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
+      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
       if (this.stopped || !this.options.isCurrent()) return;
       this.latestState = result.state;
       const terminal = isTerminalState(result.state);
