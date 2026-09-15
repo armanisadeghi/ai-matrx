@@ -154,9 +154,11 @@ export function SandboxCanvasBody({
   // "Live" = a sandbox tool is running RIGHT NOW in this conversation. Derived
   // from the same lifecycle map the transcript renders from, so the dot can
   // never disagree with what the thread shows.
-  const live = useAppSelector(
-    selectLiveToolLifecycleByConversation(conversationId ?? ""),
+  const liveSelector = React.useMemo(
+    () => selectLiveToolLifecycleByConversation(conversationId ?? ""),
+    [conversationId],
   );
+  const live = useAppSelector(liveSelector);
   const busy = live
     ? [...live.values()].some(
         (entry) =>

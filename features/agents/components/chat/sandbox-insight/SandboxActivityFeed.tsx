@@ -108,12 +108,19 @@ export function SandboxActivityFeed({
 }: {
   conversationId: string;
 }) {
-  const records = useAppSelector(
-    selectToolCallsForConversation(conversationId),
+  // Memoize the selector FACTORIES — an inline call builds a new
+  // createSelector every render and defeats the memo, so the feed rebuilt its
+  // whole row list on every unrelated render.
+  const recordsSelector = React.useMemo(
+    () => selectToolCallsForConversation(conversationId),
+    [conversationId],
   );
-  const live = useAppSelector(
-    selectLiveToolLifecycleByConversation(conversationId),
+  const liveSelector = React.useMemo(
+    () => selectLiveToolLifecycleByConversation(conversationId),
+    [conversationId],
   );
+  const records = useAppSelector(recordsSelector);
+  const live = useAppSelector(liveSelector);
   const rows = buildSandboxActivity(records, live);
 
   if (rows.length === 0) {
