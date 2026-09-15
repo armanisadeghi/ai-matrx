@@ -71,6 +71,8 @@ export interface GitHubInstallation {
   /** GitHub's own words: "all" or "selected". */
   repositorySelection: "all" | "selected" | null;
   repositoryCount: number;
+  /** A suspended App installation grants no usable repository access. */
+  suspended: boolean;
   /** That installation's settings page on GitHub. */
   htmlUrl: string | null;
 }

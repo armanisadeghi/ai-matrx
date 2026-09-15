@@ -4,8 +4,9 @@ export const GITHUB_OAUTH_COOKIE = "github_oauth_session";
 
 export interface GitHubOAuthSession {
   state: string;
-  redirectUri: string;
   returnUrl: string;
+  browserProof: string;
+  flow: "authorize" | "install";
   /**
    * The organization this connection is made in. Threaded through the OAuth
    * round trip the same way `returnUrl` is (GitHub, an external provider,
@@ -26,21 +27,14 @@ export function requestBaseUrl(request: NextRequest): string {
 }
 
 export function safeReturnUrl(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//"))
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  )
     return "/code";
   return value;
-}
-
-export function githubAuthorizationUrl(
-  clientId: string,
-  redirectUri: string,
-  state: string,
-): URL {
-  const url = new URL("https://github.com/login/oauth/authorize");
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("state", state);
-  return url;
 }
 
 export function parseGitHubOAuthSession(
@@ -52,19 +46,22 @@ export function parseGitHubOAuthSession(
       typeof parsed === "object" &&
       parsed !== null &&
       "state" in parsed &&
-      "redirectUri" in parsed &&
       "returnUrl" in parsed &&
+      "browserProof" in parsed &&
+      "flow" in parsed &&
       "organizationId" in parsed &&
       typeof parsed.state === "string" &&
-      typeof parsed.redirectUri === "string" &&
       typeof parsed.returnUrl === "string" &&
+      typeof parsed.browserProof === "string" &&
+      (parsed.flow === "authorize" || parsed.flow === "install") &&
       typeof parsed.organizationId === "string" &&
       parsed.organizationId.length > 0
     ) {
       return {
         state: parsed.state,
-        redirectUri: parsed.redirectUri,
         returnUrl: safeReturnUrl(parsed.returnUrl),
+        browserProof: parsed.browserProof,
+        flow: parsed.flow,
         organizationId: parsed.organizationId,
       };
     }
