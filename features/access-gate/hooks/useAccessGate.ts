@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
+import { classifyDataError } from "@/features/access-gate/classifyDataError";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
 import {
   resolveRecordUnavailableCapture,
@@ -54,7 +55,15 @@ export function useAccessGate(
     // An answer must never be applied to a different record — the user can
     // navigate between two denied ids faster than the RPC returns.
     let active = true;
-    void fetchAccessDeniedContext(token, id).then((next) => {
+    // WHAT THE SURFACE'S OWN READ DID is half the answer, and only the surface
+    // knows it. A genuine fault leaves room for "you can open this, that was
+    // transient"; a read that returned nothing is itself an access answer and
+    // must not be overruled by a level claim (V-XT-2/N2 — see `deriveStatus`).
+    const read =
+      classifyDataError(options.readError) === "fault"
+        ? "fault"
+        : "access-question";
+    void fetchAccessDeniedContext(token, id, read).then((next) => {
       if (!active) return;
 
       // `recordUnavailable()` had to capture immediately while the read was

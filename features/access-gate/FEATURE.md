@@ -260,6 +260,25 @@ surface means importing them too, never reimplementing the RPC call.
 
 ## Change Log
 
+- **2026-09-15** — **A level claim is no longer evidence against a read that came
+  back empty, and a door's refusal now reaches the person verbatim** (V-XT-2/N2).
+  `admin@admin.com` opening a conversation owned by another account was told
+  "You do have access to it — something went wrong on our side. Try again." on
+  a record the server had refused with `404 conversation_not_found`.
+  `access_denied_context` promotes any platform admin to `level: 'admin'`
+  because the `platform_admin_all` RLS policy normally lets them read the row;
+  the gate resolved that disagreement in favour of the claim and invented both
+  the fault and the retry. `deriveStatus` now takes an `AccessReadOutcome`, and
+  `ok` is reachable only from a read that actually FAULTED — `useAccessGate`
+  derives it through the existing `classifyDataError`, so no surface changed.
+  New `service/serverRefusal.ts` is the ONE reader of a server refusal (a thin
+  adapter over `lib/api/door-refusal.ts`, adding the machine code and a null
+  answer for non-refusals): `AccessGate` prints the server's own sentence in
+  place of the generic copy, discloses the code in a closed `<details>`, and
+  suppresses the retry. Guards: `deriveStatus.test.ts` (red on the old order),
+  `serverRefusal.test.ts`.
+
+
 - **2026-08-29** — The shared React Query boundary no longer automatically
   retries deterministic `RecordUnavailableError` results; a deleted, missing,
   or denied route visit now produces one reconciled capture while preserving

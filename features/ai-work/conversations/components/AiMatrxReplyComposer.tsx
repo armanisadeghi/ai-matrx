@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
 import { useCodingReplyResponder } from "./useCodingReplyResponder";
 
 /** `source_feature` for every reply sent from this composer (registered slug). */
@@ -40,7 +41,13 @@ export const CODING_SESSION_REPLY_SOURCE_FEATURE = "coding_session_reply";
 type SendState =
   | { phase: "idle" }
   | { phase: "answering" }
-  | { phase: "failed"; message: string; nextStep: string };
+  | {
+      phase: "failed";
+      message: string;
+      nextStep: string;
+      /** The server's machine code, when it sent one. Reportable, not prose. */
+      code: string | null;
+    };
 
 /**
  * What to do next, stated for the failure that actually happened — never a
@@ -48,6 +55,13 @@ type SendState =
  * which resolves itself; anything else is reported with the server's own words.
  */
 function nextStepFor(status: number | undefined): string {
+  if (status === 404) {
+    // 🚨 NEVER "try again" HERE. The turn door answers 404 for a conversation
+    // that is not this account's, so a resend is a click that cannot work —
+    // and telling somebody to retry it is the false sentence V-XT-2/N2 found
+    // on this page's error screen.
+    return "Nothing was sent, and sending it again cannot work: this conversation is not available to your account. Open it from your own conversations, or ask whoever shared the link to give you access.";
+  }
   if (status === 409) {
     return "A run is already going on this conversation. Wait for it to finish — new turns appear above as they arrive — then send this again.";
   }
@@ -87,6 +101,15 @@ export function AiMatrxReplyComposer({
     report && report.is_coding_session_mirror
       ? report.composer_label
       : null;
+  /**
+   * WHY a reply cannot be sent, in the server's own words. `reason` is present
+   * exactly when the server refused the door itself (a conversation this
+   * account cannot reply to) rather than merely lacking an agent to answer —
+   * and it is printed verbatim, never re-worded here.
+   */
+  const refusalSentence = report && !report.can_reply
+    ? (label ?? report.reason ?? null)
+    : null;
   const standInNotice =
     report && report.responder?.used_platform_default
       ? report.stand_in_notice
@@ -148,10 +171,15 @@ export function AiMatrxReplyComposer({
 
     if (result.error) {
       setPreview("");
+      // The server's own sentence when it sent one — read through the ONE
+      // refusal reader, so this composer can never print a transport code or
+      // a sentence that blames the reader for a refusal.
+      const refusal = readServerRefusal(result.error);
       setSend({
         phase: "failed",
-        message: result.error.message,
+        message: refusal?.message ?? result.error.message,
         nextStep: nextStepFor(result.error.status),
+        code: refusal?.code ?? null,
       });
       return;
     }
@@ -161,6 +189,7 @@ export function AiMatrxReplyComposer({
       setSend({
         phase: "failed",
         message: failure.message,
+        code: null,
         // The turn reached the server, so the person's own reply row may
         // already exist — say so instead of implying nothing happened.
         nextStep:
@@ -208,6 +237,16 @@ export function AiMatrxReplyComposer({
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{label}</span>
         </p>
+      ) : refusalSentence ? (
+        /* The server refused the door itself, so there is no "who answers"
+           sentence to show — its refusal takes that place, verbatim. */
+        <p
+          id={labelId}
+          className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
+        >
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{refusalSentence}</span>
+        </p>
       ) : null}
       {/* THE ANNOUNCED STAND-IN, on screen and not only in a log: visually
           secondary to the label above, and present only when the server says
@@ -226,14 +265,14 @@ export function AiMatrxReplyComposer({
         disabled={busy || inputBlocked}
         placeholder={
           replyRefused
-            ? "No reply can be answered here yet."
+            ? "A reply cannot be sent here."
             : "Ask AI Matrx about this session, or say what to do next."
         }
         className="mt-3 text-sm"
         aria-label="Your reply to AI Matrx"
         // The visible reason a refused field cannot be typed in is the
         // server's own sentence above it, not a tooltip.
-        aria-describedby={replyRefused && label ? labelId : undefined}
+        aria-describedby={replyRefused && refusalSentence ? labelId : undefined}
       />
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -262,9 +301,13 @@ export function AiMatrxReplyComposer({
         ) : replyRefused ? (
           // A disabled field with no explanation is the dead-looking control
           // this product forbids: the reason is the sentence above, repeated
-          // here as the reason this cannot send.
+          // here as the reason this cannot send. It is ALWAYS the server's —
+          // when the door refused the conversation itself there is no composer
+          // label to repeat, and this used to print "cannot be sent: null".
           <span className="text-xs text-muted-foreground">
-            This reply cannot be sent: {label}
+            {refusalSentence
+              ? `This reply cannot be sent: ${refusalSentence}`
+              : "This reply cannot be sent."}
           </span>
         ) : responder.status === "loading" ? (
           <span className="text-xs text-muted-foreground">
@@ -298,6 +341,11 @@ export function AiMatrxReplyComposer({
             <span className="mt-0.5 block text-foreground">
               {send.nextStep}
             </span>
+            {send.code ? (
+              <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
+                {send.code}
+              </span>
+            ) : null}
           </span>
         </div>
       ) : null}

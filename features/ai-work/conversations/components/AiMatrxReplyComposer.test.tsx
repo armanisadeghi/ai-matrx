@@ -43,7 +43,13 @@ import { AiMatrxReplyComposer } from "./AiMatrxReplyComposer";
 type DoorOptions = Parameters<typeof callConversationContinue>[0];
 /** What the component actually consumes off the result. */
 type DoorResult = {
-  error?: { type: string; message: string; status?: number };
+  error?: {
+    type: string;
+    message: string;
+    status?: number;
+    /** The refusal body the server sent — read verbatim, never re-worded. */
+    serverDetail?: unknown;
+  };
 };
 
 // The real door returns a thunk the real dispatch runs; here dispatch is the
@@ -273,6 +279,79 @@ describe("AiMatrxReplyComposer", () => {
     expect(view.text()).toContain(refusal);
     expect(view.text()).toContain("This reply cannot be sent");
     expect(door).not.toHaveBeenCalled();
+    await view.unmount();
+  });
+
+  it("says, in the server's words, that a reply cannot be sent on a conversation this account cannot reply to", async () => {
+    /*
+      V-XT-2/N1+N2, on production 2026-09-15. The responder door answered
+      `can_reply: true` for a conversation `admin@admin.com` did not own, while
+      `POST /api/conversations/<id>` answered `404 conversation_not_found` for
+      the same caller — so the composer enabled itself on a door that refuses.
+      With the server's verdict now honest, the composer has no
+      `composer_label` to carry the reason (the conversation is reported as no
+      mirror), and it used to print "This reply cannot be sent: null".
+    */
+    const reason =
+      "No conversation with this id is available to your account, so nothing can be sent here. Open it from your own conversations, or ask whoever shared the link to give you access.";
+    responderDoor.mockResolvedValue({
+      data: {
+        schema_version: 1,
+        conversation_id: "conv-1",
+        is_coding_session_mirror: false,
+        composer_label: "",
+        can_reply: false,
+        reason,
+      },
+    });
+    const view = await mount();
+    const textarea = view.host.querySelector("textarea");
+    expect(textarea?.hasAttribute("disabled")).toBe(true);
+    expect(view.sendButton.hasAttribute("disabled")).toBe(true);
+    // The server's sentence, verbatim, on the page.
+    expect(view.text()).toContain(reason);
+    expect(view.text()).toContain("This reply cannot be sent");
+    // Never the placeholder for a missing sentence, and never a claim of access.
+    expect(view.text()).not.toContain("null");
+    expect(view.text()).not.toContain("You do have access");
+    expect(door).not.toHaveBeenCalled();
+    await view.unmount();
+  });
+
+  it("prints a 404 refusal in the server's words, names its code, and never invites a retry", async () => {
+    /*
+      The other half of N2: the turn door's own refusal. A resend cannot work
+      on a conversation that is not this account's, so "try again" is a false
+      sentence — and the machine code is what makes the refusal reportable.
+    */
+    door.mockResolvedValue({
+      error: {
+        type: "not_found",
+        message: "HTTP 404",
+        status: 404,
+        serverDetail: {
+          code: "conversation_not_found",
+          message: "No conversation found with id='9e015853-…'.",
+        },
+      },
+    });
+
+    const view = await mount();
+    await view.type("Whose session is this?");
+    await view.send();
+
+    expect(view.text()).toContain(
+      "No conversation found with id='9e015853-…'.",
+    );
+    expect(view.text()).toContain("conversation_not_found");
+    expect(view.text()).toContain("sending it again cannot work");
+    // The bare transport code never reaches a person, and neither does an
+    // invitation to retry something that cannot succeed.
+    expect(view.text()).not.toContain("HTTP 404");
+    expect(view.text()).not.toContain("Send it again");
+    expect(view.onAnswered).not.toHaveBeenCalled();
+    const textarea = view.host.querySelector("textarea");
+    expect(textarea?.value).toBe("Whose session is this?");
     await view.unmount();
   });
 

@@ -7823,6 +7823,49 @@
         }
       }
     },
+    "/coding-sessions/conversations/{conversation_id}/responder": {
+      "get": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Coding Reply Responder",
+        "description": "Who answers a reply on this conversation — read BEFORE the turn.\n\nOwner-scoped: a conversation that is not a coding-session mirror belonging to the\ncaller answers `is_coding_session_mirror: false` and nothing else, which is what\nevery ordinary conversation gets.\n\n``can_reply`` is the TURN DOOR'S own verdict, not this door's opinion of it:\nit comes from ``can_reply_to_conversation``, the predicate\n``require_owned_conversation_id`` refuses ``POST /conversations/{id}`` with.\nA caller who cannot reply is told so with a reason, instead of being handed\na composer that enables itself and then 404s.",
+        "operationId": "coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodingReplyResponderReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/coding-sessions/sessions": {
       "get": {
         "tags": [
@@ -14656,7 +14699,7 @@
           "MCP Connections"
         ],
         "summary": "Catalog Refresh",
-        "description": "Force the server-wide tool catalog sync without touching user auth.",
+        "description": "Force the server-wide tool catalog sync using this admin's connection.",
         "operationId": "catalog_refresh_mcp_connections__server_id__catalog_refresh_post",
         "parameters": [
           {
@@ -15123,6 +15166,32 @@
         }
       }
     },
+    "/google-integrations/capabilities": {
+      "get": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Capabilities",
+        "description": "Typed Google product metadata for the authenticated caller.\n\nThe catalog is static capability and rollout information only. It does not\ninventory connections, selected resources, Vault values, or provider data.",
+        "operationId": "google_capabilities_google_integrations_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GoogleCapabilityMetadata"
+                  },
+                  "type": "array",
+                  "title": "Response Google Capabilities Google Integrations Capabilities Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/calendar/agenda": {
       "post": {
         "tags": [
@@ -15411,18 +15480,18 @@
         }
       }
     },
-    "/github-integrations/exchange": {
+    "/github-integrations/authorize": {
       "post": {
         "tags": [
           "GitHub Integrations"
         ],
-        "summary": "Exchange",
-        "operationId": "exchange_github_integrations_exchange_post",
+        "summary": "Authorize",
+        "operationId": "authorize_github_integrations_authorize_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GitHubExchangeRequest"
+                "$ref": "#/components/schemas/GitHubOAuthStartRequest"
               }
             }
           },
@@ -15434,7 +15503,48 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                  "$ref": "#/components/schemas/GitHubOAuthStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/complete": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Complete",
+        "operationId": "complete_github_integrations_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubOAuthCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubOAuthCompleteResponse"
                 }
               }
             }
@@ -49234,6 +49344,130 @@
         }
       }
     },
+    "/masterworks/ingest-markup": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Markup",
+        "description": "THE RED-PEN LANE (`red_pen`): a piece of someone else's work the Expert\nmarked up. Each correction is a struck-through passage plus the Expert's own\nwords — typed or dictated — on what is wrong and what they would do instead,\nand the rule comes out of the DISAGREEMENT. Every rule's `source_ref.span`\ncites the passage that provoked it and the moment the Expert said so.",
+        "operationId": "ingest_rulebook_markup_masterworks_ingest_markup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestMarkupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/ingest-predictions": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Predictions",
+        "description": "The `prediction_ledger` Approach: the Expert's own calls on real open\ncases, made before the outcome existed and now scored against what actually\nhappened. The whys behind calls that HELD become rules carrying the\nprediction and its outcome as evidence; the whys behind calls that MISSED\nbecome boundary findings the Expert is asked about, never rules written\nover their head.\n\nA ledger still waiting on the world is not an empty success: below the\n`min_resolved_to_distill` knob this refuses with the real counts and the\nreal remedy (`masterwork_prediction_not_enough_outcomes`).",
+        "operationId": "ingest_rulebook_predictions_masterworks_ingest_predictions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestPredictionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{rulebook_id}/predictions": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Read Prediction Ledger",
+        "description": "The ledger's calibration readout and this organization's knob values.\n\nThe ENTRIES themselves are not returned: the client already holds them —\nit wrote them direct to `platform.rulebook.metadata` through supabase-js,\nwhich is the platform's normal path for a pure UI↔DB write. This endpoint\nexists for the two things the client cannot compute for itself: the\norganization-scoped knob values, and the server's own reading of the same\nledger, so a drift between the two derivations is visible rather than\nsilent.",
+        "operationId": "read_prediction_ledger_masterworks__rulebook_id__predictions_get",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rulebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionLedgerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/triage": {
       "post": {
         "tags": [
@@ -49516,6 +49750,126 @@
         }
       }
     },
+    "/masterworks/triads": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Deal Rulebook Triads",
+        "description": "The Triad game's DEAL: three short items per card, drawn from this\nRulebook's own craft, for the Expert to choose between.\n\nNot a durable run, deliberately. Nothing here is written to the Rulebook —\na generated card is a QUESTION, and a lost deck costs one cheap call and is\nre-dealt by pressing the button again. Only an ANSWERED card is distilled,\nand that door (`/masterworks/ingest-triad`) is the one that writes.",
+        "operationId": "deal_rulebook_triads_masterworks_triads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriadGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/ingest-triad": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Triad",
+        "description": "ONE played Triad card into DRAFT rules: the three items, which one the\nExpert chose, and the one line she said about why.\n\nThe reason is the rule candidate and the triad is the evidence, so the\nquote is verified against HER words and never against an item the platform\nwrote. One card per call — submitted the moment she swipes, so the rules\nappear while she is still playing and a session abandoned after three cards\nkeeps all three.",
+        "operationId": "ingest_rulebook_triad_masterworks_ingest_triad_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestTriadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/probe": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Masterwork Bad Example Probe",
+        "description": "The Bad Example probe: ONE round. Distil what the Expert said was wrong\nwith the last plausible-but-wrong example we showed them, then write the\nnext one — probing a boundary of their judgment no earlier round reached.\nStops when they say \"I'd never see that\" or the round knob runs out.",
+        "operationId": "masterwork_bad_example_probe_masterworks_probe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeRoundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/ingest-chat": {
       "post": {
         "tags": [
@@ -49569,6 +49923,192 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/IngestConversationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/meeting/preview": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Preview Meeting Transcripts",
+        "description": "The Meeting Scavenger's picker: read the chosen meetings (ours, an\nuploaded transcript, or a paste) and list the VOICES in them, so the Expert\ncan say which one is them. Deterministic — no AI, no writes; meetings are\nread under the caller's own RLS.",
+        "operationId": "preview_meeting_transcripts_masterworks_meeting_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/ingest-meeting": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Meeting",
+        "description": "THE MEETING SCAVENGER (`meeting_scavenger` Approach): the meetings the\nExpert already has — ours, uploaded or pasted — scavenged for the moments\nTHEY made a call, corrected someone, or held a disagreement, each draft rule\ncarrying the speaker and the moment it was said. Zero new minutes.",
+        "operationId": "ingest_rulebook_meeting_masterworks_ingest_meeting_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestMeetingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/inbox/connection": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Inbox Connection",
+        "description": "SHADOW-THE-INBOX's connected door: is there a mailbox whose threads this\nperson's replies can actually be read from?\n\n`connected=false` is the ANSWER, never an error — the surface renders no\npicker at all (an absent control, not a dead one) and shows\n`how_to_connect`. Deterministic: no AI, no writes, no provider call.",
+        "operationId": "inbox_connection_masterworks_inbox_connection_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/inbox/preview": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Preview Inbox Threads",
+        "description": "Parse a pasted/uploaded mail export and list its threads, each saying\nwhether there is anything of the Expert's to shadow in it — before a single\npaid call. Deterministic; access-gated on the file.",
+        "operationId": "preview_inbox_threads_masterworks_inbox_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/ingest-inbox": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Inbox",
+        "description": "The Shadow-the-inbox Approach: diff what the Expert actually replied\nagainst what a competent generalist would have written (drafted blind), and\ndistill the difference into DRAFT rules anchored to the thread.",
+        "operationId": "ingest_rulebook_inbox_masterworks_ingest_inbox_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestInboxRequest"
               }
             }
           },
@@ -49784,6 +50324,102 @@
                 "schema": {
                   "$ref": "#/components/schemas/ExpertCorpusResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{rulebook_id}/bench": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Read Bench Proof",
+        "description": "THE PROOF — the latest five-arm Bench trial for this Rulebook, or an\nhonest no.\n\nThe Audition is a quick fidelity check against the Expert's published work\nand can never establish a win (doctrine CORE.md §6/§9). This is where a\nscreen asks whether the thing that CAN — a logged Bench run naming the arm\nand the budget — exists. No record means ``reason`` says so in one sentence;\nit never means an empty success.",
+        "operationId": "read_bench_proof_masterworks__rulebook_id__bench_get",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rulebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchProofResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{rulebook_id}/bench/runs": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Start Bench Run",
+        "description": "THE DOOR — start a Trial Bench run for this Rulebook, streamed arm by arm.\n\nThe Bench is the PROOF the Audition cannot be (doctrine CORE.md §6/§9): six\narms, a blind panel the expert's own withheld answer has to win, and dollars\nand seconds on every row. It runs for minutes and spends real money on every\narm, so it streams — the arms land with their price as they finish, not all\nat once at the end.\n\n🚨 DURABLE WHEN THE VOCABULARY ALLOWS IT, HONEST WHEN IT DOES NOT. A bench\ntrial is shaped exactly like a ``platform.masterwork_run`` row, but\n``operation`` is closed by the CHECK constraint\n``masterwork_run_operation_valid`` and ``bench_trial`` is not in it yet\n(``bench/persistence.py`` has the two-part change; the migration is Arman's\nto authorise). Claiming the row anyway would fail the INSERT and kill the run\nbefore its first arm, and filing it under another operation's name would\ncorrupt that operation's trend line. So while the word is absent this runs\noutside the run ledger — the same work, the same stream, the files and the\nbench index as the record — and the service SAYS SO in the stream rather\nthan letting a person believe a refresh is safe. The moment the migration\nlands, the same request becomes a durable, rejoinable run with no code\nchange but this branch's own condition.",
+        "operationId": "start_bench_run_masterworks__rulebook_id__bench_runs_post",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rulebook Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BenchRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -52745,7 +53381,7 @@
           "Dev Login"
         ],
         "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "description": "Mint a real Supabase Auth session for the given user id.",
         "operationId": "dev_login_as_dev_login_as_post",
         "parameters": [
           {
@@ -67095,11 +67731,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DefinitionRecord"
-                  },
-                  "title": "Response List Workflows Workflows Get"
+                  "$ref": "#/components/schemas/DefinitionListPage"
                 }
               }
             }
@@ -97580,7 +98212,7 @@
           "rulebook_id"
         ],
         "title": "AuditionCompareRequest",
-        "description": "Judge a Masterwork against a reference. TWO modes, one endpoint.\n\n``mode=\"reference\"`` (the default, and the only shape that existed before\n2026-09-12): our Masterwork's output vs the Expert's real published exemplar\nfor the same inputs — comparison verdict citing rulebook rule ids, gaps\noptionally landing as DRAFT rules. Every request written for that mode stays\nvalid byte-for-byte.\n\n``mode=\"elicitation\"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or\ntwo Masterwork DESKS each hold a real conversation with a sealed, reactive\ncounterparty while a vanilla model is handed that person's opening line and\nanswers it. Mechanical throughout: decisive facts surfaced, turns to frame,\npremature-advice events, lockouts caused and frame-order distance from the\nsource protocol. Nothing is pasted; the desks run for real and the profile\nis read server-side from the sealed row.\n\n``mode=\"unfolding\"``: the sealed-case benchmark\n(``common-docs/systems/masterwork/unfolding-case-contract.md`` §4) — one or\ntwo Masterwork DESKS each walk a held-out case through the case oracle while\na vanilla model is told every step's facts at once, and one judge ranks each\narm against the case's sealed outcome. Nothing is pasted: the desks run for\nreal and the reference is read server-side from the sealed row."
+        "description": "Judge a Masterwork against a reference. THREE modes, one endpoint.\n\n🚨 EVERY MODE HERE IS A QUICK CHECK, NOT A PROOF. Each one compares at most\ntwo or three arms against one reference. Proof under the doctrine\n(``common-docs/systems/masterwork/doctrine/CORE.md`` §6, and §9's standing\nverdict of 2026-09-14 that the shipped Audition's \"Expert match\" score is\nnot proof) is a logged five-arm Bench run — A0/A1/A2/B/C/GT, blind panel,\ndollars and seconds per arm, naming the arm and the budget\n(``aidream/services/masterworks/bench/``). No sentence produced by these\nmodes claims a win, and none of them says \"beat\".\n\n``mode=\"reference\"`` (the default, and the only shape that existed before\n2026-09-12): our Masterwork's output vs the Expert's real published exemplar\nfor the same inputs — a rule-by-rule fidelity comparison citing rulebook rule\nids, gaps optionally landing as DRAFT rules. Every request written for that\nmode stays valid byte-for-byte.\n\n``mode=\"elicitation\"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or\ntwo Masterwork DESKS each hold a real conversation with a sealed, reactive\ncounterparty while a vanilla model is handed that person's opening line and\nanswers it. Mechanical throughout: decisive facts surfaced, turns to frame,\npremature-advice events, lockouts caused and frame-order distance from the\nsource protocol. Nothing is pasted; the desks run for real and the profile\nis read server-side from the sealed row.\n\n``mode=\"unfolding\"``: the sealed-case benchmark\n(``common-docs/systems/masterwork/unfolding-case-contract.md`` §4) — one or\ntwo Masterwork DESKS each walk a held-out case through the case oracle while\na vanilla model is told every step's facts at once, and one judge ranks each\narm against the case's sealed outcome. Nothing is pasted: the desks run for\nreal and the reference is read server-side from the sealed row."
       },
       "AuditionOutcomeRequest": {
         "properties": {
@@ -99936,6 +100568,413 @@
           "indicator"
         ],
         "title": "BeehiivServiceStatus"
+      },
+      "BenchProof": {
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "title": "Record Id"
+          },
+          "trial_id": {
+            "type": "string",
+            "title": "Trial Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "default": ""
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "default": ""
+          },
+          "finished_at": {
+            "type": "string",
+            "title": "Finished At",
+            "default": ""
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed",
+            "default": false
+          },
+          "void": {
+            "type": "boolean",
+            "title": "Void",
+            "default": false
+          },
+          "void_reason": {
+            "type": "string",
+            "title": "Void Reason",
+            "default": ""
+          },
+          "win_claimed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Win Claimed"
+          },
+          "win_rationale": {
+            "type": "string",
+            "title": "Win Rationale",
+            "default": ""
+          },
+          "arm": {
+            "type": "string",
+            "title": "Arm",
+            "default": "a2"
+          },
+          "budget_multiple": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Multiple"
+          },
+          "panel_winner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Panel Winner"
+          },
+          "gt_in_pool": {
+            "type": "boolean",
+            "title": "Gt In Pool",
+            "default": false
+          },
+          "gt_won": {
+            "type": "boolean",
+            "title": "Gt Won",
+            "default": false
+          },
+          "panel_votes": {
+            "type": "integer",
+            "title": "Panel Votes",
+            "default": 0
+          },
+          "c_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Cost Usd"
+          },
+          "c_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Seconds"
+          },
+          "spec_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Sha256"
+          },
+          "corpus_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corpus Sha256"
+          },
+          "record_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Path"
+          },
+          "report_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Path"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "file index"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "description": "The one sentence a screen leads with — never a win without a record.\n\nA COMPUTED FIELD, so the wire carries it: the sentence and the record it\nis derived from travel together, and no client re-writes it.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id",
+          "trial_id",
+          "headline"
+        ],
+        "title": "BenchProof",
+        "description": "One finished Bench trial, as a screen shows it. Every field is copied\nfrom the record; nothing here is derived, and nothing is optimistic."
+      },
+      "BenchProofResponse": {
+        "properties": {
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "proof": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchProof"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "can_run_here": {
+            "type": "boolean",
+            "title": "Can Run Here",
+            "default": false
+          },
+          "how_to_run": {
+            "type": "string",
+            "title": "How To Run",
+            "default": "You can run one from here: six arms, a blind panel the expert's own answer has to win, and dollars and seconds on every row."
+          },
+          "form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchRunForm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "searched": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Searched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "BenchProofResponse",
+        "description": "What the run page asks for: the proof, whether one can be STARTED here,\nand — when it can — every number the form will actually run with.\n\nThe two halves are independent on purpose. A Masterwork can have no proof\nand still be able to run one (the common case), or carry a proof and no\nlonger be runnable (its Masterwork was deleted). A screen that collapsed\nthem would show a dead button in one direction and hide a working one in the\nother."
+      },
+      "BenchRunForm": {
+        "properties": {
+          "budget_multiple": {
+            "type": "number",
+            "title": "Budget Multiple"
+          },
+          "budget_multiple_source": {
+            "type": "string",
+            "title": "Budget Multiple Source"
+          },
+          "judge_model": {
+            "type": "string",
+            "title": "Judge Model"
+          },
+          "frontier_model": {
+            "type": "string",
+            "title": "Frontier Model"
+          },
+          "cheap_model": {
+            "type": "string",
+            "title": "Cheap Model"
+          },
+          "masterwork_id": {
+            "type": "string",
+            "title": "Masterwork Id"
+          },
+          "masterwork_name": {
+            "type": "string",
+            "title": "Masterwork Name"
+          },
+          "corpus_sources": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corpus Sources"
+          },
+          "corpus_note": {
+            "type": "string",
+            "title": "Corpus Note"
+          },
+          "durable": {
+            "type": "boolean",
+            "title": "Durable"
+          },
+          "durable_note": {
+            "type": "string",
+            "title": "Durable Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "budget_multiple",
+          "budget_multiple_source",
+          "judge_model",
+          "frontier_model",
+          "cheap_model",
+          "masterwork_id",
+          "masterwork_name",
+          "corpus_sources",
+          "corpus_note",
+          "durable",
+          "durable_note"
+        ],
+        "title": "BenchRunForm",
+        "description": "What the screen needs to show a form that does not lie.\n\nEvery field is a fact the server already knows: the numbers it will actually\nrun with, the models it will actually call, the corpus it actually found, and\nwhether the run it starts can be rejoined. A form that prefilled a default\nthe server would then ignore would be the quiet kind of dishonest."
+      },
+      "BenchRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id",
+            "default": ""
+          },
+          "task_prompt": {
+            "type": "string",
+            "title": "Task Prompt"
+          },
+          "case_input": {
+            "type": "string",
+            "title": "Case Input",
+            "default": ""
+          },
+          "ground_truth_text": {
+            "type": "string",
+            "title": "Ground Truth Text",
+            "default": ""
+          },
+          "budget_multiple": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Multiple"
+          },
+          "masterwork_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Masterwork Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "task_prompt"
+        ],
+        "title": "BenchRunRequest",
+        "description": "What the person typed, and nothing else.\n\nDeliberately small. Everything a trial needs that is NOT a judgement call by\nthe person running it — the corpus, the models, the judge, the panel, the\nthresholds — comes from the Rulebook and the declared defaults, so two\npeople running the Bench on the same Masterwork run the same trial.\n\n🚨 INHERITS ``AcceptsInjectedScope`` BECAUSE IT FORBIDS EXTRAS. The\nfrontend's ``callApi`` merges ``organization_id`` / ``project_id`` /\n``task_id`` onto every POST body from the active app context, so a\n``extra=\"forbid\"`` model that omits them 422s the moment the person has an\norganization selected — the 2026-07-15 ``/skills/ingest`` incident class.\nGuard: ``scripts/check_request_accepts_org_scope.py``."
       },
       "BettermodeServiceStatus": {
         "properties": {
@@ -103762,6 +104801,19 @@
           "code": {
             "$ref": "#/components/schemas/BridgeRefusalCode"
           },
+          "requested_field": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Requested Field",
+            "default": "action"
+          },
+          "requested_value": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Requested Value"
+          },
           "requested_action": {
             "type": "string",
             "maxLength": 128,
@@ -103780,6 +104832,13 @@
             "minLength": 1,
             "title": "Remedy"
           },
+          "supported_values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supported Values"
+          },
           "supported_actions": {
             "items": {
               "$ref": "#/components/schemas/BridgeAction"
@@ -103792,9 +104851,11 @@
         "type": "object",
         "required": [
           "code",
+          "requested_value",
           "requested_action",
           "reason",
           "remedy",
+          "supported_values",
           "supported_actions"
         ],
         "title": "BridgeRefusal",
@@ -103805,6 +104866,7 @@
         "enum": [
           "unimplemented_action",
           "unknown_action",
+          "unknown_field_value",
           "unsupported_runtime"
         ],
         "title": "BridgeRefusalCode"
@@ -119233,6 +120295,129 @@
         ],
         "title": "CoderPadServiceStatus"
       },
+      "CodingReplyResponder": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "agent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Name"
+          },
+          "setting_key": {
+            "type": "string",
+            "title": "Setting Key"
+          },
+          "used_platform_default": {
+            "type": "boolean",
+            "title": "Used Platform Default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "setting_key",
+          "used_platform_default"
+        ],
+        "title": "CodingReplyResponder",
+        "description": "Who will answer a reply typed here, resolved before the person types."
+      },
+      "CodingReplyResponderReport": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "is_coding_session_mirror": {
+            "type": "boolean",
+            "title": "Is Coding Session Mirror"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "composer_label": {
+            "type": "string",
+            "title": "Composer Label"
+          },
+          "can_reply": {
+            "type": "boolean",
+            "title": "Can Reply"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "responder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodingReplyResponder"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stand_in_notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stand In Notice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "is_coding_session_mirror",
+          "composer_label",
+          "can_reply"
+        ],
+        "title": "CodingReplyResponderReport",
+        "description": "What the reply composer labels itself with.\n\nThe sentence is composed on the SERVER (`composer_label`) so the label and the\nresolution that decides it cannot disagree, and so binding the mandate to another\nagent changes the label with no client release. V-XT/V3 (2026-09-15): the composer\nsaid \"AI Matrx is answering\" while, on production, neither mandate was bound and\nevery reply was silently taking the platform-default stand-in."
+      },
       "CodingSessionBridgeRestRequest": {
         "properties": {
           "schema_version": {
@@ -119253,7 +120438,15 @@
             "title": "Action"
           },
           "provider": {
-            "$ref": "#/components/schemas/BridgeProvider"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeProvider"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Provider"
           },
           "provider_session_id": {
             "anyOf": [
@@ -119297,9 +120490,13 @@
                 "$ref": "#/components/schemas/BridgeOrigin"
               },
               {
+                "type": "string"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Origin"
           },
           "stream_key": {
             "type": "string",
@@ -125061,6 +126258,17 @@
             "type": "boolean",
             "title": "Overwrite",
             "default": false
+          },
+          "expected_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Checksum"
           }
         },
         "type": "object",
@@ -130939,6 +132147,44 @@
         "type": "object",
         "title": "Definition",
         "description": "The canonical workflow definition — ReactFlow-compatible, user-authored.\n\nThis shape matches what the XYFlow canvas posts directly. The backend\nvalidates it with Pydantic but NEVER rewrites the user's JSON. Compilation\nproduces a separate CompiledGraph; the Definition remains the source of\ntruth for the UI."
+      },
+      "DefinitionListPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DefinitionRecord"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "title": "DefinitionListPage",
+        "description": "A page of workflow definitions PLUS the size of the scope it came from.\n\n🚨 A PAGE IS NOT A TOTAL. Measured on production 2026-09-15: admin's\nWorkspace held 98 active + 18 archived workflows, and the studio's\n\"Active + archived\" header said *\"Showing 100 active and archived\nworkflows.\"* over 100 cards. This route returned a bare\n``list[DefinitionRecord]`` capped at ``limit``, the studio never sent a\nlimit, and the page then counted the array it happened to receive — so\nsixteen workflows were absent and the sentence stated the page size as\nthe total. Both sub-workflow pickers read the same list, so those\nsixteen could not be *picked* either.\n\nThe same class the admin dashboard guards with ``check:list-page-size``\n(``ADMIN_LIST_MAX_PAGE_SIZE = 2000`` was a lie), and the same rule\n``@ai-matrx/data``'s ``readAllRows`` enforces: a list reader either pages\nto completeness or the screen states the truncation honestly, and the\ncount comes from the SERVER'S total — never from the length of one page.\nAn envelope makes that unskippable: there is no shape a caller can read\nthat hands it rows without also handing it ``total`` and ``has_more``."
       },
       "DefinitionPatch-Input": {
         "properties": {
@@ -148372,6 +149618,17 @@
               }
             ],
             "title": "Checksum"
+          },
+          "expected_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Checksum"
           }
         },
         "type": "object",
@@ -152820,25 +154077,192 @@
         ],
         "title": "GitHubConnectionResponse"
       },
-      "GitHubExchangeRequest": {
+      "GitHubOAuthCompleteRequest": {
         "properties": {
-          "code": {
+          "state": {
             "type": "string",
+            "maxLength": 512,
             "minLength": 1,
+            "title": "State"
+          },
+          "browser_proof": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 32,
+            "title": "Browser Proof"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Code"
           },
-          "redirect_uri": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Redirect Uri"
+          "provider_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Error"
           }
         },
         "type": "object",
         "required": [
-          "code",
-          "redirect_uri"
+          "state",
+          "browser_proof"
         ],
-        "title": "GitHubExchangeRequest"
+        "title": "GitHubOAuthCompleteRequest"
+      },
+      "GitHubOAuthCompleteResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "return_url": {
+            "type": "string",
+            "title": "Return Url"
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "authorize"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action"
+          },
+          "next_authorization_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Authorization Url"
+          },
+          "next_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next State"
+          },
+          "next_flow": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "authorize",
+                  "install"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Flow"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GitHubConnectionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "return_url"
+        ],
+        "title": "GitHubOAuthCompleteResponse"
+      },
+      "GitHubOAuthStartRequest": {
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Return Url"
+          },
+          "browser_proof_hash": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Browser Proof Hash"
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "authorize",
+              "install"
+            ],
+            "title": "Flow",
+            "default": "authorize"
+          }
+        },
+        "type": "object",
+        "required": [
+          "return_url",
+          "browser_proof_hash"
+        ],
+        "title": "GitHubOAuthStartRequest"
+      },
+      "GitHubOAuthStartResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "authorize",
+              "install"
+            ],
+            "title": "Flow"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "state",
+          "expires_at",
+          "flow"
+        ],
+        "title": "GitHubOAuthStartResponse"
       },
       "GitHubWebhookResponse": {
         "properties": {
@@ -153330,6 +154754,134 @@
         ],
         "title": "GoogleAdsReportRequest"
       },
+      "GoogleCapabilityMetadata": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "analytics",
+              "calendar",
+              "contacts",
+              "docs",
+              "drive_files",
+              "gmail_send",
+              "search_console",
+              "sheets",
+              "tag_manager",
+              "tasks",
+              "youtube",
+              "youtube_analytics"
+            ],
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "user_outcome": {
+            "type": "string",
+            "title": "User Outcome"
+          },
+          "required_scopes": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleCapabilityScope"
+            },
+            "type": "array",
+            "title": "Required Scopes"
+          },
+          "eligible_resource_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Eligible Resource Types"
+          },
+          "rollout_phase": {
+            "type": "string",
+            "enum": [
+              "available",
+              "internal_test"
+            ],
+            "title": "Rollout Phase"
+          },
+          "native_tool_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Native Tool Actions"
+          },
+          "mcp_tool_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mcp Tool Actions"
+          },
+          "limitation": {
+            "type": "string",
+            "title": "Limitation"
+          },
+          "remedy": {
+            "type": "string",
+            "title": "Remedy"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "admission_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admission Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "user_outcome",
+          "required_scopes",
+          "eligible_resource_types",
+          "rollout_phase",
+          "native_tool_actions",
+          "mcp_tool_actions",
+          "limitation",
+          "remedy",
+          "eligible"
+        ],
+        "title": "GoogleCapabilityMetadata",
+        "description": "Descriptor plus the verified caller's current rollout eligibility."
+      },
+      "GoogleCapabilityScope": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "provider_classification": {
+            "type": "string",
+            "enum": [
+              "non_sensitive",
+              "verified_sensitive"
+            ],
+            "title": "Provider Classification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scope",
+          "provider_classification"
+        ],
+        "title": "GoogleCapabilityScope",
+        "description": "One required scope and Google's exact classification for that scope."
+      },
       "GoogleConnectionCredentialResponse": {
         "properties": {
           "refresh_token": {
@@ -153443,10 +154995,29 @@
               "contacts_import",
               "general",
               "google_ads_isolated",
+              "google_capability",
               "read_only_sweep"
             ],
             "title": "Connection Purpose",
             "default": "general"
+          },
+          "capability_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "calendar",
+                  "contacts",
+                  "tag_manager",
+                  "tasks",
+                  "youtube_analytics"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Key"
           }
         },
         "type": "object",
@@ -159307,6 +160878,73 @@
         "title": "InboundOutcome",
         "description": "What G6 hands the sequence runner and the inbox — the exported contract.\n\nImport this (not the internals) from `aidream.services.outreach_inbound`."
       },
+      "InboxConnectionResponse": {
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "title": "Connected",
+            "default": false
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "account_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Email"
+          },
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id"
+          },
+          "days_back_default": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Back Default"
+          },
+          "how_to_connect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "How To Connect"
+          }
+        },
+        "type": "object",
+        "title": "InboxConnectionResponse",
+        "description": "Is the connected door open? A `False` here means the surface renders no\npicker at all — an ABSENT control, never a dead one — plus the sentence in\n`how_to_connect`."
+      },
       "InboxEditRequest": {
         "properties": {
           "organization_id": {
@@ -159556,6 +161194,217 @@
           "status"
         ],
         "title": "InboxMutationResponse"
+      },
+      "InboxPreviewRequest": {
+        "properties": {
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id",
+            "description": "cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip)."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000000,
+                "minLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "A pasted email thread — your reply plus what you were answering."
+          },
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id",
+            "description": "users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so."
+          },
+          "expert_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Email",
+            "description": "WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name."
+          },
+          "own_replies_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Own Replies Only",
+            "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "InboxPreviewRequest",
+        "description": "Parse a mail export and list its threads — no AI, no writes."
+      },
+      "InboxPreviewResponse": {
+        "properties": {
+          "threads": {
+            "items": {
+              "$ref": "#/components/schemas/InboxThreadPreview"
+            },
+            "type": "array",
+            "title": "Threads"
+          },
+          "expert_email": {
+            "type": "string",
+            "title": "Expert Email",
+            "default": ""
+          },
+          "skipped_files": {
+            "type": "integer",
+            "title": "Skipped Files",
+            "default": 0
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "InboxPreviewResponse"
+      },
+      "InboxThreadPreview": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "participants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Participants"
+          },
+          "messages": {
+            "type": "integer",
+            "title": "Messages",
+            "default": 0
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet",
+            "default": ""
+          },
+          "you_replied": {
+            "type": "boolean",
+            "title": "You Replied",
+            "default": false
+          },
+          "has_given_draft": {
+            "type": "boolean",
+            "title": "Has Given Draft",
+            "default": false
+          },
+          "nothing_to_shadow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nothing To Shadow"
+          },
+          "your_words": {
+            "type": "integer",
+            "title": "Your Words",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "subject"
+        ],
+        "title": "InboxThreadPreview"
       },
       "IncidentIoServiceStatus": {
         "properties": {
@@ -160364,6 +162213,540 @@
         "title": "IngestFileRequest",
         "description": "Distill an UPLOADED FILE into DRAFT rules on an existing rulebook.\n\nThe same two modes as the text lane, but the source is a real file the\nuser uploaded through the canonical file handler:\n\n- a document (pdf / docx / …) runs through content_processing\n  (processed_documents + pages) and a `docproc.page_extraction_jobs`\n  row that points the distiller at the pages, so every rule comes back\n  with REAL page anchors (`source_ref.source_pages`) the expert can\n  click back to. Deliberately not a parallel pipeline.\n- audio / video is transcribed first (the existing transcription\n  feature), then goes down the text lane unchanged.\n\nHuman-first invariant, identical to every other lane: draft only."
       },
+      "IngestInboxRequest": {
+        "properties": {
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id",
+            "description": "cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip)."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000000,
+                "minLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "A pasted email thread — your reply plus what you were answering."
+          },
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id",
+            "description": "users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so."
+          },
+          "expert_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Email",
+            "description": "WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name."
+          },
+          "own_replies_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Own Replies Only",
+            "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "thread_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Keys",
+            "description": "Thread keys to shadow (from the preview). None = every thread found."
+          },
+          "days_back": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Back",
+            "description": "Connected door only: how far back to look for threads you replied to (knob `masterwork.shadow_inbox.days_back`, default 30)."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where this came from ('the Northline quote thread, Sept 2026')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "IngestInboxRequest",
+        "description": "Distill the difference between the Expert's real replies and the reply a\ncompetent generalist would have written, into DRAFT rules.\n\nHuman-first invariant, identical to every other lane: drafts only."
+      },
+      "IngestMarkupRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "work_text": {
+            "type": "string",
+            "maxLength": 600000,
+            "minLength": 1,
+            "title": "Work Text",
+            "description": "The piece of work being reviewed, verbatim."
+          },
+          "corrections": {
+            "items": {
+              "$ref": "#/components/schemas/WorkCorrection"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Corrections",
+            "description": "The Expert's corrections, in the order they made them. The FLOOR is the `min_corrections_before_distilling` knob, enforced server-side; this bound only refuses an empty list."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "What the work is ('Dan's draft launch email', 'the Q3 proposal')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "work_text",
+          "corrections"
+        ],
+        "title": "IngestMarkupRequest",
+        "description": "THE RED-PEN LANE: a piece of someone else's work plus the Expert's\ncorrections on it, distilled into DRAFT rules.\n\nThe `red_pen` Approach. Unlike every other lane, the source is material the\nExpert DISAGREES with — the rule lives in the disagreement, so the unit\ndistilled is the correction (span + the Expert's words + the moment), never\na window of the work's own words.\n\nHuman-first invariant, identical to every other lane: draft only."
+      },
+      "IngestMeetingRequest": {
+        "properties": {
+          "meeting_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 25,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting Ids",
+            "description": "communication.meet_meetings ids the caller may read."
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id",
+            "description": "files.files id of an uploaded transcript or recording."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000000,
+                "minLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "A pasted meeting transcript."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "speaker_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Keys",
+            "description": "Which voices are the Expert (from /masterworks/meeting/preview). Required when own_turns_only resolves true and the source cannot prove which speaker the caller is."
+          },
+          "own_turns_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Own Turns Only",
+            "description": "Scavenge only the Expert's own turns (the default), or every speaker in the room. None = this organization's knob value."
+          },
+          "min_moment_words": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Moment Words",
+            "description": "The shortest continuous turn read as a judgment moment. None = this organization's knob value."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Optional label ('the Tuesday supplier reviews')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "IngestMeetingRequest",
+        "description": "Scavenge meetings for the Expert's own judgment moments.\n\nThe two knobs (`masterwork_distillation.meeting_own_turns_only` and\n`.meeting_min_moment_words`) supply the org's standing answer; a field left\nNone here means \"use it\". A value overrides it FOR THIS RUN only — the knob\nrow stays the authority for the next one."
+      },
+      "IngestPredictionsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "entry_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Ids",
+            "description": "Which ledger entries to read. Omitted (the normal case) means every RESOLVED entry no run has read yet — a run never re-reads a call it already distilled."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "What these calls are about ('Q3 fraud queue', 'autumn hiring round')."
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach",
+            "description": "Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'prediction_ledger'."
+          },
+          "source_ref_extra": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref Extra",
+            "description": "Extra provenance keys merged into every rule's source_ref. Never overrides the lane's own keys."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "IngestPredictionsRequest",
+        "description": "Distil the Expert's own SCORED predictions into rules and boundaries.\n\nThe `prediction_ledger` Approach. The Expert called real open cases in\ntheir work — \"this claim is fraudulent\", \"this candidate will accept\" —\nwith a confidence and one line of why, before the outcome existed. This\nreads the calls whose outcomes are now IN: the whys behind calls that held\nbecome rules carrying the prediction and its outcome as evidence, and the\nwhys behind calls that missed become boundary findings the Expert is asked\nabout.\n\nThe ledger itself lives on `platform.rulebook.metadata.prediction_ledger`\nand is written by the client direct (a pure UI↔DB write, no Python hop) —\nthis request only names WHICH Rulebook, and optionally which entries.\n\nHuman-first invariant, identical to every other lane: drafts only."
+      },
       "IngestReport": {
         "properties": {
           "parsed": {
@@ -160852,6 +163235,94 @@
         ],
         "title": "IngestTimelineRequest",
         "description": "Distill a case that UNFOLDS IN TIME into forward-looking POLICY rules.\n\nThe `timeline` Approach (W58). A case report, an incident write-up, a\ndeal that took four meetings: the expert skill in such a document is not\na list of facts, it is the SEQUENCE of choices — what was known at each\nmoment, what was still unknown, what was done next, and what that cost\nand risked.\n\nSo this lane does NOT chunk by size. A segmenter reads the narrative into\nordered steps, and ONE distiller run sees ONE step: everything known up to\nthe previous step, this step's new facts, and the action taken — with the\nfuture, including the ending, withheld. Rules come back as \"given what you\nknow now, do X, because Y\".\n\nHuman-first invariant, identical to every other lane: drafts only."
+      },
+      "IngestTriadRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "triad": {
+            "$ref": "#/components/schemas/TriadPayload"
+          },
+          "pick": {
+            "type": "string",
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ],
+            "title": "Pick",
+            "description": "Which item the Expert chose (best one, or odd one out)."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 3,
+            "title": "Reason",
+            "description": "The Expert's own one line about why — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be verified against."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where this card came from; defaults to the card's own question."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "triad",
+          "pick",
+          "reason"
+        ],
+        "title": "IngestTriadRequest",
+        "description": "Distill ONE played Triad card into DRAFT rules.\n\nSubmitted the moment the Expert swipes, one card at a time, so a session\nabandoned after three cards keeps all three. Human-first invariant,\nidentical to every other lane: drafts only."
       },
       "IngestUnfoldingRequest": {
         "properties": {
@@ -178052,6 +180523,217 @@
         ],
         "title": "MeetingEndResponse",
         "description": "What `endForEveryone` reads back.\n\n`ended_at` is not optional and is never null: the package patches its store\nwith this exact string, and a null would make the room render as live after\nthe host ended it. A repeat call returns the ORIGINAL timestamp — ending an\nended meeting must not move the clock."
+      },
+      "MeetingPreviewItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/MeetingSpeakerPreview"
+            },
+            "type": "array",
+            "title": "Speakers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "origin",
+          "turns",
+          "speakers"
+        ],
+        "title": "MeetingPreviewItem"
+      },
+      "MeetingPreviewRequest": {
+        "properties": {
+          "meeting_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 25,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting Ids",
+            "description": "communication.meet_meetings ids the caller may read."
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id",
+            "description": "files.files id of an uploaded transcript or recording."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000000,
+                "minLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "A pasted meeting transcript."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MeetingPreviewRequest",
+        "description": "Read the transcript(s) and list the voices — no AI, no writes."
+      },
+      "MeetingPreviewResponse": {
+        "properties": {
+          "meetings": {
+            "items": {
+              "$ref": "#/components/schemas/MeetingPreviewItem"
+            },
+            "type": "array",
+            "title": "Meetings"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "MeetingPreviewResponse"
+      },
+      "MeetingSpeakerPreview": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "words": {
+            "type": "integer",
+            "title": "Words"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "is_you": {
+            "type": "boolean",
+            "title": "Is You",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "turns",
+          "words"
+        ],
+        "title": "MeetingSpeakerPreview",
+        "description": "One voice in the room, so the Expert can say which one is them."
       },
       "MemServiceStatus": {
         "properties": {
@@ -198651,6 +201333,98 @@
         "title": "PredicateRow",
         "description": "One sample item, and what the author's predicate actually answered."
       },
+      "PredictionLedgerResponse": {
+        "properties": {
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "resolved": {
+            "type": "integer",
+            "title": "Resolved"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open"
+          },
+          "overdue": {
+            "type": "integer",
+            "title": "Overdue"
+          },
+          "correct": {
+            "type": "integer",
+            "title": "Correct"
+          },
+          "brier": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brier"
+          },
+          "buckets": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Buckets",
+            "default": []
+          },
+          "earliest_open_due_at": {
+            "type": "string",
+            "title": "Earliest Open Due At",
+            "default": ""
+          },
+          "ready_to_distill": {
+            "type": "integer",
+            "title": "Ready To Distill",
+            "default": 0
+          },
+          "min_resolved_to_distill": {
+            "type": "integer",
+            "title": "Min Resolved To Distill",
+            "default": 5
+          },
+          "reminder_cadence_hours": {
+            "type": "integer",
+            "title": "Reminder Cadence Hours",
+            "default": 24
+          },
+          "voice_default_on": {
+            "type": "boolean",
+            "title": "Voice Default On",
+            "default": true
+          },
+          "boundaries": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Boundaries",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "resolved",
+          "open",
+          "overdue",
+          "correct"
+        ],
+        "title": "PredictionLedgerResponse",
+        "description": "What a surface needs to render the Prediction Ledger honestly.\n\nEvery number here is DERIVED from the entries on\n`platform.rulebook.metadata.prediction_ledger` at read time — nothing about\na score is stored, so the readout can never disagree with the facts it came\nfrom (`services/distillation/prediction_ledger.py`)."
+      },
       "PrefectServiceStatus": {
         "properties": {
           "__kind": {
@@ -198934,6 +201708,17 @@
             "type": "string",
             "title": "File Path",
             "description": "Logical path the file will live at in cloud_files"
+          },
+          "expected_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Checksum"
           },
           "content_type": {
             "anyOf": [
@@ -201313,6 +204098,143 @@
         ],
         "title": "PrismicServiceStatus",
         "description": "Safe aggregate status projection for Prismic's fixed status page."
+      },
+      "ProbeRound": {
+        "properties": {
+          "example_title": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Example Title",
+            "default": ""
+          },
+          "example_body": {
+            "type": "string",
+            "maxLength": 40000,
+            "title": "Example Body",
+            "description": "The plausible-but-wrong work exactly as it was shown.",
+            "default": ""
+          },
+          "probe_label": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Probe Label",
+            "description": "The boundary this variant probed, as the generator named it. Carried back so the next round cannot re-probe ground already covered.",
+            "default": ""
+          },
+          "critique": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Critique",
+            "description": "The Expert's own words about what is wrong with this example and what they would do instead — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be anchored in. Empty means they have not answered this round yet.",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProbeRound",
+        "description": "ONE round of the Bad Example probe, as the client holds it.\n\nThe client is the only thing that knows what is on screen, so the session\nrides the request instead of a server-side session row — the same reason\nthe Triad submits one card at a time. Every field here was either produced\nby the server (the example) or typed/dictated by the Expert (the critique);\nnothing is derived."
+      },
+      "ProbeRoundRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "case_brief": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Case Brief",
+            "description": "What kind of work to fake, in the Expert's own words — the case, task or deliverable they handle. The one thing the Expert has to supply."
+          },
+          "rounds": {
+            "items": {
+              "$ref": "#/components/schemas/ProbeRound"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Rounds",
+            "description": "Every round of this session so far, oldest first. Empty starts the probe. The LAST entry is the one whose critique is distilled by this call."
+          },
+          "finish": {
+            "type": "boolean",
+            "title": "Finish",
+            "description": "The Expert said 'I'd never see that' — distil the last answer and stop instead of writing another variant.",
+            "default": false
+          },
+          "round_cap": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Round Cap",
+            "description": "Lower the number of rounds for THIS session only. Never raises the organization's `masterwork.probe.rounds` knob — the knob is the ceiling."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "A short label for this probe; defaults to the case brief."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "case_brief"
+        ],
+        "title": "ProbeRoundRequest",
+        "description": "Run ONE round of the Bad Example probe.\n\nTwo things happen in one call, in this order: the Expert's critique of the\nLAST round (the final entry of ``rounds``) is distilled into draft rules,\nand then the next variant is written — unless ``finish`` is set or the\nround cap is reached, in which case the call only distils and reports.\n\nHuman-first invariant, identical to every other lane: drafts only, never\nauto-activated."
       },
       "ProcessBlocksRequest": {
         "properties": {
@@ -216064,6 +218986,11 @@
           "conversation_id": {
             "type": "string",
             "title": "Conversation Id"
+          },
+          "conversation_started": {
+            "type": "boolean",
+            "title": "Conversation Started",
+            "default": false
           }
         },
         "type": "object",
@@ -243886,6 +246813,173 @@
         ],
         "title": "TresoritServiceStatus"
       },
+      "TriadGenerateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 30,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count",
+            "description": "How many cards to deal. Omitted → the org knob `masterwork.triad_game.triads_per_session` (10)."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "best_one",
+                  "odd_one_out"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "'best_one' (which would you actually use?) or 'odd_one_out' (which two are alike?). Omitted → the org knob `masterwork.triad_game.default_mode` (best_one)."
+          },
+          "seen_prompts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Seen Prompts",
+            "description": "The card questions this session has already played, verbatim. The game never asks the same thing twice in one sitting, and the session is the only thing that knows what it has shown."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "TriadGenerateRequest",
+        "description": "Deal one session's deck of Triad cards. Writes nothing.\n\nThe `triad_game` Approach (`triad_ingest.py`). Every value here is an\nOVERRIDE of an org knob for THIS session only — omitted means \"whatever the\norganization decided\", which is the shape a knob must have if turning it is\nto mean anything."
+      },
+      "TriadItemPayload": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ],
+            "title": "Key"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "text"
+        ],
+        "title": "TriadItemPayload",
+        "description": "One of the three items exactly as it was shown to the Expert."
+      },
+      "TriadPayload": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 6,
+            "title": "Id"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "best_one",
+              "odd_one_out"
+            ],
+            "title": "Mode",
+            "default": "best_one"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TriadItemPayload"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "prompt",
+          "items"
+        ],
+        "title": "TriadPayload",
+        "description": "The card, played back to the server exactly as it was dealt.\n\nThe deck is never stored server-side: a triad is a QUESTION, and only an\nANSWERED one is worth anything. So the answer carries its own card, and the\ncard's `id` is the provenance every rule it produces cites."
+      },
       "TriageDraftsRequest": {
         "properties": {
           "organization_id": {
@@ -256321,6 +259415,77 @@
           "indicator"
         ],
         "title": "WorkCastServiceStatus"
+      },
+      "WorkCorrection": {
+        "properties": {
+          "span": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Span",
+            "description": "The passage the Expert highlighted, VERBATIM from the work. Re-checked against the work server-side; a passage that is not in the work refuses the run rather than anchoring a rule to evidence that does not exist."
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Comment",
+            "description": "The Expert's own words: what is wrong with that passage and what they would do instead. Typed or dictated — the same field either way, because dictation writes into the same box."
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start",
+            "description": "Character offset of the span in the work, as the client's selection saw it."
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End",
+            "description": "Character offset of the end of the span in the work."
+          },
+          "voice": {
+            "type": "boolean",
+            "title": "Voice",
+            "description": "True when the Expert spoke this correction rather than typing it.",
+            "default": false
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "ISO-8601 moment the correction was made — the recording moment."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "span",
+          "comment"
+        ],
+        "title": "WorkCorrection",
+        "description": "ONE red-pen correction: a passage the Expert struck through, what they\nsaid was wrong with it, and when they said it.\n\nThe unit of the `red_pen` Approach. All three parts are provenance: the\nspan is the evidence, the comment is the judgment, and the moment is when\nthe judgment was made (Masterwork doctrine CORE §5 — provenance per rule)."
       },
       "WorkFlowyServiceStatus": {
         "properties": {
