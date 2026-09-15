@@ -42,6 +42,20 @@ if (
 }
 
 /**
+ * ── Immer MapSet: every test store behaves like the real store ───────────────
+ *
+ * `lib/redux/store.ts` calls `enableMapSet()`, so production reducers may read
+ * `Map`/`Set` state inside drafts (the notes slice's `_dirtyFields` does). A test
+ * that builds its own store without it throws INSIDE the reducer, and a caller
+ * that catches the error reports a plain failure — on 2026-09-15 the War Room
+ * rename test returned `false` for a rename that works in the app. Enabling it
+ * once here makes that divergence impossible; the per-file calls that predate
+ * this line are harmless (the plugin is idempotent).
+ */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+(require("immer") as { enableMapSet: () => void }).enableMapSet();
+
+/**
  * ── TextEncoder / TextDecoder ────────────────────────────────────────────────
  *
  * Node has had both as globals since 11; jsdom's test-local `globalThis` does
