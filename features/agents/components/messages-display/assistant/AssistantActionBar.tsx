@@ -173,7 +173,7 @@ export function AssistantActionBar({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
   const [moreOptionsAnchor, setMoreOptionsAnchor] =
-    useState<HTMLDivElement | null>(null);
+    useState<HTMLButtonElement | null>(null);
   // True once the user has opened Convert at least once — gates BOTH mount and
   // the dynamic chunk load (never pay for the education convert stack until a
   // convert is actually requested).
@@ -506,14 +506,13 @@ export function AssistantActionBar({
             )}
 
             {showOptions && (
-              <div ref={setMoreOptionsAnchor}>
-                <MoreHorizontalTapButton
-                  variant="group"
-                  onClick={() => setShowOptionsMenu(true)}
-                  ariaLabel="More options"
-                  className="text-muted-foreground"
-                />
-              </div>
+              <MoreHorizontalTapButton
+                ref={setMoreOptionsAnchor}
+                variant="group"
+                onClick={() => setShowOptionsMenu(true)}
+                ariaLabel="More options"
+                className="text-muted-foreground"
+              />
             )}
           </TapTargetButtonGroup>
           <MessageTimestamp timestamp={record?.createdAt} />

@@ -84,7 +84,8 @@ export function AssistantActionBar({
       toast.error("Failed to save feedback"),
     );
   };
-  const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
+  const [moreOptionsAnchor, setMoreOptionsAnchor] =
+    useState<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     dispatch(
@@ -228,15 +229,12 @@ export function AssistantActionBar({
             icon={<Edit className="w-4 h-4 text-muted-foreground" />}
           />
 
-          <div ref={moreOptionsButtonRef}>
-            <TapTargetButtonForGroup
-              onClick={() => setShowOptionsMenu(true)}
-              ariaLabel="More options"
-              icon={
-                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-              }
-            />
-          </div>
+          <TapTargetButtonForGroup
+            ref={setMoreOptionsAnchor}
+            onClick={() => setShowOptionsMenu(true)}
+            ariaLabel="More options"
+            icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+          />
         </TapTargetButtonGroup>
         <MessageTimestamp timestamp={timestamp} />
       </div>
@@ -258,7 +256,7 @@ export function AssistantActionBar({
             isOpen={showOptionsMenu}
             instanceId={instanceId}
             onClose={() => setShowOptionsMenu(false)}
-            anchorElement={moreOptionsButtonRef.current}
+            anchorElement={moreOptionsAnchor}
             showFullPrint={!!onFullPrint}
             onFullPrint={onFullPrint}
             isCapturing={isCapturing}

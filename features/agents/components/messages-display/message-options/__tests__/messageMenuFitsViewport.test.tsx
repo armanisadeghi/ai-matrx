@@ -34,6 +34,15 @@ globalThis.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+async function flushMenuPositioning() {
+  await act(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));
@@ -55,8 +64,16 @@ function makeContext(): MessageActionContext {
       byConversationId: {
         [CONVERSATION_ID]: {
           byId: {
-            "msg-1": { role: "user", content: "How do refunds work?", position: 1 },
-            [MESSAGE_ID]: { role: "assistant", content: "Here is the answer.", position: 2 },
+            "msg-1": {
+              role: "user",
+              content: "How do refunds work?",
+              position: 1,
+            },
+            [MESSAGE_ID]: {
+              role: "assistant",
+              content: "Here is the answer.",
+              position: 2,
+            },
           },
           order: ["msg-1", MESSAGE_ID],
         },
@@ -89,7 +106,9 @@ function makeContext(): MessageActionContext {
   };
 }
 
-async function renderMenu(items: ReturnType<typeof getAssistantMessageActions>) {
+async function renderMenu(
+  items: ReturnType<typeof getAssistantMessageActions>,
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -113,6 +132,62 @@ async function renderMenu(items: ReturnType<typeof getAssistantMessageActions>) 
     cleanup: async () => {
       await act(async () => root.unmount());
       container.remove();
+    },
+  };
+}
+
+async function renderAnchoredMenu(
+  items: ReturnType<typeof getAssistantMessageActions>,
+) {
+  const anchor = document.createElement("button");
+  document.body.appendChild(anchor);
+  anchor.getBoundingClientRect = () =>
+    ({
+      top: 700,
+      right: 420,
+      bottom: 732,
+      left: 388,
+      width: 32,
+      height: 32,
+      x: 388,
+      y: 700,
+      toJSON: () => ({}),
+    }) as DOMRect;
+
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
+      <AdvancedMenu
+        isOpen
+        onClose={jest.fn()}
+        showBackdrop={false}
+        position="bottom-left"
+        anchorElement={anchor}
+        items={items}
+        title="Message options"
+      />,
+    );
+  });
+  await flushMenuPositioning();
+
+  return {
+    root,
+    anchor,
+    container,
+    rows: () =>
+      Array.from(
+        document.body.querySelectorAll<HTMLButtonElement>("button"),
+      ).filter((button) => button !== anchor),
+    panel: () =>
+      document.body.querySelector<HTMLDivElement>(
+        'div[style*="min-width: 280px"]',
+      ),
+    cleanup: async () => {
+      await act(async () => root.unmount());
+      container.remove();
+      anchor.remove();
     },
   };
 }
@@ -151,9 +226,10 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
           /Save as/i.test(row.textContent ?? ""),
       );
     expect(trigger).toBeTruthy();
+    if (!trigger) throw new Error("Save as submenu trigger was not rendered");
 
     await act(async () => {
-      trigger!.click();
+      trigger.click();
     });
 
     const labels = menu.rows().map((row) => row.textContent ?? "");
@@ -163,5 +239,53 @@ describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
     expect(labels.some((label) => /^Save as$/i.test(label.trim()))).toBe(true);
 
     await menu.cleanup();
+  });
+
+  it("keeps the desktop panel in place while drilling into a shorter submenu", async () => {
+    const originalScrollHeight = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollHeight",
+    );
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get() {
+        const text = this.textContent ?? "";
+        return text.includes("Message options") ? 560 : 180;
+      },
+    });
+
+    const menu = await renderAnchoredMenu(
+      getAssistantMessageActions(makeContext()),
+    );
+    const initialTop = menu.panel()?.style.top;
+    expect(initialTop).toBe("132px");
+
+    const trigger = menu
+      .rows()
+      .find(
+        (row) =>
+          row.getAttribute("data-submenu-trigger") === "true" &&
+          /Save as/i.test(row.textContent ?? ""),
+      );
+    expect(trigger).toBeTruthy();
+    if (!trigger) throw new Error("Save as submenu trigger was not rendered");
+
+    await act(async () => {
+      trigger.click();
+    });
+    await flushMenuPositioning();
+
+    expect(menu.panel()?.style.top).toBe(initialTop);
+
+    await menu.cleanup();
+    if (originalScrollHeight) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        "scrollHeight",
+        originalScrollHeight,
+      );
+    } else {
+      delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+    }
   });
 });

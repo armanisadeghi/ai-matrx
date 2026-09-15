@@ -1,52 +1,37 @@
-# AdvancedMenu Component
+# AdvancedMenu
 
-A beautiful, feature-rich menu component with automatic action feedback, mobile responsiveness, and extensive customization options. Perfect for context menus, dropdown menus, or any interactive menu interface.
+The shared anchored action menu used by message action bars, content blocks,
+editors, and other kebab/button menus. Canonical page and row context menus use
+`features/context-menu-v3`; `AdvancedMenu` is for explicit action-menu triggers.
 
 ## Features
 
-✨ **Beautiful Design**
-- Modern glassmorphism effect with backdrop blur
-- Smooth animations and transitions
-- Professional shadows and borders
-- Light and dark mode support
+- **Anchored desktop panel.** The panel selects a collision-safe position when
+  it opens and keeps that frame throughout submenu navigation. A shorter child
+  list must never jump toward the trigger.
+- **Stable mobile drawer.** Mobile uses one fixed-height `85dvh` drawer and one
+  internal scroll area, so drill-down never grows or shrinks under the user's
+  thumb.
+- **Live drill-down.** The navigation trail stores item keys and resolves them
+  against current items on every render; changing availability is reflected
+  while the menu is open.
+- **No empty doors.** Hidden children are removed recursively and a submenu
+  with no visible destination is omitted.
+- **Action feedback.** Async actions receive loading, success, error, and
+  optional toast feedback.
+- **Viewport safety.** Desktop content is capped at 600px and the available
+  viewport height, with internal scrolling and a scroll-more fade.
 
-🎯 **Action Feedback**
-- Automatic loading states with spinner
-- Success states with checkmark
-- Error states with visual feedback
-- Toast notifications (optional)
+## Submenus and overflow
 
-📱 **Mobile Responsive**
-- Automatic mobile detection
-- Centers menu on mobile devices
-- Prevents cut-off on small screens
-- Touch-friendly interactions
-
-🔧 **Smart Positioning**
-- Automatic viewport collision detection
-- Adjusts position to prevent cut-off at screen edges
-- Switches from bottom to top (and vice versa) when needed
-- Switches from left to right (and vice versa) when needed
-- Centers menu if too large for viewport or no good position exists
-- Constrains maximum height to viewport with internal scrolling
-- Recursion prevention: stops adjusting once centered to avoid infinite loops
-
-📏 **It always fits** (defect D6)
-- `children` on a `MenuItem` makes that row a SUBMENU TRIGGER: one visible row with a "›" and a child count, drilling into its own panel with a back row (Escape goes back before it closes). Use it for any family of near-identical variants — nine "Save as" formats, five "Copy" formats.
-- Overflow safety net: past `AUTO_COLLAPSE_THRESHOLD` (20) visible rows, a categorized menu automatically collapses every category after the first into a submenu row, so no group can be stranded tens of rows below the fold. Opt out with `autoCollapse={false}` only for a menu that must stay flat.
-- A 600px desktop panel on a 768px-tall viewport shows about 17 rows. Design to that; the scroll fade is a hint, never the plan.
-
-🎨 **Highly Customizable**
-- Multiple positioning options
-- Categorized items with headers
-- Custom icons and colors
-- Flexible styling props
-
-🔒 **Production Ready**
-- TypeScript support
-- Accessibility features
-- Keyboard navigation (Escape to close)
-- Click outside to close
+- `children` makes a row a submenu trigger. It replaces the current list in
+  the same panel and adds an explicit back row; Escape goes back one level
+  before closing.
+- More than `AUTO_COLLAPSE_THRESHOLD` (20) visible rows automatically folds
+  every category after the first behind one submenu row. Pass
+  `autoCollapse={false}` only when the caller intentionally owns a flat list.
+- A 600px panel on a 768px viewport holds roughly 17 rows. Primary actions
+  still belong at the top; scrolling is a safety net, not information design.
 
 ## Installation
 
@@ -104,44 +89,46 @@ export function MyComponent() {
 
 ### AdvancedMenuProps
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `isOpen` | `boolean` | Required | Controls menu visibility |
-| `onClose` | `() => void` | Required | Called when menu should close |
-| `items` | `MenuItem[]` | Required | Array of menu items |
-| `title` | `string` | `"Options"` | Menu header title |
-| `description` | `string` | - | Optional header description |
-| `showHeader` | `boolean` | `true` | Show/hide header section |
-| `position` | `string` | `"bottom-left"` | Menu position (see positions) |
-| `anchorElement` | `HTMLElement` | - | Element to anchor menu to |
-| `className` | `string` | - | Additional CSS classes |
-| `width` | `string` | `"280px"` | Minimum menu width |
-| `maxWidth` | `string` | `"320px"` | Maximum menu width |
-| `closeOnAction` | `boolean` | `true` | Close menu after action |
-| `showBackdrop` | `boolean` | `true` | Show backdrop overlay |
-| `backdropBlur` | `boolean` | `true` | Blur backdrop |
-| `categorizeItems` | `boolean` | `true` | Group items by category |
-| `forceMobileCenter` | `boolean` | `true` | Center on mobile |
-| `onActionStart` | `(key: string) => void` | - | Callback when action starts |
-| `onActionSuccess` | `(key: string) => void` | - | Callback when action succeeds |
-| `onActionError` | `(key, error) => void` | - | Callback when action fails |
+| Prop              | Type                    | Default         | Description                                |
+| ----------------- | ----------------------- | --------------- | ------------------------------------------ |
+| `isOpen`          | `boolean`               | Required        | Controls menu visibility                   |
+| `onClose`         | `() => void`            | Required        | Called when menu should close              |
+| `items`           | `MenuItem[]`            | Required        | Array of menu items                        |
+| `title`           | `string`                | `"Options"`     | Menu header title                          |
+| `description`     | `string`                | -               | Optional header description                |
+| `showHeader`      | `boolean`               | `true`          | Show/hide header section                   |
+| `position`        | `string`                | `"bottom-left"` | Menu position (see positions)              |
+| `anchorElement`   | `HTMLElement`           | -               | Element to anchor menu to                  |
+| `className`       | `string`                | -               | Additional CSS classes                     |
+| `width`           | `string`                | `"280px"`       | Minimum menu width                         |
+| `maxWidth`        | `string`                | `"320px"`       | Maximum menu width                         |
+| `closeOnAction`   | `boolean`               | `true`          | Close menu after action                    |
+| `showBackdrop`    | `boolean`               | `true`          | Show backdrop overlay                      |
+| `backdropBlur`    | `boolean`               | `true`          | Blur backdrop                              |
+| `categorizeItems` | `boolean`               | `true`          | Group items by category                    |
+| `autoCollapse`    | `boolean`               | `true`          | Fold overflow categories into submenu rows |
+| `onActionStart`   | `(key: string) => void` | -               | Callback when action starts                |
+| `onActionSuccess` | `(key: string) => void` | -               | Callback when action succeeds              |
+| `onActionError`   | `(key, error) => void`  | -               | Callback when action fails                 |
 
 ### MenuItem Interface
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `key` | `string` | ✅ | Unique identifier |
-| `icon` | `LucideIcon` | ✅ | Icon component |
-| `label` | `string` | ✅ | Display label |
-| `action` | `() => void \| Promise<void>` | ✅ | Action to execute |
-| `iconColor` | `string` | - | Tailwind color class |
-| `description` | `string` | - | Helper text |
-| `category` | `string` | - | Category for grouping |
-| `disabled` | `boolean` | - | Disable item |
-| `showToast` | `boolean` | `true` | Show toast on action |
-| `successMessage` | `string` | - | Custom success message |
-| `errorMessage` | `string` | - | Custom error message |
-| `loadingMessage` | `string` | - | Custom loading message |
+| Property         | Type                          | Required | Description                                 |
+| ---------------- | ----------------------------- | -------- | ------------------------------------------- |
+| `key`            | `string`                      | ✅       | Unique identifier                           |
+| `icon`           | `LucideIcon`                  | ✅       | Icon component                              |
+| `label`          | `string`                      | ✅       | Display label                               |
+| `action`         | `() => void \| Promise<void>` | ✅       | Action to execute                           |
+| `iconColor`      | `string`                      | -        | Tailwind color class                        |
+| `description`    | `string`                      | -        | Helper text                                 |
+| `category`       | `string`                      | -        | Category for grouping                       |
+| `disabled`       | `boolean`                     | -        | Disable item                                |
+| `hidden`         | `boolean`                     | -        | Omit item                                   |
+| `children`       | `MenuItem[]`                  | -        | Render item as a drill-down submenu trigger |
+| `showToast`      | `boolean`                     | `true`   | Show toast on action                        |
+| `successMessage` | `string`                      | -        | Custom success message                      |
+| `errorMessage`   | `string`                      | -        | Custom error message                        |
+| `loadingMessage` | `string`                      | -        | Custom loading message                      |
 
 ## Position Options
 
@@ -257,76 +244,62 @@ const items = [
 ### Custom Classes
 
 ```tsx
-<AdvancedMenu
-  {...menu.menuProps}
-  items={items}
-  className="custom-menu-class"
-/>
+<AdvancedMenu {...menu.menuProps} items={items} className="custom-menu-class" />
 ```
 
-## Best Practices
+## Best practices
 
-1. **Use unique keys** - Each item must have a unique key
-2. **Provide descriptions** - Help users understand actions
-3. **Use appropriate icons** - Choose clear, recognizable icons
-4. **Handle errors** - Wrap actions in try-catch for better UX
-5. **Show feedback** - Let users know when actions succeed/fail
-6. **Categorize logically** - Group related actions together
-7. **Disable unavailable actions** - Don't hide, disable with "Soon" badge
+1. Use stable, unique keys at every level; the drill-down trail depends on them.
+2. Use concise labels and recognizable Lucide icons. Menu rows do not render
+   descriptions.
+3. Let the component report action failure; do not swallow errors inside an
+   action.
+4. Put primary actions first, then group variant families behind submenus.
+5. Disable temporarily unavailable actions. Hide actions only when they do not
+   apply; a submenu with no visible children is hidden automatically.
 
 ## Mobile Behavior
 
 On mobile devices (< 768px):
-- Menu automatically centers in viewport
-- Adjusts width to fit screen with margins
-- Maintains all functionality
-- Touch-friendly tap targets
+
+- The action menu renders as a fixed-height bottom drawer.
+- Drill-down replaces the drawer's list in place and provides a 44pt back row.
+- One scroll area owns the full list and respects the bottom safe area.
 
 ## Accessibility
 
-- ✅ Keyboard navigation (Escape to close)
-- ✅ Click outside to close
-- ✅ Focus management
-- ✅ ARIA labels (coming soon)
-- ✅ Screen reader support (coming soon)
+- Escape backs out of a submenu, then closes the menu.
+- Desktop click-outside and mobile drawer dismissal close the menu.
+- Submenu triggers expose `aria-haspopup="menu"` and a visible chevron/count.
 
 ## Complete Example
 
-See `AdvancedMenu.example.tsx` for comprehensive examples including:
-- Basic usage
-- Categorized menus
-- Context menus
-- Custom positioning
-- Disabled items
-- Callbacks
-- Minimal menus
-- Message options menu
+The official-components gallery at
+`app/(admin)/administration/ui/official-components/component-displays/advanced-menu.tsx`
+is the interactive example.
 
 ## Troubleshooting
 
 **Menu doesn't appear:**
+
 - Check `isOpen` is `true`
-- Ensure parent has `relative` positioning
+- Pass the real trigger element as `anchorElement`
 
 **Menu gets cut off:**
-- The component has automatic viewport collision detection that prevents cut-off
-- If you still see issues, ensure the menu is rendering within the normal document flow
-- The menu will automatically:
-  - Switch from `bottom` to `top` if it would overflow the bottom
-  - Switch from `top` to `bottom` if it would overflow the top
-  - Switch from `left` to `right` if it would overflow the left edge
-  - Switch from `right` to `left` if it would overflow the right edge
-  - Center itself if the content is too large for the viewport or if no good position exists
-  - Constrain its maximum height to fit within the viewport
-  - Stop adjusting once centered to prevent infinite recursion loops
-- At extreme zoom levels where the menu can't fit above or below, it will automatically center with internal scrolling
+
+- The component chooses the side with more room, clamps to viewport edges, and
+  scrolls internally when necessary.
+- It deliberately keeps the opening frame while the user drills into child
+  lists. Do not add submenu state to the positioning effect dependencies.
 
 **Actions don't work:**
+
 - Verify `action` is a function
 - Check for JavaScript errors in action
 - Ensure `disabled` is not `true`
 
 **Styling issues:**
+
 - Check for conflicting CSS
 - Verify Tailwind classes are available
 - Ensure dark mode classes are working
@@ -356,3 +329,8 @@ If you're migrating from the old `MessageOptionsMenu`:
 
 Internal component for AI-Matrx Admin. Not for redistribution.
 
+## Change log
+
+- 2026-09-15 — Keep desktop and mobile submenu frames stable, resolve open
+  paths against live items, and omit recursively empty submenus.
+- 2026-09-12 — Add drill-down submenus and automatic overflow-category folding.

@@ -26,7 +26,7 @@
  * it). That keeps dialog ownership in one place per message bubble.
  */
 
-import React, { useRef, useState, lazy, Suspense, useCallback } from "react";
+import React, { useState, lazy, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
 import {
   TapTargetButtonForGroup,
@@ -135,7 +135,8 @@ export function UserActionBar({
 
   const [isCopied, setIsCopied] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
+  const [moreOptionsAnchor, setMoreOptionsAnchor] =
+    useState<HTMLButtonElement | null>(null);
 
   // ── Delete dialog state ────────────────────────────────────────────────
   // Triggered from the overflow menu's "Delete message" item. Owns the
@@ -314,15 +315,12 @@ export function UserActionBar({
         />
 
         {showOptions && (
-          <div ref={moreOptionsButtonRef}>
-            <TapTargetButtonForGroup
-              onClick={() => setShowOptionsMenu(true)}
-              ariaLabel="More options"
-              icon={
-                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-              }
-            />
-          </div>
+          <TapTargetButtonForGroup
+            ref={setMoreOptionsAnchor}
+            onClick={() => setShowOptionsMenu(true)}
+            ariaLabel="More options"
+            icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+          />
         )}
       </TapTargetButtonGroup>
 
@@ -337,7 +335,7 @@ export function UserActionBar({
             messageId={messageId}
             conversationId={conversationId}
             metadata={metadata}
-            anchorElement={moreOptionsButtonRef.current}
+            anchorElement={moreOptionsAnchor}
             surfaceKey={surfaceKey}
             onRequestDelete={() => setDeleteDialogOpen(true)}
           />
