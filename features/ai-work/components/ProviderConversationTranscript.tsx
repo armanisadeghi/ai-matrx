@@ -50,6 +50,8 @@ import {
 } from "../conversations/components/ConversationArtifactsPanel";
 import { useCodingSessionArtifacts } from "../conversations/artifacts/useCodingSessionArtifacts";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
+import { AiMatrxReplyComposer } from "../conversations/components/AiMatrxReplyComposer";
+import { transcriptAuthorship } from "../lib/providerTranscriptAuthorship";
 import {
   useLiveProviderTranscript,
   type LiveTranscriptArrival,
@@ -391,10 +393,19 @@ export function ProviderConversationTranscript({
 
       <section className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-500/5 px-4 py-3">
         <CircleDot className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+        {/* Two different truths, and the old single sentence told only one.
+            The PROVIDER side is still a mirror we cannot write back into. The
+            AI MATRX side is now writable — a reply at the bottom of this page
+            is answered here, and stays here. Saying "read-only" flat would be
+            a lie about the composer below; saying "you can reply" without the
+            boundary would be a lie about Claude Code. */}
         <p className="min-w-0 flex-1 text-sm text-foreground">
-          This is a read-only mirror of work captured from {provider}. Starting
-          an AI Matrx chat creates a separate conversation; it does not resume
-          the provider session.
+          The {provider} half of this conversation is a mirror — AI Matrx can
+          read it but cannot write back into the {provider} session. You can
+          still reply at the bottom of this page: an AI Matrx agent answers,
+          and both your reply and its answer stay in AI Matrx. Starting a
+          separate AI Matrx chat is still an option and creates its own
+          conversation.
         </p>
         <Button asChild size="sm" variant="outline" className="gap-1.5">
           <Link href="/chat/new">
@@ -508,6 +519,17 @@ export function ProviderConversationTranscript({
           )}
         </ol>
       )}
+
+      {/* The reply door, at the BOTTOM of the transcript where a reader ends
+          up. `refreshNow` is the live hook's forced one-shot read: it applies
+          the durable, attributed rows the server just wrote, including on a
+          conversation whose provider session settled long ago (plain
+          `checkNow` would return before reading anything there). */}
+      <AiMatrxReplyComposer
+        conversationId={conversation.id}
+        providerLabel={provider}
+        onAnswered={live.refreshNow}
+      />
     </div>
   );
 }
@@ -719,22 +741,38 @@ function ProviderTranscriptMessage({
   provider: string;
 }) {
   const isUser = message.role === "user";
-  const roleLabel = isUser
-    ? "You"
-    : message.role === "assistant"
-      ? provider
-      : formatText(message.role);
+  const authorship = transcriptAuthorship(message, provider);
 
   return (
     <li className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <article
         className={cn(
-          "w-full max-w-3xl rounded-xl border px-4 py-3 shadow-sm",
-          isUser ? "border-primary/20 bg-primary/5" : "border-border bg-card",
+          "w-full max-w-3xl rounded-xl px-4 py-3 shadow-sm",
+          // A Matrx-authored turn on a bound conversation is VISIBLY marked:
+          // a solid accent edge, not a subtle tint, so nobody reads our words
+          // as the coding tool's.
+          authorship.fromMatrx
+            ? "border-2 border-violet-500/50 bg-violet-500/5"
+            : cn(
+                "border",
+                isUser
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-card",
+              ),
         )}
       >
         <header className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{roleLabel}</span>
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="font-medium text-foreground">
+              {authorship.label}
+            </span>
+            {authorship.fromMatrx && !isUser ? (
+              <span className="rounded-full bg-violet-500/10 px-1.5 py-0.5 font-medium text-violet-700 dark:text-violet-300">
+                in AI Matrx
+              </span>
+            ) : null}
+            {authorship.note ? <span>{authorship.note}</span> : null}
+          </span>
           <time dateTime={message.created_at}>
             {formatAbsoluteDate(message.created_at)}
           </time>

@@ -20,7 +20,7 @@
  * guards drive — this component is only the wiring.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { getEffectiveSandboxRef } from "@/lib/sandbox/active-binding";
@@ -68,12 +68,18 @@ export function SandboxCanvasOpener({
   // Has anything actually run in the box? Both halves of the same truth the
   // transcript renders from — the live lifecycle for the turn in flight, the
   // persisted rows for a reloaded conversation. No second data path.
-  const records = useAppSelector(
-    selectToolCallsForConversation(conversationId ?? ""),
+  // Memoize the selector FACTORIES per conversation — an inline call builds a
+  // new createSelector every render and defeats the memo.
+  const recordsSelector = useMemo(
+    () => selectToolCallsForConversation(conversationId ?? ""),
+    [conversationId],
   );
-  const live = useAppSelector(
-    selectLiveToolLifecycleByConversation(conversationId ?? ""),
+  const liveSelector = useMemo(
+    () => selectLiveToolLifecycleByConversation(conversationId ?? ""),
+    [conversationId],
   );
+  const records = useAppSelector(recordsSelector);
+  const live = useAppSelector(liveSelector);
   const toolRan =
     records.some((record) => isSandboxTool(record.toolName)) ||
     (live

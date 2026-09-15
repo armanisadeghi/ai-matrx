@@ -69,12 +69,21 @@ export function ToolResultCanvasOpener({
     (s) => s.userPreferences.coding.toolResultCanvasAutoOpen !== false,
   );
 
-  const records = useAppSelector(
-    selectToolCallsForConversation(conversationId ?? ""),
+  // The selector FACTORIES must be memoized per conversation: calling them in
+  // the render body builds a new `createSelector` every render, which defeats
+  // the memo and hands back a new array/Map each time. Harmless where the
+  // result is reduced to a boolean; here it feeds a `useMemo` that feeds an
+  // effect that DISPATCHES, so an unmemoized factory is a render loop.
+  const recordsSelector = useMemo(
+    () => selectToolCallsForConversation(conversationId ?? ""),
+    [conversationId],
   );
-  const live = useAppSelector(
-    selectLiveToolLifecycleByConversation(conversationId ?? ""),
+  const liveSelector = useMemo(
+    () => selectLiveToolLifecycleByConversation(conversationId ?? ""),
+    [conversationId],
   );
+  const records = useAppSelector(recordsSelector);
+  const live = useAppSelector(liveSelector);
 
   // Oldest → newest, deduped by the record's own identity. A record that was
   // both streamed and persisted is ONE offer, not two panes.

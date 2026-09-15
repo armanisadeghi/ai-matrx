@@ -44,6 +44,7 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 - `components/ConversationOrganizationPanel.tsx` — adapts canonical association edges and the War Room mapper into one Project/Task/War Room picker.
 - `components/AiWorkConnections.tsx` — separates account identity, authorization grant, client detection, session delivery, managed-runtime availability, and local history sync.
 - `analysis/catalog.ts` + `analysis/ConversationAnalyzePanel.tsx` — the "Analyze this conversation" action group on BOTH halves of the detail route (`ProviderConversationTranscript` and `MatrxConversationDetail`) — the split-pane inbox inspector it originally mounted on was deleted with `AiWorkConversationsInbox` on 2026-08-16. Five plain-language actions (What you asked for / What came out of it / What's still open / Decisions and why / Ask vs. delivered), each an agent MANDATE (`conversation.vision_interviewer|outcome_summarizer|action_auditor|decision_ledger|drift_auditor`, seeded by `migrations/agent_slots_conversation_analysis_seed.sql`, swappable from the mandates console) resolved at click time inside `launchAgentExecution`. The conversation id is passed as the agent's `conversation_id` runtime variable; the agent's registered `conversations` tool reads the history server-side under the caller's RLS. The run streams in the floating `LiveRunWindow` (never a spinner, never a bespoke renderer), and every finished report is a canonical conversation the panel doors via `EntityRef` → `/chat/<id>`.
+- `conversations/components/AiMatrxReplyComposer.tsx` — the reply door at the bottom of a mirrored transcript. Sends the typed reply on the ordinary continuation route (`POST /ai/conversations/{id}`, `source_feature: "coding_session_reply"`, `initiation: "user"`) through `callConversationContinue`, streams the answer while it arrives, and carries the verbatim boundary sentence `AI Matrx is answering — <provider> will not see this reply`. The SERVER picks the responder agent; the client never does.
 - `components/ProviderConversationTranscript.tsx` — normalized, read-only provider transcript: backward message pagination, LIVE newest-side updates while the session runs, interleaved `chat.tool_call` activity through the canonical tool-call components, the canonical conversation menu, task attachment, and the organization panel.
 - `hooks/useLiveProviderTranscript.ts` + `lib/liveTranscript.ts` — the live half: `liveSessionState()` is the ONE decider for "is this session still delivering", and the hook is the visible-tab poll that appends the newest side while it is. See **Watch a run while it happens** below.
 - `features/agents/components/conversation-history/ConversationHistorySidebar.tsx` — reused list/search/source filter and real range pagination.
@@ -169,6 +170,7 @@ Selected conversation → `ConversationOrganizationPanel` → canonical `Associa
 - **The mirror is its own only sensor — say so, never infer a cause.** From the browser we can observe that nothing arrived; we can NOT observe whether the user was coding. No capture-gap copy may assert that the connection dropped. The one signal that would disambiguate is out-of-band (Matrx Local already reads Claude's local transcripts) — see the handoff, and do not fake it here.
 - **Sync is real or absent.** Browser filesystem access is forbidden. Historical Claude sync is advertised only as the Matrx Local desktop capability it is, with a download door — never as a web action.
 - **Tool activity renders through the canonical system only.** `cxToolCallToLifecycleEntry` → `ToolCallVisualization`/`ToolCallBatch`. A bespoke tool renderer on this surface is the exact defect the shape doctrine bans.
+- **A mirrored conversation is read-only ON THE PROVIDER SIDE ONLY, and every turn says who wrote it.** Three authorships share these rows: a provider mirror (no `metadata.origin`), an AI Matrx reply (`metadata.origin = "ai_matrx_reply"`), and an agent run triggered from the coding host through our MCP (`metadata.origin = "matrx_agent_run"`, with `metadata.agent_run`). `lib/providerConversationMessage.ts` reads that defensively (unknown JSON, unreadable row ⇒ provider mirror with NO attribution) and `lib/providerTranscriptAuthorship.ts` turns it into the label; a Matrx-authored turn is visibly marked and an absent `agent_name` renders "AI Matrx" — never a name invented from an id. The page banner states BOTH truths: the provider session cannot be written back into, and a reply here stays here.
 - **THE HONESTY FLOOR on merged pagination.** Messages and tool calls paginate on different keys; never render one stream's items below the other's unloaded boundary (`lib/providerTimeline.ts`).
 
 ---
@@ -215,6 +217,20 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 ---
 
 ## Change log
+
+- `2026-09-14` — A person can REPLY inside AI Matrx on a mirrored coding-session
+  transcript. `conversations/components/AiMatrxReplyComposer.tsx` mounts at the
+  bottom of `ProviderConversationTranscript`, posts on the existing
+  continuation route with `source_feature: "coding_session_reply"`, streams the
+  answer, and states verbatim that the coding tool will not see the reply; a
+  409 or any other refusal renders the server's own message plus what to do
+  next, and an empty message never sends. The transcript read now selects
+  `agent_id` and `metadata`, so an AI Matrx reply, an AI-Matrx-answer, and an
+  MCP-triggered agent run are each attributed instead of reading as provider
+  turns, and the read-only banner was rewritten because it had become untrue.
+  `useLiveProviderTranscript` gained `refreshNow`: one forced newest-side read
+  for rows AI Matrx just wrote, because `checkNow` is gated on the provider
+  session still delivering and these conversations are usually settled.
 
 - `2026-09-12` — Coding-session conversations show an **Artifacts** panel: every
   `files.files` row the desktop publisher stamped `metadata.kind =

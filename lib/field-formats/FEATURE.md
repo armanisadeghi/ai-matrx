@@ -37,7 +37,7 @@ module — do not make it seven.
 | File | Role |
 |---|---|
 | `types.ts` | `FieldFormatId`, `FieldFormatDef`, `FieldFormatOptions`, `FormatResult` |
-| `registry.ts` | THE registry — 22 formats, their `format()` / `parse()`, and `formatsForBase` / `defaultFormatForBase` |
+| `registry.ts` | THE registry — 23 formats, their `format()` / `parse()`, and `formatsForBase` / `defaultFormatForBase` |
 | `format.ts` | `formatFieldValue`, `parseFieldInput`, `resolveFieldFormat`, `readFieldFormatConfig` — THE FALLBACK LAW lives here |
 | `FormattedFieldValue.tsx` | The ONE read-only renderer (links, swatch, chips, stars, amber mismatch) |
 | `FieldFormatPicker.tsx` | The ONE picker — format select + only the options that format reads; stacked by default, `layout="embedded"` exposes the option rail to a responsive parent |
@@ -51,7 +51,7 @@ Text: `text` `long_text` `markdown` `email` `url` `phone` `color`
 Numbers: `number` `decimal` `currency` `percent` `duration` `integer` `rating` `file_size`
 Choice: `boolean` `choice` `multi_choice`
 Dates: `date` `datetime` `relative_time`
-Structured: `json` `array` `tags`
+Structured: `json` `array` `tags` `formula`
 
 Each declares a `base` storage type and optional `alsoAccepts`. The picker only
 offers formats that can legally sit on the column's storage type, so a Currency
@@ -139,6 +139,74 @@ a constant — pick a Continent, and Country narrows to that continent's group.
 `percent` column's `45` from `0.45`. Both keys are OMITTED rather than sent
 empty — an empty `choices` would read as "this column offers nothing".
 
+## Formula — a column computed from its own row
+
+`formula` is a column whose value is **computed on read from the other columns
+of the same row**, Airtable-style. Champion: Airtable's formula field.
+
+**It stores nothing.** The cell is always `null` in the database. The
+expression lives in `metadata.format.options.formula = { expression,
+resultFormat? }` — the same JSONB the other formats' options live in — so a
+formula needs no migration, no column type, and no server support, and
+stripping the format leaves an ordinary empty text column behind.
+
+**The engine is `features/data-tables/formulas.ts`** — pure, dependency-free,
+and with **no `eval` and no `new Function`**: formula text is tokenized, parsed
+to an AST, and interpreted. Nothing a user types ever becomes JavaScript.
+
+```
+parseFormula(source)            → { ok, ast, references[] } | { ok: false, error, position }
+evaluateFormula(ast, resolve)   → { ok, value } | { ok: false, error }
+formulaResultType(ast, columnType) → "number" | "text" | "boolean" | "date" | "unknown"
+FORMULA_FUNCTIONS                  the help list the editor renders
+```
+
+Nothing throws. A syntax error, an unknown column, a division by zero and a
+type mismatch are all `ok: false` with a plain-English sentence — the same
+posture as THE FALLBACK LAW above.
+
+### The language
+
+A column is referenced as `{Display Name}` or `{field_name}`; `parseFormula`
+reports every name it saw in `references`, and the CALLER resolves them (it
+owns the table, the engine does not). `resolve(name)` returns the cell value,
+or `undefined` for a column that does not exist — "empty" and "misspelt" are
+different answers, and conflating them is how a formula returns a confident
+wrong number.
+
+- Values: numbers, `'single'` / `"double"` quoted text, `TRUE` / `FALSE`
+- Operators: `+ - * / %`, unary `-`, brackets, `&` (join text),
+  `= != <> < <= > >=`
+- Functions: `SUM` `MIN` `MAX` `AVERAGE` `ROUND` `ABS` · `LEN` `UPPER` `LOWER`
+  `TRIM` `CONCATENATE` `LEFT` `RIGHT` `CONTAINS` · `IF` `AND` `OR` `NOT` ·
+  `BLANK` `ISBLANK` · `TODAY` `NOW` `DATEDIFF` `YEAR` `MONTH` `DAY` `DATEADD`
+
+Coercion rules (the full list is the header of `formulas.ts`): BLANK is
+`null`/`undefined`/`""`; arithmetic reads BLANK as `0` so a half-filled row
+still computes, while **aggregates SKIP blanks** so `AVERAGE` divides by the
+values that were actually there; numeric strings coerce and `"n/a"` is a named
+type error; dates are ISO strings read and written **in UTC**; division by zero
+is an error, never `Infinity`.
+
+### Display
+
+`resultFormat` says how the computed value is rendered — a computed total as
+`currency`, a computed date as `date` — and the formula format delegates to
+that format's own `format()`, passing the same options through. With no
+`resultFormat` the value renders plainly. `formulaResultType` gives the UI a
+best-effort static type so it can suggest the right one.
+
+### The documented limitations
+
+- **Client-side only.** The value is computed in the browser at render time.
+- **Never sortable or filterable server-side**, and never searchable: there is
+  no stored value for PostgREST to order or match on. A surface that sorts a
+  formula column must sort what it has already loaded, and say so.
+- **Not editable.** The editor kind is `computed`, which is how the grid knows
+  to refuse an edit instead of offering an input that would be thrown away.
+- **Same row only.** A formula reads its own row's columns — no lookups across
+  rows or tables, and no aggregation over a table.
+
 ## Adding a format
 
 1. Add one `FieldFormatDef` to `DEFS` in `registry.ts`. `format()` returns
@@ -155,6 +223,13 @@ No migration is ever required — a format is data in a JSONB column, and an
 unknown format id degrades to the plain storage type by design.
 
 ## Change log
+
+- **2026-09-14** — Added `formula`: a column computed on read from the other
+  columns of its own row (Arman approved). The language lives in
+  `features/data-tables/formulas.ts` — tokenizer, parser and interpreter, no
+  `eval`, nothing throws — and the format stores nothing, renders through an
+  optional `resultFormat`, and declares the `computed` editor kind so the grid
+  refuses editing. Not sortable or filterable server-side, by construction.
 
 - **2026-08-19** — Added `choice` / `multi_choice`: option lists as a pure UI
   layer, hydrated inline or from a shared pick list (which supplies grouping,

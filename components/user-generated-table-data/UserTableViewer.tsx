@@ -102,6 +102,13 @@ import {
 } from "@/features/data-tables/table-style";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
+import { evaluateFormula, parseFormula } from "@/features/data-tables/formulas";
+import {
+  hasValidationRules,
+  parseValidationRules,
+  validateCellValue,
+  type ValidationRules,
+} from "@/features/data-tables/validation";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   isBulkOpError,
@@ -1936,6 +1943,69 @@ const UserTableViewer = ({
     displayRows = filtered.slice(startIndex, startIndex + limit);
   }
 
+  // ─── Formula columns (features/data-tables/formulas.ts) ──────────────────
+  //
+  // A formula column STORES nothing; its value is computed here, from the
+  // row, at render — so display, copy, the agent scope and client-side sort
+  // all see the same number, and a write can never land in it (the cell is
+  // read-only below, and paste / clear / fill skip it). Errors are per cell:
+  // a bad reference or a division by zero renders #ERROR with the reason.
+  const formulaColumns = fields.flatMap((field) => {
+    const format = resolveFieldFormat(field.data_type, field.metadata);
+    if (format.id !== "formula") return [];
+    return [{ field, parsed: parseFormula(format.options?.formula?.expression ?? "") }];
+  });
+  const formulaErrors = new Map<string, string>();
+  if (formulaColumns.length > 0) {
+    const byDisplayName = new Map(
+      fields.map((f) => [f.display_name.toLowerCase(), f.field_name]),
+    );
+    displayRows = displayRows.map((row) => {
+      const data: Record<string, unknown> = { ...row.data };
+      const resolve = (name: string): unknown =>
+        name in data
+          ? data[name]
+          : data[byDisplayName.get(name.toLowerCase()) ?? ""];
+      for (const { field, parsed } of formulaColumns) {
+        if (!parsed.ok) {
+          data[field.field_name] = null;
+          formulaErrors.set(`${row.id}::${field.field_name}`, parsed.error);
+          continue;
+        }
+        const result = evaluateFormula(parsed.ast, resolve);
+        if (result.ok) data[field.field_name] = result.value;
+        else {
+          data[field.field_name] = null;
+          formulaErrors.set(`${row.id}::${field.field_name}`, result.error);
+        }
+      }
+      return { ...row, data };
+    });
+  }
+  const isFormulaField = (fieldName: string): boolean =>
+    formulaColumns.some((c) => c.field.field_name === fieldName);
+
+  // ─── Validation rules (features/data-tables/validation.ts) ───────────────
+  // Parsed once per render per column; the cell editors, the amber mismatch
+  // marker and the paste path all judge against the same parsed rules.
+  const validationByField = new Map<string, ValidationRules>(
+    fields.flatMap((field) => {
+      const rules = parseValidationRules(field.validation_rules);
+      return hasValidationRules(rules) ? [[field.field_name, rules] as const] : [];
+    }),
+  );
+  /**
+   * Every OTHER loaded row's value for a `unique` column. Read from the full
+   * cache when the viewer holds it, else the page — the honest set the browser
+   * has; the strict-mode trigger does not enforce uniqueness (cross-row).
+   */
+  const existingValuesFor = (fieldName: string, rowId: string): unknown[] | undefined => {
+    if (!validationByField.get(fieldName)?.unique) return undefined;
+    return (fullDatasetCache ?? data)
+      .filter((row) => row.id !== rowId)
+      .map((row) => row.data[fieldName]);
+  };
+
   // True while we're fetching the full dataset for a freshly-applied filter.
   const filteringInProgress =
     hasColumnFilters && loadingFullDataset && !fullDatasetCache;
@@ -2103,6 +2173,7 @@ const UserTableViewer = ({
       if (isReadOnly) return;
       const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
       const targets = addresses
+        .filter((address) => !isFormulaField(address.fieldName))
         .map((address) => ({ address, prior: readCell(address) }))
         .filter(
           ({ prior }) => prior !== null && prior !== undefined && prior !== "",
@@ -2276,10 +2347,30 @@ const UserTableViewer = ({
       const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
       const ops: BulkOp[] = [];
       const priors = new Map<string, unknown>();
+      let skippedComputed = 0;
+      const rejected: string[] = [];
       for (const cell of plan.cells) {
         const field = fieldByName.get(cell.fieldName);
         if (!field) continue;
+        if (isFormulaField(cell.fieldName)) {
+          skippedComputed += 1;
+          continue;
+        }
         const next = coerceForField(field, cell.raw);
+        const rules = validationByField.get(cell.fieldName);
+        if (rules) {
+          const verdict = validateCellValue({
+            rules,
+            dataType: field.data_type,
+            format: resolveFieldFormat(field.data_type, field.metadata),
+            value: next,
+            existingValues: existingValuesFor(cell.fieldName, cell.rowId),
+          });
+          if (!verdict.ok) {
+            rejected.push(`${field.display_name}: ${verdict.reason}`);
+            continue;
+          }
+        }
         const prior = readCell(cell) ?? null;
         if (storedValuesEqual(next, prior)) continue;
         ops.push({
@@ -2354,6 +2445,20 @@ const UserTableViewer = ({
             "The pasted block is wider than the columns to the right of the selected cell. Paste again from a column further left, or add columns first.",
         });
       }
+      if (skippedComputed > 0) {
+        toast({
+          title: `${skippedComputed} formula cell${skippedComputed === 1 ? "" : "s"} skipped`,
+          description:
+            "A formula column computes its own values, so nothing can be pasted into it.",
+        });
+      }
+      if (rejected.length > 0) {
+        toast({
+          title: `${rejected.length} value${rejected.length === 1 ? "" : "s"} did not pass the column rules`,
+          description: [...new Set(rejected)].slice(0, 3).join(" · "),
+          variant: "destructive",
+        });
+      }
     },
     [
       cellUndo,
@@ -2381,6 +2486,7 @@ const UserTableViewer = ({
       const priors = new Map<string, unknown>();
       const source = rows[0];
       for (let c = 0; c < source.length; c += 1) {
+        if (isFormulaField(source[c].fieldName)) continue;
         const value = readCell(source[c]) ?? null;
         for (let r = 1; r < rows.length; r += 1) {
           const target = rows[r][c];
@@ -2492,6 +2598,9 @@ const UserTableViewer = ({
     rowIds: rowIdsOnPage,
     fieldNames: fieldNamesInOrder,
     editable: !isReadOnly,
+    // A formula cell is computed — Enter / typing / double-click must not
+    // open an editor on it, or the grid would sit in an invisible edit state.
+    canEdit: (address) => !isFormulaField(address.fieldName),
     getCellText,
     onCopied: handleCopied,
     onClearCells: (addresses) => void handleClearCells(addresses),
@@ -2691,6 +2800,7 @@ const UserTableViewer = ({
     const isDefault = declared.id === defaultFormatForBase(field.data_type);
     const resolvedChoices = choiceMap.get(field.field_name)?.choices;
     return {
+      validationRules: field.validation_rules,
       field_name: field.field_name,
       display_name: field.display_name,
       data_type: field.data_type,
@@ -3650,11 +3760,22 @@ const UserTableViewer = ({
                     );
                     const hasCustomFormat =
                       fieldFormat.id !== defaultFormatForBase(field.data_type);
-                    const display = hasCustomFormat ? (
+                    const formulaError = formulaErrors.get(
+                      `${row.id}::${field.field_name}`,
+                    );
+                    const display = formulaError ? (
+                      <span
+                        className="text-amber-700 dark:text-amber-300"
+                        title={formulaError}
+                      >
+                        #ERROR
+                      </span>
+                    ) : hasCustomFormat || validationByField.has(field.field_name) ? (
                       <FormattedFieldValue
                         value={rawValue}
                         format={fieldFormat}
                         dataType={field.data_type}
+                        validationRules={validationByField.get(field.field_name) ?? null}
                         className="truncate text-left"
                       />
                     ) : cellData ? (
@@ -3768,7 +3889,7 @@ const UserTableViewer = ({
                           // handle their own interaction and stop propagation;
                           // a double-click that reaches here is on a plain
                           // cell and means "edit me".
-                          if (isReadOnly) return;
+                          if (isReadOnly || isFormulaField(field.field_name)) return;
                           grid.beginEdit({
                             rowId: row.id,
                             fieldName: field.field_name,
@@ -3787,7 +3908,9 @@ const UserTableViewer = ({
                               row={row.data}
                               value={rawValue}
                               display={display}
-                              editable={!isReadOnly}
+                              validationRules={validationByField.get(field.field_name) ?? null}
+                              existingValues={existingValuesFor(field.field_name, row.id)}
+                              editable={!isReadOnly && !isFormulaField(field.field_name)}
                               selected={grid.isSelected(
                                 row.id,
                                 field.field_name,

@@ -633,6 +633,50 @@ const DEFS: FieldFormatDef[] = [
       return toList(raw) ?? raw;
     },
   },
+
+  // ─── Computed ──────────────────────────────────────────────────────────────
+  //
+  // A formula column stores NOTHING. `metadata.format.options.formula` holds
+  // the expression; the stored cell is always null; the value is computed on
+  // read from the other columns of the same row
+  // (`features/data-tables/formulas.ts`). Grouped under Structured on purpose
+  // — the picker's groups are a fixed vocabulary, and a formula is structure
+  // over a plain string column, not a sixth family.
+  //
+  // `format()` here is handed the COMPUTED value, never a stored one, and its
+  // only job is to render it: through `resultFormat`'s own `format()` when the
+  // column declares one (a computed total shown as Currency, a computed date
+  // shown as a Date), and plainly otherwise. It never returns null for an
+  // empty value, because a formula legitimately produces BLANK.
+  //
+  // No `optionKeys`: the expression is authored in its own editor, not in the
+  // generic option rail, and listing a key the picker has no control for would
+  // open an empty options section under every formula column.
+  {
+    id: "formula",
+    label: "Formula",
+    description: "Computed from the other columns in the row — never typed in",
+    group: "Structured",
+    base: "string",
+    editor: "computed",
+    format: (v, o) => {
+      const target = o.formula?.resultFormat;
+      if (target && target !== "formula") {
+        const delegate = FIELD_FORMATS[target];
+        if (delegate) {
+          const rendered = delegate.format(v, o);
+          if (rendered !== null) return rendered;
+        }
+      }
+      if (v === null || v === undefined) return "";
+      if (typeof v === "boolean") return v ? "Yes" : "No";
+      if (typeof v === "number") return groupedNumber(v, o);
+      return toText(v);
+    },
+    // Nothing is ever stored in a formula column. Returning the raw input here
+    // would be the one way a computed cell could acquire a value of its own.
+    parse: () => null,
+  },
 ];
 
 export const FIELD_FORMATS: Readonly<Record<FieldFormatId, FieldFormatDef>> =

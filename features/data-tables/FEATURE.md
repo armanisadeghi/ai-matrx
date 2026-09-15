@@ -958,7 +958,33 @@ count derived from it would be a confident number over a partial set — the exa
 failure § Column shape exists to prevent. A real count needs its own RPC and is
 not in this pass.
 
+## Formula columns in the grid (2026-09-14)
+
+A column whose format is `formula` (`lib/field-formats` — language, coercion rules and the
+26 functions in [`formulas.ts`](./formulas.ts), 65 tests) STORES nothing. `UserTableViewer`
+computes it at render for every displayed row (`{Display Name}` or `{field_name}` references,
+earlier formula columns visible to later ones) and injects the value into the row it renders,
+so display, copy, the agent scope and client-side sort all see the same number. A bad
+reference or a division by zero renders `#ERROR` with the reason as its tooltip. The cell is
+read-only (double-click, Enter, typing and the agent's `cell_value` all refuse), and paste /
+clear / fill down skip formula cells and say so. Not sortable or filterable server-side
+(`udt_column_facets` / the paginated RPC never see the value) — documented limitation.
+**No expression editor UI yet:** the Table Settings column card does not expose the `formula`
+format's expression (the format picker owns that surface; next step).
+
+## Validation rules in the grid (2026-09-14)
+
+The grid passes each column's parsed rules to `EditableCell` (refuses a violating commit,
+stays in edit mode with the reason), to `FormattedFieldValue` (a STORED value that breaks a
+rule renders amber with "saved before the rule, and is kept"), to the agent scope
+(`column_list[].validation`), and judges pasted values (violations are skipped and named in a
+toast). `unique` reads every other loaded row of the column (full cache when held, else the
+page). Rule model, editor and strict-mode trigger: § Validation rules (below, by the
+validations build).
+
 ## Change log
+
+- `2026-09-14` — **Formula columns rendered, validation rules wired into the grid.** Verified live on `/data/[id]`: a `maxLength: 12` rule on Capital rendered "Washington, D.C." amber with the tooltip "Must be at most 12 characters (this is 16) — this value was saved before the rule, and is kept."; typing a 22-character value into that cell and committing raised "Must be at most 12 characters" and kept the editor open with the typed text, and Escape restored "Beijing". Formula rendering has unit coverage only until a column carries the format — the expression editor is the next step.
 
 - `2026-09-14` — **DD-244: the grid's live data-loss path is closed.** A column type change no longer empties a cell without keeping the value, and row history is no longer trimmed below Arman's ruled 30-day floor. Migration `migrations/dd244_udt_history_reason_and_retention_floor.sql` (applied + ledgered `2026-09-15 03:57:51+00`, checksum `051bc808…`): new `workbench.udt_dataset_row_versions.reason`; `udt_log_row_version` stamps it from the transaction-local `matrx.udt_version_reason`; new `udt_cast_jsonb_value` is the ONE cast rule; `udt_change_field_type` counts un-castable values, stamps `type_change:<from>→<to>`, PROVES the history landed (and raises, rolling back, if it did not) and returns `values_moved_to_history` + `history_reason`; new knob `extensibility.user_tables.history_retention_floor_days` (30 days, `raise_only`, organization-overridable); `udt_dataset_row_versions_trim_scoped` reads it per organization and the cron's zero-arg wrapper delegates (cron job 13 untouched). UI: `TableConfigModal` says the count and names Restore as the way back (and its pre-change confirm no longer claims values just "become null"); `VersionHistoryViewer` badges that version "Column type changed (string→integer)". Guard `pnpm check:udt-history` / `:self-test` (`scripts/check-udt-history-honesty.ts`) — proven RED on the pre-fix bodies (`column "reason" does not exist`), GREEN on all five checks after. Verified: the live functions by SELECT; a lowering override refused live (`must be >= 30`); `pnpm db-types` regenerated; `pnpm check:parse` + `tsc --noEmit` clean for every touched file. NOT verified by me: the live browser dialog on production (a separate verifier owns that), and the weekly cron's next real run.
 
