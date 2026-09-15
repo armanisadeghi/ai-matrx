@@ -530,6 +530,7 @@ export function ProviderConversationTranscript({
           page passes no provider label and no agent. */}
       <AiMatrxReplyComposer
         conversationId={conversation.id}
+        conversationOrganizationId={conversation.organization_id}
         onAnswered={live.refreshNow}
       />
     </div>

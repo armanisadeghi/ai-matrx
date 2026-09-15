@@ -39,13 +39,23 @@ export interface CodingReplyResponderState {
 export function useCodingReplyResponder(opts: {
   conversationId: string;
   /**
+   * The conversation's OWN durable organization. Local-first, the same way
+   * `useContextPreview` resolves it: the JWT lane of `callApi` is fail-closed
+   * on the organization header, so without this the read dies as "Select an
+   * organization before sending this request" on any session that has not
+   * picked one — and the composer would then say it could not learn who
+   * answers when the server knew perfectly well. Live on aimatrx.com,
+   * 2026-09-15.
+   */
+  organizationId?: string | null;
+  /**
    * Read only where a reply can even be typed. A page that already knows this
    * conversation is not a coding-session mirror passes `false` and no request
    * is made.
    */
   enabled: boolean;
 }): CodingReplyResponderState {
-  const { conversationId, enabled } = opts;
+  const { conversationId, organizationId, enabled } = opts;
   const dispatch = useAppDispatch();
 
   const [status, setStatus] = useState<CodingReplyResponderStatus>("loading");
@@ -60,6 +70,9 @@ export function useCodingReplyResponder(opts: {
         path: "/coding-sessions/conversations/{conversation_id}/responder",
         method: "GET",
         pathParams: { conversation_id: conversationId },
+        scopeOverrides: organizationId
+          ? { organization_id: organizationId }
+          : undefined,
       }),
     ).then((result) => {
       if (seq !== requestSeq.current) return; // superseded
@@ -79,7 +92,7 @@ export function useCodingReplyResponder(opts: {
       setError(null);
       setStatus("ready");
     });
-  }, [conversationId, dispatch]);
+  }, [conversationId, organizationId, dispatch]);
 
   useEffect(() => {
     if (!enabled) return;
