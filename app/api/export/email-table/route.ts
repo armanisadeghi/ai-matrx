@@ -6,6 +6,15 @@ import { createClient } from "@/utils/supabase/server";
 const EMAIL_FORMATS = ["csv", "json", "markdown"] as const;
 type EmailFormat = (typeof EMAIL_FORMATS)[number];
 
+/**
+ * The email service renders one in-memory HTML/text payload. Keep the wire
+ * request below 1 MiB so an untrusted request cannot force unbounded buffering;
+ * oversized exports must use the download destination instead.
+ */
+export const MAX_EMAIL_EXPORT_REQUEST_BYTES = 1_000_000;
+
+class RequestBodyTooLargeError extends Error {}
+
 function isEmailFormat(value: unknown): value is EmailFormat {
   return typeof value === "string" && EMAIL_FORMATS.includes(value as EmailFormat);
 }
@@ -19,11 +28,49 @@ function isEmailExportRequest(
   return (
     typeof label === "string" &&
     label.trim().length > 0 &&
-    !/[<>]/.test(label) &&
+    !/[\u0000-\u001F\u007F]/.test(label) &&
     typeof content === "string" &&
     content.length > 0 &&
     isEmailFormat(format)
   );
+}
+
+async function readBoundedJson(request: Request): Promise<unknown> {
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_EMAIL_EXPORT_REQUEST_BYTES
+  ) {
+    throw new RequestBodyTooLargeError();
+  }
+
+  if (!request.body) throw new SyntaxError("Request body is required");
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_EMAIL_EXPORT_REQUEST_BYTES) {
+        await reader.cancel();
+        throw new RequestBodyTooLargeError();
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
 }
 
 /**
@@ -47,12 +94,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const body: unknown = await request.json();
+    const body = await readBoundedJson(request);
     if (!isEmailExportRequest(body)) {
       return NextResponse.json(
         {
           success: false,
-          msg: "A plain-text label, format (csv, json, or markdown), and non-empty content are required",
+          msg: "A label, format (csv, json, or markdown), and non-empty content are required",
         },
         { status: 400 },
       );
@@ -77,6 +124,15 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return NextResponse.json(
+        {
+          success: false,
+          msg: "This export is too large to email. Download it instead.",
+        },
+        { status: 413 },
+      );
+    }
     console.error("Error in POST /api/export/email-table:", error);
     return NextResponse.json(
       { success: false, msg: "Failed to send email" },
