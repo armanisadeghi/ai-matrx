@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { operationFailed } from "@/utils/errors";
 import { getUserOrganizations } from "@/features/organizations/service";
 import {
   MASTERWORK_SELECT_COLUMNS,
@@ -96,7 +97,7 @@ async function withRulebooks(
       .select("id,name,source,created_by")
       .in("id", rulebookIds)
       .is("deleted_at", null);
-    if (error) throw error;
+    if (error) throw operationFailed("load the Encore shelves", error);
     for (const row of data ?? []) {
       const source = (row.source ?? {}) as RulebookSource;
       refs.set(row.id, {
@@ -194,7 +195,7 @@ export async function getEncoreMasterwork(
     .is("deleted_at", null)
     .not("metadata->>built_from_rulebook", "is", null)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw operationFailed("open that Masterwork", error);
   if (!data) return null;
   const [withRef] = await withRulebooks([parseMasterworkRow(data)]);
   return withRef ?? null;
@@ -230,7 +231,7 @@ export async function listMyEncoreRuns(
   const { data, error } = await runQuery
     .order("created_at", { ascending: false })
     .limit(ENCORE_RUN_LIMIT);
-  if (error) throw error;
+  if (error) throw operationFailed("list your recent runs", error);
   return (data ?? []).map((row) => ({
     id: row.id,
     status: String(row.status),

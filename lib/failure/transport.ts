@@ -17,6 +17,23 @@
  * string: nobody knows whether the server acted. A write may have landed, may
  * not have. That uncertainty belongs on the screen, with the remedy attached.
  *
+ * THE SECOND HALF (wall W2, 2026-09-15). The same law broke the other way on
+ * `/masterwork/new?approach=interview`: an Expert was shown, verbatim, on the
+ * page and in a toast:
+ *
+ *     canceling statement due to statement timeout (57014)
+ *
+ * That is Postgres talking to a DBA. It is not a sentence, it names no remedy,
+ * and the Expert who read it had done nothing wrong — the database simply did
+ * not answer inside its eight seconds. `describeFailure` used to pass every
+ * PostgREST message through untouched, on the reasoning that "a door's own
+ * refusal passes through word for word". A DOOR'S REFUSAL AND POSTGRES'S OWN
+ * WORDS ARE NOT THE SAME THING: our RPCs raise sentences written for people;
+ * the engine raises SQLSTATE prose written for operators. Recognised by
+ * SQLSTATE (and by the engine's verbatim phrasings when the code is lost),
+ * those are now rewritten and marked transient, so the screen offers a retry
+ * instead of a diagnosis.
+ *
  * This module turns any thrown thing into `{ sentence, remedy, transient }`.
  * `transient` is the one that drives UI: when it is true, a RETRY is the
  * remedy, and `lib/failure/toastFailure.ts` puts a Retry button on the toast.
@@ -77,6 +94,57 @@ export function isTransportFailure(error: unknown): boolean {
   return TRANSPORT_MESSAGES.has(messageOf(error).trim());
 }
 
+/**
+ * Postgres's OWN words for "I could not answer", verbatim. Matched at the start
+ * of the message so a sentence one of our functions raised — which may quote a
+ * timeout while explaining what to do — is never rewritten out from under it.
+ * These are the strings that reach the browser when the SQLSTATE is lost on the
+ * way (a message that was stringified into a plain `Error`, for instance).
+ */
+const RAW_ENGINE_MESSAGES =
+  /^\s*(canceling statement due to|canceling authentication request|terminating connection due to|remaining connection slots are reserved|sorry, too many clients|too many connections|deadlock detected|could not serialize access|server closed the connection unexpectedly|the database system is (starting up|shutting down|in recovery)|ssl connection has been closed unexpectedly|connection to server .* failed)/i;
+
+/** What kind of "the database did not answer" this is. */
+export type DatabaseRefusal = "timeout" | "busy" | "conflict" | "dropped";
+
+function codeOf(error: unknown): string {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === "string") return code;
+  }
+  return "";
+}
+
+/**
+ * Classify by SQLSTATE first — the code is the engine's own, unambiguous
+ * statement about which of its machinery refused. Only these four classes
+ * qualify: every one of them means "the engine could not complete this run",
+ * never "your data or your permissions are wrong", and for every one of them a
+ * retry is the honest remedy. A `42501` (permission denied) or a `P0001` our
+ * own function raised is NOT here, deliberately — those are decisions, not
+ * refusals, and the caller owns what to say about them.
+ */
+export function databaseRefusal(error: unknown): DatabaseRefusal | null {
+  const code = codeOf(error);
+  if (code === "57014") return "timeout";
+  if (code.startsWith("57")) return "busy"; // operator intervention / shutdown
+  if (code.startsWith("53")) return "busy"; // insufficient resources
+  if (code.startsWith("40")) return "conflict"; // serialization / deadlock
+  if (code.startsWith("08")) return "dropped"; // connection exception
+
+  const raw = messageOf(error);
+  if (!RAW_ENGINE_MESSAGES.test(raw)) return null;
+  if (/statement timeout/i.test(raw)) return "timeout";
+  if (/deadlock|serialize access/i.test(raw)) return "conflict";
+  if (/connection|too many clients|connection slots/i.test(raw)) return "dropped";
+  return "busy";
+}
+
+/** True when Postgres itself refused, in its own words. Never a screen's words. */
+export function isDatabaseFailure(error: unknown): boolean {
+  return databaseRefusal(error) !== null;
+}
+
 /** True when this device says it is offline. Never guessed on the server. */
 function offline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
@@ -99,9 +167,52 @@ export interface DescribeOptions {
 }
 
 /**
+ * What each database refusal says, and what it honestly knows about the write.
+ *
+ * A statement the engine CANCELLED is a statement that rolled back — PostgREST
+ * runs each request in its own transaction — so "nothing was changed" is a fact
+ * here, not a comfort. A connection that DROPPED knows no such thing, so it
+ * carries the same uncertainty a transport refusal does.
+ */
+function databaseSentence(
+  refusal: DatabaseRefusal,
+  action: string,
+  options: DescribeOptions,
+): Omit<FailureSentence, "raw"> {
+  switch (refusal) {
+    case "timeout":
+      return {
+        sentence: `The database took too long to answer while ${action}, so it stopped part-way — nothing was changed.`,
+        remedy: "Try again — this usually clears on its own.",
+        transient: true,
+      };
+    case "busy":
+      return {
+        sentence: `The database was too busy to answer while ${action}, so it stopped part-way — nothing was changed.`,
+        remedy: "Try again in a moment.",
+        transient: true,
+      };
+    case "conflict":
+      return {
+        sentence: `Something else changed the same thing while ${action}, so this was rolled back.`,
+        remedy: "Try again — you will be working from the newer version.",
+        transient: true,
+      };
+    case "dropped":
+      return {
+        sentence: `The connection to the database dropped while ${action} — the answer never arrived, so this may or may not have gone through.`,
+        remedy: options.retrySafe
+          ? "Try again — doing it twice changes nothing."
+          : "Try again, then reload to confirm which way it landed.",
+        transient: true,
+      };
+  }
+}
+
+/**
  * The one place a caught error becomes what a screen prints. A door's own
- * sentence is returned unchanged and marked non-transient; only a transport
- * refusal is rewritten.
+ * sentence is returned unchanged and marked non-transient; a transport refusal
+ * and a database refusal are rewritten, because neither is anybody's sentence.
  */
 export function describeFailure(
   error: unknown,
@@ -109,6 +220,11 @@ export function describeFailure(
 ): FailureSentence {
   const raw = messageOf(error);
   const action = options.action ?? "this request";
+
+  const refusal = databaseRefusal(error);
+  if (refusal) {
+    return { ...databaseSentence(refusal, action, options), raw };
+  }
 
   if (!isTransportFailure(error)) {
     return {

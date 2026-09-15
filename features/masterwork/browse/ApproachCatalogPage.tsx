@@ -18,13 +18,11 @@
 // (`fetchDistillationApproaches`) and every tile is the ONE `ApproachCard`.
 // A new Approach appears here by existing as a row — never by editing a list.
 
-import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import {
-  approachState,
-  fetchDistillationApproaches,
-  type DistillationApproach,
-} from "./approaches";
+import { Button } from "@/components/ui/button";
+import { approachState, type DistillationApproach } from "./approaches";
+import { useApproachRegistry } from "./useApproachRegistry";
 import { ApproachCard } from "./ApproachCard";
 
 function Section({
@@ -57,36 +55,24 @@ function Section({
 }
 
 export function ApproachCatalogPage() {
-  const [approaches, setApproaches] = useState<DistillationApproach[] | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    fetchDistillationApproaches()
-      .then((rows) => {
-        if (alive) setApproaches(rows);
-      })
-      .catch((err: unknown) => {
-        if (alive)
-          setError(err instanceof Error ? err.message : "Could not load");
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // W2 sibling: this page printed the engine's own message at the Expert
+  // ("We could not load the ways to build a Rulebook: canceling statement due
+  // to statement timeout") and offered her NO way to ask again — a reload of
+  // the whole page was the only move, and nothing on screen said so.
+  const { approaches, error, loading, reload } = useApproachRegistry();
 
   if (error)
     return (
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-sm text-destructive">
-          We could not load the ways to build a Rulebook: {error}
-        </p>
+      <div className="mx-auto max-w-5xl space-y-3 px-4 py-8">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button variant="outline" size="sm" onClick={reload}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Try again
+        </Button>
       </div>
     );
 
-  if (!approaches)
+  if (loading || !approaches)
     return (
       <div className="flex h-full items-center justify-center">
         <LoadingSpinner />

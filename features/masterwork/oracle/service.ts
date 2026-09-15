@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId, getUserId } from "@/utils/auth/getUserId";
+import { operationFailed } from "@/utils/errors";
 import { getRulebook, saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
 import type { Rulebook, RulebookRule } from "../types";
@@ -77,7 +78,7 @@ export async function listMyRulebooks(): Promise<OracleRulebookOption[]> {
   const { data, error } = await q
     .order("updated_at", { ascending: false })
     .limit(50);
-  if (error) throw error;
+  if (error) throw operationFailed("list your Rulebooks", error);
   return (data ?? []).map((row) => ({
     id: String(row.id),
     name: String(row.name),

@@ -7,6 +7,7 @@ import {
   type EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { listEncoreShelves } from "../service";
+import { operationFailed } from "@/utils/errors";
 import type { EncoreListRow } from "./types";
 
 const DATE_BUCKET_MS: Record<string, number> = {
@@ -33,9 +34,14 @@ function loadRows(): Promise<EncoreListRow[]> {
         })),
       ),
     )
-    .catch((error) => {
+    .catch((error: unknown) => {
       cachedRows = null;
-      throw error;
+      // The shelves loader already threw a sentence (`operationFailed`); this
+      // only drops the cache. Anything that is NOT an Error would reach a
+      // person as "[object Object]", so it is given a sentence here too.
+      throw error instanceof Error
+        ? error
+        : operationFailed("load the Encore shelf", error);
     });
   return cachedRows;
 }

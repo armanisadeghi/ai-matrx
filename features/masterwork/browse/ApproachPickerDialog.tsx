@@ -22,8 +22,7 @@
 // its own page (`launch_href`). A coming-soon Approach renders as a named,
 // deliberately inert card — never a button that leads nowhere.
 
-import { useEffect, useState } from "react";
-import { Layers } from "lucide-react";
+import { Layers, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,12 +30,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { ApproachCard } from "./ApproachCard";
-import {
-  fetchDistillationApproaches,
-  type DistillationApproach,
-} from "./approaches";
+import { useApproachRegistry } from "./useApproachRegistry";
+import { type DistillationApproach } from "./approaches";
 
 export interface ApproachPickerDialogProps {
   open: boolean;
@@ -50,34 +48,10 @@ export function ApproachPickerDialog({
   onOpenChange,
   onLaunch,
 }: ApproachPickerDialogProps) {
-  const [approaches, setApproaches] = useState<DistillationApproach[] | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-
   // Read on first open, not on mount — the dialog lives on every Rulebook page.
-  useEffect(() => {
-    if (!open || approaches !== null) return;
-    let cancelled = false;
-    fetchDistillationApproaches()
-      .then((rows) => {
-        if (!cancelled) setApproaches(rows);
-      })
-      .catch((err: unknown) => {
-        // LOUD RECOVERY — the surface says what went wrong, never shows an
-        // empty catalog as if there were nothing to offer.
-        console.error("[masterwork] Approach registry read failed", err);
-        if (!cancelled)
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Could not load the ways to add.",
-          );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, approaches]);
+  // W2 sibling: this printed the engine's own message at the Expert and, like
+  // the catalog, gave her nothing to press afterwards.
+  const { approaches, error, loading, reload } = useApproachRegistry(open);
 
   const ready = approaches?.filter((a) => a.availability !== "coming_soon") ?? [];
   const soon = approaches?.filter((a) => a.availability === "coming_soon") ?? [];
@@ -98,8 +72,14 @@ export function ApproachPickerDialog({
         </DialogHeader>
 
         {error ? (
-          <p className="py-8 text-center text-sm text-destructive">{error}</p>
-        ) : approaches === null ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={reload}>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Try again
+            </Button>
+          </div>
+        ) : loading || approaches === null ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner />
           </div>

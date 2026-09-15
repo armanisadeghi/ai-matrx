@@ -76,10 +76,10 @@ import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
 import { createDraftRulebook } from "../service";
 import {
-  fetchDistillationApproaches,
   startableApproaches,
   type DistillationApproach,
 } from "../browse/approaches";
+import { useApproachRegistry } from "../browse/useApproachRegistry";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
 
@@ -397,8 +397,10 @@ export function NewRulebookFlow() {
   const [answers, setAnswers] = useState<Record<string, string>>(
     defaultIntakeAnswers,
   );
-  const [approaches, setApproaches] = useState<DistillationApproach[] | null>(null);
-  const [approachError, setApproachError] = useState<string | null>(null);
+  // ONE loader, shared by every Approach surface (wall W2). It owns the read,
+  // the Expert-readable sentence, and a retry that actually re-reads.
+  const registry = useApproachRegistry();
+  const approaches = registry.approaches;
   // null = follow the suggestion; a string = the Expert's explicit pick.
   const [selectedKey, setSelectedKey] = useState<string | null>(
     searchParams.get("approach"),
@@ -463,35 +465,14 @@ export function NewRulebookFlow() {
     setAnswers(v.answers);
   }, [restored]);
 
-  // Load the registry on mount so the cards are there the moment the Expert
-  // reaches step 2.
-  useEffect(() => {
-    if (approaches !== null) return;
-    let cancelled = false;
-    setApproachError(null);
-    fetchDistillationApproaches()
-      .then((rows) => {
-        if (cancelled) return;
-        if (startableApproaches(rows).length === 0) {
-          setApproachError(
-            "No ways to get started are available right now — please try again shortly.",
-          );
-          return;
-        }
-        setApproaches(rows);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setApproachError(
-          err instanceof Error
-            ? err.message
-            : "Could not load the ways to get started.",
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [approaches]);
+  // A registry that read cleanly but offers nothing startable is not an error
+  // the loader can name — it is this wizard's own problem, so this wizard says
+  // it, in the same slot and with the same working retry.
+  const approachError =
+    registry.error ??
+    (approaches !== null && startableApproaches(approaches).length === 0
+      ? "No ways to get started are available right now — please try again shortly."
+      : null);
 
   const suggested = suggestedApproachKey(answers.knowledge);
   // The registry read returns the WHOLE catalog now (that is the point — Arman
@@ -799,15 +780,14 @@ export function NewRulebookFlow() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setApproaches(null);
-                  setApproachError(null);
-                }}
+                onClick={registry.reload}
               >
                 Try again
               </Button>
             </div>
-          ) : approaches === null ? (
+          ) : registry.loading || approaches === null ? (
+            // Reached ONLY while a read is outstanding. A failed read sets the
+            // error above, so "Try again" can never land back here (W2).
             <div className="grid gap-4 sm:grid-cols-2" aria-busy="true">
               {[0, 1, 2, 3].map((i) => (
                 <div

@@ -72,6 +72,28 @@ function toIntakeQuery(value: unknown): Record<string, string> {
 }
 
 /**
+ * Carry the engine's SQLSTATE onto the thrown Error.
+ *
+ * WALL W2 (2026-09-15): this used to throw
+ * `new Error(\`${error.message} (${error.code})\`)`, and three surfaces printed
+ * that message straight at the Expert. One of them showed her, in full,
+ * `canceling statement due to statement timeout (57014)`. Folding the code into
+ * the prose also DESTROYED it as data — nothing downstream could tell a
+ * timeout from a permission denial without parsing English. The code now rides
+ * on the error where `lib/failure/transport.ts` reads it, and the message stays
+ * the engine's own for the Error Inspector, never for a screen.
+ */
+function registryReadError(error: {
+  message: string;
+  code?: string | null;
+}): Error {
+  const err = new Error(error.message);
+  err.name = "ApproachRegistryError";
+  if (error.code) Object.assign(err, { code: error.code });
+  return err;
+}
+
+/**
  * The WHOLE Distillation catalog in picker order — every non-deleted row,
  * available and coming-soon alike. Arman, 2026-08-20: "I wanna see all of them
  * here. I wanna see cards for them. And if they're not available yet, then it
@@ -95,7 +117,7 @@ export async function fetchDistillationApproaches(): Promise<
     .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
-  if (error) throw new Error(`${error.message} (${error.code})`);
+  if (error) throw registryReadError(error);
   return (data ?? []).map((row) => {
     const metadata = metaRecord(row.metadata);
     return {

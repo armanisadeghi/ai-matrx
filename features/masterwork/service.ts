@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { operationFailed } from "@/utils/errors";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
 import { pokeUnderstudy } from "./understudy/refresh";
@@ -37,7 +38,7 @@ export async function getRulebook(id: string): Promise<Rulebook | null> {
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw operationFailed("open that Rulebook", error);
   return data ? parseRulebook(data as RulebookRow) : null;
 }
 
@@ -127,7 +128,7 @@ export async function createDraftRulebook(
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
       continue;
     }
-    throw error;
+    throw operationFailed("create that Rulebook", error);
   }
   throw new Error("Could not create the Rulebook: slug collision persisted.");
 }
@@ -267,7 +268,7 @@ export async function updateRulebookMeta(opts: {
     .eq("id", opts.rulebookId)
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) throw operationFailed("save that change to the Rulebook", error);
   return parseRulebook(data as RulebookRow);
 }
 
@@ -332,7 +333,7 @@ export async function softDeleteRulebook(rulebookId: string): Promise<void> {
   const { error } = await rulebookTable()
     .update({ deleted_at: new Date().toISOString() } as never)
     .eq("id", rulebookId);
-  if (error) throw error;
+  if (error) throw operationFailed("delete that Rulebook", error);
 }
 
 /** One recorded state of a Rulebook (history.row_versions, via the gated RPC). */
@@ -357,7 +358,7 @@ export async function listRulebookVersions(
   const { data, error } = await supabase.rpc("rulebook_versions", {
     p_rulebook_id: rulebookId,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("list this Rulebook's earlier versions", error);
   return (data ?? []).map((row) => ({
     version: row.version,
     operation: row.operation,
@@ -382,7 +383,7 @@ export async function getRulebookSnapshotRules(
     p_rulebook_id: rulebookId,
     p_version: version,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("read that earlier version of the Rulebook", error);
   if (!data || typeof data !== "object") return null;
   const rules = (data as { rules?: unknown }).rules;
   return Array.isArray(rules) ? (rules as unknown as RulebookRule[]) : [];
@@ -451,7 +452,7 @@ export async function listRecentRunsForMasterworks(
     .in("definition_id", masterworkIds)
     .order("created_at", { ascending: false })
     .limit(RUNS_PER_MASTERWORK * masterworkIds.length);
-  if (error) throw error;
+  if (error) throw operationFailed("list the recent runs of these Masterworks", error);
 
   const byMasterwork: Record<string, MasterworkRun[]> = {};
   const kept: { id: string; definition_id: string }[] = [];
@@ -621,7 +622,7 @@ export async function getMasterworkRunVerdict(
         .returns<{ node_id: string; output: Record<string, unknown> | null }[]>(),
     ]);
   if (runError) throw runError;
-  if (error) throw error;
+  if (error) throw operationFailed("read that run's verdict", error);
   if (!run) return null;
   // The node output is the agent-run ENVELOPE, not the text: reading
   // `final_text` off it (this used to be an `output->>final_text` select) is
@@ -815,7 +816,7 @@ export async function listMasterworksForRulebook(
   // `is_archived`) the moment a surface with a control asks.
   if (!includeArchived) query = query.eq("is_archived", false);
   const { data, error } = await query.order("created_at", { ascending: false });
-  if (error) throw error;
+  if (error) throw operationFailed("list the Masterworks built from this Rulebook", error);
   return (data ?? []).map(parseMasterworkRow);
 }
 
@@ -845,7 +846,7 @@ export async function listMasterworksForRulebooks(
   const { data, error } = await query.order("created_at", {
     ascending: false,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("list the Masterworks built from these Rulebooks", error);
   const out: Record<string, Masterwork[]> = {};
   for (const row of data ?? []) {
     const mw = parseMasterworkRow(row);
