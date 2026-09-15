@@ -6,7 +6,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-14`
+**Last updated:** `2026-09-15`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -15,6 +15,8 @@
 ## Purpose
 
 The user-facing chat surface: pick an agent, start a conversation, stream a reply, browse history. Chat is an agent **runner** where the "agent" is chosen from the user's own / system / community agents. It is the consume end of Build → Test → Consume.
+
+**Schema-bound JSON answers:** The shared JSON-code floor may render a complete assistant object as readable prose only when the conversation-bound agent's declared `output_schema` contains every payload key. It reuses the canonical agent selector and cached `fetchAgentOutputSchemas` read on cold reload; missing/loading contracts, arrays/scalars, incomplete JSON, unknown keys, and `__kind` payloads remain on their existing JSON/kind paths. `answer`/summary/text/message renders through the normal markdown renderer; status, next steps, arrays, and unclaimed Details stay readable without adding chat chrome.
 
 ---
 
@@ -297,6 +299,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-09-15` — **schema-bound assistant answers render as readable chat output.** The shared JSON-code floor recognizes only complete objects whose keys all belong to the conversation-bound agent's declared `output_schema`; it uses the existing Redux selector and cached by-id contract read for cold reloads, while missing contracts, incomplete/unknown payloads, and registered kinds retain their existing raw JSON/kind routes. Prose, truthful status, next steps, compact arrays/tables, and collapsed raw Details render without a new chat card.
 
 - `2026-09-14` — claude: **caching rule corrected to the live config.** Rendering & data-loading standards taught Next.js 16 Cache Components (`'use cache'`, `'use cache: remote'`, `'use cache: private'`, `cacheTag`), a build error here (`cacheComponents` off). Replaced with what the `/chat` routes actually do (per-request, cookie-bound SSR reads; no cross-request cache) and the repo's live opt-in (`unstable_cache` + tags, `updateTag`, route `revalidate`). Docs only.
 

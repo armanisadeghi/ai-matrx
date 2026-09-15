@@ -7,6 +7,7 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import {
   selectHideReasoning,
   selectHideToolResults,
@@ -318,6 +319,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const hideToolResults = useAppSelector(
     conversationId ? selectHideToolResults(conversationId) : () => false,
   );
+  // Until the canonical cached contract read resolves, the JSON floor fails
+  // closed to JsonBlock.
+  const outputSchema = useBoundAgentOutputSchema(conversationId);
 
   /**
    * RECORD CHROME (THE WRAPPER LAW's other half). A kind component renders
@@ -392,6 +396,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     [index, isStreamActive],
   );
 
+  const blockType = String(block.type);
   const renderBasicMarkdown = useCallback(
     (content: string) => {
       return (
@@ -403,7 +408,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           messageId={messageId}
           showCopyButton={false}
           tableRenderDiagnostic={{
-            blockType: block.type,
+            blockType,
             conversationId,
             messageId,
             requestId,
@@ -417,7 +422,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       onContentChange,
       handleOpenEditor,
       messageId,
-      block.type,
+      blockType,
       conversationId,
       requestId,
     ],
@@ -598,6 +603,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     hideToolResults,
     replaceBlockContent,
     renderBasicMarkdown,
+    outputSchema,
   };
 
   const dispatch = resolveBlockDispatch(block.type);

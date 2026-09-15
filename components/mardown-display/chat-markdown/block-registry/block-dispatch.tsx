@@ -79,6 +79,11 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  isRenderableStructuredAgentAnswer,
+  parseStructuredAgentAnswer,
+  StructuredAgentAnswerBlock,
+} from "@/components/mardown-display/blocks/json/StructuredAgentAnswerBlock";
 
 // ── The flat render-block shape ──────────────────────────────────────────────
 
@@ -143,6 +148,8 @@ export interface BlockDispatchContext {
   replaceBlockContent: (original: string, replacement: string) => void;
   /** The shared BasicMarkdownContent renderer, pre-wired with edit/diagnostic props. */
   renderBasicMarkdown: (content: string) => React.ReactElement;
+  /** Bound agent's declared output schema; absent/loading deliberately fails closed. */
+  outputSchema?: unknown | null;
 }
 
 export type BlockRenderFn = (
@@ -1361,6 +1368,24 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
 
   code: (ctx) => {
     const { block, index, isStreamActive, conversationId, messageId } = ctx;
+
+    // Complete, schema-bound assistant answers are prose, not generic code.
+    // This sits below kind routing and refuses any unknown/incomplete shape.
+    if (!isStreamActive && !isBlockLoading(block)) {
+      const structured = parseStructuredAgentAnswer(
+        block.content,
+        ctx.outputSchema,
+      );
+      if (structured && isRenderableStructuredAgentAnswer(structured)) {
+        return (
+          <StructuredAgentAnswerBlock
+            key={index}
+            value={structured}
+            renderMarkdown={ctx.renderBasicMarkdown}
+          />
+        );
+      }
+    }
 
     // Special handling for diff blocks
     if (block.language === "diff" && looksLikeDiff(block.content)) {

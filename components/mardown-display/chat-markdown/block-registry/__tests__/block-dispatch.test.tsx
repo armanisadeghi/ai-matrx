@@ -287,4 +287,70 @@ describe("block-dispatch registry", () => {
       language: "xml",
     });
   });
+
+  it("routes a complete schema-bound JSON code block to the readable answer renderer", () => {
+    const dispatch = resolveBlockDispatch("code");
+    const content = JSON.stringify({
+      answer: "Sandbox work completed with a readable response.",
+      state: "done",
+      next_step: "Review the command output.",
+    });
+    const rendered = dispatch?.({
+      block: { type: "code", content, language: "json" },
+      index: 0,
+      hideReasoning: false,
+      hideToolResults: false,
+      outputSchema: {
+        schema: {
+          type: "object",
+          properties: { answer: {}, state: {}, next_step: {} },
+        },
+      },
+      replaceBlockContent: jest.fn(),
+      renderBasicMarkdown: (text) => React.createElement("p", null, text),
+    });
+
+    expect(React.isValidElement(rendered)).toBe(true);
+    expect(
+      (rendered?.type as React.ComponentType & { name?: string }).name,
+    ).toBe("StructuredAgentAnswerBlock");
+  });
+
+  it.each([
+    [
+      "no contract",
+      undefined,
+      JSON.stringify({ answer: "Readable only with a contract." }),
+    ],
+    [
+      "extra key",
+      { schema: { properties: { answer: {} } } },
+      JSON.stringify({ answer: "Known", leaked: "Unknown" }),
+    ],
+    [
+      "incomplete JSON",
+      { schema: { properties: { answer: {} } } },
+      '{"answer":"still streaming"',
+    ],
+    [
+      "registered kind",
+      { schema: { properties: { answer: {} } } },
+      JSON.stringify({ answer: "Known", __kind: "agent_result" }),
+    ],
+  ])("keeps %s at JsonBlock", (_caseName, outputSchema, content) => {
+    const rendered = resolveBlockDispatch("code")?.({
+      block: { type: "code", content, language: "json" },
+      index: 0,
+      hideReasoning: false,
+      hideToolResults: false,
+      outputSchema,
+      replaceBlockContent: jest.fn(),
+      renderBasicMarkdown: (text) => React.createElement("p", null, text),
+    });
+
+    expect(
+      (rendered?.type as React.ComponentType & { displayName?: string })
+        .displayName,
+    ).toBe("JsonBlock");
+  });
 });
