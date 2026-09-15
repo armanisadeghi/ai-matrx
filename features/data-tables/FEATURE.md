@@ -995,7 +995,7 @@ clear / fill down skip formula cells and say so. Not sortable or filterable serv
 **Expression editor:** [`components/FormulaExpressionEditor.tsx`](./components/FormulaExpressionEditor.tsx)
 — a popover beside the format picker in Table Settings AND in the new-column form (so a
 formula column can never be created without a way to write its expression): live parse
-status with the error position, the table's other columns as `{Display Name}` chips, the
+status with the error position (and, since 2026-09-15, an error naming any `{reference}` that matches no column — a reference is judged against the table's columns before save, not only as `#ERROR` after it), the table's other columns as `{Display Name}` chips, the
 function list, and "result shows as". It sits in `features/` because the language does and
 the picker is a `lib/` module that must not import upward. Not yet exercised live: the shared
 preview server was held by another checkout when this landed, so the editor has unit
