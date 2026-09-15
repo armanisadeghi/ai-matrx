@@ -1,6 +1,17 @@
 /** @jest-environment node */
 
-import { mintAccessTokenWithRetry } from "./route";
+const mockLookupSandboxAndOrchestrator = jest.fn();
+const mockCreateClient = jest.fn();
+
+jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
+  lookupSandboxAndOrchestrator: mockLookupSandboxAndOrchestrator,
+  orchestratorJsonHeaders: () => ({ "X-API-Key": "test" }),
+}));
+jest.mock("@/utils/supabase/server", () => ({
+  createClient: mockCreateClient,
+}));
+
+import { mintAccessTokenWithRetry, POST } from "./route";
 
 test("retries a transient unavailable-upstream response before returning a minted token", async () => {
   const request = jest
@@ -9,7 +20,7 @@ test("retries a transient unavailable-upstream response before returning a minte
     .mockResolvedValueOnce(new Response(JSON.stringify({ token: "scoped" }), { status: 200 }));
   const wait = jest.fn(async () => undefined);
 
-  const response = await mintAccessTokenWithRetry(
+  const { response } = await mintAccessTokenWithRetry(
     "https://orchestrator.example.test/sandboxes/sbx-test/access-tokens",
     { method: "POST" },
     { request, wait },
@@ -25,7 +36,7 @@ test("does not retry an authoritative client refusal", async () => {
     .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
     .mockResolvedValue(new Response("Invalid API key", { status: 403 }));
 
-  const response = await mintAccessTokenWithRetry(
+  const { response } = await mintAccessTokenWithRetry(
     "https://orchestrator.example.test/sandboxes/sbx-test/access-tokens",
     { method: "POST" },
     { request, wait: async () => undefined },
@@ -33,6 +44,71 @@ test("does not retry an authoritative client refusal", async () => {
 
   expect(response.status).toBe(403);
   expect(request).toHaveBeenCalledTimes(1);
+});
+
+test("keeps the deadline through a stalled successful response body", async () => {
+  const request = jest.fn(
+    (_url: string, init?: RequestInit) => {
+      const response = {
+        status: 200,
+        json: () =>
+          new Promise<unknown>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new Error("upstream response body deadline exceeded")),
+            );
+          }),
+      } as Response;
+      return Promise.resolve(response);
+    },
+  );
+
+  await expect(
+    mintAccessTokenWithRetry(
+      "https://orchestrator.example.test/sandboxes/sbx-test/access-tokens",
+      { method: "POST" },
+      { request, wait: async () => undefined, attemptTimeoutMs: 10, consume: (response) => response.json() },
+    ),
+  ).rejects.toThrow("upstream response body deadline exceeded");
+
+  expect(request).toHaveBeenCalledTimes(3);
+  for (const [, init] of request.mock.calls) {
+    expect((init as RequestInit).signal?.aborted).toBe(true);
+  }
+});
+
+test("the route converts an exhausted upstream deadline into the established recoverable 502", async () => {
+  mockLookupSandboxAndOrchestrator.mockResolvedValue({
+    ok: true,
+    status: "running",
+    sandboxId: "sbx-test",
+    orchestrator: { url: "https://orchestrator.example.test", tier: "hosted", apiKey: "test" },
+  });
+  mockCreateClient.mockResolvedValue({
+    auth: { getUser: async () => ({ data: { user: { id: "user-test", email: "test@example.test" } }, error: null }) },
+  });
+  const fetchSpy = jest.spyOn(global, "fetch").mockImplementation(
+    (_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("deadline")));
+      }),
+  );
+  const timerSpy = jest.spyOn(global, "setTimeout").mockImplementation((callback) => {
+    queueMicrotask(callback as () => void);
+    return 0 as unknown as ReturnType<typeof setTimeout>;
+  });
+
+  try {
+    const response = await POST(new Request("https://app.example.test/api/sandbox/sbx-test/access-tokens", { method: "POST" }) as never, {
+      params: Promise.resolve({ id: "sandbox-row" }),
+    });
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({ error: "Sandbox orchestrator is not reachable" });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  } finally {
+    timerSpy.mockRestore();
+    fetchSpy.mockRestore();
+  }
 });
 
 test("bounds a hung upstream request so the route can return a recoverable error", async () => {

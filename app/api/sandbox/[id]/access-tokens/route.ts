@@ -15,6 +15,7 @@ const TOKEN_MINT_RETRY_MS = 250;
 const TOKEN_MINT_ATTEMPT_TIMEOUT_MS = 2_000;
 
 type FetchLike = typeof fetch;
+type ResponseConsumer<T> = (response: Response) => Promise<T>;
 
 const sleep = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
@@ -26,20 +27,23 @@ const sleep = (milliseconds: number) =>
  * orchestrator after a restart. Do not retry 4xx responses: those describe a
  * caller, access, or sandbox-state problem that another request cannot fix.
  */
-export async function mintAccessTokenWithRetry(
+export async function mintAccessTokenWithRetry<T = Response>(
   url: string,
   init: RequestInit,
   {
     request = fetch,
     wait = sleep,
     attemptTimeoutMs = TOKEN_MINT_ATTEMPT_TIMEOUT_MS,
+    consume = async (response: Response) => response as T,
   }: {
     request?: FetchLike;
     wait?: (milliseconds: number) => Promise<void>;
     attemptTimeoutMs?: number;
+    consume?: ResponseConsumer<T>;
   } = {},
-): Promise<Response> {
+): Promise<{ response: Response; body: T }> {
   let response: Response | undefined;
+  let body: T | undefined;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= TOKEN_MINT_MAX_ATTEMPTS; attempt += 1) {
@@ -50,9 +54,18 @@ export async function mintAccessTokenWithRetry(
     );
     try {
       response = await request(url, { ...init, signal: controller.signal });
-      if (!TRANSIENT_UPSTREAM_STATUSES.has(response.status)) return response;
+      // Keep the deadline alive through body consumption. fetch() resolves at
+      // headers, so clearing it earlier still lets a stalled text/json body
+      // consume the serverless function until Vercel kills the route.
+      body = await consume(response);
+      if (!TRANSIENT_UPSTREAM_STATUSES.has(response.status)) {
+        return { response, body };
+      }
     } catch (error) {
       lastError = error;
+      // A 4xx is authoritative. If its body cannot be consumed in time, do
+      // not turn it into a retry storm; surface the route's recoverable 502.
+      if (response && response.status >= 400 && response.status < 500) break;
     } finally {
       clearTimeout(timeout);
     }
@@ -62,7 +75,7 @@ export async function mintAccessTokenWithRetry(
     }
   }
 
-  if (response) return response;
+  if (response && body !== undefined) return { response, body };
   throw lastError instanceof Error ? lastError : new Error("Sandbox orchestrator is not reachable");
 }
 
@@ -171,9 +184,9 @@ export async function POST(
       typeof body?.ttl_seconds === "number" ? body.ttl_seconds : undefined;
 
     // 3) Forward to the orchestrator hosting this sandbox's tier.
-    let resp: Response;
+    let mint: { response: Response; body: unknown };
     try {
-      resp = await mintAccessTokenWithRetry(
+      mint = await mintAccessTokenWithRetry(
         `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/access-tokens`,
         {
           method: "POST",
@@ -188,6 +201,10 @@ export async function POST(
             },
           }),
         },
+        {
+          consume: async (response) =>
+            response.ok ? response.json() : response.text(),
+        },
       );
     } catch (fetchError) {
       console.error(
@@ -200,20 +217,20 @@ export async function POST(
       );
     }
 
-    if (!resp.ok) {
-      const errBody = await resp.text();
+    if (!mint.response.ok) {
+      const errBody = mint.body;
       console.error(
         "Orchestrator access-tokens mint failed:",
-        resp.status,
+        mint.response.status,
         errBody,
       );
       return NextResponse.json(
         { error: "Failed to mint sandbox access token", details: errBody },
-        { status: resp.status >= 500 ? 502 : resp.status },
+        { status: mint.response.status >= 500 ? 502 : mint.response.status },
       );
     }
 
-    const tokenPayload = await resp.json();
+    const tokenPayload = mint.body;
     return NextResponse.json({
       ...tokenPayload,
       sandbox_id: lookup.sandboxId,
