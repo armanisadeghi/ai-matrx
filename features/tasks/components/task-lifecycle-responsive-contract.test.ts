@@ -89,6 +89,13 @@ describe("task lifecycle responsive contract", () => {
     expect(menu).toContain("resolveContextOnOpen={resolveMenuTarget}");
     expect(menu).toContain("createTasksExtraSections(");
     expect(menu).toContain("TASK_ROW_DOM_ATTR");
+    expect(menu).toContain("TASK_TITLE_DOM_ATTR");
+    expect(menu).toContain('closest?.("[data-task-id]")');
+
+    expect(source("TasksTableView.tsx")).toContain(
+      "[TASK_TITLE_DOM_ATTR]: task.id",
+    );
+    expect(listPane).toContain("[TASK_TITLE_DOM_ATTR]: task.id");
   });
 
   it("keeps project-task metadata fixed while long titles truncate", () => {
@@ -141,8 +148,8 @@ describe("task lifecycle responsive contract", () => {
     const mobileList = source("mobile/MobileTasksList.tsx");
     const mobileDetails = source("mobile/MobileTaskDetails.tsx");
 
-    expect(mobileList).toContain("<NonEditableContextMenu");
-    expect(mobileList).toContain("getApplicationScope={getApplicationScope}");
+    expect(mobileList).toContain("<TasksListContextMenu");
+    expect(mobileList).toContain("[TASK_ROW_DOM_ATTR]: task.id");
     expect(mobileDetails).toContain("<SurfaceRuntimeProvider");
     expect(mobileDetails).toContain(
       "getWriteHandlers={getSurfaceWriteHandlers}",
