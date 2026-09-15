@@ -21,10 +21,22 @@
 // title from the provider's, so it is stated beside the title every time — and
 // its DEFAULT reading is "ours", because an unstamped row was derived the same
 // way as a stamped one.
+//
+// EVERY BINDING IS NAMED (lane XT-05, plan-attack F7). A conversation can now
+// carry more than one provider binding, because `handoff` mints a second
+// `chat.coding_session` row so work can move from one coding tool to another.
+// This panel used to read `bindings[0]` and describe it as "the" provider, then
+// dismiss the rest as "earlier deliveries of the same session" — a sentence that
+// is FALSE the moment the second row is a different tool. So the tools are
+// listed first, each with its provider, its own session id, the provider account
+// that produced it, its fidelity verdict (seeded handoff included), and which
+// one delivered most recently. The grouped fields below still describe ONE
+// binding, and which one is stated in the heading rather than implied.
 
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  ArrowRightLeft,
   BrainCircuit,
   Loader2,
   RefreshCw,
@@ -55,6 +67,12 @@ import {
   providerLabel,
   titleProvenance,
 } from "../presentation";
+import {
+  bindingFidelityVerdict,
+  handoffRecord,
+  isUnclaimedOffer,
+  type HandoffRecord,
+} from "../handoffBinding";
 
 /** A field the source did not report. Never rendered as an empty cell. */
 const NOT_REPORTED = "Not reported";
@@ -75,7 +93,7 @@ const SOURCE_META: Record<
     title: "From AI Matrx",
     blurb:
       "What this platform decided, derived, or stored about the conversation. None of this comes from the provider.",
-    accent: "border-l-primary/60",
+    accent: "border-l-current/60",
   },
   sync: {
     title: "From the sync layer",
@@ -89,10 +107,15 @@ function Group({
   source,
   children,
   headerRight,
+  note,
 }: {
   source: Source;
   children: React.ReactNode;
   headerRight?: React.ReactNode;
+  /** WHICH binding these fields describe, when more than one exists. A group
+   *  of per-binding facts with no binding named is the single-binding
+   *  assumption wearing a heading. */
+  note?: React.ReactNode;
 }) {
   const meta = SOURCE_META[source];
   return (
@@ -110,6 +133,9 @@ function Group({
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {meta.blurb}
           </p>
+          {note ? (
+            <p className="mt-1 text-xs font-medium text-foreground">{note}</p>
+          ) : null}
         </div>
         {headerRight}
       </div>
@@ -137,6 +163,145 @@ function Fact({
 
 function Absent({ children = NOT_REPORTED }: { children?: React.ReactNode }) {
   return <span className="text-muted-foreground">{children}</span>;
+}
+
+const FIDELITY_TONE: Record<string, string> = {
+  native: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300",
+  mirror: "bg-sky-500/10 text-sky-700 ring-sky-500/30 dark:text-sky-300",
+  seeded: "bg-violet-500/10 text-violet-700 ring-violet-500/30 dark:text-violet-300",
+  unknown: "bg-muted text-muted-foreground ring-border",
+};
+
+/**
+ * ONE tool on this conversation, named in full.
+ *
+ * Every fact here is per-binding, because with two bindings a single-binding
+ * summary is not a simplification — it is wrong about one of them. `isCurrent`
+ * is stated as "delivered most recently", never as "live": this panel reads
+ * stored rows, and the live indicator is the transcript's job.
+ */
+function BindingCard({
+  binding,
+  isCurrent,
+  index,
+  total,
+}: {
+  binding: CodingSessionBinding;
+  isCurrent: boolean;
+  index: number;
+  total: number;
+}) {
+  const handoff = handoffRecord(binding.metadata);
+  const verdict = bindingFidelityVerdict(
+    fidelityVerdict(binding.fidelity),
+    handoff,
+    binding.provider_session_id,
+  );
+  const account = providerAccountIdentity(binding.metadata);
+  const unclaimed = isUnclaimedOffer(binding.provider_session_id);
+  const workspace = workspaceName(binding.metadata);
+  return (
+    <li className="rounded-lg border border-border bg-background p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <TerminalSquare className="h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" />
+        <span className="text-sm font-semibold text-foreground">
+          {providerLabel(binding.provider)}
+        </span>
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[11px] font-medium ring-1",
+            FIDELITY_TONE[verdict.tone] ?? FIDELITY_TONE.unknown,
+          )}
+        >
+          {verdict.label}
+        </span>
+        {isCurrent ? (
+          <span className="rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-medium text-current ring-1 ring-current/30">
+            Delivered most recently
+          </span>
+        ) : null}
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          Tool {index + 1} of {total}
+        </span>
+      </div>
+
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+        {verdict.detail}
+      </p>
+
+      {handoff ? (
+        <div className="mt-2 flex items-start gap-2 rounded-md bg-violet-500/5 px-2.5 py-2 text-xs ring-1 ring-violet-500/20">
+          <ArrowRightLeft className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <span className="min-w-0 text-foreground">
+            {handoff.fromProvider ? (
+              <>
+                Handed over from{" "}
+                <span className="font-medium">
+                  {providerLabel(handoff.fromProvider)}
+                </span>
+                {handoff.fromProviderSessionId ? (
+                  <>
+                    {" "}
+                    session{" "}
+                    <span className="font-mono text-[11px]">
+                      {handoff.fromProviderSessionId}
+                    </span>
+                  </>
+                ) : null}
+                .
+              </>
+            ) : (
+              <>Created by a seeded handoff.</>
+            )}
+            {handoff.claimedAt ? (
+              <> Claimed {formatSessionTimestamp(handoff.claimedAt)}.</>
+            ) : (
+              <> Not yet claimed by a session of this tool.</>
+            )}
+            {handoff.reboundFromConversationId ? (
+              <>
+                {" "}
+                This tool&apos;s session was already bound elsewhere, so that
+                binding was moved here rather than duplicated — its turns before
+                the move stayed on conversation{" "}
+                <span className="font-mono text-[11px]">
+                  {handoff.reboundFromConversationId}
+                </span>
+                .
+              </>
+            ) : null}
+          </span>
+        </div>
+      ) : null}
+
+      <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+        <Fact label="Provider session id">
+          {unclaimed ? (
+            <Absent>
+              No provider session yet — the handoff is waiting to be claimed
+            </Absent>
+          ) : (
+            <span className="font-mono text-[11px]">
+              {binding.provider_session_id}
+            </span>
+          )}
+        </Fact>
+        <Fact label="Provider account">
+          {account.reported ? (
+            account.display
+          ) : (
+            <Absent>{account.display}</Absent>
+          )}
+        </Fact>
+        <Fact label="Workspace">{workspace ?? <Absent />}</Fact>
+        <Fact label="Arrived by">{formatText(binding.origin)}</Fact>
+        <Fact label="Binding state">{formatText(binding.status)}</Fact>
+        <Fact label="Last delivery">
+          {formatSessionTimestamp(binding.last_seen_at)}
+        </Fact>
+      </dl>
+    </li>
+  );
 }
 
 export function ConversationProvenancePanel({
@@ -170,12 +335,27 @@ export function ConversationProvenancePanel({
     };
   }, [conversation.id, reloadToken]);
 
-  // The newest binding describes the conversation NOW; older ones are history
-  // and render below it rather than competing with it.
-  const primary = bindings[0] ?? null;
+  // The binding that delivered most recently. It is `current`, not `current`:
+  // with a handoff the other rows are other TOOLS, not stale copies of this
+  // one, and each is named in full in the tools list below. The grouped fields
+  // further down describe this binding, and say so in their heading.
+  const current = bindings.reduce<CodingSessionBinding | null>(
+    (newest, binding) =>
+      newest === null ||
+      Date.parse(binding.last_seen_at) > Date.parse(newest.last_seen_at)
+        ? binding
+        : newest,
+    null,
+  );
+  const claudeBinding =
+    bindings.find(
+      (binding) =>
+        binding.provider === "claude_code" &&
+        !isUnclaimedOffer(binding.provider_session_id),
+    ) ?? null;
   const provenance = titleProvenance(
-    primary ? readTitleSource(primary) : null,
-    primary?.provider ?? null,
+    current ? readTitleSource(current) : null,
+    current?.provider ?? null,
   );
 
   return (
@@ -226,6 +406,33 @@ export function ConversationProvenancePanel({
         </p>
       </div>
 
+      {/* ── Every tool on this conversation ─────────────────────────────── */}
+      {bindings.length > 0 ? (
+        <section className="rounded-lg border border-border bg-muted/20 p-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            {bindings.length === 1
+              ? "The coding tool on this conversation"
+              : `The ${bindings.length} coding tools on this conversation`}
+          </h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {bindings.length === 1
+              ? "One provider session is bound to this conversation. A handoff would add a second, and both would be named here."
+              : "This conversation moved between tools. Each binding below is a different provider session with its own history, account and fidelity — none of them is a copy of another."}
+          </p>
+          <ul className="mt-2.5 space-y-2">
+            {bindings.map((binding, index) => (
+              <BindingCard
+                key={binding.id}
+                binding={binding}
+                isCurrent={binding.id === current?.id}
+                index={index}
+                total={bindings.length}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {state === "loading" ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -238,63 +445,52 @@ export function ConversationProvenancePanel({
         </div>
       ) : null}
 
-      {/* ── From the coding provider ─────────────────────────────────────── */}
-      <Group source="provider">
+      {/* ── From the coding provider ───────────────────────────────────────
+           Provider, session id, workspace and account are stated per binding in
+           the tools list above, so they are not repeated here: what is left is
+           what only the most recent delivery can answer. */}
+      <Group
+        source="provider"
+        note={
+          current && bindings.length > 1
+            ? `These are the ${providerLabel(current.provider)} binding's fields — the one that delivered most recently.`
+            : undefined
+        }
+      >
         <Fact label="Provider">
-          {primary ? (
-            providerLabel(primary.provider)
+          {current ? (
+            providerLabel(current.provider)
           ) : (
             <Absent>No provider — this is an AI Matrx conversation</Absent>
-          )}
-        </Fact>
-        <Fact
-          label="Provider session id"
-          hint="The provider's own id for the session this conversation mirrors."
-        >
-          {primary?.provider_session_id ? (
-            <span className="font-mono text-[11px]">
-              {primary.provider_session_id}
-            </span>
-          ) : (
-            <Absent />
-          )}
-        </Fact>
-        <Fact label="Workspace" hint="The working directory the session ran in.">
-          {primary ? (
-            (workspaceName(primary.metadata) ?? <Absent />)
-          ) : (
-            <Absent>—</Absent>
           )}
         </Fact>
         <Fact
           label="Git branch"
           hint="Reported by the provider when the session was on a branch."
         >
-          {primary ? (
-            (readMetaString(primary, "git_branch") ?? (
+          {current ? (
+            (readMetaString(current, "git_branch") ?? (
               <Absent>Not reported by this provider version</Absent>
             ))
           ) : (
             <Absent>—</Absent>
           )}
         </Fact>
-        <Fact label="Provider account">
-          {primary ? (
-            providerAccountIdentity(primary.metadata).display
-          ) : (
-            <Absent>—</Absent>
-          )}
-        </Fact>
         <Fact label="Workspace identity">
-          {primary?.workspace_fingerprint ??
-            primary?.provider_project_key ?? <Absent />}
+          {current?.workspace_fingerprint ??
+            current?.provider_project_key ?? <Absent />}
         </Fact>
       </Group>
 
-      {/* ── Native continuation, capability-gated by the user's own Mac ──── */}
-      {primary?.provider === "claude_code" && primary.provider_session_id && (
+      {/* ── Native continuation, capability-gated by the user's own Mac ────
+           Found by PROVIDER, not by position: after a handoff to another tool
+           the Claude binding is no longer the newest row, and gating on
+           `bindings[0]` silently removed the one native continuation the
+           platform has. An unclaimed handoff offer is never offered for native
+           continuation — it has no provider session to resume. */}
+      {claudeBinding?.provider_session_id && (
         <ContinueOnMyMacPanel
-          providerSessionId={primary.provider_session_id}
+          providerSessionId={claudeBinding.provider_session_id}
           conversationId={conversation.id}
         />
       )}
@@ -350,49 +546,49 @@ export function ConversationProvenancePanel({
       </Group>
 
       {/* ── From the sync layer ──────────────────────────────────────────── */}
-      {primary ? (
+      {current ? (
         <>
           <Group
             source="sync"
             headerRight={
               <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                {fidelityVerdict(primary.fidelity).label}
+                {fidelityVerdict(current.fidelity).label}
               </span>
             }
           >
             <Fact
               label="Fidelity"
-              hint={fidelityVerdict(primary.fidelity).detail}
+              hint={fidelityVerdict(current.fidelity).detail}
             >
-              {fidelityVerdict(primary.fidelity).detail}
+              {fidelityVerdict(current.fidelity).detail}
             </Fact>
-            <Fact label="Binding state">{formatText(primary.status)}</Fact>
-            <Fact label="Arrived by">{formatText(primary.origin)}</Fact>
+            <Fact label="Binding state">{formatText(current.status)}</Fact>
+            <Fact label="Arrived by">{formatText(current.origin)}</Fact>
             <Fact label="Last delivery">
-              {formatSessionTimestamp(primary.last_seen_at)}
+              {formatSessionTimestamp(current.last_seen_at)}
             </Fact>
             <Fact label="Session ended">
-              {primary.ended_at ? (
-                formatSessionTimestamp(primary.ended_at)
+              {current.ended_at ? (
+                formatSessionTimestamp(current.ended_at)
               ) : (
                 <Absent>Not ended</Absent>
               )}
             </Fact>
             <Fact label="Managed runtime">
-              {primary.runtime_kind ? (
-                formatText(primary.runtime_kind)
+              {current.runtime_kind ? (
+                formatText(current.runtime_kind)
               ) : (
                 <Absent>None recorded</Absent>
               )}
             </Fact>
             <Fact label="Recorded capabilities">
-              {recordedCapabilityLabels(primary.capabilities).join(", ") || (
+              {recordedCapabilityLabels(current.capabilities).join(", ") || (
                 <Absent>None recorded</Absent>
               )}
             </Fact>
             <Fact label="Writer lease">
-              {primary.writer_lease_expires_at ? (
-                `Expires ${formatSessionTimestamp(primary.writer_lease_expires_at)}`
+              {current.writer_lease_expires_at ? (
+                `Expires ${formatSessionTimestamp(current.writer_lease_expires_at)}`
               ) : (
                 <Absent>No active lease</Absent>
               )}
@@ -400,10 +596,14 @@ export function ConversationProvenancePanel({
           </Group>
           {bindings.length > 1 && (
             <p className="text-xs text-muted-foreground">
-              {bindings.length - 1} earlier binding
-              {bindings.length === 2 ? "" : "s"} exist for this conversation.
-              The newest is shown; the others are historical deliveries of the
-              same session.
+              The delivery facts above are for the{" "}
+              {providerLabel(current.provider)} binding that delivered most
+              recently. The other {bindings.length - 1} binding
+              {bindings.length === 2 ? "" : "s"} on this conversation{" "}
+              {bindings.length === 2 ? "is a" : "are"} separate provider
+              session{bindings.length === 2 ? "" : "s"} with{" "}
+              {bindings.length === 2 ? "its" : "their"} own history — named in
+              full at the top of this panel.
             </p>
           )}
         </>
