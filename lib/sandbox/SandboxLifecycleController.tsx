@@ -34,6 +34,8 @@ export class SandboxLifecycleReceiptController {
   private pendingPolls = 0;
   private performing = false;
   private latestState: SandboxLifecycleView["state"] = "pending";
+  private firstStatusResult = true;
+  private latestSandboxId: string | null = null;
 
   constructor(private readonly options: {
     receipt: SandboxOperationReceipt;
@@ -43,6 +45,7 @@ export class SandboxLifecycleReceiptController {
     adapter: SandboxLifecycleOperationAdapter;
     onView: (view: SandboxLifecycleView) => void;
     environment?: LifecycleControllerEnvironment;
+    silenceInitialTerminal?: boolean;
   }) {}
 
   start(): void {
@@ -71,7 +74,10 @@ export class SandboxLifecycleReceiptController {
       if (this.stopped || !this.options.isCurrent()) return;
       this.failures = 0;
       this.latestState = result.state;
-      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: result.state === "attention" ? "recover" : response.status === 404 ? "retry" : "check", dismissed: false });
+      this.latestSandboxId = result.sandbox_id ?? this.latestSandboxId;
+      const silenceTerminal = this.firstStatusResult && this.options.silenceInitialTerminal === true && (result.state === "success" || result.state === "failure");
+      this.firstStatusResult = false;
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: this.latestSandboxId, action: result.state === "attention" ? "recover" : response.status === 404 ? "retry" : "check", dismissed: silenceTerminal });
       if (result.state === "pending") this.schedule();
     } catch (error) {
       if (this.stopped || !this.options.isCurrent() || (error instanceof DOMException && error.name === "AbortError")) return;
@@ -87,7 +93,7 @@ export class SandboxLifecycleReceiptController {
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
     if (this.pendingPolls >= MAX_PENDING_POLLS) {
-      this.options.onView({ operation_id: this.options.receipt.operation_id, state: "pending", message: "Still in progress; automatic status checks paused. Check status.", sandboxId: null, action: "check", dismissed: false });
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: "pending", message: "Still in progress; automatic status checks paused. Check status.", sandboxId: this.latestSandboxId, action: "check", dismissed: false });
       return;
     }
     const delay = BACKOFF_MS[Math.min(this.pendingPolls++, BACKOFF_MS.length - 1)];
@@ -122,9 +128,9 @@ export function SandboxLifecycleController() {
   const dispatch = useAppDispatch();
   const lifecycle = useAppSelector((state) => state.sandboxLifecycle);
   const current = useRef({ actorId: lifecycle.actorId, generation: lifecycle.generation });
-  current.current = { actorId: lifecycle.actorId, generation: lifecycle.generation };
   const controllers = useRef<Map<string, SandboxLifecycleReceiptController>>(new Map());
   const toastIds = useRef<Map<string, string | number>>(new Map());
+  useEffect(() => { current.current = { actorId: lifecycle.actorId, generation: lifecycle.generation }; }, [lifecycle.actorId, lifecycle.generation]);
   useEffect(() => {
     for (const controller of controllers.current.values()) controller.stop();
     controllers.current.clear();
@@ -138,7 +144,8 @@ export function SandboxLifecycleController() {
         status: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}`,
         recovery: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}/recover`,
       });
-      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => dispatch(applyView({ actorId, generation, view })) });
+      const restored = lifecycle.views.find((view) => view.operation_id === receipt.operation_id)?.restored === true;
+      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, silenceInitialTerminal: restored, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => dispatch(applyView({ actorId, generation, view })) });
       controllers.current.set(receipt.operation_id, controller); controller.start();
     }
     return () => { for (const controller of controllers.current.values()) controller.stop(); controllers.current.clear(); };
@@ -146,13 +153,15 @@ export function SandboxLifecycleController() {
 
   useEffect(() => {
     if (!lifecycle.actorId) return;
+    const actorId = lifecycle.actorId;
+    const generation = lifecycle.generation;
     for (const view of lifecycle.views) {
       if (view.dismissed) { const id = toastIds.current.get(view.operation_id); if (id !== undefined) toast.dismiss(id); toastIds.current.delete(view.operation_id); continue; }
       const currentToast = toastIds.current.get(view.operation_id);
       const controller = controllers.current.get(view.operation_id);
       const action = view.action === "recover" ? { label: "Recover", onClick: () => void controller?.recover() } : view.action === "retry" ? { label: "Retry request", onClick: () => void controller?.retry() } : { label: "Check status", onClick: () => void controller?.check(true) };
       const emit = view.state === "success" ? toast.success : view.state === "failure" ? toast.error : toast.warning;
-      toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: Infinity, action, onDismiss: () => dispatch(dismissView({ actorId: lifecycle.actorId!, generation: lifecycle.generation, operationId: view.operation_id })) }));
+      toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: Infinity, action, onDismiss: () => dispatch(dismissView({ actorId, generation, operationId: view.operation_id })) }));
     }
   }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.views]);
   return null;
