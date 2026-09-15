@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const report = await runIntegrityChecks(
       {
-        sql: createAdminSqlRunner(),
+        sql: await createAdminSqlRunner(),
         probe: createDownloadProbe(token, organizationId),
         script: createScriptRunner(),
       },

@@ -1,8 +1,31 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 function source(relativePath: string): string {
   return readFileSync(join(process.cwd(), relativePath), "utf8");
+}
+
+function productionSourcesUnder(relativeRoots: string[]): Array<{
+  path: string;
+  content: string;
+}> {
+  const files: string[] = [];
+  const visit = (relativePath: string) => {
+    for (const entry of readdirSync(join(process.cwd(), relativePath), {
+      withFileTypes: true,
+    })) {
+      const child = join(relativePath, entry.name);
+      if (entry.isDirectory()) visit(child);
+      else if (
+        /\.(?:ts|tsx)$/.test(entry.name) &&
+        !/\.test\./.test(entry.name)
+      ) {
+        files.push(child);
+      }
+    }
+  };
+  relativeRoots.forEach(visit);
+  return files.map((path) => ({ path, content: source(path) }));
 }
 
 describe("database admin surface contract", () => {
@@ -93,9 +116,6 @@ describe("database admin surface contract", () => {
   });
 
   it("keeps every SQL-running client on the canonical terminal Server Action", () => {
-    const action = source("actions/admin/database.ts");
-    const sqlFunctionActions = source("actions/admin/sql-functions.ts");
-    const enumActions = source("actions/admin/enum-functions.ts");
     const schemaOverview = source("app/api/schema-overview/route.ts");
     const privilegedClient = source(
       "features/administration/database-hub/require-super-admin-database-client.ts",
@@ -114,16 +134,27 @@ describe("database admin surface contract", () => {
 
     expect(privilegedClient).toContain("await requireSuperAdmin()");
     expect(privilegedClient).toContain("return createAdminClient()");
-    for (const [serviceRoleCaller, expectedGateCount] of [
-      [action, 1],
-      [sqlFunctionActions, 4],
-      [enumActions, 3],
-      [schemaOverview, 1],
-    ] as const) {
-      expect(serviceRoleCaller).not.toContain("createAdminClient");
-      expect(
-        serviceRoleCaller.match(/await requireSuperAdminDatabaseClient\(\)/g),
-      ).toHaveLength(expectedGateCount);
+    const privilegedSurfaceSources = productionSourcesUnder([
+      "actions/admin",
+      "app/api/schema-overview",
+      "features/administration/canonicalization",
+      "lib/integrity",
+    ]);
+    const directSqlCallers = privilegedSurfaceSources.filter(({ content }) =>
+      /\.rpc\(\s*["']execute_admin_query["']/.test(content),
+    );
+
+    expect(directSqlCallers.map(({ path }) => path).sort()).toEqual([
+      "actions/admin/database.ts",
+      "actions/admin/enum-functions.ts",
+      "actions/admin/sql-functions.ts",
+      "app/api/schema-overview/route.ts",
+      "features/administration/canonicalization/service/canonicalizationService.ts",
+      "lib/integrity/server.ts",
+    ]);
+    for (const { content } of directSqlCallers) {
+      expect(content).not.toContain("createAdminClient");
+      expect(content).toContain("await requireSuperAdminDatabaseClient()");
     }
     expect(schemaOverview).toContain('"Cache-Control": "private, no-store"');
     expect(schemaOverview).toContain("if (authResponse) return authResponse");

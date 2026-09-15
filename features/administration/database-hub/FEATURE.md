@@ -41,9 +41,10 @@ with operational status and the categorized tool registry.
   `useDatabaseAdmin.executeQuery`; the notebook calls the same
   `executeSqlQuery` Server Action directly. SQL Functions, Enums, and Schema
   Overview use the same privileged-client boundary for their distinct SQL
-  operations. The surface contract rejects raw service-client construction in
-  every one of these browser-callable modules and rejects the retired
-  timer/cancel path. Schema Overview authenticates before consulting its
+  operations. Canonicalization and Data Integrity use this boundary too. The
+  surface contract derives a census across the surface-owned server roots,
+  rejects raw service-client construction in every direct SQL caller, and
+  rejects the retired timer/cancel path. Schema Overview authenticates before consulting its
   process-local cache and forbids shared or browser response caching.
 - Browser storage entering the notebook is reconstructed only after its blocks,
   variables, and merge configuration pass runtime shape checks. Query result

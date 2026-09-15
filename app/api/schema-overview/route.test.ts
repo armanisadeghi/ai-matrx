@@ -58,6 +58,13 @@ describe("schema overview authorization boundary", () => {
 
     const first = await GET();
     expect(first.status).toBe(200);
+    expect(first.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(rpc).toHaveBeenCalledTimes(4);
+
+    requireSuperAdminDatabaseClient.mockResolvedValueOnce({ rpc });
+    const cached = await GET();
+    expect(cached.status).toBe(200);
+    expect(cached.headers.get("Cache-Control")).toBe("private, no-store");
     expect(rpc).toHaveBeenCalledTimes(4);
 
     requireSuperAdminDatabaseClient.mockRejectedValueOnce(
@@ -70,6 +77,18 @@ describe("schema overview authorization boundary", () => {
       error: "Forbidden: Super Admin required",
     });
     expect(refused.headers.get("Cache-Control")).toBe("private, no-store");
-    expect(requireSuperAdminDatabaseClient).toHaveBeenCalledTimes(2);
+    expect(requireSuperAdminDatabaseClient).toHaveBeenCalledTimes(3);
+  });
+
+  it("marks unexpected error responses private and non-cacheable", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation();
+    requireSuperAdminDatabaseClient.mockRejectedValueOnce(
+      new Error("database unavailable"),
+    );
+
+    const failed = await GET();
+    expect(failed.status).toBe(500);
+    expect(failed.headers.get("Cache-Control")).toBe("private, no-store");
+    consoleError.mockRestore();
   });
 });

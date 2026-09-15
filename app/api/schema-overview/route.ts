@@ -317,7 +317,10 @@ export async function GET() {
             error instanceof Error ? error.message : "Unknown error loading schema overview";
         return NextResponse.json(
             { error: message },
-            { status: 500 },
+            {
+                status: 500,
+                headers: { "Cache-Control": "private, no-store" },
+            },
         );
     }
 }
