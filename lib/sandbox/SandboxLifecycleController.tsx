@@ -8,7 +8,7 @@ import { classifyDurableSandboxLifecycleResponse, createSandboxLifecycleOperatio
 import type { SandboxOperationReceipt } from "@/lib/durable-run/sandbox-operation-receipt";
 
 const MAX_TRANSPORT_FAILURES = 3;
-const BACKOFF_MS = [1_000, 2_000, 5_000] as const;
+const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
 
 export type LifecycleControllerEnvironment = {
   visible: () => boolean;
@@ -30,6 +30,8 @@ export class SandboxLifecycleReceiptController {
   private failures = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private abort: AbortController | null = null;
+  private pendingPolls = 0;
+  private performing = false;
 
   constructor(private readonly options: {
     receipt: SandboxOperationReceipt;
@@ -76,21 +78,31 @@ export class SandboxLifecycleReceiptController {
     }
   }
 
-  private schedule(): void { this.timer = setTimeout(() => void this.check(), BACKOFF_MS[Math.min(this.failures, BACKOFF_MS.length - 1)]); }
+  private schedule(): void {
+    if (this.timer) clearTimeout(this.timer);
+    if (this.pendingPolls >= BACKOFF_MS.length) {
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: "check", dismissed: false });
+      return;
+    }
+    const delay = BACKOFF_MS[this.pendingPolls++];
+    this.timer = setTimeout(() => { this.timer = null; void this.check(); }, delay);
+  }
 
   async retry(): Promise<void> { await this.perform("admit"); }
   async recover(): Promise<void> { await this.perform("recover"); }
   private async perform(method: "admit" | "recover"): Promise<void> {
-    if (this.stopped || !this.options.isCurrent()) return;
+    if (this.stopped || !this.options.isCurrent() || this.performing) return;
+    this.performing = true;
     this.abort?.abort(); this.abort = new AbortController();
     try {
       const response = await this.options.adapter[method](this.options.receipt, this.abort.signal);
       if (this.stopped || !this.options.isCurrent()) return;
       const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
       if (this.stopped || !this.options.isCurrent()) return;
-      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: result.state === "attention" ? "recover" : result.state === "unknown" ? "check" : "check", dismissed: false });
+      this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: result.state === "attention" ? "recover" : result.state === "unknown" && method === "admit" ? "retry" : "check", dismissed: false });
       if (result.state === "pending") this.schedule();
-    } catch { if (!this.stopped && this.options.isCurrent()) this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: "check", dismissed: false }); }
+    } catch { if (!this.stopped && this.options.isCurrent()) this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: method === "admit" ? "retry" : "check", dismissed: false }); }
+    finally { this.performing = false; }
   }
 }
 
@@ -101,6 +113,8 @@ export class SandboxLifecycleReceiptController {
 export function SandboxLifecycleController() {
   const dispatch = useAppDispatch();
   const lifecycle = useAppSelector((state) => state.sandboxLifecycle);
+  const current = useRef({ actorId: lifecycle.actorId, generation: lifecycle.generation });
+  current.current = { actorId: lifecycle.actorId, generation: lifecycle.generation };
   const controllers = useRef<Map<string, SandboxLifecycleReceiptController>>(new Map());
   const toastIds = useRef<Map<string, string | number>>(new Map());
   useEffect(() => {
@@ -116,7 +130,7 @@ export function SandboxLifecycleController() {
         status: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}`,
         recovery: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}/recover`,
       });
-      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, isCurrent: () => lifecycle.actorId === actorId && lifecycle.generation === generation, onView: (view) => dispatch(applyView({ actorId, view })) });
+      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => dispatch(applyView({ actorId, generation, view })) });
       controllers.current.set(receipt.operation_id, controller); controller.start();
     }
     return () => { for (const controller of controllers.current.values()) controller.stop(); controllers.current.clear(); };
@@ -126,12 +140,12 @@ export function SandboxLifecycleController() {
     if (!lifecycle.actorId) return;
     for (const view of lifecycle.views) {
       if (view.dismissed) { const id = toastIds.current.get(view.operation_id); if (id !== undefined) toast.dismiss(id); toastIds.current.delete(view.operation_id); continue; }
-      const current = toastIds.current.get(view.operation_id); if (current !== undefined) toast.dismiss(current);
+      const currentToast = toastIds.current.get(view.operation_id);
       const controller = controllers.current.get(view.operation_id);
       const action = view.action === "recover" ? { label: "Recover", onClick: () => void controller?.recover() } : view.action === "retry" ? { label: "Retry request", onClick: () => void controller?.retry() } : { label: "Check status", onClick: () => void controller?.check() };
       const emit = view.state === "success" ? toast.success : view.state === "failure" ? toast.error : toast.warning;
-      toastIds.current.set(view.operation_id, emit(view.message, { duration: Infinity, action }));
+      toastIds.current.set(view.operation_id, emit(view.message, { id: currentToast, duration: Infinity, action, onDismiss: () => dispatch(dismissView({ actorId: lifecycle.actorId!, generation: lifecycle.generation, operationId: view.operation_id })) }));
     }
-  }, [dispatch, lifecycle.actorId, lifecycle.views]);
+  }, [dispatch, lifecycle.actorId, lifecycle.generation, lifecycle.views]);
   return null;
 }

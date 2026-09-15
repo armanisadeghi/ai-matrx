@@ -54,6 +54,10 @@ export function writeSandboxOperationReceipt(storage: ReceiptStorage, actorId: s
   const key = sandboxOperationReceiptKey(actorId, receipt);
   if (!key || !parseSandboxOperationReceipt(JSON.stringify(receipt))) return false;
   try {
+    const existing = parseSandboxOperationReceipt(storage.getItem(key));
+    // Observation advances, but the operation identity never does. In
+    // particular, stop and delete must not be interchangeable at one key.
+    if (existing && (existing.row_id !== receipt.row_id || existing.operation_id !== receipt.operation_id || existing.kind !== receipt.kind)) return false;
     const encoded = JSON.stringify(receipt);
     storage.setItem(key, encoded);
     const readback = parseSandboxOperationReceipt(storage.getItem(key));
