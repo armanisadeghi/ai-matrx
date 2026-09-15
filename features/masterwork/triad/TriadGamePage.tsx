@@ -411,6 +411,11 @@ export function TriadGamePage({
                 type="button"
                 onClick={() => setPick(item.key)}
                 aria-pressed={pick === item.key}
+                // A stable handle for the three items. The shell's own nav uses
+                // aria-pressed too, so "the pressable thing on this screen" is
+                // not an identity — anything driving this surface (a harness, a
+                // future agent write target) needs one that is.
+                data-triad-item={item.key}
                 className={cn(
                   "min-h-11 rounded-2xl border-2 p-4 text-left transition-all",
                   pick === item.key
