@@ -45,6 +45,9 @@ export function parseSandboxOperationReceipt(raw: string | null): SandboxOperati
     if (receipt.schema_version !== 1 || !isUuid(receipt.row_id) || !isUuid(receipt.operation_id)) return null;
     if (receipt.kind !== "stop" && receipt.kind !== "delete") return null;
     if (receipt.observation !== "prepared" && receipt.observation !== "dispatched" && receipt.observation !== "accepted") return null;
+    // Legacy receipts omitted this field, but a present value is security
+    // relevant: never coerce a forged value into graceful intent.
+    if (receipt.graceful !== undefined && typeof receipt.graceful !== "boolean") return null;
     return { ...receipt, graceful: receipt.graceful ?? true } as SandboxOperationReceipt;
   } catch {
     return null;

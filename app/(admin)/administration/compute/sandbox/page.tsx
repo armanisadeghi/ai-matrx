@@ -181,6 +181,8 @@ export default function AdminSandboxManagementPage() {
   const lifecycleReservations = useAppSelector((state) => state.sandboxLifecycle.reservations);
   const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const fetchGeneration = useRef(0);
+  const lifecycleViewerRef = useRef(viewerUserId);
+  lifecycleViewerRef.current = viewerUserId;
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const [sshDialogOpen, setSshDialogOpen] = useState(false);
@@ -217,7 +219,7 @@ export default function AdminSandboxManagementPage() {
   }, []);
 
   useEffect(() => { fetchGeneration.current += 1; }, [viewerUserId]);
-  useSandboxLifecycleTerminalInvalidation(() => fetchInstances());
+  useSandboxLifecycleTerminalInvalidation(() => fetchInstances(), () => lifecycleViewerRef.current === viewerUserId);
 
   useEffect(() => {
     setLoading(true);

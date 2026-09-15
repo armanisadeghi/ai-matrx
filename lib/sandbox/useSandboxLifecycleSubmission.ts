@@ -57,11 +57,11 @@ export function useSandboxLifecycleSubmission(): {
         receipt,
         sandboxId,
         adapter,
+        onPersistenceUnavailable: () => toast.warning("Sandbox operation will continue, but refresh recovery is unavailable in this browser."),
       });
       if (outcome) {
         dispatch(upsertReceipt(outcome.receipt));
         dispatch(applyView({ actorId, generation, view: { operation_id: receipt.operation_id, state: outcome.state, message: outcome.refreshRecoveryAvailable ? outcome.message : `${outcome.message} Refresh recovery is unavailable in this browser.`, sandboxId, action: outcome.state === "attention" ? "recover" : outcome.state === "unknown" ? "retry" : outcome.state === "pending" ? "check" : null, dismissed: false } }));
-        if (!outcome.refreshRecoveryAvailable) toast.warning("Sandbox operation was requested, but refresh recovery is unavailable in this browser.");
       }
       return { admitted: true, receipt, outcome };
     } finally {

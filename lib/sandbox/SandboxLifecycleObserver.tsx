@@ -10,6 +10,13 @@ import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
 export function SandboxLifecycleObserver() {
   const dispatch = useAppDispatch(); const authReady = useAppSelector(selectAuthReady); const actorId = useAppSelector(selectUserId); const previous = useRef<string | null>(null);
   const settled = useSyncHydrated();
-  useEffect(() => { if (!authReady) { previous.current = null; dispatch(clearActor()); return; } if (!settled) return; if (!actorId) { previous.current = null; dispatch(clearActor()); return; } if (previous.current === actorId) return; previous.current = actorId; dispatch(hydrateActor({ actorId, receipts: readSandboxOperationReceipts(window.localStorage, actorId) })); }, [actorId, authReady, dispatch, settled]);
+  useEffect(() => {
+    // Never leave the prior actor's controllers running while this namespace is
+    // unsettled or has changed. A later hydrate owns the new generation.
+    if (!authReady || !settled || !actorId) { previous.current = null; dispatch(clearActor()); return; }
+    if (previous.current === actorId) return;
+    previous.current = actorId;
+    dispatch(hydrateActor({ actorId, receipts: readSandboxOperationReceipts(window.localStorage, actorId) }));
+  }, [actorId, authReady, dispatch, settled]);
   return null;
 }

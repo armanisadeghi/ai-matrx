@@ -17,11 +17,13 @@ export async function submitSandboxLifecycleOperation(args: {
   receipt: SandboxOperationReceipt;
   sandboxId: string;
   adapter: SandboxLifecycleOperationAdapter;
+  onPersistenceUnavailable?: () => void;
 }): Promise<LifecycleControllerState | null> {
-  const { actorId, actorGeneration, isCurrentActorGeneration, storage, receipt, sandboxId, adapter } = args;
+  const { actorId, actorGeneration, isCurrentActorGeneration, storage, receipt, sandboxId, adapter, onPersistenceUnavailable } = args;
   let refreshRecoveryAvailable = writeSandboxOperationReceipt(storage, actorId, receipt);
   const dispatched = { ...receipt, observation: "dispatched" as const };
   refreshRecoveryAvailable = writeSandboxOperationReceipt(storage, actorId, dispatched) && refreshRecoveryAvailable;
+  if (!refreshRecoveryAvailable) onPersistenceUnavailable?.();
   try {
     const response = await adapter.admit(dispatched);
     if (!isCurrentActorGeneration(actorGeneration)) return null;

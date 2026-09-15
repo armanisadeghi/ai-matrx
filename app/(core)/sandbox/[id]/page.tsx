@@ -106,6 +106,9 @@ export default function SandboxDetailPage() {
   const [nameDraft, setNameDraft] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const lifecycleReadGeneration = useRef(0);
+  const lifecycleScope = useRef({ id, userId, organizationId });
+  lifecycleScope.current = { id, userId, organizationId };
   const remaining = useTimeRemaining(instance?.expires_at, "second");
   const [cwd, setCwd] = useState(DEFAULT_CWD);
   // Staged-vs-typed affordance for the surface write targets. An agent-staged
@@ -142,6 +145,8 @@ export default function SandboxDetailPage() {
   }, [currentExtensionIdentity]);
 
   const fetchInstance = useCallback(async () => {
+    const generation = ++lifecycleReadGeneration.current;
+    const scope = { id, userId, organizationId };
     try {
       const resp = await fetch(`/api/sandbox/${id}`);
       if (!resp.ok) {
@@ -149,28 +154,29 @@ export default function SandboxDetailPage() {
         // ALSO what a denied read and a soft-deleted row look like. Leave the
         // reason to <AccessGate>; recording a sentence here would be a guess.
         if (resp.status === 404) {
-          setInstance(null);
-          setError(null);
-          return null;
+          const current = generation === lifecycleReadGeneration.current && lifecycleScope.current.id === scope.id && lifecycleScope.current.userId === scope.userId && lifecycleScope.current.organizationId === scope.organizationId;
+          if (current) { setInstance(null); setError(null); }
+          return current ? null : undefined;
         }
         throw new Error("Failed to fetch sandbox");
       }
       const data = await resp.json();
-      setInstance(data.instance);
-      setError(null);
-      return data.instance as SandboxInstance;
+      const current = generation === lifecycleReadGeneration.current && lifecycleScope.current.id === scope.id && lifecycleScope.current.userId === scope.userId && lifecycleScope.current.organizationId === scope.organizationId;
+      if (current) { setInstance(data.instance); setError(null); }
+      return current ? data.instance as SandboxInstance : undefined;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      if (generation === lifecycleReadGeneration.current) setError(err instanceof Error ? err.message : "Unknown error");
       return undefined;
     } finally {
-      setLoading(false);
+      if (generation === lifecycleReadGeneration.current) setLoading(false);
     }
-  }, [id]);
+  }, [id, organizationId, userId]);
 
   useSandboxLifecycleTerminalInvalidation(async (receipt) => {
+    if (receipt.row_id !== id) return;
     const current = await fetchInstance();
     if (receipt.kind === "delete" && current === null) router.push("/sandbox");
-  });
+  }, () => lifecycleScope.current.id === id && lifecycleScope.current.userId === userId && lifecycleScope.current.organizationId === organizationId);
 
   useEffect(() => {
     fetchInstance();

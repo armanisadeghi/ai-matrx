@@ -22,6 +22,8 @@ test("marks hydrated receipts as restored and consumes that marker on the first 
 
 test("reserves only its target and releases it only after terminal server truth", () => {
   let state = reducer(undefined, hydrateActor({ actorId, receipts: [receipt] }));
+  // Reloaded receipts reserve before the mounted controller can resolve them.
+  expect(state.reservations).toEqual([expect.objectContaining({ row_id: receipt.row_id, operation_id: receipt.operation_id })]);
   state = reducer(state, reserveTarget({ actorId, generation: state.generation, reservation: receipt }));
   const other = { ...receipt, row_id: "44444444-4444-4444-8444-444444444444", operation_id: "55555555-5555-4555-8555-555555555555", kind: "delete" as const };
   state = reducer(state, reserveTarget({ actorId, generation: state.generation, reservation: other }));

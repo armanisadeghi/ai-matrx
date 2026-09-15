@@ -12,6 +12,7 @@ import type { SandboxOperationReceipt } from "@/lib/durable-run/sandbox-operatio
  */
 export function useSandboxLifecycleTerminalInvalidation(
   refresh: (receipt: SandboxOperationReceipt) => void | Promise<void>,
+  isCurrentScope: () => boolean = () => true,
 ): void {
   const lifecycle = useAppSelector((state) => state.sandboxLifecycle);
   const currentActorId = useAppSelector(selectUserId);
@@ -21,13 +22,15 @@ export function useSandboxLifecycleTerminalInvalidation(
   useEffect(() => { handled.current.clear(); }, [namespace]);
 
   useEffect(() => {
-    if (!lifecycle.actorId || lifecycle.actorId !== currentActorId) return;
+    if (!lifecycle.actorId || lifecycle.actorId !== currentActorId || !isCurrentScope()) return;
     for (const view of lifecycle.views) {
       if (view.state !== "success" || handled.current.has(view.operation_id)) continue;
       const receipt = lifecycle.receipts.find((candidate) => candidate.operation_id === view.operation_id);
       if (!receipt) continue;
       handled.current.add(view.operation_id);
-      void refresh(receipt);
+      // The callback owns its route/org/request fence; check again before the
+      // cache read so a terminal receipt cannot revive an old surface.
+      if (isCurrentScope()) void refresh(receipt);
     }
-  }, [currentActorId, lifecycle.actorId, lifecycle.receipts, lifecycle.views, refresh]);
+  }, [currentActorId, isCurrentScope, lifecycle.actorId, lifecycle.receipts, lifecycle.views, refresh]);
 }

@@ -10,7 +10,7 @@ describe("sandbox operation receipt storage", () => {
   it("reads only the current actor namespace after write/readback", () => {
     const local = storage();
     expect(writeSandboxOperationReceipt(local, actor, receipt)).toBe(true);
-    expect(readSandboxOperationReceipts(local, actor)).toEqual([receipt]);
+    expect(readSandboxOperationReceipts(local, actor)).toEqual([{ ...receipt, graceful: true }]);
     expect(readSandboxOperationReceipts(local, "44444444-4444-4444-8444-444444444444")).toEqual([]);
   });
   it("refuses to rewrite an existing receipt from stop to delete", () => {
@@ -20,6 +20,11 @@ describe("sandbox operation receipt storage", () => {
     expect(writeSandboxOperationReceipt(local, actor, stop)).toBe(true);
     // The key excludes kind, so this is the regression boundary.
     expect(writeSandboxOperationReceipt(local, actor, { ...receipt, kind: "delete" })).toBe(false);
-    expect(readSandboxOperationReceipts(local, actor)).toEqual([stop]);
+    expect(readSandboxOperationReceipts(local, actor)).toEqual([{ ...stop, graceful: true }]);
+  });
+  it("rejects a present non-boolean graceful value instead of coercing force intent", () => {
+    const local = storage();
+    local.setItem("matrx.sandbox-operation.v1:auth:11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222:33333333-3333-4333-8333-333333333333", JSON.stringify({ ...receipt, graceful: "false" }));
+    expect(readSandboxOperationReceipts(local, actor)).toEqual([]);
   });
 });
