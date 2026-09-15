@@ -5977,6 +5977,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Capabilities
+         * @description Typed Google product metadata for the authenticated caller.
+         *
+         *     The catalog is static capability and rollout information only. It does not
+         *     inventory connections, selected resources, Vault values, or provider data.
+         */
+        get: operations["google_capabilities_google_integrations_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/tasks/preview": {
         parameters: {
             query?: never;
@@ -67514,6 +67537,55 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
+        /**
+         * GoogleCapabilityMetadata
+         * @description Descriptor plus the verified caller's current rollout eligibility.
+         */
+        GoogleCapabilityMetadata: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "drive_files" | "docs" | "sheets" | "gmail_send" | "search_console" | "analytics" | "youtube" | "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
+            /** Title */
+            title: string;
+            /** User Outcome */
+            user_outcome: string;
+            /** Required Scopes */
+            required_scopes: components["schemas"]["GoogleCapabilityScope"][];
+            /** Eligible Resource Types */
+            eligible_resource_types: string[];
+            /**
+             * Rollout Phase
+             * @enum {string}
+             */
+            rollout_phase: "available" | "internal_test";
+            /** Native Tool Actions */
+            native_tool_actions: string[];
+            /** Mcp Tool Actions */
+            mcp_tool_actions: string[];
+            /** Limitation */
+            limitation: string;
+            /** Remedy */
+            remedy: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Admission Error */
+            admission_error?: string | null;
+        };
+        /**
+         * GoogleCapabilityScope
+         * @description One required scope and Google's exact classification for that scope.
+         */
+        GoogleCapabilityScope: {
+            /** Scope */
+            scope: string;
+            /**
+             * Provider Classification
+             * @enum {string}
+             */
+            provider_classification: "verified_sensitive" | "non_sensitive";
+        };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
             /** Refresh Token */
@@ -128873,6 +128945,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_capabilities_google_integrations_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleCapabilityMetadata"][];
                 };
             };
         };

@@ -2561,7 +2561,13 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "googleConnectWindow" }))
             }
             reason={typeof data?.reason === "string" ? data.reason : null}
-            mode={data?.mode === "drive-import" ? "drive-import" : "workspace"}
+            mode={
+              data?.mode === "drive-import"
+                ? "drive-import"
+                : data?.mode === "overview"
+                  ? "overview"
+                  : "workspace"
+            }
             initialConnectionId={
               typeof data?.initialConnectionId === "string"
                 ? data.initialConnectionId

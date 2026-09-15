@@ -44,6 +44,10 @@ export interface GoogleConnectionSummary {
 
 export type GoogleConnectionHealth = "connected" | "needs_reauth" | "revoked";
 
+/** Canonical API descriptor; generated from aidream's Google capability model. */
+export type GoogleCapabilityMetadata =
+  components["schemas"]["GoogleCapabilityMetadata"];
+
 export interface GoogleConnectionResource {
   id: string;
   connection_id: string;
@@ -93,8 +97,7 @@ export interface YouTubeChannelPreview {
   recent_videos: YouTubeVideoPreview[];
 }
 
-export type CalendarAgendaEvent =
-  components["schemas"]["CalendarAgendaEvent"];
+export type CalendarAgendaEvent = components["schemas"]["CalendarAgendaEvent"];
 
 export type CalendarAgendaPreview =
   components["schemas"]["CalendarAgendaPreview"];
@@ -113,11 +116,9 @@ export interface GoogleTaskItemPreview {
 export type GoogleTaskListPreview =
   components["schemas"]["GoogleTaskListPreview"];
 
-export type GoogleTasksPreview =
-  components["schemas"]["GoogleTasksPreview"];
+export type GoogleTasksPreview = components["schemas"]["GoogleTasksPreview"];
 
-export type YouTubeAnalyticsDay =
-  components["schemas"]["YouTubeAnalyticsDay"];
+export type YouTubeAnalyticsDay = components["schemas"]["YouTubeAnalyticsDay"];
 
 export type YouTubeAnalyticsPreview =
   components["schemas"]["YouTubeAnalyticsPreview"];
@@ -141,8 +142,7 @@ export interface TagManagerAccountPreview {
   containers: TagManagerContainerPreview[];
 }
 
-export type TagManagerInventory =
-  components["schemas"]["TagManagerInventory"];
+export type TagManagerInventory = components["schemas"]["TagManagerInventory"];
 
 export type GoogleAdsCustomer = components["schemas"]["GoogleAdsCustomer"];
 
