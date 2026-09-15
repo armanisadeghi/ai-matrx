@@ -13,6 +13,7 @@ const MIN_FALLBACK_PROSE_LENGTH = 40;
 
 export interface StructuredAgentAnswerProps {
   value: StructuredValue;
+  rawContent: string;
   renderMarkdown: (content: string) => React.ReactElement;
 }
 
@@ -126,18 +127,12 @@ export function isRenderableStructuredAgentAnswer(
 
 export function StructuredAgentAnswerBlock({
   value,
+  rawContent,
   renderMarkdown,
 }: StructuredAgentAnswerProps) {
   const prose = selectProse(value);
   const status = selectStatus(value);
   const nextStep = selectNextStep(value);
-  const claimed = new Set<string>();
-  if (prose) claimed.add(prose.key);
-  if (status) claimed.add(status.key);
-  if (nextStep) claimed.add(nextStep.key);
-  for (const [key, item] of Object.entries(value)) {
-    if (isStringArray(item) || isSmallObjectArray(item)) claimed.add(key);
-  }
 
   return (
     <div
@@ -149,15 +144,15 @@ export function StructuredAgentAnswerBlock({
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
             status.text === "done"
-              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+              ? "bg-success/10 text-success"
               : status.text === "blocked"
-                ? "bg-red-500/15 text-red-700 dark:text-red-300"
+                ? "bg-destructive/10 text-destructive"
                 : status.text === "needs_user"
-                  ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+                  ? "bg-warning/10 text-warning"
                   : "bg-muted text-muted-foreground"
           }`}
         >
-          {status.text}
+          {readableLabel(status.text)}
         </span>
       ) : null}
       {nextStep ? (
@@ -233,22 +228,14 @@ export function StructuredAgentAnswerBlock({
         }
         return null;
       })}
-      {Object.keys(value).some((key) => !claimed.has(key)) ? (
-        <details className="text-sm">
-          <summary className="cursor-pointer text-muted-foreground">
-            Details
-          </summary>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
-            {JSON.stringify(
-              Object.fromEntries(
-                Object.entries(value).filter(([key]) => !claimed.has(key)),
-              ),
-              null,
-              2,
-            )}
-          </pre>
-        </details>
-      ) : null}
+      <details className="text-sm">
+        <summary className="flex min-h-11 cursor-pointer items-center text-muted-foreground">
+          Details
+        </summary>
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
+          {rawContent}
+        </pre>
+      </details>
     </div>
   );
 }

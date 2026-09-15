@@ -353,4 +353,27 @@ describe("block-dispatch registry", () => {
         .displayName,
     ).toBe("JsonBlock");
   });
+
+  it("keeps JSON-shaped arbitrary-language code on its language renderer", () => {
+    const rendered = resolveBlockDispatch("code")?.({
+      block: {
+        type: "code",
+        content: JSON.stringify({
+          answer: "This must remain a TypeScript code block.",
+          state: "done",
+        }),
+        language: "typescript",
+      },
+      index: 0,
+      hideReasoning: false,
+      hideToolResults: false,
+      outputSchema: {
+        schema: { properties: { answer: {}, state: {} } },
+      },
+      replaceBlockContent: jest.fn(),
+      renderBasicMarkdown: (text) => React.createElement("p", null, text),
+    });
+
+    expect(rendered?.props).toMatchObject({ language: "typescript" });
+  });
 });

@@ -28,29 +28,41 @@ const sandboxSpecialistSchema = {
   },
 };
 
-// Captured v11 production shape from Sandbox Specialist 43ba7bad-d234-4cef-821f-c7e5722b3160.
+// Live persisted v11 capture: conversation 8be010c4-28ed-4ae1-898c-15f1fbbbbb37,
+// assistant message 437ab575-8467-461e-b220-15a49d255693; followed by conversation
+// ac9e6c80-ae00-424e-9358-0efce76424a3, assistant message 90799e53-248b-492b-a03b-fc66f5790085.
 const capturedSandboxAnswers = [
   {
     answer:
-      "The sandbox is ready. I inspected the repository and found the requested configuration.",
+      "indrev1 already existed; I reused it and ran the tests successfully. Real output: 1 passed in 0.00s.",
     state: "done",
-    commands_run: ["pwd", "rg --files"],
-    efficiency: "Two shell commands completed without retries.",
-    tools_worked: ["shell"],
-    tools_failed: [],
-    next_step: "Review the configuration and run the focused test.",
+    commands_run: [
+      "mtx toolchain ensure && mtx new python indrev1 && cd ~/projects/indrev1 && uv run pytest -q",
+      "cd ~/projects/indrev1 && uv run pytest -q",
+    ],
+    efficiency:
+      "Efficient execution: reused existing project directory and verified tests immediately.",
+    tools_worked: ["shell_execute"],
+    tools_failed: [
+      {
+        tool: "shell_execute",
+        error:
+          "Command exited with code 1.\nstderr:\n[mtx new] /home/agent/projects/indrev1 already exists and is not empty. Pick another name, or work in it directly: cd /home/agent/projects/indrev1",
+      },
+    ],
+    next_step: "none",
   },
   {
     answer:
-      "The browser verification needs a decision because the sandbox has no authenticated browser session.",
+      "The git clone failed with 403 Write access to repository not granted because the AI Matrx Admin GitHub App is not installed with contents: write permissions on the owning account AI-Matrix-Engine.",
     state: "needs_user",
-    commands_run: ["pnpm install", "pnpm test"],
-    efficiency: "Install and focused verification completed in 18 seconds.",
-    tools_worked: ["shell", "filesystem"],
-    tools_failed: [
-      { tool: "browser", error: "No authenticated session is available." },
-    ],
-    next_step: "Open the changed file and confirm the rendered result.",
+    commands_run: [],
+    efficiency:
+      "Efficiently identified the exact cause and required resolution from the error pattern without redundant tool calls.",
+    tools_worked: [],
+    tools_failed: [],
+    next_step:
+      "Install the AI Matrx Admin GitHub App on AI-Matrix-Engine at https://github.com/apps/ai-matrx-admin/installations/new with contents: write, then refresh the inventory.",
   },
 ];
 
@@ -71,14 +83,21 @@ describe("schema-bound assistant JSON answer", () => {
       const html = renderToStaticMarkup(
         <StructuredAgentAnswerBlock
           value={parsed}
+          rawContent={rawContent}
           renderMarkdown={(content) => <p data-markdown="true">{content}</p>}
         />,
       );
       expect(html).toContain(captured.answer);
       expect(html).toContain(captured.state);
+      expect(html).toContain(
+        captured.state === "needs_user" ? "Needs User" : "Done",
+      );
       expect(html).toContain("Next step");
-      expect(html).toContain("Commands Run");
+      if (captured.commands_run.length) expect(html).toContain("Commands Run");
       expect(html).toContain("Details");
+      expect(html).toContain(
+        rawContent.replace(/&/g, "&amp;").replace(/"/g, "&quot;"),
+      );
     },
   );
 
@@ -105,7 +124,7 @@ describe("schema-bound assistant JSON answer", () => {
     },
   );
 
-  it("claims the long-string prose fallback before building Details", () => {
+  it("keeps the long-string prose fallback and complete raw JSON in Details", () => {
     const fallbackAnswer =
       "This sufficiently long schema field is the reader-facing explanation when answer is absent.";
     const value = {
@@ -121,10 +140,11 @@ describe("schema-bound assistant JSON answer", () => {
     const html = renderToStaticMarkup(
       <StructuredAgentAnswerBlock
         value={parsed}
+        rawContent={JSON.stringify(value)}
         renderMarkdown={(content) => <p>{content}</p>}
       />,
     );
-    expect(html.match(new RegExp(fallbackAnswer, "g"))?.length).toBe(1);
+    expect(html.match(new RegExp(fallbackAnswer, "g"))?.length).toBe(2);
     expect(html).toContain("Completed in one pass.");
   });
 });

@@ -160,6 +160,7 @@ export type BlockRenderFn = (
 
 /** Language for ``` fences with no info string (plain text / notes / prose). */
 export const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
+const JSON_CODE_LANGUAGES = new Set(["json", "jsonc", "json5"]);
 
 /**
  * Best-effort MIME type for an audio URL parsed from a markdown link, derived
@@ -1368,10 +1369,16 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
 
   code: (ctx) => {
     const { block, index, isStreamActive, conversationId, messageId } = ctx;
+    const lang = block.language?.toLowerCase();
 
     // Complete, schema-bound assistant answers are prose, not generic code.
     // This sits below kind routing and refuses any unknown/incomplete shape.
-    if (!isStreamActive && !isBlockLoading(block)) {
+    if (
+      lang &&
+      JSON_CODE_LANGUAGES.has(lang) &&
+      !isStreamActive &&
+      !isBlockLoading(block)
+    ) {
       const structured = parseStructuredAgentAnswer(
         block.content,
         ctx.outputSchema,
@@ -1381,6 +1388,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
           <StructuredAgentAnswerBlock
             key={index}
             value={structured}
+            rawContent={block.content}
             renderMarkdown={ctx.renderBasicMarkdown}
           />
         );
@@ -1401,7 +1409,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     }
 
     // Custom renderers for specific languages — the code-language sub-table.
-    const lang = block.language?.toLowerCase();
     const languageRenderer = lang ? CODE_LANGUAGE_DISPATCH[lang] : undefined;
     if (languageRenderer) {
       return languageRenderer(ctx);
