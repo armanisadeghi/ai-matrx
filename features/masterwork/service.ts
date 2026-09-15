@@ -11,6 +11,7 @@ import {
   type RulebookWriteTouches,
 } from "./rulebookRebase";
 import {
+  dumpUrlSources,
   parseRulebook,
   type DumpUrlSource,
   type Masterwork,
@@ -287,46 +288,91 @@ export type DumpUrlWriteResult =
  * concurrent save (the Scout, another tab) surfaces as a conflict with the
  * fresh Rulebook instead of silently clobbering it.
  */
+const DUMP_URL_CAS_RETRIES = 3;
+
+/** The `metadata` column as a plain object (tolerant read). */
+function metadataObject(metadata: unknown): Record<string, unknown> {
+  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? (metadata as Record<string, unknown>)
+    : {};
+}
+
 export async function writeDumpUrlSources(opts: {
   rulebook: Rulebook;
   urls: DumpUrlSource[];
 }): Promise<DumpUrlWriteResult> {
-  const { rulebook, urls } = opts;
-  const baseMeta =
-    rulebook.metadata &&
-    typeof rulebook.metadata === "object" &&
-    !Array.isArray(rulebook.metadata)
-      ? (rulebook.metadata as Record<string, unknown>)
-      : {};
-  const metadata = { ...baseMeta, dump_url_sources: urls };
-  // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
-  // is what a built Masterwork drifts against, and bumping it here made a
-  // freshly built Masterwork read "needs rebuild" the moment a link was
-  // attached (2026-09-10, v44 → v45 with identical rules).
-  const result = await guardedUpdate<RulebookRow>({
-    expectedVersion: rulebook.version,
-    applyUpdate: ({ expectedVersion }) =>
-      rulebookTable()
-        .update({ metadata } as never)
-        .eq("id", rulebook.id)
-        .eq("version", expectedVersion)
-        .is("deleted_at", null)
-        .select("*")
-        .maybeSingle(),
-    fetchCurrent: () =>
-      rulebookTable()
-        .select("*")
-        .eq("id", rulebook.id)
-        .is("deleted_at", null)
-        .maybeSingle(),
-  });
-  if (result.status === "saved") {
-    return { status: "saved", rulebook: parseRulebook(result.row) };
+  const { rulebook } = opts;
+  // The GESTURE, not the list: what this call adds and what it removes,
+  // measured against the row the caller was looking at. A rebase replays the
+  // gesture onto the row as it now stands — replaying the LIST would delete
+  // whatever landed in between.
+  let base = rulebook;
+  let desired = opts.urls;
+  let lastCurrent: Rulebook | null = null;
+
+  for (let attempt = 0; attempt < DUMP_URL_CAS_RETRIES; attempt++) {
+    const metadata = { ...metadataObject(base.metadata), dump_url_sources: desired };
+    // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
+    // is what a built Masterwork drifts against, and bumping it here made a
+    // freshly built Masterwork read "needs rebuild" the moment a link was
+    // attached (2026-09-10, v44 → v45 with identical rules).
+    const result = await guardedUpdate<RulebookRow>({
+      expectedVersion: base.version,
+      applyUpdate: ({ expectedVersion }) =>
+        rulebookTable()
+          .update({ metadata } as never)
+          .eq("id", base.id)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .select("*")
+          .maybeSingle(),
+      fetchCurrent: () =>
+        rulebookTable()
+          .select("*")
+          .eq("id", base.id)
+          .is("deleted_at", null)
+          .maybeSingle(),
+    });
+    if (result.status === "saved") {
+      return { status: "saved", rulebook: parseRulebook(result.row) };
+    }
+    if (result.status !== "conflict") return { status: "not_found" };
+
+    // 🚨 WALL W7 (masterwork methods census, 2026-09-15) — THE SAME PHANTOM
+    // CONFLICT W12 closed for `saveRules`, in its missed sibling. Attaching a
+    // link is a metadata-only write, and the row's `version` is bumped by
+    // writes this Expert never makes: `pokeUnderstudy` wakes the Coherence
+    // Partner, which writes `metadata.coherence` back onto the SAME row a
+    // beat later, and the Understudy rebuild moves it again. So "Add a link"
+    // CASed on a number the row no longer held, the field emptied, and
+    // nothing was staged — while a file upload in the same pile (an
+    // association row, not this column) kept working. That is the census's
+    // exact discriminator.
+    //
+    // A link add is commutative: nobody DISAGREED about the link, we simply
+    // never learned about a write to another key. So replay the gesture onto
+    // the current row instead of throwing it away — carrying every other
+    // metadata key (coherence included) and every link that landed meanwhile.
+    const current = parseRulebook(result.currentRow);
+    lastCurrent = current;
+    const baseList = dumpUrlSources(base);
+    const added = desired.filter((u) => !baseList.some((b) => b.url === u.url));
+    const removed = new Set(
+      baseList.filter((b) => !desired.some((u) => u.url === b.url)).map((b) => b.url),
+    );
+    const currentList = dumpUrlSources(current);
+    base = current;
+    desired = [
+      ...currentList.filter((c) => !removed.has(c.url)),
+      ...added.filter((a) => !currentList.some((c) => c.url === a.url)),
+    ];
   }
-  if (result.status === "conflict") {
-    return { status: "conflict", rulebook: parseRulebook(result.currentRow) };
-  }
-  return { status: "not_found" };
+
+  // Three rebases and the row was still moving under us — say so rather than
+  // keep hammering it.
+  return lastCurrent
+    ? { status: "conflict", rulebook: lastCurrent }
+    : { status: "not_found" };
 }
 
 export async function softDeleteRulebook(rulebookId: string): Promise<void> {
