@@ -258,7 +258,10 @@ export function SystemPromptOptimizer({
         onOpenChange={(open) => !open && handleClose()}
         modal={false}
       >
-        <DialogContent className="max-w-6xl h-[90dvh] flex flex-col p-0">
+        <DialogContent
+          className="max-w-6xl h-[90dvh] flex flex-col p-0"
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div>

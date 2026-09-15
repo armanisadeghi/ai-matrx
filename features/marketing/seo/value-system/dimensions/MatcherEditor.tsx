@@ -617,8 +617,11 @@ export function MatcherEditor({
   const otherRows = rows.filter((row) => !kindMeta(row.kind).editableHere);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto overscroll-contain">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent
+        className="max-h-[85dvh] max-w-lg overflow-y-auto overscroll-contain"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-sm">
             Matchers for “{value.label}”
