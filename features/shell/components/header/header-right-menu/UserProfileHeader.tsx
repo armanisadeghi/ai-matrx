@@ -1,4 +1,5 @@
 import AppLink from "@/components/navigation/AppLink";
+import { tabIdToHref, SETTINGS_BASE } from "@/features/settings/route-shell/routing";
 import { UserData } from "@/utils/userDataMapper";
 import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
 
@@ -12,7 +13,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
   return (
     <label htmlFor="shell-user-menu" className="block">
       <AppLink
-        href="/settings"
+        href={tabIdToHref(SETTINGS_BASE, "account.identity")}
         className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--matrx-glass-bg-hover)] transition-colors"
       >
         {userData.userMetadata.avatarUrl ? (

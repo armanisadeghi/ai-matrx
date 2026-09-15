@@ -304,6 +304,8 @@ export function UniversalSettingsProvider({
   canManageOrganization: fixedCanManageOrganization,
   organizationName: fixedOrganizationName,
   memberCount: fixedMemberCount,
+  /** Keeps a stable shell provider from reading its settings payload off-route. */
+  enabled = true,
 }: {
   children: React.ReactNode;
   /**
@@ -318,6 +320,7 @@ export function UniversalSettingsProvider({
   canManageOrganization?: boolean;
   organizationName?: string | null;
   memberCount?: number | null;
+  enabled?: boolean;
 }) {
   const userId = useAppSelector(selectUserId);
   const canManageSystem = useAppSelector(selectIsSuperAdmin);
@@ -345,7 +348,7 @@ export function UniversalSettingsProvider({
   const requested = useRef(new Set<string>());
   const readRungOverrides = useCallback(
     (knob: ScopedKnob, force: boolean) => {
-      if (!organizationId) return;
+      if (!enabled || !organizationId) return;
       const kinds = pickableRungsFor(knob.overridable_by, knob.full_key);
       if (kinds.length === 0) return;
       if (!force && requested.current.has(knob.full_key)) return;
@@ -373,7 +376,7 @@ export function UniversalSettingsProvider({
           }));
         });
     },
-    [organizationId],
+    [enabled, organizationId],
   );
   const loadRungOverrides = useCallback(
     (knob: ScopedKnob) => readRungOverrides(knob, false),
@@ -393,11 +396,12 @@ export function UniversalSettingsProvider({
   useEffect(
     () =>
       registerDirectiveHandler("settings_changed", (payload) => {
+        if (!enabled) return;
         invalidateFeatureKnobs();
         invalidateEffectiveKnob(`${payload.feature}.${payload.key}`);
         refresh();
       }),
-    [refresh],
+    [enabled, refresh],
   );
 
   // A host may supply inherited scope/device read context. This surface never
@@ -441,6 +445,7 @@ export function UniversalSettingsProvider({
   } | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     const taxonomyRequestKey = `${requestKey}|${generation}`;
     void fetchTaxonomyIndex()
@@ -457,10 +462,10 @@ export function UniversalSettingsProvider({
         }
       });
     return () => { cancelled = true; };
-  }, [requestKey, generation]);
+  }, [enabled, requestKey, generation]);
 
   useEffect(() => {
-    if (editingContext === "system" || !organizationId || !userId) return;
+    if (!enabled || editingContext === "system" || !organizationId || !userId) return;
     let cancelled = false;
     const parsedScopes = JSON.parse(scopesKey) as KnobScopeRef[] | null;
     void Promise.all([
@@ -489,10 +494,10 @@ export function UniversalSettingsProvider({
     return () => {
       cancelled = true;
     };
-  }, [organizationId, resolverUserId, resolverDeviceId, scopesKey, requestKey, generation]);
+  }, [enabled, organizationId, resolverUserId, resolverDeviceId, scopesKey, requestKey, generation]);
 
   useEffect(() => {
-    if (editingContext !== "system" || !canManageSystem) return;
+    if (!enabled || editingContext !== "system" || !canManageSystem) return;
     let cancelled = false;
     const systemRequestKey = `${requestKey}|${canManageSystem}|${generation}`;
     void Promise.all([fetchFeatureKnobs(), fetchTaxonomyIndex()])
@@ -508,7 +513,7 @@ export function UniversalSettingsProvider({
         });
       });
     return () => { cancelled = true; };
-  }, [editingContext, canManageSystem, requestKey, generation]);
+  }, [enabled, editingContext, canManageSystem, requestKey, generation]);
 
   // Mask a previous organization's configuration synchronously: a stale answer
   // on screen is a lie about whose policy you are looking at.
@@ -545,9 +550,9 @@ export function UniversalSettingsProvider({
     knobs: destinationKnobs,
     knobByKey: (fullKey) => byKey.get(fullKey) ?? null,
     domains,
-    isLoading: editingContext === "system"
+    isLoading: enabled && (editingContext === "system"
       ? canManageSystem && !system
-      : Boolean(organizationId && userId) && !current,
+      : Boolean(organizationId && userId) && !current),
     error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyStateForRequest?.error ?? null,
     missing: destinationKnobs.filter((knob) => knob.origin === "missing"),
     rungOverrides,
