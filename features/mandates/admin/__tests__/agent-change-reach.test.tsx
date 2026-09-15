@@ -11,6 +11,8 @@ import { createRoot, type Root } from "react-dom/client";
 const fetchImpactMock = jest.fn();
 const readPostEditAutoOpenMock = jest.fn(async () => ({ state: "known", value: false }));
 const readAutoAdvanceGreenMock = jest.fn(async () => ({ state: "known", value: false }));
+const postAdvanceMock = jest.fn();
+const postRevertMock = jest.fn();
 const openWindowMock = jest.fn();
 const toastInfoMock = jest.fn();
 const toastErrorMock = jest.fn();
@@ -22,6 +24,8 @@ jest.mock("../impact", () => {
     fetchImpact: (...args: unknown[]) => fetchImpactMock(...args),
     readPostEditAutoOpen: () => readPostEditAutoOpenMock(),
     readAutoAdvanceGreen: () => readAutoAdvanceGreenMock(),
+    postAdvance: (...args: unknown[]) => postAdvanceMock(...args),
+    postRevert: (...args: unknown[]) => postRevertMock(...args),
   };
 });
 let viewer: { isSuperAdmin: boolean; userId: string | null } = { isSuperAdmin: true, userId: "admin-1" };
@@ -41,7 +45,9 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import {
+  autoAdvanceAfterSave,
   readAgentReach,
+  revertAutoAdvance,
   useAgentChangeReach,
   type AgentReach,
 } from "../useAgentChangeReach";
@@ -51,6 +57,7 @@ import {
   countBatchTiers,
   describeReach,
   isBatchActionable,
+  type AdvanceReport,
   type ImpactVerdict,
   type StandingImpact,
 } from "../impact";
@@ -338,5 +345,99 @@ describe("the sentence and the companion's inputs", () => {
         verdict({ row_id: "r3", mandate_key: "probe.i6_b" }),
       ]),
     ).toEqual(["probe.i6_alpha", "probe.i6_b"]);
+  });
+});
+
+describe("autoAdvanceAfterSave — the automatic move takes the SAME lanes as the panel (R47, verifier D-B)", () => {
+  const own = verdict({
+    row_id: "own-pin",
+    holder_kind: "binding",
+    mandate_key: "probe.own",
+    principal: { kind: "user", organization_id: "org-1", subject_user_id: "admin-1" },
+    apply_token: { holder_kind: "binding", row_id: "own-pin", expected_pinned_version_id: "v1", target_version_id: "v15" },
+  });
+  const theirs = verdict({
+    row_id: "their-pin",
+    holder_kind: "binding",
+    mandate_key: "probe.theirs",
+    principal: { kind: "user", organization_id: "org-1", subject_user_id: "someone-else" },
+    apply_token: { holder_kind: "binding", row_id: "their-pin", expected_pinned_version_id: "v1", target_version_id: "v15" },
+  });
+  const org = verdict({ row_id: "org-rung", mandate_key: "probe.org" });
+  const report = (batchId: string, rowId: string): AdvanceReport => ({
+    batch_id: batchId,
+    batch_label: "auto",
+    action: "advance",
+    computed_at: "2026-09-14T00:00:00Z",
+    counts: { total: 1, advanced: 1, reverted: 0, refused: 0, excluded: 0 },
+    results: [
+      {
+        token: { holder_kind: "binding", row_id: rowId, expected_pinned_version_id: "v1", target_version_id: "v15" },
+        mandate_key: rowId,
+        status: "advanced",
+        reason: null,
+        prior_pinned_version_id: "v1",
+        new_pinned_version_id: "v15",
+        ledger_row_id: `ledger-${rowId}`,
+      },
+    ],
+  });
+
+  beforeEach(() => {
+    postAdvanceMock.mockReset();
+    postRevertMock.mockReset();
+    readAutoAdvanceGreenMock.mockResolvedValue({ state: "known", value: true });
+  });
+
+  it("a super admin's own pin goes through /mine, the org rung through the admin lane, and another person's pin is never sent", async () => {
+    postAdvanceMock
+      .mockResolvedValueOnce(report("batch-mine", "own-pin"))
+      .mockResolvedValueOnce(report("batch-admin", "org-rung"));
+    const outcome = await autoAdvanceAfterSave(
+      jest.fn() as never,
+      standing([own, theirs, org]),
+      { posture: "admin", actorUserId: "admin-1" },
+      "auto after edit",
+    );
+    expect(outcome.state).toBe("advanced");
+    if (outcome.state !== "advanced") return;
+    expect(postAdvanceMock).toHaveBeenCalledTimes(2);
+    const postures = postAdvanceMock.mock.calls.map((call) => call[3]);
+    expect(postures).toEqual(["mine", "admin"]);
+    const sentRows = postAdvanceMock.mock.calls.flatMap((call) =>
+      (call[1] as ImpactVerdict[]).map((v) => v.row_id),
+    );
+    expect(sentRows).toEqual(["own-pin", "org-rung"]);
+    expect(sentRows).not.toContain("their-pin");
+    expect(outcome.legs.map((leg) => [leg.posture, leg.batchId])).toEqual([
+      ["mine", "batch-mine"],
+      ["admin", "batch-admin"],
+    ]);
+    expect(outcome.report.counts?.advanced).toBe(2);
+  });
+
+  it("Put back reverts every leg through the door it went through", async () => {
+    postRevertMock.mockResolvedValue({
+      batch_id: "r",
+      batch_label: "put back",
+      action: "revert",
+      computed_at: "2026-09-14T00:00:00Z",
+      counts: { total: 1, advanced: 0, reverted: 1, refused: 0, excluded: 0 },
+      results: [],
+    });
+    const { reports, failures } = await revertAutoAdvance(
+      jest.fn() as never,
+      [
+        { posture: "mine", batchId: "batch-mine", report: report("batch-mine", "own-pin") },
+        { posture: "admin", batchId: "batch-admin", report: report("batch-admin", "org-rung") },
+      ],
+      "put back",
+    );
+    expect(failures).toEqual([]);
+    expect(reports).toHaveLength(2);
+    expect(postRevertMock.mock.calls.map((call) => [call[1], call[4]])).toEqual([
+      ["batch-mine", "mine"],
+      ["batch-admin", "admin"],
+    ]);
   });
 });

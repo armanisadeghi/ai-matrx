@@ -32,6 +32,7 @@ import {
 import {
   fetchModelById,
   selectAllModels,
+  selectModelFullyLoaded,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
@@ -78,6 +79,31 @@ export type SettingsFixPlan =
       newestVersionNumber: number | null;
       why: string;
     };
+
+/**
+ * A thunk rejection is not always an Error: `createAsyncThunk`'s `condition`
+ * rejects with a plain object (`{ name: "ConditionError" … }`) and
+ * `rejectWithValue` with whatever the thunk passed. Every catch here reads
+ * as a sentence, never "[object Object]".
+ */
+export function describeThunkFailure(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && error !== null) {
+    const record = error as { message?: unknown; name?: unknown; payload?: unknown };
+    if (typeof record.message === "string" && record.message.length > 0) return record.message;
+    if (typeof record.payload === "string" && record.payload.length > 0) return record.payload;
+    if (record.name === "ConditionError") {
+      return "the read was skipped because a read of the same record is already in flight or already failed — try again in a moment";
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+  return String(error);
+}
 
 function describeValue(value: unknown): string {
   if (value === undefined) return "unset";
@@ -141,7 +167,7 @@ export async function planSettingsFix(
     return {
       status: "cannot",
       ...base,
-      why: `the agent could not be read: ${error instanceof Error ? error.message : String(error)}`,
+      why: `the agent could not be read: ${describeThunkFailure(error)}`,
     };
   }
   const record = selectAgentById(getState(), agentId);
@@ -156,14 +182,22 @@ export async function planSettingsFix(
       why: "the agent has no model, so there are no model controls to validate its settings against — open the agent and choose one.",
     };
   }
-  try {
-    await dispatch(fetchModelById(modelId)).unwrap();
-  } catch (error) {
-    return {
-      status: "cannot",
-      ...base,
-      why: `its model could not be read: ${error instanceof Error ? error.message : String(error)}`,
-    };
+  // The registry thunk's `condition` SKIPS (and `.unwrap()` throws a plain
+  // object) when the full record is already in the store — which it is on the
+  // second fix of the same agent in a session. Read the store first; dispatch
+  // only when the full controls are missing.
+  if (!selectModelFullyLoaded(getState(), modelId)) {
+    try {
+      await dispatch(fetchModelById(modelId)).unwrap();
+    } catch (error) {
+      if (!selectModelFullyLoaded(getState(), modelId)) {
+        return {
+          status: "cannot",
+          ...base,
+          why: `its model could not be read: ${describeThunkFailure(error)}`,
+        };
+      }
+    }
   }
   const models = selectAllModels(getState());
   const { normalizedControls, error: controlsError } = resolveModelControls(models, modelId);

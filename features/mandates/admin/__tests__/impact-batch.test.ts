@@ -23,6 +23,7 @@ import {
   indexResultsByRung,
   isBatchActionable,
   mergeImpactReports,
+  withheldSentenceOf,
   mergeStandingImpacts,
   revertWindowSentence,
   revertableRows,
@@ -163,6 +164,17 @@ describe("countBatchTiers / describeBatch — the headline sentence", () => {
   });
 });
 
+describe("withheldSentenceOf — a count of one reads singular, more stays the server's plural", () => {
+  it("singularizes only at one", () => {
+    expect(
+      withheldSentenceOf([
+        { principalKind: "user", count: 1, explanation: "personal pins owned by other people" },
+        { principalKind: "global", count: 2, explanation: "global rungs you are not entitled to read" },
+      ]),
+    ).toBe("3 rungs withheld: 1 personal pin owned by other people; 2 global rungs you are not entitled to read");
+  });
+});
+
 describe("mergeImpactReports — what the read withheld is summed BY REASON into one sentence (R31, D1, D4)", () => {
   const page = (n: number): ImpactReport => ({
     verdicts: [verdict({ row_id: `row-${n}` })],
@@ -193,7 +205,8 @@ describe("mergeImpactReports — what the read withheld is summed BY REASON into
       ["user", 1],
     ]);
     expect(merged.withheldSentences).toEqual([
-      "3 rungs withheld: 1 global rungs you are not entitled to read; 1 platform default rungs in organizations you do not belong to; 1 personal pins owned by other people — theirs to advance",
+      // At exactly one, the server's plural explanation loses its "s" (D9 class).
+      "3 rungs withheld: 1 global rung you are not entitled to read; 1 platform default rung in organizations you do not belong to; 1 personal pin owned by other people — theirs to advance",
     ]);
     expect(merged.unknownAgentIds).toEqual(["ghost"]);
     expect(merged.unknownSentences).toHaveLength(1);
