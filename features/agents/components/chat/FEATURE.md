@@ -300,6 +300,20 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-15` — **The Sandbox pane survives a reload, and every composer
+  control has a name.** A bound chat that also held an agent-created document
+  came back from a reload with the document only: one canvas item means no
+  switcher, and nothing else reached the running box (production `528560bbc8`).
+  `SandboxCanvasOpener`'s decision now ends in the shared
+  `features/canvas/liveSourceReachability.ts` — a live source is ALWAYS at
+  least offered, an absent one never is — so the switcher lists Sandbox beside
+  the document on every load. Put-away memory still wins: offered, not opened.
+  Separately, the loaded-chat send control had only `title="Send Message"` and
+  no `aria-label`; a parser-backed guard over this composer directory now
+  requires an accessible name on every icon-only control and named the seven it
+  found. Guards: `features/canvas/__tests__/live-pane-reachability.test.tsx`,
+  `features/agents/components/inputs/smart-input/__tests__/composer-controls-are-named.test.ts`.
+
 - `2026-09-15` — claude: **the structured-answer floor is generic, and it did not cost the reader the Copy button.** Two follow-ups on the same-day schema-bound-answer fix. (1) The status pill read `done | blocked | needs_user` literally — the Sandbox Specialist's three enum values — so every OTHER schema-bound agent's `complete` / `failed` / `pending` got a grey "nothing to see here" pill on the one surface that is supposed to be the CLASS fix. Tones now come from a vocabulary (`statusTone`), with neutral as the honest default for a word we do not know. (2) The raw payload moved from `JsonBlock` (whose header carried **Copy**) to a bare `<pre>`, so a reader who wanted the JSON could no longer take it — the answer got prettier and an affordance quietly disappeared. Details now carries a Copy control on the one canonical clipboard implementation (`components/agent-copy/clipboard.ts`). Guards in `StructuredAgentAnswerBlock.test.tsx`: the tone vocabulary, five pill-class cases, and a click-through Copy assertion against the live-captured Specialist payload — all five proven RED against the pre-change component.
 
 - `2026-09-15` — **schema-bound assistant answers render as readable chat output.** The shared JSON-code floor recognizes only complete objects whose keys all belong to the conversation-bound agent's declared `output_schema`; it uses the existing Redux selector and cached by-id contract read for cold reloads, while missing contracts, incomplete/unknown payloads, and registered kinds retain their existing raw JSON/kind routes. Prose, truthful status, next steps, compact arrays/tables, and collapsed raw Details render without a new chat card.
