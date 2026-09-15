@@ -58,13 +58,9 @@ import {
   sandboxInstanceSummary,
 } from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
-import {
-  classifySandboxLifecycleResponse,
-  sandboxLifecycleMessage,
-  sandboxLifecycleTransportUnknown,
-} from "@/lib/sandbox/lifecycle-response";
-import { toast } from "@/lib/toast";
 import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import {
   STATUS_BADGE_VARIANT,
   STATUS_LABELS,
@@ -93,6 +89,7 @@ export default function SandboxDetailPage() {
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
 
   const [instance, setInstance] = useState<SandboxInstance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,19 +150,26 @@ export default function SandboxDetailPage() {
         if (resp.status === 404) {
           setInstance(null);
           setError(null);
-          return;
+          return null;
         }
         throw new Error("Failed to fetch sandbox");
       }
       const data = await resp.json();
       setInstance(data.instance);
       setError(null);
+      return data.instance as SandboxInstance;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
+      return undefined;
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  useSandboxLifecycleTerminalInvalidation(async (receipt) => {
+    const current = await fetchInstance();
+    if (receipt.kind === "delete" && current === null) router.push("/sandbox");
+  });
 
   useEffect(() => {
     fetchInstance();
@@ -326,32 +330,10 @@ export default function SandboxDetailPage() {
     }
   };
 
-  const handleStop = async () => {
-    if (lifecycleBusy) return;
-    setLifecycleBusy("stop");
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop" }),
-      });
-      const result = await classifySandboxLifecycleResponse(resp, "Failed to stop sandbox");
-      if (result.kind === "outcome_unknown") {
-        setError(sandboxLifecycleMessage(result));
-        toast.warning(sandboxLifecycleMessage(result));
-        return;
-      }
-      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
-      await fetchInstance();
-    } catch (err) {
-      const message = err instanceof TypeError
-        ? sandboxLifecycleTransportUnknown("stop").message
-        : err instanceof Error ? err.message : "Failed to stop";
-      setError(message);
-      if (err instanceof TypeError) toast.warning(message);
-    } finally {
-      setLifecycleBusy(null);
-    }
+  const handleStop = async (graceful = true) => {
+    if (!instance || lifecycleBusy) return;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "stop", graceful });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
   const handleExtend = async (seconds: number) => {
@@ -415,27 +397,9 @@ export default function SandboxDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (lifecycleBusy) return;
-    setLifecycleBusy("delete");
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-      const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
-      if (result.kind === "outcome_unknown") {
-        setError(sandboxLifecycleMessage(result));
-        toast.warning(sandboxLifecycleMessage(result));
-        return;
-      }
-      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
-      router.push("/sandbox");
-    } catch (err) {
-      const message = err instanceof TypeError
-        ? sandboxLifecycleTransportUnknown("delete").message
-        : err instanceof Error ? err.message : "Failed to delete";
-      setError(message);
-      if (err instanceof TypeError) toast.warning(message);
-    } finally {
-      setLifecycleBusy(null);
-    }
+    if (!instance || lifecycleBusy) return;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "delete" });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
   if (loading) {
@@ -1121,12 +1085,7 @@ export default function SandboxDetailPage() {
                         onClick={async () => {
                           setAdminActionLoading("stop");
                           try {
-                            await fetch(`/api/sandbox/${id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ action: "stop" }),
-                            });
-                            await fetchInstance();
+                            await handleStop(false);
                           } finally {
                             setAdminActionLoading(null);
                           }
