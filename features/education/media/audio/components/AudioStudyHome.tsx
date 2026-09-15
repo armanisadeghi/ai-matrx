@@ -25,6 +25,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -33,6 +40,7 @@ import {
   type AudioLibraryEntry,
 } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { studyMediaService } from "../../service";
+import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import type { StudyMediaRow } from "../../types";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -46,6 +54,15 @@ const FORMAT_ICON: Record<string, typeof Headphones> = {
 
 export function AudioStudyHome() {
   const router = useRouter();
+  const loginHref = useLoginHref();
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = authenticatedStudyMediaLoadKey({
+    authReady,
+    userId,
+    accessToken,
+  });
   const [rows, setRows] = useState<StudyMediaRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,6 +88,7 @@ export function AudioStudyHome() {
     });
 
   useEffect(() => {
+    if (!loadKey) return;
     let active = true;
     studyMediaService.listByKind("audio").then((res) => {
       if (!active) return;
@@ -80,7 +98,25 @@ export function AudioStudyHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadKey]);
+
+  if (authReady && !loadKey) {
+    return (
+      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+        <EducationToolHeader title="Audio Study" />
+        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+          <div className="rounded-xl border border-dashed border-border p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sign in to view and create your audio studies.
+            </p>
+            <Button asChild className="mt-4" size="sm">
+              <Link href={loginHref}>Sign in</Link>
+            </Button>
+          </div>
+        </div>
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>

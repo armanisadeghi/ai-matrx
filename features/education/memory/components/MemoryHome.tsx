@@ -18,18 +18,35 @@ import { Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { Skeleton } from "@ai-matrx/design-system";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,
   type MemoryLibraryEntry,
 } from "@/features/surfaces/manifests/education-memory.manifest";
 import { studyMediaService } from "@/features/education/media/service";
+import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
 import type { StudyMediaRow } from "@/features/education/media/types";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
 export function MemoryHome() {
   const router = useRouter();
+  const loginHref = useLoginHref();
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = authenticatedStudyMediaLoadKey({
+    authReady,
+    userId,
+    accessToken,
+  });
   const [rows, setRows] = useState<StudyMediaRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +70,7 @@ export function MemoryHome() {
     });
 
   useEffect(() => {
+    if (!loadKey) return;
     let active = true;
     studyMediaService.listByKind("memory_aid").then((res) => {
       if (!active) return;
@@ -62,7 +80,25 @@ export function MemoryHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadKey]);
+
+  if (authReady && !loadKey) {
+    return (
+      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+        <EducationToolHeader title="Memory Aids" />
+        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+          <div className="rounded-xl border border-dashed border-border p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sign in to view and create your memory aids.
+            </p>
+            <Button asChild className="mt-4" size="sm">
+              <Link href={loginHref}>Sign in</Link>
+            </Button>
+          </div>
+        </div>
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
