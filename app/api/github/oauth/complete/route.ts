@@ -24,7 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 <html><head><meta charset="utf-8"><title>GitHub connection</title></head>
 <body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100dvh;margin:0;background:#111;color:#eee">
 <main style="text-align:center;max-width:400px;padding:2rem">
-  <p style="font-size:1.25rem;${connected ? "" : "color:#f87171"}">${
+  <p style="font-size:1.25rem;${!connected && !refreshNotice ? "color:#f87171" : ""}">${
     connected ? "✓ GitHub connected" : refreshNotice ? "Return to AI Matrx" : "Connection failed"
   }</p>
   <p style="color:#999">${
