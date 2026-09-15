@@ -22,3 +22,15 @@ export async function proxyLifecycleReceipt(target: SandboxLifecycleTarget, suff
     return NextResponse.json({ error: "Could not confirm sandbox lifecycle operation", status: "outcome_unknown" }, { status: 502 });
   }
 }
+
+/** Tombstones cannot start work, but an exact already-issued receipt may rejoin. */
+export async function hasExactLifecycleReceipt(target: SandboxLifecycleTarget, operationId: string, kind: LifecycleKind): Promise<boolean> {
+  try {
+    const response = await fetch(`${target.orchestrator.url}/sandboxes/${target.sandboxId}/lifecycle-operations/${operationId}`, { headers: orchestratorJsonHeaders(target.orchestrator) });
+    if (!response.ok) return false;
+    const payload: unknown = await response.json();
+    if (!payload || typeof payload !== "object") return false;
+    const receipt = payload as Record<string, unknown>;
+    return receipt.row_id === target.rowId && receipt.sandbox_id === target.sandboxId && receipt.operation_id === operationId && receipt.kind === kind;
+  } catch { return false; }
+}
