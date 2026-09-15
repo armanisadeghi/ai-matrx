@@ -17,6 +17,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { resolveSupabaseEnv } from "./supabase-env";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUT = resolve(ROOT, "scripts/schema-check/current-schema.json");
@@ -25,31 +26,18 @@ const C = { reset: "\x1b[0m", dim: "\x1b[2m", red: "\x1b[31m", green: "\x1b[32m"
 function loadEnv(): { url: string; key: string } | null {
   // ONE name for the URL — no second candidate, no fallback chain.
   // See common-docs/policies/package-vs-implementation.md
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  let key =
-    process.env.SUPABASE_SECRET_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    "";
-  if (!url || !key) {
-    for (const f of [".env.local", ".env.production.local", ".env.production", ".env"]) {
-      const p = resolve(ROOT, f);
-      if (!existsSync(p)) continue;
-      for (const line of readFileSync(p, "utf8").split("\n")) {
-        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
-        if (!m) continue;
-        const v = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && m[1] === "NEXT_PUBLIC_SUPABASE_URL") url = v;
-        if (
-          !key &&
-          (m[1] === "SUPABASE_SECRET_KEY" ||
-            m[1] === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
-        )
-          key = v;
-      }
-      if (url && key) break;
-    }
+  // Key precedence is by name (secret → publishable), never by line order — see supabase-env.ts.
+  const files = [".env.local", ".env.production.local", ".env.production", ".env"]
+    .map((f) => resolve(ROOT, f))
+    .filter((p) => existsSync(p))
+    .map((p) => readFileSync(p, "utf8"));
+  const env = resolveSupabaseEnv(process.env, files);
+  if (env && env.keyName !== "SUPABASE_SECRET_KEY") {
+    console.error(
+      `${C.yellow}[WARN]${C.reset} no SUPABASE_SECRET_KEY — using ${env.keyName}; schema_truth_snapshot() is granted to service_role only, so expect a 42501 and the degraded aidream fallback.`,
+    );
   }
-  return url && key ? { url, key } : null;
+  return env ? { url: env.url, key: env.key } : null;
 }
 
 async function pullViaRpc(url: string, key: string): Promise<any | null> {
