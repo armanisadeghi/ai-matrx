@@ -79,7 +79,10 @@ import {
 } from "./converters";
 import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { loadUserFileTree, reconcileTree } from "./thunks";
-import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
+import {
+  isUserVisibleFileRow,
+  isUserVisibleFolderPath,
+} from "@/features/files/utils/user-visible";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
@@ -396,7 +399,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // realtime payloads still arrive for new variant writes — we filter
     // at the boundary so they never appear in the user tree.
     // See `isSystemPath` + common-docs systems/media/file-service/WIRE_CONTRACT.md.
-    if (isHiddenFromUserTree(newRow.file_path)) return;
+    if (!isUserVisibleFileRow(newRow)) return;
     // LISTING gate (client mirror of DB `files.is_listable_for`): realtime
     // is RLS-authorized and RLS includes a `pub_read` policy, so without
     // this check every PUBLIC file any other user touches would stream into
@@ -481,7 +484,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     if (!newRow?.id) return;
     // Same system-path guard as the file handler — the backfill also
     // creates per-source-file folders under `system-files/variants/<id>/`.
-    if (isHiddenFromUserTree(newRow.folder_path)) return;
+    if (!isUserVisibleFolderPath(newRow.folder_path)) return;
     // Same LISTING gate as files — the tree RPC only ever returns the
     // user's OWN folders, so realtime must not inject anyone else's.
     if (newRow.created_by !== subscribedUserId) return;

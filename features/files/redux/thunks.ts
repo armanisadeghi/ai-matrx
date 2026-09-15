@@ -70,7 +70,10 @@ import {
 } from "./request-ledger";
 import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
-import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
+import {
+  isUserVisibleFilePath,
+  isUserVisibleFolderPath,
+} from "@/features/files/utils/user-visible";
 import {
   hasMatchingFileTreeSession,
   runFileTreeSessionOperation,
@@ -348,7 +351,9 @@ export const loadUserFileTree = createAsyncThunk<
       const folders: PartialCloudFolderWithId[] = [];
       for (const row of rows) {
         if (row.kind === "file") {
-          if (isHiddenFromUserTree(row.file_path)) continue;
+          // No client-side visibility filter: `get_user_file_tree` already
+          // applied `files.is_user_visible_path`. A second rule here is the
+          // D16 disagreement this cutover deleted.
           files.push({
             id: row.id,
             ownerId: row.owner_id,
@@ -367,7 +372,6 @@ export const loadUserFileTree = createAsyncThunk<
             deletedAt: row.deleted_at,
           });
         } else {
-          if (isHiddenFromUserTree(row.folder_path)) continue;
           folders.push({
             id: row.id,
             ownerId: row.owner_id,
@@ -385,11 +389,12 @@ export const loadUserFileTree = createAsyncThunk<
       dispatch(upsertFiles(files));
       dispatch(upsertFolders(folders));
 
-      // Drop side-product rows that were hydrated before the hide predicate
-      // existed (FastFire captures, system paths that slipped via realtime).
+      // Drop rows the DATABASE's predicate rejects that slipped into the
+      // store through realtime before the mirror was applied. FastFire rows
+      // are user-visible now and are deliberately NOT purged.
       const prior = getState().cloudFiles;
       for (const [id, rec] of Object.entries(prior.filesById)) {
-        if (rec && isHiddenFromUserTree(rec.filePath)) {
+        if (rec && !isUserVisibleFilePath(rec.filePath)) {
           dispatch(removeFile({ id }));
         }
       }
@@ -397,7 +402,7 @@ export const loadUserFileTree = createAsyncThunk<
         if (
           rec &&
           rec.source.kind === "real" &&
-          isHiddenFromUserTree(rec.folderPath)
+          !isUserVisibleFolderPath(rec.folderPath)
         ) {
           dispatch(removeFolder({ id }));
         }
@@ -1597,7 +1602,7 @@ export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
     for (const row of rows) {
       if (!row.deleted_at) continue;
       if (row.kind === "file") {
-        if (isHiddenFromUserTree(row.file_path)) continue;
+        // Already filtered by the RPC's predicate — see above.
         files.push({
           id: row.id,
           ownerId: row.owner_id,
@@ -1613,7 +1618,6 @@ export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
           deletedAt: row.deleted_at,
         });
       } else {
-        if (isHiddenFromUserTree(row.folder_path)) continue;
         folders.push({
           id: row.id,
           ownerId: row.owner_id,
