@@ -59,11 +59,7 @@ export interface AdvancedMenuProps {
 
   // Positioning
   position?:
-    | "bottom-left"
-    | "bottom-right"
-    | "top-left"
-    | "top-right"
-    | "center";
+    "bottom-left" | "bottom-right" | "top-left" | "top-right" | "center";
   anchorElement?: HTMLElement | null;
 
   // Styling
@@ -116,13 +112,27 @@ interface MenuItemsContentProps {
 // Change the row, then re-mirror this literal; the value has no sync read path.
 export const AUTO_COLLAPSE_THRESHOLD = 20;
 
+/**
+ * Remove hidden rows recursively. A submenu with no visible destinations is
+ * itself hidden; opening an empty panel is a dead end.
+ */
+function visibleMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.flatMap((item) => {
+    if (item.hidden) return [];
+    if (!item.children) return [item];
+
+    const children = visibleMenuItems(item.children);
+    return children.length ? [{ ...item, children }] : [];
+  });
+}
+
 /** Build the root row list, collapsing overflow categories into submenus. */
 export function buildRootItems(
   items: MenuItem[],
   categorizeItems: boolean,
   autoCollapse: boolean,
 ): MenuItem[] {
-  const visible = items.filter((item) => !item.hidden);
+  const visible = visibleMenuItems(items);
   if (!autoCollapse || !categorizeItems) return visible;
   if (visible.length <= AUTO_COLLAPSE_THRESHOLD) return visible;
 
@@ -175,6 +185,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
             const state = getDirectiveState(item.key);
             const Icon = item.icon;
             const hasChildren = !!item.children?.length;
+            const visibleChildCount = item.children?.length ?? 0;
             const isLoading = state === "loading";
             const isSuccess = state === "success";
             const isError = state === "error";
@@ -255,7 +266,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
                 {hasChildren && (
                   <div className="flex-shrink-0 flex items-center gap-1 text-gray-400 dark:text-gray-500">
                     <span className="text-[11px] tabular-nums">
-                      {item.children!.filter((child) => !child.hidden).length}
+                      {visibleChildCount}
                     </span>
                     <ChevronRight size={14} />
                   </div>
@@ -294,23 +305,20 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [actionStates, setDirectiveStates] = useState<Record<string, DirectiveState>>(
-    {},
-  );
+  const [actionStates, setDirectiveStates] = useState<
+    Record<string, DirectiveState>
+  >({});
   const isMobile = useIsMobile();
-  const [mounted, setMounted] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
     top: number;
     left: number;
   } | null>(null);
   const [hasScrollBelow, setHasScrollBelow] = useState(false);
-  /** Drill-in path: each entry is the submenu trigger the user opened. */
-  const [trail, setTrail] = useState<MenuItem[]>([]);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+  /**
+   * Drill-in path by key. Resolving keys against current props keeps an open
+   * submenu live when authentication, availability, or action state changes.
+   */
+  const [trail, setTrail] = useState<string[]>([]);
 
   // Calculate desktop menu position with viewport-aware clamping
   useEffect(() => {
@@ -385,7 +393,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
     // Double-RAF ensures menu is laid out before measuring
     requestAnimationFrame(() => requestAnimationFrame(compute));
-  }, [isOpen, anchorElement, position, width, isMobile, items, trail.length]);
+  }, [isOpen, anchorElement, position, width, isMobile]);
 
   // A reopened menu always starts at the top level.
   useEffect(() => {
@@ -444,7 +452,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
       el.removeEventListener("scroll", check);
       ro.disconnect();
     };
-  }, [isOpen, mounted]);
+  }, [isOpen, trail]);
 
   // Action state management
   const setDirectiveState = (key: string, state: DirectiveState) => {
@@ -464,7 +472,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
     // Submenu trigger — drill in, never run an action, never close.
     if (item.children?.length) {
-      setTrail((prev) => [...prev, item]);
+      setTrail((prev) => [...prev, item.key]);
       return;
     }
 
@@ -514,7 +522,21 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     [items, categorizeItems, autoCollapse],
   );
 
-  const activeParent = trail.length ? trail[trail.length - 1] : null;
+  const resolvedTrail = React.useMemo(() => {
+    const resolved: MenuItem[] = [];
+    let level = rootItems;
+    for (const key of trail) {
+      const parent = level.find((item) => item.key === key);
+      if (!parent?.children?.length) break;
+      resolved.push(parent);
+      level = parent.children;
+    }
+    return resolved;
+  }, [rootItems, trail]);
+
+  const activeParent = resolvedTrail.length
+    ? resolvedTrail[resolvedTrail.length - 1]
+    : null;
 
   const activeItems = React.useMemo(
     () =>
@@ -540,6 +562,10 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
   const goBack = () => setTrail((prev) => prev.slice(0, -1));
 
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [trail]);
+
   const sharedItemProps: MenuItemsContentProps = {
     groupedItems,
     categorizeItems,
@@ -548,7 +574,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     getDirectiveState,
   };
 
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   // ── Mobile: iOS-style bottom sheet ────────────────────────────────────────
   if (isMobile) {
@@ -559,7 +585,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
           if (!open) onClose();
         }}
       >
-        <DrawerContent className="max-h-[85dvh] flex flex-col">
+        <DrawerContent className="h-[85dvh] max-h-[85dvh] flex flex-col">
           {/* Drag handle is rendered by DrawerContent automatically */}
 
           {/* Header — DrawerTitle always rendered for a11y; visually hidden when showHeader is false */}

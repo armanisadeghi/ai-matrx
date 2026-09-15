@@ -130,7 +130,8 @@ export function ContentActionBar({
   const isAuthenticated = !!user?.email;
 
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
+  const [moreOptionsAnchor, setMoreOptionsAnchor] =
+    useState<HTMLButtonElement | null>(null);
 
   // Per-mount fallback id keeps overlay instances scoped when the caller
   // doesn't supply one. Stable across renders of the same component.
@@ -152,7 +153,9 @@ export function ContentActionBar({
                   // eslint-disable-next-line no-console
                   console.error("[ContentActionBar] onSave failed", err);
                   toast.error(
-                    err instanceof Error ? err.message : "Failed to save changes",
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to save changes",
                   );
                   throw err;
                 },
@@ -272,14 +275,13 @@ export function ContentActionBar({
             />
           )}
 
-          <div ref={moreOptionsButtonRef}>
-            <MoreHorizontalTapButton
-              variant="group"
-              onClick={() => setShowOptionsMenu(true)}
-              ariaLabel="More options"
-              className="text-muted-foreground"
-            />
-          </div>
+          <MoreHorizontalTapButton
+            ref={setMoreOptionsAnchor}
+            variant="group"
+            onClick={() => setShowOptionsMenu(true)}
+            ariaLabel="More options"
+            className="text-muted-foreground"
+          />
         </TapTargetButtonGroup>
       </div>
 
@@ -291,7 +293,7 @@ export function ContentActionBar({
             items={menuItems}
             title={title ?? "Content options"}
             position="bottom-left"
-            anchorElement={moreOptionsButtonRef.current}
+            anchorElement={moreOptionsAnchor}
           />
         </Suspense>
       )}
