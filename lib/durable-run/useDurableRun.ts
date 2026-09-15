@@ -130,6 +130,13 @@ const RECONNECT_MAX_DELAY_MS = 15_000;
 const RECONNECT_GIVE_UP_MS = 15 * 60 * 1000;
 /** Consecutive rejoins that could not even reach the run before we give up. */
 const RECONNECT_MAX_UNREACHABLE = 5;
+/**
+ * How many times a rejoin may come back SUCCESSFUL BUT NOT LIVE before this
+ * loop stops claiming it is reconnecting. Five at 1.5s→15s backoff is about a
+ * minute of honest trying — long enough to ride out a worker restart, short
+ * enough that nobody watches a lie for five minutes.
+ */
+const RECONNECT_MAX_NOT_LIVE = 5;
 
 /**
  * 🚨 A WORKING SCREEN MAY NEVER KEEP A PROMISE IT HAS ALREADY BROKEN.
@@ -364,6 +371,15 @@ interface RunPointer {
    * failure, or age retires a pointer.
    */
   settled?: boolean;
+  /**
+   * When the live view was FIRST lost for this run, in epoch ms.
+   *
+   * The give-up clock used to be a local in each `startReconnect` call, so a
+   * page reload reset it to zero and the loop could never age out — which is
+   * exactly what "Reconnecting… forever, even after a reload" was. Carried on
+   * the pointer, the ceiling is real wall-clock time.
+   */
+  lostLiveViewAt?: number;
 }
 
 function pointerKey(wire: DurableRunWire, key: string): string {
@@ -397,6 +413,9 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
       startedAt,
       target: typeof parsed.target === "string" ? parsed.target : null,
       settled: parsed.settled === true,
+      ...(typeof parsed.lostLiveViewAt === "number"
+        ? { lostLiveViewAt: parsed.lostLiveViewAt }
+        : {}),
       ...(scopeOverrides ? { scopeOverrides } : {}),
     };
   } catch {
@@ -1128,10 +1147,33 @@ export function useDurableRun<TResult>(
             : [...prev.stages, STREAM_LOST_MESSAGE],
       }));
 
+      // THE GIVE-UP CLOCK IS WALL TIME, NOT PER-ATTEMPT TIME.
+      //
+      // This deadline used to be `Date.now() + RECONNECT_GIVE_UP_MS` computed
+      // inside each `startReconnect`, so every page reload — and every
+      // snapshot that re-entered this function — started the fifteen minutes
+      // over. A user watched "Reconnecting…" for five minutes, reloaded the
+      // page, and watched it forever (2026-09-15). The moment the view was
+      // first lost is now carried on the run pointer, so the ceiling is real.
+      const lostAt = (() => {
+        const existing = readPointer(wire, key);
+        if (existing?.lostLiveViewAt) return existing.lostLiveViewAt;
+        const now = Date.now();
+        if (existing) writePointer(wire, key, { ...existing, lostLiveViewAt: now });
+        return now;
+      })();
+
       void (async () => {
-        const deadline = Date.now() + RECONNECT_GIVE_UP_MS;
+        const deadline = lostAt + RECONNECT_GIVE_UP_MS;
         let delayMs = RECONNECT_BASE_DELAY_MS;
         let unreachable = 0;
+        // A rejoin that SUCCEEDS but hands back a one-shot `processing`
+        // snapshot instead of a live follow is a failure to reconnect, and it
+        // is the common one: the live channel is a process-local dict on the
+        // server, so any worker but the executing one can only ever answer
+        // with the row. Counting only transport errors (`unreachable`) meant
+        // this loop could re-ask for ever without the ceiling moving.
+        let notLive = 0;
         try {
           while (!signal.aborted && mountedRef.current) {
             await waitFor(delayMs, signal);
@@ -1142,19 +1184,34 @@ export function useDurableRun<TResult>(
               wire,
               ...(scopeOverrides ? { scopeOverrides } : {}),
               runId,
-              streamOptions: streamOptions((event) =>
-                handleEvent(event, { rejoin: true }),
-              ),
+              // A STOP MUST STICK.
+              //
+              // `stopReconnect` aborts this controller, but the rejoin request
+              // already in flight is not cancelled by that — its response was
+              // read from the row BEFORE the cancel landed, so it arrives
+              // afterwards still saying `processing`, and the snapshot branch
+              // calls `startReconnect` again. The user saw "Stopping…" flicker
+              // and "Lost the live view … Reconnecting…" come straight back.
+              // Events from an aborted attempt are no longer anybody's truth.
+              streamOptions: streamOptions((event) => {
+                if (signal.aborted || !mountedRef.current) return;
+                handleEvent(event, { rejoin: true });
+              }),
               onUnreachable: (_message, error) => {
                 failure = error ?? null;
               },
             });
             if (signal.aborted || !mountedRef.current) return;
             const now = currentStatus();
-            if (now === "done" || now === "error") return;
+            // "stopped" belongs here: a user who stopped their own run must
+            // not have this loop put "Reconnecting…" back on their screen.
+            if (now === "done" || now === "error" || now === "stopped") return;
             unreachable = failure ? unreachable + 1 : 0;
+            notLive = failure ? notLive : notLive + 1;
             const giveUp =
-              unreachable >= RECONNECT_MAX_UNREACHABLE || Date.now() > deadline;
+              unreachable >= RECONNECT_MAX_UNREACHABLE ||
+              notLive >= RECONNECT_MAX_NOT_LIVE ||
+              Date.now() > deadline;
             if (giveUp) {
               // Loud, and still never a lie: we do not know that it failed, so
               // we do not say it did.
@@ -1171,7 +1228,7 @@ export function useDurableRun<TResult>(
                 status: "error",
                 stage: null,
                 error:
-                  "Lost contact with this run. It may still be finishing on the server — reload this page to pick it up before starting another one.",
+                  "We have lost the live view of this run and cannot get it back. The run itself is recorded on the server and may well have finished — reopen this Rulebook to see where it got to, and stop it here if you would rather start over. Do not start a second one until you have looked.",
               }));
               return;
             }
