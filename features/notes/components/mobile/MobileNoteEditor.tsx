@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -255,6 +255,29 @@ export default function MobileNoteEditor({
   // to Redux on unmount AND on a note switch (this effect is keyed by noteId,
   // so the cleanup runs with the OUTGOING note's id and buffer), exactly as
   // `NoteContentEditor` does. `autoSaveMiddleware` then persists it.
+  // On a TRUE unmount in rich (WYSIWYG) mode, the rich editor may hold words
+  // its onChange has not delivered yet. A layout-effect cleanup runs before the
+  // child editor detaches its imperative handle (and before the passive cleanup
+  // below), so the live markdown is snapshotted here and flushed below. Never
+  // on a note switch: by then the rich editor may already show the NEXT note.
+  const effectiveModeRef = useRef(effectiveMode);
+  useEffect(() => {
+    effectiveModeRef.current = effectiveMode;
+  }, [effectiveMode]);
+  const unmountSnapshotRef = useRef<string | null>(null);
+  useLayoutEffect(
+    () => () => {
+      if (effectiveModeRef.current !== "wysiwyg") return;
+      try {
+        const markdown = tuiRef.current?.getCurrentMarkdown?.();
+        if (typeof markdown === "string") unmountSnapshotRef.current = markdown;
+      } catch {
+        // A torn-down rich editor falls back to the last delivered buffer.
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     setNoteLiveContent(noteId, localContentRef.current);
     return () => {
@@ -263,7 +286,7 @@ export default function MobileNoteEditor({
         clearTimeout(syncTimerRef.current);
         syncTimerRef.current = null;
       }
-      const pending = localContentRef.current;
+      const pending = unmountSnapshotRef.current ?? localContentRef.current;
       if (pending !== lastReduxRef.current) {
         lastReduxRef.current = pending;
         dispatch(updateNoteContent({ id: noteId, content: pending }));

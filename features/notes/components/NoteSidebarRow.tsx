@@ -185,7 +185,11 @@ export function NoteSidebarRow({
   return (
     <NonEditableContextMenu
       sourceFeature="notes"
-      contextData={{ content: note.content ?? "" }}
+      // Only a fully read note has a body to hand the menu. A preview-only row
+      // passes nothing, so an agent is never told "" IS the note; the body is
+      // loaded the moment the menu is requested (onContextMenuCapture above)
+      // and this re-renders with it (audit N-24, reviewer finding).
+      contextData={note._fetchStatus === "full" ? { content: note.content ?? "" } : {}}
       contentSource={noteIdentityContentSource(note.id, `sidebar:${instanceId}:${note.id}`)}
       entity={{
         type: "note",

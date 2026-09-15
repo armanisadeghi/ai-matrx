@@ -51,6 +51,8 @@ function whenLabel(at: number): string {
 
 const REASON_LABELS: Record<string, string> = {
   "auth-identity-drift": "the tab had to reload",
+  // @ai-matrx/kit 0.15.2 captures when the tab goes to the background.
+  backgrounded: "the app was put in the background before the save finished",
   "note-deleted": "the note was deleted",
   "note-save-failures": "saving kept failing",
   "signed-out": "the session ended",

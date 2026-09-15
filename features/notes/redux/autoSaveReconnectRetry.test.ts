@@ -147,6 +147,46 @@ describe("autoSave reconnect retry", () => {
     expect(saveNote).toHaveBeenCalledTimes(3);
   });
 
+  it("parks after a bounded run at the 30s cap instead of writing every 30s forever", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      harness(record());
+      window.dispatchEvent(new Event("online"));
+      // 1 immediate pass, then 2+4+8+16 seconds, then ten passes at the 30s cap.
+      await jest.advanceTimersByTimeAsync(340_000);
+      expect(saveNote).toHaveBeenCalledTimes(15);
+      // Parked: nothing more, however long the tab stays open.
+      await jest.advanceTimersByTimeAsync(600_000);
+      expect(saveNote).toHaveBeenCalledTimes(15);
+      expect(warn).toHaveBeenCalled();
+      // Coming back online is new evidence: retries resume at once.
+      window.dispatchEvent(new Event("online"));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(saveNote).toHaveBeenCalledTimes(16);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("a NEW failure after the loop parked starts again at 1s, not at the old 30s cap", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { retry } = harness(record());
+      window.dispatchEvent(new Event("online"));
+      await jest.advanceTimersByTimeAsync(340_000);
+      expect(saveNote).toHaveBeenCalledTimes(15);
+      // The user edits and that keystroke's save fails: the middleware arms.
+      retry.arm();
+      await jest.advanceTimersByTimeAsync(999);
+      expect(saveNote).toHaveBeenCalledTimes(15);
+      await jest.advanceTimersByTimeAsync(1);
+      expect(saveNote).toHaveBeenCalledTimes(16);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("spends no write while the browser reports itself offline", async () => {
     const onLine = jest.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     try {

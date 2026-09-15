@@ -68,6 +68,18 @@ jest.mock("next/dynamic", () => {
     };
 });
 
+// The rich (WYSIWYG) editor, reduced to its one contract that matters here:
+// `getCurrentMarkdown()` can hold words its onChange has not delivered yet.
+let richLiveMarkdown = "";
+jest.mock("@/components/mardown-display/chat-markdown/tui/TuiEditorContent", () => {
+  const ReactModule = jest.requireActual<typeof import("react")>("react");
+  const Tui = ReactModule.forwardRef(function Tui(_props: unknown, ref: React.Ref<unknown>) {
+    ReactModule.useImperativeHandle(ref, () => ({ getCurrentMarkdown: () => richLiveMarkdown }));
+    return ReactModule.createElement("div", { "data-testid": "rich-editor" });
+  });
+  return { __esModule: true, default: Tui };
+});
+
 const ID = "33333333-3333-4333-8333-333333333333";
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ACTOR = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -92,19 +104,19 @@ const makeStore = () =>
 type Store = ReturnType<typeof makeStore>;
 type State = ReturnType<Store["getState"]>;
 
-function Host() {
+function Host({ mode = "plain" }: { mode?: "plain" | "wysiwyg" }) {
   const record = useSelector((state: State) => state.notes.notes[ID]);
-  return <MobileNoteEditor note={record} editorMode="plain" onBack={() => {}} />;
+  return <MobileNoteEditor note={record} editorMode={mode} onBack={() => {}} />;
 }
 
-async function mount(store: Store) {
+async function mount(store: Store, mode: "plain" | "wysiwyg" = "plain") {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   await act(async () => {
     root.render(
       <Provider store={store}>
-        <Host />
+        <Host mode={mode} />
       </Provider>,
     );
   });
@@ -149,6 +161,28 @@ describe("MobileNoteEditor writes through the canonical path", () => {
     expect(store.getState().notes.notes[ID].content).toBe("base and one more sentence");
     expect(store.getState().notes.notes[ID]._dirty).toBe(true);
     jest.useRealTimers();
+  });
+
+  it("keeps rich-editor text its onChange never delivered when the note is closed", async () => {
+    const store = makeStore();
+    store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
+    const { container, unmount } = await mount(store, "wysiwyg");
+    // The lazily-imported rich editor resolves on a microtask.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector("[data-testid='rich-editor']")).not.toBeNull();
+
+    // Words typed in the rich editor that its onChange has not reported yet.
+    richLiveMarkdown = "base, plus the last sentence typed before tapping Back";
+    await unmount();
+
+    expect(store.getState().notes.notes[ID].content).toBe(
+      "base, plus the last sentence typed before tapping Back",
+    );
+    expect(store.getState().notes.notes[ID]._dirty).toBe(true);
+    richLiveMarkdown = "";
   });
 
   it("renders the canonical conflict surface for a recorded CAS conflict (N-20)", async () => {

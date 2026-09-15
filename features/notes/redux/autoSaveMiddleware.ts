@@ -51,6 +51,11 @@ import { saveNote } from "./thunks";
  */
 const RETRY_BASE_DELAY_MS = 1_000;
 const RETRY_MAX_DELAY_MS = 30_000;
+/** Passes allowed at the 30s cap before the loop parks (~5 minutes). A note
+ *  that fails for good must not spend a real write every 30s forever; the
+ *  blocking save-failure banner is already on screen, and `online`, a tab
+ *  coming back, or the user's next edit re-arm it. */
+const RETRY_MAX_PASSES_AT_CAP = 10;
 
 /** Every note whose LAST save attempt failed and whose edits the DB still
  *  does not hold. `_consecutiveSaveFailures` is written by the save path
@@ -92,6 +97,11 @@ export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconne
   let retryDelay = RETRY_BASE_DELAY_MS;
   let running = false;
   let disposed = false;
+  /** True from the first failure until the loop stops (clean, or parked). A
+   *  failure that arrives while the loop is NOT active is a new streak and
+   *  starts again at 1s — never at the cap the last streak left behind. */
+  let active = false;
+  let passesAtCap = 0;
 
   function arm(delay: number = retryDelay): void {
     if (disposed || retryTimer) return;
@@ -107,6 +117,8 @@ export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconne
     const ids = notesAwaitingRetry(state);
     if (ids.length === 0) {
       retryDelay = RETRY_BASE_DELAY_MS;
+      active = false;
+      passesAtCap = 0;
       return;
     }
     // Explicitly offline: do not spend a write. The `online` listener owns the
@@ -137,10 +149,25 @@ export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconne
     if (disposed) return;
     // Still failing → back off (1s, 2s, 4s … capped at 30s). Clean → stop.
     if (notesAwaitingRetry(storeApi.getState() as StateWithNotes).length > 0) {
+      if (retryDelay >= RETRY_MAX_DELAY_MS) passesAtCap += 1;
+      if (passesAtCap >= RETRY_MAX_PASSES_AT_CAP) {
+        // Parked, loudly: the write keeps failing for a reason a retry will
+        // not fix. The save-failure banner stays up; reconnect, a tab return
+        // or the next edit starts a fresh streak.
+        console.warn(
+          `[notes] Saving still failing after ${RETRY_MAX_PASSES_AT_CAP} retries at ${RETRY_MAX_DELAY_MS / 1000}s — pausing automatic retries until you reconnect, return to the tab, or edit again.`,
+        );
+        active = false;
+        passesAtCap = 0;
+        retryDelay = RETRY_BASE_DELAY_MS;
+        return;
+      }
       retryDelay = Math.min(retryDelay * 2, RETRY_MAX_DELAY_MS);
       arm(retryDelay);
     } else {
       retryDelay = RETRY_BASE_DELAY_MS;
+      active = false;
+      passesAtCap = 0;
     }
   }
 
@@ -153,7 +180,9 @@ export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconne
       retryTimer = null;
     }
     retryDelay = RETRY_BASE_DELAY_MS;
+    passesAtCap = 0;
     if (notesAwaitingRetry(storeApi.getState() as StateWithNotes).length === 0) return;
+    active = true;
     void runPass();
   }
 
@@ -167,7 +196,14 @@ export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconne
   }
 
   return {
-    arm: () => arm(),
+    arm: () => {
+      if (!active) {
+        retryDelay = RETRY_BASE_DELAY_MS;
+        passesAtCap = 0;
+      }
+      active = true;
+      arm();
+    },
     reset: () => {
       retryDelay = RETRY_BASE_DELAY_MS;
     },

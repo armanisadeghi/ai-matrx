@@ -60,7 +60,7 @@ import type {
   NoteUndoableField,
   SharedNotePermissionLevel,
 } from "./notes.types";
-import { NOTE_DELETED_DRAFT_REASON, captureNoteDrafts } from "../utils/notesDrafts";
+import { NOTE_DELETED_DRAFT_REASON, captureNoteDraftFor } from "../utils/notesDrafts";
 import { getNoteLiveContent } from "../utils/noteLiveContent";
 import {
   upsertNoteFromServer,
@@ -1272,7 +1272,7 @@ export function noteHasUnsavedEdits(
 function captureDraftsBeforeDelete(record: NoteRecord | undefined): void {
   if (!noteHasUnsavedEdits(record)) return;
   try {
-    captureNoteDrafts(NOTE_DELETED_DRAFT_REASON);
+    captureNoteDraftFor(record!.id, NOTE_DELETED_DRAFT_REASON);
   } catch {
     // A full/blocked localStorage must never stop a delete the user asked for.
   }
