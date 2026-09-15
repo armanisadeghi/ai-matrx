@@ -14,6 +14,21 @@ export type MapFacetValueInsert = Database["seo"]["Tables"]["map_facet_value"]["
 export type MapFacetValueUpdate = Database["seo"]["Tables"]["map_facet_value"]["Update"];
 export type MapTopicStats = Database["seo"]["Views"]["v_map_topic_stats"]["Row"];
 
+/**
+ * Where a topical-map list lands. The registry declares `default_list_scope =
+ * 'organization'` for seo_topical_map / seo_map_facet / seo_map_facet_value, so
+ * every list names its organization; a brand narrows further where the table
+ * carries `brand_id`.
+ */
+export interface TopicalMapListScope {
+  organizationId: string;
+  brandId?: string | null;
+}
+
+export interface MapFacetListScope {
+  organizationId: string;
+}
+
 export interface MapTopicTreeNode {
   slug: string;
   name: string;
@@ -24,11 +39,13 @@ export interface MapTopicTreeNode {
   children?: MapTopicTreeNode[];
 }
 
+/** Shape returned by seo.upsert_map_topics — each list holds topic slugs. */
 export interface MapTopicsUpsertResult {
-  created: Json[];
-  updated: Json[];
-  unchanged: Json[];
-  errors: Json[];
+  created: string[];
+  updated: string[];
+  unchanged: string[];
+  // Always []: the function raises SQLSTATE 22023 with every validation error instead of returning them.
+  errors: never[];
 }
 
 export interface MapOutlineOptions {
@@ -52,6 +69,7 @@ export interface MapGraphNodeData {
   auto_layout: boolean;
 }
 
+/** A topic (seo.map_topic id). `position` is the stored layout or {x:0,y:0}. */
 export interface MapGraphTopicNode {
   id: string;
   type: "topic";
@@ -59,25 +77,59 @@ export interface MapGraphTopicNode {
   data: MapGraphNodeData;
 }
 
+/** A facet value (seo.map_facet_value id). Emitted only when grouping; no position. */
 export interface MapGraphFacetValueNode {
   id: string;
   type: "facet_value";
-  position: { x: number; y: number };
-  data: Record<string, Json>;
+  data: {
+    slug: string;
+    name: string;
+    facet: string;
+    parent_id: string | null;
+    ref: Json;
+  };
 }
 
-export interface MapGraphEdge {
+/** The synthetic bucket for topics with no value for the grouped facet. Its id is not a uuid. */
+export interface MapGraphAllFacetValueNode {
+  id: "all";
+  type: "facet_value";
+  data: {
+    slug: "all";
+    name: "All";
+    facet: string;
+  };
+}
+
+export type MapGraphNode =
+  | MapGraphTopicNode
+  | MapGraphFacetValueNode
+  | MapGraphAllFacetValueNode;
+
+/** Parent topic → child topic. id is `${parentId}-${childId}`. */
+export interface MapGraphTreeEdge {
   id: string;
   source: string;
   target: string;
-  type: "tree" | "facet";
+  type: "tree";
 }
+
+/** Facet value (or "all") → topic. `inherited` is true when the value comes from an ancestor. */
+export interface MapGraphFacetEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: "facet";
+  inherited: boolean;
+}
+
+export type MapGraphEdge = MapGraphTreeEdge | MapGraphFacetEdge;
 
 export interface MapGraphResult {
   map_id: string;
   group_by: string | null;
   site_id: string | null;
-  nodes: Array<MapGraphTopicNode | MapGraphFacetValueNode>;
+  nodes: MapGraphNode[];
   edges: MapGraphEdge[];
 }
 
@@ -90,6 +142,9 @@ export interface PageMapTopicsInput {
   confidence: number;
   reason: string;
 }
+
+/** Allowed values of seo.set_page_map_topics p_source (the function raises 22023 otherwise). */
+export type PageMapTopicsSource = "mapper" | "human" | "agent";
 
 export interface CreateMapFacetValueInput {
   slug: string;

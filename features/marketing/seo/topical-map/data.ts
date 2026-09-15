@@ -2,11 +2,13 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData } from "@/utils/errors";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type { Json } from "@/types/database.types";
 import type {
   CreateMapFacetValueInput,
   MapFacet,
   MapFacetInsert,
+  MapFacetListScope,
   MapFacetUpdate,
   MapFacetValue,
   MapFacetValueInsert,
@@ -22,8 +24,10 @@ import type {
   MapTopicsUpsertResult,
   MapTopicFacetsResult,
   PageMapTopicsInput,
+  PageMapTopicsSource,
   TopicalMap,
   TopicalMapInsert,
+  TopicalMapListScope,
   TopicalMapUpdate,
 } from "./types";
 
@@ -34,12 +38,30 @@ async function seoDb() {
 
 const assertData = makeAssertData("read topical-map data");
 
-export async function listTopicalMaps(signal?: AbortSignal): Promise<TopicalMap[]> {
+type TopicalMapEntityToken =
+  | "seo_topical_map"
+  | "seo_map_topic"
+  | "seo_map_facet"
+  | "seo_map_facet_value";
+
+/** Soft delete through the canonical door (db-rules §8/§8a): stamps deleted_at so the row can be restored. */
+async function softDelete(token: TopicalMapEntityToken, id: string): Promise<void> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase.rpc("entity_soft_delete", { p_token: token, p_id: id });
+  const removed = assertData(response.data, response.error, "remove that record");
+  if (!removed) throw new Error(`Could not remove that record: it was not found or is already removed (${token} ${id}).`);
+}
+
+export async function listTopicalMaps(scope: TopicalMapListScope, signal?: AbortSignal): Promise<TopicalMap[]> {
   const db = await seoDb();
   return readAllRows<TopicalMap>(
-    ({ from, to }) => db.from("topical_map").select("*").is("deleted_at", null)
-      .order("name").order("id").range(from, to)
-      .abortSignal(signal ?? new AbortController().signal),
+    ({ from, to }) => {
+      let query = db.from("topical_map").select("*").eq("organization_id", scope.organizationId)
+        .is("deleted_at", null);
+      if (scope.brandId) query = query.eq("brand_id", scope.brandId);
+      return query.order("name").order("id").range(from, to)
+        .abortSignal(signal ?? new AbortController().signal);
+    },
     { label: "seo.topical_map" },
   );
 }
@@ -62,8 +84,7 @@ export async function updateTopicalMap(id: string, patch: TopicalMapUpdate): Pro
 }
 
 export async function deleteTopicalMap(id: string): Promise<void> {
-  const response = await (await seoDb()).from("topical_map").delete().eq("id", id).select("id");
-  assertData(response.data, response.error);
+  await softDelete("seo_topical_map", id);
 }
 
 export async function listMapTopics(mapId: string, signal?: AbortSignal): Promise<MapTopic[]> {
@@ -94,14 +115,16 @@ export async function updateMapTopic(id: string, patch: MapTopicUpdate): Promise
 }
 
 export async function deleteMapTopic(id: string): Promise<void> {
-  const response = await (await seoDb()).from("map_topic").delete().eq("id", id).select("id");
-  assertData(response.data, response.error);
+  await softDelete("seo_map_topic", id);
 }
 
-export async function listMapFacets(signal?: AbortSignal): Promise<MapFacet[]> {
+/** The organization's facets plus the builtins owned by the global system organization. */
+export async function listMapFacets(scope: MapFacetListScope, signal?: AbortSignal): Promise<MapFacet[]> {
   const db = await seoDb();
+  const systemOrgId = await resolveSystemOrgId();
   return readAllRows<MapFacet>(
     ({ from, to }) => db.from("map_facet").select("*")
+      .in("organization_id", [scope.organizationId, systemOrgId])
       .is("deleted_at", null).order("key").order("id").range(from, to)
       .abortSignal(signal ?? new AbortController().signal),
     { label: "seo.map_facet" },
@@ -124,15 +147,28 @@ export async function updateMapFacet(id: string, patch: MapFacetUpdate): Promise
 }
 
 export async function deleteMapFacet(id: string): Promise<void> {
-  const response = await (await seoDb()).from("map_facet").delete().eq("id", id).select("id");
-  assertData(response.data, response.error);
+  await softDelete("seo_map_facet", id);
 }
 
-export async function listMapFacetValues(facetId: string, signal?: AbortSignal): Promise<MapFacetValue[]> {
+/**
+ * Values visible to one brand, the same rule as seo._tm_visible_facet_values: the brand's own
+ * values, plus brand-less values owned by the organization or the global system organization.
+ * Without a brand, only the brand-less values.
+ */
+export async function listMapFacetValues(
+  facetId: string,
+  scope: TopicalMapListScope,
+  signal?: AbortSignal,
+): Promise<MapFacetValue[]> {
   const db = await seoDb();
+  const systemOrgId = await resolveSystemOrgId();
+  const orgs = `organization_id.in.(${scope.organizationId},${systemOrgId})`;
+  const visible = scope.brandId
+    ? `brand_id.eq.${scope.brandId},and(brand_id.is.null,${orgs})`
+    : `and(brand_id.is.null,${orgs})`;
   return readAllRows<MapFacetValue>(
     ({ from, to }) => db.from("map_facet_value").select("*").eq("facet_id", facetId)
-      .is("deleted_at", null).order("name").order("id").range(from, to)
+      .or(visible).is("deleted_at", null).order("name").order("id").range(from, to)
       .abortSignal(signal ?? new AbortController().signal),
     { label: "seo.map_facet_value" },
   );
@@ -154,8 +190,7 @@ export async function updateMapFacetValue(id: string, patch: MapFacetValueUpdate
 }
 
 export async function deleteMapFacetValue(id: string): Promise<void> {
-  const response = await (await seoDb()).from("map_facet_value").delete().eq("id", id).select("id");
-  assertData(response.data, response.error);
+  await softDelete("seo_map_facet_value", id);
 }
 
 export async function listMapTopicStats(mapId: string, siteId?: string): Promise<MapTopicStats[]> {
@@ -229,7 +264,7 @@ export async function siteMapId(siteId: string): Promise<string | null> {
   return assertData(response.data, response.error);
 }
 
-export async function setPageMapTopics(pageId: string, topics: PageMapTopicsInput[], source = "mapper"): Promise<MapMutationResult> {
+export async function setPageMapTopics(pageId: string, topics: PageMapTopicsInput[], source: PageMapTopicsSource = "mapper"): Promise<MapMutationResult> {
   const response = await (await seoDb()).rpc("set_page_map_topics", { p_page_id: pageId, p_topics: topics, p_source: source });
   return assertData(response.data as unknown as MapMutationResult, response.error);
 }

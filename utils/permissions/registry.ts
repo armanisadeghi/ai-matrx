@@ -973,6 +973,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/marketing/changes/{id}",
     rlsUsesHasPermission: false,
   },
+  seo_topical_map: {
+    resourceType: "seo_topical_map",
+    tableName: "topical_map",
+    schemaName: "seo",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Topical map",
+    urlPathTemplate: "/marketing/topical-maps/{id}",
+    rlsUsesHasPermission: true,
+  },
   seo_keyword: {
     resourceType: "seo_keyword",
     tableName: "keyword",
