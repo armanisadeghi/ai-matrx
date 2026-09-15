@@ -27,6 +27,8 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { getUsageStatusDirect } from "@/features/files/api/direct";
+import { fetchPlanStatus } from "@/features/entitlements/plan-service";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { StorageUsageResponse } from "@/features/files/types";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -66,8 +68,16 @@ export interface QuotaSummary {
   blockedReason: string | null;
   /** Human-readable tier name (e.g. "Free", "Pro"). */
   tierName: string;
-  /** Severity buckets driven off `fraction`. */
-  severity: "ok" | "warning" | "critical" | "blocked";
+  /**
+   * True when `files.user_storage_usage` holds no row for this user, so
+   * `bytes_used` is a synthesized zero rather than a measurement. The meter
+   * must say "usage being recalculated", never "0 of 5 GB".
+   */
+  unmeasured: boolean;
+  /** When the ledger row was last written, or null when there is none. */
+  measuredAt: string | null;
+  /** Severity buckets driven off `fraction`. `unmeasured` outranks `ok`. */
+  severity: "unmeasured" | "ok" | "warning" | "critical" | "blocked";
 }
 
 export interface UseStorageQuotaResult {
@@ -81,15 +91,23 @@ export interface UseStorageQuotaResult {
   refresh: () => Promise<void>;
 }
 
-function summarize(data: StorageUsageResponse): QuotaSummary {
+export function summarizeQuota(
+  data: StorageUsageResponse,
+  planName?: string | null,
+): QuotaSummary {
   const { bytes_used, max_storage_bytes, is_blocked, blocked_reason } = data;
+  const unmeasured = !data.ledger_measured;
+  // An unmeasured account has no usage number, so it has no fraction either —
+  // drawing a 0%-full bar would be the screen lying about a measurement
+  // nobody took.
   const fraction =
-    max_storage_bytes && max_storage_bytes > 0
-      ? Math.min(bytes_used / max_storage_bytes, 1)
-      : null;
+    unmeasured || !max_storage_bytes || max_storage_bytes <= 0
+      ? null
+      : Math.min(bytes_used / max_storage_bytes, 1);
   const percent = fraction === null ? null : Math.round(fraction * 100);
   let severity: QuotaSummary["severity"];
   if (is_blocked) severity = "blocked";
+  else if (unmeasured) severity = "unmeasured";
   else if (fraction === null) severity = "ok";
   else if (fraction >= 0.95) severity = "critical";
   else if (fraction >= 0.8) severity = "warning";
@@ -101,7 +119,12 @@ function summarize(data: StorageUsageResponse): QuotaSummary {
     percent,
     isBlocked: is_blocked,
     blockedReason: blocked_reason,
-    tierName: data.tier_name,
+    // D11: the plan is billing's answer, not files.account_tiers'. The tier
+    // name is the fallback only until the row is read, and it is never
+    // presented as the plan when billing has spoken.
+    tierName: planName ?? data.tier_name,
+    unmeasured,
+    measuredAt: data.ledger_measured_at,
     severity,
   };
 }
@@ -113,7 +136,32 @@ export function useStorageQuota(
   const userId = useAppSelector(selectUserId);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const authReady = useAppSelector(selectAuthReady);
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const active = enabled && authReady && isAuthenticated && !!userId;
+  // D11: storage limits and the plan behind them come from billing, metered to
+  // the organization. `files.account_tiers` is being retired; its `tier_name`
+  // is only what shows until billing answers. The answer is stamped with the
+  // organization it describes, so switching organizations shows no plan rather
+  // than the previous organization's plan.
+  const [plan, setPlan] = useState<{
+    organizationId: string;
+    name: string | null;
+  } | null>(null);
+  const planName =
+    plan && organizationId && plan.organizationId === organizationId
+      ? plan.name
+      : null;
+
+  useEffect(() => {
+    if (!active || !organizationId) return undefined;
+    let cancelled = false;
+    void fetchPlanStatus(organizationId).then((status) => {
+      if (!cancelled) setPlan({ organizationId, name: status?.plan?.name ?? null });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, organizationId]);
 
   const cachedForUser =
     userId && quotaCache?.userId === userId ? quotaCache.data : null;
@@ -168,7 +216,7 @@ export function useStorageQuota(
 
   return {
     data,
-    summary: data ? summarize(data) : null,
+    summary: data ? summarizeQuota(data, planName) : null,
     loading,
     error,
     refresh,

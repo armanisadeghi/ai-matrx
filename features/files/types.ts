@@ -1022,6 +1022,22 @@ export interface StorageUsageResponse {
   rate_limit_uploads_per_min: number | null;
   rate_limit_downloads_per_min: number | null;
   features: Record<string, unknown>;
+  /**
+   * TRUE when `files.user_storage_usage` actually holds a row for this user.
+   *
+   * `get_usage_status` synthesizes `{bytes_used: 0, files_count: 0, …}` when
+   * the ledger row is ABSENT, which on screen is indistinguishable from a
+   * genuinely empty account — so the UI would say "0 bytes of 5 GB" about an
+   * account whose usage nobody has measured. The flattener detects the
+   * synthesized shape (it carries no `user_id`) and says so here, and the
+   * meter renders "usage being recalculated" instead of a number it does not
+   * have. folder-sync SPEC-SERVER §8: metering only just landed on the
+   * standalone service, and FS-L6 still has to rebuild and re-grain the
+   * ledger — an unbuilt row is the expected state, not an error.
+   */
+  ledger_measured: boolean;
+  /** When the ledger row was last written, or null when there is no row. */
+  ledger_measured_at: string | null;
 }
 
 // ---------------------------------------------------------------------------
