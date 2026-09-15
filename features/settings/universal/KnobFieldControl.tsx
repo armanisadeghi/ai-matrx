@@ -433,7 +433,9 @@ function ModelField({
       aria-labelledby={labelId}
       value={value}
       onValueChange={(next) => {
-        if (next) void onCommit(next);
+        // A rendered runtime default is already the effective choice. Picking
+        // that same catalog row must not materialize a redundant user override.
+        if (next && next !== value) void onCommit(next);
       }}
       inputModalities={[]}
       outputModalities={["text"]}
