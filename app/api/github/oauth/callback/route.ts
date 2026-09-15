@@ -23,8 +23,19 @@ function errorRedirect(
   return NextResponse.redirect(url);
 }
 
+function refreshNoticeRedirect(request: NextRequest) {
+  const url = new URL("/api/github/oauth/complete", requestBaseUrl(request));
+  url.searchParams.set("return_url", "/code");
+  url.searchParams.set("github_notice", "refresh");
+  return NextResponse.redirect(url);
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const cookieStore = await cookies();
+  const returnedState = request.nextUrl.searchParams.get("state");
+  // GitHub's installation settings may return here without joining an OAuth
+  // transaction. It proves neither an update nor the caller's identity.
+  if (!returnedState) return refreshNoticeRedirect(request);
   const rawSession = cookieStore.get(GITHUB_OAUTH_COOKIE)?.value;
   cookieStore.delete(GITHUB_OAUTH_COOKIE);
   const oauthSession = rawSession ? parseGitHubOAuthSession(rawSession) : null;
@@ -38,8 +49,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const code = request.nextUrl.searchParams.get("code");
   const providerError = request.nextUrl.searchParams.get("error");
-  const returnedState = request.nextUrl.searchParams.get("state");
-  if (!returnedState || returnedState !== oauthSession.state) {
+  if (returnedState !== oauthSession.state) {
     return errorRedirect(
       request,
       oauthSession.returnUrl,

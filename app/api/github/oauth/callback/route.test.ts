@@ -74,4 +74,13 @@ describe("GitHub OAuth callback lifecycle", () => {
     expect(global.fetch).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toContain("github_error=");
   });
+
+  it("preserves a pending OAuth cookie and emits no success for a no-state return", async () => {
+    const response = await GET(request());
+    expect(cookie.get).not.toHaveBeenCalled();
+    expect(cookie.delete).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(response.headers.get("location")).toContain("github_notice=refresh");
+    expect(response.headers.get("location")).not.toContain("github=connected");
+  });
 });
