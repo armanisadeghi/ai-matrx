@@ -1029,7 +1029,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Topical map",
-    "url_path_template": "/marketing/topical-maps/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },

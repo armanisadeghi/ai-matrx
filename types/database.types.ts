@@ -28918,6 +28918,10 @@ export type Database = {
       }
     }
     Functions: {
+      assert_safe_file_name: {
+        Args: { p_max_segment?: number; p_raw: string }
+        Returns: string
+      }
       crawl_site_conveys: {
         Args: { p_file_id: string; p_user_id: string }
         Returns: boolean
@@ -57998,6 +58002,30 @@ export type Database = {
           },
         ]
       }
+      _oauth_handoff_claim: {
+        Row: {
+          callback_origin: string
+          claimed_at: string
+          expires_at: string
+          handoff_hash: string
+          oauth_client_id: string
+        }
+        Insert: {
+          callback_origin: string
+          claimed_at?: string
+          expires_at: string
+          handoff_hash: string
+          oauth_client_id: string
+        }
+        Update: {
+          callback_origin?: string
+          claimed_at?: string
+          expires_at?: string
+          handoff_hash?: string
+          oauth_client_id?: string
+        }
+        Relationships: []
+      }
       _policy_overlap_backup: {
         Row: {
           check_expr: string | null
@@ -63933,6 +63961,36 @@ export type Database = {
           },
         ]
       }
+      stamped_write_table: {
+        Row: {
+          declared_at: string
+          declared_by: string
+          reason: string
+          rls_variant: string
+          schema_name: string
+          stamp_column: string
+          table_name: string
+        }
+        Insert: {
+          declared_at?: string
+          declared_by: string
+          reason: string
+          rls_variant: string
+          schema_name: string
+          stamp_column: string
+          table_name: string
+        }
+        Update: {
+          declared_at?: string
+          declared_by?: string
+          reason?: string
+          rls_variant?: string
+          schema_name?: string
+          stamp_column?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       taxonomy_node: {
         Row: {
           anchors: Json
@@ -64892,6 +64950,15 @@ export type Database = {
       cf_re_url: { Args: never; Returns: string }
       cf_utf8_byte_length: { Args: { p_text: string }; Returns: number }
       cf_ws_class: { Args: never; Returns: string }
+      claim_oauth_handoff_hash: {
+        Args: {
+          p_callback_origin: string
+          p_expires_at: string
+          p_handoff_hash: string
+          p_oauth_client_id: string
+        }
+        Returns: boolean
+      }
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
@@ -65677,6 +65744,10 @@ export type Database = {
       }
       resolve_custom_references: {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
+        Returns: Json
+      }
+      resolve_entity_ref: {
+        Args: { p_id: string; p_type: string }
         Returns: Json
       }
       resolve_retention_policy: {
@@ -74927,26 +74998,48 @@ export type Database = {
         }
         Returns: undefined
       }
-      provision_mcp_server: {
-        Args: {
-          p_auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
-          p_category: Database["public"]["Enums"]["mcp_server_category"]
-          p_color?: string
-          p_description?: string
-          p_docs_url?: string
-          p_endpoint_url?: string
-          p_icon_url?: string
-          p_is_official?: boolean
-          p_name: string
-          p_oauth_scopes?: string[]
-          p_slug: string
-          p_status?: Database["public"]["Enums"]["mcp_server_status"]
-          p_transport: Database["public"]["Enums"]["mcp_transport"]
-          p_vendor: string
-          p_website_url?: string
-        }
-        Returns: Json
-      }
+      provision_mcp_server:
+        | {
+            Args: {
+              p_auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
+              p_category: Database["public"]["Enums"]["mcp_server_category"]
+              p_color?: string
+              p_description?: string
+              p_docs_url?: string
+              p_endpoint_url?: string
+              p_icon_url?: string
+              p_is_official?: boolean
+              p_name: string
+              p_oauth_scopes?: string[]
+              p_slug: string
+              p_status?: Database["public"]["Enums"]["mcp_server_status"]
+              p_transport: Database["public"]["Enums"]["mcp_transport"]
+              p_vendor: string
+              p_website_url?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
+              p_category: Database["public"]["Enums"]["mcp_server_category"]
+              p_color?: string
+              p_description?: string
+              p_docs_url?: string
+              p_endpoint_url?: string
+              p_icon_url?: string
+              p_is_official?: boolean
+              p_name: string
+              p_oauth_scopes?: string[]
+              p_organization_id: string
+              p_slug: string
+              p_status?: Database["public"]["Enums"]["mcp_server_status"]
+              p_transport: Database["public"]["Enums"]["mcp_transport"]
+              p_vendor: string
+              p_website_url?: string
+            }
+            Returns: Json
+          }
       prune_high_volume_logs: { Args: never; Returns: undefined }
       prune_old_versions: {
         Args: { p_file_id: string; p_keep: number }
@@ -88896,7 +88989,10 @@ export type Database = {
         }[]
       }
       _slugify: { Args: { p: string }; Returns: string }
+      _tm_attachments: { Args: { p_topic_id: string }; Returns: Json }
       _tm_cut: { Args: { p_max: number; p_text: string }; Returns: string }
+      _tm_item: { Args: { p_id: string; p_type: string }; Returns: Json }
+      _tm_kind_alias: { Args: { p_kind: string }; Returns: string }
       _tm_knob: {
         Args: {
           p_brand: string
@@ -88917,16 +89013,21 @@ export type Database = {
         }
         Returns: number
       }
-      _tm_load_topics: {
-        Args: { p_map_id: string; p_site_id: string }
-        Returns: undefined
-      }
       _tm_map: {
         Args: {
           p_level: Database["public"]["Enums"]["permission_level"]
           p_map_id: string
         }
         Returns: Record<string, unknown>
+      }
+      _tm_remove_topics: {
+        Args: {
+          p_ids: string[]
+          p_lift_children: boolean
+          p_map_id: string
+          p_policy: string
+        }
+        Returns: Json
       }
       _tm_topic_facets_all: {
         Args: { p_map_id: string }
@@ -88942,6 +89043,21 @@ export type Database = {
       _tm_topic_id: {
         Args: { p_map_id: string; p_slug: string }
         Returns: string
+      }
+      _tm_topics: {
+        Args: { p_map_id: string; p_site_id: string }
+        Returns: Json
+      }
+      _tm_tree_node: {
+        Args: {
+          p_depth: number
+          p_facets: Json
+          p_id: string
+          p_include: string[]
+          p_map_id: string
+          p_topics: Json
+        }
+        Returns: Json
       }
       _tm_visible_facet_values: {
         Args: { p_brand: string; p_org: string }
@@ -91178,6 +91294,11 @@ export type Database = {
           value_source: string
         }[]
       }
+      map_diagnostics: {
+        Args: { p_limit?: number; p_map_id: string; p_site_id?: string }
+        Returns: Json
+      }
+      map_dry_run: { Args: { p_args: Json; p_function: string }; Returns: Json }
       map_facet_value_ref: { Args: { p_value_id: string }; Returns: Json }
       map_graph: {
         Args: { p_group_by?: string; p_map_id: string; p_site_id?: string }
@@ -91192,8 +91313,22 @@ export type Database = {
         }
         Returns: string
       }
+      map_topic_associations: {
+        Args: { p_kinds?: string[]; p_map_id: string; p_slug: string }
+        Returns: Json
+      }
       map_topic_facets: {
         Args: { p_map_id: string; p_slug: string }
+        Returns: Json
+      }
+      map_tree: {
+        Args: {
+          p_depth?: number
+          p_include?: string[]
+          p_map_id: string
+          p_root_slug?: string
+          p_site_id?: string
+        }
         Returns: Json
       }
       matcher_match_review: {
@@ -91222,6 +91357,10 @@ export type Database = {
       multi_location_knob: {
         Args: { p_default: number; p_key: string }
         Returns: number
+      }
+      patch_map_topics: {
+        Args: { p_edits: Json; p_map_id: string }
+        Returns: Json
       }
       platform_default_rule_delete: {
         Args: { p_id: string }
@@ -91315,6 +91454,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      replace_map_section: {
+        Args: {
+          p_children: Json
+          p_map_id: string
+          p_on_removed?: string
+          p_parent_slug: string
+        }
+        Returns: Json
+      }
+      retire_map_topics: {
+        Args: {
+          p_lift_children?: boolean
+          p_map_id: string
+          p_on_attachments?: string
+          p_slugs: string[]
+        }
+        Returns: Json
+      }
+      search_map_topics: {
+        Args: { p_limit?: number; p_map_id: string; p_query: string }
+        Returns: Json
+      }
       set_ai_autonomy: {
         Args: {
           p_capability?: string
@@ -91341,6 +91502,10 @@ export type Database = {
       }
       set_page_map_topics: {
         Args: { p_page_id: string; p_source?: string; p_topics: Json }
+        Returns: Json
+      }
+      set_pages_map_topics: {
+        Args: { p_items: Json; p_site_id: string; p_source?: string }
         Returns: Json
       }
       set_site_map: {
@@ -91974,7 +92139,44 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      tm_facet: {
+        topic_id: string | null
+        facet_key: string | null
+        value_id: string | null
+        value_slug: string | null
+        value_name: string | null
+        inherited: boolean | null
+      }
+      tm_in: {
+        ord: number | null
+        slug: string | null
+        parent_slug: string | null
+        name: string | null
+        description: string | null
+        sort_order: number | null
+        status: string | null
+      }
+      tm_sel: {
+        id: string | null
+        why: string | null
+        dist: number | null
+      }
+      tm_topic: {
+        id: string | null
+        parent_id: string | null
+        slug: string | null
+        name: string | null
+        description: string | null
+        status: string | null
+        sort_order: number | null
+        depth: number | null
+        path: string[] | null
+        spath: string[] | null
+        page_count: number | null
+        planned_count: number | null
+        keyword_count: number | null
+        layout: Json | null
+      }
     }
   }
   skill: {

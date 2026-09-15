@@ -39,13 +39,67 @@ export interface MapTopicTreeNode {
   children?: MapTopicTreeNode[];
 }
 
-/** Shape returned by seo.upsert_map_topics — each list holds topic slugs. */
+/**
+ * Shape returned by seo.upsert_map_topics — each list holds topic slugs.
+ *
+ * There is no `errors` key. The function is all-or-nothing: it raises SQLSTATE
+ * 22023 carrying the whole error list instead of returning a partial success.
+ */
 export interface MapTopicsUpsertResult {
   created: string[];
   updated: string[];
   unchanged: string[];
-  // Always []: the function raises SQLSTATE 22023 with every validation error instead of returning them.
-  errors: never[];
+}
+
+/**
+ * `platform.resolve_entity_ref` — the one shape every entity reference in this
+ * schema resolves to. Access is checked BEFORE existence, so a caller who
+ * cannot see the row is told `forbidden`, never whether it exists.
+ *
+ * The resolved variant is `jsonb_strip_nulls`ed, so every optional key is
+ * simply absent when the underlying row has no value for it.
+ */
+export type EntityRefUnregistered = { type: string; id: string; unregistered: true };
+export type EntityRefForbidden = { type: string; id: string; forbidden: true };
+export type EntityRefMissing = { type: string; id: string; missing: true };
+
+export interface EntityRefResolved {
+  type: string;
+  id: string;
+  /** name / title / label / phrase / url / slug / key, first non-null wins. */
+  label?: string;
+  slug?: string;
+  url?: string;
+  status?: string;
+  country_code?: string;
+  region_code?: string;
+  region?: string;
+  city?: string;
+}
+
+export type EntityRef =
+  | EntityRefUnregistered
+  | EntityRefForbidden
+  | EntityRefMissing
+  | EntityRefResolved;
+
+/** Narrows an {@link EntityRef} to the variant that actually carries row data. */
+export function isResolvedEntityRef(ref: EntityRef | null): ref is EntityRefResolved {
+  if (!ref) return false;
+  return !("unregistered" in ref) && !("forbidden" in ref) && !("missing" in ref);
+}
+
+/**
+ * What still hangs off a topic, from seo._tm_attachments. Nulls are stripped,
+ * so a kind with nothing attached is absent rather than 0, and `{}` means the
+ * topic is free to retire.
+ */
+export interface MapTopicAttachments {
+  pages?: number;
+  planned?: number;
+  keywords?: number;
+  facets?: number;
+  other?: number;
 }
 
 export interface MapOutlineOptions {
@@ -158,7 +212,273 @@ export interface MapFacetTopicValue {
   value_slug: string;
   value_name: string;
   inherited: boolean;
-  ref: Json;
+  /** `seo.map_facet_value_ref` — null when the value names no entity. */
+  ref: EntityRef | null;
 }
 
 export type MapTopicFacetsResult = Record<string, MapFacetTopicValue>;
+
+/** Result of seo.merge_map_topics. */
+export interface MapMergeResult {
+  ok: true;
+  into: string;
+  retired: string[];
+  associations_moved: number;
+  associations_dropped_as_duplicate: number;
+  planned_pages_moved: number;
+  keywords_moved: number;
+  children_reparented: number;
+  /**
+   * Rows another organization filed under the merged topics. They are neither
+   * moved nor dropped — only counted, so the caller can say so out loud.
+   */
+  foreign_org_attachments: number;
+}
+
+/** One topic in the `seo.map_tree` payload. Every key past slug/name is opt-in via `include`. */
+export interface MapTreeNode {
+  slug: string;
+  name: string;
+  /** `include: ["description"]`. */
+  description?: string | null;
+  /** `include: ["status"]`, and always present when the status is not `active`. */
+  status?: string;
+  /** `include: ["counts"]` — all three arrive together. */
+  pages?: number;
+  planned?: number;
+  keywords?: number;
+  /** `include: ["path"]` — root-first slugs ending with this topic. */
+  path?: string[];
+  /** `include: ["facets"]` — facet key → value slug, inherited values included. */
+  facets?: Record<string, string>;
+  /**
+   * `include: ["associations"]` for everything, or any association kind
+   * (`pages`, `facets`, `keywords`, `planned`, or a raw entity token) to narrow.
+   */
+  associations?: MapTopicAssociation[];
+  /** Present when the topic has children and `depth` has not run out. */
+  children?: MapTreeNode[];
+  /** Present INSTEAD of `children` when `depth` stopped the walk here. */
+  children_count?: number;
+}
+
+/** `seo.map_tree` called with a `rootSlug`: one subtree. */
+export interface MapTreeRootedResult {
+  map_id: string;
+  root: string;
+  topic: MapTreeNode;
+}
+
+/** `seo.map_tree` called without a `rootSlug`: every root topic. */
+export interface MapTreeWholeResult {
+  map_id: string;
+  root: null;
+  topics: MapTreeNode[];
+  total_topics: number;
+}
+
+export type MapTreeResult = MapTreeRootedResult | MapTreeWholeResult;
+
+/** Narrows {@link MapTreeResult} by the `root` discriminant. */
+export function isRootedMapTree(result: MapTreeResult): result is MapTreeRootedResult {
+  return result.root !== null;
+}
+
+/** One edge off a topic, from seo.map_topic_associations. */
+export interface MapTopicAssociation {
+  /** The topic slug the edge was read from. */
+  topic: string;
+  /** `jsonb_strip_nulls`ed: `role` and `payload` are absent when null. */
+  association: {
+    /** The other end's entity token (`web_page`, `seo_map_facet_value`, `plan_node`, `seo_keyword`, …). */
+    kind: string;
+    role?: string;
+    direction: "in" | "out";
+    payload?: Json;
+  };
+  /**
+   * The other end, resolved. Facet values carry two extra keys naming the facet
+   * and whatever entity the value itself points at.
+   */
+  item: EntityRef & { facet?: string; ref?: EntityRef | null };
+}
+
+/** One entry in `seo.search_map_topics`. */
+export interface MapTopicSearchHit {
+  slug: string;
+  name: string;
+  status: string;
+  /** Root-first slugs ending with this topic. */
+  path: string[];
+}
+
+export interface MapDiagnosticsCrowdedTopic {
+  slug: string;
+  pages: number;
+}
+
+export interface MapDiagnosticsPageRef {
+  page_id: string;
+  url: string;
+}
+
+export interface MapDiagnosticsOverloadedPage extends MapDiagnosticsPageRef {
+  /** How many topics this page claims to cover (only pages with 3 or more appear). */
+  topics: number;
+}
+
+export interface MapDiagnosticsRetiredTopic {
+  slug: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of seo.map_diagnostics. Every sample list is capped by `limit`. */
+export interface MapDiagnosticsResult {
+  topics_total: number;
+  /** Topics with no pages, no planned pages and no keywords. */
+  topics_empty: number;
+  topics_empty_sample: string[];
+  topics_crowded: MapDiagnosticsCrowdedTopic[];
+  topics_proposed: string[];
+  pages_on_many_topics: MapDiagnosticsOverloadedPage[];
+  /** 0 when no site is in scope — the count only means something per site. */
+  pages_on_no_topic: number;
+  pages_on_no_topic_sample: MapDiagnosticsPageRef[];
+  /** Retired topics that still carry attachments. */
+  retired_with_attachments: MapDiagnosticsRetiredTopic[];
+  /** seo.topical_map ids of the sites using this map. */
+  sites_using_map: string[];
+}
+
+/** One edit in seo.patch_map_topics. Only the keys present are touched. */
+export interface MapTopicPatch {
+  /** Which topic to edit. Required. */
+  slug: string;
+  name?: string;
+  description?: string | null;
+  status?: MapTopicStatus;
+  sort_order?: number;
+  /** Rename: must match `^[a-z0-9]+(-[a-z0-9]+)*$`. */
+  new_slug?: string;
+  /** null moves the topic to the root. */
+  parent_slug?: string | null;
+}
+
+export type MapTopicStatus = "proposed" | "active" | "retired";
+
+/** One rejected edit. `slug` is whatever the caller sent, so it can be null. */
+export interface MapTopicPatchError {
+  slug: string | null;
+  message: string;
+}
+
+/**
+ * Result of seo.patch_map_topics. Unlike upsert, this one is per-edit: a bad
+ * edit lands in `errors` and the rest still apply.
+ */
+export interface MapTopicsPatchResult {
+  updated: string[];
+  unchanged: string[];
+  errors: MapTopicPatchError[];
+}
+
+/**
+ * What to do with a topic that is being removed while attachments still hang
+ * off it. `merge_into:<slug>` moves them onto that topic.
+ */
+export type MapTopicRemovalPolicy =
+  | "error"
+  | "retire"
+  | "parent"
+  | `merge_into:${string}`;
+
+/** One line of the removal report from seo._tm_remove_topics. */
+export interface MapTopicRemoval {
+  slug: string;
+  /**
+   * `retired` (nothing was attached), `retired_with_attachments`,
+   * `attachments_moved_to_parent`, or `attachments_merged_into_<slug>`.
+   */
+  action: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of seo.replace_map_section: the upsert's own report plus what left. */
+export interface MapSectionReplaceResult extends MapTopicsUpsertResult {
+  /** Slugs that lived elsewhere in the map and were moved into this section. */
+  moved_in: string[];
+  /** Topics that vanished from the section, and what happened to each. */
+  removed: MapTopicRemoval[];
+}
+
+/** Result of seo.retire_map_topics. */
+export interface MapTopicsRetireResult {
+  ok: true;
+  removed: MapTopicRemoval[];
+}
+
+export interface SetPagesMapTopicsItem {
+  /** Name the page by id or by url; id wins when both are given. */
+  page_id?: string;
+  url?: string;
+  topics?: PageMapTopicsInput[];
+}
+
+/** One page that was mapped. Carries seo.set_page_map_topics' own report. */
+export interface SetPagesMapTopicsSuccess {
+  ok: true;
+  page_id: string;
+  /** Echoed from the item; null when the page was named by id. */
+  url: string | null;
+  map_id: string;
+  covers: number;
+  /** How many coverage rows from the same `source` were replaced. */
+  replaced: number;
+  unknown_slugs: string[];
+}
+
+/** One page that could not be mapped. The batch keeps going. */
+export interface SetPagesMapTopicsFailure {
+  ok: false;
+  page_id: string | null;
+  url: string | null;
+  /** SQLERRM from the failed page — a message, never a code. */
+  error: string;
+}
+
+export type SetPagesMapTopicsRow = SetPagesMapTopicsSuccess | SetPagesMapTopicsFailure;
+
+/** Result of seo.set_pages_map_topics. `ok` is true only when nothing failed. */
+export interface SetPagesMapTopicsResult {
+  ok: boolean;
+  mapped: number;
+  failed: number;
+  results: SetPagesMapTopicsRow[];
+}
+
+/** The functions seo.map_dry_run will rehearse. Anything else raises 22023. */
+export type MapDryRunFunction =
+  | "upsert_map_topics"
+  | "replace_map_section"
+  | "patch_map_topics"
+  | "move_map_topic"
+  | "merge_map_topics"
+  | "split_map_topic"
+  | "retire_map_topics"
+  | "set_map_topic_facet"
+  | "set_page_map_topics"
+  | "set_pages_map_topics"
+  | "create_map_facet_values"
+  | "set_site_map"
+  | "set_page_map_facet";
+
+/**
+ * Result of seo.map_dry_run. `would_return` is exactly what the rehearsed
+ * function returned before the rollback, so narrow it to that function's own
+ * result type at the call site.
+ */
+export interface MapDryRunResult {
+  dry_run: true;
+  function: MapDryRunFunction;
+  would_return: Json;
+}
