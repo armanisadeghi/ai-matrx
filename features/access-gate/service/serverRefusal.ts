@@ -22,7 +22,11 @@
  * are not refusals at all, so a genuine fault keeps its retry.
  */
 
-import { describeDoorRefusal, doorBody } from "@/lib/api/door-refusal";
+import {
+  describeDoorRefusal,
+  doorBody,
+  isBareTransportCode,
+} from "@/lib/api/door-refusal";
 
 export interface ServerRefusal {
   /** The server's machine code — `conversation_not_found`, `forbidden`, … */
@@ -33,6 +37,19 @@ export interface ServerRefusal {
   issues: string[];
   /** HTTP status, when the error carried one. */
   status: number | null;
+}
+
+/**
+ * A sentence that blames the reader for the server's own refusal is never
+ * printed — the same rule `lib/api/door-refusal.ts` holds for door bodies.
+ */
+const BLAMES_THE_READER = /check your input/i;
+
+/** Naming the silence, with the code that identifies it. Never a reason we invented. */
+function silentRefusalSentence(code: string | null): string {
+  return code
+    ? `The server refused this and sent no explanation (${code}).`
+    : "The server refused this and sent no explanation.";
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -73,11 +90,7 @@ export function readServerRefusal(error: unknown): ServerRefusal | null {
     },
     // Only reached when the body carried a code but no sentence. Naming the
     // silence is the honest move — never inventing a reason for it.
-    {
-      fallback: code
-        ? `The server refused this and sent no explanation (${code}).`
-        : "The server refused this and sent no explanation.",
-    },
+    { fallback: silentRefusalSentence(code) },
   );
 
   return {
@@ -85,5 +98,44 @@ export function readServerRefusal(error: unknown): ServerRefusal | null {
     message: described.message,
     issues: described.issues,
     status,
+  };
+}
+
+/**
+ * The same refusal, read off an error that is ALREADY typed by its own client
+ * — `@ai-matrx/associations`' `{code, message, hint}`, and anything shaped
+ * like it. Kept beside `readServerRefusal` so there is still ONE place that
+ * decides how a server refusal reads; what differs is only where the code and
+ * the sentence were found.
+ *
+ * Deliberately a separate entrance rather than widening `readServerRefusal`:
+ * a raw PostgREST error is also `{code, message}`, and printing `PGRST116` or
+ * an RLS message verbatim at a person is the opposite of what this feature is
+ * for. A caller that holds a typed refusal says so.
+ */
+export function readTypedRefusal(error: unknown): ServerRefusal | null {
+  if (!isRecord(error)) return null;
+  const code = str(error.code) || null;
+  // 🚨 READ THE TOP LEVEL, NEVER `detail`. A typed client's `detail` carries
+  // the RAW cause it mapped FROM — for `@ai-matrx/associations` that is the
+  // PostgREST body, whose code is `42501` and whose sentence is
+  // "assoc_add: editor access to both endpoints is required for an
+  // access-conveying edge". Both are machine text: the code a person would
+  // report is the mapped one (`forbidden_org`), and pg prose must never reach
+  // a screen. Going through `doorBody` unwrapped exactly that and printed it
+  // (caught by this module's own test, 2026-09-15).
+  const message = str(error.user_message) || str(error.message);
+  if (!code && !message) return null;
+
+  const usable =
+    message.length > 0 &&
+    !BLAMES_THE_READER.test(message) &&
+    !isBareTransportCode(message);
+
+  return {
+    code,
+    message: usable ? message : silentRefusalSentence(code),
+    issues: [],
+    status: typeof error.status === "number" ? error.status : null,
   };
 }

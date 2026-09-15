@@ -56,6 +56,9 @@ import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { readTypedRefusal } from "@/features/access-gate/service/serverRefusal";
+import { decideHomeAttachRetry } from "../homeAttach";
+import { createClient } from "@/utils/supabase/client";
 import { createAssignment } from "@/features/war-room/service/associations";
 import { roomRef } from "@/features/war-room/types";
 import { useUser } from "@/lib/hooks/useUser";
@@ -87,17 +90,29 @@ const HOME_ATTACH_ATTEMPTS = 4;
 const HOME_ATTACH_DELAY_MS = 600;
 
 /**
- * The ONE retryable failure: the edge was written before the server committed
- * the conversation row, so the RPC's `iam.has_access` check saw nothing to
- * authorize. Everything else is permanent and must surface immediately.
+ * Is the run's conversation row readable by this caller YET?
+ *
+ * THE TRANSIENT CAUSE, OBSERVED. `assoc_add` answers every access refusal with
+ * the same code and the same sentence whether the row is a moment away or
+ * belongs to somebody else (measured on production — see `../homeAttach`), so
+ * the retry decision cannot come from the error. It comes from here.
+ *
+ * A read that itself fails answers `false`: not knowing is not evidence that
+ * the refusal was final, and the attempt budget bounds the loop anyway.
  */
-function isConversationNotReadyYet(message: string): boolean {
-  const lowered = message.toLowerCase();
-  return (
-    lowered.includes("access") ||
-    lowered.includes("not authorized") ||
-    lowered.includes("not found")
-  );
+async function conversationIsReadable(conversationId: string): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .schema("chat")
+      .from("conversation")
+      .select("id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    return Boolean(data);
+  } catch {
+    return false;
+  }
 }
 
 export interface AiWorkComposerProps {
@@ -267,6 +282,8 @@ function ComposerBody({
   const attachHomes = async (runConversationId: string) => {
     for (const home of homes) {
       let attached = false;
+      /** The server's own refusal, in its own words. Never re-worded here. */
+      let refusal: ReturnType<typeof readTypedRefusal> = null;
       let lastError = "";
       for (let attempt = 0; attempt < HOME_ATTACH_ATTEMPTS; attempt += 1) {
         try {
@@ -289,12 +306,20 @@ function ComposerBody({
             attached = true;
             break;
           }
+          refusal = readTypedRefusal(result.error);
           lastError = result.error.message;
-          if (!isConversationNotReadyYet(lastError)) break;
         } catch (error) {
+          refusal = readTypedRefusal(error);
           lastError = error instanceof Error ? error.message : String(error);
-          if (!isConversationNotReadyYet(lastError)) break;
         }
+        // RETRY ONLY THE RACE, and only while it is still a race. The refusal
+        // is identical for "the row is a moment away" and "that is not yours",
+        // so the cause is observed instead of guessed at.
+        const decision = decideHomeAttachRetry(
+          refusal,
+          await conversationIsReadable(runConversationId),
+        );
+        if (decision === "stop") break;
         await new Promise((resolve) =>
           setTimeout(resolve, HOME_ATTACH_DELAY_MS),
         );
@@ -302,9 +327,14 @@ function ComposerBody({
       if (!attached) {
         console.error(
           `[ai-work/new] could not file the run under ${home.token} ${home.id}: ${lastError}`,
+          refusal?.code ?? "",
         );
+        // The server's sentence, verbatim, plus the code that makes it
+        // reportable — and a next step that does not promise a retry.
         toast.error(
-          `The run started, but it could not be filed under "${home.label}". Open the conversation and add it there.`,
+          refusal
+            ? `The run started, but it could not be filed under "${home.label}": ${refusal.message}${refusal.code ? ` (${refusal.code})` : ""}. Open the conversation and add it there.`
+            : `The run started, but it could not be filed under "${home.label}". Open the conversation and add it there.`,
         );
       }
     }
