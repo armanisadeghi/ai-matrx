@@ -60,6 +60,7 @@ import {
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
+import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
 
 /** Server-processed block from the content_block protocol. */
@@ -382,6 +383,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
   applyLocalEdits = true,
 }) => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  // One schema resolution per rendered assistant message; all child blocks
+  // receive the settled result and never issue their own cold-load reads.
+  const outputSchema = useBoundAgentOutputSchema(conversationId);
   const [editedContent, setEditedContent] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
@@ -930,6 +934,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             isLastReasoningBlock={isLastReasoning}
             replaceBlockContent={replaceBlockContent}
             handleOpenEditor={handleOpenEditor}
+            outputSchema={outputSchema}
           />
         );
       } catch (error) {
@@ -952,7 +957,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
       blockKey,
       isStreamActive,
       onContentChange,
+      conversationId,
       messageId,
+      requestId,
       taskId,
       replaceBlockContent,
       handleOpenEditor,

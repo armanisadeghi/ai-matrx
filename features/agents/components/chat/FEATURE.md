@@ -16,7 +16,7 @@
 
 The user-facing chat surface: pick an agent, start a conversation, stream a reply, browse history. Chat is an agent **runner** where the "agent" is chosen from the user's own / system / community agents. It is the consume end of Build → Test → Consume.
 
-**Schema-bound JSON answers:** The shared JSON-code floor may render a complete assistant object as readable prose only when the conversation-bound agent's declared `output_schema` contains every payload key. It reuses the canonical agent selector and cached `fetchAgentOutputSchemas` read on cold reload; missing/loading contracts, arrays/scalars, incomplete JSON, unknown keys, and `__kind` payloads remain on their existing JSON/kind paths. `answer`/summary/text/message renders through the normal markdown renderer; status, next steps, arrays, and unclaimed Details stay readable without adding chat chrome.
+**Schema-bound JSON answers:** The shared JSON-code floor may render a complete assistant object as readable prose only when the conversation-bound agent's declared `output_schema` contains every payload key. It resolves the contract once per rendered message through the canonical selector and cached `fetchAgentOutputSchemas` read; missing/loading contracts, arrays/scalars, incomplete JSON, unknown keys, and `__kind` payloads remain on their existing JSON/kind paths. `answer`/summary/text/message renders through the normal markdown renderer; status, next steps, arrays, and complete raw JSON behind Details stay readable without adding chat chrome.
 
 ---
 

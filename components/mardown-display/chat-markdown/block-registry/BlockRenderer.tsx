@@ -7,7 +7,6 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import {
   selectHideReasoning,
   selectHideToolResults,
@@ -72,6 +71,7 @@ interface BlockRendererProps {
    * provisional value. Never set by an ordinary caller.
    */
   suppressLoadingGate?: boolean;
+  outputSchema?: unknown | null;
 }
 
 /**
@@ -247,6 +247,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
   suppressLoadingGate = false,
+  outputSchema = null,
 }) => {
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
@@ -319,9 +320,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const hideToolResults = useAppSelector(
     conversationId ? selectHideToolResults(conversationId) : () => false,
   );
-  // Until the canonical cached contract read resolves, the JSON floor fails
-  // closed to JsonBlock.
-  const outputSchema = useBoundAgentOutputSchema(conversationId);
 
   /**
    * RECORD CHROME (THE WRAPPER LAW's other half). A kind component renders
@@ -461,6 +459,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             replaceBlockContent={replaceBlockContent}
             handleOpenEditor={handleOpenEditor}
             suppressLoadingGate
+            outputSchema={outputSchema}
           />
         </ProvisionalKindFrame>
       </ProvisionalKindBoundary>

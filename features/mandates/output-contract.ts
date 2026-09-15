@@ -63,10 +63,16 @@ export function missingOutputKeys(
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; value: unknown }>();
+const inFlight = new Map<string, Promise<unknown | null>>();
 
 export function invalidateOutputSchemaCache(agentId?: string): void {
-  if (agentId) cache.delete(agentId);
-  else cache.clear();
+  if (agentId) {
+    cache.delete(agentId);
+    inFlight.delete(agentId);
+  } else {
+    cache.clear();
+    inFlight.clear();
+  }
 }
 
 /**
@@ -90,31 +96,68 @@ export async function fetchAgentOutputSchemas(
 ): Promise<Record<string, unknown>> {
   const out: Record<string, unknown> = {};
   const misses: string[] = [];
+  const pending: Array<Promise<void>> = [];
   const now = Date.now();
   for (const id of new Set(agentIds)) {
     const hit = cache.get(id);
     if (hit && now - hit.at < CACHE_TTL_MS) out[id] = hit.value;
-    else misses.push(id);
+    else {
+      const pendingRead = inFlight.get(id);
+      if (pendingRead) {
+        pending.push(
+          pendingRead.then((value) => {
+            out[id] = value;
+          }),
+        );
+      } else misses.push(id);
+    }
   }
-  if (misses.length === 0) return out;
+  if (misses.length === 0) {
+    await Promise.all(pending);
+    return out;
+  }
 
   const supabase = createClient();
-  const { data, error } = await supabase
+  const query = supabase
     .schema("agent")
     .from("definition")
     .select("id, output_schema")
-    .in("id", misses);
-  if (error) {
+    .in("id", misses)
+    .then(({ data, error }) => {
+      if (error) throw error;
+      const byId = new Map(
+        (data ?? []).map((row) => [
+          row.id,
+          (row as { output_schema?: unknown }).output_schema ?? null,
+        ]),
+      );
+      return misses.map((id) => ({ id, value: byId.get(id) ?? null }));
+    });
+  for (const id of misses) {
+    inFlight.set(
+      id,
+      query
+        .then((rows) => rows.find((row) => row.id === id)?.value ?? null)
+        .catch(() => null),
+    );
+  }
+  let rows: Array<{ id: string; value: unknown | null }>;
+  try {
+    rows = await query;
+  } catch (error) {
     console.error(
       "[mandates] couldn't read output_schema for bound agents",
       error,
     );
+    for (const id of misses) inFlight.delete(id);
+    await Promise.all(pending);
     return out;
   }
-  for (const row of data ?? []) {
-    const value = (row as { output_schema?: unknown }).output_schema ?? null;
-    out[row.id] = value;
-    cache.set(row.id, { at: now, value });
+  for (const { id, value } of rows) {
+    out[id] = value;
+    cache.set(id, { at: now, value });
+    inFlight.delete(id);
   }
+  await Promise.all(pending);
   return out;
 }
