@@ -76,7 +76,9 @@ describe("the Oracle tap's write", () => {
 
     // It went through the canonical CAS with the version it read.
     expect(saveRules).toHaveBeenCalledWith(
-      expect.objectContaining({ rulebookId: "rb1", expectedVersion: 3 }),
+      expect.objectContaining({
+        base: expect.objectContaining({ id: "rb1", version: 3 }),
+      }),
     );
   });
 

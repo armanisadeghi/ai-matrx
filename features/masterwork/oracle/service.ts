@@ -223,8 +223,7 @@ export async function appendDraftRuleFromMessage(opts: {
 
     try {
       const saved = await saveRules({
-        rulebookId: opts.rulebookId,
-        expectedVersion: rulebook.version,
+        base: rulebook,
         rules: [...rulebook.rules, rule],
         ...(sections ? { sections } : {}),
       });

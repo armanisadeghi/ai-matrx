@@ -20,11 +20,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 1. **Human-first.** Anything machine-generated lands as `draft: true` rules or a `status='draft'`
    Rulebook. Never auto-activate.
-2. **`saveRules` is the ONE write path**, and it is a CAS on `version`. Never write
-   `platform.rulebook.rules` beside it; never build a second improve/apply funnel. Metadata-only
-   writes (`metadata.checkup`, `metadata.coherence`, `metadata.expert_corpus`,
-   `metadata.elicitation`) CAS-guard on `version` but must **never bump it** — `version` is the
-   RULES version a Masterwork drifts against.
+2. **`saveRules` is the ONE write path**, and it is a CAS on `version` that ALWAYS carries the
+   base it edited from (`base: Rulebook` — the row the surface read). Never write
+   `platform.rulebook.rules` beside it; never build a second improve/apply funnel.
+   🚨 **`version` moves on EVERY update of this row, not only on rules.** The line that used to
+   stand here — "metadata-only writes must never bump it" — is not what the database does and
+   never was: `platform._touch_row` bumps `version` on every UPDATE of any column,
+   unconditionally (verified against the live function, 2026-09-15). So `metadata.coherence`,
+   written back by the server's Coherence Partner that OUR OWN save woke, silently ages out the
+   version the page is holding. That is a phantom conflict, not a conflict, and `saveRules`
+   classifies it with `rulebookRebase.ts` — which is why the base is mandatory. Read that file
+   before touching this path (wall W12).
 3. **Saving an edit is NEVER approving.** `applyManualRuleEdit` in `types.ts` is the one merge;
    `ruleState()` is the one precedence. Approve is only ever the explicit Approve action.
 4. **The four verbs are ONE primitive.** Render them through `review/RuleDecisionActions.tsx`
@@ -480,6 +486,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   exceptions.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+
+- `2026-09-15` — 🚨 **The Reject dialog refused the Expert's reason, and nobody else had touched the Rulebook.** Trial `teach-recent-interview`, first scored run: reviewing 34 drafts, she could reject some rules and not others — six refused 6–8 times each with "This Rulebook changed while you were editing (someone else saved a newer version)". The other writer was us. Every rules save fires `pokeUnderstudy`, whose server hook (`rulebook_writes._poke_understudy` → `_poke_coherence`) wakes the Coherence Partner; its batch scan writes `metadata.coherence` back onto the SAME `platform.rulebook` row up to a minute later, and `platform._touch_row` bumps `version` on that write like it does on every UPDATE. The version her own save had just returned was therefore stale by the time she finished reading the next rule and typing a reason — so whether the next decision landed was pure timing, which is exactly the some-yes-some-no signature. Evidence: `metadata.coherence.last_scan.at = 2026-09-15T12:50:02Z`, `lane: batch`, `rules_read: 57`, landing mid-review. `saveRules` now takes `base: Rulebook` (the row the edit was made against) and hands `guardedUpdate` the platform's own `rebase.isPhantom` — if `rules` as the server holds them still equal that base, the write is retried once against the live version instead of refused. A real edit to the rules, and a whole-`metadata` write (the Final Checkup) when metadata moved, are still refused exactly as before, so a rebase can never overwrite someone's work. Every review surface inherits it through the one funnel: Reject, Request changes, Improve, Edit, Approve, Approve-all, the review wizard, the Final Checkup apply/undo, the Oracle tap, the Add-rule window. The dialog also stopped relabelling itself "Request changes" on its way out after a successful Reject. Guard: `__tests__/reject-survives-the-coherence-bump.test.ts` (3 cases, proven failing then passing). Verified live on the preview as the Expert, before/after: `../../../common-docs/projects/teach-recent-interview/fix-evidence/w12-before-reject-2.png` vs `w12-after-reject-2.png`.
 
 - `2026-09-13` — 🚨 **The stand-in's banner stopped lying after a rebuild that worked, and overlapping rebuilds stopped clobbering each other.** Two defects in the staleness ledger shipped the day before: a successful `pokeUnderstudy` never reloaded the workflow row, so `behind` kept comparing the CACHED `rulebook_version` with the bumped Rulebook version and the amber "this stand-in is behind your rules" banner stayed up after a rebuild that actually landed (only the manual retry cleared it, because that path calls `onCreated`); and the ledger wrote pending/success/failure with no generation token, so two in-flight pokes — the normal case, the review wizard saves once per rule — could settle out of order and let an older failure bury a newer success, or an older success hide a newer failure. Now `readUnderstudyStandIn` derives the version, counts and rebuild time from whichever account is newer (the row, or the last successful refresh payload — which already returns `rulebook_version`, `approved_rules` and `unconfirmed_rules`, so no round trip is needed), and every ledger write is gated on a per-Rulebook generation token. Guard: `__tests__/understudy-refresh.test.ts` (4 cases, proven failing then passing). Found by Cursor Bugbot on PR #222.
 

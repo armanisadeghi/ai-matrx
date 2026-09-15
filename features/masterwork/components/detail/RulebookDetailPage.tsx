@@ -1348,8 +1348,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       });
       try {
         const saved = await saveRules({
-          rulebookId: rulebook.id,
-          expectedVersion: rulebook.version,
+          base: rulebook,
           rules: stamped,
         });
         setRulebook(saved);

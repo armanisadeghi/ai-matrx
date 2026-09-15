@@ -273,8 +273,7 @@ export async function applyCheckup(opts: {
 }): Promise<CheckupApplyOutcome> {
   const projection = projectCheckup(opts);
   const saved = await saveRules({
-    rulebookId: opts.rulebook.id,
-    expectedVersion: opts.rulebook.version,
+    base: opts.rulebook,
     rules: projection.rules,
     metadata: projection.metadata,
   });
@@ -297,8 +296,7 @@ export async function undoCheckup(opts: {
   previousRules: RulebookRule[];
 }): Promise<Rulebook> {
   return saveRules({
-    rulebookId: opts.rulebook.id,
-    expectedVersion: opts.rulebook.version,
+    base: opts.rulebook,
     rules: opts.previousRules,
   });
 }

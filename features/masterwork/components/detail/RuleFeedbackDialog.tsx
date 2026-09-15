@@ -10,7 +10,7 @@
 //    carries a change request the Scout applies next turn.
 // The textarea is ProTextarea — the Expert can just tap the mic and talk.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquareWarning, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +51,18 @@ export function RuleFeedbackDialog({
     if (open) setFeedback("");
   }, [open, mode, ruleName]);
 
+  // 🚨 A CLOSING DIALOG MUST NOT RELABEL ITSELF. The caller derives `open`
+  // from "is a rule targeted?" and `mode` from that same target, so clearing
+  // the target flips BOTH at once — and Radix keeps the panel mounted through
+  // its close animation. The Expert who had just clicked "Reject with
+  // feedback" watched the panel turn into "Request changes", still carrying
+  // her words, on its way out (wall W12's second half). Hold the last shown
+  // identity until the panel is actually gone.
+  const shown = useRef({ mode, ruleName });
+  if (open) shown.current = { mode, ruleName };
+  const shownMode = open ? mode : shown.current.mode;
+  const shownRuleName = open ? ruleName : shown.current.ruleName;
+
   const submit = async () => {
     const text = feedback.trim();
     if (!text) return;
@@ -65,7 +77,7 @@ export function RuleFeedbackDialog({
     }
   };
 
-  const isReject = mode === "reject";
+  const isReject = shownMode === "reject";
   return (
     // The reason the Expert dictates here IS expert judgment about this
     // Rulebook — it belongs to the Record, not to a nameless Recordings folder.
@@ -88,13 +100,13 @@ export function RuleFeedbackDialog({
           <DialogDescription>
             {isReject ? (
               <>
-                Tell us why “{ruleName}” is wrong. Your reason goes straight to
+                Tell us why “{shownRuleName}” is wrong. Your reason goes straight to
                 the interviewer, who will rewrite the rule for your review — or
                 drop it entirely if it shouldn&apos;t exist.
               </>
             ) : (
               <>
-                Say what should change about “{ruleName}”. The rule stays as it
+                Say what should change about “{shownRuleName}”. The rule stays as it
                 is for now; your note is applied on the interviewer&apos;s next
                 turn.
               </>

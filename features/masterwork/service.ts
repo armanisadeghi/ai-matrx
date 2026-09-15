@@ -5,6 +5,11 @@ import { presentedPreview } from "@/features/workflow-runtime/run-result/present
 import { pokeUnderstudy } from "./understudy/refresh";
 import { DuplicateRuleError, findIdenticalRule } from "./duplicateRules";
 import {
+  isPhantomRulebookMiss,
+  type RulebookCurrentRow,
+  type RulebookWriteTouches,
+} from "./rulebookRebase";
+import {
   parseRulebook,
   type DumpUrlSource,
   type Masterwork,
@@ -133,8 +138,15 @@ export async function createDraftRulebook(
  * surfaces as a conflict instead of silently overwriting.
  */
 export async function saveRules(opts: {
-  rulebookId: string;
-  expectedVersion: number;
+  /**
+   * The Rulebook exactly as this edit was based on — the row the surface read
+   * (or the row the last save returned). It carries BOTH the id and the
+   * `version` to compare-and-swap on AND the `rules`/`sections`/`metadata` the
+   * edit was made against, which is what lets a miss be classified as a
+   * phantom conflict instead of refused. Passing the base is not optional:
+   * see `rulebookRebase.ts` for the wall this closed.
+   */
+  base: Rulebook;
   rules: RulebookRule[];
   sections?: RulebookSections;
   /**
@@ -148,22 +160,41 @@ export async function saveRules(opts: {
 }): Promise<Rulebook> {
   // `version` is supplied by guardedUpdate's `nextVersion` below — the CAS
   // helper owns the bump, and platform._touch_row re-derives it server-side.
+  const rulebookId = opts.base.id;
   const patch: Record<string, unknown> = {
     rules: opts.rules,
   };
   if (opts.sections) patch.sections = opts.sections;
   if (opts.metadata) patch.metadata = opts.metadata;
+  const touches: RulebookWriteTouches = {
+    rules: true,
+    sections: opts.sections !== undefined,
+    metadata: opts.metadata !== undefined,
+  };
   const result = await guardedUpdate<RulebookRow & { version: number }>({
-    expectedVersion: opts.expectedVersion,
+    expectedVersion: opts.base.version,
     applyUpdate: ({ expectedVersion, nextVersion }) =>
       rulebookTable()
         .update({ ...patch, version: nextVersion } as never)
-        .eq("id", opts.rulebookId)
+        .eq("id", rulebookId)
         .eq("version", expectedVersion)
         .select("*")
         .maybeSingle(),
     fetchCurrent: () =>
-      rulebookTable().select("*").eq("id", opts.rulebookId).maybeSingle(),
+      rulebookTable().select("*").eq("id", rulebookId).maybeSingle(),
+    // 🚨 WALL W12. Our OWN save wakes the server's Coherence Partner, which
+    // writes `metadata.coherence` back onto this row a second later and bumps
+    // `version`. Without this the Expert's NEXT decision — reject, approve,
+    // improve, edit — is refused with "someone else saved a newer version"
+    // when nobody else touched it. Read `rulebookRebase.ts` before changing.
+    rebase: {
+      isPhantom: (currentRow) =>
+        isPhantomRulebookMiss({
+          base: opts.base,
+          touches,
+          current: currentRow as unknown as RulebookCurrentRow,
+        }),
+    },
   });
   if (result.status !== "saved") {
     throw new Error(
@@ -174,7 +205,7 @@ export async function saveRules(opts: {
   // ONE funnel covers every FE rules write (editor, wizard, approve-all,
   // checkup apply): the Understudy rebuilds — free, in place — so the Expert
   // watches the running system get better as approvals land.
-  pokeUnderstudy(opts.rulebookId);
+  pokeUnderstudy(rulebookId);
   return parseRulebook(data as RulebookRow);
 }
 
@@ -209,11 +240,7 @@ export async function upsertRuleWithRetry(opts: {
       ? rulebook.rules.map((r) => (r.id === opts.rule.id ? opts.rule : r))
       : [...rulebook.rules, opts.rule];
     try {
-      return await saveRules({
-        rulebookId: opts.rulebookId,
-        expectedVersion: rulebook.version,
-        rules,
-      });
+      return await saveRules({ base: rulebook, rules });
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : "";
