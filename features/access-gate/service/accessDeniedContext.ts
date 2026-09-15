@@ -11,7 +11,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { deriveStatus } from "./deriveStatus";
+import { deriveStatus, type AccessReadOutcome } from "./deriveStatus";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   cmsAccessGateLabel,
@@ -144,12 +144,13 @@ function unknownContext(token: string): AccessDeniedContext {
 function parsePayload(
   payload: Record<string, unknown>,
   token: string,
+  read: AccessReadOutcome,
 ): AccessDeniedContext {
   const disclosure = parseDisclosure(payload.disclosure);
   const entity = rec(payload.entity);
 
   return {
-    status: deriveStatus(payload, disclosure),
+    status: deriveStatus(payload, disclosure, read),
     disclosure,
     level: parseLevel(payload.level),
     isOwner: payload.is_owner === true,
@@ -194,6 +195,13 @@ async function fetchCmsAccessDeniedPayload(
 export async function fetchAccessDeniedContext(
   token: string,
   id: string,
+  /**
+   * What the CALLER'S read did — the caller knows, and the resolver cannot.
+   * `access-question` (a read that returned nothing, or a policy refusal) is
+   * the honest default: it never lets a level claim overrule the read.
+   * See `deriveStatus`.
+   */
+  read: AccessReadOutcome = "access-question",
 ): Promise<AccessDeniedContext> {
   if (!token || !id) return unknownContext(token);
 
@@ -216,7 +224,7 @@ export async function fetchAccessDeniedContext(
   try {
     if (isCmsAccessGateToken(token)) {
       const payload = await fetchCmsAccessDeniedPayload(token, id);
-      return payload ? parsePayload(payload, token) : unknownContext(token);
+      return payload ? parsePayload(payload, token, read) : unknownContext(token);
     }
 
     const supabase = createClient();
@@ -227,7 +235,7 @@ export async function fetchAccessDeniedContext(
     if (error) return unknownContext(token);
 
     const payload = rec(data);
-    return payload ? parsePayload(payload, token) : unknownContext(token);
+    return payload ? parsePayload(payload, token, read) : unknownContext(token);
   } catch {
     return unknownContext(token);
   }

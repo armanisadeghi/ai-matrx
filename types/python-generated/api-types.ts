@@ -3360,6 +3360,12 @@ export interface paths {
          *     Owner-scoped: a conversation that is not a coding-session mirror belonging to the
          *     caller answers `is_coding_session_mirror: false` and nothing else, which is what
          *     every ordinary conversation gets.
+         *
+         *     ``can_reply`` is the TURN DOOR'S own verdict, not this door's opinion of it:
+         *     it comes from ``can_reply_to_conversation``, the predicate
+         *     ``require_owned_conversation_id`` refuses ``POST /conversations/{id}`` with.
+         *     A caller who cannot reply is told so with a reason, instead of being handed
+         *     a composer that enables itself and then 404s.
          */
         get: operations["coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get"];
         put?: never;
@@ -6101,7 +6107,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/github-integrations/exchange": {
+    "/github-integrations/authorize": {
         parameters: {
             query?: never;
             header?: never;
@@ -6110,8 +6116,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exchange */
-        post: operations["exchange_github_integrations_exchange_post"];
+        /** Authorize */
+        post: operations["authorize_github_integrations_authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete */
+        post: operations["complete_github_integrations_complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -46869,12 +46892,21 @@ export interface components {
          */
         BridgeRefusal: {
             code: components["schemas"]["BridgeRefusalCode"];
+            /**
+             * Requested Field
+             * @default action
+             */
+            requested_field?: string;
+            /** Requested Value */
+            requested_value: string;
             /** Requested Action */
             requested_action: string;
             /** Reason */
             reason: string;
             /** Remedy */
             remedy: string;
+            /** Supported Values */
+            supported_values: string[];
             /** Supported Actions */
             supported_actions: components["schemas"]["BridgeAction"][];
         };
@@ -46882,7 +46914,7 @@ export interface components {
          * BridgeRefusalCode
          * @enum {string}
          */
-        BridgeRefusalCode: "unimplemented_action" | "unknown_action" | "unsupported_runtime";
+        BridgeRefusalCode: "unimplemented_action" | "unknown_action" | "unknown_field_value" | "unsupported_runtime";
         /** BridgeResponse */
         BridgeResponse: {
             /**
@@ -53400,6 +53432,8 @@ export interface components {
             composer_label: string;
             /** Can Reply */
             can_reply: boolean;
+            /** Reason */
+            reason?: string | null;
             responder?: components["schemas"]["CodingReplyResponder"] | null;
             /** Stand In Notice */
             stand_in_notice?: string | null;
@@ -53414,13 +53448,15 @@ export interface components {
             schema_version?: 1;
             /** Action */
             action: components["schemas"]["BridgeAction"] | string;
-            provider: components["schemas"]["BridgeProvider"];
+            /** Provider */
+            provider: components["schemas"]["BridgeProvider"] | string;
             /** Provider Session Id */
             provider_session_id?: string | null;
             /** Provider Project Key */
             provider_project_key?: string | null;
             conversation?: components["schemas"]["BridgeConversation"] | null;
-            origin?: components["schemas"]["BridgeOrigin"] | null;
+            /** Origin */
+            origin?: components["schemas"]["BridgeOrigin"] | string | null;
             /**
              * Stream Key
              * @default main
@@ -67938,12 +67974,62 @@ export interface components {
             /** Mcp Connected */
             mcp_connected: boolean;
         };
-        /** GitHubExchangeRequest */
-        GitHubExchangeRequest: {
+        /** GitHubOAuthCompleteRequest */
+        GitHubOAuthCompleteRequest: {
+            /** State */
+            state: string;
+            /** Browser Proof */
+            browser_proof: string;
             /** Code */
-            code: string;
-            /** Redirect Uri */
-            redirect_uri: string;
+            code?: string | null;
+            /** Provider Error */
+            provider_error?: string | null;
+        };
+        /** GitHubOAuthCompleteResponse */
+        GitHubOAuthCompleteResponse: {
+            /** Status */
+            status: string;
+            /** Return Url */
+            return_url: string;
+            /** Next Action */
+            next_action?: "authorize" | null;
+            /** Next Authorization Url */
+            next_authorization_url?: string | null;
+            /** Next State */
+            next_state?: string | null;
+            /** Next Flow */
+            next_flow?: ("authorize" | "install") | null;
+            connection?: components["schemas"]["GitHubConnectionResponse"] | null;
+        };
+        /** GitHubOAuthStartRequest */
+        GitHubOAuthStartRequest: {
+            /** Return Url */
+            return_url: string;
+            /** Browser Proof Hash */
+            browser_proof_hash: string;
+            /**
+             * Flow
+             * @default authorize
+             * @enum {string}
+             */
+            flow?: "authorize" | "install";
+        };
+        /** GitHubOAuthStartResponse */
+        GitHubOAuthStartResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /** State */
+            state: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Flow
+             * @enum {string}
+             */
+            flow: "authorize" | "install";
         };
         /** GitHubWebhookResponse */
         GitHubWebhookResponse: {
@@ -71496,7 +71582,7 @@ export interface components {
             expert_email?: string | null;
             /**
              * Own Replies Only
-             * @description Read only threads this person actually replied in (knob `masterwork_shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
              */
             own_replies_only?: boolean | null;
             /**
@@ -72069,7 +72155,7 @@ export interface components {
             expert_email?: string | null;
             /**
              * Own Replies Only
-             * @description Read only threads this person actually replied in (knob `masterwork_shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
              */
             own_replies_only?: boolean | null;
             /**
@@ -72096,7 +72182,7 @@ export interface components {
             thread_keys?: string[] | null;
             /**
              * Days Back
-             * @description Connected door only: how far back to look for threads you replied to (knob `masterwork_shadow_inbox.days_back`, default 30).
+             * @description Connected door only: how far back to look for threads you replied to (knob `masterwork.shadow_inbox.days_back`, default 30).
              */
             days_back?: number | null;
             /**
@@ -130629,7 +130715,7 @@ export interface operations {
             };
         };
     };
-    exchange_github_integrations_exchange_post: {
+    authorize_github_integrations_authorize_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -130638,7 +130724,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GitHubExchangeRequest"];
+                "application/json": components["schemas"]["GitHubOAuthStartRequest"];
             };
         };
         responses: {
@@ -130648,7 +130734,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GitHubConnectionResponse"];
+                    "application/json": components["schemas"]["GitHubOAuthStartResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_github_integrations_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GitHubOAuthCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubOAuthCompleteResponse"];
                 };
             };
             /** @description Validation Error */

@@ -7829,7 +7829,7 @@
           "Coding Sessions"
         ],
         "summary": "Coding Reply Responder",
-        "description": "Who answers a reply on this conversation — read BEFORE the turn.\n\nOwner-scoped: a conversation that is not a coding-session mirror belonging to the\ncaller answers `is_coding_session_mirror: false` and nothing else, which is what\nevery ordinary conversation gets.",
+        "description": "Who answers a reply on this conversation — read BEFORE the turn.\n\nOwner-scoped: a conversation that is not a coding-session mirror belonging to the\ncaller answers `is_coding_session_mirror: false` and nothing else, which is what\nevery ordinary conversation gets.\n\n``can_reply`` is the TURN DOOR'S own verdict, not this door's opinion of it:\nit comes from ``can_reply_to_conversation``, the predicate\n``require_owned_conversation_id`` refuses ``POST /conversations/{id}`` with.\nA caller who cannot reply is told so with a reason, instead of being handed\na composer that enables itself and then 404s.",
         "operationId": "coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get",
         "parameters": [
           {
@@ -15480,18 +15480,18 @@
         }
       }
     },
-    "/github-integrations/exchange": {
+    "/github-integrations/authorize": {
       "post": {
         "tags": [
           "GitHub Integrations"
         ],
-        "summary": "Exchange",
-        "operationId": "exchange_github_integrations_exchange_post",
+        "summary": "Authorize",
+        "operationId": "authorize_github_integrations_authorize_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GitHubExchangeRequest"
+                "$ref": "#/components/schemas/GitHubOAuthStartRequest"
               }
             }
           },
@@ -15503,7 +15503,48 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                  "$ref": "#/components/schemas/GitHubOAuthStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/complete": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Complete",
+        "operationId": "complete_github_integrations_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubOAuthCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubOAuthCompleteResponse"
                 }
               }
             }
@@ -104760,6 +104801,19 @@
           "code": {
             "$ref": "#/components/schemas/BridgeRefusalCode"
           },
+          "requested_field": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Requested Field",
+            "default": "action"
+          },
+          "requested_value": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Requested Value"
+          },
           "requested_action": {
             "type": "string",
             "maxLength": 128,
@@ -104778,6 +104832,13 @@
             "minLength": 1,
             "title": "Remedy"
           },
+          "supported_values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supported Values"
+          },
           "supported_actions": {
             "items": {
               "$ref": "#/components/schemas/BridgeAction"
@@ -104790,9 +104851,11 @@
         "type": "object",
         "required": [
           "code",
+          "requested_value",
           "requested_action",
           "reason",
           "remedy",
+          "supported_values",
           "supported_actions"
         ],
         "title": "BridgeRefusal",
@@ -104803,6 +104866,7 @@
         "enum": [
           "unimplemented_action",
           "unknown_action",
+          "unknown_field_value",
           "unsupported_runtime"
         ],
         "title": "BridgeRefusalCode"
@@ -120311,6 +120375,17 @@
             "type": "boolean",
             "title": "Can Reply"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
           "responder": {
             "anyOf": [
               {
@@ -120363,7 +120438,15 @@
             "title": "Action"
           },
           "provider": {
-            "$ref": "#/components/schemas/BridgeProvider"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeProvider"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Provider"
           },
           "provider_session_id": {
             "anyOf": [
@@ -120407,9 +120490,13 @@
                 "$ref": "#/components/schemas/BridgeOrigin"
               },
               {
+                "type": "string"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Origin"
           },
           "stream_key": {
             "type": "string",
@@ -153990,25 +154077,192 @@
         ],
         "title": "GitHubConnectionResponse"
       },
-      "GitHubExchangeRequest": {
+      "GitHubOAuthCompleteRequest": {
         "properties": {
-          "code": {
+          "state": {
             "type": "string",
+            "maxLength": 512,
             "minLength": 1,
+            "title": "State"
+          },
+          "browser_proof": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 32,
+            "title": "Browser Proof"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Code"
           },
-          "redirect_uri": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Redirect Uri"
+          "provider_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Error"
           }
         },
         "type": "object",
         "required": [
-          "code",
-          "redirect_uri"
+          "state",
+          "browser_proof"
         ],
-        "title": "GitHubExchangeRequest"
+        "title": "GitHubOAuthCompleteRequest"
+      },
+      "GitHubOAuthCompleteResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "return_url": {
+            "type": "string",
+            "title": "Return Url"
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "authorize"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action"
+          },
+          "next_authorization_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Authorization Url"
+          },
+          "next_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next State"
+          },
+          "next_flow": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "authorize",
+                  "install"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Flow"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GitHubConnectionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "return_url"
+        ],
+        "title": "GitHubOAuthCompleteResponse"
+      },
+      "GitHubOAuthStartRequest": {
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Return Url"
+          },
+          "browser_proof_hash": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Browser Proof Hash"
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "authorize",
+              "install"
+            ],
+            "title": "Flow",
+            "default": "authorize"
+          }
+        },
+        "type": "object",
+        "required": [
+          "return_url",
+          "browser_proof_hash"
+        ],
+        "title": "GitHubOAuthStartRequest"
+      },
+      "GitHubOAuthStartResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "authorize",
+              "install"
+            ],
+            "title": "Flow"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "state",
+          "expires_at",
+          "flow"
+        ],
+        "title": "GitHubOAuthStartResponse"
       },
       "GitHubWebhookResponse": {
         "properties": {
@@ -161006,7 +161260,7 @@
               }
             ],
             "title": "Own Replies Only",
-            "description": "Read only threads this person actually replied in (knob `masterwork_shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
+            "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
           },
           "organization_id": {
             "anyOf": [
@@ -162024,7 +162278,7 @@
               }
             ],
             "title": "Own Replies Only",
-            "description": "Read only threads this person actually replied in (knob `masterwork_shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
+            "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
           },
           "organization_id": {
             "anyOf": [
@@ -162095,7 +162349,7 @@
               }
             ],
             "title": "Days Back",
-            "description": "Connected door only: how far back to look for threads you replied to (knob `masterwork_shadow_inbox.days_back`, default 30)."
+            "description": "Connected door only: how far back to look for threads you replied to (knob `masterwork.shadow_inbox.days_back`, default 30)."
           },
           "source_note": {
             "anyOf": [
