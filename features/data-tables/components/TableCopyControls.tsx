@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentTransferMenu, tableSchemaFormat, type ContentTransferReference } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu, tableDataFormat, tableSchemaFormat, type ContentTransferReference } from "@ai-matrx/design-system/content-transfer";
 import { directSource, normalizeTransferJson, type Json, type Source } from "@ai-matrx/kit/content-transfer";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 import type { DataTableCopyField, DataTableCopyRow } from "@/features/data-tables/table-copy";
@@ -72,6 +72,7 @@ export function tableTransferColumns(
       exportable: true,
       schema: {
         dataType: field.data_type ?? "text",
+        metadata: { fieldId: field.id },
         order: field.field_order ?? order,
         required: field.is_required ?? false,
         ...(field.default_value === undefined
@@ -113,7 +114,7 @@ export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = 
     triggerVariant="outline"
     className={className}
     table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Current filtered view (all matching rows)", target: "Entire table (no filters)", selected: "Selected rows in this view" } }}
-    capabilities={{ formats: [tableSchemaFormat] }}
+    capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
     references={references}
     referenceActions={[{ id: "choose-reference", label: "Choose a row, column or cell reference", run: onChooseReference }]}
   />;

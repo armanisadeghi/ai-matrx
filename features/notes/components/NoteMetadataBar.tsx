@@ -317,6 +317,7 @@ export function NoteMetadataBar({
           <CopyButtons
             size="xs"
             label={`Note "${noteDisplayLabel(note)}"`}
+            references={[{ id: note.id, label: "Copy note reference", noun: "note", items: [{ id: note.id, label: noteDisplayLabel(note) }] }]}
             className="shrink-0"
             human={() => noteRecordSummary(buildRecordView())}
             json={() => noteRecordData(buildRecordView())}
