@@ -219,7 +219,7 @@ function AccountToolbar({
               connections={connections}
               connectionId={selectedConnection.id}
               onConnectionChange={onConnectionChange}
-              label="Choose account to inspect"
+              label="Google account"
               disabled={busy}
             />
           ) : (
