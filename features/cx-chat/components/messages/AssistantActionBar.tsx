@@ -30,6 +30,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { toast } from "@/lib/toast";
+import { MessageTimestamp } from "@/features/agents/components/messages-display/MessageTimestamp";
 
 const ConversationMessageOptionsMenu = lazy(
   () => import("./MessageOptionsMenu"),
@@ -46,6 +47,7 @@ export interface AssistantActionBarProps {
   onQuickSave?: () => void;
   onFullPrint?: () => void;
   isCapturing?: boolean;
+  timestamp?: string;
 }
 
 export function AssistantActionBar({
@@ -59,6 +61,7 @@ export function AssistantActionBar({
   onQuickSave,
   onFullPrint,
   isCapturing,
+  timestamp,
 }: AssistantActionBarProps) {
   const dispatch = useAppDispatch();
   const reactId = useId();
@@ -77,7 +80,9 @@ export function AssistantActionBar({
     originalContent: content,
   });
   const handleVerdict = (clicked: "positive" | "negative") => {
-    void setVerdict(clicked).catch(() => toast.error("Failed to save feedback"));
+    void setVerdict(clicked).catch(() =>
+      toast.error("Failed to save feedback"),
+    );
   };
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
@@ -167,69 +172,74 @@ export function AssistantActionBar({
 
   return (
     <>
-      <TapTargetButtonGroup>
-        <TapTargetButtonForGroup
-          onClick={() => handleVerdict("positive")}
-          ariaLabel="Like message"
-          icon={
-            <ThumbsUp
-              className={`w-4 h-4 ${verdict === "positive" ? "text-green-500 dark:text-green-400" : "text-muted-foreground"}`}
-            />
-          }
-        />
-
-        <TapTargetButtonForGroup
-          onClick={() => handleVerdict("negative")}
-          ariaLabel="Dislike message"
-          icon={
-            <ThumbsDown
-              className={`w-4 h-4 ${verdict === "negative" ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}
-            />
-          }
-        />
-
-        <TapTargetButtonForGroup
-          onClick={handleCopy}
-          ariaLabel="Copy message"
-          icon={
-            isCopied ? (
-              <Check className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            ) : (
-              <Copy className="w-4 h-4 text-muted-foreground" />
-            )
-          }
-        />
-
-        <SpeakerButton text={content} variant="group" />
-
-        {hasUnsavedChanges && (
+      <div className="flex items-center gap-2">
+        <TapTargetButtonGroup>
           <TapTargetButtonForGroup
-            onClick={onQuickSave}
-            ariaLabel="Save changes"
+            onClick={() => handleVerdict("positive")}
+            ariaLabel="Like message"
             icon={
-              isSaving ? (
-                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <ThumbsUp
+                className={`w-4 h-4 ${verdict === "positive" ? "text-green-500 dark:text-green-400" : "text-muted-foreground"}`}
+              />
+            }
+          />
+
+          <TapTargetButtonForGroup
+            onClick={() => handleVerdict("negative")}
+            ariaLabel="Dislike message"
+            icon={
+              <ThumbsDown
+                className={`w-4 h-4 ${verdict === "negative" ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}
+              />
+            }
+          />
+
+          <TapTargetButtonForGroup
+            onClick={handleCopy}
+            ariaLabel="Copy message"
+            icon={
+              isCopied ? (
+                <Check className="w-4 h-4 text-blue-500 dark:text-blue-400" />
               ) : (
-                <Save className="w-4 h-4 text-primary" />
+                <Copy className="w-4 h-4 text-muted-foreground" />
               )
             }
           />
-        )}
 
-        <TapTargetButtonForGroup
-          onClick={handleEdit}
-          ariaLabel="Edit message"
-          icon={<Edit className="w-4 h-4 text-muted-foreground" />}
-        />
+          <SpeakerButton text={content} variant="group" />
 
-        <div ref={moreOptionsButtonRef}>
+          {hasUnsavedChanges && (
+            <TapTargetButtonForGroup
+              onClick={onQuickSave}
+              ariaLabel="Save changes"
+              icon={
+                isSaving ? (
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 text-primary" />
+                )
+              }
+            />
+          )}
+
           <TapTargetButtonForGroup
-            onClick={() => setShowOptionsMenu(true)}
-            ariaLabel="More options"
-            icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+            onClick={handleEdit}
+            ariaLabel="Edit message"
+            icon={<Edit className="w-4 h-4 text-muted-foreground" />}
           />
-        </div>
-      </TapTargetButtonGroup>
+
+          <div ref={moreOptionsButtonRef}>
+            <TapTargetButtonForGroup
+              onClick={() => setShowOptionsMenu(true)}
+              ariaLabel="More options"
+              icon={
+                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              }
+            />
+          </div>
+        </TapTargetButtonGroup>
+        <MessageTimestamp timestamp={timestamp} />
+      </div>
 
       {/* Negative-verdict follow-up strip — same ONE surface as the /chat
           bar: [Diagnose] opens the drill-down review walk; [Attach your

@@ -113,12 +113,10 @@ export function AssistantMessage({
   // A TTS audio response is one of our own files — on a load failure the
   // primitive refreshes the file-session cookie and retries the durable URL.
   const audioSrc = audioUrl ?? "";
-  const {
-    retryKey: audioRetryKey,
-    onLoadError: handleAudioError,
-  } = useMediaLoadRecovery(audioUrl ?? null, {
-    recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
-  });
+  const { retryKey: audioRetryKey, onLoadError: handleAudioError } =
+    useMediaLoadRecovery(audioUrl ?? null, {
+      recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
+    });
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;
@@ -155,7 +153,7 @@ export function AssistantMessage({
 
   return (
     <div
-      className={`flex min-w-0 overflow-x-hidden ${isAppearing ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+      className={`group/assistant-msg flex min-w-0 overflow-x-hidden ${isAppearing ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
     >
       <div className="max-w-full min-w-0 w-full relative overflow-x-hidden">
         {showLoading && (
@@ -287,6 +285,7 @@ export function AssistantMessage({
                     onQuickSave={handleQuickSave}
                     onFullPrint={handleFullPrint}
                     isCapturing={isCapturing}
+                    timestamp={message.createdAt ?? message.timestamp}
                   />
                 </div>
               )}
