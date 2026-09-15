@@ -2,6 +2,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 let mockDbSegments: Array<Record<string, unknown>> = [];
+let mockOutputSchema: unknown | null = null;
+let receivedOutputSchemas: unknown[] = [];
 let mockReduxState: Record<string, unknown> = {
   activeRequests: { byRequestId: {} },
 };
@@ -14,6 +16,11 @@ jest.mock("@/lib/redux/hooks", () => ({
   // rendering.
   useAppDispatch: () => () => undefined,
 }));
+
+jest.mock(
+  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  () => ({ useBoundAgentOutputSchema: () => mockOutputSchema }),
+);
 
 jest.mock(
   "@/features/agents/redux/execution-system/messages/messages.selectors",
@@ -43,9 +50,12 @@ jest.mock("../internal-handlers/SafeBlockRenderer", () => {
     // but render XML through the real XmlBlock and MarkdownCore implementation.
     SafeBlockRenderer: ({
       block,
+      outputSchema,
     }: {
       block: { type: string; content: string; language?: string };
+      outputSchema?: unknown;
     }) => {
+      receivedOutputSchemas.push(outputSchema);
       const attrs = {
         "data-mtx-ctx": "block",
         "data-block-type": block.type,
@@ -147,6 +157,8 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
 
   beforeEach(() => {
     mockDbSegments = [];
+    mockOutputSchema = null;
+    receivedOutputSchemas = [];
     mockReduxState = { activeRequests: { byRequestId: {} } };
     jest
       .spyOn(globalThis, "requestAnimationFrame")
@@ -174,6 +186,20 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
     });
 
     expectRichXmlFallback(container);
+  });
+
+  it("plumbs the message-bound output schema to every rendered block", async () => {
+    mockOutputSchema = { schema: { properties: { answer: {} } } };
+    await act(async () => {
+      root.render(
+        <EnhancedChatMarkdownInternal
+          content={'```json\n{"answer":"Readable"}\n```'}
+          conversationId="conversation-1"
+          hideCopyButton
+        />,
+      );
+    });
+    expect(receivedOutputSchemas).toContain(mockOutputSchema);
   });
 
   it("expands server-processed text blocks before rendering", async () => {
@@ -220,7 +246,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
 
   it("renders XML and its table from actual accumulator output through Redux", async () => {
     const latest = new Map<string, RenderBlockPayload>();
-    const accumulator = new StreamBlockAccumulator("redux-xml", payload => {
+    const accumulator = new StreamBlockAccumulator("redux-xml", (payload) => {
       latest.set(payload.block.blockId, payload.block);
       return payload;
     });
@@ -285,8 +311,14 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
   it("updates the XML rendering through live chunk events", async () => {
     const events = [
       { event: "chunk", data: { text: "<custom_response>\n" } },
-      { event: "chunk", data: { text: "**Strong result** with `inline_code`\n\n" } },
-      { event: "chunk", data: { text: "| Name | Score |\n| --- | ---: |\n| Ada | 42 |\n" } },
+      {
+        event: "chunk",
+        data: { text: "**Strong result** with `inline_code`\n\n" },
+      },
+      {
+        event: "chunk",
+        data: { text: "| Name | Score |\n| --- | ---: |\n| Ada | 42 |\n" },
+      },
       { event: "chunk", data: { text: "</custom_response>" } },
     ] as TypedStreamEvent[];
 
