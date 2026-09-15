@@ -1036,11 +1036,13 @@ button.shell-nav-flyout-item {
    complete sidebar presentation without changing the saved checkbox value, so
    leaving Settings restores the user's usual expanded/collapsed preference. */
 @media (min-width: 1024px) {
-  .shell-root[data-settings-route] {
+  .shell-root[data-settings-route],
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) {
     grid-template-columns: 15rem 1fr;
   }
 
-  .shell-root[data-settings-route] .shell-sidebar {
+  .shell-root[data-settings-route] .shell-sidebar,
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) .shell-sidebar {
     width: 15rem;
     background: var(--shell-sidebar-bg-expanded);
     border-right-color: var(--shell-sidebar-border-expanded);
@@ -1051,7 +1053,23 @@ button.shell-nav-flyout-item {
     gap: 0.75rem;
   }
 
-  .shell-root[data-settings-route] :is(.shell-nav-label, .shell-sidebar-switch-label) {
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked)
+    :is(.shell-nav-label, .shell-sidebar-switch-label),
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    :is(.shell-nav-label, .shell-sidebar-switch-label) {
+    width: auto;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .shell-sidebar-switch {
+    justify-content: flex-start;
+  }
+
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .shell-sidebar-brand-logo {
     width: auto;
     opacity: 1;
     transform: translateX(0);
