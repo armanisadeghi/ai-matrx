@@ -8,6 +8,7 @@ import Link from "next/link";
 import { AuthMessageType } from "@/components/form-message";
 import AuthPageContainer from "@/components/auth/auth-page-container";
 import { SignOutConfirmButton } from "@/features/shell/auth/SignOutConfirmButton";
+import { loginHref } from "@/utils/auth/auth-destination";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
@@ -40,7 +41,7 @@ export default async function SignOut({ searchParams }: SignOutProps) {
                 message={message}
             >
                 <div className="text-center">
-                    <Link href="/login" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
+                    <Link href={loginHref()} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
                         Go to sign in
                     </Link>
                 </div>
