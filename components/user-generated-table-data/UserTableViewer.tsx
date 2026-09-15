@@ -2887,6 +2887,7 @@ const UserTableViewer = ({
           : null,
       readOnly: isReadOnly,
       on: {
+        copy: (address) => grid.copyCell(address),
         cut: (address) => grid.cutCell(address),
         paste: (address) => void grid.pasteIntoCell(address),
         clear: (address) => void handleClearCell(address),

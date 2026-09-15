@@ -8,11 +8,19 @@
  * clicked cell / row / column on open (`resolveGridMenuTarget`), so the same
  * menu says "Cut cell" on a value and "Sort A→Z" on a header.
  *
- * WHY THE CORE `Copy` VERB IS NOT DUPLICATED HERE. The menu's own Copy row
- * acts on the scope's `content`, which the grid sets to the clicked cell's
- * text — so "Copy" already copies the cell, exactly the way Excel's does. Cut
- * and Paste are core verbs only on EDITABLE (textarea) menus, and a grid is
- * not a textarea, so they live in the Cell section instead.
+ * WHY THE CORE `Copy` VERB IS NOT DUPLICATED HERE — EXCEPT FOR A RANGE. The
+ * menu's own Copy row acts on the scope's `content`, which the grid sets to
+ * the clicked cell's text — so "Copy" already copies the cell, exactly the way
+ * Excel's does. Cut and Paste are core verbs only on EDITABLE (textarea)
+ * menus, and a grid is not a textarea, so they live in the Cell section.
+ *
+ * That rationale holds for ONE cell and breaks for a RANGE: the scope content
+ * is still the single clicked cell, so on a 3-cell selection the core Copy
+ * quietly yielded one cell while this section's own "Cut 3 cells" / "Clear 3
+ * cells" took all three — a narrower result than the menu promised, nothing
+ * saying so, and no way to copy the range from the menu at all. So the Cell
+ * section carries its OWN range-aware `Copy n cells` whenever a range is
+ * selected. It stays enabled on a view-only table: copying only reads.
  *
  * 🚨 NO NEW WRITE PATH LIVES HERE. Every item delegates to a handler the grid
  * already has (its toolbar buttons, header menu, row actions and keyboard
@@ -183,6 +191,8 @@ export function buildGridCellMenuSection(opts: {
   rangeCells?: CellAddress[] | null;
   readOnly: boolean;
   on: {
+    /** Copy the range to the clipboard as TSV. Range only — see the header. */
+    copy: (address: CellAddress) => void;
     cut: (address: CellAddress) => void;
     paste: (address: CellAddress) => void;
     clear: (address: CellAddress) => void;
@@ -204,6 +214,21 @@ export function buildGridCellMenuSection(opts: {
   const rowsSpanned = many ? new Set(many.map((c) => c.rowId)).size : 1;
 
   const items: ContextMenuExtraItem[] = [
+    // Range only: for one cell the core Copy verb already copies it, and a
+    // second Copy row would just say the same thing twice.
+    ...(many
+      ? [
+          {
+            kind: "item" as const,
+            id: "grid-cell-copy",
+            label: `Copy ${n} cells`,
+            icon: Copy,
+            hint: "⌘C",
+            // `copyCell(address)` copies the range when the address is in it.
+            onSelect: () => address && on.copy(address),
+          },
+        ]
+      : []),
     {
       kind: "item",
       id: "grid-cell-cut",
@@ -268,6 +293,8 @@ export function buildGridCellMenuSection(opts: {
       items,
     },
     {
+      // Copy reads; it survives a view-only share, unlike cut/paste/clear.
+      "grid-cell-copy": !cell ? needs("a cell") : undefined,
       "grid-cell-cut": gate,
       "grid-cell-paste": gate,
       "grid-cell-clear": gate,
