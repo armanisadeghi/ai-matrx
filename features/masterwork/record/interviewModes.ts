@@ -1,6 +1,6 @@
 // features/masterwork/record/interviewModes.ts
 //
-// THE TWO WAYS OF BEING INTERVIEWED, and the five ways of being dug into.
+// THE TWO WAYS OF BEING INTERVIEWED, and the seven ways of being dug into.
 //
 // Arman, 2026-09-15:
 //   "Ninety percent of the expertise I possess is not documented anywhere, or the
@@ -13,7 +13,12 @@
 //
 // Ruling doctrine: `common-docs/systems/masterwork/doctrine/CORE.md` §7 (the
 // interviewer has two modes, BOTH offered) and §8 (the forks-are-modes law).
-// The probe vocabulary is `advantage-stack.md` Part III §3.1, stages 1.2–1.6.
+// The first five probes are `advantage-stack.md` Part III §3.1, stages 1.2–1.6.
+// `story_time` is the critical-decision method — one bad outcome walked as a
+// timeline, every decision point a rule candidate with the story moment as its
+// evidence — and `rewind` is hindsight on a decision whose ending is already
+// known, which is the one probe that can separate a rule the Expert actually
+// used from one that only looks right because they know how it ended.
 //
 // 🚨 THIS MODULE HOLDS NO INSTRUCTION TEXT. The interviewer's prose for every
 // mode and every probe lives in its own `agent.definition` row, where an agent's
@@ -39,7 +44,9 @@ export type InterviewProbe =
   | "correction_log"
   | "prediction_then_reveal"
   | "withheld_replay"
-  | "boundary_hunting";
+  | "boundary_hunting"
+  | "story_time"
+  | "rewind";
 
 export interface InterviewOption<T extends string> {
   id: T;
@@ -109,6 +116,18 @@ export const INTERVIEW_PROBES: readonly InterviewOption<InterviewProbe>[] = [
     title: "Find the edges",
     sentence:
       "It invents cases that are nearly but not quite yours, one after another, until you say you would never see that.",
+  },
+  {
+    id: "story_time",
+    title: "When it went badly",
+    sentence:
+      "You tell the story of a time it went wrong, and it walks the timeline with you: what you saw first, what you decided at each point, what a good colleague would have done differently, and what you look for now because of it.",
+  },
+  {
+    id: "rewind",
+    title: "Knowing how it turned out",
+    sentence:
+      "You take a real decision whose outcome you already know, and it asks what you saw then that others missed, what you would do exactly the same again, and what only looks right because you know the ending.",
   },
 ] as const;
 
