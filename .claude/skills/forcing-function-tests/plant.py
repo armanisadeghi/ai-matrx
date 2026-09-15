@@ -6,7 +6,8 @@ sessions and deploy agents edit and commit the same tree. Born from a 2026-09-10
 in which hand-rolled plants left mutations on disk three times and peer sweep commits captured three
 live mutations (one an auth bypass). Every guarantee below answers one of those incidents.
 
-- Per-file lock: two plants on the same file serialize (lock dir, stale-pid steal).
+- Per-REPOSITORY lock: plants anywhere in one repo serialize (lock dir, stale-pid steal), because a test
+  run can see another plant's live mutation in any file it imports or caches.
 - The mutation lives on disk only for the command; restore runs in `finally` and on SIGINT/SIGTERM.
 - Restore locates the mutation by its surrounding CONTEXT, so a peer's edit elsewhere in the file
   survives (a deletion mutation included). If it cannot, it screams and exits 3.
@@ -98,7 +99,11 @@ def pid_alive(pid):
 
 
 def acquire_lock(path, wait):
-    d = os.path.join(STATE_DIR, "locks", hashlib.sha1(path.encode()).hexdigest())
+    # One lock per REPOSITORY, not per file: a test run while another plant's mutation is live anywhere
+    # in the repo can import that mutation or read a runner cache built from it (observed 2026-09-15:
+    # two concurrent jest plants on different files each reported a real mutant GREEN; both RED alone).
+    scope = repo_of(path) or path
+    d = os.path.join(STATE_DIR, "locks", hashlib.sha1(scope.encode()).hexdigest())
     os.makedirs(os.path.dirname(d), exist_ok=True)
     start = time.time()
     announced = False
