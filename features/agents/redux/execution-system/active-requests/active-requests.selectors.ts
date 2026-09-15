@@ -135,11 +135,8 @@ export const selectProviderRetry =
     state.activeRequests.byRequestId[requestId]?.providerRetry ?? null;
 
 export const selectProviderRetryHistory = (requestId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.providerRetryHistory,
-    (history): ProviderRetryPayload[] | undefined => history,
-  );
+  (state: RootState): ProviderRetryPayload[] | undefined =>
+    state.activeRequests.byRequestId[requestId]?.providerRetryHistory;
 
 /**
  * THE canonical set of render-block types that are NOT the model's answer.
@@ -277,13 +274,10 @@ export const selectCurrentPhase =
   (state: RootState): Phase | null =>
     state.activeRequests.byRequestId[requestId]?.currentPhase ?? null;
 
-/** Full phase history — for timeline / debug views. Memoized. */
+/** Full phase history — existing state reference, so no memoization is needed. */
 export const selectPhaseHistory = (requestId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.phaseHistory,
-    (phaseHistory): Phase[] | undefined => phaseHistory,
-  );
+  (state: RootState): Phase[] | undefined =>
+    state.activeRequests.byRequestId[requestId]?.phaseHistory;
 
 // =============================================================================
 // Operation Tracking Selectors (init/completion pairs)
@@ -1543,14 +1537,12 @@ export const selectFirstTypedDataPayload =
       DataTypeMap[T] | undefined;
   };
 
-/** All data payloads as a typed union. Memoized. */
+/** All data payloads as the existing typed state reference. */
 export const selectAllTypedDataPayloads = (requestId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.dataPayloads,
-    (payloads): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
-      payloads,
-  );
+  (
+    state: RootState,
+  ): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
+    state.activeRequests.byRequestId[requestId]?.dataPayloads;
 
 /** Distinct data types received for this request. Memoized. */
 export const selectReceivedDataTypes = (requestId: string) =>

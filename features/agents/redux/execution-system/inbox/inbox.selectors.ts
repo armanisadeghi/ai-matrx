@@ -2,7 +2,6 @@
  * conversationInbox selectors — queued-while-running message cards.
  */
 
-import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ConversationInboxItem } from "./inbox.slice";
 
@@ -10,11 +9,8 @@ const EMPTY_ITEMS: ConversationInboxItem[] = [];
 
 /** All queued items for a conversation, FIFO. Stable empty reference. */
 export const selectInboxItems = (conversationId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.conversationInbox?.byConversationId[conversationId],
-    (items) => items ?? EMPTY_ITEMS,
-  );
+  (state: RootState): ConversationInboxItem[] =>
+    state.conversationInbox?.byConversationId[conversationId] ?? EMPTY_ITEMS;
 
 /** Count of items still waiting (sending + pending). Primitive — no memo needed. */
 export const selectInboxWaitingCount =
