@@ -2,7 +2,9 @@ const getSession = jest.fn();
 const getState = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: { getSession: (...args: unknown[]) => getSession(...args) } },
+  supabase: {
+    auth: { getSession: (...args: unknown[]) => getSession(...args) },
+  },
 }));
 
 jest.mock("@/lib/redux/store-singleton", () => ({
@@ -18,7 +20,7 @@ jest.mock("@/lib/api/resolve-service-url", () => ({
   resolveServiceBaseUrl: () => "https://server.example.test",
 }));
 
-import { listDuplicateSchedules } from "./schedulerClient";
+import { getStatus, listDuplicateSchedules } from "./schedulerClient";
 
 describe("scheduler client organization admission", () => {
   beforeEach(() => {
@@ -62,5 +64,24 @@ describe("scheduler client organization admission", () => {
       code: "organization_context_required",
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("uses an explicitly admitted organization when the singleton is still booting", async () => {
+    getState.mockReturnValue({ organizationId: null });
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({ running: true }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await getStatus("22222222-2222-4222-8222-222222222222");
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(new Headers(init.headers).get("X-Organization-Id")).toBe(
+      "22222222-2222-4222-8222-222222222222",
+    );
   });
 });
