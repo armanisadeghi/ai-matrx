@@ -6,7 +6,6 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
-import { reconcileUserSandboxes } from "@/lib/sandbox/reconcile";
 import {
   sandboxCreateRequestSchema,
   type SandboxConfig,
@@ -159,69 +158,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ACTIVE_STATUSES = ["creating", "starting", "ready", "running"];
-    const ACTIVE_LIMIT = 5;
-
-    const countActive = async () => {
-      const { data, error } = await supabase
-        .from("sandbox_instances")
-        .select("id", { count: "exact" })
-        .eq("user_id", user.id)
-        .in("status", ACTIVE_STATUSES)
-        .is("deleted_at", null);
-      return { data, error };
-    };
-
-    let { data: activeInstances, error: countError } = await countActive();
-
-    // Capacity is an admission control, not a best-effort hint. Creating when
-    // the read failed can silently exceed the protected per-user ceiling.
-    if (countError || !activeInstances) {
-      console.error("[POST /api/sandbox] active sandbox capacity check failed", countError);
-      return NextResponse.json(
-        { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
-        { status: 503 },
-      );
-    }
-
-    // Self-heal: if we're at the limit, ask each orchestrator whether the
-    // sandboxes the rows reference actually still exist. Rows whose
-    // containers are gone get marked destroyed so they free their slot.
-    // This catches the common case where an in-memory orchestrator restart
-    // (or an out-of-band container destroy) leaves Supabase rows stranded
-    // in 'ready'/'running' forever.
-    if (
-      !countError &&
-      activeInstances &&
-      activeInstances.length >= ACTIVE_LIMIT
-    ) {
-      const summary = await reconcileUserSandboxes(user.id);
-      if (summary.reconciled > 0) {
-        ({ data: activeInstances, error: countError } = await countActive());
-        if (countError || !activeInstances) {
-          console.error("[POST /api/sandbox] reconciled active sandbox capacity check failed", countError);
-          return NextResponse.json(
-            { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
-            { status: 503 },
-          );
-        }
-      }
-    }
-
-    if (
-      !countError &&
-      activeInstances &&
-      activeInstances.length >= ACTIVE_LIMIT
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Maximum active sandbox limit reached (5). Stop an existing sandbox first.",
-        },
-        { status: 429 },
-      );
-    }
-
     // Tier is required — reject requests that omit it rather than silently
     // routing to a default orchestrator. Callers must read the user's
     // configured default from `sandboxPrefs.tier` or `useSandboxCreate().tier`.
@@ -290,8 +226,8 @@ export async function POST(request: NextRequest) {
         { error: "Failed to create sandbox container", details: errBody },
         {
           status:
-            orchestratorResp.status === 400
-              ? 400
+            orchestratorResp.status === 400 || orchestratorResp.status === 429
+              ? orchestratorResp.status
               : orchestratorResp.status === 401 ||
                   orchestratorResp.status === 403
                 ? orchestratorResp.status
