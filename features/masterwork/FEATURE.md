@@ -263,8 +263,41 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   surface that shows a ledger or a ruling renders through them.
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
+- `encore/RunTheBench.tsx` — **the Trial Bench's door in the product**, beside the quick check on
+  the Encore run page. The form the server sent (`form` on `GET /masterworks/{rulebook_id}/bench`)
+  drives it: task brief, optional case input, the expert's real answer, the budget multiple with
+  the server's own sentence for where that number came from, and a read-only line naming the judge
+  model, the frontier and cheap arms and the Masterwork arm C will run. Streams
+  `POST /masterworks/{rulebook_id}/bench/runs` on its own durable-run surface `bench`
+  (terminal event `masterwork_bench_verdict`). `encore/benchFacts.ts` builds the panel/cost/void
+  sentence used BOTH here and by `AuditionProof`'s banked-record line, so one fact is never said
+  two ways.
 
 ## Change Log
+
+- `2026-09-15` — **THE BENCH HAS A DOOR (`encore/RunTheBench.tsx`).** The proof existed and could
+  only be started from a command line, so the product could report a trial and never run one. The
+  door sits beside the quick check on the Encore run page and is governed by the server's answer,
+  not by the client's guess: `can_run_here` true (and a `form` actually present) renders a "Run the
+  Bench" button; false renders the server's own REASON sentence and **no control at all** — never a
+  greyed button, never one that does nothing. Starting is a destructive/expensive click: the
+  consequence (real paid calls across all six arms plus the judges and the blind panel) is named
+  above the button AND in the canonical `confirm()` before anything fires. Live, each
+  `masterwork_bench_arm` lands as its own row — the arm letter, what it is in plain words, its
+  model, cost and seconds, or "did not run" with the server's error — over the server's
+  `masterwork_bench_progress` stage line, with the running total visible. 🚨 **A BENCH RUN IS NOT
+  ALWAYS DURABLE:** `bench_trial` is still outside the `platform.masterwork_run.operation`
+  vocabulary, so when `form.durable` is false there is no run row, no `masterwork_run` receipt and
+  therefore nothing to rejoin — `useDurableRun` degrades cleanly (stages and the terminal event
+  still work, only the pointer is absent) and `form.durable_note` is rendered BEFORE the start
+  control, because a person is owed that before they spend. On the verdict the server's own
+  `headline` is rendered, never re-written; a **void** trial says it proves nothing and renders NO
+  win, and a **not scored** trial says the panel was not calibrated and that this is neither a pass
+  nor a fail. Then the panel re-reads `GET .../bench` so the banked record replaces the live one.
+  Guard: `encore/__tests__/RunTheBench.honest-states.test.tsx` — five legs (cannot-run reason
+  verbatim with zero controls · the not-rejoinable sentence positioned above the start control ·
+  per-arm cost and seconds · void renders no win · not-scored never reads as a fail), each proven
+  red against a mutated component and green against the real one.
 
 - `2026-09-15` — 🚨 **A TWO-ARM COMPARISON IS NEVER THE PROOF.** `encore/AuditionProof.tsx` rendered
   "Expert match {N}/100", called itself THE PROOF in its own header and described the vanilla arm as

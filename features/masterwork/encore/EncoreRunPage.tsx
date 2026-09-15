@@ -26,7 +26,8 @@ import { runHref } from "@/features/workflow-runtime/run-doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
-import { getBenchProof, type BenchProofState } from "./benchProof";
+import { getBenchProof, UNAVAILABLE, type BenchProofState } from "./benchProof";
+import { RunTheBench } from "./RunTheBench";
 import {
   getEncoreMasterwork,
   listMyEncoreRuns,
@@ -106,15 +107,14 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // Masterwork has loaded. A viewer who cannot read the Rulebook gets the
   // "can't tell from here" sentence rather than a false "no proof".
   const rulebookId = masterwork?.rulebook?.id ?? null;
+  const refreshBench = useCallback(() => {
+    if (!rulebookId) return;
+    void getBenchProof(rulebookId).then(setBench);
+  }, [rulebookId]);
   useEffect(() => {
     let cancelled = false;
     if (!rulebookId) {
-      setBench({
-        status: "unavailable",
-        reason:
-          "Only people who can open this Masterwork's Rulebook can see whether a bench trial exists for it.",
-        canRunHere: false,
-      });
+      setBench(UNAVAILABLE);
       return;
     }
     setBench({ status: "loading" });
@@ -244,6 +244,17 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
           auditionedAt={masterwork.auditionedAt}
           bench={bench}
         />
+        {/* THE PROOF HAS A DOOR. It sits beside the quick check because that
+            is the comparison being made: one is a two-arm check, the other is
+            the six-arm trial that can establish a win. When the server cannot
+            start one here, this renders its reason — never a dead button. */}
+        {rulebookId ? (
+          <RunTheBench
+            rulebookId={rulebookId}
+            bench={bench}
+            onVerdict={refreshBench}
+          />
+        ) : null}
 
         <div className="mt-4 border-t border-border pt-4">
           <TryMasterworkBox

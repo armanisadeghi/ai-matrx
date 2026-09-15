@@ -95,7 +95,19 @@ export type MasterworkRunSurface =
   // surface and pointer: it never rejoins the reference Audition's dialog.
   | "compare_two"
   | "checkup"
-  | "clean_corpus";
+  | "clean_corpus"
+  // THE TRIAL BENCH (`/masterworks/{rulebook_id}/bench/runs`) — six arms, a
+  // blind panel, and a verdict. Its own surface and pointer: a Bench trial is
+  // not an Audition and must never rejoin one.
+  //
+  // 🚨 A BENCH RUN IS NOT ALWAYS DURABLE. `bench_trial` is not yet in the
+  // `platform.masterwork_run.operation` vocabulary, so when the server reports
+  // `form.durable === false` there is no row, no `masterwork_run` receipt and
+  // therefore no pointer and no rejoin. That degrades cleanly here — `launch`
+  // sets `running` itself, stages and the terminal event are handled without a
+  // run id — and the DOOR says so in the server's own sentence before the
+  // person spends. It is never papered over.
+  | "bench";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
@@ -138,6 +150,7 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // paid pass the Expert asks for, so it gets its own surface and pointer and
   // is visible in the run ledger like every other Masterwork operation.
   clean_corpus: "masterwork_corpus_cleaned",
+  bench: "masterwork_bench_verdict",
 };
 
 /**
@@ -191,6 +204,14 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   unfolding: 90_000,
   // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
   triage: 90_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. A trial runs SIX arms (A0/A1/A2/B/C/GT), one of which is
+  // the product's own workflow, and then judges them: a spine call per arm,
+  // the panel's calibration leg and the blind panel itself. Live CLI trials of
+  // 2026-09-15 put arm C alone at 782-1694 s. 15 minutes is the honest opening
+  // promise; `useDurableRun` stops promising entirely past three times it.
+  bench: 900_000,
 };
 
 /**

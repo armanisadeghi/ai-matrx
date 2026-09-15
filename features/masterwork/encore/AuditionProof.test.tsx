@@ -66,6 +66,9 @@ const NONE: BenchProofState = {
     "judged cost and time on every arm, and a claim naming the arm and the budget it was made " +
     "against. The Bench runs from the command line today — there is no button for it in the app yet.",
   canRunHere: false,
+  form: null,
+  howToRun:
+    "The Bench runs from the command line today — there is no button for it in the app yet.",
 };
 
 describe("the Audition score is presented as a quick check, never as proof", () => {
@@ -113,7 +116,13 @@ describe("the Audition score is presented as a quick check, never as proof", () 
   });
 
   it("(c) shows the record's own claim, arm, budget, panel and cost", () => {
-    render({ status: "record", proof: RECORD, canRunHere: false });
+    render({
+      status: "record",
+      proof: RECORD,
+      canRunHere: false,
+      form: null,
+      howToRun: "",
+    });
     const text = host.textContent ?? "";
     expect(text).toContain(RECORD.headline);
     expect(text).toContain("blind panel of 3");
@@ -133,6 +142,8 @@ describe("the Audition score is presented as a quick check, never as proof", () 
       status: "unavailable",
       reason: "Only people who can open this Masterwork's Rulebook can see it.",
       canRunHere: false,
+      form: null,
+      howToRun: "",
     });
     const text = host.textContent ?? "";
     expect(text).toContain("can't tell from here");

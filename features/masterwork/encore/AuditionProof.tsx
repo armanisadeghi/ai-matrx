@@ -30,6 +30,7 @@ import { BadgeCheck, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { BenchProofState } from "./benchProof";
+import { benchFacts } from "./benchFacts";
 
 export interface AuditionProofProps {
   /** 0-100, judged against the Expert's own published work. 50 = parity. */
@@ -77,11 +78,6 @@ export function auditionSentence(verdict: string | null | undefined): {
   return { text, legacy: false };
 }
 
-function money(usd: number | null | undefined): string | null {
-  if (usd === null || usd === undefined) return null;
-  return usd >= 1 ? `$${usd.toFixed(2)}` : `${(usd * 100).toFixed(1)}¢`;
-}
-
 /** The Bench half: a record, or a plain no — never silence, never a fake door. */
 function BenchLine({ bench }: { bench: BenchProofState }) {
   if (bench.status === "loading") {
@@ -94,19 +90,9 @@ function BenchLine({ bench }: { bench: BenchProofState }) {
 
   if (bench.status === "record") {
     const { proof } = bench;
-    const facts = [
-      proof.panel_votes > 0
-        ? `blind panel of ${proof.panel_votes}${
-            proof.gt_in_pool
-              ? proof.gt_won
-                ? ", the expert's own work won it"
-                : ", the expert's own work did NOT win it — the trial is void"
-              : ""
-          }`
-        : null,
-      money(proof.c_cost_usd) ? `our arm cost ${money(proof.c_cost_usd)}` : null,
-      proof.c_seconds ? `${Math.round(proof.c_seconds)}s` : null,
-    ].filter(Boolean);
+    // Built by the shared `benchFacts` so the live dialog and this banked
+    // record can never say the same fact two different ways.
+    const facts = benchFacts(proof);
     return (
       <div className="mt-2 rounded-md border border-border px-2 py-1.5">
         <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
