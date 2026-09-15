@@ -958,7 +958,30 @@ count derived from it would be a confident number over a partial set — the exa
 failure § Column shape exists to prevent. A real count needs its own RPC and is
 not in this pass.
 
-## Formula columns in the grid (2026-09-14)
+## Formula columns in the grid (2026-09-14; readers unified 2026-09-15)
+
+**THE ONE INJECTION POINT (2026-09-15):** `withComputedColumns(rows, fields)` in
+[`formulas.ts`](./formulas.ts) (with `formulaColumnsOf` / `isFormulaColumn`) is the only place a
+formula column's value is put into a row. The grid page, `loadRowsForCopy` / `loadAllRows`
+(every Copy / Copy for AI / CSV+JSON export / copy-subset window — they all read
+`getCompleteTable`, whose rows hold the stored BLANK), the column-filter path, the client-side
+sort and the agent scope's `full_table_json` / `selected_rows_json` all call it. A reference
+resolves against the table's COLUMNS (machine name, then display name), so a row saved without
+that key is BLANK, not the "no such column" `#ERROR` (live-found on the empty sixth row of the
+test table; guard `__tests__/computed-columns.test.ts`). Off-grid writes are refused everywhere:
+`AddRowModal` / `EditRowModal` render a read-only note instead of an input (and skip the column
+in the required and rules checks), `AddColumnModal` offers no default/required control for a
+formula column, and the agent `cell_value` target throws with the reason. Header controls: sort
+by a formula column is client-side when the browser can hold every row (≤ `CLIENT_SORT_THRESHOLD`,
+no search) and otherwise refused with a toast that says why; the column filter's menu is mounted
+without `tableId` for a formula column so it works from the browser's computed rows and says
+when that is not every row (server facets never see the value).
+
+Live-verified 2026-09-15 on the local preview as admin@admin.com: new column "Double area" via
++ Column → Shows as → Formula → editor ("Valid · uses 1 column"), `{Area (sq km)} * 2` rendered
+19193920 for China; sort by it ordered 0 → 34196484; Edit Row showed the read-only note; Copy →
+Text carried the computed column; the Project Tracker example renders "Budget per point" as
+$2,471 (84000 / 34).
 
 A column whose format is `formula` (`lib/field-formats` — language, coercion rules and the
 26 functions in [`formulas.ts`](./formulas.ts), 65 tests) STORES nothing. `UserTableViewer`
@@ -990,6 +1013,8 @@ page). Rule model, editor and strict-mode trigger: § Validation rules (below, b
 validations build).
 
 ## Change log
+
+- `2026-09-15` — **Formula columns: one read-side helper, off-grid refusals, header controls, showcase column.** See § Formula columns in the grid (top paragraph). Commits `26f41a5e8c`, `968b3f08f1`, `315c4dd761`. Verified live on the local preview (list in that section); 286 data-tables tests green; `tsc --noEmit` clean for every touched file. Surface mirror re-synced (`POST /api/admin/surfaces/sync-manifests` → 200) and `pnpm check:surface-drift` OK. Project Tracker example reseeded with `--only project-tracker --reset` (new id `30374c26-f16d-4e78-ab12-01495f86b954`). Filed five review-queue rows (lane `data-tables-grid-overhaul`) and dispatched an independent reviewer. NOT done: aidream ORM regeneration is a no-op for the two new SQL functions (`db/generate.py` emits table models only; nothing in aidream reads `udt_*` functions).
 
 - `2026-09-14` — **Formula columns rendered, validation rules wired into the grid.** Verified live on `/data/[id]`: a `maxLength: 12` rule on Capital rendered "Washington, D.C." amber with the tooltip "Must be at most 12 characters (this is 16) — this value was saved before the rule, and is kept."; typing a 22-character value into that cell and committing raised "Must be at most 12 characters" and kept the editor open with the typed text, and Escape restored "Beijing". Formula rendering has unit coverage only until a column carries the format — the expression editor is the next step.
 
