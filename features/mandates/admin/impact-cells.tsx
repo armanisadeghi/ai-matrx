@@ -30,6 +30,11 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import {
   BLOCKER_META,
@@ -329,15 +334,17 @@ export function ImpactBlockerCell({
 export function ImpactLegend() {
   // The legend is DERIVED from the rule table (D8) — every rule id's plain
   // sentence, per grade — never a hand summary that can drift from the grader.
+  // Click-to-open, so the legend is reachable on touch (a hover card never
+  // opens on a phone); hover still works through the pointer on desktop.
   return (
-    <HoverCard openDelay={100} closeDelay={80}>
-      <HoverCardTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" aria-label="Legend">
           <CircleHelp className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Legend</span>
         </Button>
-      </HoverCardTrigger>
-      <HoverCardContent
+      </PopoverTrigger>
+      <PopoverContent
         align="end"
         className="w-[min(30rem,96vw)] space-y-2 p-3 text-xs"
       >
@@ -385,8 +392,8 @@ export function ImpactLegend() {
             ),
           )}
         </ul>
-      </HoverCardContent>
-    </HoverCard>
+      </PopoverContent>
+    </Popover>
   );
 }
 

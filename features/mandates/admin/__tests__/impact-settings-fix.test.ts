@@ -6,7 +6,7 @@ jest.mock("@/lib/knobs/featureKnobs", () => ({
   knobInt: jest.fn(async () => 72),
 }));
 
-import { describeSettingsChanges } from "../impact-settings-fix";
+import { describeSettingsChanges, describeThunkFailure } from "../impact-settings-fix";
 import { settleSettingsFix, type SettingsFixReport } from "../impact-settings-fix-report";
 import { ADMIN_WRITE_CONTEXT, type ImpactVerdict } from "../impact";
 
@@ -119,5 +119,18 @@ describe("settleSettingsFix — before → after from the read that followed the
     expect(after.after[0].afterTier).toBeNull();
     expect(after.changedPile).toBe(false);
     expect(after.sentence).toContain("expected v32");
+  });
+});
+
+describe("describeThunkFailure — a thunk rejection is always a sentence (verifier D-A)", () => {
+  it("a createAsyncThunk condition rejection never prints [object Object]", () => {
+    const sentence = describeThunkFailure({ name: "ConditionError", message: "" });
+    expect(sentence).not.toContain("[object");
+    expect(sentence).toMatch(/skipped/);
+  });
+  it("an Error and a string pass through; an unknown object is serialized", () => {
+    expect(describeThunkFailure(new Error("boom"))).toBe("boom");
+    expect(describeThunkFailure("plain")).toBe("plain");
+    expect(describeThunkFailure({ code: 42 })).toBe('{"code":42}');
   });
 });

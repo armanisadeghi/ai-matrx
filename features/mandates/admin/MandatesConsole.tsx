@@ -197,6 +197,7 @@ function toMandateSummary(r: MandateRow): MandateSummary {
 function toMandateDetail(
   row: MandateRow,
   data: MandateConsoleData,
+  newestSnapshotByAgent: Record<string, number | null>,
 ): MandateDetail {
   const holder = holderOfMandate(row.mandate);
   const pinnedVersion = holder.versionId
@@ -210,7 +211,9 @@ function toMandateDetail(
     agent_type: agent?.agentType ?? null,
     use_latest: isFloatingMandate(row.mandate),
     pinned_version: pinnedVersion?.versionNumber ?? null,
-    latest_version: agent?.version ?? null,
+    // The newest SAVED snapshot from the impact read — never `agent.version`,
+    // which is the optimistic-concurrency counter and not a version (R7/D10).
+    latest_version: agentId ? (newestSnapshotByAgent[agentId] ?? null) : null,
   };
 }
 
@@ -997,7 +1000,9 @@ export function MandatesConsole() {
       system_agent_count: agentOptions.length,
       selected_mandate_id: selectedRow?.id,
       selected_mandate:
-        selectedRow && data ? toMandateDetail(selectedRow, data) : undefined,
+        selectedRow && data
+          ? toMandateDetail(selectedRow, data, newestSnapshotByAgent)
+          : undefined,
       selected_mandate_health: selectedRow?.health,
       selected_mandate_overrides: overrides,
       selected_mandate_contract: contract,

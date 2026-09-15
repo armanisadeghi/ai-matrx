@@ -672,8 +672,18 @@ export function withheldSentenceOf(groups: readonly WithheldGroup[]): string | n
   if (count === 0) return null;
   return (
     `${count} rung${count === 1 ? "" : "s"} withheld: ` +
-    groups.map((group) => `${group.count} ${group.explanation}`).join("; ")
+    groups.map((group) => `${group.count} ${singularizeExplanation(group.count, group.explanation)}`).join("; ")
   );
+}
+
+/**
+ * The server's per-kind explanation is written for a count ("personal pins
+ * owned by other people", "global rungs …"); at exactly one, the first plural
+ * noun loses its "s" so the sentence never reads "1 personal pins".
+ */
+export function singularizeExplanation(count: number, explanation: string): string {
+  if (count !== 1) return explanation;
+  return explanation.replace(/\b(pins|rungs|bindings|defaults)\b/, (word) => word.slice(0, -1));
 }
 
 /** ONE sentence for merged unknown ids, in the server's own form (Amendment 3d). */

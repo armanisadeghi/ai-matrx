@@ -54,8 +54,11 @@ import {
   rungSuffixOf,
   summarizeAdvanceReport,
   versionsLabelOf,
+  mergeAdvanceReports,
+  splitWriteLegs,
   type AdvanceReport,
   type BatchTierCounts,
+  type ImpactPosture,
   type ImpactVerdict,
   type StandingImpact,
   type WriteContext,
@@ -126,8 +129,15 @@ export type AutoAdvanceOutcome =
   | { state: "off" }
   | { state: "knob_unknown"; why: string }
   | { state: "no_candidates" }
-  | { state: "advanced"; report: AdvanceReport; candidates: ImpactVerdict[] }
+  | { state: "advanced"; report: AdvanceReport; legs: AutoAdvanceLeg[]; candidates: ImpactVerdict[] }
   | { state: "failed"; why: string; candidates: ImpactVerdict[] };
+
+/** One server batch behind the automatic move — the door it went through, so Put back uses the same one. */
+export interface AutoAdvanceLeg {
+  posture: ImpactPosture;
+  batchId: string;
+  report: AdvanceReport;
+}
 
 /**
  * The automatic step, as a pure function of the read: candidates by the hard
@@ -142,11 +152,21 @@ export async function autoAdvanceAfterSave(
   const knob = await readAutoAdvanceGreen();
   if (knob.state === "unknown") return { state: "knob_unknown", why: knob.why };
   if (!knob.value) return { state: "off" };
-  const candidates = autoAdvanceCandidates(impact.verdicts, context);
+  // THE SAME LANES AS THE PANEL (R47): a super admin's OWN personal pins go
+  // through the owner door (/mine), org/global rungs through the admin lane,
+  // and another person's pin is never sent — `splitWriteLegs` drops it before
+  // any request. One request per lane, shown as one batch.
+  const legs = splitWriteLegs(autoAdvanceCandidates(impact.verdicts, context), context);
+  const candidates = legs.flatMap((leg) => leg.verdicts);
   if (candidates.length === 0) return { state: "no_candidates" };
   try {
-    const report = await postAdvance(dispatch, candidates, batchLabel, context.posture);
-    return { state: "advanced", report, candidates };
+    const written: AutoAdvanceLeg[] = [];
+    for (const leg of legs) {
+      const report = await postAdvance(dispatch, leg.verdicts, batchLabel, leg.posture);
+      written.push({ posture: leg.posture, batchId: report.batch_id, report });
+    }
+    const report = mergeAdvanceReports(written.map((leg) => leg.report));
+    return { state: "advanced", report, legs: written, candidates };
   } catch (error) {
     return {
       state: "failed",
@@ -154,6 +174,29 @@ export async function autoAdvanceAfterSave(
       candidates,
     };
   }
+}
+
+/**
+ * Put back EVERY leg of an automatic move through the door it went through
+ * (a /mine batch cannot be reverted through the admin door, nor the reverse).
+ * Never throws — each leg answers with its report or its failure sentence.
+ */
+export async function revertAutoAdvance(
+  dispatch: AppDispatch,
+  legs: readonly AutoAdvanceLeg[],
+  batchLabel: string,
+): Promise<{ reports: AdvanceReport[]; failures: string[] }> {
+  const reports: AdvanceReport[] = [];
+  const failures: string[] = [];
+  for (const leg of legs) {
+    if ((leg.report.counts?.advanced ?? 0) === 0) continue;
+    try {
+      reports.push(await postRevert(dispatch, leg.batchId, null, batchLabel, leg.posture));
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  return { reports, failures };
 }
 
 /** The announcement's lines: every pin that moved, from → to, in the batch's own words. */
@@ -224,7 +267,7 @@ export function useAgentChangeReach(agentId: string) {
       if (auto.state === "advanced") {
         const { title, lines } = describeAutoAdvance(auto.report, auto.candidates);
         const advanced = auto.report.counts?.advanced ?? 0;
-        const batchId = auto.report.batch_id;
+        const legs = auto.legs;
         const announce = advanced > 0 ? toast.success : toast.error;
         announce(title, {
           duration: AUTO_ADVANCE_TOAST_MS,
@@ -234,30 +277,26 @@ export function useAgentChangeReach(agentId: string) {
               ? {
                   label: "Put back",
                   onClick: () => {
-                    void postRevert(
+                    void revertAutoAdvance(
                       dispatch,
-                      batchId,
-                      null,
+                      legs,
                       `Put back auto-advance after edit of ${name ?? "agent"}`,
-                      writeContext.posture,
-                    )
-                      .then((revert) => {
-                        const back = revert.counts?.reverted ?? 0;
-                        (back > 0 ? toast.success : toast.error)(
-                          `${back > 0 ? "Put back" : "Nothing put back"}: ${summarizeAdvanceReport(revert)}`,
-                          {
-                            description: (revert.results ?? [])
-                              .map((row) => `${row.mandate_key ?? row.token.row_id}: ${row.status} — ${row.reason ?? ""}`)
-                              .join(" · "),
-                          },
+                    ).then(({ reports, failures }) => {
+                      const revert = reports.length > 0 ? mergeAdvanceReports(reports) : null;
+                      const back = revert?.counts?.reverted ?? 0;
+                      const lines = (revert?.results ?? []).map(
+                        (row) => `${row.mandate_key ?? row.token.row_id}: ${row.status} — ${row.reason ?? ""}`,
+                      );
+                      if (failures.length > 0) {
+                        lines.push(
+                          `${failures.length} revert request${failures.length === 1 ? "" : "s"} failed: ${failures.join("; ")} — the batch is in its ledger and can be put back from the impact panel.`,
                         );
-                      })
-                      .catch((error: unknown) => {
-                        toast.error(
-                          `The revert failed: ${error instanceof Error ? error.message : String(error)}`,
-                          { description: "Open the impact panel — the batch is in its ledger and can be put back from there." },
-                        );
-                      });
+                      }
+                      (back > 0 && failures.length === 0 ? toast.success : toast.error)(
+                        `${back > 0 ? "Put back" : "Nothing put back"}${revert ? `: ${summarizeAdvanceReport(revert)}` : "."}`,
+                        { description: lines.join(" · ") },
+                      );
+                    });
                   },
                 }
               : undefined,
