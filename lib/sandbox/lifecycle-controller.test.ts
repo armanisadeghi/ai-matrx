@@ -28,7 +28,7 @@ describe("sandbox lifecycle controller", () => {
   it("offers only exact retry for a receipt whose status is unknown at 404", async () => {
     const views: unknown[] = [];
     const controller = new SandboxLifecycleReceiptController({ actorId: "33333333-3333-4333-8333-333333333333", generation: 1, isCurrent: () => true, receipt, adapter: { recover: jest.fn(), status: async () => wire(404, { error: "missing" }), admit: async (same) => { expect(same.operation_id).toBe(receipt.operation_id); expect(same.row_id).toBe(receipt.row_id); expect(same.kind).toBe(receipt.kind); return wire(202, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "accepted" }); } }, onView: (view) => views.push(view), environment: { visible: () => true, online: () => true, addEventListener: () => {}, removeEventListener: () => {} } });
-    controller.start(); await new Promise((resolve) => setTimeout(resolve, 0)); await controller.retry(); controller.stop();
+    controller.start(); await new Promise((resolve) => setTimeout(resolve, 10)); await controller.retry(); controller.stop();
     expect(views).toEqual([expect.objectContaining({ state: "unknown", action: "retry" }), expect.objectContaining({ state: "pending" })]);
   });
 
@@ -40,7 +40,7 @@ describe("sandbox lifecycle controller", () => {
   it("permits recovery only from attention and records terminal success without deleting the receipt", async () => {
     const views: unknown[] = []; const recover = jest.fn(async () => wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "succeeded" }));
     const controller = new SandboxLifecycleReceiptController({ actorId: "33333333-3333-4333-8333-333333333333", generation: 1, isCurrent: () => true, receipt, adapter: { admit: jest.fn(), recover, status: async () => wire(200, { row_id: receipt.row_id, sandbox_id: "runtime-a", operation_id: receipt.operation_id, kind: receipt.kind, state: "recovery_required" }) }, onView: (view) => views.push(view), environment: { visible: () => true, online: () => true, addEventListener: () => {}, removeEventListener: () => {} } });
-    controller.start(); await new Promise((resolve) => setTimeout(resolve, 0)); await controller.recover(); controller.stop();
+    controller.start(); await new Promise((resolve) => setTimeout(resolve, 10)); await controller.recover(); controller.stop();
     expect(views).toEqual([expect.objectContaining({ state: "attention", action: "recover" }), expect.objectContaining({ state: "success" })]); expect(recover).toHaveBeenCalledWith(receipt, expect.anything());
   });
 });
