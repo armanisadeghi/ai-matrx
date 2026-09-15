@@ -151,6 +151,7 @@ export function QuickSaveCodeCore({
   // about to overwrite it is the incoming version (new). engine="auto"+language
   // routes recognized code to Monaco, plain text to the light engine.
   const handlePreviewOverwrite = useCallback(() => {
+    setShowOverwrite(false);
     openDiff({
       original: selectedFile?.content ?? "",
       modified: content,

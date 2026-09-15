@@ -120,6 +120,7 @@ export function SetContextValueCore({
   const openDiff = useOpenDiffViewerWindow();
 
   const handlePreviewOverwrite = useCallback(() => {
+    setShowOverwriteWarning(false);
     openDiff({
       original: currentRow?.value_text ?? "",
       modified: workingContent,
