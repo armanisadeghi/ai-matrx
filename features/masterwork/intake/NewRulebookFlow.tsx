@@ -935,6 +935,11 @@ export function NewRulebookFlow() {
               <p className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
                 {waitingForWorkspace ? (
                   "Getting your workspace ready…"
+                ) : approachError ? (
+                  // NOTHING FAILS SILENTLY: with no list, "Pick how you'd like
+                  // to do this" is an instruction the Expert cannot follow. Say
+                  // why the button is dark instead (W2).
+                  "Nothing to start until the ways to get started load"
                 ) : selectedApproach ? (
                   <>
                     Starting with{" "}

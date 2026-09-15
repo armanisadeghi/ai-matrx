@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { toast } from "@/lib/toast";
+import { describeFailure } from "@/lib/failure/transport";
 import { createClient } from "@/utils/supabase/client";
 import {
   credentialMaintenanceIndexPath,
@@ -48,11 +49,40 @@ export default function CredentialExpiryNotifier() {
       if (cancelled) return;
 
       if (error || !data) {
+        // WALL W2 (2026-09-15). An Expert on `/masterwork/new` was shown a
+        // permanent toast titled "Credential monitoring is unavailable" whose
+        // body was, verbatim, `canceling statement due to statement timeout`.
+        // TWO lies in one toast. The body was Postgres talking to a DBA, and
+        // the title claimed a standing configuration problem when the database
+        // had simply not answered this one read inside its eight seconds —
+        // which is not a credential problem at all, needs no administration
+        // screen, and must not sit on the page forever with `duration:
+        // Infinity`. A transient refusal and a missing row are different
+        // facts, so they are now different toasts.
+        const failure = describeFailure(error, {
+          action: "checking credential expiry",
+          retrySafe: true,
+          fallback: `The ${WEB_APP_CONFIG_SLUG} app_config row is missing.`,
+        });
+        if (error && failure.transient) {
+          console.error("[credential-expiry] config read failed", error);
+          toast.error("Couldn't check credential expiry just now", {
+            id: CONFIG_ERROR_TOAST_ID,
+            description: `${failure.sentence} ${failure.remedy}`.trim(),
+            duration: 8000,
+          });
+          activeToastIds.push(CONFIG_ERROR_TOAST_ID);
+          return;
+        }
+        // Not transient: either the row is genuinely absent, or the read was
+        // refused for a reason an administrator must look at. That IS a
+        // standing configuration problem, and it keeps the standing toast.
+        if (error) console.error("[credential-expiry] config read failed", error);
         toast.error("Credential monitoring is unavailable", {
           id: CONFIG_ERROR_TOAST_ID,
-          description:
-            error?.message ??
-            `The ${WEB_APP_CONFIG_SLUG} app_config row is missing. Credential expiry checks cannot run.`,
+          description: error
+            ? "The credential-monitoring configuration could not be read. Credential expiry checks cannot run."
+            : `The ${WEB_APP_CONFIG_SLUG} app_config row is missing. Credential expiry checks cannot run.`,
           duration: Infinity,
           action: {
             label: "Manage",
