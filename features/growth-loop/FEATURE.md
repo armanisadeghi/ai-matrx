@@ -199,6 +199,17 @@ Neither ever restates a stage.
   every direct incoming/outgoing connection and dims unrelated stages and arrows; arrow selection
   highlights both endpoints. Canvas clicks clear the trace.
 
+- 2026-09-14 — claude: fixed a React hydration-mismatch error that logged on every load of the
+  public `/how-it-works` page. `GrowthLoopRing`'s node and arrow geometry is trigonometric
+  (`50 + 40 * Math.cos(...)`), which lands on values like `29.999999999999982`; the SSR HTML and
+  the hydrated client did not serialise that identically (`left: 30%` vs
+  `left: 29.999999999999982%`). Every coordinate now goes through a `percent()` helper that rounds
+  to 3 decimals at the source, so both halves emit the same string — three decimals of a percentage
+  is far below one device pixel, so nothing moved. Verified: headless Chromium at 1440x1000 and
+  390x844, console clean on `/how-it-works` where it previously errored. Found while adding the
+  differentiator cross-link band to that route (`/why-ai-matrx`, `/how-we-prove-it`,
+  `/the-landscape`), which lives in the route file, not in `GrowthLoopStory` — that component stays
+  generated from the loop map and about the loop.
 - 2026-08-13 — claude: re-audit after an agent proposed dropping `growth.*` as unused. **Root
   cause found and fixed:** `growth_loop` was the only one of aidream `app.py`'s 138 routers never
   mounted, so 3,209 rescued lines were unreachable — mounted now (13 routes, `/api/growth-loop/*`).
