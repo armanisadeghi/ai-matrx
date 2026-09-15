@@ -52,6 +52,9 @@ jest.mock("@/features/google-workspace/GoogleAccountSelect", () => ({
     </select>
   ),
 }));
+jest.mock("@/features/google-workspace/GoogleAgentToolsSection", () => ({
+  GoogleAgentToolsSection: () => <div data-testid="google-agent-tools" />,
+}));
 
 const keys = [
   "drive_files",
