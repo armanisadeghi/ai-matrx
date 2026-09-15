@@ -158,6 +158,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Provisional safe-cutover fence: both orchestrator tiers must be live on
+    // atomic admission before this read-only guard can be removed. During a
+    // staggered frontend/backend release, the older orchestrator has no
+    // durable capacity primitive. Fail closed on an unreadable census and do
+    // not run reconciliation here: create admission must never mutate rows.
+    const { count: activeCount, error: activeCountError } = await supabase
+      .from("sandbox_instances")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .in("status", ["creating", "starting", "ready", "running"])
+      .is("deleted_at", null);
+
+    if (activeCountError || activeCount === null) {
+      console.error(
+        "[POST /api/sandbox] active sandbox capacity check failed",
+        activeCountError,
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Sandbox capacity check is temporarily unavailable. Try again shortly.",
+        },
+        { status: 503 },
+      );
+    }
+
+    if (activeCount >= 5) {
+      return NextResponse.json(
+        {
+          error:
+            "Maximum active sandbox limit reached (5). Stop an existing sandbox first.",
+        },
+        { status: 429 },
+      );
+    }
+
     // Tier is required — reject requests that omit it rather than silently
     // routing to a default orchestrator. Callers must read the user's
     // configured default from `sandboxPrefs.tier` or `useSandboxCreate().tier`.
