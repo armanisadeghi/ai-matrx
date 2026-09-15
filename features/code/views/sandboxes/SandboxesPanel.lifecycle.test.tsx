@@ -2,12 +2,22 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { SandboxInstance } from "@/types/sandbox";
+import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
 const dispatch = jest.fn();
 let selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
 let selectedUserId: string | null = "33333333-3333-4333-8333-333333333333";
 let authReady = true;
+let nextRequest: SandboxCreateRequest = {
+  organization_id: selectedOrganizationId,
+  tier: "ec2",
+  template: "bare",
+  ttl_seconds: 3600,
+  project_id: "44444444-4444-4444-8444-444444444444",
+  config: { name: "captured-name", retained: true },
+  resources: { cpu: 2, memory_mb: 2048, disk_mb: 4096 },
+  labels: { source: "code" },
+};
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
@@ -42,16 +52,7 @@ jest.mock("./useSandboxCreate", () => ({
     resources: { enabled: false, cpu: 2, memoryMb: 2048, diskMb: 4096 },
     setResources: jest.fn(),
     persistChoices: jest.fn(),
-    buildRequest: () => ({
-      organization_id: selectedOrganizationId,
-      tier: "ec2",
-      template: "bare",
-      ttl_seconds: 3600,
-      project_id: "44444444-4444-4444-8444-444444444444",
-      config: { name: "captured-name", retained: true },
-      resources: { cpu: 2, memory_mb: 2048, disk_mb: 4096 },
-      labels: { source: "code" },
-    }),
+    buildRequest: () => nextRequest,
   }),
 }));
 jest.mock("./SandboxVersionHealthCard", () => ({ SandboxVersionHealthCard: () => null }));
@@ -144,6 +145,7 @@ describe("SandboxesPanel deletion", () => {
     selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
     selectedUserId = "33333333-3333-4333-8333-333333333333";
     authReady = true;
+    nextRequest = { ...nextRequest, organization_id: selectedOrganizationId };
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -337,5 +339,59 @@ describe("SandboxesPanel non-blocking creation", () => {
 
     expect(toast.dismiss).toHaveBeenCalledWith("unmounted-toast");
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("invalidates a held create across logout then same-account login", async () => {
+    let resolveCreate: ((value: ReturnType<typeof response>) => void) | undefined;
+    toast.loading.mockImplementationOnce(() => "logout-toast");
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => { resolveCreate = resolve; });
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    authReady = false;
+    await act(async () => root.render(<SandboxesPanel />));
+    authReady = true;
+    await act(async () => root.render(<SandboxesPanel />));
+    await act(async () => resolveCreate?.(response({ instance: { ...instance, name: "old login", status: "creating" } }, 201)));
+    await settle();
+
+    expect(container.textContent).not.toContain("old login");
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.dismiss).toHaveBeenCalledWith("logout-toast");
+  });
+
+  it.each<SandboxCreateRequest>([
+    {
+      organization_id: "22222222-2222-4222-8222-222222222222",
+      tier: "ec2", template: "bare", ttl_seconds: 3600,
+      labels: { source: "first-case" },
+    },
+    {
+      organization_id: "22222222-2222-4222-8222-222222222222",
+      tier: "hosted", template: "aidream", template_version: "2026.09.15",
+      ttl_seconds: 7200, project_id: "44444444-4444-4444-8444-444444444444",
+      config: { name: "second-case", retained: true },
+      resources: { cpu: 4, memory_mb: 8192, disk_mb: 16384 },
+      labels: { source: "second-case", mode: "heavy" },
+    },
+  ])("forwards every typed create request field exactly", async (request) => {
+    nextRequest = request;
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return Promise.reject(new TypeError("held for payload assertion"));
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    const post = (global.fetch as jest.Mock).mock.calls.find(
+      ([url, init]) => url === "/api/sandbox" && init?.method === "POST",
+    );
+    expect(post).toBeDefined();
+    expect(JSON.parse(post?.[1].body)).toEqual(request);
   });
 });
