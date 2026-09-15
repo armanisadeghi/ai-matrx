@@ -1032,35 +1032,48 @@ button.shell-nav-flyout-item {
   flex: 1;
 }
 
-/* Settings keeps its own readable expanded width, but the canonical shell
-   checkbox remains the only source of truth for whether this is a rail. */
+/* Settings is a full navigation surface on desktop. Its route gate forces the
+   complete sidebar presentation without changing the saved checkbox value, so
+   leaving Settings restores the user's usual expanded/collapsed preference. */
 @media (min-width: 1024px) {
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) {
+  .shell-root[data-settings-route] {
     grid-template-columns: 15rem 1fr;
   }
 
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) .shell-sidebar {
+  .shell-root[data-settings-route] .shell-sidebar {
     width: 15rem;
     background: var(--shell-sidebar-bg-expanded);
     border-right-color: var(--shell-sidebar-border-expanded);
   }
 
   .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
-    .settings-route-menu [role="search"],
-  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
-    .settings-route-menu h2,
-  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
-    .settings-route-menu-empty,
-  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
-    .settings-route-menu-description,
-  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
-    .settings-route-menu-location {
-    display: none;
+    .shell-nav-item {
+    gap: 0.75rem;
+  }
+
+  .shell-root[data-settings-route] :is(.shell-nav-label, .shell-sidebar-switch-label) {
+    width: auto;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
   }
 
   .shell-root[data-settings-route] .shell-sidebar-footer {
     display: none;
   }
+}
+
+.shell-sidebar-settings-home {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--shell-nav-text);
+  text-decoration: none;
+}
+
+.shell-sidebar-brand-toggle-static {
+  cursor: default;
 }
 
 .settings-route-menu {
