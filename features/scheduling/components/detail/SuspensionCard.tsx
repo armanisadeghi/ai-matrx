@@ -76,7 +76,8 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
   const now = useNow();
   const suspended = task.metadata.auto_suspended;
   const alarmMute = task.metadata.alarm_mute;
-  const alarmMuted = alarmMute !== undefined && new Date(alarmMute.until).getTime() > now;
+  const alarmMuted =
+    alarmMute !== undefined && new Date(alarmMute.until).getTime() > now;
   const history = task.metadata.auto_suspended_history ?? [];
   const approval = approvalSentence(task);
 
@@ -112,8 +113,14 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
                 .
               </p>
               {suspended.reason && (
-                <p className="text-foreground" data-surface-value="suspension_reason">
-                  <TextWithDoors text={suspended.reason} defaultToken="sch_task" />
+                <p
+                  className="text-foreground"
+                  data-surface-value="suspension_reason"
+                >
+                  <TextWithDoors
+                    text={suspended.reason}
+                    defaultToken="sch_task"
+                  />
                 </p>
               )}
               {suspended.run_id && (
@@ -135,8 +142,9 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
                 <p data-surface-value="schedule_alarm_mute">
                   Its alarm is muted until {formatWhen(alarmMute.until)}
                   {alarmMute.by ? ` by ${alarmMute.by}` : ""}
-                  {alarmMute.reason ? ` — ${alarmMute.reason}` : ""}. It leaves the
-                  super-admin attention dock until then and returns on its own.
+                  {alarmMute.reason ? ` — ${alarmMute.reason}` : ""}. It leaves
+                  the super-admin attention dock until then and returns on its
+                  own.
                 </p>
               )}
               {suspended.override_notice && (
@@ -175,8 +183,8 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
               {isSuspendedNow && (
                 <>
                   {" "}
-                  Re-enabling restores this approval — it is not a new schedule and
-                  needs no new sign-off.
+                  Re-enabling restores this approval — it is not a new schedule
+                  and needs no new sign-off.
                 </>
               )}
             </p>
@@ -199,7 +207,8 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
             )}
             <History className="h-3.5 w-3.5" />
             <span>
-              Suspended {history.length} {history.length === 1 ? "time" : "times"} before
+              Suspended {history.length}{" "}
+              {history.length === 1 ? "time" : "times"} before
             </span>
           </button>
           {historyOpen && (
@@ -228,6 +237,18 @@ function HistoryEntry({ entry }: { entry: AutoSuspendedBlock }) {
       {entry.reason && (
         <p className="text-muted-foreground">
           <TextWithDoors text={entry.reason} defaultToken="sch_task" />
+        </p>
+      )}
+      {entry.run_id && (
+        <p>
+          <a
+            href={`#run-${entry.run_id}`}
+            className="underline underline-offset-2"
+            title="Jump to this run in the history below"
+          >
+            The run that tipped it
+          </a>{" "}
+          is in the history below.
         </p>
       )}
       {entry.restored ? (

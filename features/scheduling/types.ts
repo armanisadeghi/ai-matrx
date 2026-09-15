@@ -76,6 +76,8 @@ export interface AutoSuspendedBlock {
   at?: string;
   run_id?: string;
   failure_signature?: string;
+  /** Repeat-guard verdict recorded with an auto-suspension history entry. */
+  verdict?: string;
   consecutive_failures?: number;
   reason?: string;
   /** Present when the guard overrode a human approval — in those words. */

@@ -220,6 +220,14 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-15** — Scanner Health now waits for explicit organization
+  admission before its first status poll and refreshes immediately when the
+  selected organization arrives or changes; a settled missing selection uses
+  `OrganizationRequiredNotice` instead of a false scanner-outage error. Every
+  prior repeat-guard suspension with a recorded `run_id` now links to that run
+  in the schedule history, fetching referenced runs outside the recent page
+  and rendering an honest unavailable target if an old run was purged.
+
 - **2026-09-14** — Record and run-history reads now share the roster's
   20-second abort boundary. Detail, edit, and run-history error states expose
   manual Retry actions, so an unhealthy scheduler read always terminates in a
@@ -255,7 +263,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   `/schedules/<id>` refused every `kind='tool'` system schedule with the
   AccessGate ("You don't have access to this scheduled task"), so the banner and
   scanner-health rows led nowhere and raw SQL was the only way to re-enable a
-  wrongly-suspended schedule. See *A system schedule's record page* below.
+  wrongly-suspended schedule. See _A system schedule's record page_ below.
 - **2026-09-14** — **Schedule alarms v2: an alarm with a way out.** The global
   banner became furniture (three commerce schedules red for 16 days because
   commerce is unbuilt; two SEO schedules orange on one transient failure; every
@@ -624,8 +632,9 @@ On the page, for a task the guard switched off (`components/detail/SuspensionCar
 - the recorded approval (`metadata.approval` / `approved_by` / `approved_at`),
   stating that re-enabling RESTORES it — not a new schedule, no new sign-off
   (`common-docs/policies/no-unapproved-schedules.md`);
-- the prior suspensions in `auto_suspended_history`, each saying whether a
-  restore was recorded and by whom;
+- the prior suspensions in `auto_suspended_history`, each linking its recorded
+  `run_id` to the matching history row and saying whether a restore was
+  recorded and by whom;
 - the page's ONE enable control (the header's Enable/Pause handler, rendered a
   second time beside the complaint — never a second write path). For a `tool`
   task it dispatches `setSystemTaskEnabled` → the admin PATCH

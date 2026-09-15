@@ -22,7 +22,22 @@ interface Props {
 }
 
 export function RunHistoryCard({ taskId, task = null }: Props) {
-  const { runs, status, error, retry } = useTaskRuns(taskId);
+  const requiredRunIds = [
+    task?.metadata.auto_suspended?.run_id,
+    ...(task?.metadata.auto_suspended_history?.map((entry) => entry.run_id) ??
+      []),
+  ].filter((id): id is string => typeof id === "string");
+  const { runs, status, error, retry, requiredRunsSettled } = useTaskRuns(
+    taskId,
+    20,
+    requiredRunIds,
+  );
+  const unavailableRequiredRunIds =
+    status === "success" && requiredRunsSettled
+      ? Array.from(new Set(requiredRunIds)).filter(
+          (requiredId) => !runs.some((run) => run.id === requiredId),
+        )
+      : [];
   useRunStream(taskId);
 
   return (
@@ -65,8 +80,9 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
           ) : null}
         </div>
 
-        {status === "loading" || status === "idle" ? (
+        {status === "loading" || status === "idle" || !requiredRunsSettled ? (
           <div className="space-y-2">
+            <span className="sr-only">Loading run history</span>
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full rounded-md" />
             ))}
@@ -80,7 +96,7 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
               </Button>
             </AlertDescription>
           </Alert>
-        ) : runs.length === 0 ? (
+        ) : runs.length === 0 && unavailableRequiredRunIds.length === 0 ? (
           <div className="text-xs text-muted-foreground py-4">
             No runs yet — the next scheduled fire will appear here.
           </div>
@@ -88,6 +104,15 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
           <div className="space-y-1.5">
             {runs.map((run) => (
               <RunRow key={run.id} run={run} task={task} />
+            ))}
+            {unavailableRequiredRunIds.map((runId) => (
+              <div
+                key={runId}
+                id={`run-${runId}`}
+                className="scroll-mt-24 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground"
+              >
+                This referenced run is no longer available in run history.
+              </div>
             ))}
           </div>
         )}

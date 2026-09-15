@@ -105,20 +105,31 @@ function parseAutoSuspended(value: unknown): AutoSuspendedBlock | undefined {
     at: typeof value.at === "string" ? value.at : undefined,
     run_id: typeof value.run_id === "string" ? value.run_id : undefined,
     failure_signature:
-      typeof value.failure_signature === "string" ? value.failure_signature : undefined,
+      typeof value.failure_signature === "string"
+        ? value.failure_signature
+        : undefined,
     consecutive_failures:
-      typeof value.consecutive_failures === "number" ? value.consecutive_failures : undefined,
+      typeof value.consecutive_failures === "number"
+        ? value.consecutive_failures
+        : undefined,
     reason: typeof value.reason === "string" ? value.reason : undefined,
+    verdict: typeof value.verdict === "string" ? value.verdict : undefined,
     overriding_approval:
-      typeof value.overriding_approval === "string" ? value.overriding_approval : undefined,
+      typeof value.overriding_approval === "string"
+        ? value.overriding_approval
+        : undefined,
     override_notice:
-      typeof value.override_notice === "string" ? value.override_notice : undefined,
+      typeof value.override_notice === "string"
+        ? value.override_notice
+        : undefined,
     restored: restored
       ? {
           at: typeof restored.at === "string" ? restored.at : undefined,
           by: typeof restored.by === "string" ? restored.by : null,
           restored_approval:
-            typeof restored.restored_approval === "string" ? restored.restored_approval : null,
+            typeof restored.restored_approval === "string"
+              ? restored.restored_approval
+              : null,
         }
       : undefined,
   };
@@ -140,10 +151,14 @@ export function parseTaskMetadata(raw: unknown): SchTaskMetadata {
     auto_suspended: parseAutoSuspended(raw.auto_suspended),
     auto_suspended_history: history && history.length > 0 ? history : undefined,
     approval: typeof raw.approval === "string" ? raw.approval : undefined,
-    approved_by: typeof raw.approved_by === "string" ? raw.approved_by : undefined,
-    approved_at: typeof raw.approved_at === "string" ? raw.approved_at : undefined,
+    approved_by:
+      typeof raw.approved_by === "string" ? raw.approved_by : undefined,
+    approved_at:
+      typeof raw.approved_at === "string" ? raw.approved_at : undefined,
     approved_interval:
-      typeof raw.approved_interval === "string" ? raw.approved_interval : undefined,
+      typeof raw.approved_interval === "string"
+        ? raw.approved_interval
+        : undefined,
     handler_gate_pending: raw.handler_gate_pending,
     alarm_mute: parseAlarmMute(raw.alarm_mute),
     impact: parseImpact(raw.impact) ?? undefined,
@@ -320,7 +335,8 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   let error: unknown;
   try {
     ({ data, error } = await schedulerDb(supabase)
-      .schema("scheduler").from("sch_task")
+      .schema("scheduler")
+      .from("sch_task")
       .select(SELECT_TASK_RECORD)
       .eq("id", id)
       .is("deleted_at", null)
@@ -369,7 +385,8 @@ export async function updateAgentTaskFields(
 ): Promise<void> {
   if (Object.keys(patch).length === 0) return;
   const { error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_agent_task")
+    .schema("scheduler")
+    .from("sch_agent_task")
     .update(patch)
     .eq("id", id);
   if (error) throw pgErrorToError(error);
@@ -380,19 +397,53 @@ export async function updateAgentTaskFields(
 export async function listRunsForTask(
   taskId: string,
   limit = 20,
+  requiredRunIds: readonly string[] = [],
 ): Promise<SchRunRow[]> {
   const { controller, dispose } = createScheduleLoadTimeout();
-  let data: SchRunRow[] | null;
-  let error: unknown;
   try {
-    ({ data, error } = await schedulerDb(supabase)
-      .schema("scheduler").from("sch_run")
+    const { data, error } = await schedulerDb(supabase)
+      .schema("scheduler")
+      .from("sch_run")
       .select("*")
       .eq("task_id", taskId)
       .order("created_at", { ascending: false })
       .limit(limit)
       .abortSignal(controller.signal)
-      .returns<SchRunRow[]>());
+      .returns<SchRunRow[]>();
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause: error });
+    }
+    if (error) throw pgErrorToError(error);
+
+    const recentRuns = data ?? [];
+    const missingRequiredIds = Array.from(new Set(requiredRunIds)).filter(
+      (id) => !recentRuns.some((run) => run.id === id),
+    );
+    if (missingRequiredIds.length === 0) return recentRuns;
+
+    // Both reads share one operation-level deadline. Historical enrichment
+    // must fit inside the run history's 20-second terminal boundary, not add a
+    // second full timeout after the recent-page query.
+    const { data: requiredData, error: requiredError } = await schedulerDb(
+      supabase,
+    )
+      .schema("scheduler")
+      .from("sch_run")
+      .select("*")
+      .eq("task_id", taskId)
+      .in("id", missingRequiredIds)
+      .abortSignal(controller.signal)
+      .returns<SchRunRow[]>();
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, {
+        cause: requiredError,
+      });
+    }
+    if (requiredError) throw pgErrorToError(requiredError);
+
+    return [...recentRuns, ...(requiredData ?? [])].sort(
+      (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
+    );
   } catch (cause) {
     if (controller.signal.aborted) {
       throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause });
@@ -401,12 +452,6 @@ export async function listRunsForTask(
   } finally {
     dispose();
   }
-
-  if (controller.signal.aborted) {
-    throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause: error });
-  }
-  if (error) throw pgErrorToError(error);
-  return (data ?? []) as SchRunRow[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -482,7 +527,8 @@ function parseImpact(raw: unknown): SystemTaskImpact[] | null {
   const out: SystemTaskImpact[] = [];
   for (const entry of raw) {
     if (!isRecord(entry)) continue;
-    if (typeof entry.href !== "string" || typeof entry.label !== "string") continue;
+    if (typeof entry.href !== "string" || typeof entry.label !== "string")
+      continue;
     out.push({
       href: entry.href,
       label: entry.label,
@@ -492,12 +538,17 @@ function parseImpact(raw: unknown): SystemTaskImpact[] | null {
   return out.length > 0 ? out : null;
 }
 
-export async function fetchSystemScheduleAlarms(): Promise<SystemScheduleAlarm[]> {
+export async function fetchSystemScheduleAlarms(): Promise<
+  SystemScheduleAlarm[]
+> {
   // `p_overdue_grace_minutes: null` = the scheduler.alarms.overdue_grace_minutes
   // knob. The argument survives only so the function identity stays put.
-  const { data, error } = await schedulerDb(supabase).rpc("system_schedule_alarms", {
-    p_overdue_grace_minutes: undefined,
-  });
+  const { data, error } = await schedulerDb(supabase).rpc(
+    "system_schedule_alarms",
+    {
+      p_overdue_grace_minutes: undefined,
+    },
+  );
   if (error) throw pgErrorToError(error);
   return (data ?? []).map((row) => ({
     ...row,
@@ -529,12 +580,21 @@ type SchTaskMuteRow = Pick<
 
 async function writeAlarmMute(
   taskId: string,
-  next: { until: string; reason: string | null; by: string | null; at: string } | null,
+  next: {
+    until: string;
+    reason: string | null;
+    by: string | null;
+    at: string;
+  } | null,
 ): Promise<void> {
   const db = schedulerDb(supabase);
   const result = await mergeJsonColumn<SchTaskMuteRow>({
     fetchCurrent: () =>
-      db.from("sch_task").select("id, version, metadata").eq("id", taskId).maybeSingle(),
+      db
+        .from("sch_task")
+        .select("id, version, metadata")
+        .eq("id", taskId)
+        .maybeSingle(),
     readColumn: (row) => row.metadata,
     merge: (current) => {
       const { alarm_mute: _dropped, ...rest } = current;
@@ -551,10 +611,14 @@ async function writeAlarmMute(
   });
   if (result.status === "saved") return;
   if (result.status === "not_found") {
-    throw new Error("This schedule no longer exists, so its alarm cannot be muted.");
+    throw new Error(
+      "This schedule no longer exists, so its alarm cannot be muted.",
+    );
   }
   if (result.status === "conflict") {
-    throw new Error("Something else was editing this schedule at the same moment — try again.");
+    throw new Error(
+      "Something else was editing this schedule at the same moment — try again.",
+    );
   }
   throw result.error instanceof Error
     ? result.error
@@ -575,6 +639,8 @@ export async function muteSystemScheduleAlarm(args: {
   });
 }
 
-export async function clearSystemScheduleAlarmMute(taskId: string): Promise<void> {
+export async function clearSystemScheduleAlarmMute(
+  taskId: string,
+): Promise<void> {
   await writeAlarmMute(taskId, null);
 }
