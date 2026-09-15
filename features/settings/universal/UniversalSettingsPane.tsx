@@ -111,6 +111,11 @@ export function UniversalSettingsRows({
                   registeredDefault: knob.shipped_default,
                 } : undefined}
                 stateOnly={stateOnly}
+                showUserLockControl={
+                  settings.editingContext === "organization" &&
+                  scopeKind === "organization" &&
+                  canManageOrganization
+                }
                 hideKey={hideKey}
                 onChanged={onChanged ?? settings.refresh}
               />

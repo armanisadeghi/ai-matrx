@@ -936,6 +936,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setTimelineOpen(true);
   }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
 
+  // THE BAD EXAMPLE PROBE Approach lands here with ?probe=1 from the guided
+  // start, and its next step is a PAGE, not a dialog — so the deep link does
+  // the one thing the picker's `case "probe"` does: go there.
+  //
+  // 🚨 THE CENSUS ROW 3 CLASS, on the other side of the door. `launchApproach`
+  // is only called when the Expert picks an Approach from THIS page; a Rulebook
+  // the funnel created and deep-linked arrives with nobody having picked
+  // anything. Until this effect existed, `?probe=1` was a query string nothing
+  // read: the funnel created the Rulebook, the card had been a real door all
+  // the way through, and the Expert landed on a bare Rulebook page being told
+  // to start an interview — the exact shape of the `timeline` defect, one step
+  // further in. Found by driving the funnel end to end, 2026-09-15.
+  const probeDeepLink = searchParams.get("probe") === "1";
+  const probeDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!probeDeepLink || probeDeepLinkRef.current || !rulebook?.id) return;
+    probeDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/probe`);
+  }, [probeDeepLink, rulebook?.id, router]);
+
   // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
   // ?predictions=1 — the ledger dialog IS the next step. The registry row
   // carries the same `{"predictions":"1"}` in its `intake_query`, so the deep

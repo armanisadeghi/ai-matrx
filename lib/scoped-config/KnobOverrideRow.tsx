@@ -38,6 +38,7 @@ import { formatKnobValue, type KnobLadder } from "./ladder";
 import { availableVoices } from "@/lib/cartesia/voices";
 import {
   setKnobOverride,
+  setKnobRungLock,
   writeKnobOverrideThroughDoor,
   type KnobWriteDoor,
 } from "./service";
@@ -147,7 +148,13 @@ export function KnobOverrideRow(props: {
    */
   /** Platform defaults use feature_knob_set; platform is not a scoped rung. */
   system?: { canWrite: boolean; registeredDefault: unknown };
-  /** Retained for existing callers; user-preference locks have no mutable UI. */
+  /**
+   * Org screen only: offer the per-key "personal overrides" switch (the scfg_50
+   * rung lock — the organization turning off user-level control of this one
+   * setting even though the platform allows it; Arman 2026-08-29). Owner/admin
+   * gated in SQL. f489f35f3e had removed it as a mirror of aidream 0640's lock
+   * exemption; 0702 reverted that exemption, so the switch is back.
+   */
   showUserLockControl?: boolean;
   /**
    * DD-183 — this row is ONE picked scope row at a per-row rung (a table, an
@@ -315,6 +322,55 @@ export function KnobOverrideRow(props: {
       return false;
     }
     return write(parsed.value);
+  };
+
+  const userLockAvailable =
+    Boolean(props.showUserLockControl) &&
+    !system &&
+    !scopeLabel &&
+    scopeKind === "organization" &&
+    knob.overridable_by.includes("user");
+
+  const setUserLock = async (lock: boolean) => {
+    if (lock) {
+      const confirmed = await confirm({
+        title: `Turn off personal overrides for ${knob.label}?`,
+        description:
+          "Members can no longer set their own value for this setting, and any personal values they already saved stop applying. Those values are kept and apply again if you allow personal overrides later.",
+        confirmLabel: "Turn off personal overrides",
+      });
+      if (!confirmed) return;
+    }
+    // Keep every other rung this organization has locked; only the user rung moves.
+    const others = (knob.org_locked_kinds ?? []).filter((kind) => kind !== "user");
+    setBusy(true);
+    try {
+      const result = await setKnobRungLock({
+        feature: knob.feature,
+        key: knob.key,
+        organizationId,
+        lockedKinds: lock ? [...others, "user"] : others,
+      });
+      if (!result.ok) {
+        const detail =
+          result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
+        setInlineError(detail);
+        toast.error(detail);
+        return;
+      }
+      toast.success(
+        lock
+          ? `Personal overrides are off for ${knob.label}.`
+          : `Personal overrides are allowed again for ${knob.label}.`,
+      );
+      onChanged();
+    } catch (err) {
+      const detail = extractErrorMessage(err);
+      setInlineError(detail);
+      toast.error(detail);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const clear = async () => {
@@ -569,6 +625,29 @@ export function KnobOverrideRow(props: {
                 >
                   {system ? "Restore registered default" : "Inherit this value"}
                 </Button>
+              )}
+              {userLockAvailable && (
+                <div className="space-y-1 border-t border-border pt-3">
+                  <p className="text-muted-foreground">
+                    Personal overrides:{" "}
+                    <span className="font-medium text-foreground">
+                      {knob.user_override_locked
+                        ? "off for this organization"
+                        : "allowed"}
+                    </span>
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-start whitespace-normal text-left"
+                    disabled={busy}
+                    onClick={() => void setUserLock(!knob.user_override_locked)}
+                  >
+                    {knob.user_override_locked
+                      ? "Allow personal overrides"
+                      : "Turn off personal overrides"}
+                  </Button>
+                </div>
               )}
             </PopoverContent>
           </Popover>
