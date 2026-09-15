@@ -73,6 +73,7 @@ import { aiModelHref, aiProviderHref } from "../doors";
 import {
   modelFiltersToColumns,
   modelQueryToTab,
+  modelQueryExtras,
 } from "../utils/canonicalTableQuery";
 import {
   ProviderPriceCell,
@@ -1207,10 +1208,8 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
     onCreate,
     onRefresh,
   } = props;
-  const [extraQuery, setExtraQuery] = React.useState<
-    Partial<MatrxDataTableQueryState>
-  >({});
   const { tabState, onUpdateTabState } = props;
+  const extraQuery: Partial<MatrxDataTableQueryState> = tabState.tableQuery ?? {};
   const state: MatrxDataTableQueryState = {
     ...extraQuery,
     search: tabState.q,
@@ -1285,23 +1284,10 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
         mode: "controlled-local",
         state,
         onStateChange: (next) => {
-          const additionalFilters = Object.fromEntries(
-            Object.entries(next.columnFilters).filter(
-              ([key]) =>
-                ![
-                  "maker",
-                  "input_capability",
-                  "output_capability",
-                  "is_deprecated",
-                  "is_primary",
-                  "is_premium",
-                  "context_window",
-                  "max_tokens",
-                ].includes(key),
-            ),
-          );
-          setExtraQuery({ ...next, columnFilters: additionalFilters });
-          onUpdateTabState(modelQueryToTab(next));
+          onUpdateTabState({
+            ...modelQueryToTab(next),
+            tableQuery: modelQueryExtras(next),
+          });
         },
       }}
       isLoading={isLoading && models.length === 0}
