@@ -15,6 +15,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D323 — aidream's `structured_output_contract_satisfied` message marker lands on ZERO live rows (2026-09-15)
+
+**aidream-side defect, filed here because the frontend is the consumer that needed it.** While
+building the schema-bound answer renderer, the only DURABLE per-message signal for "this
+assistant turn is the run's structured output" turned out to be declared but never observed.
+
+- Declared: `STRUCTURED_OUTPUT_SATISFIED_KEY` in `aidream/packages/matrx-ai/matrx_ai/config/response_format.py`
+  (constant ~L16), written into `message.metadata` (~L285-292) and invoked from
+  `matrx_ai/orchestrator/executor.py` (~L2042-2047) *before* `persist_completed_request`.
+- Observed live, `brsgrqvjdzwihsvnfqkf`, 2026-09-15:
+  `select count(*) filter (where metadata ? 'structured_output_contract_satisfied'), count(*) from chat.message where role='assistant' and created_at > now() - interval '7 days'`
+  → **0 of 9,859**. Assistant `metadata` holds only `{finish_reason, provider_iteration}`; the
+  text part's own `metadata` is `{}`.
+- Consequence: the client cannot ask the message whether it is structured output. The renderer
+  therefore reads the RUN'S CONTRACT instead (the conversation-bound agent's `output_schema`,
+  via `features/mandates/output-contract.ts`) and matches the payload's keys against it — honest
+  and durable, but it cannot tell two different agents apart inside one conversation, and it
+  cannot see the kind slug (`kind` / `kind_checked` ride the ephemeral `structured_output`
+  stream event only).
+- Fix belongs in aidream: either make the marker actually land (it is presumably overwritten by a
+  later metadata write on the same row, or the branch's preconditions never hold), or promote the
+  `structured_output` event's `schema_name` / `kind` / `kind_checked` onto the persisted message.
+  Then this repo's `parseStructuredAgentAnswer` can gate on the marker instead of on key coverage.
+
 ### D322 — SEO topical map: 14 `seo.*` DEFINER functions have no door and no grant, and a committed client module already calls them (2026-09-14)
 
 **Not live breakage — an in-flight build with a missing last step.** Filed so the door

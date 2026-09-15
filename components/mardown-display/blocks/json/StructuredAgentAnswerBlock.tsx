@@ -1,8 +1,11 @@
 "use client";
 
 import React from "react";
+import { Copy } from "lucide-react";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { outputSchemaKeys } from "@/features/mandates/output-contract";
+import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 
 type StructuredValue = Record<string, unknown>;
@@ -38,6 +41,72 @@ export function parseStructuredAgentAnswer(
   } catch {
     return null;
   }
+}
+
+/**
+ * Status tone from the VALUE, read against a vocabulary — not against one
+ * agent's enum. This block is the floor for EVERY schema-bound agent, so
+ * hardcoding `done | blocked | needs_user` (the Sandbox Specialist's three
+ * values) would give the next agent's "complete" / "failed" / "pending" a
+ * grey pill that says nothing. Anything unrecognised stays neutral rather
+ * than guessing a colour that would lie about the run.
+ */
+export function statusTone(
+  value: string,
+): "success" | "warning" | "danger" | "neutral" {
+  const v = value.trim().toLowerCase();
+  if (
+    ["done", "complete", "completed", "success", "succeeded", "ok", "passed", "resolved", "healthy"].includes(v)
+  ) {
+    return "success";
+  }
+  if (
+    ["blocked", "failed", "failure", "error", "fatal", "refused", "broken"].includes(v)
+  ) {
+    return "danger";
+  }
+  if (
+    ["needs_user", "needs_input", "needs_review", "pending", "partial", "in_progress", "running", "waiting", "warning", "unknown"].includes(v)
+  ) {
+    return "warning";
+  }
+  return "neutral";
+}
+
+const STATUS_TONE_CLASS: Record<
+  ReturnType<typeof statusTone>,
+  string
+> = {
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
+};
+
+/**
+ * The raw payload keeps a Copy control. Before this block existed the JSON
+ * rendered through `JsonBlock`, whose header carried Copy — replacing it with
+ * a bare `<pre>` would have taken a working affordance away while making the
+ * answer prettier. `writeClipboard` is the ONE clipboard implementation.
+ */
+function CopyRawButton({ rawContent }: { rawContent: string }) {
+  return (
+    <button
+      type="button"
+      aria-label="Copy raw JSON"
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void writeClipboard(rawContent).then(() => {
+          toast.success("Raw answer copied");
+        });
+      }}
+    >
+      <Copy className="h-3.5 w-3.5" />
+      Copy
+    </button>
+  );
 }
 
 function readableLabel(key: string): string {
@@ -142,15 +211,7 @@ export function StructuredAgentAnswerBlock({
       {prose ? renderMarkdown(prose.text) : null}
       {status ? (
         <span
-          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-            status.text === "done"
-              ? "bg-success/10 text-success"
-              : status.text === "blocked"
-                ? "bg-destructive/10 text-destructive"
-                : status.text === "needs_user"
-                  ? "bg-warning/10 text-warning"
-                  : "bg-muted text-muted-foreground"
-          }`}
+          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_TONE_CLASS[statusTone(status.text)]}`}
         >
           {readableLabel(status.text)}
         </span>
@@ -229,8 +290,9 @@ export function StructuredAgentAnswerBlock({
         return null;
       })}
       <details className="text-sm">
-        <summary className="flex min-h-11 cursor-pointer items-center text-muted-foreground">
+        <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-muted-foreground">
           Details
+          <CopyRawButton rawContent={rawContent} />
         </summary>
         <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
           {rawContent}

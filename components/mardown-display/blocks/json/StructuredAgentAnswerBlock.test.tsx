@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   isRenderableStructuredAgentAnswer,
   parseStructuredAgentAnswer,
+  statusTone,
   StructuredAgentAnswerBlock,
 } from "./StructuredAgentAnswerBlock";
 
@@ -219,6 +220,85 @@ describe("schema-bound assistant JSON answer", () => {
     expect(visible.textContent).toContain(captured.next_step);
     expect(visible.textContent).not.toContain('"next_step"');
     expect(details?.textContent).toContain(rawContent);
+    await act(async () => {
+      root.unmount();
+    });
+  });
+  // ── the floor is generic, and it never costs the user a control ──────────
+
+  it("tones a status by vocabulary, not by one agent's enum", () => {
+    // The Sandbox Specialist's three values, which the first cut hardcoded.
+    expect(statusTone("done")).toBe("success");
+    expect(statusTone("blocked")).toBe("danger");
+    expect(statusTone("needs_user")).toBe("warning");
+    // The NEXT schema-bound agent's words — grey pills here would say nothing.
+    expect(statusTone("completed")).toBe("success");
+    expect(statusTone("failed")).toBe("danger");
+    expect(statusTone("in_progress")).toBe("warning");
+    // Never guess a colour that would lie about the run.
+    expect(statusTone("swizzled")).toBe("neutral");
+  });
+
+  it.each([
+    ["done", "bg-success/10"],
+    ["completed", "bg-success/10"],
+    ["failed", "bg-destructive/10"],
+    ["in_progress", "bg-warning/10"],
+    ["swizzled", "bg-muted"],
+  ])("paints the %s pill from the tone", (state, toneClass) => {
+    const value = { state, answer: "A reply long enough to be the prose." };
+    const parsed = parseStructuredAgentAnswer(JSON.stringify(value), {
+      schema: { properties: { state: {}, answer: {} } },
+    });
+    if (!parsed) throw new Error("pill fixture did not parse");
+    const html = renderToStaticMarkup(
+      <StructuredAgentAnswerBlock
+        value={parsed}
+        rawContent={JSON.stringify(value)}
+        renderMarkdown={(content) => <p>{content}</p>}
+      />,
+    );
+    expect(html).toContain(toneClass);
+  });
+
+  it("keeps a Copy control on the raw answer — JsonBlock's header used to carry one", async () => {
+    const captured = capturedSandboxAnswers[0];
+    const rawContent = JSON.stringify(captured);
+    const parsed = parseStructuredAgentAnswer(
+      rawContent,
+      sandboxSpecialistSchema,
+    );
+    if (!parsed) throw new Error("captured payload did not parse");
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <StructuredAgentAnswerBlock
+          value={parsed}
+          rawContent={rawContent}
+          renderMarkdown={(text) => <p>{text}</p>}
+        />,
+      );
+    });
+    const copy = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Copy raw JSON"]',
+    );
+    expect(copy).not.toBeNull();
+
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: (text: string) => {
+          written.push(text);
+          return Promise.resolve();
+        },
+      },
+    });
+    await act(async () => {
+      copy!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(written).toEqual([rawContent]);
     await act(async () => {
       root.unmount();
     });
