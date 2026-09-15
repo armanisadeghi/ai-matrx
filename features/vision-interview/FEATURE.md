@@ -225,6 +225,21 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- **2026-09-15** — **The room can no longer sit on "Working…" over a run that
+  does not exist (wall W9).** `handleInlineEvent` returned on every non-`data`
+  event, so the server's `fatal_error` envelope — the ONE thing the inline
+  start stream sends when `start_session_run` raises before a run row exists —
+  was dropped. `callApi` resolved happily (HTTP 200, stream fully consumed),
+  `runStream` reported the request accepted, and the phase stayed `starting`
+  forever: the Finish dialog read "Handing the interview to the room… Working…"
+  for nine minutes while the server had already crashed and said so. The wire
+  reader is now the pure exported `interpretInlineEvent` (run_id / failure /
+  nothing), an `error` event lands in `runFailed` with the server's
+  person-facing sentence, and a stream that ends having said nothing terminal
+  fails loudly with `SILENT_START_MESSAGE` instead of spinning. Forcing test:
+  `hooks/__tests__/inlineStartVerdict.test.ts` (red against the old
+  drop-everything behaviour, green now).
+
 - **2026-09-09** — Role rooms hide programmatic variable collection and render
   pristine `user_content`; internal role templates no longer appear as Expert
   input or feed speech.
