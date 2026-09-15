@@ -14,7 +14,7 @@
  * actually reach the server (the failure cases are not vacuous).
  */
 import { execFile, type ExecFileException } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -111,6 +111,54 @@ describe("schema snapshot refresher (get-current-schema.ts)", () => {
       const written = JSON.parse(readFileSync(out, "utf8"));
       expect(written.generated_at).toBe(live.generated_at);
       expect(written.schemas).toEqual(live.schemas);
+    } finally {
+      server.close();
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("check:schema --refresh (check-schema.ts)", () => {
+  jest.setTimeout(120_000);
+
+  // A requested refresh that fails must stop the run. Until 2026-09-15 the
+  // orchestrator printed "snapshot refresh failed — using the committed
+  // snapshot" and ran every check against a possibly stale file, exit 0.
+  // Runs the REAL orchestrator (whole schema-check dir copied into a throwaway
+  // checkout, node_modules linked) so its refresher child really runs and fails.
+  it("a refused refresh exits non-zero, in red, and never continues on the committed snapshot", async () => {
+    // Real path on purpose: macOS tmpdir() is a symlink, and the pre-fix
+    // direct-invocation guard silently skipped main() under a symlinked path.
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "schema-refresh-")));
+    const fe = join(base, "fe");
+    const dir = join(fe, "scripts", "schema-check");
+    mkdirSync(dir, { recursive: true });
+    cpSync(HERE, dir, { recursive: true, filter: (src) => !src.endsWith("current-schema.json") });
+    writeFileSync(join(dir, "current-schema.json"), COMMITTED);
+    symlinkSync(join(REPO, "node_modules"), join(fe, "node_modules"));
+    const { server, url } = await serve(401, JSON.stringify({ code: "42501", message: "permission denied for function schema_truth_snapshot" }));
+    try {
+      const r = await new Promise<{ code: number; output: string }>((done) => {
+        execFile(
+          TSX,
+          [join(dir, "check-schema.ts"), "--refresh"],
+          {
+            cwd: fe,
+            env: { NODE_ENV: "test", PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SECRET_KEY: "sb_secret_test" },
+            timeout: 110_000,
+            encoding: "utf8",
+          },
+          (err: ExecFileException | null, stdout: string, stderr: string) =>
+            done({ code: err ? (typeof err.code === "number" ? err.code : 1) : 0, output: `${stdout}${stderr}` }),
+        );
+      });
+      expect(r.output).toContain("schema snapshot NOT refreshed"); // the refresher really ran and was refused
+      expect(r.output).not.toContain("using the committed snapshot");
+      expect(r.output).not.toContain("schema-truth-check:"); // no check ran
+      expect(r.output).toContain("\x1b[31m");
+      expect(r.output).toMatch(/refresh FAILED[\s\S]*remedy/);
+      expect(r.code).not.toBe(0);
+      expect(readFileSync(join(dir, "current-schema.json"), "utf8")).toBe(COMMITTED);
     } finally {
       server.close();
       rmSync(base, { recursive: true, force: true });

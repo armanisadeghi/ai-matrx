@@ -43,7 +43,7 @@ const NOT_SUPABASE = /\b(Array|Object|Buffer|Date|(?:Ui|I)nt(?:8|16|32)Array|Uin
 
 export function checkDirectFromSchema(ctx: Context): Finding[] {
   const { snapshot: snap, schemaBinders } = ctx;
-  if (snap.provenance === "none" || snap.tables.size === 0) return [];
+  if (snap.tables.size === 0) return [];
   const findings: Finding[] = [];
 
   for (const file of ctx.codeFiles) {

@@ -13,7 +13,6 @@ const SCHEMA_RE = /\.schema\(\s*['"]([a-z_][a-z0-9_]*)['"]\s*\)/g;
 
 function check(ctx: Context): Finding[] {
   const { snapshot: snap } = ctx;
-  if (snap.provenance === "none") return [];
   const live = new Set([...snap.tables.keys(), ...snap.views.keys()]);
 
   // schema -> first "path:line" it's referenced at.

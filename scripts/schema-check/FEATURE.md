@@ -17,7 +17,7 @@ against everything the code assumes about the schema, so the 2026 schema reorg
 pnpm check:schema            # full report, exit 0 (loud, non-blocking)
 pnpm check:schema:strict     # exit 1 on any error (CI gate)
 pnpm check:schema:warn       # include the WARN tier
-pnpm check:schema:refresh    # re-pull the live snapshot first, then check
+pnpm check:schema:refresh    # re-pull the live snapshot first, then check — a failed pull exits 1 in red, no check runs
 pnpm check:schema:snapshot   # only refresh scripts/schema-check/current-schema.json
 pnpm check:dead-relations    # fast OFFLINE reference subset (pre-commit) — see below
 tsx scripts/schema-check/check-schema.ts --only types-freshness,direct-from-schema --verbose
@@ -42,8 +42,12 @@ non-zero with the cause and remedy and writes nothing when the RPC is unreachabl
 answers without a snapshot (or when no `SUPABASE_SECRET_KEY` is set); the loader (`snapshot.ts`)
 reads only that file and throws — naming the file and `pnpm check:schema:snapshot` — when it is
 missing, unparsable, or malformed. The snapshot's `generated_at` is printed once in every report's
-provenance line. Guard: `snapshot-source.test.ts` (runs the real refresher against a local server
-with the old aidream fallback planted beside it).
+provenance line. `check:schema --refresh` whose pull fails stops there: exit 1, red, cause and
+remedy, no check run (until 2026-09-15 it warned and checked the committed snapshot, exit 0); plain
+`check:schema` checks the committed snapshot knowingly. There is one snapshot provenance (`rpc`) —
+the degraded `aidream` / `db-types` / `none` labels and the checks' branches on them are gone.
+Guard: `snapshot-source.test.ts` (runs the real refresher, and the real orchestrator with
+`--refresh`, against a refusing local server, with the old aidream fallback planted beside it).
 
 **The RPC is granted to `service_role` only** — the refresher must send `SUPABASE_SECRET_KEY`.
 Key choice is by name, never by line order ([`supabase-env.ts`](./supabase-env.ts), test
@@ -142,6 +146,13 @@ again.
 
 ## Change Log
 
+- **2026-09-15** — Finished the one-snapshot-source class (DC-027 #8): `check:schema --refresh` whose
+  pull fails now exits 1 in red with cause + remedy and runs no check (it warned and checked the
+  committed snapshot, exit 0); `SnapshotProvenance` is `"rpc"` only and the dead
+  `aidream`/`db-types`/`none` branches in six checks and the orchestrator's DEGRADED notes are gone;
+  the direct-invocation guard compares real paths (under a symlinked path `main()` silently never
+  ran, exit 0). Guard: the `check:schema --refresh` case in `snapshot-source.test.ts`, failing
+  against `d6f2db1abc`.
 - **2026-09-10** — `entity-registry-drift` iterated a local re-export shim with zero
   `token/schema/table` rows, so it silently passed every token (DC-009). It now iterates the
   installed `@ai-matrx/associations` `ENTITY_TYPE_METADATA` (injectable for the jest test,
