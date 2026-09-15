@@ -77,6 +77,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -503,6 +504,15 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   const schema = `zz_rls_on_selftest_${Date.now().toString(36)}`;
   const token = `${schema}_t`;
   const viewToken = `${schema}_v`;
+  const scratch = registeredScratchPlan({
+    owner: "check:rls-on --self-test", run: (sql) => door(env, sql), schema, tokens: [token, viewToken],
+    extraRows: [{
+      what: `platform.entity_relationships rows for ${token}, ${viewToken}`,
+      deleteSql: `delete from platform.entity_relationships where child_type in ('${token}','${viewToken}') or parent_type in ('${token}','${viewToken}')`,
+      countSql: `select count(*)::int as n from platform.entity_relationships where child_type in ('${token}','${viewToken}') or parent_type in ('${token}','${viewToken}')`,
+    }],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `grant usage on schema ${schema} to authenticated`);
@@ -601,10 +611,10 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       else { console.log(`  ${C.r}✗${C.x} GREEN — ${arm.toUpperCase().replace("_", " ")} still flags it after ${label}`); bad++; }
     }
   } finally {
-    // The registry rows first: dropping the schema leaves them pointing at nothing.
-    try { await door(env, `delete from platform.entity_relationships where child_type in ('${token}','${viewToken}') or parent_type in ('${token}','${viewToken}')`); } catch { /* named for this run */ }
-    try { await door(env, `delete from platform.entity_types where token in ('${token}','${viewToken}')`); } catch { /* named for this run */ }
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* unique per run */ }
+    // Registry rows first, then the schema — and never silent (DC-027 #8): every step attempted,
+    // every object probed, leftovers named with the remedy, and the run fails for them.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0

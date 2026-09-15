@@ -51,6 +51,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -257,6 +258,10 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   // And the same two states built FOR REAL, so the SQL that feeds the detector is proven too.
   const schema = `zz_staff_door_selftest_${Date.now().toString(36)}`;
   const token = `${schema}_token`;
+  const scratch = registeredScratchPlan({
+    owner: "check:staff-door --self-test", run: (sql) => door(env, sql), schema, tokens: [token],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create table ${schema}.probe (id uuid primary key default gen_random_uuid())`);
@@ -313,13 +318,12 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment the policy is dropped`);
     }
   } finally {
-    // The teardown is not optional: a leftover registered token would break every other guard.
-    try { await door(env, `delete from platform.entity_types where token = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* reported below */ }
-    const left = await door(env, `select count(*)::int as n from platform.entity_types where token = '${token}'`);
-    if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
-      console.log(`  ${C.r}✗${C.x} the self-test left its scratch token behind — remove '${token}' by hand`); bad++;
-    }
+    // The teardown is not optional, and never silent (DC-027 #8): on 2026-09-14 this block swallowed
+    // two `permission denied` failures and its leftover check threw past the report, so
+    // `zz_staff_door_selftest_mu0wnnb1_token` stayed registered and shipped in @ai-matrx/associations.
+    // `teardownScratch` attempts every step, probes every object, never throws, and names what is left.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0
