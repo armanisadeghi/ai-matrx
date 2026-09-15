@@ -26,7 +26,9 @@ export interface ToolResultCanvasDecisionInput {
 /**
  *  1. A put-away pane stays away — offered, so it is still one click away in
  *     the switcher, never opened.
- *  2. Revealed once already → nothing more to do; it is already in the canvas.
+ *  2. Revealed once already → offered, never opened again. Across a reload the
+ *     canvas is empty but the memory is not, so "nothing to do" would strand
+ *     the record outside every switcher.
  *  3. Auto-open off → offer.
  *  4. The canvas is showing something else → OFFER. NEVER HIJACK. This is the
  *     rule the whole design turns on: the agent creating a document while the
@@ -45,7 +47,13 @@ export function decideToolResultCanvasAction({
   isNewest,
 }: ToolResultCanvasDecisionInput): ToolResultCanvasAction {
   if (userClosed) return "offer";
-  if (alreadyAutoOpened) return "none";
+  // Revealed once already → never open it again, but STILL OFFER it. Measured
+  // live on 2026-09-15: returning "none" here meant that after a reload (the
+  // canvas slice is deliberately not persisted, the reveal memory is) a
+  // document the chat had created was in no switcher at all — reachable only
+  // by finding its card again. A record this conversation made is always one
+  // click away in the canvas; it is only ever *opened* once.
+  if (alreadyAutoOpened) return "offer";
   if (!autoOpen) return "offer";
   if (canvasHasOtherContent) return "offer";
   if (!isNewest) return "offer";
