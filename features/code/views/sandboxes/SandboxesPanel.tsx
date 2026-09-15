@@ -116,7 +116,10 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creatingRequest, setCreatingRequest] = useState<{
+    generation: number;
+    organizationId: string;
+  } | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
@@ -137,6 +140,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const didMountReconcileRef = useRef(false);
   const mountedRef = useRef(false);
   const currentOrganizationIdRef = useRef(organizationId);
+  const createRequestGenerationRef = useRef(0);
+  const creating = creatingRequest?.organizationId === organizationId;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -147,6 +152,10 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   useEffect(() => {
     currentOrganizationIdRef.current = organizationId;
+    // A scope switch invalidates its old request's UI ownership. `creating`
+    // is scoped to the request's organization, so the new scope is usable
+    // immediately while an old completion cannot clear a newer create.
+    createRequestGenerationRef.current += 1;
   }, [organizationId]);
 
   const refresh = useCallback(async () => {
@@ -255,13 +264,18 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const createSandbox = useCallback(
     (request: SandboxCreateRequest): void => {
       const requestedOrganizationId = request.organization_id;
+      const requestGeneration = ++createRequestGenerationRef.current;
       const toastId = toast.loading("Requesting sandbox creation");
-      setCreating(true);
+      setCreatingRequest({
+        generation: requestGeneration,
+        organizationId: requestedOrganizationId,
+      });
       setError(null);
       void (async () => {
         const isCurrentSurface = () =>
           mountedRef.current &&
-          currentOrganizationIdRef.current === requestedOrganizationId;
+          currentOrganizationIdRef.current === requestedOrganizationId &&
+          createRequestGenerationRef.current === requestGeneration;
         try {
           const explicitOrganizationId = requireMatchingSandboxOrganization(
             requestedOrganizationId,
@@ -312,8 +326,15 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             toast.warning(unknown);
           }
         } finally {
-          if (isCurrentSurface()) setCreating(false);
-          else toast.dismiss(toastId);
+          // Always retire the exact toast this request created, including
+          // after logout/unmount/scope change. Only its own generation may
+          // clear busy, so a late old completion cannot clear a newer create.
+          toast.dismiss(toastId);
+          if (isCurrentSurface()) {
+            setCreatingRequest((current) =>
+              current?.generation === requestGeneration ? null : current,
+            );
+          }
         }
       })();
     },

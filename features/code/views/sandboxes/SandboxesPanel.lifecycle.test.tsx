@@ -5,10 +5,11 @@ import { createRoot, type Root } from "react-dom/client";
 import type { SandboxInstance } from "@/types/sandbox";
 
 const dispatch = jest.fn();
+let selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
-  useAppSelector: () => "22222222-2222-4222-8222-222222222222",
+  useAppSelector: () => selectedOrganizationId,
 }));
 jest.mock("../../CodeWorkspaceProvider", () => ({
   useCodeWorkspace: () => ({ setFilesystem: jest.fn(), setProcess: jest.fn() }),
@@ -34,10 +35,14 @@ jest.mock("./useSandboxCreate", () => ({
     setResources: jest.fn(),
     persistChoices: jest.fn(),
     buildRequest: () => ({
-      organization_id: "22222222-2222-4222-8222-222222222222",
+      organization_id: selectedOrganizationId,
       tier: "ec2",
       template: "bare",
       ttl_seconds: 3600,
+      project_id: "44444444-4444-4444-8444-444444444444",
+      config: { name: "captured-name", retained: true },
+      resources: { cpu: 2, memory_mb: 2048, disk_mb: 4096 },
+      labels: { source: "code" },
     }),
   }),
 }));
@@ -127,6 +132,7 @@ describe("SandboxesPanel deletion", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -210,6 +216,16 @@ describe("SandboxesPanel non-blocking creation", () => {
       ([url, init]) => url === "/api/sandbox" && init?.method === "POST",
     );
     expect(createPosts).toHaveLength(1);
+    expect(JSON.parse(createPosts[0][1].body)).toEqual({
+      organization_id: selectedOrganizationId,
+      tier: "ec2",
+      template: "bare",
+      ttl_seconds: 3600,
+      project_id: "44444444-4444-4444-8444-444444444444",
+      config: { name: "captured-name", retained: true },
+      resources: { cpu: 2, memory_mb: 2048, disk_mb: 4096 },
+      labels: { source: "code" },
+    });
   });
 
   it("renders a 201 creating row without claiming it is ready", async () => {
@@ -260,5 +276,55 @@ describe("SandboxesPanel non-blocking creation", () => {
     expect(toast.warning).toHaveBeenCalledWith("Could not confirm creation; check sandbox list before retrying");
     const postCalls = (global.fetch as jest.Mock).mock.calls.filter(([, init]) => init?.method === "POST");
     expect(postCalls).toHaveLength(2); // create plus reconcile, never an automatic create retry
+  });
+
+  it("keeps a newer scope request busy when an old scope response settles", async () => {
+    const resolves: Array<(value: ReturnType<typeof response>) => void> = [];
+    toast.loading
+      .mockImplementationOnce(() => "old-scope-toast")
+      .mockImplementationOnce(() => "new-scope-toast");
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") {
+        return new Promise((resolve) => resolves.push(resolve));
+      }
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    selectedOrganizationId = "55555555-5555-4555-8555-555555555555";
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    await act(async () => resolves[0](response({ instance: { ...instance, name: "old scope", status: "creating" } }, 201)));
+    await settle();
+
+    expect(container.textContent).not.toContain("old scope");
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.dismiss).toHaveBeenCalledWith("old-scope-toast");
+    const reopened = await openCreateModal(container);
+    expect(reopened.disabled).toBe(true);
+    await act(async () => resolves[1](response({ instance: { ...instance, name: "new scope", organization_id: selectedOrganizationId, status: "creating" } }, 201)));
+    await settle();
+    expect(container.textContent).toContain("new scope");
+  });
+
+  it("dismisses a held request toast after unmount without publishing its result", async () => {
+    let resolveCreate: ((value: ReturnType<typeof response>) => void) | undefined;
+    toast.loading.mockImplementationOnce(() => "unmounted-toast");
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => { resolveCreate = resolve; });
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    await act(async () => root.unmount());
+    await act(async () => resolveCreate?.(response({ instance: { ...instance, status: "creating" } }, 201)));
+
+    expect(toast.dismiss).toHaveBeenCalledWith("unmounted-toast");
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });
