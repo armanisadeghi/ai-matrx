@@ -12,7 +12,6 @@ import React, {
   useRef,
   useCallback,
   useMemo,
-  useSyncExternalStore,
 } from "react";
 import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
@@ -24,14 +23,6 @@ import {
   removeInstanceTab,
   markTabInteraction,
   setInstanceOutlineOpen,
-  captureNoteConflictLiveBuffer,
-  dismissNoteConflict,
-  reopenNoteConflict,
-  chooseRetainedNoteReviewSource,
-  beginRetainedNoteConflictCommand,
-  settleRetainedNoteConflictCommand,
-  transitionRetainedNoteConflictReview,
-  setRetainedNoteConflictProposal,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
@@ -51,8 +42,6 @@ import { editorDisplayName } from "../utils/editorDisplayName";
 import {
   saveNote,
   fetchNoteContent,
-  refreshNoteConflictReview,
-  resolveNoteConflict,
   copyNote,
   deleteNote,
   moveNoteToFolder,
@@ -64,7 +53,6 @@ import {
   normalizeNoteEditorMode,
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { analyzeDiff } from "../utils/diffAnalysis";
 import { NoteEditorCore } from "./NoteEditorCore";
 import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
@@ -112,20 +100,12 @@ import { createNotesEditorExtraSections } from "@/features/notes/agent-context/n
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import type { ContentSource, NoteEditableContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
-import { displayedPhysicalSnapshot, noteIdentityContentSource } from "../richDocumentSource";
-import { materializeReviewSession, type ReviewSessionAction } from "@ai-matrx/diff";
-import {
-  acknowledgeReviewCommandOutcome,
-  getReviewCommandOutcomesVersion,
-  readReviewCommandOutcomes,
-  startReviewSaveCommand,
-  subscribeReviewCommandOutcomes,
-} from "../redux/reviewCommandCoordinator";
-import { equalNoteSnapshotValue } from "../noteSnapshotEquality";
+import { noteIdentityContentSource } from "../richDocumentSource";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
+import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -148,15 +128,6 @@ export function NoteContentEditor({
 }: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const reviewOutcomeVersion = useSyncExternalStore(
-    (listener) => subscribeReviewCommandOutcomes(store.getState, listener),
-    () => getReviewCommandOutcomesVersion(store.getState),
-    () => 0,
-  );
-  // The subscription version is actor-scoped; read on every notified render so
-  // an A→B→A session never observes another actor's retained outcome.
-  void reviewOutcomeVersion;
-  const reviewCommandOutcomes = readReviewCommandOutcomes(store.getState);
   const instanceId = useNotesInstanceId();
 
   // ── Check if note exists in Redux ────────────────────────────────
@@ -207,33 +178,15 @@ export function NoteContentEditor({
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
-  // A conflict is created only by a full service CAS rejection. Realtime may
-  // record newer evidence, but it cannot open a modal or replace this base.
-  const conflictDecision = noteExists?._conflictDecision ?? null;
   const conflictActorId = useAppSelector((state) => state.userAuth.id);
-  const retainedConflictReview = useAppSelector((state) => {
-    const key = state.notes.currentConflictReviewKeys[noteId];
-    return key ? state.notes.retainedConflictReviews[key] ?? null : null;
-  });
-  const [mergeDraft, setMergeDraft] = useState<string | null>(null);
-  const [conflictError, setConflictError] = useState<string | null>(null);
-  const [pendingReviewedMerge, setPendingReviewedMerge] = useState<null | {
-    reviewKey: string; token: string; decisionId: string; reviewId: string; actorId: string; sourceId: string; candidate: string;
-    acknowledged: NoteEditableContentSource["acknowledgedPhysicalSnapshot"];
-    displayed: NoteEditableContentSource["displayedPhysicalSnapshot"];
-  }>(null);
 
   const editorMountedRef = useRef(true);
-  const pendingReviewCommandRef = useRef<{ reviewKey: string; actorId: string; requestId: string } | null>(null);
   useEffect(() => {
     editorMountedRef.current = true;
     return () => {
       editorMountedRef.current = false;
-      const pending = pendingReviewCommandRef.current;
-      if (pending) dispatch(settleRetainedNoteConflictCommand({ ...pending, error: "The editor closed before the reviewed save was admitted. Your review is retained." }));
-      pendingReviewCommandRef.current = null;
     };
-  }, [dispatch]);
+  }, []);
 
   // ── Local content state — initialized from Redux, synced back on debounce
   const [localContent, setLocalContent] = useState(reduxContent);
@@ -248,28 +201,28 @@ export function NoteContentEditor({
       ? { record: noteExists, displayedNote: { ...noteExists, content: localContent }, actorId: conflictActorId, hasLocalEdits: isDirty || noteExists._dirty || localContent !== noteExists.content }
       : null,
   );
-  const mountedEditableContentSource = editableContentSource?.type === "note" && editableContentSource.mode === "editable"
-    ? editableContentSource
-    : undefined;
-
 
   useEffect(() => {
     localContentRef.current = localContent;
   }, [localContent]);
 
-  useEffect(() => {
-    if (!conflictDecision || conflictDecision.reviewedLiveContent !== null) return;
-    dispatch(captureNoteConflictLiveBuffer({
-      id: noteId,
-      content: localContentRef.current,
-    }));
-  }, [dispatch, noteId, conflictDecision]);
-
-  useEffect(() => {
-    if (conflictDecision) return;
-    setMergeDraft(null);
-    setConflictError(null);
-  }, [conflictDecision]);
+  // THE ONE conflict choreography — the same hook the phone editor consumes.
+  const adoptResolvedContent = useCallback((content: string) => {
+    setLocalContent(content);
+    lastReduxRef.current = content;
+  }, []);
+  const conflict = useNoteConflictChoreography({
+    noteId,
+    record: noteExists,
+    noteTitle: noteLabel,
+    localContent,
+    editableContentSource,
+    editorMountedRef,
+    noteIdRef,
+    localContentRef,
+    adoptResolvedContent,
+  });
+  const { conflictDecision, conflictError } = conflict;
 
   // ── Reset generation — bumps ONLY on note switch, so the rich editor
   // subtree remounts only when we navigate between different notes.
@@ -302,8 +255,7 @@ export function NoteContentEditor({
     noteIdRef.current = noteId;
     lastReduxRef.current = reduxContent;
     setLocalContent(reduxContent);
-    setMergeDraft(null);
-    setConflictError(null);
+    conflict.resetForNoteSwitch();
     setNoteLiveContent(noteId, reduxContent);
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
@@ -743,163 +695,6 @@ export function NoteContentEditor({
     onPermanentDelete: handlePermanentDelete,
   });
 
-  const handleReviewTransition = useCallback((transition: ReviewSessionAction) => {
-    if (!retainedConflictReview || !conflictActorId) return;
-    dispatch(transitionRetainedNoteConflictReview({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictActorId, transition }));
-  }, [dispatch, retainedConflictReview, conflictActorId]);
-
-  const handleReviewProposalChange = useCallback((proposal: string) => {
-    if (!retainedConflictReview || !conflictActorId) { setMergeDraft(proposal); return; }
-    dispatch(setRetainedNoteConflictProposal({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictActorId, proposal }));
-  }, [dispatch, retainedConflictReview, conflictActorId]);
-
-  // ── Conflict resolution handlers ─────────────────────────────────-
-  // NEVER resolve a conflict with `markNoteSaved({id})` (no snapshot): it
-  // wipes ALL dirty fields, so the queued save bails on `!_dirty` and nothing
-  // is written — "Keep mine" was a silent no-op and, with the stale
-  // updated_at still in place, the conflict re-fired on the next keystroke
-  // forever (2026-07 freeze class).
-  const handleKeepMine = useCallback(
-    async (editedContent: string, choice: "mine" | "merge" = "mine") => {
-      if (pendingReviewedMerge || !retainedConflictReview || !conflictDecision || conflictDecision.stale || !noteExists || !mountedEditableContentSource) return;
-      if (retainedConflictReview.refreshSourceReviewKey !== null) { setConflictError("Choose the text for the refreshed review first."); return; }
-      const mountedSource = mountedEditableContentSource;
-      const commandToken = crypto.randomUUID();
-      if (mountedSource.noteId !== noteId || mountedSource.editBase.actorId !== conflictDecision.actorId) {
-        setConflictError("Your mounted editor changed. Refresh before saving this review.");
-        return;
-      }
-      if (
-        !equalNoteSnapshotValue(mountedSource.displayedPhysicalSnapshot.metadata, conflictDecision.currentRow.metadata) ||
-        mountedSource.displayedPhysicalSnapshot.position !== conflictDecision.currentRow.position ||
-        mountedSource.displayedPhysicalSnapshot.organization_id !== conflictDecision.currentRow.organization_id
-      ) {
-        setConflictError("This review includes unsupported metadata, position, or organization changes. Keep those edits and resolve them separately.");
-        return;
-      }
-      if (retainedConflictReview && choice === "merge") {
-        const materialized = materializeReviewSession(retainedConflictReview.session);
-        if (materialized.kind !== "complete") {
-          setConflictError("Resolve every change before saving the reviewed result.");
-          return;
-        }
-        editedContent = materialized.candidate;
-      }
-      if (retainedConflictReview) {
-        dispatch(beginRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId: commandToken, sessionId: retainedConflictReview.session.sessionId, revision: retainedConflictReview.session.revision }));
-        if (store.getState().notes.retainedConflictReviews[retainedConflictReview.reviewKey]?.command.requestId !== commandToken) return;
-      }
-      pendingReviewCommandRef.current = { reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId: commandToken };
-      const outcome = await dispatch(resolveNoteConflict({ noteId, decisionId: conflictDecision.decisionId, reviewId: conflictDecision.reviewId, commandRequestId: commandToken, choice: "mine", proposedContent: editedContent, getLiveBuffer: () => editorMountedRef.current && noteIdRef.current === noteId ? localContentRef.current : null }));
-      if (outcome.status !== "applied" || !editorMountedRef.current || noteIdRef.current !== noteId || store.getState().userAuth.id !== conflictDecision.actorId) {
-        setConflictError(outcome.status === "refused" ? outcome.reason : "This conflict changed. Refresh before applying a choice.");
-        if (retainedConflictReview) dispatch(settleRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId: commandToken, error: outcome.status === "refused" ? outcome.reason : "This conflict changed." }));
-        return;
-      }
-      // The reducer installed the reviewed remote acknowledgement. Do not
-      // fabricate its successor: the mounted hook supplies it after render.
-      setLocalContent(outcome.content);
-      lastReduxRef.current = outcome.content;
-      setPendingReviewedMerge({
-        reviewKey: retainedConflictReview.reviewKey, token: commandToken, decisionId: conflictDecision.decisionId, reviewId: conflictDecision.reviewId, actorId: conflictDecision.actorId, sourceId: mountedSource.sourceId, candidate: editedContent,
-        acknowledged: displayedPhysicalSnapshot(conflictDecision.currentRow),
-        displayed: { ...mountedSource.displayedPhysicalSnapshot, version: conflictDecision.currentRow.version, content: editedContent },
-      });
-    },
-    [dispatch, noteId, conflictDecision, noteExists, conflictActorId, retainedConflictReview, mountedEditableContentSource, pendingReviewedMerge],
-  );
-
-  useEffect(() => {
-    if (!pendingReviewedMerge) return;
-    const refuse = (message: string) => {
-      setConflictError(message);
-      dispatch(settleRetainedNoteConflictCommand({ reviewKey: pendingReviewedMerge.reviewKey, actorId: pendingReviewedMerge.actorId, requestId: pendingReviewedMerge.token, error: message }));
-      pendingReviewCommandRef.current = null;
-      setPendingReviewedMerge(null);
-    };
-    // This is phase two. It intentionally accepts only the actual source
-    // emitted by this mounted editor after the reviewed reducer rebase.
-    if (!mountedEditableContentSource) {
-      refuse("The editor was closed before the reviewed save could start.");
-      return;
-    }
-    if (
-      noteIdRef.current !== noteId ||
-      conflictActorId !== pendingReviewedMerge.actorId ||
-      mountedEditableContentSource.sourceId !== pendingReviewedMerge.sourceId ||
-      mountedEditableContentSource.noteId !== noteId ||
-      !equalNoteSnapshotValue(mountedEditableContentSource.acknowledgedPhysicalSnapshot, pendingReviewedMerge.acknowledged) ||
-      !equalNoteSnapshotValue(mountedEditableContentSource.displayedPhysicalSnapshot, pendingReviewedMerge.displayed)
-    ) {
-      refuse("Your editor changed before the reviewed save could start. The review remains available.");
-      return;
-    }
-    const started = startReviewSaveCommand({ dispatch, getState: store.getState, source: mountedEditableContentSource, decisionId: pendingReviewedMerge.decisionId, reviewId: pendingReviewedMerge.reviewId, requestId: pendingReviewedMerge.token });
-    if (started.status === "refused") { refuse(started.reason); return; }
-    pendingReviewCommandRef.current = null; // The coordinator now owns physical settlement.
-    setPendingReviewedMerge(null);
-  }, [pendingReviewedMerge, mountedEditableContentSource, conflictActorId, noteId, dispatch, store]);
-
-  useEffect(() => {
-    for (const outcome of reviewCommandOutcomes) {
-      if (outcome.result.status === "pending") continue;
-      const key = store.getState().notes.currentConflictReviewKeys[outcome.noteId];
-      const review = key ? store.getState().notes.retainedConflictReviews[key] : undefined;
-      if (review?.command.requestId === outcome.requestId) {
-        dispatch(settleRetainedNoteConflictCommand({ reviewKey: review.reviewKey, actorId: outcome.actorId, requestId: outcome.requestId }));
-      }
-    }
-  }, [dispatch, reviewCommandOutcomes, store]);
-
-  const handleAcceptRemote = useCallback(async () => {
-    if (!conflictDecision || conflictDecision.stale || !noteExists || pendingReviewedMerge) return;
-    const requestId = crypto.randomUUID();
-    if (retainedConflictReview) {
-      dispatch(beginRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId, sessionId: retainedConflictReview.session.sessionId, revision: retainedConflictReview.session.revision }));
-      if (store.getState().notes.retainedConflictReviews[retainedConflictReview.reviewKey]?.command.requestId !== requestId) return;
-    }
-    const outcome = await dispatch(resolveNoteConflict({ noteId, decisionId: conflictDecision.decisionId, reviewId: conflictDecision.reviewId, commandRequestId: requestId, choice: "theirs", proposedContent: conflictDecision.currentRow.content ?? "", getLiveBuffer: () => editorMountedRef.current && noteIdRef.current === noteId ? localContentRef.current : null }));
-    if (outcome.status !== "applied" || !editorMountedRef.current || noteIdRef.current !== noteId || store.getState().userAuth.id !== conflictDecision.actorId) {
-      const error = outcome.status === "refused" ? outcome.reason : "This conflict changed. Refresh before applying a choice.";
-      setConflictError(error);
-      if (retainedConflictReview) dispatch(settleRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId, error }));
-      return;
-    }
-    setLocalContent(outcome.content);
-    lastReduxRef.current = outcome.content;
-    if (retainedConflictReview) dispatch(settleRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId }));
-  }, [dispatch, noteId, conflictDecision, noteExists, conflictActorId, pendingReviewedMerge, retainedConflictReview, store]);
-
-  const handleCancelConflict = useCallback(() => {
-    // Dismissal keeps the unresolved decision and draft available to reopen.
-    dispatch(dismissNoteConflict({ id: noteId }));
-  }, [dispatch, noteId]);
-
-  const handleRefreshConflict = useCallback(async () => {
-    if (!conflictDecision || !noteExists || pendingReviewedMerge) return;
-    const requestId = crypto.randomUUID();
-    if (retainedConflictReview) {
-      dispatch(beginRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId, sessionId: retainedConflictReview.session.sessionId, revision: retainedConflictReview.session.revision }));
-      if (store.getState().notes.retainedConflictReviews[retainedConflictReview.reviewKey]?.command.requestId !== requestId) return;
-    }
-    setConflictError(null);
-    const outcome = await dispatch(refreshNoteConflictReview({ commandRequestId: requestId, noteId, decisionId: conflictDecision.decisionId, reviewId: conflictDecision.reviewId, getLiveBuffer: () => editorMountedRef.current && noteIdRef.current === noteId ? localContentRef.current : null }));
-    if (outcome.status === "refused") setConflictError(outcome.reason);
-    if (retainedConflictReview) dispatch(settleRetainedNoteConflictCommand({ reviewKey: retainedConflictReview.reviewKey, actorId: conflictDecision.actorId, requestId, ...(outcome.status === "refused" ? { error: outcome.reason } : {}) }));
-  }, [dispatch, noteId, conflictDecision, noteExists, pendingReviewedMerge, retainedConflictReview, store]);
-
-  // Memoized — analyzeDiff builds an O(lines²) LCS matrix. Computing it
-  // inline in JSX re-ran it on EVERY render (i.e. every keystroke while a
-  // conflict was open), which alone could saturate the main thread on a
-  // large note (2026-07 freeze class).
-  const conflictAnalysis = useMemo(
-    () =>
-      conflictDecision != null
-        ? analyzeDiff(localContent, conflictDecision.currentRow.content ?? "")
-        : null,
-    [localContent, conflictDecision],
-  );
-
   // A deep link adds its tab before the request resolves. Treating that
   // expected gap as a missing record made a slow/temporarily unavailable DB
   // look like a deleted note. Only show unavailable after the request rejects.
@@ -965,71 +760,21 @@ export function NoteContentEditor({
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       {conflictError && !conflictDecision && <div role="alert" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{conflictError}</div>}
-      {reviewCommandOutcomes.filter(outcome => outcome.noteId === noteId).map((outcome) => (
+      {conflict.reviewOutcomes.map((outcome) => (
         <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
           <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>
-          <button type="button" className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium" onClick={() => {
-            if (acknowledgeReviewCommandOutcome(store.getState, outcome)) { setConflictError(null); }
-          }}>Dismiss</button>
+          <button type="button" className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium" onClick={() => conflict.acknowledgeOutcome(outcome)}>Dismiss</button>
         </div>
       ))}
       {/* Conflict resolution window */}
-      {conflictDecision?.dismissed && (
+      {conflict.dismissedReviewAvailable && (
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
           <span>Your unsaved conflict review is still available.</span>
-          <button type="button" onClick={() => dispatch(reopenNoteConflict({ id: noteId }))} className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:text-amber-100">Reopen conflict review</button>
+          <button type="button" onClick={conflict.reopenConflict} className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:text-amber-100">Reopen conflict review</button>
         </div>
       )}
-      {conflictDecision != null && !conflictDecision.dismissed && conflictAnalysis != null && (
-        <NoteConflictWindow
-          noteTitle={noteLabel}
-          localContent={localContent}
-          remoteContent={conflictDecision.currentRow.content ?? ""}
-          analysis={conflictAnalysis}
-          mergeDraft={retainedConflictReview?.proposal ?? mergeDraft ?? localContent}
-          onMergeDraftChange={handleReviewProposalChange}
-          reviewSession={retainedConflictReview?.session}
-          onReviewTransition={handleReviewTransition}
-          remoteDetails={[
-            { label: "Title", yours: noteExists?.label ?? "Untitled", saved: conflictDecision.currentRow.label ?? "Untitled" },
-            { label: "Folder", yours: `${noteExists?.folder_name ?? "Uncategorized"} (${noteExists?.folder_id ?? "no folder"})`, saved: `${conflictDecision.currentRow.folder_name ?? "Uncategorized"} (${conflictDecision.currentRow.folder_id ?? "no folder"})` },
-            { label: "Organization", yours: noteExists?.organization_id ?? "Unavailable", saved: conflictDecision.currentRow.organization_id ?? "Unavailable" },
-            { label: "Tags", yours: noteExists?.tags?.join(", ") || "None", saved: conflictDecision.currentRow.tags?.join(", ") || "None" },
-            { label: "Visibility", yours: noteExists?.visibility ?? "", saved: conflictDecision.currentRow.visibility },
-            { label: "Position", yours: String(noteExists?.position ?? "Unset"), saved: String(conflictDecision.currentRow.position ?? "Unset") },
-            {
-              label: "Metadata",
-              yours:
-                noteExists?.metadata && typeof noteExists.metadata === "object"
-                  ? `${Object.keys(noteExists.metadata).length} fields`
-                  : "None",
-              saved:
-                conflictDecision.currentRow.metadata && typeof conflictDecision.currentRow.metadata === "object"
-                  ? `${Object.keys(conflictDecision.currentRow.metadata).length} fields`
-                  : "None",
-              metadata: { yours: noteExists?.metadata, saved: conflictDecision.currentRow.metadata },
-            },
-          ]}
-          stale={conflictDecision.stale}
-          decisionError={conflictError}
-          locked={retainedConflictReview?.command.status === "pending"}
-          isCommandLocked={() => Object.values(store.getState().notes.retainedConflictReviews).some(review => review.noteId === noteId && review.command.status === "pending")}
-          sourceChoiceRequired={retainedConflictReview?.refreshSourceReviewKey != null}
-          canUseCompletedSource={(() => {
-            const previousKey = retainedConflictReview?.refreshSourceReviewKey;
-            const previous = previousKey ? store.getState().notes.retainedConflictReviews[previousKey] : undefined;
-            return previous !== undefined && materializeReviewSession(previous.session).kind === "complete";
-          })()}
-          onChooseSource={(source) => {
-            if (!retainedConflictReview?.refreshSourceReviewKey) return;
-            dispatch(chooseRetainedNoteReviewSource({ reviewKey: retainedConflictReview.reviewKey, actorId: retainedConflictReview.actorId,
-              sourceReviewKey: retainedConflictReview.refreshSourceReviewKey, source, sessionId: crypto.randomUUID() }));
-          }}
-          onKeepMine={handleKeepMine}
-          onAcceptChanges={handleAcceptRemote}
-          onCancel={handleCancelConflict}
-          onRefresh={handleRefreshConflict}
-        />
+      {conflict.conflictWindowProps != null && (
+        <NoteConflictWindow {...conflict.conflictWindowProps} />
       )}
 
       {/* Artifact refs rendered in the preview get their unbind path from

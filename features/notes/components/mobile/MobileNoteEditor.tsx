@@ -19,21 +19,8 @@ import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
-import {
-  updateNoteContent,
-  updateNoteTags,
-  dismissNoteConflict,
-  reopenNoteConflict,
-  beginRetainedNoteConflictCommand,
-  settleRetainedNoteConflictCommand,
-  transitionRetainedNoteConflictReview,
-  setRetainedNoteConflictProposal,
-} from "../../redux/slice";
-import {
-  saveNote,
-  resolveNoteConflict,
-  refreshNoteConflictReview,
-} from "../../redux/thunks";
+import { updateNoteContent, updateNoteTags } from "../../redux/slice";
+import { saveNote } from "../../redux/thunks";
 import { getReduxSyncDelay } from "../../redux/notes.types";
 import {
   selectNoteById,
@@ -44,10 +31,9 @@ import {
   selectNoteLabel,
   selectNoteTags,
 } from "../../redux/selectors";
-import { analyzeDiff } from "../../utils/diffAnalysis";
 import { NoteSaveFailureBanner } from "../NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
-import { materializeReviewSession, type ReviewSessionAction } from "@ai-matrx/diff";
+import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
@@ -167,6 +153,26 @@ export default function MobileNoteEditor({
       : null,
   );
 
+  // THE ONE conflict choreography — the same hook the desktop editor
+  // consumes, so Keep Mine on a phone produces the desktop dispatch sequence
+  // (begin lock → resolveNoteConflict → the reviewed-save coordinator), never
+  // a resolve-then-`saveNote` shortcut of its own.
+  const adoptResolvedContent = useCallback((content: string) => {
+    setLocalContent(content);
+    lastReduxRef.current = content;
+  }, []);
+  const conflict = useNoteConflictChoreography({
+    noteId,
+    record,
+    noteTitle: noteLabel || "Untitled Note",
+    localContent,
+    editableContentSource,
+    editorMountedRef,
+    noteIdRef,
+    localContentRef,
+    adoptResolvedContent,
+  });
+
   // The delete confirmation belongs to the platform, not to this screen —
   // `requestDelete` opens the canonical `confirm()` (see useNoteDelete).
   const { isDeleting, requestDelete } = useNoteDelete({
@@ -185,6 +191,7 @@ export default function MobileNoteEditor({
   if (syncedNoteId !== noteId) {
     setSyncedNoteId(noteId);
     setLocalContent(store.getState().notes?.notes?.[noteId]?.content ?? "");
+    conflict.resetForNoteSwitch();
   }
 
   // ── Redux -> local (realtime / remote edits) ────────────────────────
@@ -313,201 +320,6 @@ export default function MobileNoteEditor({
     };
   });
 
-  // ── Conflict surface (audit N-20: mobile rendered nothing at all) ───
-  const conflictDecision = record?._conflictDecision ?? null;
-  const retainedConflictReview = useAppSelector((state) => {
-    const key = state.notes.currentConflictReviewKeys?.[noteId];
-    return key ? state.notes.retainedConflictReviews[key] ?? null : null;
-  });
-  const [mergeDraft, setMergeDraft] = useState<string | null>(null);
-  const [conflictError, setConflictError] = useState<string | null>(null);
-
-  const conflictAnalysis = useMemo(
-    () =>
-      conflictDecision != null
-        ? analyzeDiff(localContent, conflictDecision.currentRow.content ?? "")
-        : null,
-    [localContent, conflictDecision],
-  );
-
-  const getLiveBuffer = useCallback(
-    () =>
-      editorMountedRef.current && noteIdRef.current === noteId
-        ? localContentRef.current
-        : null,
-    [noteId],
-  );
-
-  const handleReviewTransition = useCallback(
-    (transition: ReviewSessionAction) => {
-      if (!retainedConflictReview || !editingActorId) return;
-      dispatch(
-        transitionRetainedNoteConflictReview({
-          reviewKey: retainedConflictReview.reviewKey,
-          actorId: editingActorId,
-          transition,
-        }),
-      );
-    },
-    [dispatch, retainedConflictReview, editingActorId],
-  );
-
-  const handleReviewProposalChange = useCallback(
-    (proposal: string) => {
-      if (!retainedConflictReview || !editingActorId) {
-        setMergeDraft(proposal);
-        return;
-      }
-      dispatch(
-        setRetainedNoteConflictProposal({
-          reviewKey: retainedConflictReview.reviewKey,
-          actorId: editingActorId,
-          proposal,
-        }),
-      );
-    },
-    [dispatch, retainedConflictReview, editingActorId],
-  );
-
-  /** Begin/settle the retained-review command lock around one decision. */
-  const runConflictCommand = useCallback(
-    async (
-      run: (requestId: string) => Promise<{ status: "applied"; content: string } | { status: "refused"; reason: string }>,
-    ) => {
-      if (!conflictDecision) return;
-      const requestId = crypto.randomUUID();
-      const review = retainedConflictReview;
-      if (review) {
-        dispatch(
-          beginRetainedNoteConflictCommand({
-            reviewKey: review.reviewKey,
-            actorId: conflictDecision.actorId,
-            requestId,
-            sessionId: review.session.sessionId,
-            revision: review.session.revision,
-          }),
-        );
-        if (
-          store.getState().notes.retainedConflictReviews[review.reviewKey]?.command
-            .requestId !== requestId
-        )
-          return;
-      }
-      const outcome = await run(requestId);
-      if (
-        outcome.status !== "applied" ||
-        !editorMountedRef.current ||
-        noteIdRef.current !== noteId ||
-        store.getState().userAuth.id !== conflictDecision.actorId
-      ) {
-        const error =
-          outcome.status === "refused"
-            ? outcome.reason
-            : "This conflict changed. Refresh before applying a choice.";
-        setConflictError(error);
-        if (review)
-          dispatch(
-            settleRetainedNoteConflictCommand({
-              reviewKey: review.reviewKey,
-              actorId: conflictDecision.actorId,
-              requestId,
-              error,
-            }),
-          );
-        return;
-      }
-      setLocalContent(outcome.content);
-      lastReduxRef.current = outcome.content;
-      if (review)
-        dispatch(
-          settleRetainedNoteConflictCommand({
-            reviewKey: review.reviewKey,
-            actorId: conflictDecision.actorId,
-            requestId,
-          }),
-        );
-      return outcome;
-    },
-    [conflictDecision, dispatch, noteId, retainedConflictReview, store],
-  );
-
-  const handleKeepMine = useCallback(
-    async (editedContent: string, choice: "mine" | "merge" = "mine") => {
-      if (!conflictDecision || conflictDecision.stale) return;
-      let content = editedContent;
-      if (choice === "merge" && retainedConflictReview) {
-        const materialized = materializeReviewSession(retainedConflictReview.session);
-        if (materialized.kind !== "complete") {
-          setConflictError("Resolve every change before saving the reviewed result.");
-          return;
-        }
-        content = materialized.candidate;
-      }
-      setConflictError(null);
-      const outcome = await runConflictCommand((requestId) =>
-        dispatch(
-          resolveNoteConflict({
-            noteId,
-            decisionId: conflictDecision.decisionId,
-            reviewId: conflictDecision.reviewId,
-            commandRequestId: requestId,
-            choice: "mine",
-            proposedContent: content,
-            getLiveBuffer,
-          }),
-        ),
-      );
-      // The reducer advanced the base and kept the record dirty — the text is
-      // only durable once the canonical save writes it.
-      if (outcome?.status === "applied") {
-        try {
-          await dispatch(saveNote(noteId)).unwrap();
-        } catch {
-          toastErrorAlreadyCaptured("Failed to save note");
-        }
-      }
-    },
-    [conflictDecision, dispatch, getLiveBuffer, noteId, retainedConflictReview, runConflictCommand],
-  );
-
-  const handleAcceptRemote = useCallback(async () => {
-    if (!conflictDecision || conflictDecision.stale) return;
-    setConflictError(null);
-    await runConflictCommand((requestId) =>
-      dispatch(
-        resolveNoteConflict({
-          noteId,
-          decisionId: conflictDecision.decisionId,
-          reviewId: conflictDecision.reviewId,
-          commandRequestId: requestId,
-          choice: "theirs",
-          proposedContent: conflictDecision.currentRow.content ?? "",
-          getLiveBuffer,
-        }),
-      ),
-    );
-  }, [conflictDecision, dispatch, getLiveBuffer, noteId, runConflictCommand]);
-
-  const handleRefreshConflict = useCallback(async () => {
-    if (!conflictDecision) return;
-    setConflictError(null);
-    await runConflictCommand((requestId) =>
-      dispatch(
-        refreshNoteConflictReview({
-          commandRequestId: requestId,
-          noteId,
-          decisionId: conflictDecision.decisionId,
-          reviewId: conflictDecision.reviewId,
-          getLiveBuffer,
-        }),
-      ),
-    );
-  }, [conflictDecision, dispatch, getLiveBuffer, noteId, runConflictCommand]);
-
-  const handleCancelConflict = useCallback(() => {
-    dispatch(dismissNoteConflict({ id: noteId }));
-  }, [dispatch, noteId]);
-
   const handleCopy = async () => {
     try {
       await copyNote(noteId);
@@ -551,44 +363,33 @@ export default function MobileNoteEditor({
         <NoteDraftRecoveryBanner noteId={noteId} onRestore={handleChangeFlush} />
       )}
 
-      {conflictDecision?.dismissed && (
+      {conflict.reviewOutcomes.map((outcome) => (
+        <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
+          <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>
+          <button
+            type="button"
+            className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium"
+            onClick={() => conflict.acknowledgeOutcome(outcome)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ))}
+      {conflict.dismissedReviewAvailable && (
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
           <span>Your unsaved conflict review is still available.</span>
           <button
             type="button"
-            onClick={() => dispatch(reopenNoteConflict({ id: noteId }))}
+            onClick={conflict.reopenConflict}
             className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 dark:text-amber-100"
           >
             Reopen conflict review
           </button>
         </div>
       )}
-      {conflictDecision != null &&
-        !conflictDecision.dismissed &&
-        conflictAnalysis != null && (
-          <NoteConflictWindow
-            noteTitle={noteLabel || "Untitled Note"}
-            localContent={localContent}
-            remoteContent={conflictDecision.currentRow.content ?? ""}
-            analysis={conflictAnalysis}
-            mergeDraft={retainedConflictReview?.proposal ?? mergeDraft ?? localContent}
-            onMergeDraftChange={handleReviewProposalChange}
-            reviewSession={retainedConflictReview?.session}
-            onReviewTransition={handleReviewTransition}
-            remoteDetails={[
-              { label: "Title", yours: record?.label ?? "Untitled", saved: conflictDecision.currentRow.label ?? "Untitled" },
-              { label: "Folder", yours: record?.folder_name ?? "Uncategorized", saved: conflictDecision.currentRow.folder_name ?? "Uncategorized" },
-              { label: "Tags", yours: record?.tags?.join(", ") || "None", saved: conflictDecision.currentRow.tags?.join(", ") || "None" },
-            ]}
-            stale={conflictDecision.stale}
-            decisionError={conflictError}
-            locked={retainedConflictReview?.command.status === "pending"}
-            onKeepMine={handleKeepMine}
-            onAcceptChanges={handleAcceptRemote}
-            onCancel={handleCancelConflict}
-            onRefresh={handleRefreshConflict}
-          />
-        )}
+      {conflict.conflictWindowProps != null && (
+        <NoteConflictWindow {...conflict.conflictWindowProps} />
+      )}
 
       {/* ── Scrollable content area ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
