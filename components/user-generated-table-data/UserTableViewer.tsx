@@ -2772,7 +2772,9 @@ const UserTableViewer = ({
             loadAllRows={async () => {
               const complete = await getCompleteTable({ tableId, sortField, sortDirection });
               if (isServiceFailure(complete)) throw new Error(complete.error);
-              return complete.data.rows;
+              return sortField
+                ? smartSort(complete.data.rows, sortField, sortDirection, getFieldDataType(sortField))
+                : complete.data.rows;
             }}
             onChooseReference={onChooseReference}
           />
