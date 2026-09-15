@@ -342,10 +342,18 @@ export default function SandboxDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ttl_seconds: seconds }),
       });
-      if (resp.ok) {
-        const data = await resp.json();
-        setInstance(data.instance);
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => null);
+        if (resp.status >= 400 && resp.status < 500) {
+          throw new Error(body?.error ?? `Extension refused (${resp.status})`);
+        }
+        throw new Error("Could not confirm extension; refresh before retrying");
       }
+      const data = await resp.json().catch(() => null);
+      if (!data?.instance || data.instance.id !== id || !data.instance.expires_at || !Number.isFinite(Date.parse(data.instance.expires_at))) {
+        throw new Error("Could not confirm extension; refresh before retrying");
+      }
+      setInstance(data.instance);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to extend");
     }
@@ -1190,12 +1198,18 @@ export default function SandboxDetailPage() {
                             // sending `seconds` instead of `ttl_seconds`,
                             // so the orchestrator never saw the bump and the
                             // mirrored expires_at silently drifted.
-                            await fetch(`/api/sandbox/${id}/extend`, {
+                            const response = await fetch(`/api/sandbox/${id}/extend`, {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ ttl_seconds: 3600 }),
                             });
+                            if (!response.ok) {
+                              const body = await response.json().catch(() => null);
+                              throw new Error(response.status >= 400 && response.status < 500 ? (body?.error ?? `Extension refused (${response.status})`) : "Could not confirm extension; refresh before retrying");
+                            }
                             await fetchInstance();
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : "Could not confirm extension; refresh before retrying");
                           } finally {
                             setAdminActionLoading(null);
                           }

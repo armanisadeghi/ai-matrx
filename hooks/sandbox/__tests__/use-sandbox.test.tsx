@@ -288,4 +288,27 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     );
     await hook.unmount();
   });
+
+  it("uses the dedicated POST extend route and accepts only its matching finite expiry", async () => {
+    const expiry = "2026-10-01T00:00:00.000Z";
+    const fetchMock = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => ({
+      ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: expiry } }),
+    }));
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    let result;
+    await hook.act(async () => { result = await hook.current.extendInstance("extend-id", 7200); });
+    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/extend-id/extend", expect.objectContaining({ method: "POST", body: JSON.stringify({ ttl_seconds: 7200 }) }));
+    expect(result).toEqual(expect.objectContaining({ id: "extend-id", expires_at: expiry }));
+    await hook.unmount();
+  });
+
+  it("keeps a 405 old-method response and malformed success from claiming extension", async () => {
+    const fetchMock = jest.fn(async () => ({ ok: false, status: 405, json: async () => ({ error: "Use POST /extend" }) }));
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
+    expect(hook.current.error).toBe("Use POST /extend");
+    await hook.unmount();
+  });
 });
