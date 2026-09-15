@@ -297,7 +297,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
         <button
           aria-label="Copy XML"
           onClick={handleCopy}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          className="size-11 flex items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground lg:size-auto lg:p-1"
         >
           {copied ? (
             <Check className="w-3.5 h-3.5 text-green-500" />
@@ -388,7 +388,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                 <button
                   aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`}
                   onClick={() => toggleCollapse(idx)}
-                  className="mr-1 mt-0.5 p-0 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  className="size-11 mr-1 flex flex-shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors lg:size-auto lg:mt-0.5 lg:p-0"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5" />
