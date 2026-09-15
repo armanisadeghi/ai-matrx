@@ -215,6 +215,17 @@ jobs:
         # "control" is a comment — and asserts all three are reported, while a
         # service layer, a single-record read and a reasoned exemption are not.
         run: pnpm check:archived-items-law:self-test
+      - name: A SIGN-OUT ENDS ONLY THE DEVICE THAT ASKED — every signOut( names a literal scope
+        # supabase-js `signOut()` defaults to scope "global": it deletes EVERY
+        # session the account holds, including the OAuth-client session Claude
+        # Code / claude.ai / Codex use for the AI Dream MCP. Browser tests
+        # signing admin@admin.com out ~30×/day (2026-09-15) killed that MCP
+        # sign-in each time ("requires authentication"). The gate existed only
+        # in run-release-gates.sh — by hand — so it never ran on a push. Pure
+        # static scan over tracked .ts/.tsx, ~1s.
+        run: pnpm check:signout-scope
+      - name: the sign-out scope guard can still fail (self-test)
+        run: pnpm check:signout-scope:self-test
       - name: NO HAND-TYPED MANDATE KEYS — the vocabulary is the authority
         # @ai-matrx/agents 0.10.0 publishes the declared mandate key set,
         # emitted by THE ONE GENERATOR from aidream's own declared_mandates().
