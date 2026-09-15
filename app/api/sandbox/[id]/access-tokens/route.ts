@@ -42,11 +42,13 @@ export async function mintAccessTokenWithRetry<T = Response>(
     consume?: ResponseConsumer<T>;
   } = {},
 ): Promise<{ response: Response; body: T }> {
-  let response: Response | undefined;
-  let body: T | undefined;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= TOKEN_MINT_MAX_ATTEMPTS; attempt += 1) {
+    // Response and body are one atomic attempt result. Do not let a later
+    // timeout pair fresh headers with a previous transient response body.
+    let response: Response | undefined;
+    let body: T | undefined;
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -70,12 +72,15 @@ export async function mintAccessTokenWithRetry<T = Response>(
       clearTimeout(timeout);
     }
 
+    if (attempt === TOKEN_MINT_MAX_ATTEMPTS && response && body !== undefined) {
+      return { response, body };
+    }
+
     if (attempt < TOKEN_MINT_MAX_ATTEMPTS) {
       await wait(TOKEN_MINT_RETRY_MS * attempt);
     }
   }
 
-  if (response && body !== undefined) return { response, body };
   throw lastError instanceof Error ? lastError : new Error("Sandbox orchestrator is not reachable");
 }
 

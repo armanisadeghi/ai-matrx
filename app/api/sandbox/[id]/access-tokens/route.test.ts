@@ -46,6 +46,39 @@ test("does not retry an authoritative client refusal", async () => {
   expect(request).toHaveBeenCalledTimes(1);
 });
 
+test("never combines a stale transient body with a later failed response", async () => {
+  const request = jest
+    .fn()
+    .mockResolvedValueOnce(new Response("transient", { status: 502 }))
+    .mockImplementationOnce((_url: string, init?: RequestInit) =>
+      Promise.resolve({
+        status: 200,
+        json: () =>
+          new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener("abort", () =>
+              reject(new Error("body deadline")),
+            ),
+          ),
+      } as Response),
+    )
+    .mockRejectedValueOnce(new Error("connection failed"));
+
+  await expect(
+    mintAccessTokenWithRetry(
+      "https://orchestrator.example.test/sandboxes/sbx-test/access-tokens",
+      { method: "POST" },
+      {
+        request,
+        wait: async () => undefined,
+        attemptTimeoutMs: 10,
+        consume: (response) =>
+          response.status === 200 ? response.json() : response.text(),
+      },
+    ),
+  ).rejects.toThrow("connection failed");
+  expect(request).toHaveBeenCalledTimes(3);
+});
+
 test("keeps the deadline through a stalled successful response body", async () => {
   const request = jest.fn(
     (_url: string, init?: RequestInit) => {
