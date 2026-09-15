@@ -192,10 +192,41 @@ describe("CanvasNavigation accessible controls", () => {
       container.querySelector('[aria-label="Next canvas"]'),
     ).not.toBeNull();
 
+    // A LIVE pane (both fixture items are the sandbox) offers no Remove: its
+    // surface re-offers it for as long as the box is running, so the control
+    // would visibly lose its own fight. Absent, never dead — see
+    // features/canvas/liveSourceReachability.ts.
     expect(
       container.querySelector('[aria-label="Remove First item"]'),
-    ).not.toBeNull();
+    ).toBeNull();
 
+    unmount();
+  });
+
+  it("still names the removal control for a stored item", () => {
+    const store = splitStore();
+    act(() => {
+      store.dispatch(
+        offerCanvasItem({
+          type: "code",
+          data: { code: "print(1)", language: "python" },
+          metadata: { title: "A saved snippet", sourceMessageId: "code-1" },
+        } as CanvasContent),
+      );
+    });
+    const items = selectCanvasItems(store.getState());
+    const { container, unmount } = mount(
+      store,
+      <CanvasNavigation
+        items={items}
+        currentItemId={items[0].id}
+        onNavigate={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    expect(
+      container.querySelector('[aria-label="Remove A saved snippet"]'),
+    ).not.toBeNull();
     unmount();
   });
 });
