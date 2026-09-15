@@ -806,10 +806,14 @@ signed-in user is a viewer through the platform-global tier, super admins can ed
 `scripts/seed-udt-example-tables.ts` (three tables: Project Tracker — every column
 format, color-by Status, a rule, manual highlights; Product Catalog — rules on stock;
 Team Directory — color-by Department on cells; plus one shared pick list for the
-dependent Team column). ⚠️ Seeding needs the seeding admin to be a MEMBER of the system
-org: `udt_datasets.std_insert` requires `iam.has_org_access(organization_id)`, which is
-pure membership, and the system org had zero members on 2026-09-14. Add the membership
-through the super-admin API (`POST /api/admin/users/organizations`) first.
+dependent Team column). Seeded live 2026-09-14 (Project Tracker `ce73458f`, Product
+Catalog `437ad3e2`, Team Directory `6a4b2950`). The first run was refused by RLS because
+`udt_datasets.std_insert` needs `iam.has_org_access(organization_id)`, which was pure
+membership, and the system org has no members BY DESIGN (Arman: "if something is requiring
+it to have a user before it can store things, that is the problem"). Fixed at the class:
+`migrations/iam_org_access_platform_admins_manage_global_system_org.sql` — the org lane
+(`iam.has_org_access_for` / `my_orgs`) admits a super admin on a `global_readable` system
+org, the write-side twin of the platform-global read tier. `--reset` rebuilds an example.
 
 ## Right-click menu additions (2026-09-14, second pass)
 
@@ -828,7 +832,7 @@ a day of careful work each; the selection model was deliberately left single-cel
 
 ## Change log
 
-- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. NOT done: the example tables are not seeded yet (system-org membership, above); realtime for style changes.
+- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. The example tables are seeded (see § Examples); realtime for style changes is still open.
 
 - `2026-09-14` — **Copy / cut / paste on a selected cell (spreadsheet blocks included), choice cells select-then-open, and the grid's first right-click menu.** See § Grid clipboard + right-click menu. Verified live on `/data/[id]` in the isolated browser: Cmd-C on a plain and on a choice cell wrote the cell text; a native paste event over a cell wrote it and Cmd-Z restored it; a two-row block on the last row raised the "Add 1 new row?" confirm, Skip wrote the fitting cell; the menu opened with the Cell / Row / Column sections and no INERT / VALUE MAPPING scream. Not verifiable in the isolated browser (it denies clipboard read and fires no native clipboard events): the Cmd-V async fallback was proven with a stubbed `readText`; the real-browser prompt path is untested.
 
