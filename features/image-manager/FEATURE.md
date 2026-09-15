@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-15`
 
 ---
 
@@ -210,6 +210,8 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 ---
 
 ## Change log
+
+- `2026-09-15` — codex: the Images Large Route sidebar now resolves the single most-specific route owner before applying the shared blue selected treatment, so overlapping paths such as Studio and Studio Light cannot both appear active.
 
 - `2026-09-15` — codex: **My Cloud has a bounded, honest terminal-load test
   scenario.** `/images/my-cloud?data=error` renders only a labeled simulated

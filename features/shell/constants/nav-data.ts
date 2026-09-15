@@ -339,6 +339,13 @@ export interface ShellNavItem {
   external?: boolean;
   /** Open an internal destination beside the current workspace. */
   openInNewTab?: boolean;
+  /**
+   * Additional first-party route namespaces owned by this item. Children are
+   * matched under each prefix by replacing the canonical parent prefix, so an
+   * alias such as `/rag` keeps `/knowledge/data-stores` selected at
+   * `/rag/data-stores` without duplicating the child registry.
+   */
+  ownedRoutePrefixes?: readonly string[];
 }
 
 // Primary navigation items — canonical app URLs shared by (core), (dev), and (transitional).
@@ -802,6 +809,7 @@ export const primaryNavItems: ShellNavItem[] = [
     description:
       "Knowledge data stores, knowledge graph, deep research, and org-wide search",
     color: "amber",
+    ownedRoutePrefixes: ["/rag"],
     children: [
       {
         label: "Research",

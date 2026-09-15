@@ -85,7 +85,6 @@ export default function AdminRouteSidebarMenu({
         aria-current={pathname === ADMIN_LAUNCHPAD_PATH ? "page" : undefined}
         className={cn(
           ROUTE_MENU_NAV_ITEM_CLASS,
-          "border border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300",
           pathname === ADMIN_LAUNCHPAD_PATH && "shell-active-pill",
         )}
       >

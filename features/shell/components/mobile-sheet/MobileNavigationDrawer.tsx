@@ -22,6 +22,11 @@ import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
+import {
+  findActiveNavChild,
+  isNavGroupActive,
+  isOnRoute,
+} from "@/features/shell/utils/is-nav-group-active";
 
 interface MobileNavigationDrawerProps {
   items: ShellNavItem[];
@@ -79,8 +84,7 @@ function GroupButton({
   onOpen: () => void;
 }) {
   const pathname = usePathname();
-  const isActive =
-    pathname === item.href || pathname?.startsWith(`${item.href}/`) === true;
+  const isActive = isNavGroupActive(pathname ?? "", item);
   const closeAfterNavigationStarts = () => {
     window.setTimeout(closeShellMobileMenu, 0);
   };
@@ -197,7 +201,7 @@ export default function MobileNavigationDrawer({
     }
   };
 
-  const renderChild = (child: ShellNavChild) => {
+  const renderChild = (child: ShellNavChild, active?: boolean) => {
     const handler = child.panelAction
       ? navPanelActions[child.panelAction]
       : child.action
@@ -234,6 +238,8 @@ export default function MobileNavigationDrawer({
         iconName={child.iconName}
         label={child.label}
         external={child.external}
+        exact={child.exact}
+        active={active}
       />
     );
   };
@@ -280,6 +286,12 @@ export default function MobileNavigationDrawer({
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
     );
+    const activeChild = findActiveNavChild(pathname, group);
+    const overviewActive =
+      isOnRoute(pathname, group.href, true) ||
+      (group.ownedRoutePrefixes ?? []).some((prefix) =>
+        isOnRoute(pathname, prefix, true),
+      );
     return (
       <div className="shell-mobile-main-nav" key={group.href}>
         <MobileSheetNavLink
@@ -288,6 +300,8 @@ export default function MobileNavigationDrawer({
           label={`Open ${group.label}`}
           external={group.external}
           openInNewTab={group.openInNewTab}
+          exact
+          active={overviewActive}
         />
 
         {sections.map((section) => (
@@ -295,21 +309,23 @@ export default function MobileNavigationDrawer({
             {section.label ? (
               <div className="shell-mobile-section-label">{section.label}</div>
             ) : null}
-            {section.items.map(renderChild)}
+            {section.items.map((child) =>
+              renderChild(child, child === activeChild),
+            )}
           </section>
         ))}
 
         {panels.length ? (
           <section>
             <div className="shell-mobile-section-label">Windows</div>
-            {panels.map(renderChild)}
+            {panels.map((child) => renderChild(child))}
           </section>
         ) : null}
 
         {actions.length ? (
           <section>
             <div className="shell-mobile-section-label">Create</div>
-            {actions.map(renderChild)}
+            {actions.map((child) => renderChild(child))}
           </section>
         ) : null}
       </div>
@@ -331,6 +347,7 @@ export default function MobileNavigationDrawer({
               contextLabel={groupLabel}
               external={item.external}
               openInNewTab={"openInNewTab" in item ? item.openInNewTab : false}
+              exact={"exact" in item ? item.exact : undefined}
             />
           ),
         )

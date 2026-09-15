@@ -174,6 +174,14 @@ function AgencyMenu({
   pathname: string;
   expanded: boolean;
 }) {
+  const activeEntry = resolveActiveRouteMode(
+    MARKETING_PILLARS.flatMap((pillar) =>
+      pillar.entries.filter(
+        (entry) => entry.status !== "coming-soon" && !entry.navHidden,
+      ),
+    ),
+    pathname,
+  );
   return (
     <>
       <Link
@@ -209,7 +217,7 @@ function AgencyMenu({
                 href={entry.href}
                 label={entry.label}
                 title={entry.description}
-                active={pathname.startsWith(entry.href)}
+                active={activeEntry?.href === entry.href}
                 icon={
                   <IconResolver
                     iconName={entry.iconName}

@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-09-11`
+**Last updated:** `2026-09-15`
 
 ---
 
@@ -40,7 +40,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 ### Launch administration work
 
 1. `AdminSidebarSection` hydrates the existing `selectIsAdmin` gate.
-2. Admins receive a visually distinct Admin Launchpad anchor before the Administration cascade and operational toggles.
+2. Admins receive a neutral Admin Launchpad anchor before the Administration cascade and operational toggles. It is a launcher, so it never borrows the selected-route treatment.
 3. The anchor opens `/administration/launchpad` in a new tab so the current product workspace is never displaced.
 
 ### Navigate on mobile
@@ -61,6 +61,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - **Never depend on animation events for the view flip.** Hidden pages may not emit them.
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
 - **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
+- **Selected means the current route.** Global groups, flyout children, mobile drill-ins, Large Route menus, and alternate module sidebars use the same blue selected treatment and choose the single most-specific route owner. New-tab launchers such as Admin Launchpad stay neutral. A module with a legacy/alternate namespace declares it once through `ownedRoutePrefixes`; consumers must not duplicate pathname heuristics.
 - **Phone navigation is a solid bottom drawer.** Tablet widths use the same drawer primitive as a bounded left edge panel, while phones retain the fixed-height bottom drawer. Do not restore glass, inline primary-group accordions, or an adaptive-height panel.
 - **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
 - **Keep iOS interaction minimums.** Rows are at least 48px and the search input is 16px.
@@ -84,6 +85,8 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - `route-menu-style.ts` names the already-shared visual contract so consumers stop copying literals.
 
 ## Change log
+
+- `2026-09-15` — Codex: unified active-route ownership and the blue selected treatment across desktop groups, flyout children, mobile drill-ins, Administration, and alternate module sidebars; added explicit alternate namespaces for Knowledge's `/rag/*` routes; kept the Admin Launchpad launcher neutral.
 
 - `2026-09-11` — Browser verification: removed the desktop checkbox dependency from portaled route-menu styles and the inherited bottom-sheet top margin on tablets; verified visible 48px rows in a 352px-wide panel at 834×1112 with the desktop sidebar expanded.
 

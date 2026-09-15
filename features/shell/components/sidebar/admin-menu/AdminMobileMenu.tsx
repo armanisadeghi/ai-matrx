@@ -14,15 +14,20 @@ import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categorie
 import {
   adminDomainHref,
   adminNavigationRegistry,
+  destinationOwnsPathname,
+  findAdminNavigationDomainByPathname,
 } from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toggleOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ERROR_INSPECTOR_OVERLAY_ID } from "@/features/admin/error-inspector/useOpenErrorInspector";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+import { usePathname } from "next/navigation";
 
 export default function AdminMobileMenu() {
   const dispatch = useAppDispatch();
+  const pathname = usePathname() ?? "";
+  const activeDomain = findAdminNavigationDomainByPathname(pathname);
   return (
     <>
       <div className="shell-mobile-section-divider" />
@@ -31,6 +36,8 @@ export default function AdminMobileMenu() {
       <AppLink
         href="/administration"
         data-nav-href="/administration"
+        aria-current={pathname === "/administration" ? "page" : undefined}
+        data-active={pathname === "/administration" ? "true" : undefined}
         className="shell-mobile-nav-item"
         onClick={closeShellMobileMenu}
       >
@@ -44,7 +51,9 @@ export default function AdminMobileMenu() {
         href={ADMIN_LAUNCHPAD_PATH}
         target="_blank"
         rel="noopener noreferrer"
-        className="shell-mobile-nav-item bg-sky-500/10 text-sky-700 dark:text-sky-300"
+        aria-current={pathname === ADMIN_LAUNCHPAD_PATH ? "page" : undefined}
+        data-active={pathname === ADMIN_LAUNCHPAD_PATH ? "true" : undefined}
+        className="shell-mobile-nav-item"
         onClick={closeShellMobileMenu}
       >
         <span className="shell-nav-icon">
@@ -90,7 +99,11 @@ export default function AdminMobileMenu() {
       {adminNavigationRegistry
         .filter((domain) => domain.slug !== "launchpad")
         .map((domain) => (
-          <details key={domain.name} className="shell-mobile-nav-group">
+          <details
+            key={domain.name}
+            className="shell-mobile-nav-group"
+            open={activeDomain?.name === domain.name || undefined}
+          >
             <summary className="shell-mobile-nav-item list-none [&::-webkit-details-marker]:hidden">
               <span className="shell-nav-icon">
                 <IconResolver iconName={domain.iconName} className="h-5 w-5" />
@@ -111,6 +124,12 @@ export default function AdminMobileMenu() {
               <AppLink
                 href={adminDomainHref(domain)}
                 data-nav-href={adminDomainHref(domain)}
+                data-active={
+                  pathname === adminDomainHref(domain) ? "true" : undefined
+                }
+                aria-current={
+                  pathname === adminDomainHref(domain) ? "page" : undefined
+                }
                 className="shell-mobile-nav-item shell-mobile-nav-child font-medium"
                 onClick={closeShellMobileMenu}
               >
@@ -131,23 +150,28 @@ export default function AdminMobileMenu() {
                     />
                     <span>{section.name}</span>
                   </div>
-                  {section.destinations.map((item) => (
-                    <AppLink
-                      key={item.link}
-                      href={item.link}
-                      data-nav-href={item.link}
-                      className="shell-mobile-nav-item shell-mobile-nav-child"
-                      onClick={closeShellMobileMenu}
-                    >
-                      <span className="shell-nav-icon">
-                        <IconResolver
-                          iconName={item.iconName}
-                          className="h-[18px] w-[18px]"
-                        />
-                      </span>
-                      <span>{item.title}</span>
-                    </AppLink>
-                  ))}
+                  {section.destinations.map((item) => {
+                    const active = destinationOwnsPathname(item, pathname);
+                    return (
+                      <AppLink
+                        key={item.link}
+                        href={item.link}
+                        data-nav-href={item.link}
+                        data-active={active ? "true" : undefined}
+                        aria-current={active ? "page" : undefined}
+                        className="shell-mobile-nav-item shell-mobile-nav-child"
+                        onClick={closeShellMobileMenu}
+                      >
+                        <span className="shell-nav-icon">
+                          <IconResolver
+                            iconName={item.iconName}
+                            className="h-[18px] w-[18px]"
+                          />
+                        </span>
+                        <span>{item.title}</span>
+                      </AppLink>
+                    );
+                  })}
                 </div>
               ))}
             </div>

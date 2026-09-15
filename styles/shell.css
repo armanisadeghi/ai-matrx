@@ -2048,8 +2048,14 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 }
 
 .shell-mobile-nav-item[data-active="true"] {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+  font-weight: 600;
+}
+
+.shell-mobile-nav-item[data-active="true"] .shell-nav-icon {
+  color: var(--shell-pill-text);
 }
 
 .shell-mobile-nav-group {
