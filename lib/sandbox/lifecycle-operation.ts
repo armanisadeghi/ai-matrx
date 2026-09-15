@@ -46,7 +46,7 @@ export function createSandboxLifecycleOperationAdapter(fetcher: typeof fetch, pa
   const body = (receipt: SandboxOperationReceipt) => JSON.stringify({ row_id: receipt.row_id, operation_id: receipt.operation_id, kind: receipt.kind });
   return {
     admit: (receipt) => fetcher(paths.admission(receipt), { method: "POST", headers: { "Content-Type": "application/json" }, body: body(receipt) }),
-    status: (receipt) => fetcher(paths.status(receipt), { method: "GET" }),
-    recover: (receipt) => fetcher(paths.recovery(receipt), { method: "POST", headers: { "Content-Type": "application/json" }, body: body(receipt) }),
+    status: (receipt) => fetcher(`${paths.status(receipt)}?kind=${receipt.kind}`, { method: "GET" }),
+    recover: (receipt) => fetcher(`${paths.recovery(receipt)}?kind=${receipt.kind}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: body(receipt) }),
   };
 }
