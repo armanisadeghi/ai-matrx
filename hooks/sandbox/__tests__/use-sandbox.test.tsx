@@ -2,8 +2,25 @@ import { renderHook } from "@/test-utils/renderHook";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useState } from "react";
 
+jest.mock("@/lib/sandbox/useSandboxLifecycleSubmission", () => ({ useSandboxLifecycleSubmission: () => ({ submit: jest.fn(async () => ({ admitted: true, receipt: {}, outcome: null })) }) }));
+jest.mock("@/lib/sandbox/useSandboxLifecycleTerminalInvalidation", () => ({ useSandboxLifecycleTerminalInvalidation: () => {} }));
+
+let identity: {
+  authReady: boolean;
+  userId: string | null;
+  organizationId: string | null;
+} = {
+  authReady: true,
+  userId: "user-1",
+  organizationId: "organization-1",
+};
+
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => "organization-1",
+  useAppSelector: (selector: { name: string }) => {
+    if (selector.name === "selectAuthReady") return identity.authReady;
+    if (selector.name === "selectUserId") return identity.userId;
+    return identity.organizationId;
+  },
 }));
 
 jest.mock("@/hooks/sandbox/use-compute-targets", () => ({
@@ -25,6 +42,11 @@ function listResponse(ids: string[], total: number, hasMore: boolean) {
 }
 
 type TestResponse = ReturnType<typeof listResponse>;
+type ExtensionResponse = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
 
 function installFetch(fetchMock: unknown) {
   Object.defineProperty(globalThis, "fetch", {
@@ -40,6 +62,11 @@ describe("useSandboxInstances list pagination", () => {
   afterEach(() => {
     installFetch(originalFetch);
     jest.restoreAllMocks();
+    identity = {
+      authReady: true,
+      userId: "user-1",
+      organizationId: "organization-1",
+    };
   });
 
   it("starts in loading state until the first list response settles", async () => {
@@ -208,7 +235,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     jest.restoreAllMocks();
   });
 
-  it("keeps an unknown batch delete out of the definitive failures", async () => {
+  it("does not issue a legacy batch delete when no canonical target is loaded", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
       if (String(input).endsWith("/unknown")) {
         return {
@@ -227,14 +254,15 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     });
 
     expect(result).toEqual({
+      queuedIds: [],
       deletedIds: [],
-      failed: ["refused"],
-      unknownIds: ["unknown"],
+      failed: ["unknown", "refused"],
+      unknownIds: [],
     });
     await hook.unmount();
   });
 
-  it("reconciles an outcome-unknown stop rather than reporting it as a definitive failure", async () => {
+  it("never issues a legacy stop request for an unknown target", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "PUT") {
         return {
@@ -252,14 +280,12 @@ describe("useSandboxInstances lifecycle outcomes", () => {
       result = await hook.current.stopInstance("reconciled");
     });
 
-    expect(result).toBe("outcome_unknown");
-    expect(hook.current.error).toBe("check persisted state");
-    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/reconciled", expect.objectContaining({ method: "PUT" }));
-    expect(fetchMock).toHaveBeenCalledWith("/api/sandbox?limit=50&offset=0", expect.any(Object));
+    expect(result).toBeNull();
+    expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PUT")).toBe(false);
     await hook.unmount();
   });
 
-  it("reconciles an outcome-unknown stop against the current project after a project switch", async () => {
+  it("does not use a legacy stop route after a project switch", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "PUT") {
         return {
@@ -282,10 +308,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
       await hook.current.stopInstance("reconciled");
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/sandbox?project_id=project-two&limit=50&offset=0",
-      expect.any(Object),
-    );
+    expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PUT")).toBe(false);
     await hook.unmount();
   });
 
@@ -309,6 +332,114 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     const hook = await renderHook(() => useSandboxInstances());
     await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
     expect(hook.current.error).toBe("Use POST /extend");
+    await hook.unmount();
+  });
+
+  it.each([
+    ["a 5xx response", () => ({ ok: false, status: 503, json: async () => ({ error: "upstream" }) })],
+    ["a network failure", () => Promise.reject(new TypeError("offline"))],
+    ["a success with another sandbox's valid expiry", () => ({ ok: true, status: 200, json: async () => ({ instance: { id: "wrong-id", expires_at: "2026-10-01T00:00:00.000Z" } }) })],
+  ])("reports %s as an unknown extension outcome", async (_label, response) => {
+    const fetchMock = jest.fn(async () => response());
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+
+    await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
+
+    expect(hook.current.error).toBe("Could not confirm extension; refresh before retrying");
+    await hook.unmount();
+  });
+
+  it("does not duplicate an in-flight extension for the same target", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    const fetchMock = jest.fn(() => pending);
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    let first: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { first = hook.current.extendInstance("extend-id"); });
+    await hook.act(async () => { await hook.current.extendInstance("extend-id"); });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await first; });
+    await hook.unmount();
+  });
+
+  it("allows a different sandbox extension while another target is pending", async () => {
+    let resolveFirst: (response: ExtensionResponse) => void = () => {
+      throw new Error("First extension resolver was not initialized.");
+    };
+    const first = new Promise<ExtensionResponse>((resolve) => { resolveFirst = resolve; });
+    const fetchMock = jest.fn((input: RequestInfo | URL) =>
+      String(input).includes("sandbox-a")
+        ? first
+        : Promise.resolve({ ok: true, status: 200, json: async () => ({ instance: { id: "sandbox-b", expires_at: "2026-10-01T00:00:00.000Z" } }) }),
+    );
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    let firstExtension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { firstExtension = hook.current.extendInstance("sandbox-a"); });
+    let secondResult: Awaited<ReturnType<typeof hook.current.extendInstance>>;
+    await hook.act(async () => { secondResult = await hook.current.extendInstance("sandbox-b"); });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(secondResult).toEqual(expect.objectContaining({ id: "sandbox-b" }));
+    resolveFirst({ ok: true, status: 200, json: async () => ({ instance: { id: "sandbox-a", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await firstExtension; });
+    await hook.unmount();
+  });
+
+  it("does not publish an extension result after the active organization changes", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    const fetchMock = jest.fn(() => pending);
+    installFetch(fetchMock);
+    const hook = await renderHook(() => {
+      const [, refresh] = useState(0);
+      return { ...useSandboxInstances(), refresh: () => refresh((value) => value + 1) };
+    });
+    let extension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { extension = hook.current.extendInstance("extend-id"); });
+    identity = { ...identity, organizationId: "organization-2" };
+    await hook.act(() => { hook.current.refresh(); });
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await extension; });
+
+    expect(hook.current.instances).toEqual([]);
+    expect(hook.current.error).toBeNull();
+    await hook.unmount();
+  });
+
+  it("does not publish an extension result after the same user logs out and back in", async () => {
+    let resolveResponse: (response: ExtensionResponse) => void = () => {
+      throw new Error("Extension resolver was not initialized.");
+    };
+    const pending = new Promise<ExtensionResponse>((resolve) => { resolveResponse = resolve; });
+    installFetch(jest.fn(() => pending));
+    const hook = await renderHook(() => {
+      const [, refresh] = useState(0);
+      return { ...useSandboxInstances(), refresh: () => refresh((value) => value + 1) };
+    });
+    let extension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { extension = hook.current.extendInstance("extend-id"); });
+    identity = { ...identity, authReady: false, userId: null };
+    await hook.act(() => { hook.current.refresh(); });
+    identity = { ...identity, authReady: true, userId: "user-1" };
+    await hook.act(() => { hook.current.refresh(); });
+    resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await extension; });
+
+    expect(hook.current.instances).toEqual([]);
+    expect(hook.current.error).toBeNull();
     await hook.unmount();
   });
 });

@@ -25,6 +25,7 @@ const INSTALLATION = {
   accountAvatarUrl: "https://avatars.githubusercontent.com/u/132974515?v=4",
   repositorySelection: "all" as const,
   repositoryCount: 62,
+  suspended: false,
   htmlUrl: "https://github.com/settings/installations/60982002",
 };
 
@@ -71,6 +72,7 @@ describe("GitHubConnectionCard mobile layout", () => {
       sync,
       disconnect,
       connect: jest.fn(),
+      install: jest.fn(),
     });
 
     await act(async () => {
@@ -145,7 +147,7 @@ describe("GitHubConnectionCard mobile layout", () => {
 describe("GitHubConnectionCard installation coverage", () => {
   let container: HTMLDivElement;
   let root: Root;
-  const openSpy = jest.fn();
+  const install = jest.fn();
 
   beforeEach(async () => {
     container = document.createElement("div");
@@ -153,9 +155,7 @@ describe("GitHubConnectionCard installation coverage", () => {
     root = createRoot(container);
     sync.mockReset();
     sync.mockResolvedValue(undefined);
-    openSpy.mockReset();
-    (window as unknown as { open: typeof window.open }).open =
-      openSpy as unknown as typeof window.open;
+    install.mockReset();
     mockUseGitHubConnection.mockReturnValue({
       inventory: {
         connection: { status: "connected", metadata: {}, account_name: "x" },
@@ -175,6 +175,7 @@ describe("GitHubConnectionCard installation coverage", () => {
       sync,
       disconnect: jest.fn(),
       connect: jest.fn(),
+      install,
     });
     await act(async () => {
       root.render(<GitHubConnectionCard />);
@@ -206,12 +207,11 @@ describe("GitHubConnectionCard installation coverage", () => {
     expect(addButton).toBeDefined();
     expect(container.textContent).toContain("Don't see the repos you want?");
     expect(container.textContent).toContain(
-      "refreshes automatically when you come back",
+      "refreshes the inventory after GitHub confirms",
     );
   });
 
-  // Guard (b): one refresh on return, and only one.
-  it("refreshes exactly once when the tab regains focus after the click", async () => {
+  it("starts the state-bound install popup instead of opening an unbound GitHub URL", async () => {
     const addButton = Array.from(container.querySelectorAll("button")).find(
       (button) =>
         button.textContent?.includes(
@@ -220,32 +220,9 @@ describe("GitHubConnectionCard installation coverage", () => {
     );
     if (!addButton) throw new Error("add-access button did not render");
 
-    // Focus BEFORE the click must not refresh — nothing was armed.
-    await act(async () => {
-      window.dispatchEvent(new Event("focus"));
-    });
-    expect(sync).not.toHaveBeenCalled();
-
     await act(async () => {
       addButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(openSpy).toHaveBeenCalledWith(
-      "https://github.com/apps/ai-matrx-admin/installations/new",
-      "_blank",
-      "noopener,noreferrer",
-    );
-    expect(sync).not.toHaveBeenCalled();
-
-    await act(async () => {
-      window.dispatchEvent(new Event("focus"));
-    });
-    expect(sync).toHaveBeenCalledTimes(1);
-
-    // Every later focus is silent until the user asks again.
-    await act(async () => {
-      window.dispatchEvent(new Event("focus"));
-      window.dispatchEvent(new Event("focus"));
-    });
-    expect(sync).toHaveBeenCalledTimes(1);
+    expect(install).toHaveBeenCalledTimes(1);
   });
 });

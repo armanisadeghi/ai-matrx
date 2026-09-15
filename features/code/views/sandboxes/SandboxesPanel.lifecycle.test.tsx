@@ -4,6 +4,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
+jest.mock("@/lib/sandbox/useSandboxLifecycleSubmission", () => ({ useSandboxLifecycleSubmission: () => ({ submit: jest.fn(async () => ({ admitted: true, receipt: {}, outcome: null })) }) }));
+jest.mock("@/lib/sandbox/useSandboxLifecycleTerminalInvalidation", () => ({ useSandboxLifecycleTerminalInvalidation: () => {} }));
+
 const dispatch = jest.fn();
 let selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
 let selectedUserId: string | null = "33333333-3333-4333-8333-333333333333";
@@ -362,6 +365,41 @@ describe("SandboxesPanel non-blocking creation", () => {
     expect(container.textContent).not.toContain("old login");
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.dismiss).toHaveBeenCalledWith("logout-toast");
+    const reopened = await openCreateModal(container);
+    expect(reopened.disabled).toBe(false);
+  });
+
+  it("keeps a new same-user request busy when the pre-logout request settles late", async () => {
+    const resolves: Array<(value: ReturnType<typeof response>) => void> = [];
+    toast.loading
+      .mockImplementationOnce(() => "pre-logout-toast")
+      .mockImplementationOnce(() => "post-login-toast");
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => resolves.push(resolve));
+      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      throw new Error(`unexpected ${url}`);
+    }) });
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    await act(async () => (await openCreateModal(container)).click());
+    authReady = false;
+    await act(async () => root.render(<SandboxesPanel />));
+    authReady = true;
+    await act(async () => root.render(<SandboxesPanel />));
+    const postLoginCreate = await openCreateModal(container);
+    expect(postLoginCreate.disabled).toBe(false);
+    await act(async () => postLoginCreate.click());
+
+    await act(async () => resolves[0](response({ instance: { ...instance, name: "stale pre-logout", status: "creating" } }, 201)));
+    await settle();
+    expect(container.textContent).not.toContain("stale pre-logout");
+    expect(toast.dismiss).toHaveBeenCalledWith("pre-logout-toast");
+    const whilePostLoginPending = await openCreateModal(container);
+    expect(whilePostLoginPending.disabled).toBe(true);
+
+    await act(async () => resolves[1](response({ instance: { ...instance, name: "post-login create", status: "creating" } }, 201)));
+    await settle();
+    expect(container.textContent).toContain("post-login create");
   });
 
   it.each<SandboxCreateRequest>([

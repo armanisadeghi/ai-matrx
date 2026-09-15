@@ -61,6 +61,8 @@ export function GoogleOAuthRedirectCallback({
           redirectUri: window.location.origin,
           organizationContextId: pending.organizationContextId,
           expectedUserId: pending.initiatingUserId,
+          targetConnectionId: pending.targetConnectionId,
+          capabilityKey: pending.capabilityKey,
         });
         window.location.replace(
           returnPathWithGoogleOAuthResult(

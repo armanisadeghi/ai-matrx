@@ -70,7 +70,7 @@ describe("GitHub repository inventory", () => {
     jest.mocked(createClient).mockReturnValue({
       auth: {
         getSession: jest.fn().mockResolvedValue({
-          data: { session: { access_token: "test-token" } },
+          data: { session: { access_token: "test-token", user: { id: "current-user" } } },
           error: null,
         }),
       },
@@ -84,6 +84,8 @@ describe("GitHub repository inventory", () => {
     const projection = select.mock.calls[0]?.[0] as string;
     expect(projection).not.toContain("credential_item_id");
     expect(projection).not.toContain("vault_secret_key");
+    expect(query.eq).toHaveBeenCalledWith("owner_type", "user");
+    expect(query.eq).toHaveBeenCalledWith("owner_user_id", "current-user");
   });
 
   test("projects safe database metadata into a cloneable repository", () => {

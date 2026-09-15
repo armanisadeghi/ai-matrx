@@ -6,7 +6,6 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
-import { reconcileUserSandboxes } from "@/lib/sandbox/reconcile";
 import {
   sandboxCreateRequestSchema,
   type SandboxConfig,
@@ -159,60 +158,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ACTIVE_STATUSES = ["creating", "starting", "ready", "running"];
-    const ACTIVE_LIMIT = 5;
+    // Provisional safe-cutover fence: both orchestrator tiers must be live on
+    // atomic admission before this read-only guard can be removed. During a
+    // staggered frontend/backend release, the older orchestrator has no
+    // durable capacity primitive. Fail closed on an unreadable census and do
+    // not run reconciliation here: create admission must never mutate rows.
+    const { count: activeCount, error: activeCountError } = await supabase
+      .from("sandbox_instances")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .in("status", ["creating", "starting", "ready", "running"])
+      .is("deleted_at", null);
 
-    const countActive = async () => {
-      const { data, error } = await supabase
-        .from("sandbox_instances")
-        .select("id", { count: "exact" })
-        .eq("user_id", user.id)
-        .in("status", ACTIVE_STATUSES)
-        .is("deleted_at", null);
-      return { data, error };
-    };
-
-    let { data: activeInstances, error: countError } = await countActive();
-
-    // Capacity is an admission control, not a best-effort hint. Creating when
-    // the read failed can silently exceed the protected per-user ceiling.
-    if (countError || !activeInstances) {
-      console.error("[POST /api/sandbox] active sandbox capacity check failed", countError);
+    if (activeCountError || activeCount === null) {
+      console.error(
+        "[POST /api/sandbox] active sandbox capacity check failed",
+        activeCountError,
+      );
       return NextResponse.json(
-        { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
+        {
+          error:
+            "Sandbox capacity check is temporarily unavailable. Try again shortly.",
+        },
         { status: 503 },
       );
     }
 
-    // Self-heal: if we're at the limit, ask each orchestrator whether the
-    // sandboxes the rows reference actually still exist. Rows whose
-    // containers are gone get marked destroyed so they free their slot.
-    // This catches the common case where an in-memory orchestrator restart
-    // (or an out-of-band container destroy) leaves Supabase rows stranded
-    // in 'ready'/'running' forever.
-    if (
-      !countError &&
-      activeInstances &&
-      activeInstances.length >= ACTIVE_LIMIT
-    ) {
-      const summary = await reconcileUserSandboxes(user.id);
-      if (summary.reconciled > 0) {
-        ({ data: activeInstances, error: countError } = await countActive());
-        if (countError || !activeInstances) {
-          console.error("[POST /api/sandbox] reconciled active sandbox capacity check failed", countError);
-          return NextResponse.json(
-            { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
-            { status: 503 },
-          );
-        }
-      }
-    }
-
-    if (
-      !countError &&
-      activeInstances &&
-      activeInstances.length >= ACTIVE_LIMIT
-    ) {
+    if (activeCount >= 5) {
       return NextResponse.json(
         {
           error:
@@ -290,8 +262,8 @@ export async function POST(request: NextRequest) {
         { error: "Failed to create sandbox container", details: errBody },
         {
           status:
-            orchestratorResp.status === 400
-              ? 400
+            orchestratorResp.status === 400 || orchestratorResp.status === 429
+              ? orchestratorResp.status
               : orchestratorResp.status === 401 ||
                   orchestratorResp.status === 403
                 ? orchestratorResp.status

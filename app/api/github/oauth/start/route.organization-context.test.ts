@@ -22,6 +22,9 @@ jest.mock("next/headers", () => ({
     delete: jest.fn(),
   }),
 }));
+jest.mock("@/lib/api/endpoints", () => ({
+  AIDREAM_PRODUCTION_URL: "https://server.example.test",
+}));
 
 const createClientMock = jest.mocked(createClient);
 
@@ -40,9 +43,21 @@ describe("GitHub OAuth start — organization admission (sender-side, fail-close
     createClientMock.mockResolvedValue({
       auth: {
         getUser: async () => ({ data: { user: { id: "user-1" } } }),
+        getSession: async () => ({ data: { session: { access_token: "test-token" } } }),
       },
     } as unknown as Awaited<ReturnType<typeof createClient>>);
+    jest.spyOn(global, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          authorization_url: "https://github.com/login/oauth/authorize?state=opaque",
+          state: "opaque",
+        }),
+        { status: 200 },
+      ),
+    );
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   it("REFUSAL: never redirects to GitHub when no organization_id is supplied", async () => {
     const response = await GET(requestWithParams({ return_url: "/code" }));

@@ -138,6 +138,8 @@ import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHo
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
 import { GoogleOAuthRedirectNotice } from "@/providers/google-provider/GoogleOAuthRedirectNotice";
+import { SandboxLifecycleObserver } from "@/lib/sandbox/SandboxLifecycleObserver";
+import { SandboxLifecycleController } from "@/lib/sandbox/SandboxLifecycleController";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -194,6 +196,9 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                         <AudioSystemHost />
                                         <React.Fragment>
                                           <GlobalAuthSync />
+                                          {/* One authenticated lifecycle runtime for Core, Code, and Admin. */}
+                                          <SandboxLifecycleObserver />
+                                          <SandboxLifecycleController />
                                           {children}
                                           <RecoveryWindow />
                                           <RecoveryNudge />

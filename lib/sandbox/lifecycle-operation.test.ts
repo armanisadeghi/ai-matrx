@@ -1,7 +1,7 @@
 import { classifyDurableSandboxLifecycleResponse } from "./lifecycle-operation";
 
 const identity = { row_id: "11111111-1111-4111-8111-111111111111", sandbox_id: "runtime-a", operation_id: "22222222-2222-4222-8222-222222222222", kind: "stop" as const };
-const response = (status: number, payload: object) => ({ ok: status >= 200 && status < 300, status, json: async () => payload });
+const response = (status: number, payload: object) => ({ ok: status >= 200 && status < 300, status, json: async () => ({ graceful: true, ...payload }) });
 
 describe("durable sandbox lifecycle classifier", () => {
   it("does not call the backend accepted receipt success", async () => {

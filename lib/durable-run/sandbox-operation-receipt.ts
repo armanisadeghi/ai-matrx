@@ -11,6 +11,8 @@ export interface SandboxOperationReceipt {
   row_id: string;
   operation_id: string;
   kind: SandboxOperationKind;
+  /** Omitted legacy receipts are graceful by contract. */
+  graceful?: boolean;
   observation: SandboxOperationObservation;
 }
 
@@ -43,7 +45,10 @@ export function parseSandboxOperationReceipt(raw: string | null): SandboxOperati
     if (receipt.schema_version !== 1 || !isUuid(receipt.row_id) || !isUuid(receipt.operation_id)) return null;
     if (receipt.kind !== "stop" && receipt.kind !== "delete") return null;
     if (receipt.observation !== "prepared" && receipt.observation !== "dispatched" && receipt.observation !== "accepted") return null;
-    return receipt as SandboxOperationReceipt;
+    // Legacy receipts omitted this field, but a present value is security
+    // relevant: never coerce a forged value into graceful intent.
+    if (receipt.graceful !== undefined && typeof receipt.graceful !== "boolean") return null;
+    return { ...receipt, graceful: receipt.graceful ?? true } as SandboxOperationReceipt;
   } catch {
     return null;
   }
@@ -57,11 +62,11 @@ export function writeSandboxOperationReceipt(storage: ReceiptStorage, actorId: s
     const existing = parseSandboxOperationReceipt(storage.getItem(key));
     // Observation advances, but the operation identity never does. In
     // particular, stop and delete must not be interchangeable at one key.
-    if (existing && (existing.row_id !== receipt.row_id || existing.operation_id !== receipt.operation_id || existing.kind !== receipt.kind)) return false;
+    if (existing && (existing.row_id !== receipt.row_id || existing.operation_id !== receipt.operation_id || existing.kind !== receipt.kind || (existing.graceful ?? true) !== (receipt.graceful ?? true))) return false;
     const encoded = JSON.stringify(receipt);
     storage.setItem(key, encoded);
     const readback = parseSandboxOperationReceipt(storage.getItem(key));
-    return readback?.row_id === receipt.row_id && readback.operation_id === receipt.operation_id && readback.kind === receipt.kind && readback.observation === receipt.observation;
+    return readback?.row_id === receipt.row_id && readback.operation_id === receipt.operation_id && readback.kind === receipt.kind && (readback.graceful ?? true) === (receipt.graceful ?? true) && readback.observation === receipt.observation;
   } catch {
     return false;
   }
