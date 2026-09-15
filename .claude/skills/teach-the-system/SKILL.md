@@ -2,9 +2,9 @@
 name: teach-the-system
 type: Skill
 title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
-description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
+description: "Trial protocol for teaching AI Matrx an expert's knowledge until the platform breaks, fixing it. Use when asked to run an expertise trial, distil a person/creator/recent video into a Masterwork, or test the capture product. NOT for a known-missing feature (use build-sub-feature)."
 tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-12T17:40:00Z
+timestamp: 2026-09-14T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -62,6 +62,12 @@ edit either learned nothing or lost it.
 
 ## 0. The mandate every trial is measured against
 
+🚨 **The ruling authority for everything in this skill is
+`common-docs/systems/masterwork/doctrine/CORE.md`** (Arman, 2026-09-14) and its companion parts,
+`core-mandate-and-trial-program.md` and `advantage-stack.md`, in the same directory. Read CORE.md
+in full before your first trial and whenever a rule here seems to conflict with it — CORE.md wins,
+and this skill gets fixed. The checks below still apply on top of it.
+
 🚨 Read `common-docs/projects/expert-book-challenge/MANDATE.md` (Arman, 2026-09-12, `authority: owner`)
 before choosing a subject, and answer its seven checks in your register before you build: which acquisition
 **modality** you add; whether the knowledge is genuinely **tacit** (if the expert could have written it down,
@@ -75,63 +81,73 @@ merged model, one averaged verdict, or one consensus rulebook destroys exactly w
 principal source of value. Keep per-expert or per-school profiles as the unit, be able to show a minority
 position that survived, and never resolve a disagreement by averaging.
 
-## 1. Choose the subject — the opposite of what computers are good at
+## 1. Choose the subject — the Moat Gate
+
+🚨 **Authority: `common-docs/systems/masterwork/doctrine/CORE.md` §3–4 (Arman, 2026-09-14).** This
+section restates it for trial use; when the two disagree, CORE.md wins and this section is wrong.
 
 REQUIRED before anything else: write the subject choice into your trial register (§3) with the
-three answers below. A subject that fails any of them is rejected.
+gate answers below. A subject that fails the gate is rejected.
 
-1. **Does it need judgment, questions, and a diagnosis** rather than yes/no rules? Ad-copy
-   checklists, style rules, pass/fail grading are rejected ("almost digital"). Relationship advice
-   for teenagers, parenting, what a therapist should tell a person, tax or HR judgment calls,
-   "how to not sound like AI" are the model.
-2. **Can two experts disagree?** The strongest trial is two sources with differing views on the
-   same topic → two masterworks → the same inputs → two different, defensible answers. Plan for
-   the pair even if night 1 only builds one.
-3. **Can the result be judged without you?** Prefer subjects with a judge built in: a Fable-written
-   blog fed to a "sound human" masterwork; a real viral post fed to a verification desk; a
-   described family situation fed to two parenting masterworks. Name the judge (AI or Arman) now.
-4. **Would a frontier model give this answer unprompted?** If yes, reject: it is common knowledge,
-   not expertise. The subject must be a highly opinionated method the best people believe in — an
-   order of operations they refuse to violate, "never X without first Y" gates, their own vocabulary,
-   a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
-   agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
-
+1. **The Moat Gate — screening question: do this expert's own peers disagree with them?** A
+   subject is worth a trial only if the expertise is **scarce**, locked in a head or a private
+   corpus, **idiosyncratic** to one person, **non-stationary** (it keeps changing), or **private**.
+   Disqualifiers: **if you could fine-tune it, fine-tune it** — that means it is not tacit; a
+   memorized benchmark; anything a frontier model already does well raw.
+2. **Gate by measurement, never by assumption — the A0 probe.** Run the best frontier model raw,
+   with only the subject's byline instruction (no corpus, no our-artifacts), and score it on the
+   seven-metric spine (§4 below). **If it already makes the heterodox calls, the subject fails —
+   evidenced, not guessed.** For any public-figure subject, contamination-screen the *target
+   artifact* (never the source corpus) so it postdates every model's cutoff in every arm, checked
+   and logged before you run anything else.
+3. **Recency is the proving ground.** Anything published in the last ninety days is guaranteed
+   outside every model's training data — prefer these subjects while living experts stay in
+   reserve (§4 below, readiness gate).
+4. **Can the result be judged without you?** Prefer subjects with a judge built in: a real viral
+   post fed to a verification desk, a described family situation fed to two parenting masterworks,
+   or — strongest — the expert's own withheld real work as blind ground truth in the bench pool
+   (the GT arm, §3 below). Name the judge now.
 5. **Does the subject hold more than one school, and will you keep both?** Two sources that
    disagree are two schools of one body of knowledge, not one Rulebook to reconcile. Name the
    schools in the register before distilling; a rule that one source holds and the other rejects
    is the trial's most valuable output, never a "coherence tension" to settle. Trial 3 planned the
    pair and attached both to one Rulebook — 139 drafts, one desk, every disagreement resolved to a
-   side: that is the consensus trap, and it is now a wall (§4).
+   side: that is the consensus trap, and it is now a wall (§4 below).
+
+**The bright line.** Every input that existed before the engagement began belongs to the raw
+arms too — the corpus, retrieval, tools, web, a large budget, a competent prompt. Raw arms never
+get the elicitation transcript, the distillate, the contrastive analysis, the decision tree, the
+negative-space list, the rubric, or the correction log — those are engagement artifacts, ours
+alone. Never build a "fair" comparison that hands a raw arm something we made.
+
+**A public book is an input, not a subject that proves anything on its own.** Given the same book
+in context, the raw frontier model matches or beats a Masterwork distilled from it (trial 2,
+re-run 2026-09-14) — a book trial can find platform walls, but it cannot prove the product. Treat
+a book the way CORE.md does: as one input among the acquisition doors (organizational exhaust,
+past work, interviews, video), never as the default subject.
+
+🚨 **Arman is never the subject.** He is not interviewed as the Expert, and no trial is built
+around his own knowledge, until the readiness gate in CORE.md §8 is met: three consecutive
+resource trials driven end to end by agents as non-technical users with zero unfixed walls, the
+interview lane completing a full simulated session with the new probes with zero walls, and the
+bench live so his own session yields a scored result the same day. Until then, a subject involving
+him is out of scope for this skill.
 
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
 method genuinely needs a primitive (reverse image search, a records lookup), build it in the shared
 layer and log it as platform capability, not as the trial's achievement.
 
-The source must be freely and legally available (public domain, CC, the author's own site, a blog).
-Record the licence and the link in the register.
+The source must be freely and legally available (public domain, CC, the author's own site, a blog,
+a recent video with a transcript). Record the licence and the link in the register.
 
-**Books are only one of three subject classes (Arman, 2026-09-12) — don't let this become "a
-couple of little books".** Most expertise in a company never made it into a book:
-
-- **(a) Expertise that only lives in a person's head.** The trial extracts it through the
-  product's own **interview lane** (Masterwork guided start interviewing you as the Expert) — not
-  a book, not a transcript you pre-wrote. If the interview does a shitty job, that IS the wall:
-  fix the interview lane itself, in the shared layer, before blaming the subject. This has been
-  reported for a while with nobody fixing it — a trial that hits it and doesn't fix it has failed
-  the trial.
-- **(b) Expertise that lives in someone's past work.** The only input is a body of real examples
-  (a writer's published pieces, a critic's reviews, a designer's portfolio) — never the person's
-  narration of their own method. Distil the standards the examples imply, then reproduce a
-  held-out example blind and compare.
-- **(c) Ground-truth subjects, where the world already holds the right answer.** Feed the system
-  everything it needs except the actual answer, have it produce its own version, and diff it
-  against the real one that already exists — a week-old New York Times or Washington Post article
-  reproduced blind from the same sources, a fashion critic's review reproduced blind against the
-  real one. **No AI judge is needed for the main verdict** here: the ground truth already exists.
-  AI cannot yet write at that level, and closing that gap — YouTube talks and guides from real
-  news editors and media writing coaches feeding a Rulebook for a highly unique, opinionated,
-  non-AI-sounding voice — is exactly the kind of trial this program exists to run.
+**Acquisition doors, not subject classes.** CORE.md §5 lists the source lane, the body-of-work
+lane, the YouTube link with time-anchored transcript, the monologue recorder, and the chat-import
+lane as intake doors — pick whichever door the Moat Gate's chosen subject actually lives behind,
+never as three parallel "kinds" of trial to rotate through. If the subject is expertise that only
+lives in a person's head and that person is not Arman (§ above), the interview lane is that door;
+if the interview does a shitty job, that IS the wall — fix the interview lane itself, in the shared
+layer, before blaming the subject.
 
 ## 2. The rules of the trial
 
@@ -168,8 +184,12 @@ couple of little books".** Most expertise in a company never made it into a book
   the hostname it offers you — and your failed navigation can no longer burn another trial's nonce.
   Mechanics and forcing proof: `matrx-frontend/docs/official/browser-testing.md`,
   `pnpm check:preview-session`.
-- **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
-  fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
+- **Cost is a measured result, graded on the five-arm bench, never a two-arm comparison.** Track
+  model spend from `chat.request` for every arm you run (§3 below): A0 frontier raw, A1 frontier
+  with the full corpus in context, A2 frontier plus retrieval/tools/web to a reported budget
+  ceiling, B the cheap model raw, C our workflow on the cheap model, GT the expert's real withheld
+  work blind in the pool. A "vibe-coded app vs. our build" comparison, or any report naming only
+  two arms, is not a grade under this doctrine — see CORE.md §4 and advantage-stack.md §4.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
   that doesn't need complex code — this explicitly includes driving a whole trial (reading,
   comparing, distilling, running real cases, judging outputs, logging walls); Opus 5 for complex
@@ -180,13 +200,29 @@ couple of little books".** Most expertise in a company never made it into a book
   a deploy train to call a fix or a step complete — commit it, verify it works on localhost, and
   move on; the deploy agent's cadence is a separate concern from whether the trial can continue.
 
-## 3. The register — one file, the single source of state
+## 3. The register and the bench — the single source of state and the only valid grade
 
 Create `common-docs/projects/<trial-slug>/REGISTER.md` on the first action, modelled on
 `expert-book-challenge/REGISTER.md`: rules, source + licence, walls table
 (`| W# | Where | What happened | Class | Status/fix |`), real test cases, a UTC timeline, "where
 it stands", spend. Update it **as you go**, never at the end — a compaction or restart loses
 anything not written. Also write a memory note (`project_<slug>.md`) with the state.
+
+**Grading is the five-arm bench, never fewer arms.** Per CORE.md §6 / advantage-stack.md §4: run
+A0 (frontier raw), A1 (frontier + full corpus in context), A2 (frontier + retrieval/tools/web to a
+reported budget ceiling of 100× our cost), B (cheap model raw), and C (our workflow on the cheap
+model, air-gapped by tool removal), then score all of them plus GT (the expert's real withheld
+work, blind in the pool) on the seven-metric spine — heterodoxy retention and consensus drift
+first, then decision selection, reason overlap, commitment, restraint, calibration — plus rule
+fidelity, fabrications, cost-to-parity, capture cost in expert-hours, and walls hit. Record dollars
+and seconds on every arm. **The trial is void if GT does not win the blind panel.** Name which of
+the three wins (ceiling / quality / efficiency, CORE.md §6) the trial is claiming, or claim none.
+
+**Until the bench UI exists, grade from the CLI.** `aidream/services/masterworks/bench` (being
+built now) is the way to run and score the arms — check there first for the current entrypoint
+before hand-rolling a comparison. **A report naming only two arms is not a grade under this
+doctrine**, no matter how it is worded; if the bench CLI cannot yet run an arm you need, that is a
+wall (§4), not a reason to fall back to a smaller comparison.
 
 ## 4. Hit a wall → fix the class → continue (the loop)
 
@@ -213,16 +249,30 @@ A run reached the deliverable on a real case, OR the platform is blocked on a bu
 both cases the register says exactly where it stands, every wall has a status and an owner, and the
 morning report exists (§6). "I got tired" is not a stopping point; a blocked deploy is.
 
-## 6. The morning report — what improved, in plain English
+## 6. The morning report — the capability ledger leads, never a run story
 
 Written for Arman: plain sentences, no paths, no codes, no doc pointers (law:
-`common-docs/policies/talk-to-arman-like-a-person.md`). Lead with the capability ledger — the count
-of "could not → can now" and each row as a capability the next user inherits — and the **tacit
-ledger**: how many rules the trial kept that a frontier model would not have produced unprompted,
-how many disagreements it kept alive as two positions, and how many the product tried to collapse — then the trial's honest state, then the cost,
-then the pending list — items only he can do, each with the prompt already written. Never ask
-him to decide something you can find out or do yourself; never send him a question without your
-recommendation.
+`common-docs/policies/talk-to-arman-like-a-person.md`). **Every report opens with the capability
+ledger** — one row per "could not → can now" (CORE.md §6) — never with what the trial did or how
+the session went; a run that added no row is worth nothing and the report says so plainly rather
+than padding with narrative. Immediately after the ledger:
+
+- **Walls a real user hit — a first-class metric, counted and named, not folded into prose.**
+  Capture *is* the product (CORE.md §4), so every wall the trial hit while driving the product as
+  a non-technical Expert is reported at the same weight as a capability gained, fixed or open.
+- **Every UI defect, however small, logged** — a dead control, a false "saved", a caveated finding
+  shown instead of dropped, a stray pixel. Nothing is too minor to log; an unlogged defect is a
+  defect the next trial re-discovers.
+- **The tacit ledger:** how many rules the trial kept that a frontier model would not have produced
+  unprompted (verified against the A0 probe, §1), how many disagreements it kept alive as two
+  positions, and how many the product tried to collapse.
+- **The bench result**, named by which of the three wins it claims or that it claims none, with the
+  arm costs and seconds — never a "we compared it to X and it did better" sentence with fewer than
+  five arms.
+
+Then the trial's honest state, the cost, and the pending list — items only he can do, each with the
+prompt already written. Never ask him to decide something you can find out or do yourself; never
+send him a question without your recommendation.
 
 ## 7. Improve this skill before you stop
 

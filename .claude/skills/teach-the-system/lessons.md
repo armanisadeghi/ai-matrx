@@ -17,8 +17,8 @@ with the date (SKILL.md §7); if a lesson changes a rule, edit the rule in SKILL
 - 2026-09-10 → 2026-09-13 — the main log: subject choice, Arman's rulings, the Conductor, trials 3, 7, 9 and 12
 - 2026-09-12 — interview-lane trials, the Sonnet driver, trial 9 runs 3–6 and the newsroom exam
 - 2026-09-12 — trial 8 (the unfolding case): stale credentials, the honest headless path, parallel builders
-- 2026-09-12 — trial 2 closed: the disagreeing pair
 - 2026-09-12 → 2026-09-13 — Arman's architecture brief and the gap census; concurrent trials, CI, access refusals, trials 7–9
+- 2026-09-14 — the fair re-run: trial 2 re-graded, the subject rule replaced by the Moat Gate
 
 ## Lessons
 
@@ -279,7 +279,6 @@ with the date (SKILL.md §7); if a lesson changes a rule, edit the rule in SKILL
   frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
   Treat every bot finding as a bug report and fix the class before the morning report.
 
-- **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
 
 - **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,
   multi-modal, provenance-tagged, dissent-preserving expertise. The census found the platform had
@@ -337,3 +336,16 @@ with the date (SKILL.md §7); if a lesson changes a rule, edit the rule in SKILL
   before AI can run". Classify by exception CLASS first, and never let a classifier see argument payloads.
    Its sibling: a resumable chat pause (the tool loop guard) reaching an unattended workflow step is a blind
    failure — "no error detail recorded" while the guard knew the tool, the count and the error.
+- 2026-09-14 — **The fair re-run: trial 2 re-graded under the doctrine, and the subject rule replaced.**
+  Re-running trial 2 (Watson vs. Montessori) with the raw frontier model handed the same book in context
+  (the A1 arm) showed it matching or beating the Masterwork built from it — the earlier "passed" verdict was
+  a two-arm comparison with no raw-model arm at all, exactly the class of error CORE.md §4 and the five-arm
+  bench exist to catch. Lesson, ruled by Arman into `common-docs/systems/masterwork/doctrine/CORE.md`: a
+  public book is an input, never a subject that proves the product on its own; the old book-first / three
+  subject-class rule in this skill's §1 is superseded by the Moat Gate (peers disagree; scarce, locked,
+  idiosyncratic, non-stationary, private; gate by measurement with the A0 probe, never by assumption) plus
+  the recency amendment (content under ninety days old is the best proving ground) and the bright line (raw
+  arms get every pre-existing input, never our engagement artifacts). Grading itself moves from any two-arm
+  audition to the five-arm bench (A0/A1/A2/B/C/GT) on the seven-metric spine, run via the
+  `aidream/services/masterworks/bench` CLI until the bench UI ships. Also ruled the same day: Arman is not a
+  trial subject until the CORE.md §8 readiness gate is met.
