@@ -174,6 +174,16 @@ export async function POST(request: NextRequest) {
 
     let { data: activeInstances, error: countError } = await countActive();
 
+    // Capacity is an admission control, not a best-effort hint. Creating when
+    // the read failed can silently exceed the protected per-user ceiling.
+    if (countError || !activeInstances) {
+      console.error("[POST /api/sandbox] active sandbox capacity check failed", countError);
+      return NextResponse.json(
+        { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
+        { status: 503 },
+      );
+    }
+
     // Self-heal: if we're at the limit, ask each orchestrator whether the
     // sandboxes the rows reference actually still exist. Rows whose
     // containers are gone get marked destroyed so they free their slot.
@@ -188,6 +198,13 @@ export async function POST(request: NextRequest) {
       const summary = await reconcileUserSandboxes(user.id);
       if (summary.reconciled > 0) {
         ({ data: activeInstances, error: countError } = await countActive());
+        if (countError || !activeInstances) {
+          console.error("[POST /api/sandbox] reconciled active sandbox capacity check failed", countError);
+          return NextResponse.json(
+            { error: "Sandbox capacity check is temporarily unavailable. Try again shortly." },
+            { status: 503 },
+          );
+        }
       }
     }
 
