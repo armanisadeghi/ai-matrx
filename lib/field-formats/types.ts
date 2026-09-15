@@ -63,7 +63,9 @@ export type FieldFormatId =
   // structured
   | "json"
   | "array"
-  | "tags";
+  | "tags"
+  // computed — the cell stores nothing; the value comes from a formula
+  | "formula";
 
 /**
  * A binding from a choice format to a user structured list (a "pick list").
@@ -170,6 +172,23 @@ export type FieldFormatOptions = {
    * it. Off-list values are never rejected or blanked — they render in amber.
    */
   allowOther?: boolean;
+  /**
+   * `formula` — the computed column's definition.
+   *
+   * `expression` is the formula text exactly as the user typed it, parsed by
+   * `features/data-tables/formulas.ts`. `resultFormat` is how the computed
+   * value should be DISPLAYED (a computed total shown as Currency, a computed
+   * date shown as a Date); when it is absent the value renders plainly.
+   *
+   * The expression lives here, in `metadata.format.options`, for the same
+   * reason every other format option does: it is a UI layer over an untouched
+   * storage type. The cell itself is always `null` — strip the format and the
+   * column is an ordinary empty text column, with nothing to migrate.
+   */
+  formula?: {
+    expression: string;
+    resultFormat?: FieldFormatId;
+  };
 };
 
 /** What a field declares. Persisted as `metadata.format` on the field row. */
@@ -210,7 +229,12 @@ export type FieldEditorKind =
   | "rating"
   | "json"
   | "select"
-  | "multiselect";
+  | "multiselect"
+  /**
+   * Not editable at all — the value is COMPUTED, so the grid refuses editing
+   * rather than offering an input that would throw the computed value away.
+   */
+  | "computed";
 
 export type FieldFormatDef = {
   id: FieldFormatId;
