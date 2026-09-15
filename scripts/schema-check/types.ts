@@ -8,13 +8,17 @@
 
 export type Severity = "error" | "warn";
 
-/** Provenance of the live-truth snapshot — surfaced so the report can say how fresh it is. */
-export type SnapshotProvenance = "rpc" | "aidream" | "db-types" | "none";
+/**
+ * Provenance of the live-truth snapshot. ONE source since 2026-09-15: the committed
+ * pull of schema_truth_snapshot() (snapshot.ts throws otherwise). The old
+ * "aidream" / "db-types" / "none" degraded labels, and every branch on them, are gone.
+ */
+export type SnapshotProvenance = "rpc";
 
 /** The live database, as one offline-readable snapshot. The single source of truth. */
 export interface Snapshot {
   generatedAt: string;
-  /** Human-readable provenance, e.g. "schema_truth_snapshot() RPC (live)". */
+  /** Human-readable provenance carrying generated_at, e.g. "schema_truth_snapshot() RPC (cached 2026-09-14T…)". */
   source: string;
   provenance: SnapshotProvenance;
   /** schema -> Set(table names) — base, partitioned-parent, and partition-child tables. */

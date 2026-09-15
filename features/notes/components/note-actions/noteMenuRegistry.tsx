@@ -41,6 +41,7 @@ import {
   deleteNote,
   restoreNote,
   moveNoteToFolder,
+  ensureNoteBodiesLoaded,
 } from "../../redux/thunks";
 import { isNoteContentEmpty } from "../../utils/noteUtils";
 import { downloadNoteAsMarkdown } from "../../utils/exportNotesMarkdown";
@@ -282,11 +283,17 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
             label: "Export as Markdown",
             icon: Download,
             onSelect: () => {
-              downloadNoteAsMarkdown({
-                id: ctx.noteId,
-                label: ctx.label,
-                content: ctx.content,
-              });
+              // The row may hold only a preview (audit N-24): read the body first.
+              void ctx
+                .dispatch(ensureNoteBodiesLoaded([ctx.noteId]))
+                .unwrap()
+                .then(([full]) => {
+                  downloadNoteAsMarkdown({
+                    id: ctx.noteId,
+                    label: ctx.label,
+                    content: full?.content ?? ctx.content,
+                  });
+                });
             },
           },
           {

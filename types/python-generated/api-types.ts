@@ -19480,7 +19480,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief": {
+    "/seo/brands/{brand_id}/strategy": {
         parameters: {
             query?: never;
             header?: never;
@@ -19488,10 +19488,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Site Landscape Brief
-         * @description The brief as it stands, whatever its review state.
+         * Get Brand Strategy
+         * @description The brand's strategy as it stands, whatever its review state.
          */
-        get: operations["get_site_landscape_brief_seo_sites__site_id__landscape_brief_get"];
+        get: operations["get_brand_strategy_seo_brands__brand_id__strategy_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19500,7 +19500,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/generate": {
+    "/seo/brands/{brand_id}/strategy/generate": {
         parameters: {
             query?: never;
             header?: never;
@@ -19510,20 +19510,22 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Generate Site Landscape Brief
-         * @description Stage 1 of the staged-confidence pattern: establish the ground facts.
+         * Generate Brand Strategy
+         * @description Establish the brand's ground facts as a DURABLE streamed command.
          *
-         *     Leaves the brief `awaiting_review` with a 24-hour deadline — after which
-         *     downstream work proceeds on these assumptions rather than stalling.
+         *     It reads every site the brand owns, each site's crawl, and the current
+         *     research document before it writes — minutes of work, so it claims its
+         *     `seo.collection_run` row first and streams a named stage per input. Rejoin
+         *     with `POST /seo/collections/{run_id}/rejoin`.
          */
-        post: operations["generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post"];
+        post: operations["generate_brand_strategy_seo_brands__brand_id__strategy_generate_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/ruling": {
+    "/seo/brands/{brand_id}/strategy/ruling": {
         parameters: {
             query?: never;
             header?: never;
@@ -19533,11 +19535,116 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rule On Site Landscape Brief
+         * Rule On Brand Strategy
          * @description The owner's correction, in their own words — the guidance every later
-         *     agent inherits.
+         *     agent inherits, for every website this brand owns.
          */
-        post: operations["rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post"];
+        post: operations["rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/brands/{brand_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Brand Strategy History
+         * @description Superseded brand strategies, newest first.
+         */
+        get: operations["get_brand_strategy_history_seo_brands__brand_id__strategy_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy
+         * @description What this website is FOR, as it stands, whatever its review state.
+         */
+        get: operations["get_site_strategy_seo_sites__site_id__strategy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Site Strategy
+         * @description Establish what this website is FOR as a DURABLE streamed command.
+         *
+         *     It reads the established brand strategy, this site's crawl, its Search
+         *     Console performance, its keyword library, its content plan and its research
+         *     document before it writes. Rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         */
+        post: operations["generate_site_strategy_seo_sites__site_id__strategy_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rule On Site Strategy
+         * @description The owner's correction on what this website is for.
+         */
+        post: operations["rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy History
+         * @description Superseded site strategies, newest first.
+         */
+        get: operations["get_site_strategy_history_seo_sites__site_id__strategy_history_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -30310,6 +30417,51 @@ export interface paths {
          * @description The same verdicts, for the jobs this caller can already see.
          */
         post: operations["agent_impact_mine_mandates_impact_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/advance/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Advance Mine
+         * @description The same batch advance, as the OWNER (I12): only this person's own
+         *     personal pins and the org rungs of organizations they administer move;
+         *     every other token is refused with the same sentence as a rung they cannot
+         *     see. Never on anyone's behalf.
+         */
+        post: operations["agent_impact_advance_mine_mandates_impact_advance_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/revert/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Revert Mine
+         * @description The same revert, as the OWNER (I12): a batch id is not an entitlement —
+         *     only rows this person may write go back; the rest are refused without
+         *     being named.
+         */
+        post: operations["agent_impact_revert_mine_mandates_impact_revert_mine_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -41614,7 +41766,10 @@ export interface components {
              * @enum {string}
              */
             holder_kind: "binding" | "mandate_default";
-            /** Row Id */
+            /**
+             * Row Id
+             * Format: uuid
+             */
             row_id: string;
             /** Expected Pinned Version Id */
             expected_pinned_version_id?: string | null;
@@ -45143,6 +45298,8 @@ export interface components {
              * @description Destination cld_files.file_path
              */
             file_path: string;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /** Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put */
         Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
@@ -45249,6 +45406,8 @@ export interface components {
              * @description Upload options. JSON: {"rag": {"enabled": bool|null, "trigger_now": bool}}
              */
             options_json?: string | null;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /** Body_upload_file_source_research_topics__topic_id__sources_upload_post */
         Body_upload_file_source_research_topics__topic_id__sources_upload_post: {
@@ -45763,9 +45922,22 @@ export interface components {
         };
         /**
          * BridgeAction
+         * @description The ONE advertised action vocabulary of the coding-session bridge.
+         *
+         *     This enum is not an internal dispatch key: it IS the ``action`` parameter
+         *     of the remote MCP tool and of ``POST /api/coding-sessions/bridge``, and MCP
+         *     hosts fetch that schema live. **A member added here is callable by Claude
+         *     Code, Codex, Cursor and VS Code the moment the server deploys** — so a
+         *     member arrives only WITH its implementation, or it is refused out loud
+         *     (:class:`BridgeRefusal`). Never add a placeholder member.
+         *
+         *     The dispatch family (``capabilities`` today; ``start``/``send``/``cancel``/
+         *     ``handoff`` in their own lanes) answers with :class:`BridgeDispatchResult`
+         *     on ``BridgeResponse.dispatch`` — never by overloading the entry-ledger
+         *     counters.
          * @enum {string}
          */
-        BridgeAction: "append_native" | "delete" | "health" | "list_native" | "load_native" | "observe_hook";
+        BridgeAction: "append_native" | "capabilities" | "delete" | "health" | "list_native" | "load_native" | "observe_hook";
         /** BridgeCapabilities */
         BridgeCapabilities: {
             /** Native Resume */
@@ -45786,6 +45958,30 @@ export interface components {
              * @enum {string}
              */
             tool_payload_fidelity: "full" | "none" | "partial";
+        };
+        /**
+         * BridgeCapabilityReport
+         * @description The `capabilities` action's answer: provider × origin, with reasons.
+         *
+         *     Generalizes the Claude-only ``GET /api/coding-sessions/claude/capabilities``
+         *     probe to every provider and every origin, and is the ONLY place a client
+         *     may learn what it can do — see ``supported_actions``. A client that
+         *     hardcodes an action list breaks on the first server that predates or
+         *     postdates it, which is why there is no version number to negotiate.
+         */
+        BridgeCapabilityReport: {
+            provider: components["schemas"]["BridgeProvider"];
+            origin?: components["schemas"]["BridgeOrigin"] | null;
+            runtime?: components["schemas"]["BridgeRuntimeKind"] | null;
+            /** Available */
+            available: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Operations */
+            operations: components["schemas"]["CapabilityVerdict"][];
+            fidelity: components["schemas"]["BridgeCapabilities"];
+            /** Supported Actions */
+            supported_actions: components["schemas"]["BridgeAction"][];
         };
         /** BridgeChangesResponse */
         BridgeChangesResponse: {
@@ -45837,6 +46033,28 @@ export interface components {
              * @constant
              */
             store?: true;
+        };
+        /**
+         * BridgeDispatchResult
+         * @description Result of a dispatch-family action.
+         *
+         *     ``BridgeResponse``'s ``accepted/duplicates/conflicts/receipts`` counters are
+         *     the RAW-LEDGER receipt and mean nothing for a dispatch verb; reusing them
+         *     (``accepted: 1`` for "the agent answered") is contract-lying. Dispatch
+         *     results land here instead, and each future verb adds its own fields in its
+         *     own lane rather than overloading an existing one.
+         */
+        BridgeDispatchResult: {
+            action: components["schemas"]["BridgeAction"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "accepted" | "completed" | "in_flight" | "refused";
+            runtime?: components["schemas"]["BridgeRuntimeKind"] | null;
+            capabilities?: components["schemas"]["BridgeCapabilityReport"] | null;
+            /** Detail */
+            detail?: string | null;
         };
         /** BridgeEntry */
         BridgeEntry: {
@@ -45967,6 +46185,25 @@ export interface components {
             next_cursor?: string | null;
         };
         /**
+         * BridgeOperation
+         * @description The ONE capability vocabulary every adapter and runtime reports against.
+         *
+         *     Reconciles the two lists that disagreed before 2026-09-14: the ten adapter
+         *     flags published in the contract doc (``start|send|stream|cancel|
+         *     resume_native|fork_native|list|mirror|export|open``) and the six
+         *     fidelity fields of :class:`BridgeCapabilities`. The ten OPERATIONS live
+         *     here and are answered per provider × origin with a reason; the six
+         *     fidelity FACTS stay in :class:`BridgeCapabilities`, which is also what
+         *     ``chat.coding_session.capabilities`` stores. ``handoff`` is the eleventh
+         *     member because the contract's collaboration section promises it as an
+         *     operation; it is reported unsupported until its lane lands.
+         *
+         *     Never mint a twelfth vocabulary: a new capability question becomes a member
+         *     here, reported by every runtime descriptor in the same change.
+         * @enum {string}
+         */
+        BridgeOperation: "cancel" | "export" | "fork_native" | "handoff" | "list" | "mirror" | "open" | "resume_native" | "send" | "start" | "stream";
+        /**
          * BridgeOrigin
          * @enum {string}
          */
@@ -46015,6 +46252,31 @@ export interface components {
             /** Files Count */
             files_count: number;
         };
+        /**
+         * BridgeRefusal
+         * @description A typed refusal — never a validation dump, never silence.
+         *
+         *     Every refusal carries the action that was asked for, why it cannot be
+         *     served, what to do instead, and the live list of actions this server does
+         *     implement. That list is the version negotiation: there is no version number
+         *     to compare, so a client asks and believes the answer.
+         */
+        BridgeRefusal: {
+            code: components["schemas"]["BridgeRefusalCode"];
+            /** Requested Action */
+            requested_action: string;
+            /** Reason */
+            reason: string;
+            /** Remedy */
+            remedy: string;
+            /** Supported Actions */
+            supported_actions: components["schemas"]["BridgeAction"][];
+        };
+        /**
+         * BridgeRefusalCode
+         * @enum {string}
+         */
+        BridgeRefusalCode: "unimplemented_action" | "unknown_action" | "unsupported_runtime";
         /** BridgeResponse */
         BridgeResponse: {
             /**
@@ -46025,6 +46287,10 @@ export interface components {
             schema_version?: 1;
             action: components["schemas"]["BridgeAction"];
             provider: components["schemas"]["BridgeProvider"];
+            /** Supported Actions */
+            supported_actions?: components["schemas"]["BridgeAction"][];
+            refusal?: components["schemas"]["BridgeRefusal"] | null;
+            dispatch?: components["schemas"]["BridgeDispatchResult"] | null;
             /** Session Id */
             session_id?: string | null;
             /** Conversation Id */
@@ -46070,6 +46336,19 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /**
+         * BridgeRuntimeKind
+         * @description Which runtime can actually execute turns for a provider session.
+         *
+         *     ``matrx_local`` and ``matrx_sandbox`` mirror the same-named
+         *     :class:`BridgeOrigin` values (the user's own machine via Matrx Local, and
+         *     the hosted Matrx Sandbox). ``seeded`` is the no-runtime case: a handoff
+         *     that carries a seed packet instead of an executor, so a second tool can
+         *     continue a conversation it never ran. ``independent_hook`` has no runtime
+         *     by definition — nothing on our side executes those turns.
+         * @enum {string}
+         */
+        BridgeRuntimeKind: "matrx_local" | "matrx_sandbox" | "seeded";
         /**
          * BridgeSourceMetadata
          * @description Bounded, non-authoritative provenance for an explicit local import.
@@ -48206,6 +48485,25 @@ export interface components {
              * @default false
              */
             applied?: boolean;
+        };
+        /**
+         * CapabilityVerdict
+         * @description One operation's truthful answer for one provider × origin.
+         *
+         *     ``reason`` is MANDATORY whenever ``supported`` is false: a UI renders this
+         *     sentence instead of guessing parity, and "unavailable" with no reason is
+         *     the silent failure the contract forbids. When ``supported`` is true the
+         *     reason may still carry the live-probe caveat (a hosted runtime needs a
+         *     Matrx Sandbox; a local runtime needs Matrx Local running).
+         */
+        CapabilityVerdict: {
+            operation: components["schemas"]["BridgeOperation"];
+            /** Supported */
+            supported: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Live Probe */
+            live_probe?: string | null;
         };
         /**
          * CapsuleServiceStatus
@@ -52462,7 +52760,8 @@ export interface components {
              * @constant
              */
             schema_version?: 1;
-            action: components["schemas"]["BridgeAction"];
+            /** Action */
+            action: components["schemas"]["BridgeAction"] | string;
             provider: components["schemas"]["BridgeProvider"];
             /** Provider Session Id */
             provider_session_id?: string | null;
@@ -67248,6 +67547,8 @@ export interface components {
             owner_type: string;
             /** Organization Id */
             organization_id?: string | null;
+            /** Target Connection Id */
+            target_connection_id?: string | null;
             /**
              * Connection Purpose
              * @default general
@@ -74157,69 +74458,6 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.landr.com";
-        };
-        /** LandscapeBrief */
-        LandscapeBrief: {
-            /** Id */
-            id: string;
-            /** Site Id */
-            site_id: string;
-            /** Status */
-            status: string;
-            /** Brief Markdown */
-            brief_markdown: string;
-            /** Facts */
-            facts?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][];
-            /** Agent Confidence */
-            agent_confidence?: number | null;
-            /**
-             * Confidence Reason
-             * @default
-             */
-            confidence_reason?: string;
-            /**
-             * Guidance
-             * @default
-             */
-            guidance?: string;
-            /** Auto Accept At */
-            auto_accept_at?: string | null;
-            /** Reviewed At */
-            reviewed_at?: string | null;
-            /** Generated At */
-            generated_at?: string | null;
-        };
-        /** LandscapeBriefResponse */
-        LandscapeBriefResponse: {
-            brief?: components["schemas"]["LandscapeBrief"] | null;
-        };
-        /** LandscapeBriefRulingBody */
-        LandscapeBriefRulingBody: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Guidance */
-            guidance: string;
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][] | null;
-            /** Brief Markdown */
-            brief_markdown?: string | null;
         };
         /** LaserficheServiceStatus */
         LaserficheServiceStatus: {
@@ -95556,7 +95794,10 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Batch Id */
+            /**
+             * Batch Id
+             * Format: uuid
+             */
             batch_id: string;
             /** Row Id */
             row_id?: string | null;
@@ -99243,6 +99484,9 @@ export interface components {
          *     disposition and Southern-California-only for small-business e-waste pickup,
          *     so a national ITAD rival is not a competitor for local pickup. Market
          *     overlap is a property of (service line x geography) — never of a company.
+         *
+         *     It is a BRAND fact. A site brief names which of these lines it carries by
+         *     name; it never re-describes them.
          */
         ServiceLine: {
             /** Name */
@@ -104071,6 +104315,99 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.strapi.io/";
+        };
+        /**
+         * StrategyBrief
+         * @description One strategy document — brand or site — exactly as the row holds it.
+         */
+        StrategyBrief: {
+            /** Id */
+            id: string;
+            /** Scope */
+            scope: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Status */
+            status: string;
+            /** Brief Markdown */
+            brief_markdown: string;
+            /** Facts */
+            facts?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][];
+            /** Inputs */
+            inputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Version No
+             * @default 1
+             */
+            version_no?: number;
+            /** Agent Confidence */
+            agent_confidence?: number | null;
+            /**
+             * Confidence Reason
+             * @default
+             */
+            confidence_reason?: string;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /** Auto Accept At */
+            auto_accept_at?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Generated At */
+            generated_at?: string | null;
+        };
+        /**
+         * StrategyBriefHistoryResponse
+         * @description Every SUPERSEDED version, newest first. Regeneration INSERTS, so the
+         *     strategy document has a history instead of an overwrite.
+         */
+        StrategyBriefHistoryResponse: {
+            /** Briefs */
+            briefs?: components["schemas"]["StrategyBrief"][];
+        };
+        /** StrategyBriefResponse */
+        StrategyBriefResponse: {
+            brief?: components["schemas"]["StrategyBrief"] | null;
+        };
+        /** StrategyRulingBody */
+        StrategyRulingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][] | null;
+            /** Service Lines Served */
+            service_lines_served?: string[] | null;
+            /** Brief Markdown */
+            brief_markdown?: string | null;
         };
         /** StreamServiceStatus */
         StreamServiceStatus: {
@@ -146984,7 +147321,139 @@ export interface operations {
             };
         };
     };
-    get_site_landscape_brief_seo_sites__site_id__landscape_brief_get: {
+    get_brand_strategy_seo_brands__brand_id__strategy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_brand_strategy_seo_brands__brand_id__strategy_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptsInjectedScope"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrategyRulingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_brand_strategy_history_seo_brands__brand_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_seo_sites__site_id__strategy_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -147001,7 +147470,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
                 };
             };
             /** @description Validation Error */
@@ -147015,7 +147484,7 @@ export interface operations {
             };
         };
     };
-    generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post: {
+    generate_site_strategy_seo_sites__site_id__strategy_generate_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -147036,7 +147505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -147050,7 +147519,7 @@ export interface operations {
             };
         };
     };
-    rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post: {
+    rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -147061,7 +147530,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LandscapeBriefRulingBody"];
+                "application/json": components["schemas"]["StrategyRulingBody"];
             };
         };
         responses: {
@@ -147071,7 +147540,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_history_seo_sites__site_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -165511,6 +166011,72 @@ export interface operations {
             };
         };
     };
+    agent_impact_advance_mine_mandates_impact_advance_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_revert_mine_mandates_impact_revert_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     run_agent_tests_agent_testing_agents__agent_id__tests_post: {
         parameters: {
             query?: never;
@@ -171196,6 +171762,7 @@ export interface operations {
             };
             header?: {
                 "X-Idempotency-Key"?: string | null;
+                "If-Match"?: string | null;
             };
             path: {
                 file_id: string;

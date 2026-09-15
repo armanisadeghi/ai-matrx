@@ -312,10 +312,13 @@ describe("the canvas is never hijacked", () => {
     );
   });
 
-  it("never reveals the same record twice", () => {
+  it("never reveals the same record twice — but keeps it reachable", () => {
+    // Measured live 2026-09-15: "none" here stranded a document outside every
+    // switcher after a reload, because the canvas slice is not persisted and
+    // the reveal memory is.
     expect(
       decideToolResultCanvasAction({ ...base, alreadyAutoOpened: true }),
-    ).toBe("none");
+    ).toBe("offer");
   });
 
   it("only the newest record may take an empty canvas", () => {

@@ -7,23 +7,46 @@
  * `schema_truth_snapshot_rpc.sql`) — structural metadata only, no row data. Same
  * live DB the aidream backend reads, so the two snapshots agree.
  *
- *   pnpm check:schema:refresh        # pull live, rewrite the snapshot
+ *   pnpm check:schema:snapshot       # pull live, rewrite the snapshot
  *
- * Falls back to ../aidream/db/schema_analysis/current_schemas.json if the DB is
- * unreachable. Exits non-zero only when it cannot produce a snapshot at all; the
- * committed snapshot keeps the offline checks working in between refreshes.
+ * ONE source, no fallback. If the RPC cannot be reached, refuses, or answers
+ * without a snapshot, this exits non-zero with the cause and the remedy and
+ * writes NOTHING — the committed snapshot stays exactly as it was. Until
+ * 2026-09-14 a refused RPC (42501, wrong key) wrote the older aidream snapshot
+ * (fewer tables, no exposed schemas) and exited 0, which made
+ * entity-registry-drift report 17 live tables as dead.
+ * Guard: snapshot-source.test.ts.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { resolveSupabaseEnv } from "./supabase-env";
+import { resolveSupabaseEnv, type SupabaseEnv } from "./supabase-env";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const OUT = resolve(ROOT, "scripts/schema-check/current-schema.json");
-const C = { reset: "\x1b[0m", dim: "\x1b[2m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m" };
+const OUT_REL = "scripts/schema-check/current-schema.json";
+const OUT = resolve(ROOT, OUT_REL);
+const C = { reset: "\x1b[0m", dim: "\x1b[2m", red: "\x1b[31m", green: "\x1b[32m", cyan: "\x1b[36m" };
 
-function loadEnv(): { url: string; key: string } | null {
+type LiveSnapshot = {
+  generated_at: string;
+  project: string;
+  source: string;
+  exposed_schemas: string[];
+  schemas: Record<string, string[]>;
+  views: Record<string, string[]>;
+};
+
+class RefreshError extends Error {
+  constructor(
+    readonly cause_: string,
+    readonly remedy: string,
+  ) {
+    super(cause_);
+  }
+}
+
+function loadEnv(): SupabaseEnv {
   // ONE name for the URL — no second candidate, no fallback chain.
   // See common-docs/policies/package-vs-implementation.md
   // Key precedence is by name (secret → publishable), never by line order — see supabase-env.ts.
@@ -32,18 +55,26 @@ function loadEnv(): { url: string; key: string } | null {
     .filter((p) => existsSync(p))
     .map((p) => readFileSync(p, "utf8"));
   const env = resolveSupabaseEnv(process.env, files);
-  if (env && env.keyName !== "SUPABASE_SECRET_KEY") {
-    console.error(
-      `${C.yellow}[WARN]${C.reset} no SUPABASE_SECRET_KEY — using ${env.keyName}; schema_truth_snapshot() is granted to service_role only, so expect a 42501 and the degraded aidream fallback.`,
+  if (!env) {
+    throw new RefreshError(
+      "no NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY in the environment or .env* files",
+      "set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in .env.local",
     );
   }
-  return env ? { url: env.url, key: env.key } : null;
+  if (env.keyName !== "SUPABASE_SECRET_KEY") {
+    throw new RefreshError(
+      `only ${env.keyName} is set — schema_truth_snapshot() is granted to service_role only, so it would be refused (42501)`,
+      "set SUPABASE_SECRET_KEY in .env.local",
+    );
+  }
+  return env;
 }
 
-async function pullViaRpc(url: string, key: string): Promise<any | null> {
+async function pullViaRpc(url: string, key: string): Promise<LiveSnapshot> {
   const endpoint = `${url.replace(/\/$/, "")}/rest/v1/rpc/schema_truth_snapshot`;
+  let res: Response;
   try {
-    const res = await fetch(endpoint, {
+    res = await fetch(endpoint, {
       method: "POST",
       headers: {
         apikey: key,
@@ -55,80 +86,73 @@ async function pullViaRpc(url: string, key: string): Promise<any | null> {
       },
       body: "{}",
     });
-    if (!res.ok) {
-      console.error(`${C.yellow}[WARN]${C.reset} RPC schema_truth_snapshot failed (${res.status}). ${C.dim}${(await res.text()).slice(0, 200)}${C.reset}`);
-      return null;
-    }
-    return await res.json();
   } catch (err) {
-    console.error(`${C.yellow}[WARN]${C.reset} could not reach Supabase: ${String(err)}`);
-    return null;
+    throw new RefreshError(
+      `could not reach ${endpoint}: ${String(err)}`,
+      "check the network and NEXT_PUBLIC_SUPABASE_URL, then re-run pnpm check:schema:snapshot",
+    );
   }
+  if (!res.ok) {
+    const body = (await res.text()).slice(0, 300);
+    const refused = res.status === 401 || res.status === 403 || body.includes("42501");
+    throw new RefreshError(
+      `RPC schema_truth_snapshot answered ${res.status}: ${body}`,
+      refused
+        ? "the key is not service_role — set SUPABASE_SECRET_KEY in .env.local to the project's secret key"
+        : "confirm public.schema_truth_snapshot() exists on the live DB (migrations/schema_truth_snapshot_rpc.sql) and NEXT_PUBLIC_SUPABASE_URL is right",
+    );
+  }
+  const snap = (await res.json()) as Partial<LiveSnapshot> | null;
+  const isRecord = (v: unknown) => !!v && typeof v === "object" && !Array.isArray(v);
+  if (
+    !snap ||
+    typeof snap.generated_at !== "string" ||
+    !isRecord(snap.schemas) ||
+    Object.keys(snap.schemas!).length === 0 ||
+    !isRecord(snap.views) ||
+    !Array.isArray(snap.exposed_schemas)
+  ) {
+    throw new RefreshError(
+      "RPC schema_truth_snapshot answered without generated_at / schemas / views / exposed_schemas",
+      "the live function no longer returns the snapshot shape — fix public.schema_truth_snapshot(), never hand-edit the snapshot",
+    );
+  }
+  return snap as LiveSnapshot;
 }
 
-function fromAidream(): any | null {
-  const p = resolve(ROOT, "../aidream/db/schema_analysis/current_schemas.json");
-  if (!existsSync(p)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(p, "utf8"));
-    const result = Array.isArray(raw) ? raw[0]?.result : raw?.result;
-    if (!result?.schemas) return null;
-    return {
-      generated_at: "(aidream snapshot)",
-      project: "brsgrqvjdzwihsvnfqkf",
-      source: "aidream current_schemas.json",
-      exposed_schemas: [],
-      schemas: result.schemas,
-      views: result.views ?? {},
-    };
-  } catch {
-    return null;
-  }
-}
-
-function write(snap: any, via: string): void {
-  const nTables = Object.values(snap.schemas ?? {}).reduce((a: number, v: any) => a + v.length, 0);
+function write(snap: LiveSnapshot): void {
+  const nTables = Object.values(snap.schemas).reduce((a, v) => a + v.length, 0);
   const payload = {
     _comment:
       "LIVE schema snapshot (tables + views + PostgREST-exposed schemas) — the truth scripts/schema-check diffs the code against. AUTOGENERATED by `pnpm check:schema:refresh` (pulls public.schema_truth_snapshot()). Do NOT hand-edit — refresh it.",
-    generated_at: snap.generated_at ?? "unknown",
-    project: snap.project ?? "brsgrqvjdzwihsvnfqkf",
-    source: snap.source ?? via,
-    exposed_schemas: snap.exposed_schemas ?? [],
-    schemas: snap.schemas ?? {},
-    views: snap.views ?? {},
+    generated_at: snap.generated_at,
+    project: snap.project,
+    source: snap.source,
+    exposed_schemas: snap.exposed_schemas,
+    schemas: snap.schemas,
+    views: snap.views,
   };
   writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n", "utf8");
   console.log(
-    `${C.green}✓${C.reset} snapshot written → ${C.cyan}scripts/schema-check/current-schema.json${C.reset}  ` +
-      `${C.dim}(${Object.keys(snap.schemas ?? {}).length} schemas, ${nTables} tables, ${(snap.exposed_schemas ?? []).length} exposed; via ${via})${C.reset}`,
+    `${C.green}✓${C.reset} snapshot written → ${C.cyan}${OUT_REL}${C.reset}  ` +
+      `${C.dim}(${Object.keys(snap.schemas).length} schemas, ${nTables} tables, ${snap.exposed_schemas.length} exposed; generated_at ${snap.generated_at})${C.reset}`,
   );
 }
 
 async function main(): Promise<number> {
-  const env = loadEnv();
-  if (env) {
-    const snap = await pullViaRpc(env.url, env.key);
-    if (snap?.schemas) {
-      write(snap, "schema_truth_snapshot() RPC");
-      return 0;
-    }
-  } else {
-    console.error(`${C.yellow}[WARN]${C.reset} no Supabase URL/key in env or .env* — trying the aidream snapshot.`);
-  }
-
-  const aidream = fromAidream();
-  if (aidream) {
-    write(aidream, "aidream current_schemas.json");
+  try {
+    const env = loadEnv();
+    write(await pullViaRpc(env.url, env.key));
     return 0;
+  } catch (err) {
+    if (!(err instanceof RefreshError)) throw err;
+    console.error(
+      `${C.red}[FAIL]${C.reset} schema snapshot NOT refreshed — ${err.cause_}\n` +
+        `       remedy: ${err.remedy}\n` +
+        `       Nothing was written; ${OUT_REL} is unchanged.`,
+    );
+    return 1;
   }
-
-  console.error(
-    `${C.red}[FAIL]${C.reset} could not refresh the snapshot (no DB reach, no aidream snapshot).\n` +
-      `       The committed scripts/schema-check/current-schema.json (if any) still drives the checks.\n` +
-      `       As an agent, you can refresh it via the Supabase MCP: select public.schema_truth_snapshot().`,
-  );
-  return 1;
 }
 
 main().then((code) => process.exit(code));

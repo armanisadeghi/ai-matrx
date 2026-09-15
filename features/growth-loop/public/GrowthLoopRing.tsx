@@ -36,12 +36,24 @@ const CAPABILITY_ICON: Record<PublicCapability, LucideIcon> = {
 const RADIUS = 40;
 const CENTER = 50;
 
+/**
+ * Round to 3 decimals before the number ever reaches a style string.
+ *
+ * `50 + 40 * Math.cos(...)` lands on values like `29.999999999999982`, and the
+ * server and the client did not always serialise that identically — the SSR
+ * HTML carried `left: 30%` while hydration computed `29.999999999999982%`, and
+ * React logged a hydration-mismatch error on every load of /how-it-works.
+ * Rounding at the source makes both halves emit the same string; 3 decimals of
+ * a percentage is far below one device pixel, so nothing moves.
+ */
+const percent = (value: number) => Number(value.toFixed(3));
+
 /** Node centers as percentages of the box, so the ring scales with its container. */
 const NODE_POSITIONS = STAGE_CARDS.map((_, index) => {
     const angle = (-90 + index * (360 / STAGE_CARDS.length)) * (Math.PI / 180);
     return {
-        left: CENTER + RADIUS * Math.cos(angle),
-        top: CENTER + RADIUS * Math.sin(angle),
+        left: percent(CENTER + RADIUS * Math.cos(angle)),
+        top: percent(CENTER + RADIUS * Math.sin(angle)),
     };
 });
 
@@ -50,8 +62,8 @@ const FLOW_ARROWS = [0, 1, 2, 3].map((quarter) => {
     const degrees = -90 + quarter * 90 + 360 / STAGE_CARDS.length / 2;
     const radians = degrees * (Math.PI / 180);
     return {
-        x: CENTER + RADIUS * Math.cos(radians),
-        y: CENTER + RADIUS * Math.sin(radians),
+        x: percent(CENTER + RADIUS * Math.cos(radians)),
+        y: percent(CENTER + RADIUS * Math.sin(radians)),
         rotate: degrees + 90,
     };
 });

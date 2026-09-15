@@ -53,13 +53,15 @@ import {
   canonicalRevision,
   currentRealtimeManager,
   defineChannelNamespace,
+  realtimeDiagnostics,
   subscribeToRealtimeManager,
+  type RealtimeStatus,
   type WriteLedger,
 } from "@ai-matrx/realtime";
 import {
   upsertNoteFromServer,
   removeNote,
-  setRealtimeConnected,
+  setRealtimeSyncStatus,
   setNoteEditor,
   clearNoteEditor,
 } from "./slice";
@@ -306,6 +308,68 @@ export const notesRealtimeMiddleware: Middleware<
     }
   }
 
+  // ── THE SYNC-STATUS DOOR (audit N-05, connection half) ────────────────
+  //
+  // A screen that says "live" while the socket is gone is the lying-screen
+  // defect, so the status has to reach Redux with enough detail to tell
+  // "still retrying" from "given up". The package pushes only the status
+  // string, and `onStatusChange` is EDGE-triggered: the whole backoff ladder
+  // sits on one "reconnecting" value, so the callback fires once and the
+  // attempt count never arrives that way. The count IS published, per channel,
+  // on the diagnostics snapshot (`failedAttempts`), and the alarm threshold is
+  // exported (`RECONNECT_ALARM_ATTEMPTS`) — so we read the snapshot at each
+  // transition and, while the channel is down, poll it until the number moves.
+  // (If the package ever pushes attempts/alarm through `onStatusChange`, delete
+  // this poll and take them from the callback.)
+  const ATTEMPT_POLL_MS = 2_000;
+  let attemptPoll: ReturnType<typeof setInterval> | null = null;
+  let lastStatus: RealtimeStatus | null = null;
+  let lastAttempts = 0;
+
+  /** The package's own count of consecutive failed joins for OUR channel. */
+  function currentFailedAttempts(): number {
+    if (!subscribedUserId) return 0;
+    const topic = notesChannel.topic({ userId: subscribedUserId });
+    const channel = realtimeDiagnostics().channels.find(
+      (entry) => entry.topic === topic,
+    );
+    return channel?.failedAttempts ?? 0;
+  }
+
+  function stopAttemptPoll() {
+    if (attemptPoll === null) return;
+    clearInterval(attemptPoll);
+    attemptPoll = null;
+  }
+
+  function publishStatus(status: RealtimeStatus) {
+    const failedAttempts = status === "connected" ? 0 : currentFailedAttempts();
+    lastStatus = status;
+    lastAttempts = failedAttempts;
+    storeApi.dispatch(setRealtimeSyncStatus({ status, failedAttempts }));
+
+    if (status === "connected" || status === "disconnected") {
+      stopAttemptPoll();
+      return;
+    }
+    if (attemptPoll !== null) return;
+    // Down and retrying: the attempt number is the only thing that still
+    // changes, and nothing will push it. Poll until it crosses the alarm — the
+    // difference between "wait a moment" and "reload to see other devices".
+    attemptPoll = setInterval(() => {
+      if (lastStatus === null || lastStatus === "connected") {
+        stopAttemptPoll();
+        return;
+      }
+      const attempts = currentFailedAttempts();
+      if (attempts === lastAttempts) return;
+      lastAttempts = attempts;
+      storeApi.dispatch(
+        setRealtimeSyncStatus({ status: lastStatus, failedAttempts: attempts }),
+      );
+    }, ATTEMPT_POLL_MS);
+  }
+
   function subscribe(userId: string) {
     unsubscribe();
     subscribedUserId = userId;
@@ -336,7 +400,7 @@ export const notesRealtimeMiddleware: Middleware<
         },
       ],
       onStatusChange: (status) => {
-        storeApi.dispatch(setRealtimeConnected(status === "connected"));
+        publishStatus(status);
       },
       // THE CATCH-UP READ. Realtime has no replay, and this now fires on tab
       // wake, network restore and queue overflow as well as reconnect — the
@@ -353,10 +417,16 @@ export const notesRealtimeMiddleware: Middleware<
   function unsubscribe() {
     subscribedUserId = null;
     clearAllEditorTimers();
+    stopAttemptPoll();
     if (stopChannel) {
       stopChannel();
       stopChannel = null;
-      storeApi.dispatch(setRealtimeConnected(false));
+      // Back to `idle`, not `disconnected`: we closed the channel on purpose
+      // (logout, account switch), and a screen must never accuse the network
+      // of a teardown we asked for.
+      storeApi.dispatch(
+        setRealtimeSyncStatus({ status: "idle", failedAttempts: 0 }),
+      );
     }
   }
 

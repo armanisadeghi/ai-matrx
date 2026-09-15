@@ -141,8 +141,57 @@ const FIX =
   "\n         run `pnpm up @ai-matrx/associations` here. (No local regeneration" +
   "\n         path exists — the vocabulary ships in the package.)\n";
 
+/**
+ * THE SCRATCH PREFIX (DC-027 #8, 2026-09-15). Every live self-test that registers a scratch
+ * relation names it `zz_<guard>_selftest_<run>` so it is recognisable and sorts last. A `zz_` row in
+ * the live registry is a teardown that did not finish; a `zz_` token in the INSTALLED package is
+ * that leftover already shipped to every client. Both happened: `check:staff-door --self-test` left
+ * `zz_staff_door_selftest_mu0wnnb1_token` registered on 2026-09-14, aidream f1b781fb2 synced it,
+ * and @ai-matrx/associations 0.9.15 published it — while this gate stayed GREEN, because a
+ * leftover that is both live AND installed is perfectly "in sync". Parity cannot see it; this can.
+ */
+const SCRATCH_PREFIX = "zz_";
+
+export function findScratchRegistrations(
+  liveRows: ReadonlyArray<Pick<EntityTypeSourceRow, "token" | "schema_name">>,
+  installed: Readonly<Record<string, { schema: string }>>,
+): { live: string[]; installed: string[] } {
+  const isScratch = (token: string, schema: string) =>
+    token.startsWith(SCRATCH_PREFIX) || schema.startsWith(SCRATCH_PREFIX);
+  return {
+    live: liveRows.filter((r) => isScratch(r.token, r.schema_name)).map((r) => `${r.token} → ${r.schema_name}`),
+    installed: Object.entries(installed)
+      .filter(([token, meta]) => isScratch(token, meta.schema))
+      .map(([token, meta]) => `${token} → ${meta.schema}`),
+  };
+}
+
 async function main(): Promise<void> {
   const rows = await fetchEntityTypes();
+
+  // 0. No self-test scratch registration, live or shipped. Checked BEFORE parity, because a
+  //    leftover that is live and installed at once passes parity by construction.
+  const scratch = findScratchRegistrations(
+    rows,
+    ENTITY_TYPE_METADATA as unknown as Record<string, { schema: string }>,
+  );
+  if (scratch.live.length > 0 || scratch.installed.length > 0) {
+    console.error(
+      `\n  ✗ Self-test SCRATCH registrations (prefix "${SCRATCH_PREFIX}") are present — a guard's teardown did not finish.` +
+        (scratch.live.length
+          ? `\n    Live in platform.entity_types: ${scratch.live.join(", ")}` +
+            "\n      If no self-test is running this minute, remove each through a migration applied with" +
+            "\n      `pnpm db:apply` (delete the platform.entity_types row, then `drop schema if exists <schema> cascade`)."
+          : "") +
+        (scratch.installed.length
+          ? `\n    Shipped in the installed @ai-matrx/associations: ${scratch.installed.join(", ")}` +
+            "\n      After the live rows are gone: aidream/apps/shared/associations → pnpm gen:entity-types," +
+            "\n      patch-release, then `pnpm up @ai-matrx/associations` here."
+          : "") +
+        "\n",
+    );
+    process.exit(1);
+  }
 
   // 1. Token-set parity.
   const liveTokens = new Set(rows.map((r) => r.token));

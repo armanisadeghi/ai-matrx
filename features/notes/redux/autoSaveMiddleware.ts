@@ -30,6 +30,162 @@ import { saveNote } from "./thunks";
  * older rows are materialized lazily, so zero rows is not an error.
  */
 /**
+ * Reconnect + backoff retry (audit N-05).
+ *
+ * The middleware is action-triggered: before this, a save that failed while
+ * the wifi was down was retried only by the user's NEXT keystroke. A student
+ * who stops typing when class ends and comes back online an hour later had
+ * nothing re-issue the write — the note simply stayed unsaved, with a banner
+ * after three failures and silence on mobile.
+ *
+ * `lib/sync/engine/autoSaveScheduler.ts` was the candidate home for this
+ * (AUDIT N-05/N-12 point at it), but it implements per-record debounce only —
+ * it contains no `online`, retry or backoff logic, and has zero production
+ * consumers — so the policy lives here until Notes moves onto that engine.
+ *
+ * Contract: one timer for the whole store, never a per-note loop; the delay
+ * doubles 1s → 30s and stays there; the loop STOPS as soon as no dirty note
+ * carries a failure streak; `online` and a tab becoming visible reset the
+ * backoff and re-issue immediately, because both are evidence the reason for
+ * the failure may be gone.
+ */
+const RETRY_BASE_DELAY_MS = 1_000;
+const RETRY_MAX_DELAY_MS = 30_000;
+
+/** Every note whose LAST save attempt failed and whose edits the DB still
+ *  does not hold. `_consecutiveSaveFailures` is written by the save path
+ *  itself, so this covers saves this middleware never scheduled. */
+function notesAwaitingRetry(state: StateWithNotes): string[] {
+  const records = state.notes?.notes;
+  if (!records) return [];
+  const ids: string[] = [];
+  for (const record of Object.values(records) as NoteRecord[]) {
+    if (!record) continue;
+    if (record._dirty && (record._consecutiveSaveFailures ?? 0) > 0) {
+      ids.push(record.id);
+    }
+  }
+  return ids;
+}
+
+export interface NotesReconnectRetry {
+  /** Start (or keep) the backoff loop. No-op while a timer is already armed. */
+  arm(): void;
+  /** A save landed: drop the accumulated backoff. */
+  reset(): void;
+  /** Detach the listeners and cancel the timer. */
+  dispose(): void;
+}
+
+interface RetryStoreApi {
+  getState: () => unknown;
+  dispatch: (action: unknown) => { unwrap: () => Promise<unknown> };
+}
+
+/**
+ * ONE retry controller per store. Exported so it can be driven directly in a
+ * test — the middleware owns exactly one and disposes nothing, because a
+ * store lives as long as the page.
+ */
+export function createNotesReconnectRetry(storeApi: RetryStoreApi): NotesReconnectRetry {
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryDelay = RETRY_BASE_DELAY_MS;
+  let running = false;
+  let disposed = false;
+
+  function arm(delay: number = retryDelay): void {
+    if (disposed || retryTimer) return;
+    retryTimer = setTimeout(() => {
+      void runPass();
+    }, delay);
+  }
+
+  async function runPass(): Promise<void> {
+    retryTimer = null;
+    if (disposed || running) return;
+    const state = storeApi.getState() as StateWithNotes;
+    const ids = notesAwaitingRetry(state);
+    if (ids.length === 0) {
+      retryDelay = RETRY_BASE_DELAY_MS;
+      return;
+    }
+    // Explicitly offline: do not spend a write. The `online` listener owns the
+    // wake-up; the timer stays armed at the cap as a belt-and-braces fallback
+    // because `navigator.onLine` lies on captive portals.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      arm(RETRY_MAX_DELAY_MS);
+      return;
+    }
+    const identity = state.userAuth.id;
+    running = true;
+    try {
+      for (const noteId of ids) {
+        const current = storeApi.getState() as StateWithNotes;
+        if (current.userAuth.id !== identity) return;
+        const record = current.notes?.notes?.[noteId] as NoteRecord | undefined;
+        if (!record || !record._dirty) continue;
+        try {
+          await storeApi.dispatch(saveNote(noteId)).unwrap();
+        } catch {
+          // `saveNote` owns durable error state and the user-visible failure;
+          // the backoff below owns when we come back.
+        }
+      }
+    } finally {
+      running = false;
+    }
+    if (disposed) return;
+    // Still failing → back off (1s, 2s, 4s … capped at 30s). Clean → stop.
+    if (notesAwaitingRetry(storeApi.getState() as StateWithNotes).length > 0) {
+      retryDelay = Math.min(retryDelay * 2, RETRY_MAX_DELAY_MS);
+      arm(retryDelay);
+    } else {
+      retryDelay = RETRY_BASE_DELAY_MS;
+    }
+  }
+
+  /** A reconnect or a tab coming back is evidence the cause may be gone: drop
+   *  the accumulated backoff and re-issue now. */
+  function retryNow(): void {
+    if (disposed) return;
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+    retryDelay = RETRY_BASE_DELAY_MS;
+    if (notesAwaitingRetry(storeApi.getState() as StateWithNotes).length === 0) return;
+    void runPass();
+  }
+
+  function onVisibility(): void {
+    if (document.visibilityState === "visible") retryNow();
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("online", retryNow);
+    document.addEventListener("visibilitychange", onVisibility);
+  }
+
+  return {
+    arm: () => arm(),
+    reset: () => {
+      retryDelay = RETRY_BASE_DELAY_MS;
+    },
+    dispose: () => {
+      disposed = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", retryNow);
+        document.removeEventListener("visibilitychange", onVisibility);
+      }
+    },
+  };
+}
+
+/**
  * Auto-save middleware.
  * Listens for updateNoteContent and updateNoteLabel actions.
  * Schedules a debounced save to Supabase.
@@ -43,6 +199,9 @@ import { saveNote } from "./thunks";
 export const autoSaveMiddleware: Middleware<unknown, StateWithNotes, AppDispatch> =
   (storeApi) => {
     const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    // Audit N-05: coming back online (or back to the tab) re-issues the write.
+    const reconnectRetry = createNotesReconnectRetry(storeApi as never);
+
     return (next) => (action) => {
     const result = next(action);
 
@@ -132,8 +291,12 @@ export const autoSaveMiddleware: Middleware<unknown, StateWithNotes, AppDispatch
 
       try {
         await storeApi.dispatch(saveNote(noteId)).unwrap();
+        reconnectRetry.reset();
       } catch {
-        // `saveNote` owns durable error state and user-visible failure.
+        // `saveNote` owns durable error state and user-visible failure. What
+        // it does NOT own is coming back: start the backoff so the write is
+        // re-issued without waiting for another keystroke (audit N-05).
+        reconnectRetry.arm();
       }
     }, delay);
 

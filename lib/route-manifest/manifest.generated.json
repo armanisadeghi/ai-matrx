@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1163,
+  "routeCount": 1171,
   "routes": [
     {
       "pattern": "/",
@@ -392,6 +392,11 @@
       "pattern": "/administration/applications/installations",
       "status": "live",
       "source": "app/(admin)/administration/applications/installations/page.tsx"
+    },
+    {
+      "pattern": "/administration/applications/packages",
+      "status": "live",
+      "source": "app/(admin)/administration/applications/packages/page.tsx"
     },
     {
       "pattern": "/administration/automation",
@@ -874,6 +879,11 @@
       "source": "app/(admin)/administration/reporting/page.tsx"
     },
     {
+      "pattern": "/administration/reporting/codex-usage",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/codex-usage/page.tsx"
+    },
+    {
       "pattern": "/administration/reporting/dead-ends",
       "status": "live",
       "source": "app/(admin)/administration/reporting/dead-ends/page.tsx"
@@ -957,6 +967,11 @@
       "pattern": "/administration/ui/official-components/[componentId]",
       "status": "live",
       "source": "app/(admin)/administration/ui/official-components/[componentId]/page.tsx"
+    },
+    {
+      "pattern": "/administration/ui/official-components/alchemy",
+      "status": "live",
+      "source": "app/(admin)/administration/ui/official-components/alchemy/page.tsx"
     },
     {
       "pattern": "/administration/ui/official-components/to-be-added/toggle-menu-demo",
@@ -2574,6 +2589,11 @@
       "source": "app/(public)/how-it-works/page.tsx"
     },
     {
+      "pattern": "/how-we-prove-it",
+      "status": "live",
+      "source": "app/(public)/how-we-prove-it/page.tsx"
+    },
+    {
       "pattern": "/hr",
       "status": "live",
       "source": "app/(core)/hr/page.tsx"
@@ -3316,6 +3336,11 @@
       "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/ai-runs/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/brief",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/brief/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/content/plan/[siteId]/entities",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/entities/page.tsx"
@@ -3389,6 +3414,11 @@
       "pattern": "/marketing/[brandId]/identity/offerings",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/identity/offerings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/strategy",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/strategy/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/inbox",
@@ -5511,6 +5541,11 @@
       "source": "app/(public)/terms-of-service/page.tsx"
     },
     {
+      "pattern": "/the-landscape",
+      "status": "live",
+      "source": "app/(public)/the-landscape/page.tsx"
+    },
+    {
       "pattern": "/tool-call-visualization/admin",
       "status": "live",
       "source": "app/(core)/tool-call-visualization/admin/page.tsx"
@@ -5689,6 +5724,11 @@
       "pattern": "/welcome",
       "status": "live",
       "source": "app/(core)/welcome/page.tsx"
+    },
+    {
+      "pattern": "/why-ai-matrx",
+      "status": "live",
+      "source": "app/(public)/why-ai-matrx/page.tsx"
     },
     {
       "pattern": "/work",

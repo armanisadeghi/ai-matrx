@@ -37427,22 +37427,23 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief": {
+    "/seo/brands/{brand_id}/strategy": {
       "get": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Get Site Landscape Brief",
-        "description": "The brief as it stands, whatever its review state.",
-        "operationId": "get_site_landscape_brief_seo_sites__site_id__landscape_brief_get",
+        "summary": "Get Brand Strategy",
+        "description": "The brand's strategy as it stands, whatever its review state.",
+        "operationId": "get_brand_strategy_seo_brands__brand_id__strategy_get",
         "parameters": [
           {
-            "name": "site_id",
+            "name": "brand_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Site Id"
+              "format": "uuid",
+              "title": "Brand Id"
             }
           }
         ],
@@ -37452,7 +37453,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
                 }
               }
             }
@@ -37470,14 +37471,207 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief/generate": {
+    "/seo/brands/{brand_id}/strategy/generate": {
       "post": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Generate Site Landscape Brief",
-        "description": "Stage 1 of the staged-confidence pattern: establish the ground facts.\n\nLeaves the brief `awaiting_review` with a 24-hour deadline — after which\ndownstream work proceeds on these assumptions rather than stalling.",
-        "operationId": "generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post",
+        "summary": "Generate Brand Strategy",
+        "description": "Establish the brand's ground facts as a DURABLE streamed command.\n\nIt reads every site the brand owns, each site's crawl, and the current\nresearch document before it writes — minutes of work, so it claims its\n`seo.collection_run` row first and streams a named stage per input. Rejoin\nwith `POST /seo/collections/{run_id}/rejoin`.",
+        "operationId": "generate_brand_strategy_seo_brands__brand_id__strategy_generate_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptsInjectedScope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/brands/{brand_id}/strategy/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Brand Strategy",
+        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits, for every website this brand owns.",
+        "operationId": "rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/brands/{brand_id}/strategy/history": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Brand Strategy History",
+        "description": "Superseded brand strategies, newest first.",
+        "operationId": "get_brand_strategy_history_seo_brands__brand_id__strategy_history_get",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Site Strategy",
+        "description": "What this website is FOR, as it stands, whatever its review state.",
+        "operationId": "get_site_strategy_seo_sites__site_id__strategy_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy/generate": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Generate Site Strategy",
+        "description": "Establish what this website is FOR as a DURABLE streamed command.\n\nIt reads the established brand strategy, this site's crawl, its Search\nConsole performance, its keyword library, its content plan and its research\ndocument before it writes. Rejoin with\n`POST /seo/collections/{run_id}/rejoin`.",
+        "operationId": "generate_site_strategy_seo_sites__site_id__strategy_generate_post",
         "parameters": [
           {
             "name": "site_id",
@@ -37504,8 +37698,59 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/strategy/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Site Strategy",
+        "description": "The owner's correction on what this website is for.",
+        "operationId": "rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyBriefResponse"
                 }
               }
             }
@@ -37523,14 +37768,14 @@
         }
       }
     },
-    "/seo/sites/{site_id}/landscape-brief/ruling": {
-      "post": {
+    "/seo/sites/{site_id}/strategy/history": {
+      "get": {
         "tags": [
           "SEO Collections"
         ],
-        "summary": "Rule On Site Landscape Brief",
-        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits.",
-        "operationId": "rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post",
+        "summary": "Get Site Strategy History",
+        "description": "Superseded site strategies, newest first.",
+        "operationId": "get_site_strategy_history_seo_sites__site_id__strategy_history_get",
         "parameters": [
           {
             "name": "site_id",
@@ -37542,23 +37787,13 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LandscapeBriefRulingBody"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LandscapeBriefResponse"
+                  "$ref": "#/components/schemas/StrategyBriefHistoryResponse"
                 }
               }
             }
@@ -47506,7 +47741,6 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "default": 2,
               "title": "Samples"
             }
           }
@@ -65376,6 +65610,90 @@
         }
       }
     },
+    "/mandates/impact/advance/mine": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Agent Impact Advance Mine",
+        "description": "The same batch advance, as the OWNER (I12): only this person's own\npersonal pins and the org rungs of organizations they administer move;\nevery other token is refused with the same sentence as a rung they cannot\nsee. Never on anyone's behalf.",
+        "operationId": "agent_impact_advance_mine_mandates_impact_advance_mine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/revert/mine": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Agent Impact Revert Mine",
+        "description": "The same revert, as the OWNER (I12): a batch id is not an entitlement —\nonly rows this person may write go back; the rest are refused without\nbeing named.",
+        "operationId": "agent_impact_revert_mine_mandates_impact_revert_mine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-testing/agents/{agent_id}/tests": {
       "post": {
         "tags": [
@@ -74285,6 +74603,22 @@
                 }
               ],
               "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
             }
           }
         ],
@@ -94162,12 +94496,14 @@
           },
           "row_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Row Id"
           },
           "expected_pinned_version_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -94178,7 +94514,8 @@
           "target_version_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -101362,6 +101699,17 @@
             "type": "string",
             "title": "File Path",
             "description": "Destination cld_files.file_path"
+          },
+          "expected_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Checksum"
           }
         },
         "type": "object",
@@ -101608,6 +101956,17 @@
             ],
             "title": "Options Json",
             "description": "Upload options. JSON: {\"rag\": {\"enabled\": bool|null, \"trigger_now\": bool}}"
+          },
+          "expected_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Checksum"
           }
         },
         "type": "object",
@@ -102532,13 +102891,15 @@
         "type": "string",
         "enum": [
           "append_native",
+          "capabilities",
           "delete",
           "health",
           "list_native",
           "load_native",
           "observe_hook"
         ],
-        "title": "BridgeAction"
+        "title": "BridgeAction",
+        "description": "The ONE advertised action vocabulary of the coding-session bridge.\n\nThis enum is not an internal dispatch key: it IS the ``action`` parameter\nof the remote MCP tool and of ``POST /api/coding-sessions/bridge``, and MCP\nhosts fetch that schema live. **A member added here is callable by Claude\nCode, Codex, Cursor and VS Code the moment the server deploys** — so a\nmember arrives only WITH its implementation, or it is refused out loud\n(:class:`BridgeRefusal`). Never add a placeholder member.\n\nThe dispatch family (``capabilities`` today; ``start``/``send``/``cancel``/\n``handoff`` in their own lanes) answers with :class:`BridgeDispatchResult`\non ``BridgeResponse.dispatch`` — never by overloading the entry-ledger\ncounters."
       },
       "BridgeCapabilities": {
         "properties": {
@@ -102588,6 +102949,80 @@
           "tool_payload_fidelity"
         ],
         "title": "BridgeCapabilities"
+      },
+      "BridgeCapabilityReport": {
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/BridgeProvider"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeOrigin"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeRuntimeKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityVerdict"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Operations"
+          },
+          "fidelity": {
+            "$ref": "#/components/schemas/BridgeCapabilities"
+          },
+          "supported_actions": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeAction"
+            },
+            "type": "array",
+            "title": "Supported Actions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "available",
+          "operations",
+          "fidelity",
+          "supported_actions"
+        ],
+        "title": "BridgeCapabilityReport",
+        "description": "The `capabilities` action's answer: provider × origin, with reasons.\n\nGeneralizes the Claude-only ``GET /api/coding-sessions/claude/capabilities``\nprobe to every provider and every origin, and is the ONLY place a client\nmay learn what it can do — see ``supported_actions``. A client that\nhardcodes an action list breaks on the first server that predates or\npostdates it, which is why there is no version number to negotiate."
       },
       "BridgeChangesResponse": {
         "properties": {
@@ -102710,6 +103145,64 @@
           "is_new"
         ],
         "title": "BridgeConversation"
+      },
+      "BridgeDispatchResult": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/BridgeAction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "completed",
+              "in_flight",
+              "refused"
+            ],
+            "title": "Status"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeRuntimeKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeCapabilityReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "status"
+        ],
+        "title": "BridgeDispatchResult",
+        "description": "Result of a dispatch-family action.\n\n``BridgeResponse``'s ``accepted/duplicates/conflicts/receipts`` counters are\nthe RAW-LEDGER receipt and mean nothing for a dispatch verb; reusing them\n(``accepted: 1`` for \"the agent answered\") is contract-lying. Dispatch\nresults land here instead, and each future verb adds its own fields in its\nown lane rather than overloading an existing one."
       },
       "BridgeEntry": {
         "properties": {
@@ -103101,6 +103594,24 @@
         ],
         "title": "BridgeListResponse"
       },
+      "BridgeOperation": {
+        "type": "string",
+        "enum": [
+          "cancel",
+          "export",
+          "fork_native",
+          "handoff",
+          "list",
+          "mirror",
+          "open",
+          "resume_native",
+          "send",
+          "start",
+          "stream"
+        ],
+        "title": "BridgeOperation",
+        "description": "The ONE capability vocabulary every adapter and runtime reports against.\n\nReconciles the two lists that disagreed before 2026-09-14: the ten adapter\nflags published in the contract doc (``start|send|stream|cancel|\nresume_native|fork_native|list|mirror|export|open``) and the six\nfidelity fields of :class:`BridgeCapabilities`. The ten OPERATIONS live\nhere and are answered per provider × origin with a reason; the six\nfidelity FACTS stay in :class:`BridgeCapabilities`, which is also what\n``chat.coding_session.capabilities`` stores. ``handoff`` is the eleventh\nmember because the contract's collaboration section promises it as an\noperation; it is reported unsupported until its lane lands.\n\nNever mint a twelfth vocabulary: a new capability question becomes a member\nhere, reported by every runtime descriptor in the same change."
+      },
       "BridgeOrigin": {
         "type": "string",
         "enum": [
@@ -103246,6 +103757,58 @@
         ],
         "title": "BridgeQuotaResponse"
       },
+      "BridgeRefusal": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/BridgeRefusalCode"
+          },
+          "requested_action": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Requested Action"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "remedy": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Remedy"
+          },
+          "supported_actions": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeAction"
+            },
+            "type": "array",
+            "title": "Supported Actions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "requested_action",
+          "reason",
+          "remedy",
+          "supported_actions"
+        ],
+        "title": "BridgeRefusal",
+        "description": "A typed refusal — never a validation dump, never silence.\n\nEvery refusal carries the action that was asked for, why it cannot be\nserved, what to do instead, and the live list of actions this server does\nimplement. That list is the version negotiation: there is no version number\nto compare, so a client asks and believes the answer."
+      },
+      "BridgeRefusalCode": {
+        "type": "string",
+        "enum": [
+          "unimplemented_action",
+          "unknown_action",
+          "unsupported_runtime"
+        ],
+        "title": "BridgeRefusalCode"
+      },
       "BridgeResponse": {
         "properties": {
           "schema_version": {
@@ -103259,6 +103822,33 @@
           },
           "provider": {
             "$ref": "#/components/schemas/BridgeProvider"
+          },
+          "supported_actions": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeAction"
+            },
+            "type": "array",
+            "title": "Supported Actions"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeRefusal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dispatch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeDispatchResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "session_id": {
             "anyOf": [
@@ -103385,6 +103975,16 @@
           "provider"
         ],
         "title": "BridgeResponse"
+      },
+      "BridgeRuntimeKind": {
+        "type": "string",
+        "enum": [
+          "matrx_local",
+          "matrx_sandbox",
+          "seeded"
+        ],
+        "title": "BridgeRuntimeKind",
+        "description": "Which runtime can actually execute turns for a provider session.\n\n``matrx_local`` and ``matrx_sandbox`` mirror the same-named\n:class:`BridgeOrigin` values (the user's own machine via Matrx Local, and\nthe hosted Matrx Sandbox). ``seeded`` is the no-runtime case: a handoff\nthat carries a seed packet instead of an executor, so a second tool can\ncontinue a conversation it never ran. ``independent_hook`` has no runtime\nby definition — nothing on our side executes those turns."
       },
       "BridgeSourceMetadata": {
         "properties": {
@@ -108056,6 +108656,51 @@
         "type": "object",
         "title": "CapDetail",
         "description": "One cap and what was left of it. ``remaining`` is ``None`` when the cap is not set.\n\n🚨 ``None`` here means *there is no such ceiling*, which is a completely different fact from\n``0`` (*the ceiling is reached*). §5's balance-honesty law is the reason the two are not\nallowed to render the same."
+      },
+      "CapabilityVerdict": {
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/BridgeOperation"
+          },
+          "supported": {
+            "type": "boolean",
+            "title": "Supported"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "live_probe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Probe"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "operation",
+          "supported"
+        ],
+        "title": "CapabilityVerdict",
+        "description": "One operation's truthful answer for one provider × origin.\n\n``reason`` is MANDATORY whenever ``supported`` is false: a UI renders this\nsentence instead of guessing parity, and \"unavailable\" with no reason is\nthe silent failure the contract forbids. When ``supported`` is true the\nreason may still carry the live-probe caveat (a hosted runtime needs a\nMatrx Sandbox; a local runtime needs Matrx Local running)."
       },
       "CapsuleServiceStatus": {
         "properties": {
@@ -118597,7 +119242,15 @@
             "default": 1
           },
           "action": {
-            "$ref": "#/components/schemas/BridgeAction"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeAction"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Action"
           },
           "provider": {
             "$ref": "#/components/schemas/BridgeProvider"
@@ -152772,6 +153425,18 @@
             ],
             "title": "Organization Id"
           },
+          "target_connection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Connection Id"
+          },
           "connection_purpose": {
             "type": "string",
             "enum": [
@@ -167265,197 +167930,6 @@
           "indicator"
         ],
         "title": "LandrServiceStatus"
-      },
-      "LandscapeBrief": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "site_id": {
-            "type": "string",
-            "title": "Site Id"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "brief_markdown": {
-            "type": "string",
-            "title": "Brief Markdown"
-          },
-          "facts": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Facts"
-          },
-          "service_lines": {
-            "items": {
-              "$ref": "#/components/schemas/ServiceLine"
-            },
-            "type": "array",
-            "title": "Service Lines"
-          },
-          "agent_confidence": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Agent Confidence"
-          },
-          "confidence_reason": {
-            "type": "string",
-            "title": "Confidence Reason",
-            "default": ""
-          },
-          "guidance": {
-            "type": "string",
-            "title": "Guidance",
-            "default": ""
-          },
-          "auto_accept_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auto Accept At"
-          },
-          "reviewed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reviewed At"
-          },
-          "generated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Generated At"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "site_id",
-          "status",
-          "brief_markdown"
-        ],
-        "title": "LandscapeBrief"
-      },
-      "LandscapeBriefResponse": {
-        "properties": {
-          "brief": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LandscapeBrief"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "LandscapeBriefResponse"
-      },
-      "LandscapeBriefRulingBody": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "guidance": {
-            "type": "string",
-            "maxLength": 8000,
-            "minLength": 1,
-            "title": "Guidance"
-          },
-          "service_lines": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/ServiceLine"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Service Lines"
-          },
-          "brief_markdown": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Brief Markdown"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "guidance"
-        ],
-        "title": "LandscapeBriefRulingBody"
       },
       "LaserficheServiceStatus": {
         "properties": {
@@ -214521,12 +214995,14 @@
           },
           "batch_id": {
             "type": "string",
+            "format": "uuid",
             "title": "Batch Id"
           },
           "row_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -222824,7 +223300,7 @@
           "name"
         ],
         "title": "ServiceLine",
-        "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company."
+        "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company.\n\nIt is a BRAND fact. A site brief names which of these lines it carries by\nname; it never re-describes them."
       },
       "SessionExchangeRequest": {
         "properties": {
@@ -232907,6 +233383,252 @@
         ],
         "title": "StrapiServiceStatus",
         "description": "Safe aggregate status projection for Strapi's fixed status page."
+      },
+      "StrategyBrief": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "brief_markdown": {
+            "type": "string",
+            "title": "Brief Markdown"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Facts"
+          },
+          "service_lines": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceLine"
+            },
+            "type": "array",
+            "title": "Service Lines"
+          },
+          "inputs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Inputs"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No",
+            "default": 1
+          },
+          "agent_confidence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Confidence"
+          },
+          "confidence_reason": {
+            "type": "string",
+            "title": "Confidence Reason",
+            "default": ""
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance",
+            "default": ""
+          },
+          "auto_accept_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Accept At"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "scope",
+          "brand_id",
+          "status",
+          "brief_markdown"
+        ],
+        "title": "StrategyBrief",
+        "description": "One strategy document — brand or site — exactly as the row holds it."
+      },
+      "StrategyBriefHistoryResponse": {
+        "properties": {
+          "briefs": {
+            "items": {
+              "$ref": "#/components/schemas/StrategyBrief"
+            },
+            "type": "array",
+            "title": "Briefs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StrategyBriefHistoryResponse",
+        "description": "Every SUPERSEDED version, newest first. Regeneration INSERTS, so the\nstrategy document has a history instead of an overwrite."
+      },
+      "StrategyBriefResponse": {
+        "properties": {
+          "brief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StrategyBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StrategyBriefResponse"
+      },
+      "StrategyRulingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 8000,
+            "title": "Guidance",
+            "default": ""
+          },
+          "service_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ServiceLine"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines"
+          },
+          "service_lines_served": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines Served"
+          },
+          "brief_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Markdown"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StrategyRulingBody"
       },
       "StreamServiceStatus": {
         "properties": {

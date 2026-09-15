@@ -8,9 +8,10 @@
 // same query/options state via Redux but compute their match lists in
 // parallel.
 
-import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useEffect, useMemo } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllNotesList, selectFindReplaceState } from "../redux/selectors";
+import { ensureNoteBodiesLoaded } from "../redux/thunks";
 import {
   computeGlobalMatches,
   parsePathPatterns,
@@ -27,6 +28,19 @@ const EMPTY_RESULTS: GlobalSearchResults = {
 export function useGlobalFind(instanceId: string): GlobalSearchResults {
   const findReplace = useAppSelector(selectFindReplaceState(instanceId));
   const allNotes = useAppSelector(selectAllNotesList);
+  const dispatch = useAppDispatch();
+
+  // Find-across-notes needs every BODY, and list rows carry only a preview
+  // (audit N-24). Load the missing bodies once a global query is active; the
+  // memo below recomputes as they land. Records already full cost nothing.
+  const globalActive = Boolean(findReplace?.query) && findReplace?.scope === "global";
+  const missingIds = globalActive
+    ? allNotes.filter((n) => n._fetchStatus !== "full").map((n) => n.id).join("\n")
+    : "";
+  useEffect(() => {
+    if (!missingIds) return;
+    void dispatch(ensureNoteBodiesLoaded(missingIds.split("\n")));
+  }, [dispatch, missingIds]);
 
   return useMemo(() => {
     if (!findReplace || !findReplace.query || findReplace.scope !== "global") {

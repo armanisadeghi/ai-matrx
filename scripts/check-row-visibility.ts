@@ -61,6 +61,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -435,6 +436,15 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   // And the same two states built FOR REAL, so the SQL that feeds the detector is proven too.
   const schema = `zz_row_visibility_selftest_${Date.now().toString(36)}`;
   const token = `${schema}_token`;
+  const scratch = registeredScratchPlan({
+    owner: "check:row-visibility --self-test", run: (sql) => door(env, sql), schema, tokens: [token],
+    extraRows: [{
+      what: `platform.entity_relationships rows for ${token}`,
+      deleteSql: `delete from platform.entity_relationships where child_type = '${token}'`,
+      countSql: `select count(*)::int as n from platform.entity_relationships where child_type = '${token}'`,
+    }],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create table ${schema}.probe (id uuid primary key default gen_random_uuid(),
@@ -500,15 +510,9 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment the arm is walled`);
     }
   } finally {
-    // The teardown is not optional: a leftover registered token would break every other guard.
-    try { await door(env, `delete from platform.entity_relationships where child_type = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `delete from platform.entity_types where token = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* reported below */ }
-    const left = await door(env, `select (select count(*) from platform.entity_types where token = '${token}')
-                                       + (select count(*) from platform.entity_relationships where child_type = '${token}') as n`);
-    if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
-      console.log(`  ${C.r}✗${C.x} the self-test left its scratch token behind — remove '${token}' by hand`); bad++;
-    }
+    // Never silent (DC-027 #8): every step attempted, every object probed, leftovers named with the remedy.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0

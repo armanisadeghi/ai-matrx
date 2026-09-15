@@ -22,6 +22,7 @@ import {
   type NoteScopeAssignment,
   type FindReplaceState,
   type SharedNoteMeta,
+  type NotesRealtimeStatus,
   NOTE_UNDO_MAX_ENTRIES,
   NOTE_UNDO_MAX_BYTES,
   NOTE_UNDO_COALESCE_MS,
@@ -523,6 +524,8 @@ const initialState: NotesSliceState & {
   retainedConflictReviews: {},
   instances: {},
   realtimeConnected: false,
+  realtimeStatus: "idle",
+  realtimeFailedAttempts: 0,
   noteEditors: {},
   noteScopeAssignments: [],
   noteScopesLoaded: false,
@@ -1446,8 +1449,21 @@ const notesSlice = createSlice({
 
     // ── Realtime ────────────────────────────────────────────────────────
 
-    setRealtimeConnected(state, action: PayloadAction<boolean>) {
-      state.realtimeConnected = action.payload;
+    /**
+     * THE ONE REALTIME STATUS WRITE. `realtimeConnected` is derived here and
+     * never set on its own: two writers for one fact is how a screen ends up
+     * claiming "live" while the status says the channel gave up.
+     */
+    setRealtimeSyncStatus(
+      state,
+      action: PayloadAction<{
+        status: NotesRealtimeStatus;
+        failedAttempts: number;
+      }>,
+    ) {
+      state.realtimeStatus = action.payload.status;
+      state.realtimeFailedAttempts = action.payload.failedAttempts;
+      state.realtimeConnected = action.payload.status === "connected";
     },
 
     // ── Find & Replace (per-instance) ────────────────────────────────
@@ -1790,7 +1806,7 @@ export const {
   // List
   setListStatus,
   setListError,
-  setRealtimeConnected,
+  setRealtimeSyncStatus,
   resetNotesState,
   // Find & Replace
   openFindReplace,

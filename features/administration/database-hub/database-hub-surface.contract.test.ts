@@ -109,6 +109,7 @@ describe("database admin surface contract", () => {
     const clientSources = [hook, enhancedClient, legacyDashboard, notebook];
 
     expect(action.match(/rpc\("execute_admin_query"/g)).toHaveLength(1);
+    expect(action).toContain("await requireSuperAdmin()");
     expect(hook).toContain("await executeSqlQuery(query)");
     expect(enhancedClient).toContain("onExecuteQuery={executeQuery}");
     expect(legacyDashboard).toContain("await executeQuery(query)");

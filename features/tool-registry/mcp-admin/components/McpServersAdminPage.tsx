@@ -101,6 +101,7 @@ import {
   type ServerToolRow,
 } from "@/features/tool-registry/mcp-admin/format";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -113,6 +114,7 @@ const EMPTY_SERVER_DRAFT: McpServerDraft = {
 };
 
 export function McpServersAdminPage() {
+  const { organizationId } = useOrganizationRequired();
   const [servers, setServers] = useState<McpServerRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -504,6 +506,7 @@ export function McpServersAdminPage() {
       </div>
       {adding && (
         <AddMcpServerDialog
+          organizationId={organizationId}
           existingSlugs={new Set(servers.map((s) => s.slug))}
           draft={newServerDraft}
           onDraftChange={patchNewServerDraft}

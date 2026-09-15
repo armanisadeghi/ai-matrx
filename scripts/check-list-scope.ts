@@ -53,6 +53,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scanRepo, scanSource, type Registry, type RegistryFact } from "./list-scope-client-scan";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -189,6 +190,8 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   // And the same two cases built for real in the database, so the SQL that feeds the detector is
   // proven too — a detector fed by a query nobody tested is a detector nobody tested.
   const schema = `zz_list_scope_selftest_${Date.now().toString(36)}`;
+  const scratch = registeredScratchPlan({ owner: "check:list-scope --self-test", run: (sql) => door(env, sql), schema });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create function ${schema}.zz_probe_list_scoped() returns int
@@ -214,7 +217,9 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment it becomes invoker`);
     }
   } finally {
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* the teardown is best effort; the schema name is unique per run */ }
+    // Never "best effort" (DC-027 #8): the drop is attempted, the schema probed, a leftover named with the remedy.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   // ── Guard B's detector, fed source this test wrote itself ──────────────────────────────────────

@@ -164,10 +164,21 @@ path updates the node's `STATE.md` in the same session.
   The sandbox's reveal memory generalized into `revealMemory.ts` (one
   implementation, namespaced) so "a pane the user put away stays away" can
   never drift between panes. Guard:
-  `features/canvas/__tests__/document-canvas-door.test.tsx` (23 tests; six
+  `features/canvas/__tests__/document-canvas-door.test.tsx` (24 tests; EIGHT
   mutations proven RED — the nested `create` shape, the never-hijack guard, the
-  two-item switcher rule, the `CanvasBody` case, the `Source` allowance, and
-  the snapshot reader).
+  two-item switcher rule, the `CanvasBody` case, the `Source` allowance, the
+  snapshot reader, the per-record reading of "other content", and the
+  reachability of an already-revealed record).
+  **Two defects the live check caught that the guards had not**, both fixed and
+  re-verified on production (commit `de5f3c8032`, 1280x720, admin account):
+  a second document TOOK the pane from the first — "other content" had been
+  computed once against every offer of the conversation instead of per record,
+  so a canvas already showing the first document read as empty; and after a
+  reload an already-revealed document was in NO switcher at all — the canvas
+  slice is deliberately not persisted while the reveal memory is, so "already
+  revealed → nothing to do" stranded the record. `canvasHoldsOtherContent` and
+  `alreadyAutoOpened → "offer"` are those two fixes, each with its own guard.
+  Evidence: `common-docs/operations/for-arman/2026-09-15/document-canvas-door/`.
 
 - `2026-09-14` — **the docked canvas' own chrome can never scroll off the top,
   and `Source` shows the item's real source.** The pane header and the

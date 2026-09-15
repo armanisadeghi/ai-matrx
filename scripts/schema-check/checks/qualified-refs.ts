@@ -30,7 +30,7 @@ function inComment(text: string, idx: number): boolean {
 
 function check(ctx: Context): Finding[] {
   const { snapshot: snap } = ctx;
-  if (snap.provenance === "none" || snap.tables.size === 0) return [];
+  if (snap.tables.size === 0) return [];
   const liveSchemas = new Set([...snap.tables.keys(), ...snap.views.keys()]);
   const findings: Finding[] = [];
 

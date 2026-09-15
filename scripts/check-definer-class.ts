@@ -57,6 +57,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -217,6 +218,15 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
 
   // And the same two states built for real, so the VIEW that feeds the rule is proven too.
   const schema = `zz_definer_class_selftest_${Date.now().toString(36)}`;
+  const scratch = registeredScratchPlan({
+    owner: "check:definer-class --self-test", run: (sql) => door(env, sql), schema,
+    extraRows: [{
+      what: `platform.client_callable_door rows for ${schema}`,
+      deleteSql: `delete from platform.client_callable_door where schema_name = '${schema}'`,
+      countSql: `select count(*)::int as n from platform.client_callable_door where schema_name = '${schema}'`,
+    }],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create table ${schema}.t (id uuid primary key default gen_random_uuid(), organization_id uuid)`);
@@ -251,9 +261,9 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — it stops being flagged the moment it asks the gate`);
     }
   } finally {
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* unique per run */ }
-    try { await door(env, `delete from platform.client_callable_door where schema_name = '${schema}'`); }
-    catch { /* the schema name is unique per run; a leftover row names its own origin */ }
+    // Never silent (DC-027 #8): every step attempted, every object probed, leftovers named with the remedy.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0 ? `${C.g}✓${C.x} ${C.b}the guard fails when it should and passes when it should${C.x}`
