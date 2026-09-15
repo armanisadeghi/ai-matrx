@@ -30,11 +30,9 @@ until the platform stops or breaks, fix the platform (never the trial), and cont
 report **what improved in the system**, not what happened to the run. The why, in his words, is
 `common-docs/projects/expert-book-challenge/PROGRAM.md` — read it once before your first trial.
 **The architecture mandate every trial serves is his brief
-`common-docs/projects/expert-book-challenge/OVERVIEW.md` (authority: owner, 2026-09-12):** capture the
+`common-docs/projects/expert-book-challenge/MANDATE.md` (authority: owner, 2026-09-12):** capture the
 tacit and the controversial across modalities, atomize with provenance, keep schools of thought and
-dissent navigable, treat "weirdness" as the asset. The measured gap between that brief and the live
-platform is `OVERVIEW-GAP-CENSUS.md` beside it — read its ranked table so you know which walls are
-already owned.
+dissent navigable, treat "weirdness" as the asset.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
@@ -233,7 +231,7 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 | Platform defect (silent drop, dead default, wrong error, stale cache, engine gap) | Root cause → census of siblings → shared-layer fix → guard proven failing-then-passing → push → wait for the deploy train (never run a release; >60 min = bug against the deploy agent) → rerun on the live build. Never patch the instance. |
 | Missing primitive the method needs | Build it as a platform node/tool in the shared layer (lane named, subagent if it is bounded), wire it through the Conductor by conversation, never by hand. |
 | Third-party switch (enable an API, approve an app, a console toggle) | Fix it yourself if you can (you have Arman's machine and logins), else write a ten-minute prompt for a Codex agent, hand it to Arman, start a watcher that wakes you when it is done, and **continue on the parts that do not need it**. It never stops the trial. |
-| **Consensus collapse** — the product merged, deduped, synthesized-by-recurrence, excluded a once-seen rule from a build, framed two positions as a problem to settle, or offered Approve-all as the only way through a large review | A wall of the shared layer, not a review step. Keep BOTH positions verbatim in the register, log the wall with the mechanism (`OVERVIEW-GAP-CENSUS.md` names the live ones: the evidence standing and its 3-piece knob, statement-key dedupe, cross-piece-only synthesis, the tension card's recommendation, in-place `update_rule`), fix the class on the rule atom (retained dissent, school, history), continue with both schools alive. |
+| **Consensus collapse** — the product merged, deduped, synthesized-by-recurrence, excluded a once-seen rule from a build, framed two positions as a problem to settle, or offered Approve-all as the only way through a large review | A wall of the shared layer, not a review step. Keep BOTH positions verbatim in the register, log the wall with the mechanism (the live ones: the evidence standing and its 3-piece knob, statement-key dedupe, cross-piece-only synthesis, the tension card's recommendation, in-place `update_rule`), fix the class on the rule atom (retained dissent, school, history), continue with both schools alive. |
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
