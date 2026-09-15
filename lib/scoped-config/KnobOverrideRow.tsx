@@ -58,6 +58,25 @@ function valueText(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/**
+ * A personal settings row edits what the person is using now.  An absent
+ * personal override is not an empty draft: the organization/platform answer
+ * is the starting value for an intentional personal change.
+ */
+export function editableKnobValue(
+  scopeKind: KnobScopeKindName,
+  ladder: KnobLadder | undefined,
+  knob: ScopedKnob,
+  overrideValue: unknown,
+): unknown {
+  if (scopeKind !== "user") return overrideValue;
+  return ladder?.value ?? knob.effective_value;
+}
+
+export function sameKnobValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function formatRowValue(
   value: unknown,
   unit: string | null,
@@ -194,7 +213,13 @@ export function KnobOverrideRow(props: {
     : hasOrgParent
       ? "your organization"
       : "the platform";
-  const overrideText = isSetHere ? valueText(overrideValue) : "";
+  const editableValue = editableKnobValue(
+    scopeKind,
+    ladder,
+    knob,
+    overrideValue,
+  );
+  const overrideText = valueText(editableValue);
   const displayValue = (value: unknown) =>
     formatRowValue(value, knob.unit, ladder?.control);
   const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
@@ -212,6 +237,11 @@ export function KnobOverrideRow(props: {
   }
 
   const write = async (value: unknown) => {
+    // A personal control is initialized from its effective value. This guard
+    // makes opening it, or pressing Save without changing it, a true no-op.
+    if (scopeKind === "user" && sameKnobValue(value, editableValue)) {
+      return true;
+    }
     setBusy(true);
     setInlineError(null);
     try {
@@ -347,16 +377,16 @@ export function KnobOverrideRow(props: {
       : null;
   // A picked scope row qualifies every DOM identity on the row; the section's
   // own rung keeps the bare key so existing anchors and deep links still land.
-  const rowIdentity = scopeLabel ? `${knob.full_key}@${scopeKind}:${scopeId}` : knob.full_key;
+  const rowIdentity = scopeLabel
+    ? `${knob.full_key}@${scopeKind}:${scopeId}`
+    : knob.full_key;
   const inputId = `${rowIdentity}-input`;
   const labelId = `${inputId}-label`;
   const usesLabelledGroup =
     Boolean(stateOnly) ||
     lockedForMe ||
     (fieldLadder !== null &&
-      ["segmented", "slider", "json", "secret"].includes(
-        fieldLadder.control,
-      ));
+      ["segmented", "slider", "json", "secret"].includes(fieldLadder.control));
 
   return (
     <SettingsRow
@@ -377,16 +407,24 @@ export function KnobOverrideRow(props: {
         system
           ? JSON.stringify(knob.platform_default) !==
             JSON.stringify(system.registeredDefault)
-          : isSetHere
+          : scopeKind === "user"
+            ? false
+            : isSetHere
       }
       controlLayout="wide"
       variant="inline"
     >
       <div className="flex w-full min-w-0 max-w-[calc(20rem+2.5rem)] items-start gap-1">
-        <div className="w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]">
+        <div
+          className={
+            scopeKind === "user"
+              ? "w-full min-w-0"
+              : "w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]"
+          }
+        >
           {stateOnly ? (
             <div className="text-sm text-muted-foreground">
-            This preference is not available yet.
+              This preference is not available yet.
             </div>
           ) : lockedForMe ? (
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -405,116 +443,136 @@ export function KnobOverrideRow(props: {
             />
           ) : (
             <div className="flex w-full min-w-0 flex-wrap items-start gap-2">
-            {enumOptions ? (
-              <Select
-                value={draft || undefined}
-                disabled={busy || !canWrite}
-                onValueChange={setDraft}
-              >
-                <SelectTrigger
-                  id={inputId}
-                  aria-label={scopeLabel ? `${knob.label} for ${scopeLabel}` : knob.label}
-                  size="default"
-                  className="w-full min-w-0"
+              {enumOptions ? (
+                <Select
+                  value={draft || undefined}
+                  disabled={busy || !canWrite}
+                  onValueChange={setDraft}
                 >
-                  <SelectValue
-                    placeholder={formatKnobValue(
-                      knob.effective_value,
-                      knob.unit,
-                    )}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {enumOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                className="w-full min-w-0"
-                id={inputId}
-                aria-label={scopeLabel ? `${knob.label} for ${scopeLabel}` : knob.label}
-                placeholder={formatKnobValue(knob.effective_value, knob.unit)}
-                value={draft}
-                disabled={busy || !canWrite}
-                onChange={(event) => setDraft(event.target.value)}
-              />
-            )}
-            <Button
-              size="sm"
-              disabled={busy || draft.trim() === "" || !canWrite}
-              onClick={() => void save()}
-            >
-              Save
-            </Button>
+                  <SelectTrigger
+                    id={inputId}
+                    aria-label={
+                      scopeLabel
+                        ? `${knob.label} for ${scopeLabel}`
+                        : knob.label
+                    }
+                    size="default"
+                    className="w-full min-w-0"
+                  >
+                    <SelectValue
+                      placeholder={formatKnobValue(
+                        knob.effective_value,
+                        knob.unit,
+                      )}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enumOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  className="w-full min-w-0"
+                  id={inputId}
+                  aria-label={
+                    scopeLabel ? `${knob.label} for ${scopeLabel}` : knob.label
+                  }
+                  placeholder={formatKnobValue(knob.effective_value, knob.unit)}
+                  value={draft}
+                  disabled={busy || !canWrite}
+                  onChange={(event) => setDraft(event.target.value)}
+                />
+              )}
+              <Button
+                size="sm"
+                disabled={
+                  busy ||
+                  draft.trim() === "" ||
+                  !canWrite ||
+                  sameKnobValue(parseDraft(knob, draft).value, editableValue)
+                }
+                onClick={() => void save()}
+              >
+                Save
+              </Button>
             </div>
           )}
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label={`Options for ${scopeLabel ?? knob.label}`}
-              className="h-9 w-9 shrink-0"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="w-72 max-w-[calc(100vw-2rem)] space-y-3 break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
-          >
-            <div className="space-y-1 text-muted-foreground">
-              <p>
-                {stateOnly
-                  ? "Not connected yet."
-                  : system
-                    ? JSON.stringify(knob.platform_default) !==
-                      JSON.stringify(system.registeredDefault)
-                      ? "Set for the platform."
-                      : "Registered default."
-                    : isSetHere
-                      ? "Set here."
-                      : `Inherited from ${inheritedFrom}.`}
-              </p>
-              {!hideKey && <p>Key: {knob.full_key}</p>}
-              <p>
-                {system
-                  ? `Registered default: ${displayValue(system.registeredDefault)}`
-                  : `Platform default: ${displayValue(knob.platform_default)}`}
-              </p>
-              {knob.bound_value !== null && knob.bound_value !== undefined && (
-                <p>Bound: {displayValue(knob.bound_value)}</p>
-              )}
-              {!hideKey && knob.basis && <p>Basis: {knob.basis}</p>}
-              {system && (
-                <p className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
-                  {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
-                  {knob.review_due ? ` · review ${knob.review_due}` : ""}
-                </p>
-              )}
-              {!hideKey && stateOnly && <p>Audit: {stateOnly.consumerEvidence}</p>}
-            </div>
-            {(system
-              ? JSON.stringify(knob.platform_default) !==
-                JSON.stringify(system.registeredDefault)
-              : isSetHere) && (
+        {scopeKind !== "user" && (
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
-                size="sm"
-                variant="outline"
-                className="w-full justify-start whitespace-normal text-left"
-                disabled={busy || !canWrite}
-                onClick={() => void clear()}
+                size="icon"
+                variant="ghost"
+                aria-label={`Options for ${scopeLabel ?? knob.label}`}
+                className="h-9 w-9 shrink-0"
               >
-                {system ? "Restore registered default" : "Inherit this value"}
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
-            )}
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-72 max-w-[calc(100vw-2rem)] space-y-3 break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
+            >
+              <div className="space-y-1 text-muted-foreground">
+                <p>
+                  {stateOnly
+                    ? "Not connected yet."
+                    : system
+                      ? JSON.stringify(knob.platform_default) !==
+                        JSON.stringify(system.registeredDefault)
+                        ? "Set for the platform."
+                        : "Registered default."
+                      : isSetHere
+                        ? "Set here."
+                        : `Inherited from ${inheritedFrom}.`}
+                </p>
+                {!hideKey && <p>Key: {knob.full_key}</p>}
+                <p>
+                  {system
+                    ? `Registered default: ${displayValue(system.registeredDefault)}`
+                    : `Platform default: ${displayValue(knob.platform_default)}`}
+                </p>
+                {knob.bound_value !== null &&
+                  knob.bound_value !== undefined && (
+                    <p>Bound: {displayValue(knob.bound_value)}</p>
+                  )}
+                {!hideKey && knob.basis && <p>Basis: {knob.basis}</p>}
+                {system && (
+                  <p
+                    className={
+                      reviewOverdue ? "font-medium text-amber-600" : undefined
+                    }
+                  >
+                    {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
+                    {knob.review_due ? ` · review ${knob.review_due}` : ""}
+                  </p>
+                )}
+                {!hideKey && stateOnly && (
+                  <p>Audit: {stateOnly.consumerEvidence}</p>
+                )}
+              </div>
+              {(system
+                ? JSON.stringify(knob.platform_default) !==
+                  JSON.stringify(system.registeredDefault)
+                : isSetHere) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start whitespace-normal text-left"
+                  disabled={busy || !canWrite}
+                  onClick={() => void clear()}
+                >
+                  {system ? "Restore registered default" : "Inherit this value"}
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
     </SettingsRow>
   );
