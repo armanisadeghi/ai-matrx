@@ -21,6 +21,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { configureStore } from "@reduxjs/toolkit";
+import { enableMapSet } from "immer";
 import { Provider } from "react-redux";
 
 jest.mock("@/features/war-room/service/associations");
@@ -59,6 +60,11 @@ import {
 } from "./useThreadEntitySelect";
 
 Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
+// The production store (lib/redux/store.ts) enables Immer's MapSet plugin at
+// import; this hand-built store must match it. Note records carry a
+// `_dirtyFields` Set that `applyServerNoteUpsert` reads through the draft
+// whenever a server row re-upserts an already-held note (the rename path).
+enableMapSet();
 
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const USER = "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081";
