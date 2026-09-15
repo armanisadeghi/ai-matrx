@@ -260,6 +260,23 @@ surface means importing them too, never reimplementing the RPC call.
 
 ## Change Log
 
+- **2026-09-15** — **The resolver stopped telling a super admin they can open
+  someone's private conversation.** `access_denied_context` promoted every
+  platform admin to `level: 'admin'` on the belief that `platform_admin_all`
+  is unconditional on every canonical table. Live it is not: 332 of 812 active
+  entity types have no platform-staff lane (the privacy wall — `conversation`
+  among them) and 217 of the 609 that do admit only `visibility >= 'internal'`.
+  So admin@admin.com opening another account's personal `/chat/<id>` was told
+  "You do have access to it — something went wrong on our side" while its own
+  RLS read had returned nothing. Ruling applied, not asked: a super admin has
+  no standing read of a person's private data (access DECISIONS 2026-09-12).
+  The promotion now fires only when the row passes the table's live SELECT
+  policies for `authenticated` under the caller's claims; the authorizer and
+  RLS are untouched. Migration
+  `migrations/access_gate_resolver_reports_the_real_rls_ceiling.sql` (applied
+  and ledgered); guard `service/accessDeniedContext.rlsCeiling.test.ts` runs
+  the file in a rolled-back transaction against four live rows — red on the
+  previous body, three plant.py mutations red.
 - **2026-09-15** — **A level claim is no longer evidence against a read that came
   back empty, and a door's refusal now reaches the person verbatim** (V-XT-2/N2).
   `admin@admin.com` opening a conversation owned by another account was told
