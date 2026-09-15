@@ -105,6 +105,9 @@ import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RedPenDialog } from "./RedPenDialog";
 import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { PredictionLedgerDialog } from "@/features/masterwork/prediction/PredictionLedgerDialog";
+import { DailyDripDialog } from "@/features/masterwork/drip/DailyDripDialog";
+import { DripStreakReadout } from "@/features/masterwork/drip/DripStreakReadout";
+import { dripOf } from "@/features/masterwork/drip/service";
 import { CalibrationReadout } from "@/features/masterwork/prediction/CalibrationReadout";
 import { ledgerOf } from "@/features/masterwork/prediction/service";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
@@ -956,6 +959,55 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     router.replace(`/masterwork/${rulebook.id}/probe`);
   }, [probeDeepLink, rulebook?.id, router]);
 
+  // THE SORTING TABLE lands here with ?sort=1 from the guided start, and its
+  // next step is a PAGE, not a dialog — so the deep link does the one thing the
+  // picker's `case "sortingTable"` does: go there.
+  //
+  // 🚨 FOUND LIVE, 2026-09-15, driving the funnel end to end as a user: the
+  // registry row was live, `approachLane.ts` resolved it, `launchApproach`
+  // dispatched it — and the funnel still dropped the Expert on a bare Rulebook
+  // page, because `launchApproach` ONLY fires when somebody picks an Approach
+  // ON this page, and a Rulebook the funnel just created arrives with nobody
+  // having picked anything. Census row 3's defect, one step further in, for the
+  // third time (timeline, then probe, then this). The guard that catches it for
+  // every future lane is
+  // `features/masterwork/browse/__tests__/approachLaneCoverage.test.ts`.
+  const sortDeepLink = searchParams.get("sort") === "1";
+  const sortDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!sortDeepLink || sortDeepLinkRef.current || !rulebook?.id) return;
+    sortDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/sort`);
+  }, [sortDeepLink, rulebook?.id, router]);
+
+  // THE TEACH-BACK Approach lands here with ?teachBack=1 from the guided start,
+  // and its next step is a PAGE, not a dialog — so the deep link does the one
+  // thing the picker's `case "teachBack"` does: go there. Same census-row-3
+  // reasoning as the probe above: `launchApproach` only fires when the Expert
+  // picks an Approach ON this page, and a Rulebook the funnel created and
+  // deep-linked arrives with nobody having picked anything.
+  const teachBackDeepLink = searchParams.get("teachBack") === "1";
+  const teachBackDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!teachBackDeepLink || teachBackDeepLinkRef.current || !rulebook?.id) return;
+    teachBackDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/teach-back`);
+  }, [teachBackDeepLink, rulebook?.id, router]);
+
+  // THE CAPTURE PLAN lands here with ?plan=1 from the guided start, and its
+  // next step is its own PAGE. Same census-row-3 reasoning as the probe and the
+  // teach-back above: `launchApproach` only fires when the Expert picks an
+  // Approach ON this page, and a Rulebook the funnel just created arrives with
+  // nobody having picked anything — without this the card is a real door all
+  // the way through and the Expert still lands on a bare Rulebook.
+  const planDeepLink = searchParams.get("plan") === "1";
+  const planDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!planDeepLink || planDeepLinkRef.current || !rulebook?.id) return;
+    planDeepLinkRef.current = true;
+    router.replace(`/masterwork/${rulebook.id}/plan`);
+  }, [planDeepLink, rulebook?.id, router]);
+
   // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
   // ?predictions=1 — the ledger dialog IS the next step. The registry row
   // carries the same `{"predictions":"1"}` in its `intake_query`, so the deep
@@ -977,6 +1029,31 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     predictionDeepLinkRef.current = true;
     setPredictionOpen(true);
   }, [predictionDeepLink, rulebook?.id, setPredictionOpen]);
+
+  // THE DAILY DRIP ("One question a day") lands here with ?drip=1 — the drip
+  // dialog IS the next step, because the first thing to do is pick a channel
+  // and a time. The registry row carries the same `{"drip":"1"}` in its
+  // `intake_query`, so the deep link and the in-page picker can never drift.
+  //
+  // 🚨 The ANSWERING does not happen here: it happens on
+  // `/masterwork/[id]/drip`, which is where every daily question links, because
+  // the person tapping that link is on a phone with thirty seconds and one
+  // question in front of them.
+  //
+  // A drip session belongs to ONE Rulebook, the same rule the ledger above
+  // lives by: this page instance is REUSED across Rulebooks, and a bare
+  // `useState` would leave a half-typed answer about one Expert's morning on
+  // screen after navigating to another Rulebook — and then write it there.
+  const dripSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const dripOpen = dripSession.open;
+  const setDripOpen = dripSession.setOpen;
+  const dripDeepLink = searchParams.get("drip") === "1";
+  const dripDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!dripDeepLink || dripDeepLinkRef.current || !rulebook?.id) return;
+    dripDeepLinkRef.current = true;
+    setDripOpen(true);
+  }, [dripDeepLink, rulebook?.id, setDripOpen]);
   // THE RED-PEN LANE ("Mark it up here instead") lands here with ?red_pen=1 —
   // the markup dialog IS the next step. The registry row carries the same
   // `{"red_pen":"1"}` in its `intake_query`, so the deep link and the in-page
@@ -1001,6 +1078,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // Read straight off the Rulebook already in hand — the ledger lives on
   // `metadata.prediction_ledger`, so the page owes it no query of its own.
   const predictionEntries = rulebook ? ledgerOf(rulebook).entries : [];
+  const drip = rulebook ? dripOf(rulebook) : null;
   const predictionEntryCount = predictionEntries.length;
 
   /**
@@ -1075,6 +1153,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "prediction":
           setPredictionOpen(true);
           return;
+        // THE DAILY DRIP — one question a day by text or email. The DIALOG is
+        // the right first step and not a page, because what an Expert does here
+        // once is choose a channel and a time; the ANSWERING lives at
+        // `/masterwork/[id]/drip`, which is where every daily question links,
+        // because that reader is on a phone with thirty seconds. A registry row
+        // reaches this with `intake_query.drip="1"`.
+        case "drip":
+          setDripOpen(true);
+          return;
         // THE RED-PEN LANE — somebody else's work, marked up correction by
         // correction. A registry row reaches it with `intake_query.red_pen="1"`.
         case "redPen":
@@ -1086,6 +1173,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         // therefore owed a real URL like the interview and the Conductor.
         case "probe":
           router.push(`/masterwork/${rulebookId}/probe`);
+          return;
+        // THE TEACH-BACK — we explain their method back to them and they
+        // interrupt. Its own PAGE for the probe's reason and one more: a round
+        // plays AUDIO, and a voice coming out of a dialog somebody opened over
+        // their Rulebook is not a working mode, it is an ambush.
+        case "teachBack":
+          router.push(`/masterwork/${rulebookId}/teach-back`);
+          return;
+        // THE SORTING TABLE — a pile of real cases sorted wordlessly, then the
+        // boundary questions the edges between the piles produce. Its own PAGE
+        // and not a dialog, for the Triad's reason: a phone-first sort needs the
+        // whole screen and a sticky thumb-reachable row of piles.
+        case "sortingTable":
+          router.push(`/masterwork/${rulebookId}/sort`);
+          return;
+        // THE CAPTURE PLAN — a PROGRAM over the other lanes rather than a lane.
+        // Its own PAGE because it is the longest-lived working mode here: an
+        // Expert comes back to it daily, and every session reminder links to it.
+        case "plan":
+          router.push(`/masterwork/${rulebookId}/plan`);
           return;
         // SHADOW-THE-INBOX — the Expert's real mail, diffed against the reply
         // a competent generalist would have written. A registry row reaches it
@@ -2550,6 +2657,35 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             </div>
           ) : null}
 
+          {/* THE DAILY DRIP — the streak and, far more importantly, what a
+          minute a day has actually bought. Renders only once there is a
+          subscription or a question has gone out: a Rulebook built any other
+          way shows nothing here, which is the true state. */}
+          {drip && (drip.subscription || drip.days.length > 0) ? (
+            <div className="space-y-2" data-surface-value="daily_drip">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Your daily question
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDripOpen(true)}
+                >
+                  Open it
+                </Button>
+              </div>
+              <DripStreakReadout
+                drip={drip}
+                rules={rulebook.rules ?? []}
+                // The detail page does not read this knob — the dialog does,
+                // one tap away. `null` means the sentence that depends on it is
+                // not shown, rather than shown against a number nobody read.
+                minAnswersToDistill={null}
+              />
+            </div>
+          ) : null}
+
           {/* THE COHERENCE PARTNER (D11 · UNPARTNERED CAPTURE) — the questions
           only the Expert can settle, sitting directly above the rules they are
           about. Renders nothing when there are none, which is the normal and
@@ -2998,6 +3134,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             key={`prediction-${rulebook.id}`}
             open={predictionOpen}
             onOpenChange={setPredictionOpen}
+            rulebook={rulebook}
+            canEdit={canEdit}
+            onChanged={() => void reloadRulebook()}
+          />
+          <DailyDripDialog
+            // The drip's settings, its half-typed answer and its run pointer
+            // all belong to THIS Rulebook — same rule, same remount, as the
+            // ledger dialog above.
+            key={`drip-${rulebook.id}`}
+            open={dripOpen}
+            onOpenChange={setDripOpen}
             rulebook={rulebook}
             canEdit={canEdit}
             onChanged={() => void reloadRulebook()}

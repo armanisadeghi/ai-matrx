@@ -34,6 +34,7 @@ import {
   Check,
   Clock,
   Compass,
+  Ear,
   Eye,
   FileText,
   Inbox,
@@ -116,6 +117,7 @@ const APPROACH_LOOK: Record<
   bad_example_probe: { icon: Eye, accent: "amber" },
   triad_game: { icon: Shuffle, accent: "violet" },
   prediction_ledger: { icon: Target, accent: "emerald" },
+  teach_back: { icon: Ear, accent: "violet" },
 };
 const APPROACH_FALLBACK: { icon: LucideIcon; accent: keyof typeof ACCENT } = {
   icon: Compass,

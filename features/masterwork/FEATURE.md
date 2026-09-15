@@ -314,6 +314,38 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   effect that routes to the page. Without it the card was a real door all the way through and the
   Expert still landed on a bare Rulebook — the `timeline` census-row-3 defect, one step further in
   (found by driving the funnel end to end, 2026-09-15).
+- `teach-back/` — **THE TEACH-BACK** (`teach_back`), the system explains and the Expert corrects, on
+  its own page `/masterwork/[id]/teach-back`. We read everything the Rulebook holds and say their
+  method back to them in about a minute of plain spoken words — a bright new hire at the end of
+  their first week, confident and therefore correctable — and they interrupt: "no, not like that",
+  "you missed the part where…", "that's right but only when…". Each interruption becomes draft
+  rules whose `detection` names what the explanation actually got wrong (the Feynman move) AND
+  steers the next explanation. `service.ts` holds the wire shape, the ONE request builder, the
+  terminal parser and the sentences; `TeachBack.tsx` is the screen, on `RulebookLaneRoute`. Server
+  half: `aidream/services/distillation/teach_back.py`.
+  🚨 **THE SESSION LIVES ON THE CLIENT**, as on the probe and for the same reason — and here the
+  screen is also the only thing that knows what was said OUT LOUD.
+  🚨 **WHOSE JUDGMENT IS ON SCREEN IS SAID IN WORDS, EVERY ROUND.** This is the one lane that needs
+  no material: with an empty Rulebook the explanation is what a competent generalist would do, and
+  the banner says so ("You haven't given us anything yet… not you"). `basis` is decided on the
+  server from the digest, never from the model's claim, and `describeBasis` refuses to pick the
+  flattering half when it is unreadable. Presenting a generalist's guess as "what we learned from
+  you" would be the platform lying about the one thing it sells (CORE.md §2).
+  🚨 **IT IS SPOKEN THROUGH THE ONE `speak()` ENTRY POINT** (`useSpeech`), with `primeAudioOutput()`
+  inside the click that STARTS a round — WebKit plays silence for audio begun outside a gesture,
+  and every phone browser is WebKit. The text is always on screen too, so the voice is a speed-up
+  and never the only channel, and the play control is absent or honest, never dead.
+  🚨 **"Yes, that's it" IS A SIGNATURE, NOT A STOP BUTTON** (CORE.md §7's release gate). It writes
+  the verdict through the EXISTING expert-signature path — `saveOutputFeedback` →
+  `platform.upsert_output_feedback`, `surface_name = masterwork.expert_signature`, subject the
+  durable `platform.masterwork_run` of the round being signed (`MASTERWORK_DISTILLATION_RUN_SUBJECT_TYPE`,
+  NOT the `workflow_run` token a built desk's output uses) — and only then closes the session,
+  carrying the same run id so the server stamps `signed_teach_back` on the rules that explanation
+  cited. **If the verdict write fails the session does not finish** and the screen says so; a
+  "signed" over a failed write is the lie this lane's whole value depends on not telling. Guard:
+  `teach-back/__tests__/teach-back-signs-and-tells-the-truth.test.tsx`.
+  The funnel's `?teachBack=1` deep link has its own effect in `RulebookDetailPage`, for the reason
+  the probe's does.
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its

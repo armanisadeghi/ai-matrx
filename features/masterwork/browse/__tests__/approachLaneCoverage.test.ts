@@ -234,6 +234,75 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     intakeQuery: { predictions: "1" },
     launchHref: null,
   },
+  {
+    // THE SORTING TABLE — a NEW Approach, not one of the twenty Arman named on
+    // 2026-08-17, so its row carries no `catalog_number`. Created live and
+    // enabled on 2026-09-15 by `aidream/db/migrations/0745_the_sorting_table_is_live.sql`,
+    // whose parity block refuses to commit a row that is enabled with no lane
+    // key — the `timeline` defect (census row 3) cannot recur through this row.
+    // The lane: `/masterwork/[id]/sort`, `features/masterwork/sorting/`.
+    key: "sorting_table",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { sort: "1" },
+    launchHref: null,
+  },
+  {
+    // THE TEACH-BACK — another NEW Approach, not one of the twenty Arman named
+    // on 2026-08-17, so its row carries no `catalog_number` and its card words
+    // are marked `words_reviewed_by_arman: false` rather than passing as his.
+    // Created live and enabled on 2026-09-15 through the platform's own write
+    // path (`aidream/scripts/seed_teach_back_approach.py`, the Matrx ORM
+    // Approach model) together with its three `masterwork.teach_back` knobs —
+    // no schema edit, because migration 0727 made the run-kind vocabulary
+    // code-seeded. The lane: `/masterwork/[id]/teach-back`,
+    // `features/masterwork/teach-back/`, `POST /masterworks/teach-back`.
+    key: "teach_back",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { teachBack: "1" },
+    launchHref: null,
+  },
+  {
+    // THE CAPTURE PLAN — a PROGRAM over the other Approaches rather than a
+    // lane of its own, live 2026-09-15 by
+    // `aidream/db/migrations/0744_the_capture_plan_is_a_program.sql`. It is a
+    // NEW Approach, not one of the twenty Arman named on 2026-08-17, so its row
+    // carries no `catalog_number`.
+    //
+    // Its `mandate_key` is the literal string `none` and its metadata carries
+    // `runs_no_agent: true` — deliberately, and guarded by
+    // `features/masterwork/capture-plan/__tests__/registry-posture.test.ts`.
+    // Every other row names the agent that runs its lane; this one runs no
+    // agent at all (the planner is arithmetic over the yield ledger) and every
+    // session it opens credits the lane's own mandate on that lane's own
+    // screen. Naming a plausible mandate here would declare an AI integration
+    // that is never invoked.
+    key: "capture_plan",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { plan: "1" },
+    launchHref: null,
+  },
+  {
+    // THE DAILY DRIP — one short question a day about the work the Expert
+    // actually did, by text, email or in-app, answered by talking into one
+    // field on their phone. Live 2026-09-15 by
+    // `aidream/scripts/seed_daily_drip_approach.py` (the row and its five knobs
+    // are DATA, written through the ORM — there is no migration in this lane,
+    // and the run kind needs none either since 0727 made the Masterwork
+    // operation vocabulary a seeded table rather than a hand-typed CHECK).
+    //
+    // A NEW Approach, not one of the twenty Arman named on 2026-08-17, so its
+    // row carries no `catalog_number` — claiming a number it was never given
+    // would be the catalog lying about its own provenance. Its metadata says
+    // `introduced: "2026-09-15"` instead.
+    key: "daily_drip",
+    enabled: true,
+    availability: "available",
+    intakeQuery: { drip: "1" },
+    launchHref: null,
+  },
 ];
 
 function describe_(row: RegistryRow): string {
@@ -329,6 +398,34 @@ describe("every promised Distillation Approach has a lane", () => {
     expect(promisesALane(row as DistillationApproach)).toBe(true);
     expect(row!.enabled).toBe(true);
     expect(resolveApproachLane(row!)).toEqual<ApproachLane>({ kind: "probe" });
+  });
+
+  it("opens the sorting_table Approach on its own page — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "sorting_table");
+    expect(row).toBeDefined();
+    // Both halves, as for every other lane here: the row PROMISES a lane, and
+    // the lane exists. A live card that resolved to null would let an Expert
+    // select an Approach the product cannot open.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "sortingTable",
+    });
+  });
+
+  it("opens the teach_back Approach on its own page — the card is a real door", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "teach_back");
+    expect(row).toBeDefined();
+    // Both halves, as for every other lane here: the row PROMISES a lane, and
+    // the lane exists. A live card that resolved to null would let an Expert
+    // select an Approach the product cannot open — and this one is the lane a
+    // brand-new Rulebook is most likely to be sent to, because it is the only
+    // one that needs no material at all.
+    expect(promisesALane(row as DistillationApproach)).toBe(true);
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "teachBack",
+    });
   });
 
   it("returns null — never a guess — for a row the product has no door for", () => {
@@ -436,6 +533,48 @@ describe("the LIVE platform.approach registry", () => {
       REGISTRY_SNAPSHOT_2026_09_12.map(norm).sort(),
     );
   }, 30_000);
+});
+
+/**
+ * THE THIRD HALF OF THE DEAD END — the one census row 3 taught us THREE times.
+ *
+ * `resolveApproachLane` resolving and `launchApproach` dispatching are both
+ * only reached when somebody picks an Approach ON the Rulebook page. The GUIDED
+ * START does not: it creates the Rulebook and lands on
+ * `/masterwork/<id>?<intake_query>` with nobody having picked anything. So a
+ * lane whose `intake_query` key the detail page never READS is a card that is
+ * live, resolvable, dispatchable — and still drops the Expert on a bare
+ * Rulebook page when she comes through the funnel.
+ *
+ * It happened to `timeline` (2026-09-12), to `bad_example_probe` (2026-09-15),
+ * and to `sorting_table` the same afternoon, each found only by a human driving
+ * the funnel by hand. This asserts it mechanically instead: every key in every
+ * promised row's `intake_query` is read by `RulebookDetailPage`.
+ *
+ * Proven red before green (2026-09-15): with the `searchParams.get("sort")`
+ * handoff removed, this fails naming `sorting_table -> sort`.
+ */
+describe("the guided start's deep link reaches every promised lane", () => {
+  it("has the detail page reading every intake_query key", () => {
+    const pageSource = readFileSync(
+      resolve(__dirname, "../../components/detail/RulebookDetailPage.tsx"),
+      "utf8",
+    );
+    const unread: string[] = [];
+    for (const row of REGISTRY_SNAPSHOT_2026_09_12) {
+      if (!promisesALane(row as DistillationApproach)) continue;
+      for (const key of Object.keys(row.intakeQuery)) {
+        if (!pageSource.includes(`searchParams.get("${key}")`)) {
+          unread.push(`${row.key} -> ${key}`);
+        }
+      }
+    }
+    expect(
+      // A row here is a card the funnel can start and then abandon the Expert
+      // on. Give the key a `searchParams.get(...)` handoff in the detail page.
+      unread.join(", "),
+    ).toBe("");
+  });
 });
 
 /**

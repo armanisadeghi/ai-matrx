@@ -1178,3 +1178,130 @@ export function formulaResultType(
     }
   }
 }
+
+// ─── computed columns over rows ─────────────────────────────────────────────
+//
+// THE ONE PLACE a formula column's value is injected into a row. The grid,
+// every copy/export reader (`getCompleteTable` consumers), the client-side
+// sort and the agent scope all call this, so no reader can ever hand out a
+// formula column as the empty cell the database actually stores.
+
+/** The slice of a field row this helper needs to find and evaluate formulas. */
+export interface ComputedColumnField {
+  field_name: string;
+  display_name: string;
+  data_type: string;
+  metadata?: unknown;
+}
+
+export interface ComputedColumn<F extends ComputedColumnField = ComputedColumnField> {
+  field: F;
+  parsed: ParseResult;
+}
+
+/**
+ * Read the field's declared format WITHOUT importing `lib/field-formats`
+ * (which imports nothing from `features/`, and the reverse direction is the
+ * one this module keeps clean too). The shape is `metadata.format = { id,
+ * options }`, exactly what `readFieldFormatConfig` reads.
+ */
+function formulaExpressionOf(field: ComputedColumnField): string | null {
+  const metadata = field.metadata;
+  if (!metadata || typeof metadata !== "object") return null;
+  const format = (metadata as { format?: unknown }).format;
+  if (!format || typeof format !== "object") return null;
+  if ((format as { id?: unknown }).id !== "formula") return null;
+  const options = (format as { options?: unknown }).options;
+  const formula =
+    options && typeof options === "object"
+      ? (options as { formula?: unknown }).formula
+      : undefined;
+  const expression =
+    formula && typeof formula === "object"
+      ? (formula as { expression?: unknown }).expression
+      : undefined;
+  return typeof expression === "string" ? expression : "";
+}
+
+/** True when the column's declared format is `formula`. */
+export function isFormulaColumn(field: ComputedColumnField): boolean {
+  return formulaExpressionOf(field) !== null;
+}
+
+/** Every formula column among `fields`, each with its expression parsed once. */
+export function formulaColumnsOf<F extends ComputedColumnField>(
+  fields: readonly F[],
+): ComputedColumn<F>[] {
+  return fields.flatMap((field) => {
+    const expression = formulaExpressionOf(field);
+    if (expression === null) return [];
+    return [{ field, parsed: parseFormula(expression) }];
+  });
+}
+
+export interface ComputedRowsResult<R> {
+  rows: R[];
+  /** `${rowId}::${fieldName}` → the plain-English reason that cell shows #ERROR. */
+  errors: Map<string, string>;
+  /** Machine names of the formula columns, for callers that must skip them. */
+  formulaFieldNames: Set<string>;
+}
+
+/**
+ * Return `rows` with every formula column's value computed from the row's
+ * other cells. Pure; the input rows are never mutated. When `fields` holds no
+ * formula column the SAME array is returned, so callers pay nothing.
+ *
+ * Formula columns are evaluated in `fields` order, and each one is written into
+ * the working copy of the row before the next runs — so a later formula may
+ * reference an earlier one. References resolve by machine name first, then by
+ * display name (case-insensitive), matching the grid.
+ */
+export function withComputedColumns<
+  R extends { id: string; data: Record<string, unknown> },
+  F extends ComputedColumnField,
+>(rows: readonly R[], fields: readonly F[]): ComputedRowsResult<R> {
+  const columns = formulaColumnsOf(fields);
+  const formulaFieldNames = new Set(columns.map((c) => c.field.field_name));
+  const errors = new Map<string, string>();
+  if (columns.length === 0) {
+    return { rows: rows as R[], errors, formulaFieldNames };
+  }
+  // A reference resolves against the table's COLUMNS, never against the keys a
+  // particular row happens to carry: a row saved with only some of its cells
+  // (every new row, every sparse import) has no key for the rest, and that is
+  // BLANK — not "no such column", which is the #ERROR the engine reserves for
+  // a misspelt reference.
+  const fieldNameByReference = new Map<string, string>();
+  for (const f of fields) {
+    fieldNameByReference.set(f.display_name.toLowerCase(), f.field_name);
+  }
+  for (const f of fields) {
+    // Machine names win over a display name that happens to collide.
+    fieldNameByReference.set(f.field_name.toLowerCase(), f.field_name);
+  }
+  const computed = rows.map((row) => {
+    const data: Record<string, unknown> = { ...(row.data ?? {}) };
+    const resolve: ResolveCell = (name) => {
+      if (name in data) return data[name];
+      const fieldName = fieldNameByReference.get(name.toLowerCase());
+      if (fieldName === undefined) return undefined; // truly no such column
+      return data[fieldName] ?? null;
+    };
+    for (const { field, parsed } of columns) {
+      if (!parsed.ok) {
+        data[field.field_name] = null;
+        errors.set(`${row.id}::${field.field_name}`, parsed.error);
+        continue;
+      }
+      const result = evaluateFormula(parsed.ast, resolve);
+      if (result.ok) data[field.field_name] = result.value;
+      else {
+        data[field.field_name] = null;
+        errors.set(`${row.id}::${field.field_name}`, result.error);
+      }
+    }
+    return { ...row, data };
+  });
+  return { rows: computed, errors, formulaFieldNames };
+}

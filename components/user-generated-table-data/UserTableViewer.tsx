@@ -102,7 +102,11 @@ import {
 } from "@/features/data-tables/table-style";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
-import { evaluateFormula, parseFormula } from "@/features/data-tables/formulas";
+import {
+  formulaColumnsOf,
+  isFormulaColumn,
+  withComputedColumns,
+} from "@/features/data-tables/formulas";
 import {
   hasValidationRules,
   parseValidationRules,
@@ -1224,6 +1228,28 @@ const UserTableViewer = ({
     const newDirection =
       explicitDirection ??
       (field === sortField && sortDirection === "asc" ? "desc" : "asc");
+
+    // A formula column exists only in the browser: the server's sort RPC
+    // reads the stored (empty) cell. Client-side sorting covers it whenever
+    // the browser can hold every row; when it cannot, say so — never a sort
+    // arrow over an order that is not real.
+    const sortTarget = fields.find((f) => f.field_name === field);
+    if (
+      sortTarget &&
+      isFormulaColumn(sortTarget) &&
+      !hasColumnFilters &&
+      (totalCount > CLIENT_SORT_THRESHOLD || Boolean(searchTerm))
+    ) {
+      toast({
+        title: `Can't sort by ${sortTarget.display_name} right now`,
+        description: searchTerm
+          ? "Formula columns are calculated in your browser, so they can't be sorted while a search is active. Clear the search, then sort."
+          : `Formula columns are calculated in your browser, and this table has more than ${CLIENT_SORT_THRESHOLD.toLocaleString()} rows. Filter the table down first, then sort.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSortField(field);
     setSortDirection(newDirection);
 
@@ -1276,8 +1302,10 @@ const UserTableViewer = ({
 
         const allPayload = allData as typeof allData & { data: unknown[] };
         // Sort all data client-side with type awareness
+        // A formula column has no stored value to sort by — compute it over
+        // the freshly loaded rows first, then sort on what the user sees.
         const sortedData = smartSort(
-          asTableDataRows(allPayload.data),
+          withComputedColumns(asTableDataRows(allPayload.data), fields).rows,
           field,
           newDirection,
           fieldDataType,
@@ -1326,10 +1354,12 @@ const UserTableViewer = ({
     });
     if (isServiceFailure(complete)) throw new Error(complete.error);
 
-    let rows: TableDataRow[] = complete.data.rows.map((row) => ({
-      id: row.id,
-      data: row.data,
-    }));
+    // Formula columns are EMPTY in what the database returns — compute them
+    // before the search, the filters and the sort look at the rows.
+    let rows: TableDataRow[] = withComputedColumns(
+      complete.data.rows.map((row) => ({ id: row.id, data: row.data })),
+      fields,
+    ).rows;
     const query = searchTerm.trim().toLowerCase();
     if (query) {
       rows = rows.filter((row) =>
@@ -1927,7 +1957,9 @@ const UserTableViewer = ({
   let effectiveTotalPages = totalPages;
 
   if (hasColumnFilters) {
-    const source = fullDatasetCache ?? data;
+    // Formula values are computed BEFORE the filter and the sort run, so a
+    // filter on a formula column judges the number the user sees.
+    const source = withComputedColumns(fullDatasetCache ?? data, fields).rows;
     let filtered = applyColumnFilters(source);
     if (sortField) {
       filtered = smartSort(
@@ -1945,43 +1977,17 @@ const UserTableViewer = ({
 
   // ─── Formula columns (features/data-tables/formulas.ts) ──────────────────
   //
-  // A formula column STORES nothing; its value is computed here, from the
-  // row, at render — so display, copy, the agent scope and client-side sort
-  // all see the same number, and a write can never land in it (the cell is
-  // read-only below, and paste / clear / fill skip it). Errors are per cell:
-  // a bad reference or a division by zero renders #ERROR with the reason.
-  const formulaColumns = fields.flatMap((field) => {
-    const format = resolveFieldFormat(field.data_type, field.metadata);
-    if (format.id !== "formula") return [];
-    return [{ field, parsed: parseFormula(format.options?.formula?.expression ?? "") }];
-  });
-  const formulaErrors = new Map<string, string>();
-  if (formulaColumns.length > 0) {
-    const byDisplayName = new Map(
-      fields.map((f) => [f.display_name.toLowerCase(), f.field_name]),
-    );
-    displayRows = displayRows.map((row) => {
-      const data: Record<string, unknown> = { ...row.data };
-      const resolve = (name: string): unknown =>
-        name in data
-          ? data[name]
-          : data[byDisplayName.get(name.toLowerCase()) ?? ""];
-      for (const { field, parsed } of formulaColumns) {
-        if (!parsed.ok) {
-          data[field.field_name] = null;
-          formulaErrors.set(`${row.id}::${field.field_name}`, parsed.error);
-          continue;
-        }
-        const result = evaluateFormula(parsed.ast, resolve);
-        if (result.ok) data[field.field_name] = result.value;
-        else {
-          data[field.field_name] = null;
-          formulaErrors.set(`${row.id}::${field.field_name}`, result.error);
-        }
-      }
-      return { ...row, data };
-    });
-  }
+  // A formula column STORES nothing; its value is computed from the row at
+  // read time by ONE helper, `withComputedColumns` — used here for the page,
+  // by `loadRowsForCopy` / `loadAllRows` for every copy and export, by the
+  // client-side sort, and by the agent scope — so every reader sees the same
+  // number and a write can never land in it (the cell is read-only below, and
+  // paste / clear / fill skip it). Errors are per cell: a bad reference or a
+  // division by zero renders #ERROR with the reason.
+  const formulaColumns = formulaColumnsOf(fields);
+  const computedPage = withComputedColumns(displayRows, fields);
+  displayRows = computedPage.rows;
+  const formulaErrors = computedPage.errors;
   const isFormulaField = (fieldName: string): boolean =>
     formulaColumns.some((c) => c.field.field_name === fieldName);
 
@@ -2822,9 +2828,15 @@ const UserTableViewer = ({
           grid.selectionText(),
         ].join("\n")
       : null;
-  const tickedRows = (fullDatasetCache ?? data).filter((row) =>
-    selectedRowIdSet.has(row.id),
-  );
+  // Both agent-facing row sets carry computed formula values — the same
+  // numbers the user is looking at, never the stored blanks.
+  const tickedRows = withComputedColumns(
+    (fullDatasetCache ?? data).filter((row) => selectedRowIdSet.has(row.id)),
+    fields,
+  ).rows;
+  const fullDatasetForScope = fullDatasetCache
+    ? withComputedColumns(fullDatasetCache, fields).rows
+    : null;
 
   const surfaceScopeSnapshot: DataTableScopeInput = {
     tableId,
@@ -2838,7 +2850,7 @@ const UserTableViewer = ({
     visibleRows: displayRows,
     totalCount: effectiveTotalCount,
     searchTerm,
-    fullDataset: fullDatasetCache,
+    fullDataset: fullDatasetForScope,
     openCell: surfaceOpenCell,
     openRow:
       showEditModal && selectedRowId
@@ -3213,9 +3225,12 @@ const UserTableViewer = ({
             loadAllRows={async () => {
               const complete = await getCompleteTable({ tableId, sortField, sortDirection });
               if (isServiceFailure(complete)) throw new Error(complete.error);
+              // Same rule as `loadRowsForCopy`: formula columns are computed
+              // before anything downstream (export, sort) reads the rows.
+              const rows = withComputedColumns(complete.data.rows, fields).rows;
               return sortField
-                ? smartSort(complete.data.rows, sortField, sortDirection, getFieldDataType(sortField))
-                : complete.data.rows;
+                ? smartSort(rows, sortField, sortDirection, getFieldDataType(sortField))
+                : rows;
             }}
             onChooseReference={onChooseReference}
           />
@@ -3599,7 +3614,12 @@ const UserTableViewer = ({
                         )}
                       </button>
                       <ColumnHeaderMenu
-                        tableId={tableId}
+                        // A formula column has no stored value, so the server
+                        // facet RPC would return nothing for it. Omitting the
+                        // table identity makes the menu work from the rows the
+                        // browser holds (with computed values) and say when
+                        // that is not every row — its own honest fallback.
+                        tableId={isFormulaField(field.field_name) ? undefined : tableId}
                         fieldName={field.field_name}
                         displayName={field.display_name}
                         dataType={field.data_type}
@@ -3612,7 +3632,11 @@ const UserTableViewer = ({
                         // which IS the whole table for the many tables that fit
                         // on one page. The menu asks the server only when these
                         // do not cover `totalCount`.
-                        localRows={fullDatasetCache ?? data}
+                        localRows={
+                          isFormulaField(field.field_name)
+                            ? withComputedColumns(fullDatasetCache ?? data, fields).rows
+                            : (fullDatasetCache ?? data)
+                        }
                         totalCount={totalCount}
                         onSortAsc={() => handleSort(field.field_name, "asc")}
                         onSortDesc={() => handleSort(field.field_name, "desc")}

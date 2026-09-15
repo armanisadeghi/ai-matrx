@@ -92,8 +92,8 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
         fieldName,
         displayName,
         dataType,
-        isRequired,
-        defaultValue: defaultValue || null,
+        isRequired: format.id === 'formula' ? false : isRequired,
+        defaultValue: format.id === 'formula' ? null : defaultValue || null,
         ...(typeof insertAtOrder === "number" ? { fieldOrder: insertAtOrder } : {}),
       });
       
@@ -216,6 +216,14 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
             </p>
           </div>
 
+          {/* A formula column stores nothing, so "required" and "default" have
+              no meaning for it; the two controls are absent rather than dead. */}
+          {format.id === 'formula' ? (
+            <p className="text-xs text-muted-foreground">
+              A formula column is calculated for every row, so it has no default and is never required.
+            </p>
+          ) : (
+          <>
           <div className="flex items-center space-x-2">
             <Switch
               id="isRequired"
@@ -242,6 +250,8 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
               }`}
             />
           </div>
+          </>
+          )}
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>

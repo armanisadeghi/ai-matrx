@@ -35,6 +35,10 @@ export interface MapTopicTreeNode {
   description?: string | null;
   sort_order?: number;
   status?: string;
+  /**
+   * Absent or null keeps the parent implied by nesting (or, at the top level,
+   * the topic's current parent) — it never moves a topic to the root.
+   */
   parent_slug?: string | null;
   children?: MapTopicTreeNode[];
 }
@@ -52,16 +56,20 @@ export interface MapTopicsUpsertResult {
 }
 
 /**
- * `platform.resolve_entity_ref` — the one shape every entity reference in this
- * schema resolves to. Access is checked BEFORE existence, so a caller who
- * cannot see the row is told `forbidden`, never whether it exists.
+ * An entity reference as the topical-map functions return it (`seo._tm_ref`,
+ * round 17). Two variants, and nothing else:
  *
- * The resolved variant is `jsonb_strip_nulls`ed, so every optional key is
- * simply absent when the underlying row has no value for it.
+ * - resolved: the row, through `platform.resolve_entity_ref`'s whitelist.
+ *   `jsonb_strip_nulls`ed, so every optional key is simply absent when the
+ *   underlying row has no value for it.
+ * - hidden: a row the caller cannot open — forbidden, missing and unregistered
+ *   are deliberately the same answer — is `{type, hidden: true}`. It carries no
+ *   id, so the caller learns that something is there and never which row.
  */
-export type EntityRefUnregistered = { type: string; id: string; unregistered: true };
-export type EntityRefForbidden = { type: string; id: string; forbidden: true };
-export type EntityRefMissing = { type: string; id: string; missing: true };
+export interface EntityRefHidden {
+  type: string;
+  hidden: true;
+}
 
 export interface EntityRefResolved {
   type: string;
@@ -77,16 +85,11 @@ export interface EntityRefResolved {
   city?: string;
 }
 
-export type EntityRef =
-  | EntityRefUnregistered
-  | EntityRefForbidden
-  | EntityRefMissing
-  | EntityRefResolved;
+export type EntityRef = EntityRefResolved | EntityRefHidden;
 
 /** Narrows an {@link EntityRef} to the variant that actually carries row data. */
-export function isResolvedEntityRef(ref: EntityRef | null): ref is EntityRefResolved {
-  if (!ref) return false;
-  return !("unregistered" in ref) && !("forbidden" in ref) && !("missing" in ref);
+export function isResolvedEntityRef(ref: EntityRef | null | undefined): ref is EntityRefResolved {
+  return !!ref && !("hidden" in ref);
 }
 
 /**
@@ -140,7 +143,8 @@ export interface MapGraphFacetValueNode {
     name: string;
     facet: string;
     parent_id: string | null;
-    ref: Json;
+    /** `seo.map_facet_value_ref` — null when the value names no entity. */
+    ref: EntityRef | null;
   };
 }
 
@@ -212,7 +216,10 @@ export interface MapFacetTopicValue {
   value_slug: string;
   value_name: string;
   inherited: boolean;
-  /** `seo.map_facet_value_ref` — null when the value names no entity. */
+  /**
+   * `seo.map_facet_value_ref` — null when the value names no entity,
+   * `{type, hidden: true}` when it names a row this caller cannot open.
+   */
   ref: EntityRef | null;
 }
 
@@ -254,6 +261,8 @@ export interface MapTreeNode {
   /**
    * `include: ["associations"]` for everything, or any association kind
    * (`pages`, `facets`, `keywords`, `planned`, or a raw entity token) to narrow.
+   * Same rows as `seo.map_topic_associations`: what the caller cannot open is
+   * counted in a hidden entry, never listed.
    */
   associations?: MapTopicAssociation[];
   /** Present when the topic has children and `depth` has not run out. */
@@ -284,8 +293,10 @@ export function isRootedMapTree(result: MapTreeResult): result is MapTreeRootedR
   return result.root !== null;
 }
 
-/** One edge off a topic, from seo.map_topic_associations. */
-export interface MapTopicAssociation {
+export type MapTopicAssociationDirection = "in" | "out";
+
+/** One edge off a topic whose other end the caller can open. */
+export interface MapTopicAssociationResolved {
   /** The topic slug the edge was read from. */
   topic: string;
   /** `jsonb_strip_nulls`ed: `role` and `payload` are absent when null. */
@@ -293,14 +304,47 @@ export interface MapTopicAssociation {
     /** The other end's entity token (`web_page`, `seo_map_facet_value`, `plan_node`, `seo_keyword`, …). */
     kind: string;
     role?: string;
-    direction: "in" | "out";
+    direction: MapTopicAssociationDirection;
     payload?: Json;
   };
   /**
-   * The other end, resolved. Facet values carry two extra keys naming the facet
-   * and whatever entity the value itself points at.
+   * The other end, resolved. A facet value (`kind: "seo_map_facet_value"`)
+   * also carries `facet` (its facet key) and `ref` (whatever entity the value
+   * points at: null when it names none, hidden when the caller cannot open it).
    */
-  item: EntityRef & { facet?: string; ref?: EntityRef | null };
+  item: EntityRefResolved & { facet?: string; ref?: EntityRef | null };
+}
+
+/**
+ * Every edge of one (kind, direction) whose other end the caller cannot open —
+ * forbidden, missing, unregistered, or a keyword edge naming a site the caller
+ * cannot view. Those edges are never listed (no id, no role, no payload); they
+ * are counted here, once per (kind, direction), so a screen can say that
+ * something is there without saying what.
+ */
+export interface MapTopicAssociationHidden {
+  topic: string;
+  association: {
+    kind: string;
+    direction: MapTopicAssociationDirection;
+  };
+  item: {
+    /** Always equal to `association.kind`. */
+    type: string;
+    /** How many edges were withheld; at least 1. */
+    hidden: number;
+  };
+}
+
+/**
+ * One row of seo.map_topic_associations. Resolved rows come first (ordered by
+ * kind, direction, age), then at most one hidden-count row per (kind,
+ * direction). Narrow with {@link isHiddenMapTopicAssociation}.
+ */
+export type MapTopicAssociation = MapTopicAssociationResolved | MapTopicAssociationHidden;
+
+export function isHiddenMapTopicAssociation(row: MapTopicAssociation): row is MapTopicAssociationHidden {
+  return "hidden" in row.item;
 }
 
 /** One entry in `seo.search_map_topics`. */
@@ -350,11 +394,18 @@ export interface MapDiagnosticsResult {
   sites_using_map: string[];
 }
 
-/** One edit in seo.patch_map_topics. Only the keys present are touched. */
+/**
+ * One edit in seo.patch_map_topics. An ABSENT key leaves that field alone.
+ * `name`, `status`, `sort_order` and `new_slug` are omit-or-value: a JSON null
+ * for any of them is a per-edit error (`"name cannot be null"`, …), so they are
+ * typed optional, never `| null`. Only `description` (clears it) and
+ * `parent_slug` (moves the topic to the root) take null on purpose.
+ */
 export interface MapTopicPatch {
   /** Which topic to edit. Required. */
   slug: string;
   name?: string;
+  /** null clears the description. */
   description?: string | null;
   status?: MapTopicStatus;
   sort_order?: number;
@@ -417,12 +468,18 @@ export interface MapTopicsRetireResult {
   removed: MapTopicRemoval[];
 }
 
-export interface SetPagesMapTopicsItem {
-  /** Name the page by id or by url; id wins when both are given. */
-  page_id?: string;
-  url?: string;
-  topics?: PageMapTopicsInput[];
-}
+/**
+ * One page in seo.set_pages_map_topics. The page is named by `page_id` or by
+ * `url` (id wins when both are given) and must be a live page OF the call's
+ * site — foreign, invented and off-site pages are one per-item 42501.
+ *
+ * `topics` is required: `[]` clears this source's coverage on purpose, and an
+ * item without a topics array comes back as a per-item 22023 failure row
+ * rather than clearing anything.
+ */
+export type SetPagesMapTopicsItem =
+  | { page_id: string; url?: string; topics: PageMapTopicsInput[] }
+  | { page_id?: undefined; url: string; topics: PageMapTopicsInput[] };
 
 /** One page that was mapped. Carries seo.set_page_map_topics' own report. */
 export interface SetPagesMapTopicsSuccess {

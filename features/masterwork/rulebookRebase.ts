@@ -29,6 +29,24 @@
 // path, FEATURE.md rule 2) so every surface inherits it: the Reject dialog,
 // Request changes, Improve, Edit, Approve, bulk approve, the review wizard,
 // the Final Checkup apply/undo, the Oracle tap and the Add-rule window.
+//
+// 🚨 BELT AND BRACES SINCE 2026-09-15 — KEEP IT, AND EXPECT IT NEVER TO FIRE.
+// The server side of this defect is closed at the cause: aidream migration
+// `0728_rulebook_background_metadata_does_not_bump_version.sql` gave
+// `platform.rulebook` its own trigger function, and a write that changes
+// nothing but the DECLARED BACKGROUND metadata keys (today just `coherence`,
+// the Coherence Partner's findings) now CARRIES the version forward instead of
+// bumping it. Everything a person can see — a rule, a section, the name, the
+// status, and every other metadata key including `intake` and
+// `dump_url_sources` — still bumps exactly as before.
+//
+// So the phantom this file rebases past should no longer be produced. That is
+// precisely why the rebase stays: a guard is not deleted because the thing it
+// catches got rarer, and a REAL conflict (two people editing the same rulebook)
+// still needs it. If this ever starts firing again on a background write,
+// something re-pointed that trigger or widened the exemption — the aidream
+// guard `services/distillation/tests/test_background_metadata_holds_the_version.py`
+// is what names which.
 
 import type { Rulebook } from "./types";
 

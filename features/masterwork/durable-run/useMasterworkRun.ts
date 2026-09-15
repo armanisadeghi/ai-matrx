@@ -117,6 +117,13 @@ export type MasterworkRunSurface =
   // a source ingest and must never rejoin one, and its run makes TWO paid calls
   // per thread rather than one.
   | "shadow_inbox"
+  // THE TEACH-BACK (`/masterworks/teach-back`) — one round: distil the Expert's
+  // correction of the last explanation we gave back to them, then say it again
+  // with that correction in it. Its own surface + pointer, and its own terminal
+  // event, because a teach-back round's answer is a NEW QUESTION as well as a
+  // rule count — a rejoin that settled on an ingest summary would leave the
+  // Expert with nothing on screen to interrupt.
+  | "teach_back"
   // THE MEETING SCAVENGER (`/masterworks/ingest-meeting`) — the meetings the
   // Expert already has, mined for the moments THEY made a call. Its own
   // surface + pointer: a meeting scavenge is not a chat import and a reload
@@ -133,7 +140,12 @@ export type MasterworkRunSurface =
   // sets `running` itself, stages and the terminal event are handled without a
   // run id — and the DOOR says so in the server's own sentence before the
   // person spends. It is never papered over.
-  | "bench";
+  | "bench"
+  // THE DAILY DRIP (`/masterworks/ingest-drip`) — a run of one-question-a-day
+  // answers, each anchored to the morning it was asked. Its own surface +
+  // pointer: a drip distillation is not a source ingest, and a reload must
+  // never rejoin one as the other.
+  | "drip";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
@@ -179,12 +191,18 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // The prediction-ledger lane appends draft rules exactly as the other
   // ingest lanes do, so it shares their terminal event — and nothing else.
   prediction: "masterwork_ingest_complete",
+  // The Daily Drip appends draft rules exactly as the other ingest lanes do,
+  // so it shares their terminal event — but never their pointer.
+  drip: "masterwork_ingest_complete",
   // The red-pen lane appends draft rules exactly as the other ingest lanes
   // do, so it shares their terminal event — and nothing else.
   red_pen: "masterwork_ingest_complete",
   // The probe is the one lane whose terminal payload is not an ingest summary:
   // it carries the next bad example as well as what the last answer produced.
   probe: "masterwork_probe_round",
+  // The teach-back is the probe's sibling in this one respect: its terminal
+  // payload carries the next explanation, not an ingest summary.
+  teach_back: "masterwork_teach_back_round",
   // Shadow-the-inbox appends draft rules exactly as the other ingest lanes do,
   // so it shares their terminal event — and nothing else.
   shadow_inbox: "masterwork_ingest_complete",
@@ -216,6 +234,12 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
  * entirely past three times it. Re-measure these when a pipeline changes.
  */
 const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
+  // THE DAILY DRIP distils ONE batch of short answers in a single mandate
+  // call — a run of days is an atom, so there is no per-chunk multiplier. It
+  // sits below `ingest` because the whole corpus is a handful of paragraphs
+  // rather than a document. Estimated until this lane has runs of its own on
+  // the ledger; re-measure then, as the header of this table requires.
+  drip: 45_000,
   build: 60_000,
   ingest: 160_000,
   chat: 25_000,
@@ -271,6 +295,13 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   // measured `chat` shape, ~25 s). Threads run concurrently, so the promise is
   // the serial depth of one thread plus headroom, not a multiple of the count.
   shadow_inbox: 60_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. One round is at most TWO paid calls in sequence: distilling
+  // a short spoken correction (the measured `chat` shape, ~25 s) and then
+  // writing about 150 words of plain speech from a Rulebook briefing (a short
+  // reasoning call, nearer 30 s). Round one is the second of those alone.
+  teach_back: 55_000,
   // The scavenger reads one portion per meeting-sized batch of the Expert's own
   // turns — far less text than a source ingest, and a single paid call for most
   // meetings. Seeded at the chat lane's measured median until this lane has

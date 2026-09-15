@@ -306,6 +306,15 @@ export async function writeDumpUrlSources(opts: {
   // measured against the row the caller was looking at. A rebase replays the
   // gesture onto the row as it now stands — replaying the LIST would delete
   // whatever landed in between.
+  //
+  // 🚨 BELT AND BRACES SINCE 2026-09-15, AND IT STAYS. The server no longer
+  // manufactures the conflict this loop was written for: aidream migration
+  // `0728_rulebook_background_metadata_does_not_bump_version.sql` stops a
+  // background `metadata.coherence` write from bumping `version`. Note the
+  // asymmetry that makes the retry still necessary — `dump_url_sources` is
+  // EXPERT-FACING metadata and deliberately still bumps, so two people
+  // attaching links at once is a real conflict, not a phantom, and this rebase
+  // is what keeps both sets of links.
   let base = rulebook;
   let desired = opts.urls;
   let lastCurrent: Rulebook | null = null;
