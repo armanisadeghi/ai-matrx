@@ -196,6 +196,23 @@ export function describeIngest({
   skippedWords,
 }: IngestSummary): string {
   const missing = describeMissingIngestParts({ failedChunks, skippedWords });
+  // 🚨 ZERO IS NEVER A CLEAN SUCCESS SENTENCE (2026-09-15, found by driving the
+  // Meeting Scavenger against a real platform meeting on production). A run
+  // that read its source fine and found nothing used to print "0 suggested
+  // rules added as drafts. Every quote verified word-for-word against your
+  // source." — a screen that congratulates itself on verifying zero quotes
+  // while the Expert looks at an empty Rulebook and concludes the product is
+  // broken. This is the ONE summary every lane's dialog prints, so the fix
+  // belongs here and reaches all of them. A zero WITH a real cause (parts that
+  // failed, everything a duplicate) keeps saying that cause instead.
+  if (added === 0 && !missing && !duplicatesSkipped) {
+    return (
+      "We read your source and found nothing in it we could turn into a rule — " +
+      "no judgment calls, corrections or standards that would apply again next " +
+      "time. Nothing was added. That is usually the source rather than you: try " +
+      "one where you were deciding something."
+    );
+  }
   return (
     (missing ? `${missing} ` : "") +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
