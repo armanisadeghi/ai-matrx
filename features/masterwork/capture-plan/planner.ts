@@ -150,15 +150,21 @@ export function foldSessionIntoYield(
   rules: readonly RulebookRule[],
 ): MethodYield {
   const produced = outcome.ruleIds.length > 0;
+  // A method whose yield is DEFERRED by construction (the Prediction Ledger)
+  // cannot produce a rule in the session that records the call — the rules come
+  // when the outcome lands, weeks later. Counting that as an empty session
+  // would drop the plan's only instrument for implicit weighting after two
+  // goes. Declared in `methods.ts`, never a hidden exception.
+  const deferred = plannableMethod(ledger.method)?.deferredYield === true;
   const next: MethodYield = {
     ...ledger,
     sessions: ledger.sessions + 1,
     minutes: ledger.minutes + Math.max(0, outcome.minutes),
     ruleIds: Array.from(new Set([...ledger.ruleIds, ...outcome.ruleIds])),
-    zeroYieldStreak: produced ? 0 : ledger.zeroYieldStreak + 1,
+    zeroYieldStreak: produced || deferred ? 0 : ledger.zeroYieldStreak + 1,
     lastSessionAt: outcome.at,
   };
-  if (!produced && next.zeroYieldStreak >= ZERO_YIELD_SESSIONS_TO_DROP) {
+  if (!produced && !deferred && next.zeroYieldStreak >= ZERO_YIELD_SESSIONS_TO_DROP) {
     next.dropped = true;
     next.weight = 0;
     next.droppedReason = `${next.zeroYieldStreak} sessions in a row produced nothing, so the plan stopped spending your time on it.`;
@@ -229,8 +235,17 @@ export function checkStop(args: {
 
   if (settings.stopRule === "yield_flat" || settings.stopRule === "either") {
     const window = Math.max(2, settings.flattenWindow);
-    if (completed.length >= window) {
-      const recent = completed.slice(-window);
+    // A DEFERRED session is not evidence that the plan has stopped paying, for
+    // the same reason it is not evidence against its method: the Prediction
+    // Ledger's rules arrive when the cases land. Counting it here ended a live
+    // plan on 2026-09-15 three sessions in, one of which was a call that had
+    // not had time to come back. Declared per method in `methods.ts`, never a
+    // general softening — an ordinary empty session still counts.
+    const reporting = completed.filter(
+      (s) => !plannableMethod(s.method)?.deferredYield,
+    );
+    if (reporting.length >= window) {
+      const recent = reporting.slice(-window);
       if (recent.every((s) => s.ruleIds.length === 0)) {
         return {
           stop: true,
@@ -311,6 +326,11 @@ export function chosenBecause(
     return "You have not tried this one yet, so the plan is finding out what it gives you.";
   }
   const tally = yieldOfRuleIds(ledger.ruleIds, rules);
+  if (plannableMethod(ledger.method)?.deferredYield) {
+    return tally.approved > 0
+      ? `The calls you have already answered turned into ${tally.approved} rule${tally.approved === 1 ? "" : "s"} you kept.`
+      : "This one pays later — the rules appear when the cases you called actually land.";
+  }
   if (ledger.zeroYieldStreak > 0) {
     return `It came back empty last time. One more short go before the plan drops it.`;
   }
@@ -359,26 +379,31 @@ export function scheduleSessions(args: ScheduleArgs): PlanSession[] {
   let day = new Date(from.getTime());
 
   // 🚨 A RE-PLAN MUST NOT RE-SPEND A DAY THAT IS ALREADY PART SPENT.
-  // Every re-plan lays the remaining slots out again starting from NOW, and the
-  // first pass through this loop is the CURRENT day — so without this the plan
-  // handed the Expert a fresh full day's budget on top of whatever they had
-  // already done. Ten minutes of triads at nine in the morning turned "thirty
-  // minutes a day" into forty, and it grew every time they finished a session.
-  // Found by driving a real plan on 2026-09-15: "Today · 40 min" under a
-  // 30-minute plan.
-  const todayKey = from.toISOString().slice(0, 10);
-  const spentToday = history
-    .filter((s) => s.dueAt.slice(0, 10) === todayKey)
-    .reduce((n, s) => n + s.plannedMinutes, 0);
-  let firstDayCredit = Math.max(0, spentToday);
+  // Every re-plan lays the remaining slots out again, and a day that already
+  // carries finished sessions must be laid out around them — not given a fresh
+  // full budget on top. Without this, "thirty minutes a day" grew every time
+  // the Expert finished anything.
+  //
+  // Found twice on 2026-09-15, one day apart, which is why this counts EVERY
+  // day rather than only the current one: the first fix credited today, and the
+  // very next re-plan (after a session dated tomorrow was done early) put
+  // "Wed, Sep 16 · 40 min" on the screen under the same 30-minute plan.
+  const spentByDay = new Map<string, number>();
+  for (const s of history) {
+    const key = s.dueAt.slice(0, 10);
+    spentByDay.set(key, (spentByDay.get(key) ?? 0) + s.plannedMinutes);
+  }
   // A projection of the ledger that ages as we lay slots out, so one method
   // does not take every slot of every day just because it leads today.
   const projected: Record<string, number> = {};
   for (const m of alive) projected[m] = 0;
 
   while (day.getTime() < horizonEnd) {
-    let remaining = Math.max(0, settings.minutesPerDay - firstDayCredit);
-    firstDayCredit = 0;
+    const dayKey = day.toISOString().slice(0, 10);
+    let remaining = Math.max(
+      0,
+      settings.minutesPerDay - (spentByDay.get(dayKey) ?? 0),
+    );
     let slotsToday = 0;
     let cursor = new Date(day.getTime());
     const usedToday = new Set<string>();
@@ -427,7 +452,7 @@ export function scheduleSessions(args: ScheduleArgs): PlanSession[] {
       // Today is spent, but the plan is not over. Move to the next day rather
       // than ending the schedule — otherwise finishing the last slot of a day
       // would empty the rest of the plan.
-      if (sessions.length === 0 && spentToday > 0) {
+      if (sessions.length === 0 && (spentByDay.get(dayKey) ?? 0) > 0) {
         day = advanceDay(day, settings.cadence);
         continue;
       }

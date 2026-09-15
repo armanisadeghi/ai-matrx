@@ -32,6 +32,7 @@ import { liveMethods, METHOD_POSTURE } from "../methods";
 import {
   buildPlan,
   checkStop,
+  chosenBecause,
   completeSession,
   emptyYield,
   foldSessionIntoYield,
@@ -273,6 +274,36 @@ describe("G2 — yield governs the weight", () => {
     expect(led.dropped).toBe(false);
   });
 
+  it("never drops a method whose yield is DEFERRED by construction", () => {
+    // THE DEFECT, found by recording a real call on the live plan, 2026-09-15:
+    // the Prediction Ledger records a call on an OPEN case, so no rule can
+    // appear in the session that records it — the rules come when the outcome
+    // lands, weeks later. Measured like every other method it reads zero every
+    // time, and two zeroes drop it: the plan would delete its only instrument
+    // for capturing implicit weighting because that instrument runs on a
+    // longer clock than the plan does.
+    let led = emptyYield("prediction_ledger");
+    for (let i = 0; i < 4; i += 1) {
+      led = foldSessionIntoYield(led, { ruleIds: [], minutes: 4, at: `t${i}` }, []);
+    }
+    expect(led.sessions).toBe(4);
+    expect(led.zeroYieldStreak).toBe(0);
+    expect(led.dropped).toBe(false);
+    expect(chosenBecause(led, [], 1)).toMatch(/pays later/);
+
+    // And an ordinary method with the same four empty sessions IS dropped —
+    // the exemption is declared per method, never a general softening.
+    let ordinary = emptyYield("triad_game");
+    for (let i = 0; i < 4; i += 1) {
+      ordinary = foldSessionIntoYield(
+        ordinary,
+        { ruleIds: [], minutes: 4, at: `t${i}` },
+        [],
+      );
+    }
+    expect(ordinary.dropped).toBe(true);
+  });
+
   it("a method that produces approved rules outranks one that produces drafts", () => {
     const rules = [rule("a1", "approved"), rule("d1", "draft")];
     const good = foldSessionIntoYield(
@@ -360,16 +391,19 @@ describe("G3 — the plan ends itself", () => {
   }
 
   it("stops when the yield curve flattens", () => {
+    // Every method here REPORTS in the session that runs it — a deferred one
+    // (the Prediction Ledger) is deliberately absent, because it has its own
+    // case below.
     const plan = planWith([
       { method: "monologue", ruleIds: ["a1"] },
       { method: "triad_game", ruleIds: [] },
       { method: "monologue", ruleIds: [] },
-      { method: "prediction_ledger", ruleIds: [] },
+      { method: "bad_example_probe", ruleIds: [] },
     ]);
     const stop = checkStop({
       plan,
       yields: {},
-      schedulableMethods: ["monologue", "triad_game", "prediction_ledger"],
+      schedulableMethods: ["monologue", "triad_game", "bad_example_probe"],
       rules: [rule("a1", "approved")],
       now: new Date("2026-09-16T09:00:00.000Z"),
     });
@@ -392,6 +426,42 @@ describe("G3 — the plan ends itself", () => {
       now: new Date("2026-09-16T09:00:00.000Z"),
     });
     expect(stop.stop).toBe(false);
+  });
+
+  it("a deferred session never counts toward the flat curve", () => {
+    // Same defect as the method drop, one level up: a live plan stopped itself
+    // on 2026-09-15 with three empty sessions, one of which was a prediction
+    // call that by construction could not have reported yet.
+    const plan = planWith([
+      { method: "triad_game", ruleIds: [] },
+      { method: "prediction_ledger", ruleIds: [] },
+      { method: "monologue", ruleIds: [] },
+    ]);
+    const stop = checkStop({
+      plan,
+      yields: {},
+      schedulableMethods: ["monologue", "triad_game", "prediction_ledger"],
+      rules: [],
+      now: new Date("2026-09-16T09:00:00.000Z"),
+    });
+    expect(stop.stop).toBe(false);
+
+    // A third REPORTING empty session does end it.
+    const plan2 = planWith([
+      { method: "triad_game", ruleIds: [] },
+      { method: "prediction_ledger", ruleIds: [] },
+      { method: "monologue", ruleIds: [] },
+      { method: "bad_example_probe", ruleIds: [] },
+    ]);
+    const stop2 = checkStop({
+      plan: plan2,
+      yields: {},
+      schedulableMethods: ["monologue", "triad_game", "bad_example_probe"],
+      rules: [],
+      now: new Date("2026-09-16T09:00:00.000Z"),
+    });
+    expect(stop2.stop).toBe(true);
+    expect(stop2.reason).toBe("yield_flat");
   });
 
   it("stops when the goal's coverage is met", () => {
@@ -618,6 +688,50 @@ describe("the program end to end", () => {
     expect(todayAfter.reduce((n, s) => n + s.plannedMinutes, 0)).toBe(30);
     // And the plan did not end just because today filled up.
     expect(after.state.plan!.sessions.length).toBeGreaterThan(todayAfter.length);
+  });
+
+  it("credits EVERY day that already carries work, not just today", () => {
+    // THE SECOND HALF of the same defect, found one day after the first: an
+    // Expert who does tomorrow's session early gets a re-plan that lays
+    // tomorrow out again with a fresh full budget on top of what they just
+    // did. "Wed, Sep 16 · 40 min" under a 30-minute plan, 2026-09-15.
+    const built = buildPlan({
+      goal: "g",
+      settings: { ...SETTINGS, minutesPerDay: 30, sessionMinutes: 10 },
+      approaches: LIVE_FOUR,
+      yields: {},
+      rules: [],
+      now: NOW,
+      newId: ids,
+    });
+    if (!built.ok) throw new Error("fixture");
+
+    // Do a session that the plan scheduled for TOMORROW, today.
+    const tomorrow = built.plan.sessions.find(
+      (s) => s.dueAt.slice(0, 10) === "2026-09-16",
+    )!;
+    let state: CapturePlanState = { ...EMPTY_CAPTURE_PLAN_STATE, plan: built.plan };
+    const rules = [rule("t1", "draft")];
+    const at = new Date("2026-09-15T18:00:00.000Z");
+    state = completeSession({
+      state,
+      sessionId: tomorrow.id,
+      ruleIds: ["t1"],
+      minutes: 10,
+      rules,
+      now: at,
+    });
+    const after = replan({
+      state,
+      approaches: LIVE_FOUR,
+      rules,
+      now: at,
+      newId: ids,
+    });
+    const wednesday = after.state.plan!.sessions.filter(
+      (s) => s.dueAt.slice(0, 10) === "2026-09-16",
+    );
+    expect(wednesday.reduce((n, s) => n + s.plannedMinutes, 0)).toBe(30);
   });
 
   it("a skipped session is not evidence about the method", () => {

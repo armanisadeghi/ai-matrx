@@ -147,6 +147,27 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `capture-plan/` — **THE CAPTURE PLAN** (`capture_plan`, `?plan=1`, page
+  `/masterwork/[id]/plan`). A PROGRAM over the other Approaches: the Expert says what they want
+  covered and how much time they can give, and the planner picks the next method from the LIVE
+  lanes, sizes each session, measures what it produced and re-plans. Cross-repo SoR:
+  `../../../common-docs/systems/masterwork/distillation-contract.md` § THE CAPTURE PLAN.
+  🚨 **No capture surface of its own** — `SessionHost.tsx` mounts the lane's OWN dialog in place
+  or navigates to its OWN page, so there is never a second version of a lane to keep in step.
+  🚨 **Yield is the DIFF of the Rulebook's rule ids across a session**, so no lane knows it is
+  inside a plan and a lane shipped tomorrow is measured identically. `planner.ts` is pure
+  arithmetic (no agent, no network) and carries the four guards — a method that is not live is
+  never scheduled, an empty session lowers its weight and two in a row drop it, the plan ends
+  itself on its stop rule, and a plan with no allowed method refuses BY NAME. `methods.ts` gives
+  every Approach in the catalog a posture (plannable with a session length and an ask, or excluded
+  with a reason a person reads); `__tests__/registry-posture.test.ts` reads the LIVE registry and
+  fails on a row nobody has decided about — three lanes went live during the build. The plan,
+  its sessions and the per-method yield ledger live on `rulebook.metadata.capture_plan`, written
+  by the same CAS-without-bumping-`version` the Prediction Ledger uses, RAW FACTS ONLY (how many
+  rules the Expert kept is derived on read). Knobs: feature `masterwork.capture_plan`, twelve of
+  them, no code fallback. Server half (the ONE thing the browser cannot do — telling someone it is
+  time): `aidream/aidream/services/capture_plan/`, which creates no schedule because
+  `notify(deliver_at=…)` parks the notice for the approved dispatcher.
 - `prediction/` — **THE PREDICTION LEDGER** Approach (`prediction_ledger`, `?predictions=1`).
   The Expert calls live cases in her own work before the answer is known — the call, how sure she
   is, ONE line of why, and a due date — and enters the outcome when it lands.

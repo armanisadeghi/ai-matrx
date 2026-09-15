@@ -40,6 +40,22 @@ export interface PlannableMethod {
    * ten-minute slot becomes a cancelled one.
    */
   bringsMaterial: boolean;
+  /**
+   * 🚨 THIS METHOD'S YIELD ARRIVES WEEKS LATER, BY CONSTRUCTION.
+   *
+   * The Prediction Ledger records a call on an open case; the rules appear when
+   * the outcome lands and the answered calls are distilled, which is the whole
+   * point of it. Measuring such a session by the rules that appeared WHILE it
+   * ran therefore reads zero every time — and two zeroes drop a method. The
+   * plan would delete its only instrument for capturing implicit weighting
+   * because that instrument works on a longer clock than the plan does.
+   *
+   * So a deferred method never accrues the zero-yield streak, and the ledger
+   * SAYS why rather than quietly exempting it. It still competes on score: once
+   * outcomes land and rules appear, its rules-per-hour is computed like
+   * everyone else's from the same raw facts.
+   */
+  deferredYield?: true;
 }
 
 /** A method the plan will never schedule, and the reason, in plain words. */
@@ -78,10 +94,13 @@ export const METHOD_POSTURE: Record<string, MethodPosture> = {
     3,
     "Three real cases: which two are alike, which is the odd one out, and why.",
   ),
-  prediction_ledger: plannable(
-    4,
-    "Call one open case before you know the answer — what happens, how sure, one line of why.",
-  ),
+  prediction_ledger: {
+    ...plannable(
+      4,
+      "Call one open case before you know the answer — what happens, how sure, one line of why.",
+    ),
+    deferredYield: true,
+  },
   bad_example_probe: plannable(
     8,
     "We wrote something that looks right and is not. Tell us what is wrong with it.",

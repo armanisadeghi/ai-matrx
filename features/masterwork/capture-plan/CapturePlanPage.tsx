@@ -608,7 +608,8 @@ export function CapturePlanPage({
             <section className="rounded-lg border p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="text-sm font-semibold">
-                  Ready now · {methodName(next.method)}
+                  {dueNow(next) ? "Ready now" : whenReady(next)} ·{" "}
+                  {methodName(next.method)}
                 </h3>
                 <span className="text-xs text-muted-foreground">
                   {next.plannedMinutes} minutes · session {next.seq}
@@ -647,7 +648,9 @@ export function CapturePlanPage({
                   Not today
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  Nothing expires — a session waits until you open it.
+                  {dueNow(next)
+                    ? "Nothing expires — a session waits until you open it."
+                    : "Nothing expires, and nothing stops you doing it early."}
                 </span>
               </div>
             </section>
@@ -692,6 +695,24 @@ export function CapturePlanPage({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 🚨 THE CARD NEVER SAYS "READY NOW" ABOUT A SESSION SCHEDULED FOR TOMORROW.
+ *
+ * Found live on 2026-09-15: after "Not today" filled the current day, the next
+ * session was Wednesday's and the card still read "Ready now". Nothing expires
+ * and an Expert with a spare ten minutes is welcome to do it early, so the
+ * button stays — but the heading says WHEN, because a screen is honest or it is
+ * a defect.
+ */
+function dueNow(session: PlanSession): boolean {
+  return new Date(session.dueAt).getTime() <= Date.now();
+}
+
+function whenReady(session: PlanSession): string {
+  const label = dayLabel(session.dueAt);
+  return label === "Today" ? "Later today" : label;
+}
 
 function methodName(key: string): string {
   return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -874,6 +895,8 @@ function MethodLedger({
                       <span className="text-amber-700 dark:text-amber-400">
                         Dropped — {row.droppedReason}
                       </span>
+                    ) : plannableMethod(row.method)?.deferredYield ? (
+                      <>Pays later — rules appear when the cases land</>
                     ) : row.zeroYieldStreak > 0 ? (
                       <>One empty session; one more go before it is dropped.</>
                     ) : (
