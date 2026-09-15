@@ -25,7 +25,7 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -62,8 +62,12 @@ import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/utils/errors";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
+import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -83,6 +87,56 @@ function canonicalVoiceName(voiceId: string): string {
 
 const purposeDefaultVoiceLabel = `${canonicalVoiceName(ASSISTANT_VOICE_ID)} / ${canonicalVoiceName(READING_VOICE_ID)}`;
 const purposeDefaultVoiceDescription = `Assistant replies: ${canonicalVoiceName(ASSISTANT_VOICE_ID)}; reading: ${canonicalVoiceName(READING_VOICE_ID)}`;
+const AGENT_GENERATOR_SHORTCUT_ID = getSystemShortcut("agent-generator-01").id;
+
+/**
+ * The builder's default is the generator shortcut's actual agent model, not
+ * a generic catalog default. These are the same read thunks AgentGenerator
+ * uses to load its shortcut; neither runs the agent nor writes configuration.
+ */
+function useAgentBuilderDefaultModel(enabled: boolean): {
+  modelId: string | null;
+  unavailable: boolean;
+} {
+  const dispatch = useAppDispatch();
+  const shortcut = useAppSelector(
+    (state) =>
+      state.agentShortcut.shortcuts[AGENT_GENERATOR_SHORTCUT_ID] ?? null,
+  );
+  const agentId = shortcut?.agentId ?? null;
+  const execution = useAppSelector((state) =>
+    agentId ? selectAgentCustomExecutionPayload(state, agentId) : null,
+  );
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    if (!enabled || shortcut) return;
+    let cancelled = false;
+    void dispatch(ensureShortcutLoaded(AGENT_GENERATOR_SHORTCUT_ID))
+      .unwrap()
+      .catch(() => {
+        if (!cancelled) setUnavailable(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, enabled, shortcut]);
+
+  useEffect(() => {
+    if (!enabled || !agentId || execution?.isReady) return;
+    let cancelled = false;
+    void dispatch(fetchAgentExecutionFull(agentId))
+      .unwrap()
+      .catch(() => {
+        if (!cancelled) setUnavailable(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, enabled, agentId, execution?.isReady]);
+
+  return { modelId: execution?.modelId ?? null, unavailable };
+}
 
 export function hasFieldControl(control: KnobControl): boolean {
   return RENDERED.has(control);
@@ -352,6 +406,8 @@ function ModelField({
   inputId,
   labelId,
 }: KnobFieldControlProps) {
+  const isBuilderKey =
+    knob.full_key === "agents.model_prefs.agent_authoring_default_model";
   const configuredValue =
     typeof ladder.value === "string" && ladder.value !== ""
       ? ladder.value
@@ -361,14 +417,15 @@ function ModelField({
   // "platform default". The authoring key intentionally defers to its
   // builder, whose selected model is not exposed to this screen.
   const platformTextModelId = useAppSelector(selectPlatformDefaultTextModelId);
+  const builderDefault = useAgentBuilderDefaultModel(isBuilderKey);
   const value =
     configuredValue ??
     (knob.full_key === "agents.model_prefs.chat_default_model"
       ? platformTextModelId
-      : null);
-  const isBuilderDefault =
-    !configuredValue &&
-    knob.full_key === "agents.model_prefs.agent_authoring_default_model";
+      : isBuilderKey
+        ? builderDefault.modelId
+        : null);
+  const isBuilderDefault = !configuredValue && isBuilderKey;
   return (
     <ModelListDropdown
       id={inputId}
@@ -383,7 +440,9 @@ function ModelField({
       placeholder={
         isBuilderDefault
           ? "Agent builder's default model"
-          : "Loading current model…"
+          : builderDefault.unavailable
+            ? "Agent builder model is unavailable"
+            : "Loading current model…"
       }
       disabled={disabled}
       triggerVariant="settings"
