@@ -501,7 +501,18 @@ export default function TableConfigModal({
           if (field.display_name !== originalField.display_name)
             updates.display_name = field.display_name;
           if (field.data_type !== originalField.data_type) {
-            updates.data_type = field.data_type;
+            // DD-260: `data_type` deliberately does NOT ride this metadata write.
+            // `udt_change_field_type` below flips the declared type ITSELF, in the
+            // same transaction as the row rewrite and the row-history proof — and
+            // it reads the OLD type to stamp `type_change:<from>→<to>` on that
+            // history. Flipping it here first made the function read the NEW type
+            // as the "from", so the row-history badge on production read
+            // `integer→integer` and told the user nothing about what their value
+            // used to be (V-113 finding F1). The function now REFUSES a call whose
+            // stored type already equals the requested one, so this cannot regress
+            // silently. Sending it here is also unsafe on its own terms: if the
+            // row rewrite failed, the declared type had already changed and the
+            // table was left new-typed over old-shaped rows.
             typeChanges.push({
               fieldId: field.id,
               displayName: field.display_name,
@@ -597,10 +608,13 @@ export default function TableConfigModal({
         });
       }
 
-      // After the metadata flip lands, walk rows for each type-changed field
-      // and coerce their JSONB cell values to the new type via the dedicated
-      // SECURITY DEFINER RPC. cast_or_null is the safer default — un-castable
-      // values become null rather than silently keeping the old shape.
+      // Now the type changes. This RPC owns BOTH halves — it walks every row and
+      // coerces the JSONB cell values AND flips `udt_dataset_fields.data_type`, in
+      // one transaction, stamping the real `type_change:<from>→<to>` on the row
+      // history it produces (DD-260: nothing above may flip the declared type
+      // first, or the "from" it records is a lie). cast_or_null is the safer
+      // default — un-castable values become null rather than silently keeping the
+      // old shape, and the value itself goes to row history, restorable.
       let totalRewritten = 0;
       // DD-244: a value that cannot become the new type is emptied from the
       // grid, and its only surviving copy is the row's history. The screen says

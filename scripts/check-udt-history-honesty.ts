@@ -30,6 +30,16 @@
  *   4. The trim at the default floor does NOT delete a 20-day-old version
  *      beyond the latest two — and still DOES delete a 40-day-old one, so the
  *      gate cannot go green on a trim that simply stopped working.
+ *   5. THE ORDER THE DIALOG ACTUALLY USES (DD-260, V-113 finding F1). Checks 2
+ *      and 3 call the RPC directly, which is not what any user does — and that
+ *      blind spot let a live lie through: `TableConfigModal` wrote the field's
+ *      new `data_type` through `update_user_table_config` FIRST, so
+ *      `udt_change_field_type` read the already-new type as the "from" and the
+ *      production row-history badge read "Column type changed
+ *      (integer→integer)". So the gate now drives both orders through the real
+ *      RPCs: the dialog's save must stamp `type_change:string→integer`, and a
+ *      caller that pre-flips the declared type must be REFUSED rather than
+ *      leave a `<new>→<new>` reason behind.
  *
  * Everything runs inside ONE transaction that is ALWAYS rolled back: the
  * throwaway table, its rows, the planted version ages, and the trim's deletes.
@@ -306,6 +316,119 @@ async function probe(client: pg.Client, selfTest: boolean): Promise<void> {
       } else {
         ok("the trim still trims past the floor", "40-day-old version deleted");
       }
+    }
+
+    // ── 5 + 6. The order the Table settings dialog ACTUALLY uses ────────────
+    // DD-260 / V-113 finding F1. Checks 2 and 3 above call the RPC DIRECTLY —
+    // which is not what any user does. `TableConfigModal` saves the field's new
+    // metadata through `update_user_table_config` and only then calls
+    // `udt_change_field_type`, so on the real path the function read the ALREADY
+    // NEW type as the "from" and stamped `type_change:integer→integer` on the row
+    // history. The value survived; the label lied, on the one screen DD-244 exists
+    // to make honest. These two checks drive that order for real.
+    const uiCase = async (
+      name: string,
+      preflipDeclaredType: boolean,
+    ): Promise<{ raised: string | null; reason: string | null }> => {
+      await client.query("SAVEPOINT ui_order");
+      try {
+        const t = await client.query<{ id: string }>(
+          `insert into workbench.udt_datasets
+             (table_name, user_id, created_by, organization_id, visibility, validation_mode)
+           values ($1, $2, $2, $3, 'personal', 'permissive') returning id`,
+          [`dd260_ui_order_${name}_${Date.now()}`, who.user_id, who.org_id],
+        );
+        const tid = t.rows[0]!.id;
+        const f = await client.query<{ id: string }>(
+          `insert into workbench.udt_dataset_fields
+             (table_id, field_name, display_name, data_type, user_id, organization_id)
+           values ($1, 'amount', 'Amount', 'string', $2, $3) returning id`,
+          [tid, who.user_id, who.org_id],
+        );
+        const fid = f.rows[0]!.id;
+        const r = await client.query<{ id: string }>(
+          `insert into workbench.udt_dataset_rows (table_id, data, user_id, organization_id)
+           values ($1, '{"amount":"about twelve dollars"}'::jsonb, $2, $3) returning id`,
+          [tid, who.user_id, who.org_id],
+        );
+        const rid = r.rows[0]!.id;
+
+        // The dialog's metadata save, through the very RPC it calls. The ONLY
+        // difference between the two cases is whether `data_type` rides it — the
+        // bug, and the fix.
+        const fieldUpdate: Record<string, unknown> = {
+          id: fid,
+          display_name: "Amount (USD)",
+        };
+        if (preflipDeclaredType) fieldUpdate["data_type"] = "integer";
+        await client.query(
+          `select public.update_user_table_config(p_table_id := $1, p_field_updates := $2::jsonb)`,
+          [tid, JSON.stringify([fieldUpdate])],
+        );
+
+        // ...then the row rewrite, exactly as the dialog does it.
+        let raised: string | null = null;
+        try {
+          await client.query(
+            `select public.udt_change_field_type($1, $2, 'integer', 'cast_or_null')`,
+            [tid, fid],
+          );
+        } catch (err) {
+          raised = err instanceof Error ? err.message : String(err);
+          await client.query("ROLLBACK TO SAVEPOINT ui_order");
+          return { raised, reason: null };
+        }
+        const v = await client.query<{ reason: string | null }>(
+          `select reason from workbench.udt_dataset_row_versions
+            where row_id = $1 and reason like 'type_change:%' order by changed_at desc limit 1`,
+          [rid],
+        );
+        return { raised, reason: v.rows[0]?.reason ?? null };
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT ui_order");
+        await client.query("RELEASE SAVEPOINT ui_order");
+      }
+    };
+
+    // 5. The dialog's REAL save, fixed: the declared type is NOT pre-flipped, so
+    //    the history names what the value actually used to be.
+    const honest = await uiCase("honest", false);
+    if (honest.raised) {
+      fail(
+        "the dialog's real save records the real from-type",
+        `the Table settings save order (update_user_table_config for the other field properties, then udt_change_field_type) RAISED: ${honest.raised}`,
+      );
+    } else if (honest.reason !== "type_change:string→integer") {
+      fail(
+        "the dialog's real save records the real from-type",
+        `the row-history reason produced by the dialog's own order is ${JSON.stringify(honest.reason)}, not 'type_change:string→integer'. The badge on the row-history screen renders this string verbatim, so the screen tells the user the wrong thing about their own value (DD-260 / V-113 F1).`,
+      );
+    } else {
+      ok(
+        "the dialog's real save records the real from-type",
+        "type_change:string→integer through update_user_table_config + udt_change_field_type",
+      );
+    }
+
+    // 6. The order that produced the lie is REFUSED, not recorded. This is the
+    //    forcing half: whatever a future caller does, it can never leave a
+    //    `<new>→<new>` reason behind quietly.
+    const preflipped = await uiCase("preflipped", true);
+    if (!preflipped.raised) {
+      fail(
+        "flipping the declared type first is refused, never recorded as a lie",
+        `a caller that wrote data_type through update_user_table_config BEFORE calling udt_change_field_type was accepted, and the row history now reads ${JSON.stringify(preflipped.reason)}. The from-type is unrecoverable at that point, so the only honest answer is to refuse (DD-260).`,
+      );
+    } else if (!/already declared/i.test(preflipped.raised)) {
+      fail(
+        "flipping the declared type first is refused, never recorded as a lie",
+        `it raised, but not with the DD-260 refusal naming the cause and the remedy: ${preflipped.raised}`,
+      );
+    } else {
+      ok(
+        "flipping the declared type first is refused, never recorded as a lie",
+        "udt_change_field_type raises on a field already declared the target type",
+      );
     }
 
     // ── Self-test: the gate must go RED when the honesty is removed ──────────
