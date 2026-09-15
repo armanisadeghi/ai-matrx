@@ -33,6 +33,7 @@ import {
   useMemo,
   useState,
   type ReactNode,
+  useSyncExternalStore,
 } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ import {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
+import { isBlankSlateInterview, subscribeBlankSlate } from "@/features/masterwork/record/blankSlateLane";
 import {
   buildRulebookSurfaceScope,
   CLOSED_RULEBOOK_WORKSPACE_STATE,
@@ -229,6 +231,15 @@ export function RulebookLaneRoute({
   // live systems only, and an archived Masterwork is never handed to an agent
   // as something it can run or rebuild. The archived half is read and revealed
   // on the Masterworks lane and the Rulebook page, which carry the control.
+  // The blank-slate register is module-level (it crosses a file boundary the
+  // props cannot), so this subscription is what turns a declaration into a
+  // rebuilt scope callback.
+  const blankSlateEpoch = useSyncExternalStore(
+    subscribeBlankSlate,
+    () => isBlankSlateInterview(rulebookId),
+    () => false,
+  );
+
   const buildSurfaceScope = useCallback(() => {
     if (!rulebook) {
       throw new Error("The Rulebook surface is still loading.");
@@ -238,6 +249,13 @@ export function RulebookLaneRoute({
       canEdit,
       masterworks,
       lane,
+      // 🚨 A BLANK-SLATE INTERVIEW IS THE ONE CASE THIS SURFACE STAYS QUIET.
+      // The provider republishes its scope on every turn, so an interview
+      // launched with an empty scope got the whole Rulebook back one turn
+      // later and opened by reciting it (found live 2026-09-15). The panel
+      // declares the mode in `record/blankSlateLane.ts`; identity, permission
+      // and lane still go out, so client tools and write targets keep working.
+      withholdContent: isBlankSlateInterview(rulebookId),
       // The read twin of the `rule_draft` write target, and the honest
       // workspace state: an agent that staged a rule here can read back
       // exactly what is sitting in the editor.
@@ -247,13 +265,18 @@ export function RulebookLaneRoute({
         editor_open: editorOpen,
       },
     });
+    // `blankSlateEpoch` is not read inside — it is the register's change
+    // signal, so a mode declared after this callback was memoised rebuilds it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeRuleDraft,
+    blankSlateEpoch,
     canEdit,
     editorOpen,
     lane,
     masterworks,
     rulebook,
+    rulebookId,
   ]);
 
   // The one client tool every lane can honestly service: refetch this

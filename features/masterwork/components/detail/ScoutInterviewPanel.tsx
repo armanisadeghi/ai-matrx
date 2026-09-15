@@ -46,12 +46,14 @@ import {
 } from "@/features/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
+import { declareBlankSlateInterview } from "@/features/masterwork/record/blankSlateLane";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
 import {
   InterviewStartScreen,
   type InterviewChoice,
 } from "@/features/masterwork/record/InterviewStartScreen";
 import {
+  blankSlateScopeOverride,
   buildInterviewLaunchVariables,
   contextModeOption,
 } from "@/features/masterwork/record/interviewModes";
@@ -169,6 +171,18 @@ function InterviewConversation({
   const surfaceKey = `masterwork-interview:${rulebookId}`;
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // 🚨 DECLARE THE MODE TO THE PAGE, not just to the launch. The lane's
+  // `<SurfaceRuntimeProvider>` republishes its scope EVERY turn, so an empty
+  // scope at launch buys one turn of silence and nothing more — the whole
+  // rendered Rulebook came straight back as `content` on turn two (found live
+  // 2026-09-15). The register in `record/blankSlateLane.ts` is what the lane
+  // reads; this declaration is live for exactly as long as the interview is.
+  useEffect(() => {
+    if (choice.mode !== "blank_slate") return undefined;
+    return declareBlankSlateInterview(rulebookId);
+  }, [choice.mode, rulebookId]);
+
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
@@ -200,6 +214,15 @@ function InterviewConversation({
       // refuses when it is absent. The `rulebook` tool stays for RE-reads —
       // the Scout WRITES rules mid-conversation and variables substitute once,
       // at conversation start.
+      // 🚨 THE SECOND DOOR (found live 2026-09-15, fixed the same session). A
+      // launch that names a surface and passes no scope ADOPTS everything the
+      // mounted provider publishes — for this surface that is the Rulebook's
+      // name, description and full rule set. A blank-slate interview therefore
+      // opened by reciting the Rulebook's description back to the Expert, one
+      // second after the card promised her it knew nothing about her. An
+      // explicit scope beats adoption, so blank slate passes an empty one and
+      // keeps the surface NAME (dropping that resolves NO bindings at all).
+      ...blankSlateScopeOverride(choice.mode),
       variables: buildInterviewLaunchVariables({
         rulebookId,
         expertName,

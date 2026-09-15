@@ -29,6 +29,7 @@
  */
 
 import {
+  blankSlateScopeOverride,
   INTERVIEW_CONTEXT_MODES,
   INTERVIEW_PROBES,
   buildInterviewLaunchVariables,
@@ -216,5 +217,122 @@ describe("the screen's own copy", () => {
       expect(option.sentence.trim().length).toBeGreaterThan(30);
       expect(option.title.trim().length).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * THE SECOND DOOR. The payload tests above were all green on 2026-09-15 while a
+ * live blank-slate interview opened by reciting the Rulebook's description —
+ * because the launch ALSO adopts the mounted surface provider, which publishes
+ * the Rulebook's name, description and full rule set. A guard that only watches
+ * the variables watches one of the two ways in.
+ */
+describe("blank slate closes the surface-context door too", () => {
+  it("passes an explicit empty scope, so nothing is auto-adopted", () => {
+    expect(blankSlateScopeOverride("blank_slate")).toEqual({
+      applicationScope: {},
+    });
+  });
+
+  it("leaves a primed launch to adopt the live surface, as it should", () => {
+    expect(blankSlateScopeOverride("primed")).toEqual({});
+    expect("applicationScope" in blankSlateScopeOverride("primed")).toBe(false);
+  });
+
+  it("is actually spread into the launch runtime by the interview panel", () => {
+    // A source check, because the defect was a MISSING line at the call site:
+    // the helper can be perfect and unused, which is exactly what shipped.
+    const panel = require("node:fs").readFileSync(
+      require("node:path").join(
+        __dirname,
+        "../../components/detail/ScoutInterviewPanel.tsx",
+      ),
+      "utf8",
+    );
+    expect(panel).toContain("...blankSlateScopeOverride(choice.mode)");
+  });
+});
+
+/**
+ * THE THIRD DOOR, and the one that actually shipped the lie. The two guards
+ * above were green while a live blank-slate interview recited the Rulebook's
+ * own description back to the Expert — because a mounted
+ * `<SurfaceRuntimeProvider>` republishes its scope on EVERY turn, so the empty
+ * launch scope bought exactly one turn of silence and the whole rendered
+ * Rulebook came back as `content` on turn two.
+ */
+describe("blank slate withholds the surface's content, every turn", () => {
+  const RULEBOOK = {
+    id: "rb-1",
+    name: "Electronics recycling intake",
+    description: "ZORBLAXIAN-DESCRIPTION: how we sort incoming pallets",
+    status: "draft",
+    version: 3,
+    visibility: "private",
+    organization_id: "org-1",
+    source: { title: "QUUXTRON-SOURCE" },
+    sections: [{ key: "a", title: "Intake" }],
+    rules: [
+      {
+        id: "r-1",
+        name: "ZORBLAXIAN-RULE",
+        statement: "Never accept a pallet without a chain-of-custody form.",
+      },
+    ],
+    metadata: {},
+  } as never;
+
+  const build = (withholdContent: boolean) =>
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require("../../agent-context/rulebookSurfaceScope").buildRulebookSurfaceScope({
+      rulebook: RULEBOOK,
+      canEdit: true,
+      lane: "interview",
+      withholdContent,
+    });
+
+  const LEAKS = [
+    "ZORBLAXIAN-DESCRIPTION",
+    "ZORBLAXIAN-RULE",
+    "QUUXTRON-SOURCE",
+    "chain-of-custody",
+  ];
+
+  it.each(LEAKS)("withholds %s from every field of the scope", (leak) => {
+    expect(JSON.stringify(build(true))).not.toContain(leak);
+  });
+
+  it.each(LEAKS)("still publishes %s when NOT withholding", (leak) => {
+    expect(JSON.stringify(build(false))).toContain(leak);
+  });
+
+  it("keeps identity, permission and lane so tools and write targets work", () => {
+    const scope = build(true);
+    expect(scope.rulebook_id).toBe("rb-1");
+    expect(scope.can_edit).toBe(true);
+    expect(scope.context.lane).toBe("interview");
+    expect(scope.rulebook_version).toBe(3);
+  });
+
+  it("is actually consulted by the lane route that owns the provider", () => {
+    const route = require("node:fs").readFileSync(
+      require("node:path").join(
+        __dirname,
+        "../../components/RulebookLaneRoute.tsx",
+      ),
+      "utf8",
+    );
+    expect(route).toContain("withholdContent: isBlankSlateInterview(rulebookId)");
+  });
+
+  it("is actually declared by the interview panel that knows the mode", () => {
+    const panel = require("node:fs").readFileSync(
+      require("node:path").join(
+        __dirname,
+        "../../components/detail/ScoutInterviewPanel.tsx",
+      ),
+      "utf8",
+    );
+    expect(panel).toContain("declareBlankSlateInterview(rulebookId)");
   });
 });

@@ -220,3 +220,32 @@ export function buildInterviewLaunchVariables(
   }
   return base;
 }
+
+/**
+ * THE SECOND DOOR — and it was standing wide open until it was driven live.
+ *
+ * A launch that names a surface and supplies no `applicationScope` ADOPTS the
+ * mounted `<SurfaceRuntimeProvider>` and everything it publishes. The Masterwork
+ * Rulebook surface publishes `rulebook_name`, `rulebook_description`,
+ * `rulebook_rules` ("the full rules, their sections, and review-state
+ * projections") and the whole `rulebook` record — so on 2026-09-15 a blank-slate
+ * interview, launched with a payload proven to carry no source text, opened by
+ * reciting the Rulebook's description back to the Expert. The card had just
+ * promised her it knew nothing about her.
+ *
+ * The variables were never the only way in. An EXPLICIT scope always beats
+ * auto-adoption, so a blank-slate launch passes an empty one: the surface NAME
+ * stays (dropping it would silently resolve no agent bindings at all), and
+ * nothing of the Rulebook rides in behind it. `withSurfaceDocumentEvidence`
+ * adds nothing to an empty scope — it only elaborates ids the scope already
+ * holds.
+ *
+ * A primed launch leaves the scope undefined on purpose: adopting the live
+ * surface is exactly right there, and is where the Scout's view of the rules
+ * stays current as the Expert reviews them mid-session.
+ */
+export function blankSlateScopeOverride(
+  mode: InterviewContextMode,
+): { applicationScope: Record<string, unknown> } | Record<string, never> {
+  return mode === "blank_slate" ? { applicationScope: {} } : {};
+}
