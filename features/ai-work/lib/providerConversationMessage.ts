@@ -7,9 +7,18 @@ import {
 /** Messages loaded per transcript page (initial server read and each earlier page). */
 export const PROVIDER_TRANSCRIPT_PAGE_SIZE = 200;
 
-/** The exact chat.message columns a provider transcript reads. */
+/**
+ * The exact chat.message columns a provider transcript reads.
+ *
+ * `agent_id` and `metadata` joined the projection on 2026-09-14: a conversation
+ * bound to a coding session is no longer only a mirror. Two kinds of turn are
+ * now authored INSIDE AI Matrx on the same row set — a person's reply typed
+ * here, and an agent run triggered from the coding host through our MCP — and
+ * without these two columns neither is distinguishable from a provider turn,
+ * so the page would attribute our own words to Claude Code.
+ */
 export const PROVIDER_MESSAGE_COLUMNS =
-  "id, conversation_id, role, content, position, status, created_at";
+  "id, conversation_id, role, content, position, status, created_at, agent_id, metadata";
 
 export type ProviderConversationMessageRow = Pick<
   Tables<{ schema: "chat" }, "message">,
@@ -20,19 +29,116 @@ export type ProviderConversationMessageRow = Pick<
   | "position"
   | "status"
   | "created_at"
+  | "agent_id"
+  | "metadata"
 >;
+
+/**
+ * WHO authored a turn on a coding-session-bound conversation.
+ *
+ * The wire contract is the server's (aidream writes every one of these rows):
+ *  - `ai_matrx_reply`   — `metadata.origin === "ai_matrx_reply"`: a person's
+ *                         reply typed in AI Matrx, or the AI Matrx answer to
+ *                         it. The coding host never sees either.
+ *  - `matrx_agent_run`  — `metadata.origin === "matrx_agent_run"`: an AI Matrx
+ *                         agent run triggered from the coding host through our
+ *                         MCP, landing in this same transcript.
+ *  - `provider_mirror`  — ABSENCE of `metadata.origin`. That is the contract:
+ *                         a mirrored provider turn carries only
+ *                         `coding_session_bridge`, so "no origin" is the
+ *                         mirror, and anything unreadable degrades to it.
+ */
+export type ProviderMessageOrigin =
+  | "ai_matrx_reply"
+  | "matrx_agent_run"
+  | "provider_mirror";
 
 export type ProviderConversationMessage = Omit<
   ProviderConversationMessageRow,
-  "content"
+  "content" | "metadata" | "agent_id"
 > & {
   display: ProviderMessageDisplay;
   contentValid: boolean;
+  origin: ProviderMessageOrigin;
+  /** The responder agent's id, from the row's own column. Never derived. */
+  agentId: string | null;
+  /**
+   * The responder agent's display name, read ONLY from the metadata block the
+   * server wrote (`ai_matrx_reply.agent_name` / `agent_run.agent_name`).
+   * `null` when absent — a name is never invented from an id, a slug, or a
+   * provider label.
+   */
+  agentName: string | null;
 };
+
+/** `metadata` is unknown JSON on the wire. Narrow, never assume. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+export interface ProviderMessageAttribution {
+  origin: ProviderMessageOrigin;
+  agentName: string | null;
+}
+
+/**
+ * Read the authorship block out of a row's metadata.
+ *
+ * Defensive on purpose: every field is optional on the wire, the JSON can be
+ * any shape, and a row we cannot read is reported as a provider mirror with NO
+ * attribution rather than a guess.
+ */
+export function readProviderMessageAttribution(
+  metadata: unknown,
+): ProviderMessageAttribution {
+  if (!isRecord(metadata)) return { origin: "provider_mirror", agentName: null };
+
+  const origin = readString(metadata.origin);
+  if (origin === "ai_matrx_reply") {
+    const block = isRecord(metadata.ai_matrx_reply)
+      ? metadata.ai_matrx_reply
+      : null;
+    return {
+      origin: "ai_matrx_reply",
+      agentName: block ? readString(block.agent_name) : null,
+    };
+  }
+  if (origin === "matrx_agent_run") {
+    const block = isRecord(metadata.agent_run) ? metadata.agent_run : null;
+    return {
+      origin: "matrx_agent_run",
+      agentName: block ? readString(block.agent_name) : null,
+    };
+  }
+  // Absence of a known origin IS the provider mirror. An origin string we do
+  // not know is also not ours to claim — it renders as the mirror it came from
+  // rather than borrowing an AI Matrx byline.
+  return { origin: "provider_mirror", agentName: null };
+}
 
 export function normalizeProviderMessage(
   message: ProviderConversationMessageRow,
 ): ProviderConversationMessage {
+  let attribution: ProviderMessageAttribution = {
+    origin: "provider_mirror",
+    agentName: null,
+  };
+  try {
+    attribution = readProviderMessageAttribution(message.metadata);
+  } catch (error) {
+    // Same honesty as the invalid-content branch below: an unreadable row is
+    // reported, and shown as a mirror with no attribution — never as an
+    // AI Matrx turn we cannot substantiate.
+    console.error(
+      "[normalizeProviderMessage] unreadable persisted message metadata",
+      { messageId: message.id, error },
+    );
+  }
+
   try {
     return {
       id: message.id,
@@ -43,6 +149,9 @@ export function normalizeProviderMessage(
       created_at: message.created_at,
       display: providerMessageDisplay(message.content),
       contentValid: true,
+      origin: attribution.origin,
+      agentId: message.agent_id,
+      agentName: attribution.agentName,
     };
   } catch (error) {
     console.error(
@@ -58,6 +167,9 @@ export function normalizeProviderMessage(
       created_at: message.created_at,
       display: { text: "", activityCount: 0 },
       contentValid: false,
+      origin: attribution.origin,
+      agentId: message.agent_id,
+      agentName: attribution.agentName,
     };
   }
 }

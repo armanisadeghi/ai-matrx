@@ -271,6 +271,12 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   },
   podcast: { label: "Podcasts (legacy)", icon: Mic },
 
+  // A person's reply, typed in AI Matrx on a MIRRORED coding-session
+  // conversation, and the AI Matrx answer to it. Not `system: true`: a human
+  // pressed send. The coding host never sees these turns — see
+  // `features/ai-work/conversations/components/AiMatrxReplyComposer.tsx`.
+  coding_session_reply: { label: "AI Matrx reply on a coding session", icon: MessageSquare },
+
   // Automations / system runs
   "server-run": { label: "Server Run", icon: Server, system: true },
   programmatic: { label: "Programmatic", icon: Server, system: true },
