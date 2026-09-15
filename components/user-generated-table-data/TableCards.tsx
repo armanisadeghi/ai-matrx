@@ -884,7 +884,10 @@ export default function TableCards() {
                         .toLowerCase()
                         .includes(searchTerm.toLowerCase()),
                   )
-                  .map((table) => renderTableCard(table, isOwner(table) === true))}
+                  // Examples are the platform's read-only showcase for EVERYONE,
+                  // including the account that seeded them — no rename, no
+                  // delete from a card. The seed script is their only writer.
+                  .map((table) => renderTableCard(table, false))}
               </div>
             )}
           </CollapsibleContent>

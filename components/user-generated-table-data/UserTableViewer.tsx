@@ -53,6 +53,7 @@ import {
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   choicesForRow,
   useFieldChoiceMap,
@@ -215,6 +216,8 @@ export interface TableInfo {
   table_name: string;
   description?: string;
   user_id?: string;
+  /** The owning organization. The platform's example tables live in the global system org and are read-only for everyone. */
+  organization_id?: string;
   row_ordering_config?: RowOrderingConfig;
   /** `permissive` | `strict` — read by TableConfigModal's Strict Validation switch. */
   validation_mode?: string;
@@ -532,6 +535,23 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
+  const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    resolveSystemOrgId()
+      .then((id) => {
+        if (!cancelled) setSystemOrgId(id);
+      })
+      .catch((err) => {
+        // Without it an example table would look editable to its seeding
+        // account; say so rather than silently guessing either way.
+        console.error("Could not resolve the system organization:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // has_permission is the source of truth for sharing, so the UI matches
   // what the RLS-protected RPCs will actually accept — previously shared
   // EDITORS were wrongly shown the read-only UI.
@@ -539,8 +559,19 @@ const UserTableViewer = ({
     tableInfo !== null &&
     currentUserId !== null &&
     tableInfo.user_id === currentUserId;
+  // The platform's example tables (Arman: "defaults that they can see, which
+  // are read-only") belong to the global system org. They are read-only for
+  // EVERYONE in the UI — including the admin account that seeded them, since
+  // every agent signs in as that account and one stray keystroke would rewrite
+  // the showcase every user sees. Their only writer is the seed script.
+  const isExampleTable =
+    tableInfo !== null &&
+    systemOrgId !== null &&
+    tableInfo.organization_id === systemOrgId;
   const isReadOnly =
-    tableInfo !== null && currentUserId !== null && !isOwner && !sharedEditor;
+    tableInfo !== null &&
+    currentUserId !== null &&
+    (isExampleTable || (!isOwner && !sharedEditor));
 
   useEffect(() => {
     if (!tableInfo || currentUserId === null || isOwner) return;
@@ -564,8 +595,9 @@ const UserTableViewer = ({
   const showReadOnlyToast = () => {
     toast({
       title: "View Only",
-      description:
-        "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
+      description: isExampleTable
+        ? "This is one of the platform's example tables, so it is read-only for everyone. Create a table of your own to try this out."
+        : "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
       variant: "default",
     });
   };
