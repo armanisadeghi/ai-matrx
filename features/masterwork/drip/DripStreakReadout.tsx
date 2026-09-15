@@ -115,8 +115,9 @@ export function DripStreakReadout({
           </>
         ) : report.rules > 0 ? (
           <>
-            {report.answered} answer{report.answered === 1 ? "" : "s"} so far have become{" "}
-            {report.rules} rule{report.rules === 1 ? "" : "s"} in this Rulebook
+            {report.answered} answer{report.answered === 1 ? "" : "s"} so far{" "}
+            {report.answered === 1 ? "has" : "have"} become {report.rules} rule
+            {report.rules === 1 ? "" : "s"} in this Rulebook
             {report.undistilled > 0 ? (
               <>
                 , and {report.undistilled} more day{report.undistilled === 1 ? "" : "s"}{" "}
