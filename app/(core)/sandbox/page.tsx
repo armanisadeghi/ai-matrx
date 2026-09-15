@@ -68,6 +68,7 @@ export default function SandboxListPage() {
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
@@ -200,20 +201,29 @@ export default function SandboxListPage() {
     });
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget || deleting) return;
-    const sandboxId = deleteTarget.sandbox_id;
+  const handleDelete = async (target: SandboxInstance) => {
+    const sandboxId = target.sandbox_id;
     setDeleting(true);
+    setDeletingIds((previous) => new Set(previous).add(target.id));
     setDeleteError(null);
-    const ok = await deleteInstance(deleteTarget.id);
+    const ok = await deleteInstance(target.id);
     setDeleting(false);
-    if (ok) {
+    setDeletingIds((previous) => {
+      const next = new Set(previous);
+      next.delete(target.id);
+      return next;
+    });
+    if (ok === true) {
       setDeleteSuccess(true);
       toast.success(`Sandbox ${sandboxId} deleted`);
       setTimeout(() => {
-        setDeleteTarget(null);
         setDeleteSuccess(false);
       }, 700);
+    } else if (ok === "outcome_unknown") {
+      const msg = "The delete outcome is unknown. Refresh this sandbox while its state is checked.";
+      setDeleteError(msg);
+      toast.warning(msg);
+      void fetchInstances();
     } else {
       const msg = "Failed to delete sandbox. Please try again.";
       setDeleteError(msg);
@@ -256,21 +266,19 @@ export default function SandboxListPage() {
       ? historicalInstances.length
       : selectedHistoryCount;
 
-  const handleHistoryBatchDelete = async () => {
-    if (!historyDeleteMode || historyDeleting) return;
-    const ids =
-      historyDeleteMode === "all"
-        ? historicalInstances.map((i) => i.id)
-        : Array.from(currentSelectedHistoryIds);
+  const handleHistoryBatchDelete = async (
+    mode: "selected" | "all",
+    ids: string[],
+  ) => {
+    if (historyDeleting) return;
     if (ids.length === 0) {
       setHistoryDeleteMode(null);
       return;
     }
 
     setHistoryDeleting(true);
-    const { deletedIds, failed } = await deleteInstances(ids);
+    const { deletedIds, failed, unknownIds } = await deleteInstances(ids);
     setHistoryDeleting(false);
-    setHistoryDeleteMode(null);
 
     if (deletedIds.length > 0) {
       setSelectedHistoryIds((prev) => {
@@ -288,6 +296,12 @@ export default function SandboxListPage() {
           ? "Failed to delete sandbox history"
           : `${failed.length} record${failed.length === 1 ? "" : "s"} could not be deleted`,
       );
+    }
+    if (unknownIds.length > 0) {
+      toast.warning(
+        `${unknownIds.length} sandbox delete outcome${unknownIds.length === 1 ? " is" : "s are"} unknown. Refresh history while state is checked.`,
+      );
+      void fetchInstances();
     }
   };
 
@@ -392,6 +406,7 @@ export default function SandboxListPage() {
             onStop={handleStop}
             onDelete={setDeleteTarget}
             stoppingIds={stoppingIds}
+            busyIds={deletingIds}
             selection={
               historyOpen
                 ? {
@@ -592,7 +607,11 @@ export default function SandboxListPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="destructive" onClick={handleDelete}>
+                <Button variant="destructive" onClick={() => {
+                  const target = deleteTarget;
+                  setDeleteTarget(null);
+                  if (target) void handleDelete(target);
+                }}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Sandbox
                 </Button>
@@ -628,7 +647,14 @@ export default function SandboxListPage() {
         }
         variant="destructive"
         busy={historyDeleting}
-        onConfirm={() => void handleHistoryBatchDelete()}
+        onConfirm={() => {
+          const mode = historyDeleteMode;
+          const ids = mode === "all"
+            ? historicalInstances.map((instance) => instance.id)
+            : Array.from(currentSelectedHistoryIds);
+          setHistoryDeleteMode(null);
+          if (mode) void handleHistoryBatchDelete(mode, ids);
+        }}
       />
     </SurfaceRuntimeProvider>
   );

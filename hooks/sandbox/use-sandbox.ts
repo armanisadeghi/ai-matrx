@@ -16,6 +16,10 @@ import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+import {
+  classifySandboxLifecycleResponse,
+  sandboxLifecycleMessage,
+} from "@/lib/sandbox/lifecycle-response";
 
 /** The sandbox list's page size is the `infrastructure.sandbox list_page_size` knob. */
 const SANDBOX_KNOB_FEATURE = "infrastructure.sandbox";
@@ -382,11 +386,12 @@ export function useSandboxInstances(projectId?: string) {
     try {
       const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
 
-      if (!resp.ok && resp.status !== 204) {
-        throw new Error(
-          await extractSandboxError(resp, "Failed to delete sandbox"),
-        );
+      const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
+      if (result.kind === "outcome_unknown") {
+        setError(sandboxLifecycleMessage(result));
+        return "outcome_unknown" as const;
       }
+      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
 
       setInstances((prev) => prev.filter((i) => i.id !== id));
       setTotal((prev) => prev - 1);
@@ -394,13 +399,18 @@ export function useSandboxInstances(projectId?: string) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(msg);
+      if (err instanceof TypeError) return "outcome_unknown" as const;
       return false;
     }
   }, []);
 
   const deleteInstances = useCallback(async (ids: string[]) => {
     if (ids.length === 0) {
-      return { deletedIds: [] as string[], failed: [] as string[] };
+      return {
+        deletedIds: [] as string[],
+        failed: [] as string[],
+        unknownIds: [] as string[],
+      };
     }
 
     setError(null);
@@ -408,13 +418,16 @@ export function useSandboxInstances(projectId?: string) {
       ids.map(async (id) => {
         try {
           const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-          if (!resp.ok && resp.status !== 204) {
-            throw new Error(
-              await extractSandboxError(resp, "Failed to delete sandbox"),
-            );
+          const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
+          if (result.kind === "outcome_unknown") {
+            return { id, kind: "outcome_unknown" as const };
           }
+          if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
           return { id, ok: true as const };
-        } catch {
+        } catch (err) {
+          if (err instanceof TypeError) {
+            return { id, kind: "outcome_unknown" as const };
+          }
           return { id, ok: false as const };
         }
       }),
@@ -422,6 +435,9 @@ export function useSandboxInstances(projectId?: string) {
 
     const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
     const failed = results.filter((r) => !r.ok).map((r) => r.id);
+    const unknownIds = results
+      .filter((r) => "kind" in r && r.kind === "outcome_unknown")
+      .map((r) => r.id);
 
     if (deletedIds.length > 0) {
       const deletedSet = new Set(deletedIds);
@@ -437,7 +453,7 @@ export function useSandboxInstances(projectId?: string) {
       );
     }
 
-    return { deletedIds, failed };
+    return { deletedIds, failed, unknownIds };
   }, []);
 
   const execCommand = useCallback(

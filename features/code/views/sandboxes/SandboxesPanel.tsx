@@ -81,6 +81,12 @@ import {
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+import {
+  classifySandboxLifecycleResponse,
+  sandboxLifecycleMessage,
+  sandboxLifecycleTransportUnknown,
+} from "@/lib/sandbox/lifecycle-response";
+import { toast } from "@/lib/toast";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import {
@@ -299,14 +305,24 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "stop" }),
         });
-        if (!resp.ok) {
-          const data = await resp.json().catch(() => null);
-          throw new Error(data?.error ?? `Stop failed (${resp.status})`);
+        const result = await classifySandboxLifecycleResponse(resp, "Stop failed");
+        if (result.kind === "outcome_unknown") {
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+          await refresh();
+          return;
         }
+        if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
         if (activeId === instance.id) disconnect();
         await refresh();
       } catch (err) {
-        setError(extractErrorMessage(err));
+        if (err instanceof TypeError) {
+          const result = sandboxLifecycleTransportUnknown("stop");
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+        } else {
+          setError(extractErrorMessage(err));
+        }
       } finally {
         setBusyId(null);
       }
@@ -322,15 +338,24 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         const resp = await fetch(`/api/sandbox/${instance.id}`, {
           method: "DELETE",
         });
-        if (!resp.ok && resp.status !== 204) {
-          const data = await resp.json().catch(() => null);
-          throw new Error(data?.error ?? `Delete failed (${resp.status})`);
+        const result = await classifySandboxLifecycleResponse(resp, "Delete failed");
+        if (result.kind === "outcome_unknown") {
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+          await refresh();
+          return;
         }
+        if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
         if (activeId === instance.id) disconnect();
         await refresh();
-        setDeleteTarget(null);
       } catch (err) {
-        setError(extractErrorMessage(err));
+        if (err instanceof TypeError) {
+          const result = sandboxLifecycleTransportUnknown("delete");
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+        } else {
+          setError(extractErrorMessage(err));
+        }
       } finally {
         setBusyId(null);
       }
@@ -534,7 +559,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         variant="destructive"
         busy={!!deleteTarget && busyId === deleteTarget.id}
         onConfirm={() => {
-          if (deleteTarget) void deleteSandbox(deleteTarget);
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (target) void deleteSandbox(target);
         }}
       />
     </div>

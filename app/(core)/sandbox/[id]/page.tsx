@@ -54,6 +54,12 @@ import {
 } from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {
+  classifySandboxLifecycleResponse,
+  sandboxLifecycleMessage,
+  sandboxLifecycleTransportUnknown,
+} from "@/lib/sandbox/lifecycle-response";
+import { toast } from "@/lib/toast";
+import {
   STATUS_BADGE_VARIANT,
   STATUS_LABELS,
   getEffectiveStatus,
@@ -88,6 +94,7 @@ export default function SandboxDetailPage() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
@@ -298,18 +305,30 @@ export default function SandboxDetailPage() {
   };
 
   const handleStop = async () => {
+    if (lifecycleBusy) return;
+    setLifecycleBusy("stop");
     try {
       const resp = await fetch(`/api/sandbox/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stop" }),
       });
-      if (resp.ok) {
-        const data = await resp.json();
-        setInstance(data.instance);
+      const result = await classifySandboxLifecycleResponse(resp, "Failed to stop sandbox");
+      if (result.kind === "outcome_unknown") {
+        setError(sandboxLifecycleMessage(result));
+        toast.warning(sandboxLifecycleMessage(result));
+        return;
       }
+      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
+      await fetchInstance();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to stop");
+      const message = err instanceof TypeError
+        ? sandboxLifecycleTransportUnknown("stop").message
+        : err instanceof Error ? err.message : "Failed to stop";
+      setError(message);
+      if (err instanceof TypeError) toast.warning(message);
+    } finally {
+      setLifecycleBusy(null);
     }
   };
 
@@ -362,13 +381,26 @@ export default function SandboxDetailPage() {
   };
 
   const handleDelete = async () => {
+    if (lifecycleBusy) return;
+    setLifecycleBusy("delete");
     try {
       const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-      if (resp.ok || resp.status === 204) {
-        router.push("/sandbox");
+      const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
+      if (result.kind === "outcome_unknown") {
+        setError(sandboxLifecycleMessage(result));
+        toast.warning(sandboxLifecycleMessage(result));
+        return;
       }
+      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
+      router.push("/sandbox");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      const message = err instanceof TypeError
+        ? sandboxLifecycleTransportUnknown("delete").message
+        : err instanceof Error ? err.message : "Failed to delete";
+      setError(message);
+      if (err instanceof TypeError) toast.warning(message);
+    } finally {
+      setLifecycleBusy(null);
     }
   };
 
@@ -437,11 +469,13 @@ export default function SandboxDetailPage() {
             label: "+1h",
             icon: Clock,
             onPress: () => handleExtend(3600),
+            disabled: lifecycleBusy !== null,
           },
           {
-            label: "Stop",
+            label: lifecycleBusy === "stop" ? "Stopping…" : "Stop",
             icon: Square,
             onPress: () => void handleStop(),
+            disabled: lifecycleBusy !== null,
           },
         ]
       : []),
@@ -455,10 +489,11 @@ export default function SandboxDetailPage() {
       },
     },
     {
-      label: "Delete",
+      label: lifecycleBusy === "delete" ? "Deleting…" : "Delete",
       icon: Trash2,
       onPress: () => setDeleteOpen(true),
       destructive: true,
+      disabled: lifecycleBusy !== null,
     },
   ];
 
@@ -1234,7 +1269,10 @@ export default function SandboxDetailPage() {
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" disabled={lifecycleBusy !== null} onClick={() => {
+              setDeleteOpen(false);
+              void handleDelete();
+            }}>
               Delete Sandbox
             </Button>
           </DialogFooter>
