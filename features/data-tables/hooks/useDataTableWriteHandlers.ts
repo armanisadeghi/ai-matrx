@@ -28,6 +28,11 @@ import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRu
 import { normalizeCellValue } from "../components/EditableCell";
 import { updateTableMetadata, upsertCell } from "../service";
 import { isServiceFailure } from "../types";
+import {
+  describeValidationRules,
+  parseValidationRules,
+  validateCellValue,
+} from "../validation";
 
 /** Hard ceiling on the authored description. */
 const MAX_DESCRIPTION_CHARS = 2000;
@@ -36,6 +41,13 @@ export interface DataTableWriteField {
   field_name: string;
   display_name: string;
   data_type: string;
+  /**
+   * The column's raw `validation_rules` jsonb, straight off the field row. Left
+   * unparsed here on purpose — the viewer hands these handlers the field rows it
+   * loaded, and re-shaping them on the way in would be a second place for the
+   * rule model to drift from `validation.ts`.
+   */
+  validation_rules?: unknown;
 }
 
 export interface DataTableWriteRow {
@@ -238,6 +250,27 @@ export function useDataTableWriteHandlers(
               `cell_value.value parsed to ${describe(normalized)}, but column "${fieldName}" is an "array" column. Send a JSON array.`,
             );
           }
+        }
+
+        // The column's own validation rules. An agent gets the SAME refusal a
+        // person gets, worded for a reader who can act on it: the rule it broke,
+        // and every rule the column carries, so the retry is informed rather
+        // than a second guess. `unique` is answered against the rows on screen —
+        // the only rows this handler is allowed to reason about at all.
+        const rules = parseValidationRules(field.validation_rules);
+        const verdict = validateCellValue({
+          rules,
+          dataType: field.data_type,
+          value: normalized,
+          existingValues: live.visibleRows
+            .filter((r) => r.id !== rowId)
+            .map((r) => r.data?.[fieldName]),
+        });
+        if (!verdict.ok) {
+          const all = describeValidationRules(rules);
+          throw new Error(
+            `cell_value.value ${JSON.stringify(raw)} is refused by column "${fieldName}": ${verdict.reason}. This column's rules are: ${all.join("; ")}. Send a value that satisfies them, or tell the user the rule needs changing — an agent does not relax a column's validation to get a write through.`,
+          );
         }
 
         const result = await upsertCell({

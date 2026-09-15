@@ -242,9 +242,13 @@ export function AudioImportDialog({
   return (
     <Dialog
       open={open}
+      modal={false}
       onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Import audio</DialogTitle>
           <DialogDescription>
@@ -453,4 +457,3 @@ function SubmitButton({
     </button>
   );
 }
-

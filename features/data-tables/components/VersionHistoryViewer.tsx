@@ -338,7 +338,8 @@ function VersionCard({
   onRevertField: (fieldName: string, prev: unknown) => void;
   onCopy: () => void;
 }) {
-  const { change_kind, changed_at, changed_by, data, prior_data } = version;
+  const { change_kind, changed_at, changed_by, data, prior_data, reason } =
+    version;
   const diff = computeDiff(prior_data, data, change_kind);
   const restoreBusy = busyKey === `restore-${version.id}`;
   // Restoring the current (non-delete) version is a no-op — hide it there.
@@ -351,6 +352,7 @@ function VersionCard({
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <ChangeKindBadge kind={change_kind} />
+          <ReasonBadge reason={reason} />
           {isCurrent && !rowDeleted && (
             <Badge variant="outline" className="text-[10px]">
               Current
@@ -468,6 +470,36 @@ function ChangeKindBadge({ kind }: { kind: RowVersion["change_kind"] }) {
   return (
     <Badge variant="destructive" className="gap-1">
       <Trash2 className="size-3" /> Deleted
+    </Badge>
+  );
+}
+
+/**
+ * Why this version exists, when the writer knew (DD-244).
+ *
+ * `type_change:<from>→<to>` is the one that matters: this version holds a value
+ * a column type change could not keep, and it is the ONLY surviving copy — the
+ * grid cell beside it is empty. Name it so the Restore button next to it reads
+ * as the remedy instead of an unexplained old snapshot. NULL is an ordinary
+ * edit and says nothing, never "unknown".
+ */
+function ReasonBadge({ reason }: { reason: string | null }) {
+  if (!reason) return null;
+  const typeChange = reason.match(/^type_change:(.+)$/);
+  if (typeChange) {
+    return (
+      <Badge
+        variant="outline"
+        className="gap-1 border-amber-500/50 text-[10px] text-amber-700 dark:text-amber-400"
+        title={`This value could not become the new column type, so it was emptied from the grid and kept here. Restore brings it back.`}
+      >
+        <AlertCircle className="size-3" /> Column type changed ({typeChange[1]})
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[10px]" title={reason}>
+      {reason}
     </Badge>
   );
 }

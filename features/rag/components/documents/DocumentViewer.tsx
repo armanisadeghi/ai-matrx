@@ -284,14 +284,17 @@ function BindButton({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
           <Database className="h-3.5 w-3.5" />
           Data stores
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md p-0">
+      <DialogContent
+        className="max-w-md p-0"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader className="px-4 pt-4 pb-2 border-b">
           <DialogTitle className="text-sm flex items-center gap-2">
             <Database className="h-4 w-4" />

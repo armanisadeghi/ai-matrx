@@ -299,8 +299,11 @@ export function NewConversationDialog({
     debouncedSearchQuery === searchQuery;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85dvh] flex flex-col p-0 gap-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent
+        className="sm:max-w-md max-h-[85dvh] flex flex-col p-0 gap-0"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader className="px-4 pt-4 pb-2 flex-shrink-0">
           <DialogTitle>New Conversation</DialogTitle>
           <DialogDescription>

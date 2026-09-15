@@ -59,6 +59,7 @@ import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
 import { CanvasSourceView } from "./CanvasSourceView";
 import { canvasTypeHasSource } from "./canvasSource";
 import { CanvasNavigation } from "./CanvasNavigation";
+import { shouldShowCanvasSwitcher } from "./canvasSwitcher";
 import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
 import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
 import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
@@ -205,8 +206,12 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   // Header layout: title (left) | view toggle (center) | actions (right).
   // Navigation chip only shows in the single/top pane to avoid two competing
   // history pickers when split.
-  const showNavigation =
-    paneRole !== "bottom" && allItems.length > 1 && !isSplit;
+  // THE SWITCHER RULE lives in `canvasSwitcher.ts` so a guard can assert it.
+  const showNavigation = shouldShowCanvasSwitcher({
+    paneRole,
+    itemCount: allItems.length,
+    isSplit,
+  });
 
   // Primary pane header (single or top in split): put-away + avatar live here
   // beside preview/source and the other actions — not a separate shell row.

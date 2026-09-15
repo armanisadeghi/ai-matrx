@@ -33,7 +33,7 @@
  */
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { useRealtimeChannel } from "@ai-matrx/data/react";
 import { supabase } from "@/utils/supabase/client";
@@ -59,17 +59,42 @@ export type TableRealtimeEvent = {
   row: TableRealtimeRow | null;
 };
 
+/** The dataset row's own columns another editor can change under the viewer. */
+export type TableRealtimeTableRow = {
+  id?: string;
+  table_name?: string;
+  description?: string | null;
+  metadata?: unknown;
+  updated_at?: string;
+};
+
 export function useTableRealtime(
   tableId: string | null | undefined,
   onChange: (event: TableRealtimeEvent) => void,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    /**
+     * The DATASET row itself changed (name, description, `metadata.style` —
+     * the colors). Same channel as the rows: one channel per feature.
+     * Our own style writes echo back here too; the caller adopts the row as
+     * the server truth, which is what it already holds locally, so the echo
+     * costs a re-render and nothing else.
+     */
+    onTableChange?: (row: TableRealtimeTableRow) => void;
+  },
 ) {
   const enabled = options?.enabled ?? true;
 
   // Held in a ref so the subscription's lifetime is tied to the TABLE, not to
   // the identity of the handler.
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const onTableChangeRef = useRef(options?.onTableChange);
+  // Written in an effect, never during render (React Compiler rule); the
+  // handlers are only ever read at event time, after the commit.
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onTableChangeRef.current = options?.onTableChange;
+  });
 
   const bindings = useMemo(
     () => [
@@ -97,6 +122,17 @@ export function useTableRealtime(
             rowId: newRow?.id ?? oldRow?.id ?? null,
             row: newRow && Object.keys(newRow).length > 0 ? newRow : null,
           });
+        },
+      },
+      {
+        event: "UPDATE" as const,
+        schema: "workbench",
+        // realtime-publication: workbench.udt_datasets
+        table: "udt_datasets",
+        filter: `id=eq.${tableId ?? ""}`,
+        onChange: (payload: { new?: unknown }) => {
+          const row = (payload.new ?? null) as TableRealtimeTableRow | null;
+          if (row && Object.keys(row).length > 0) onTableChangeRef.current?.(row);
         },
       },
     ],

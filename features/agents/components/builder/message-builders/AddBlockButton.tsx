@@ -542,8 +542,11 @@ export function BlockRow({
             </div>
           </div>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl bg-background border border-border">
+        <Dialog open={open} onOpenChange={setOpen} modal={false}>
+          <DialogContent
+            className="max-w-2xl bg-background border border-border"
+            onInteractOutside={(event) => event.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />

@@ -281,7 +281,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
   - `udt_upsert_cell(p_table_id, p_row_id, p_field_name, p_value)` — surgical `jsonb_set` write.
   - `udt_bulk_write(p_table_id, p_operations jsonb[])` — one txn; ops `insert|update|cell|delete`.
   - `udt_change_field_type(p_table_id, p_field_id, p_new_type, p_strategy)` — rewrites every
-    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`.
+    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`. 🚨 **A value that
+    cannot become the new type goes to the row's history WITH the reason before its cell is
+    emptied** (`reason = 'type_change:<from>→<to>'`, Data Doctrine Rule 3), in the same
+    transaction; the call RAISES and changes nothing if fewer values reach history than it is
+    about to empty. Returns `values_moved_to_history` + `history_reason` — every screen that
+    runs a type change MUST say the number and the way back (DD-244).
+  - `udt_cast_jsonb_value(p_value, p_new_type)` — the ONE cast rule (SQL NULL = does not fit),
+    so "does this fit?" and "what does it become?" can never disagree.
 
 **Key types**
 - Generated Supabase types: `types/database.types.ts` (regenerate with `pnpm db-types`).
@@ -309,9 +316,15 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 **3. Change a column's type**
 - Trigger: user changes a field from `string` to `integer` in the column editor.
 - Path: `udt_change_field_type(table_id, field_id, 'integer', 'cast_or_null')`.
-- Walks every row, rewrites the JSONB cell (regex-validates then casts; un-castable → null or
-  skip per strategy), then flips `udt_dataset_fields.data_type`.
-- Exit: `{ field_id, new_type, strategy, rows_rewritten }`.
+- Walks every row, rewrites the JSONB cell (`udt_cast_jsonb_value`; un-castable → emptied or
+  left in place per strategy), then flips `udt_dataset_fields.data_type`.
+- Under `cast_or_null`, every un-castable value is first written to that row's history carrying
+  `reason = 'type_change:string→integer'` — the history row is the ONLY surviving copy, and the
+  call refuses outright (rolling back) if it cannot prove the history landed.
+- Exit: `{ field_id, new_type, strategy, rows_rewritten, rows_skipped, rows_total,
+  values_moved_to_history, history_reason }`. `TableConfigModal` shows the count, says the values
+  are in each row's history, and names Restore as the way back; `VersionHistoryViewer` badges that
+  version "Column type changed (string→integer)".
 
 **4. Validation enforcement (opt-in)**
 - Trigger: a dataset is set to `validation_mode='strict'` (new imports may default to strict).
@@ -392,8 +405,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 - **Realtime fanout.** `udt_dataset_rows` is in the `supabase_realtime` publication — a 10k-row
   import emits 10k events. Importers MUST batch via `udt_bulk_write`, and only the UI viewing a
   given dataset should subscribe. Do not subscribe app-wide.
-- **Version table growth.** Every cell edit appends to `udt_dataset_row_versions`. No retention
-  policy yet (P2). Heavy agent traffic will grow it quickly — budget for archival.
+- **Version retention is a knob, per organization, raise-only.** `udt_dataset_row_versions_trim_scoped`
+  (the weekly `udt_dataset_row_versions_trim_weekly` cron calls the zero-arg wrapper) keeps the
+  latest 2 versions of every row plus everything newer than that organization's
+  `extensibility.user_tables.history_retention_floor_days` — **default 30 days, `raise_only`**
+  (Data Doctrine Rule 10). It was a hardcoded platform-wide **14 days** until DD-244, which
+  together with `cast_or_null` meant the only copy of a value a type change could not keep was
+  deleted two weeks later. Heavy agent traffic still grows the table — budget for archival.
+  Guard: `pnpm check:udt-history` (`scripts/check-udt-history-honesty.ts`).
 - **`udt_change_field_type` validates against the *pre-change* type** during the row rewrite
   (rows are rewritten before the field's `data_type` flips). Run type changes on permissive
   datasets; on strict datasets with un-castable required values it can conflict. Documented
@@ -806,10 +825,14 @@ signed-in user is a viewer through the platform-global tier, super admins can ed
 `scripts/seed-udt-example-tables.ts` (three tables: Project Tracker — every column
 format, color-by Status, a rule, manual highlights; Product Catalog — rules on stock;
 Team Directory — color-by Department on cells; plus one shared pick list for the
-dependent Team column). ⚠️ Seeding needs the seeding admin to be a MEMBER of the system
-org: `udt_datasets.std_insert` requires `iam.has_org_access(organization_id)`, which is
-pure membership, and the system org had zero members on 2026-09-14. Add the membership
-through the super-admin API (`POST /api/admin/users/organizations`) first.
+dependent Team column). Seeded live 2026-09-14 (Project Tracker `ce73458f`, Product
+Catalog `437ad3e2`, Team Directory `6a4b2950`). The first run was refused by RLS because
+`udt_datasets.std_insert` needs `iam.has_org_access(organization_id)`, which was pure
+membership, and the system org has no members BY DESIGN (Arman: "if something is requiring
+it to have a user before it can store things, that is the problem"). Fixed at the class:
+`migrations/iam_org_access_platform_admins_manage_global_system_org.sql` — the org lane
+(`iam.has_org_access_for` / `my_orgs`) admits a super admin on a `global_readable` system
+org, the write-side twin of the platform-global read tier. `--reset` rebuilds an example.
 
 ## Right-click menu additions (2026-09-14, second pass)
 
@@ -819,16 +842,131 @@ the columns at and after that slot by one), **Highlight column ▸**, **Color ro
 column** / **Stop coloring…** (disabled with the reason on non-choice columns), **Table
 colors…**. Cell: **Highlight cell ▸**. Highlights show a ✓ on the color already applied.
 
-**Documented, not built (talk first):** multi-cell RANGE selection (shift-click / drag /
-shift-arrows → copy, clear, fill, paste over a range — the Excel gesture; also the
-natural "send these cells to an agent" scope), and ROW / COLUMN selection by clicking the
-row number or header (today rows select via checkboxes and columns have no selection).
-Both change `grid-selection.ts` from a single address to an anchor+focus range and are
-a day of careful work each; the selection model was deliberately left single-cell here.
+## Range selection — cells, rows, columns (2026-09-14, Arman: "go ahead and build those")
+
+A selection is an ANCHOR (the ringed cell) plus an optional FOCUS (`CellRange` in
+`grid-selection.ts`, resolved against the grid's current order so a re-sort cannot
+move it). Gestures: **shift-click** extends; **press-and-drag** across cells sweeps
+(`select-none` on the grid while dragging); **shift+arrows** grow the range;
+**click a header's own surface** (not its sort label / menu) or **Ctrl/Cmd+Space**
+selects the column; **click beside a row's checkbox** or **Shift+Space** selects the
+row; **Cmd/Ctrl+A** selects the page. Escape collapses the range first, then clears.
+Copy / cut / Delete / paste act on the range: copy writes the block as TSV
+(Excel-paste-ready), Delete or cut clears every cell in ONE `udt_bulk_write` with each
+cell on the undo stack, pasting ONE value over a range FILLS it, a block still lands at
+the anchor, and **Cmd-D / "Fill down"** copies the range's first row down. Right-click
+inside the range keeps it and the Cell section becomes "Cells · N selected" (cut / clear /
+paste over / fill down / highlight N cells). The ticked-checkbox rows are a separate
+model (bulk actions) and stay that way. **Agents see both:** `selected_range_tsv` (+
+`selected_range_cell_count`, a header line of machine field names first) and
+`selected_rows_json` on the `matrx-user/data-tables` surface — "these cells" / "these
+rows" now mean something to an agent.
+
+**Live colors.** `useTableRealtime` carries a second binding on the SAME channel —
+`workbench.udt_datasets` UPDATE for this table id — so a rename, a description or a
+color change by another editor lands without a reload (own writes echo harmlessly: the
+row IS what the grid already holds). Publication verified by `pnpm check:realtime-publication`.
+
+## Validation rules — what a column ACCEPTS (2026-09-14)
+
+Three questions can be asked of a column, and the Table Settings card now asks
+all three in one row: what it **Stores** (the storage type), what it **Shows as**
+(the display format), and what its **Rules** accept.
+
+The rules live on `workbench.udt_dataset_fields.validation_rules` (jsonb — a
+column that existed since the v2 backbone and was read by nothing). The model,
+the parser and the judge are ONE pure module: [`validation.ts`](./validation.ts).
+Champions: Excel's data validation (a rule per column; an invalid entry is
+refused *with the reason*) and Airtable (type-level only — we go past it).
+
+```ts
+type ValidationRules = {
+  required?: boolean;     // MIRROR of is_required — never stored, never written
+  min?: number; max?: number;                  // number-ish columns
+  minLength?: number; maxLength?: number;      // text-ish columns
+  pattern?: string; patternHint?: string;      // JS/PG-compatible, anchored by the author
+  allowedValues?: string[];                    // NON-choice columns only
+  unique?: boolean;                            // checked by the caller, never by the trigger
+};
+```
+
+**The four laws.**
+
+1. **`required` is not stored here.** The column already declares `is_required`
+   and the card already has the Req checkbox. `parseValidationRules` never
+   invents the key and `serializeValidationRules` always strips it. One fact,
+   one home.
+2. **An empty value is never a violation.** Emptiness is `is_required`'s
+   question, asked once, by whoever owns the whole row. Otherwise a `min: 0`
+   would quietly make every optional number column mandatory.
+3. **A rule judges what the user is WRITING, never what is already stored.**
+   Existing values that break a new rule are kept, never rewritten, and render
+   in the SAME amber THE FALLBACK LAW already uses for a format mismatch —
+   `<FormattedFieldValue validationRules>`, one amber, one voice. Declaring a
+   rule over existing data is how a user FINDS the values that do not fit,
+   exactly as declaring a choice column's options is.
+4. **`allowedValues` is refused on a choice column.** Its options live in its
+   format, are offered in the picker, and an off-list value there is legal and
+   amber by design. A second list would be a second vocabulary for one column.
+   `validateCellValue` skips the rule when the format is `choice`/`multi_choice`
+   and `ColumnValidationEditor` does not offer it.
+
+**Where it is enforced — the browser first, the database as a backstop.**
+
+| Path | File | What refusal looks like |
+|---|---|---|
+| Inline cell edit | `components/EditableCell.tsx` | Toast with the reason; the editor STAYS OPEN holding what was typed (same as a server refusal) |
+| Add row | `components/user-generated-table-data/AddRowModal.tsx` | Inline red line under that field; the rules print under every field that has them |
+| Edit row | `components/user-generated-table-data/EditRowModal.tsx` | Same |
+| Agent write (`cell_value`) | `hooks/useDataTableWriteHandlers.ts` | THROWS the reason plus every rule the column carries, so the retry is informed |
+| Database | `public.udt_validate_row` → `public.udt_validate_cell_rules` | **`validation_mode='strict'` ONLY** |
+
+Client enforcement is unconditional — it does not consult `validation_mode`,
+because strict mode is a database backstop, not the user's error message. The
+DB half keeps the standing invariant intact: permissive stays a pure
+passthrough (§ Invariants).
+
+**The reason strings are the product, and the two engines must agree on them
+word for word.** `features/data-tables/validation.ts` and
+`public.udt_validate_cell_rules(p_rules jsonb, p_value jsonb, p_data_type text)`
+are twins: `Must be at least 0`, `Must be at most 100`, `Must be at least 3
+characters (this is 2)`, `Must match the pattern ###-####`, `Must be one of:
+Red, Green, Blue`. The TS half is pinned by
+`__tests__/validation.test.ts` (39 cases); the SQL half by a DO block inside
+`migrations/udt_validation_rules_strict_enforcement.sql` (26 cases) that runs
+in the same transaction, so the migration cannot land if the wording drifts.
+
+**`unique` is NOT enforced by the trigger, on purpose.** A cross-row check
+inside a per-row BEFORE trigger cannot see a concurrent insert — it would be a
+guarantee that is not one — and it walks the table on every write. It is checked
+by the caller against the rows it holds (`existingValues`), which catches the
+common mistake honestly; the editor says so in as many words. A real guarantee,
+if one is ever wanted, is a unique expression index, not a trigger.
+
+**Saving.** Rules ride the SAME write every other column property uses —
+`update_user_table_config`'s `p_field_updates` has always accepted
+`validation_rules`. That RPC COALESCEs the column, so `{}` is the only way to
+CLEAR rules; `serializeValidationRules({})` returns exactly that. No new RPC.
+
+**Agents can see the rules.** `column_list` entries gain `validation?: string[]`
+— the same plain-English phrases the row forms print (`describeValidationRules`)
+— so an agent reads the rule instead of discovering it by being refused.
+
+**Not built (said plainly).** The Table Settings card does NOT show "N values
+don't fit". `udt_table_profile` returns `top_values`, not every value, so a
+count derived from it would be a confident number over a partial set — the exact
+failure § Column shape exists to prevent. A real count needs its own RPC and is
+not in this pass.
 
 ## Change log
 
-- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. NOT done: the example tables are not seeded yet (system-org membership, above); realtime for style changes.
+- `2026-09-14` — **DD-244: the grid's live data-loss path is closed.** A column type change no longer empties a cell without keeping the value, and row history is no longer trimmed below Arman's ruled 30-day floor. Migration `migrations/dd244_udt_history_reason_and_retention_floor.sql` (applied + ledgered `2026-09-15 03:57:51+00`, checksum `051bc808…`): new `workbench.udt_dataset_row_versions.reason`; `udt_log_row_version` stamps it from the transaction-local `matrx.udt_version_reason`; new `udt_cast_jsonb_value` is the ONE cast rule; `udt_change_field_type` counts un-castable values, stamps `type_change:<from>→<to>`, PROVES the history landed (and raises, rolling back, if it did not) and returns `values_moved_to_history` + `history_reason`; new knob `extensibility.user_tables.history_retention_floor_days` (30 days, `raise_only`, organization-overridable); `udt_dataset_row_versions_trim_scoped` reads it per organization and the cron's zero-arg wrapper delegates (cron job 13 untouched). UI: `TableConfigModal` says the count and names Restore as the way back (and its pre-change confirm no longer claims values just "become null"); `VersionHistoryViewer` badges that version "Column type changed (string→integer)". Guard `pnpm check:udt-history` / `:self-test` (`scripts/check-udt-history-honesty.ts`) — proven RED on the pre-fix bodies (`column "reason" does not exist`), GREEN on all five checks after. Verified: the live functions by SELECT; a lowering override refused live (`must be >= 30`); `pnpm db-types` regenerated; `pnpm check:parse` + `tsc --noEmit` clean for every touched file. NOT verified by me: the live browser dialog on production (a separate verifier owns that), and the weekly cron's next real run.
+
+- `2026-09-14` — **Column validation rules.** See § Validation rules. New: `features/data-tables/validation.ts` (the ONE rule model), `features/data-tables/components/ColumnValidationEditor.tsx` (the Rules popover on each Table Settings column card), `migrations/udt_validation_rules_strict_enforcement.sql` (new pure helper `public.udt_validate_cell_rules`; `public.udt_validate_row` consults it under strict mode only). Enforced client-side in `EditableCell`, `AddRowModal`, `EditRowModal` and the agent `cell_value` write target regardless of `validation_mode`; existing violating values render in the format system's existing amber. Verified: `npx jest features/data-tables/__tests__/validation.test.ts` 39/39 green; the migration's in-transaction DO block 26/26 (it cannot apply otherwise); applied and ledgered at `2026-09-15 03:46:40+00`, checksum `10db619e…`; `public.udt_validate_cell_rules` called live as the `authenticated` role returned `Must be at most 100` / `Must be one of: Red, Blue` / `null` for an empty value; `npx tsc --noEmit -p tsconfig.typecheck.json` clean for every touched file. NOT verified: the live browser — the grid, the row modals and the Rules popover were not exercised on `/data/[id]`, and the strict-mode trigger has not been tripped by a real row write. NOT wired (the viewer is owned by another session this turn): `UserTableViewer` still has to pass `validationRules` / `existingValues` to `EditableCell`, `validationRules` to `FormattedFieldValue`, and `validationRules` on each `surfaceFields` entry — until it does, the grid cell, the amber and the agent's `column_list.validation` are inert. The `EditRowModal`, `AddRowModal`, agent `cell_value`, Table Settings and database paths are complete.
+
+- `2026-09-14` — **Range selection (cells / rows / columns), live colors, wide-table layout.** See § Range selection. Verified live: shift-click made a 3-cell range and Cmd-C wrote "Beijing\nOttawa\nBrasília"; a drag selected a 2×4 block with no text selection; clicking the Capital header selected the column and copied 6 lines; right-click inside the range showed "Cells · 6 selected"; an SQL change to `metadata.style` on the open table repainted the rows within a second with no reload. Wide tables (over eight visible columns) now keep natural column widths and scroll sideways instead of overlapping text (the 26-column example was unreadable). The org lane fix that unblocked the example seed is in `migrations/iam_org_access_platform_admins_manage_global_system_org.sql`. NOT verified in the isolated browser: a real second user's session for the live-color path (the SQL update stood in for it).
+
+- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. The example tables are seeded (see § Examples); realtime for style changes is still open.
 
 - `2026-09-14` — **Copy / cut / paste on a selected cell (spreadsheet blocks included), choice cells select-then-open, and the grid's first right-click menu.** See § Grid clipboard + right-click menu. Verified live on `/data/[id]` in the isolated browser: Cmd-C on a plain and on a choice cell wrote the cell text; a native paste event over a cell wrote it and Cmd-Z restored it; a two-row block on the last row raised the "Add 1 new row?" confirm, Skip wrote the fitting cell; the menu opened with the Cell / Row / Column sections and no INERT / VALUE MAPPING scream. Not verifiable in the isolated browser (it denies clipboard read and fires no native clipboard events): the Cmd-V async fallback was proven with a stubbed `readText`; the real-browser prompt path is untested.
 

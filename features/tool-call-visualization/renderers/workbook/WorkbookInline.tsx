@@ -4,8 +4,10 @@ import { useMemo } from "react";
 import { Sheet, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { parseWorkbook } from "./parseWorkbook";
+import { isTerminal } from "../_shared";
 import { WorkbookGrid } from "./WorkbookGrid";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { EmptyResultCard } from "../_shared-entity/EmptyResultCard";
 
 /**
  * Inline renderer for the `workbook` tool — a polished entity card with a small
@@ -20,7 +22,38 @@ export function WorkbookInline({
   onToggleExpanded,
 }: ToolRendererProps) {
   const wb = useMemo(() => parseWorkbook(entry), [entry]);
-  if (!wb.id && !wb.name) return null;
+  if (!wb.id && !wb.name) {
+    if (!isTerminal(entry)) return null;
+    return (
+      <EmptyResultCard
+        expanded={expanded}
+        onToggleExpanded={onToggleExpanded}
+        icon={Sheet}
+        accent="green"
+        title="Workbook"
+        did="Finished a workbook action"
+        remedy={
+          <>
+            Your workbooks are all listed at{" "}
+            <a
+              href="/workbooks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              /workbooks
+            </a>
+            {onOpenOverlay ? ", and the full tool result is under Expand." : "."}
+          </>
+        }
+        actions={
+          onOpenOverlay
+            ? [{ label: "Expand", icon: Maximize2, onSelect: () => onOpenOverlay() }]
+            : []
+        }
+      />
+    );
+  }
 
   const name = wb.name ?? "Workbook";
   const href = wb.id ? `/workbooks/${wb.id}` : undefined;

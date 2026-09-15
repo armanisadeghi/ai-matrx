@@ -287,7 +287,10 @@ export function CmsPageAiActionDialog({
   // renders above this surface without changing WindowPanel itself.
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className="max-h-[88dvh] overflow-y-auto sm:max-w-xl"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <SurfaceRuntimeProvider
           surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
           getScope={buildScope}

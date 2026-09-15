@@ -30,6 +30,9 @@ import {
   resolveCanvasSourceFromData,
   type CanvasSourceText,
 } from "./canvasSource";
+import { getLatestDocumentSnapshot } from "@/features/data-tables/document-service";
+import { isServiceFailure } from "@/features/data-tables/types";
+import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
 
 function SourceText({ source }: { source: CanvasSourceText }) {
   return (
@@ -122,7 +125,92 @@ function PersistedCanvasSource({
   return <SourceText source={source} />;
 }
 
+/**
+ * A cloud document's source is its MARKDOWN, read back from the latest Univer
+ * snapshot — never the `{ documentId }` pointer the canvas holds. The document
+ * row is the truth; this view reads it the same way the editor does.
+ */
+function DocumentCanvasSource({ documentId }: { documentId: string }) {
+  // Remounted (not reset with a setState) whenever the document or the retry
+  // changes, so the load effect never has to push "loading" synchronously.
+  const [attempt, setAttempt] = React.useState(0);
+  return (
+    <DocumentCanvasSourceLoad
+      key={`${documentId}:${attempt}`}
+      documentId={documentId}
+      onRetry={() => setAttempt((n) => n + 1)}
+    />
+  );
+}
+
+function DocumentCanvasSourceLoad({
+  documentId,
+  onRetry,
+}: {
+  documentId: string;
+  onRetry: () => void;
+}) {
+  const [state, setState] = React.useState<
+    | { phase: "loading" }
+    | { phase: "error"; reason: string }
+    | { phase: "ready"; markdown: string }
+  >({ phase: "loading" });
+
+  React.useEffect(() => {
+    let active = true;
+    void (async () => {
+      const res = await getLatestDocumentSnapshot(documentId);
+      if (!active) return;
+      if (isServiceFailure(res)) {
+        setState({ phase: "error", reason: res.error });
+        return;
+      }
+      const markdown = univerDocToMarkdown(res.data?.snapshot);
+      setState({ phase: "ready", markdown });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [documentId]);
+
+  if (state.phase === "loading") {
+    return (
+      <div className="flex h-full items-center justify-center" role="status">
+        <MatrxMiniLoader />
+        <span className="sr-only">Loading document source</span>
+      </div>
+    );
+  }
+  if (state.phase === "error") {
+    return (
+      <SourceUnavailable
+        reason={`The document's content could not be read (${state.reason}).`}
+        onRetry={onRetry}
+      />
+    );
+  }
+  if (!state.markdown.trim()) {
+    return (
+      <SourceUnavailable reason="This document is empty — there is no text to show yet." />
+    );
+  }
+  return <SourceText source={{ text: state.markdown, language: "markdown" }} />;
+}
+
 export function CanvasSourceView({ content }: { content: CanvasContent }) {
+  if (content.type === "udt_document") {
+    const documentId =
+      typeof content.data?.documentId === "string"
+        ? content.data.documentId
+        : "";
+    if (!documentId) {
+      return (
+        <SourceUnavailable reason="This pane has no document id, so its source cannot be read." />
+      );
+    }
+    return <DocumentCanvasSource documentId={documentId} />;
+  }
+
   const pointerId = isMaterializedArtifactId(content.metadata?.canvasItemId)
     ? content.metadata?.canvasItemId
     : readArtifactPointerId(content.data);

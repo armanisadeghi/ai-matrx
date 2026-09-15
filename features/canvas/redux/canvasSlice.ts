@@ -45,6 +45,16 @@ export type CanvasContentType =
   // `{ initialProfileId?, runId? }`; the body holds live run/screenshot/handoff
   // state (never serializable) — NON_PERSISTABLE, like the editor surfaces.
   | "cloud_browser"
+  // A CLOUD DOCUMENT (`workbench.udt_documents`) hosted in the canvas pane.
+  // `data` is a pointer `{ documentId }`; the body mounts the canonical
+  // `DocumentEditor` — the very component `/documents/[id]` mounts — so the
+  // canvas hosts the document rather than being a second editor for it.
+  //
+  // This type is the DOOR the 2026-09-14 production defect was missing: the
+  // `document` tool created a row, the agent announced "Created and opened as
+  // a document artifact", and nothing could open because the canvas had no
+  // type that could host a `udt_document`.
+  | "udt_document"
   // Live SANDBOX surface hosted in the canvas pane — Terminal / Files /
   // Activity for the box bound to a conversation. `data` is a pointer
   // `{ sandboxRowId, fallbackName? }`; the body holds a live pty and a live
@@ -74,6 +84,12 @@ export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   // Live sandbox: a pty and a file tree against a running box. A canvas_items
   // row would freeze a pointer to a box that is gone by the time it is read.
   "sandbox",
+  // A cloud document owns its OWN append-only snapshot history
+  // (`udt_document_snapshots`) and saves itself as the user types. A
+  // `canvas_items` row would freeze a stale copy beside the live one, so the
+  // pane is a pointer and only a pointer. Unlike the other live surfaces it
+  // still HAS a real source — see `canvasSource.ts`.
+  "udt_document",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {

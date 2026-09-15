@@ -193,7 +193,10 @@ export function SaveContactFromSelectionDialog({
       onOpenChange={(open) => !open && onClose()}
       modal={false}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Save as contact</DialogTitle>
           <DialogDescription>

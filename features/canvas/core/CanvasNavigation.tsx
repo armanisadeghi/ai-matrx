@@ -77,7 +77,15 @@ export function CanvasNavigation({
   
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5">
+      {/* `shrink-0`: the title beside it is `flex-1` and truncates, so without
+          this the switcher is the control that gets squeezed out of a narrow
+          docked column — the one control the user needs to reach the other
+          item. `data-canvas-switcher` is the handle guards and live checks
+          look for. */}
+      <div
+        data-canvas-switcher="true"
+        className="flex shrink-0 items-center gap-0.5 bg-muted/60 rounded-lg p-0.5"
+      >
         {/* Previous Button */}
         <Tooltip>
           <TooltipTrigger asChild>

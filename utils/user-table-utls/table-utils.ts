@@ -74,6 +74,16 @@ export interface TableField extends FieldDefinition {
    * `@/lib/field-formats/format`, never by hand. See `lib/field-formats/FEATURE.md`.
    */
   metadata?: Record<string, unknown> | null;
+  /**
+   * The column's validation rules (min/max, lengths, pattern, allowed values,
+   * unique). `get_full_table` returns this column on every field row, so every
+   * surface that loads fields already holds it. Read it with
+   * `parseValidationRules` from `@/features/data-tables/validation`, never by
+   * hand — it is a jsonb column that predates the feature, and an import or an
+   * agent may have written something else into it. `required` is NOT in here:
+   * `is_required` above is that fact's one home.
+   */
+  validation_rules?: unknown;
 }
 
 export interface CreateTableParams {

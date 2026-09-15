@@ -50,6 +50,17 @@ export interface CanvasSourceText {
 const PASSTHROUGH_TYPES: ReadonlySet<string> = new Set(["image", "iframe"]);
 
 /**
+ * NON_PERSISTABLE pointer types that nevertheless have a REAL authored source
+ * of their own, read from the row they point at rather than from the canvas
+ * envelope. A cloud document is the case: it is non-persistable because the
+ * editor owns its own snapshot history, but its markdown is exactly what a
+ * person means by "Source". `CanvasSourceView` resolves it.
+ */
+const SOURCE_BEARING_POINTER_TYPES: ReadonlySet<string> = new Set([
+  "udt_document",
+]);
+
+/**
  * Types whose payload IS code/markup — print it as itself, not as markdown.
  * Value = the fence language.
  */
@@ -74,8 +85,10 @@ const CODE_LANGUAGE_BY_TYPE: Readonly<Record<string, string>> = {
  */
 export function canvasTypeHasSource(type: string): boolean {
   if (PASSTHROUGH_TYPES.has(type)) return false;
-  // Every non-persistable type is a LIVE surface — a pty, a browser session, an
-  // in-place editor. Printing its canvas envelope is exactly the defect above.
+  if (SOURCE_BEARING_POINTER_TYPES.has(type)) return true;
+  // Every other non-persistable type is a LIVE surface — a pty, a browser
+  // session, an in-place editor. Printing its canvas envelope is exactly the
+  // defect above.
   if (NON_PERSISTABLE_CANVAS_TYPES.has(type)) return false;
   return true;
 }

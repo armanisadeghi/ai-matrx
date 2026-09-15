@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { Table2, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { parseDataset, type ParsedDatasetField } from "./parseDataset";
+import { isTerminal } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { EmptyResultCard } from "../_shared-entity/EmptyResultCard";
 import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
 
 const MAX_FIELD_CHIPS = 12;
@@ -43,7 +45,41 @@ export function DatasetInline({
   onToggleExpanded,
 }: ToolRendererProps) {
   const ds = useMemo(() => parseDataset(entry), [entry]);
-  if (!ds.id && !ds.name) return null;
+  if (!ds.id && !ds.name) {
+    // In flight with nothing yet — the shell's live line is the status.
+    if (!isTerminal(entry)) return null;
+    // RESULTED with nothing. Rendering null here is the silent-failure class
+    // (see `EmptyResultCard`): the tool really ran and left no trace at all.
+    return (
+      <EmptyResultCard
+        expanded={expanded}
+        onToggleExpanded={onToggleExpanded}
+        icon={Table2}
+        accent="cyan"
+        title="Table"
+        did="Finished a table action"
+        remedy={
+          <>
+            Your tables are all listed at{" "}
+            <a
+              href="/data"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              /data
+            </a>
+            {onOpenOverlay ? ", and the full tool result is under Expand." : "."}
+          </>
+        }
+        actions={
+          onOpenOverlay
+            ? [{ label: "Expand", icon: Maximize2, onSelect: () => onOpenOverlay() }]
+            : []
+        }
+      />
+    );
+  }
 
   const name = ds.name ?? "Table";
   const href = ds.id ? `/data/${ds.id}` : undefined;

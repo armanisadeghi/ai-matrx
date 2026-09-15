@@ -4509,6 +4509,7 @@ export type Database = {
           actual_cost_usd: number | null
           attempt_count: number
           cache_read_tokens: number | null
+          cache_write_tokens: number | null
           claimed_at: string | null
           completed_at: string | null
           created_at: string
@@ -4554,6 +4555,7 @@ export type Database = {
           actual_cost_usd?: number | null
           attempt_count?: number
           cache_read_tokens?: number | null
+          cache_write_tokens?: number | null
           claimed_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -4599,6 +4601,7 @@ export type Database = {
           actual_cost_usd?: number | null
           attempt_count?: number
           cache_read_tokens?: number | null
+          cache_write_tokens?: number | null
           claimed_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -75777,6 +75780,13 @@ export type Database = {
         Args: { p_operations: Json; p_table_id: string }
         Returns: Json
       }
+      udt_cast_jsonb_value: {
+        Args: {
+          p_new_type: Database["public"]["Enums"]["field_data_type"]
+          p_value: Json
+        }
+        Returns: Json
+      }
       udt_change_field_type: {
         Args: {
           p_field_id: string
@@ -75796,6 +75806,10 @@ export type Database = {
         Returns: Json
       }
       udt_dataset_row_versions_trim: { Args: never; Returns: Json }
+      udt_dataset_row_versions_trim_scoped: {
+        Args: { p_dry_run?: boolean; p_table_id?: string }
+        Returns: Json
+      }
       udt_delete_field: {
         Args: { p_field_id: string; p_table_id: string }
         Returns: Json
@@ -75825,6 +75839,10 @@ export type Database = {
       udt_upsert_row: {
         Args: { p_data?: Json; p_row_id?: string; p_table_id: string }
         Returns: Json
+      }
+      udt_validate_cell_rules: {
+        Args: { p_data_type: string; p_rules: Json; p_value: Json }
+        Returns: string
       }
       udt_validate_row: {
         Args: { p_data: Json; p_prior: Json; p_table_id: string }
@@ -100859,6 +100877,7 @@ export type Database = {
           data: Json | null
           id: number
           prior_data: Json | null
+          reason: string | null
           row_id: string
           table_id: string
         }
@@ -100869,6 +100888,7 @@ export type Database = {
           data?: Json | null
           id?: number
           prior_data?: Json | null
+          reason?: string | null
           row_id: string
           table_id: string
         }
@@ -100879,6 +100899,7 @@ export type Database = {
           data?: Json | null
           id?: number
           prior_data?: Json | null
+          reason?: string | null
           row_id?: string
           table_id?: string
         }
