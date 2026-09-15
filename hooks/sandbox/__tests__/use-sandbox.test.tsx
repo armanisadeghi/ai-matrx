@@ -339,7 +339,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
   it.each([
     ["a 5xx response", () => ({ ok: false, status: 503, json: async () => ({ error: "upstream" }) })],
     ["a network failure", () => Promise.reject(new TypeError("offline"))],
-    ["a malformed success", () => ({ ok: true, status: 200, json: async () => ({ instance: { id: "wrong" } }) })],
+    ["a success with another sandbox's valid expiry", () => ({ ok: true, status: 200, json: async () => ({ instance: { id: "wrong-id", expires_at: "2026-10-01T00:00:00.000Z" } }) })],
   ])("reports %s as an unknown extension outcome", async (_label, response) => {
     const fetchMock = jest.fn(async () => response());
     installFetch(fetchMock);
@@ -367,6 +367,31 @@ describe("useSandboxInstances lifecycle outcomes", () => {
 
     resolveResponse({ ok: true, status: 200, json: async () => ({ instance: { id: "extend-id", expires_at: "2026-10-01T00:00:00.000Z" } }) });
     await hook.act(async () => { await first; });
+    await hook.unmount();
+  });
+
+  it("allows a different sandbox extension while another target is pending", async () => {
+    let resolveFirst: (response: ExtensionResponse) => void = () => {
+      throw new Error("First extension resolver was not initialized.");
+    };
+    const first = new Promise<ExtensionResponse>((resolve) => { resolveFirst = resolve; });
+    const fetchMock = jest.fn((input: RequestInfo | URL) =>
+      String(input).includes("sandbox-a")
+        ? first
+        : Promise.resolve({ ok: true, status: 200, json: async () => ({ instance: { id: "sandbox-b", expires_at: "2026-10-01T00:00:00.000Z" } }) }),
+    );
+    installFetch(fetchMock);
+    const hook = await renderHook(() => useSandboxInstances());
+    let firstExtension: Promise<unknown> = Promise.resolve();
+
+    await hook.act(() => { firstExtension = hook.current.extendInstance("sandbox-a"); });
+    let secondResult: Awaited<ReturnType<typeof hook.current.extendInstance>>;
+    await hook.act(async () => { secondResult = await hook.current.extendInstance("sandbox-b"); });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(secondResult).toEqual(expect.objectContaining({ id: "sandbox-b" }));
+    resolveFirst({ ok: true, status: 200, json: async () => ({ instance: { id: "sandbox-a", expires_at: "2026-10-01T00:00:00.000Z" } }) });
+    await hook.act(async () => { await firstExtension; });
     await hook.unmount();
   });
 
