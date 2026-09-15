@@ -38,7 +38,7 @@ test("emails the exact prepared artifact only to the authenticated account", asy
 
   const response = await POST(
     request({
-      label: "My <edited> view",
+      label: "My edited view",
       format: "csv",
       content: filteredAndEditedArtifact,
       to: "attacker@example.test",
@@ -50,7 +50,7 @@ test("emails the exact prepared artifact only to the authenticated account", asy
   expect(response.status).toBe(200);
   expect(emailTableExport).toHaveBeenCalledWith({
     to: "owner@matrx.test",
-    tableName: "My <edited> view",
+    tableName: "My edited view",
     format: "csv",
     content: filteredAndEditedArtifact,
   });
@@ -59,6 +59,15 @@ test("emails the exact prepared artifact only to the authenticated account", asy
 test("rejects malformed artifacts before attempting an email", async () => {
   const response = await POST(
     request({ label: "Table", format: "xlsx", content: "data" }),
+  );
+
+  expect(response.status).toBe(400);
+  expect(emailTableExport).not.toHaveBeenCalled();
+});
+
+test("rejects markup in the label before it reaches the email template", async () => {
+  const response = await POST(
+    request({ label: "<img src=x onerror=alert(1)>", format: "csv", content: "data" }),
   );
 
   expect(response.status).toBe(400);

@@ -19,6 +19,7 @@ function isEmailExportRequest(
   return (
     typeof label === "string" &&
     label.trim().length > 0 &&
+    !/[<>]/.test(label) &&
     typeof content === "string" &&
     content.length > 0 &&
     isEmailFormat(format)
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          msg: "label, format (csv, json, or markdown), and non-empty content are required",
+          msg: "A plain-text label, format (csv, json, or markdown), and non-empty content are required",
         },
         { status: 400 },
       );
