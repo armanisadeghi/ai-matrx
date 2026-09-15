@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
+import type { ReviewVocabulary } from "@/features/masterwork/review/vocabulary";
 
 export type RuleFeedbackMode = "reject" | "request";
 
@@ -30,6 +31,7 @@ export function RuleFeedbackDialog({
   open,
   onOpenChange,
   mode,
+  vocabulary = "standard",
   ruleName,
   rulebookId,
   rulebookName,
@@ -38,6 +40,12 @@ export function RuleFeedbackDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: RuleFeedbackMode;
+  /**
+   * The Expert's wording. In `ownership` the two modes ARE "not mine" and
+   * "mine but wrong", and "not mine" is a complete answer with no sentence —
+   * the caller stores the default reason. The statuses written are identical.
+   */
+  vocabulary?: ReviewVocabulary;
   ruleName: string;
   /** The Rulebook this feedback is about — stamps the dictation's origin. */
   rulebookId: string;
@@ -63,9 +71,14 @@ export function RuleFeedbackDialog({
   const shownMode = open ? mode : shown.current.mode;
   const shownRuleName = open ? ruleName : shown.current.ruleName;
 
+  const ownership = vocabulary === "ownership";
+  // "Not mine" needs no explanation to be true. Every other move does: a
+  // change request with no words tells the interviewer nothing to act on.
+  const mayBeEmpty = ownership && shownMode === "reject";
+
   const submit = async () => {
     const text = feedback.trim();
-    if (!text) return;
+    if (!text && !mayBeEmpty) return;
     setBusy(true);
     try {
       await onSubmit(text);
@@ -95,14 +108,35 @@ export function RuleFeedbackDialog({
             ) : (
               <MessageSquareWarning className="h-4 w-4 text-primary" />
             )}
-            {isReject ? "Reject this rule" : "Request changes"}
+            {isReject
+              ? ownership
+                ? "Not mine"
+                : "Reject this rule"
+              : ownership
+                ? "Mine but wrong"
+                : "Request changes"}
           </DialogTitle>
           <DialogDescription>
             {isReject ? (
+              ownership ? (
+                <>
+                  “{shownRuleName}” isn&apos;t how you do it. That alone is enough —
+                  send it as it is, or say a word about why and the interviewer
+                  will use it. Either way the rule leaves your book and lands on
+                  the next session&apos;s agenda.
+                </>
+              ) : (
+                <>
+                  Tell us why “{shownRuleName}” is wrong. Your reason goes straight to
+                  the interviewer, who will rewrite the rule for your review — or
+                  drop it entirely if it shouldn&apos;t exist.
+                </>
+              )
+            ) : ownership ? (
               <>
-                Tell us why “{shownRuleName}” is wrong. Your reason goes straight to
-                the interviewer, who will rewrite the rule for your review — or
-                drop it entirely if it shouldn&apos;t exist.
+                The idea in “{shownRuleName}” is yours, but this got it wrong. Say
+                what it should say. The rule keeps its current state; your words
+                go on the next session&apos;s agenda.
               </>
             ) : (
               <>
@@ -118,8 +152,12 @@ export function RuleFeedbackDialog({
           onChange={(e) => setFeedback(e.target.value)}
           placeholder={
             isReject
-              ? "What's wrong with it? Talk or type — the more specific, the better the rewrite…"
-              : "What should change? Talk or type…"
+              ? ownership
+                ? "Optional — say a word about why, or just send it. Talk or type…"
+                : "What's wrong with it? Talk or type — the more specific, the better the rewrite…"
+              : ownership
+                ? "What should it say instead? Talk or type…"
+                : "What should change? Talk or type…"
           }
           autoGrow
           minHeight={110}
@@ -132,9 +170,15 @@ export function RuleFeedbackDialog({
           <Button
             variant={isReject ? "destructive" : "default"}
             onClick={() => void submit()}
-            disabled={busy || !feedback.trim()}
+            disabled={busy || (!feedback.trim() && !mayBeEmpty)}
           >
-            {isReject ? "Reject with feedback" : "Send change request"}
+            {isReject
+              ? ownership
+                ? "It's not mine"
+                : "Reject with feedback"
+              : ownership
+                ? "Send my correction"
+                : "Send change request"}
           </Button>
         </DialogFooter>
       </DialogContent>

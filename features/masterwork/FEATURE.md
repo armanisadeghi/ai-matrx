@@ -154,6 +154,34 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   median, never below a number somebody picked. `RulebookSourcesPanel` renders the rows and the
   per-part "Read again", which posts `only_section` + `redistill: "replace"` to the dump lane so
   only that part's drafts are replaced. Guard: `__tests__/source-section-yields.test.ts`.
+- `review/vocabulary.ts` — THE EXPERT'S OWN WORDS for the review: "Mine / Mine but wrong / Not
+  mine" beside the neutral "Approve / Request changes / Reject". Wording ONLY — every verb, every
+  handler and every status it writes is unchanged, which is leg 1 of
+  `review/__tests__/ownership-review.test.tsx`. Knob `masterwork.review.vocabulary`
+  (`auto` | `standard` | `ownership`, default `auto`, org+user rungs, read through
+  `knob_resolve`): `auto` gives the ownership words to a Rulebook whose expertise comes from a
+  PERSON (their own intake answer about where the knowledge lives, else whether any rule came
+  from an interview, a recording, a chat import or an Oracle tap) and the neutral words to one
+  distilled from somebody else's book — because "is this rule yours?" is a question a reader
+  cannot answer.
+- `review/agenda.ts` + `review/NextSessionAgenda.tsx` — THE NEXT SESSION'S AGENDA (doctrine
+  CORE.md §5): every rule marked not-mine or mine-but-wrong, with the Expert's own words, not-mine
+  first. A reading of state that already exists, never a second store — the SAME two conditions
+  feed `agent-context/rulebookDocument.ts` (the bound document the interviewer gets before its
+  first turn) and aidream's `rulebook action=read` → `open_feedback`. Panel knob
+  `masterwork.review.agenda_panel` (boolean, default on) hides the panel only; the interviewer
+  keeps receiving the agenda, because that is a provision and not a panel.
+- `review/signature.ts` + `review/ExpertSignOff.tsx` — THE EXPERT'S SIGNATURE ON A RESULT, the
+  single most important signal we have (Arman, 2026-09-15). One tap on a finished Masterwork run
+  writes `verdict = positive` into `platform.output_feedback` through the existing
+  `upsert_output_feedback` RPC, stamped `surface_name = masterwork.expert_signature` — **no new
+  table, no new verdict word, no migration**, so the hindsight/replay loop reads a signed output
+  as a positive example with no wiring. A thumbs-down writes `negative`, captures the Expert's
+  own version as `corrected_content` on the same row, and hands it to the existing Oracle-tap
+  dialog as a rule candidate. The Conductor's answers are COUNTED, not re-instrumented: they are
+  ordinary chat messages whose column already carries the platform thumbs, so a second control
+  beside them would be the duplicate-affordance defect. The Rulebook page shows
+  "N outputs signed by the expert" beside the quick-check line.
 - `service.ts` — detail reads/writes (getRulebook, saveRules, createDraftRulebook,
   updateRulebookMeta, softDeleteRulebook, listMasterworksForRulebook). Direct supabase-js,
   RLS live, THE VIEW LAW respected.
@@ -275,6 +303,30 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   two ways.
 
 ## Change Log
+
+- `2026-09-15` — **"YES, THAT'S MINE" — the ownership review, the agenda it produces, and the
+  signature on a result.** Three things, one derivation each, no parallel system. (1) The rule
+  review speaks the Expert's words under knob `masterwork.review.vocabulary`; mine→approved,
+  not-mine→rejected (reason "Not mine." when they say nothing more), mine-but-wrong→change
+  requested, and the statuses are byte-identical to the neutral wording. "Not mine" is a complete
+  answer with no sentence — one tap. (2) Every rule in those last two states is listed on the page
+  as **Next session starts here** (knob `masterwork.review.agenda_panel`), and the SAME list is
+  named THE NEXT SESSION'S AGENDA in the bound Rulebook document and in the server's
+  `open_feedback`, so Expert and interviewer read one agenda. (3) Every rule row now carries its
+  provenance MOMENT in the row itself, through the same `formatTimeAnchor` the expanded row uses —
+  an Expert asked "is this yours?" could previously not see where it came from without opening it.
+  (4) A finished Masterwork run carries the thumbs: "Yes, that's mine" signs it, "Not right" opens
+  the correction flow whose result becomes a rule candidate. Signing lives on the Try box the
+  moment a run ends AND on every finished run in "Your recent runs", because the Try box forgets a
+  finished run on purpose and the signature must outlive a page reload.
+  Guards: `review/__tests__/ownership-review.test.tsx` (the wording maps to the same handlers; the
+  agenda is exactly the two states; a thumbs-up reaches `upsert_output_feedback` and never a
+  table) — all three proven failing on a planted break.
+  **Also fixed here, at the class:** every Supabase call in this feature rethrew the raw PostgREST
+  error object, which is not an Error and stringifies to "[object Object]" — the sentence a user
+  actually saw when Approve failed. All of them now throw `operationFailed(action, cause)`;
+  `__tests__/errors-are-sentences.test.ts` proves a refused read comes out as a sentence with the
+  raw response preserved as `cause`, and censuses the feature for the old shape.
 
 - `2026-09-15` — **THE BENCH HAS A DOOR (`encore/RunTheBench.tsx`).** The proof existed and could
   only be started from a command line, so the product could report a trial and never run one. The

@@ -214,17 +214,30 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
     (r) => r.feedback && !r.rejected && !r.retired,
   );
   if (rejected.length || changeRequests.length) {
+    // 🚨 THIS IS THE NEXT SESSION'S AGENDA (doctrine CORE.md §5): the review is
+    // "mine / not mine / mine but wrong", and the last two rows are where the
+    // next interview starts. The Rulebook page renders the SAME list from the
+    // SAME two conditions (`features/masterwork/review/agenda.ts`), so the
+    // Expert and the interviewer are always looking at one agenda.
     lines.push(
-      "\n## OPEN REVIEW FEEDBACK — the Expert is waiting on this",
-      "A REJECTED rule must be rewritten per the Expert's reason (it re-queues " +
-        "as a fresh draft) or withdrawn. A rule with requested changes must have " +
-        "exactly that change applied; its approval state is untouched.",
+      "\n## THE NEXT SESSION'S AGENDA — start here, in the Expert's own words",
+      `${rejected.length + changeRequests.length} rule(s) the Expert did not ` +
+        "claim as theirs. This is where this session begins: do NOT open with " +
+        "general questions while these are sitting here. NOT MINE means they " +
+        "do not do this — rewrite it per their reason (it re-queues as a fresh " +
+        "draft) or withdraw it, and ask what they DO do instead. MINE BUT " +
+        "WRONG means the judgment is theirs and the wording got it wrong — " +
+        "apply exactly the change they named; its approval state is untouched.",
     );
     for (const rule of rejected) {
-      lines.push(`- REJECTED · ${rule.name} [${rule.id}] — ${rule.feedback ?? "(no reason given)"}`);
+      lines.push(
+        `- NOT MINE (rejected) · ${rule.name} [${rule.id}] — ${rule.feedback ?? "(no reason given — ask)"}`,
+      );
     }
     for (const rule of changeRequests) {
-      lines.push(`- CHANGE REQUESTED · ${rule.name} [${rule.id}] — ${rule.feedback}`);
+      lines.push(
+        `- MINE BUT WRONG (change requested) · ${rule.name} [${rule.id}] — ${rule.feedback}`,
+      );
     }
   }
 

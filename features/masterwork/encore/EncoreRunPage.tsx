@@ -27,6 +27,8 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
 import { getBenchProof, UNAVAILABLE, type BenchProofState } from "./benchProof";
+import { ExpertSignOff } from "../review/ExpertSignOff";
+import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
 import { RunTheBench } from "./RunTheBench";
 import {
   getEncoreMasterwork,
@@ -277,24 +279,44 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             </h3>
             <div className="mt-2">
               {runs.map((run) => (
-                // THE DOOR IS IN THIS APP (wall W36): an Operator's finished
-                // run is read at its own permalink here, never in the author's
-                // Studio on another host.
-                <Link
+                <div
                   key={run.id}
-                  href={runHref(run.id)}
-                  className="group flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  className="flex flex-wrap items-center gap-2 rounded px-1.5 py-1"
                 >
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 shrink-0 rounded-full",
-                      RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
-                    )}
-                  />
-                  <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
-                  <span>· {runWhen(run)}</span>
-                  <SquareArrowOutUpRight className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                </Link>
+                  {/* THE DOOR IS IN THIS APP (wall W36): an Operator's finished
+                      run is read at its own permalink here, never in the
+                      author's Studio on another host. */}
+                  <Link
+                    href={runHref(run.id)}
+                    className="group flex min-w-0 flex-1 items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        RUN_STATUS_STYLES[run.status] ??
+                          "bg-muted-foreground/50",
+                      )}
+                    />
+                    <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
+                    <span>· {runWhen(run)}</span>
+                    <SquareArrowOutUpRight className="ml-1 h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </Link>
+                  {/* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
+                      the thumbs the moment a run ends, and then forgets the run
+                      on purpose — so without this, an Expert who came back an
+                      hour later had no way to say "yes, that one was mine" and
+                      the most important signal we have was lost to a page
+                      reload. Same control, same row in
+                      `platform.output_feedback`. Only a FINISHED run: there is
+                      nothing to sign on a run that failed. */}
+                  {run.status === "completed" ? (
+                    <ExpertSignOff
+                      subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+                      subjectId={run.id}
+                      showPrompt={false}
+                    />
+                  ) : null}
+                </div>
               ))}
             </div>
           </div>

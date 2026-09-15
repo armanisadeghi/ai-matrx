@@ -63,6 +63,8 @@ import {
   absentResultReason,
   readPresentedResult,
 } from "@/features/workflow-runtime/run-result/presented-result";
+import { ExpertSignOff } from "@/features/masterwork/review/ExpertSignOff";
+import { MASTERWORK_RUN_SUBJECT_TYPE } from "@/features/masterwork/review/signature";
 import {
   runIsOver,
   type WorkflowRunStatus,
@@ -778,6 +780,27 @@ export function TryMasterworkBox({
             invocation={finalInvocation}
             declaredKind={finalStep.outputKind}
             prefer="live"
+          />
+        </div>
+      ) : null}
+
+      {/* ── THE EXPERT'S SIGNATURE (Arman, 2026-09-15: a thumbs-up on a result
+          is "the most important indication we need"). One tap writes a verdict
+          row through the platform's ONE feedback path
+          (`platform.output_feedback`, subject `workflow_run`) — never a new
+          table. A thumbs-down opens the correction flow and the correction
+          becomes a rule candidate. Only on a FINISHED run: there is nothing to
+          judge while it is still working, and a control that pretends
+          otherwise is a dead control. */}
+      {runId && terminal && !failure ? (
+        <div
+          className="rounded-md border border-border bg-muted/20 px-3 py-2"
+          data-masterwork-signature="run"
+        >
+          <ExpertSignOff
+            subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+            subjectId={runId}
+            originalContent={candidateText ?? null}
           />
         </div>
       ) : null}

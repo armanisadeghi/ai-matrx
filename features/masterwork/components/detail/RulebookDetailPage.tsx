@@ -25,6 +25,7 @@ import {
   BrainCircuit,
   Workflow,
   Library,
+  Signature,
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -127,6 +128,20 @@ import {
 } from "./RuleFeedbackDialog";
 import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+// THE EXPERT'S OWN WORDS (2026-09-15) — "mine / not mine / mine but wrong",
+// the agenda they produce, and the signature on a finished result. All three
+// are readings of state this page already holds; none of them is a new store.
+import {
+  NOT_MINE_REASON,
+  REVIEW_VOCABULARY_LABELS,
+  useReviewVocabulary,
+  type ReviewVocabulary,
+} from "../../review/vocabulary";
+import {
+  NextSessionAgenda,
+  useAgendaPanelEnabled,
+} from "../../review/NextSessionAgenda";
+import { countSignedOutputs, type SignedOutputTally } from "../../review/signature";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import {
   computeKpis,
@@ -236,6 +251,50 @@ export function formatTimeAnchor(timeRange: NonNullable<RuleSourceRef["time_rang
     granularity === "chunk" ||
     (granularity == null && timeRange.end - timeRange.start > NARROW_UNSTAMPED_RANGE_SECONDS);
   return isChunk ? `somewhere in ${startLabel}–${endLabel}` : `at ${startLabel}–${endLabel}`;
+}
+
+/**
+ * THE MOMENT THIS RULE CAME FROM, in the row itself.
+ *
+ * Doctrine CORE.md §5: "Each rule carries its origin so the expert can say
+ * 'yes, that's mine' rule by rule." Until 2026-09-15 the origin lived only
+ * inside the expanded row, so an Expert scanning the list was asked to own a
+ * sentence with nothing behind it and had to open every rule to see where it
+ * came from. This is the same provenance, at a glance — the SAME
+ * `formatTimeAnchor` rendering the expanded row uses, never a second format.
+ *
+ * Renders nothing when the rule carries no moment. A rule with no recorded
+ * origin is a real state and it must not be given a manufactured one.
+ */
+export function RuleProvenanceMoment({ rule }: { rule: RulebookRule }) {
+  const sourceRef = rule.source_ref;
+  if (!sourceRef) return null;
+  const time =
+    sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
+      ? formatTimeAnchor(sourceRef.time_range)
+      : null;
+  const where =
+    time ??
+    (sourceRef.source_pages?.length
+      ? formatPages(sourceRef.source_pages)
+      : sourceRef.pages
+        ? `page ${sourceRef.pages}`
+        : sourceRef.section_label
+          ? sourceRef.section_label
+          : sourceRef.interview
+            ? "your interview"
+            : (sourceRef.note ?? null));
+  const quote = rule.quote?.trim() || null;
+  if (!where && !quote) return null;
+  return (
+    <span className="inline-flex min-w-0 items-baseline gap-1 text-xs text-muted-foreground">
+      <Quote className="h-3 w-3 shrink-0 self-center" aria-hidden="true" />
+      {where ? <span className="shrink-0">{where}</span> : null}
+      {quote ? (
+        <span className="min-w-0 truncate italic">“{quote}”</span>
+      ) : null}
+    </span>
+  );
 }
 
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
@@ -348,6 +407,7 @@ export function RuleRow({
   selected,
   onToggleSelected,
   recurrenceThreshold,
+  vocabulary = "standard",
 }: {
   rule: RulebookRule;
   /** Every rule in the Rulebook — a `relates_to` link resolves its sibling's
@@ -366,11 +426,19 @@ export function RuleRow({
   onToggleSelected: () => void;
   /** From `useRecurrenceThreshold`; `null` renders no badge. */
   recurrenceThreshold: number | null;
+  /**
+   * Which words this reviewer sees — `../../review/vocabulary`. Optional so a
+   * surface that has not thought about the wording gets the standard verbs
+   * rather than a crash; the Rulebook page always passes the resolved value.
+   */
+  vocabulary?: ReviewVocabulary;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const state = ruleState(rule);
   const retired = state === "retired";
   const rejected = state === "rejected";
+  const words = REVIEW_VOCABULARY_LABELS[vocabulary];
+  const ownership = vocabulary === "ownership";
   return (
     <div
       // THE DOOR a sibling rule's `relates_to` link opens. `scroll-mt` keeps
@@ -417,7 +485,9 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
                 >
-                  Draft — needs your approval
+                  {ownership
+                    ? "Waiting on you — is this yours?"
+                    : "Draft — needs your approval"}
                 </Badge>
               ) : null}
               {rejected ? (
@@ -425,7 +495,9 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-destructive/50 text-destructive"
                 >
-                  Rejected — with the interviewer
+                  {ownership
+                    ? "Not mine — with the interviewer"
+                    : "Rejected — with the interviewer"}
                 </Badge>
               ) : null}
               {rule.feedback && !rejected ? (
@@ -433,7 +505,7 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
                 >
-                  Change requested
+                  {ownership ? "Mine but wrong" : "Change requested"}
                 </Badge>
               ) : null}
               {retired ? (
@@ -465,6 +537,9 @@ export function RuleRow({
             <p className="mt-0.5 text-sm text-muted-foreground">
               {rule.statement}
             </p>
+            {/* WHERE IT CAME FROM, in the same row — so "is this mine?" is a
+                question the Expert can actually answer without opening it. */}
+            <RuleProvenanceMoment rule={rule} />
           </div>
         </button>
         {canEdit && state === "draft" ? (
@@ -474,10 +549,15 @@ export function RuleRow({
           <RuleDecisionActions
             className="shrink-0 flex-nowrap gap-1"
             size="sm"
+            vocabulary={vocabulary}
             onApprove={onApprove}
             onImprove={onImprove}
             onReject={onReject}
             onEdit={onEdit}
+            // The ownership wording needs all THREE of its words together;
+            // the standard wording keeps the change request in the panel
+            // below, exactly where it has always been.
+            onRequestChanges={ownership ? onRequestChanges : undefined}
           />
         ) : null}
         {canEdit && rejected ? (
@@ -496,7 +576,13 @@ export function RuleRow({
       {rule.feedback ? (
         <div className="mx-3 mb-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs">
           <span className="font-medium text-foreground">
-            {rejected ? "Why you rejected it: " : "Your change request: "}
+            {rejected
+              ? ownership
+                ? "Why it isn't yours: "
+                : "Why you rejected it: "
+              : ownership
+                ? "What it got wrong: "
+                : "Your change request: "}
           </span>
           <span className="text-muted-foreground">{rule.feedback}</span>
           <span className="ml-1 text-muted-foreground">
@@ -570,7 +656,9 @@ export function RuleRow({
               {!retired && !rejected ? (
                 <Button size="sm" variant="outline" onClick={onRequestChanges}>
                   <MessageSquareWarning className="h-3.5 w-3.5" />
-                  {rule.feedback ? "Change the request" : "Request changes"}
+                  {rule.feedback
+                    ? "Change what you said"
+                    : words.requestChanges}
                 </Button>
               ) : null}
               <Button size="sm" variant="ghost" onClick={onToggleRetired}>
@@ -940,6 +1028,46 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     };
   }, [assistKey, launchApproach, openCheckup, openIngestLane, rulebookId]);
   const userId = useAppSelector(selectUserId);
+  // THE EXPERT'S WORDING for this Rulebook's review, and the agenda panel's
+  // knob. Both are read once here and handed down — never re-read per row.
+  const vocabulary = useReviewVocabulary(
+    rulebook,
+    rulebook?.organization_id ?? null,
+    userId,
+  );
+  const agendaPanelEnabled = useAgendaPanelEnabled(
+    rulebook?.organization_id ?? null,
+    userId,
+  );
+  // THE MOST IMPORTANT SIGNAL WE HAVE (Arman, 2026-09-15) — how many of this
+  // Rulebook's results the Expert has actually put their name to. `null` means
+  // we could not read it, and the line SAYS so rather than printing a zero.
+  const [signedTally, setSignedTally] = useState<SignedOutputTally | null>(null);
+  const [signedUnreadable, setSignedUnreadable] = useState(false);
+  const masterworkIdKey = masterworks.map((m) => m.id).join(",");
+  useEffect(() => {
+    let cancelled = false;
+    const ids = masterworkIdKey ? masterworkIdKey.split(",") : [];
+
+    void countSignedOutputs({ rulebookId, masterworkIds: ids })
+      .then((tally) => {
+        if (cancelled) return;
+        setSignedTally(tally);
+        setSignedUnreadable(false);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setSignedTally(null);
+        setSignedUnreadable(true);
+        console.warn(
+          "[masterwork] could not count signed outputs:",
+          error instanceof Error ? error.message : error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [masterworkIdKey, rulebookId]);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
 
@@ -1897,7 +2025,45 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 activeFilter={ruleFilter}
                 onFilterChange={showRules}
               />
+              {/* BESIDE THE QUICK CHECK: the Expert's own signature count. A
+                  score a judge produced is a check; a result the Expert signed
+                  is the signal. Only shown once something exists to run. */}
+              {masterworks.length > 0 ||
+              signedUnreadable ||
+              (signedTally !== null &&
+                signedTally.signed + signedTally.corrected > 0) ? (
+                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <Signature className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  {signedUnreadable ? (
+                    <span>
+                      Couldn&apos;t read the signatures on this Rulebook&apos;s
+                      results just now — reload to try again.
+                    </span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {signedTally?.signed ?? 0}{" "}
+                        {signedTally?.signed === 1 ? "output" : "outputs"} signed
+                        by the expert
+                      </span>
+                      {signedTally && signedTally.corrected > 0 ? (
+                        <span>
+                          · {signedTally.corrected} corrected — each one a rule
+                          waiting to be written
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </p>
+              ) : null}
             </div>
+            {agendaPanelEnabled ? (
+              <NextSessionAgenda
+                rulebook={rulebook}
+                vocabulary={vocabulary}
+                className="mt-3"
+              />
+            ) : null}
             {/* Rules-only actions. Masterwork creation and inventory have a
                 separate section so these controls never imply mixed scope. */}
             <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
@@ -2378,6 +2544,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                             selected={selectedIds.has(rule.id)}
                             onToggleSelected={() => toggleSelected(rule.id)}
                             recurrenceThreshold={recurrenceThreshold}
+                            vocabulary={vocabulary}
                           />
                         ))}
                       </div>
@@ -2464,6 +2631,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               if (!open) setFeedbackTarget(null);
             }}
             mode={feedbackTarget?.mode ?? "request"}
+            vocabulary={vocabulary}
             ruleName={feedbackTarget?.rule.name ?? ""}
             rulebookId={rulebook.id}
             rulebookName={rulebook.name}
@@ -2471,7 +2639,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               if (!feedbackTarget) return;
               try {
                 if (feedbackTarget.mode === "reject") {
-                  await rejectRule(feedbackTarget.rule, text);
+                  // "Not mine" is a complete answer on its own — one tap. The
+                  // reason is stored either way so the interviewer always has
+                  // a sentence to act on.
+                  await rejectRule(
+                    feedbackTarget.rule,
+                    text.trim() || NOT_MINE_REASON,
+                  );
                 } else {
                   await requestChanges(feedbackTarget.rule, text);
                 }
