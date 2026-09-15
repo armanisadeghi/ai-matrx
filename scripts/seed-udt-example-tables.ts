@@ -390,6 +390,25 @@ function buildProjectTracker(): TableSpec {
       data_type: "number",
       format: { id: "currency", options: { currency: "USD", precision: 0 } },
     },
+    // A FORMULA column: stores nothing, computed in the browser from the two
+    // columns above it. This is the showcase's proof that a table can carry
+    // a calculated value without anyone typing it.
+    {
+      field_name: "budget_per_point",
+      display_name: "Budget per point",
+      data_type: "string",
+      format: {
+        id: "formula",
+        options: {
+          formula: {
+            expression: "{Budget} / {Story points}",
+            resultFormat: "currency",
+          },
+          currency: "USD",
+          precision: 0,
+        },
+      },
+    },
     {
       field_name: "complete",
       display_name: "Complete",
@@ -692,7 +711,7 @@ function buildProjectTracker(): TableSpec {
     key: "project-tracker",
     tableName: "Example: Project Tracker",
     description:
-      "A project plan that uses every kind of column the table system offers — money, percentages, ratings, dates, checkboxes, links, tags and colour-coded status. Colours are set by the Status column, over-budget projects are flagged automatically, and the Team column only offers the teams that belong to the department you picked.",
+      "A project plan that uses every kind of column the table system offers — money, percentages, ratings, dates, checkboxes, links, tags, colour-coded status and a calculated column. Colours are set by the Status column, over-budget projects are flagged automatically, Budget per point is a formula worked out from Budget and Story points, and the Team column only offers the teams that belong to the department you picked.",
     fields,
     rows,
     style: {

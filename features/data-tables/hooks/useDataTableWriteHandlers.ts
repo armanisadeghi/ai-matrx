@@ -26,6 +26,7 @@ import { useMemo, type RefObject } from "react";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { normalizeCellValue } from "../components/EditableCell";
+import { isFormulaColumn } from "../formulas";
 import { updateTableMetadata, upsertCell } from "../service";
 import { isServiceFailure } from "../types";
 import {
@@ -48,6 +49,12 @@ export interface DataTableWriteField {
    * rule model to drift from `validation.ts`.
    */
   validation_rules?: unknown;
+  /**
+   * The column's raw `metadata` jsonb. Read only to recognise a `formula`
+   * column (`metadata.format.id`), which stores nothing and refuses every
+   * write — the same refusal the grid cell gives a person.
+   */
+  metadata?: unknown;
 }
 
 export interface DataTableWriteRow {
@@ -194,6 +201,12 @@ export function useDataTableWriteHandlers(
             .join(", ");
           throw new Error(
             `cell_value.field_name "${fieldName}" is not a column of this table. The real columns are: ${real || "(none loaded)"}. Send the MACHINE name from column_list.\`name\`, not the display header.`,
+          );
+        }
+
+        if (isFormulaColumn(field)) {
+          throw new Error(
+            `cell_value cannot write column "${fieldName}" ("${field.display_name}"): it is a FORMULA column, calculated from the row's other cells, and stores nothing. Change the cells the formula reads instead — its value updates on its own.`,
           );
         }
 
