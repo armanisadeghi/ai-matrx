@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   MessageSquare,
   Camera,
+  MonitorSmartphone,
   AppWindow,
   Activity,
   Building2,
@@ -56,6 +57,7 @@ import ImageGenerationTab from "./tabs/ImageGenerationTab";
 import PhotoEditingTab from "./tabs/PhotoEditingTab";
 import VideoConferenceTab from "./tabs/VideoConferenceTab";
 import MediaDevicesTab from "./tabs/MediaDevicesTab";
+import DevicesSyncTab from "@/features/files/devices/DevicesSyncTab";
 import CodingTab from "./tabs/CodingTab";
 import CodeWorkspaceTab from "./tabs/CodeWorkspaceTab";
 import FlashcardsTab from "./tabs/FlashcardsTab";
@@ -408,6 +410,32 @@ export const settingsRegistry: SettingsTabDef[] = [
       "facing",
     ],
     component: MediaDevicesTab,
+    persistence: "synced",
+  },
+
+  // ── Devices & sync (folder sync: the machines, their folders, their state) ─
+  {
+    id: "files.devices",
+    label: "Devices & sync",
+    icon: MonitorSmartphone,
+    description:
+      "Every computer signed in to this account, the folders each one syncs, and what is happening with them right now.",
+    searchKeywords: [
+      "devices",
+      "sync",
+      "folder sync",
+      "computers",
+      "machines",
+      "matrx local",
+      "desktop",
+      "storage",
+      "quota",
+      "pause sync",
+      "mappings",
+      "offline",
+    ],
+    component: DevicesSyncTab,
+    requiresAuth: true,
     persistence: "synced",
   },
 
