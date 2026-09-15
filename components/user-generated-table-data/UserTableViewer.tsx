@@ -3864,19 +3864,34 @@ const UserTableViewer = ({
                         // signal that an editor was open at all — a cell with
                         // unsaved text became indistinguishable from a saved
                         // one, which is how you lose an edit without knowing.
+                        // 🚨 THE SELECTION WASH IS AN OVERLAY, NOT A
+                        // BACKGROUND. `cn` is tailwind-merge: a selection fill
+                        // written as `bg-primary/10` and a manual highlight
+                        // written as `bg-red-100` are the same utility group,
+                        // so the LAST one wins and the other is deleted from
+                        // the class list entirely. The tint is applied last —
+                        // so every highlighted cell inside a selected block
+                        // silently lost its selection shading, and a block
+                        // drawn across coloured cells appeared to have holes in
+                        // it while Cmd-C happily copied the cells that looked
+                        // excluded (found on live review 2026-09-15). Painting
+                        // the wash on the `after:` pseudo-element puts it in a
+                        // different utility group, so the two genuinely survive
+                        // together the way the comment below always claimed.
                         className={cn(
-                          "group max-w-[70vw] py-2 md:max-w-0 md:py-3",
+                          "group relative max-w-[70vw] py-2 md:max-w-0 md:py-3",
+                          "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
                           !isReadOnly && "cursor-cell",
                           grid.isSelected(row.id, field.field_name) &&
                             !grid.isEditing(row.id, field.field_name) &&
-                            "bg-primary/5 ring-2 ring-inset ring-primary/70",
+                            "ring-2 ring-inset ring-primary/70 after:bg-primary/5",
                           grid.isEditing(row.id, field.field_name) &&
-                            "bg-primary/10 ring-[3px] ring-inset ring-primary",
+                            "ring-[3px] ring-inset ring-primary after:bg-primary/10",
                           // A cell inside the extended range — softer than the
                           // anchor's ring, so the anchor stays findable.
                           grid.isInRange(row.id, field.field_name) &&
                             !grid.isSelected(row.id, field.field_name) &&
-                            "bg-primary/10",
+                            "after:bg-primary/10",
                           // Tint LAST: the ring says "selected", the tint says
                           // "highlighted", and both must survive together.
                           cellTintClass(row, field.field_name),
