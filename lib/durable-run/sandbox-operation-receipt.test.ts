@@ -13,4 +13,13 @@ describe("sandbox operation receipt storage", () => {
     expect(readSandboxOperationReceipts(local, actor)).toEqual([receipt]);
     expect(readSandboxOperationReceipts(local, "44444444-4444-4444-8444-444444444444")).toEqual([]);
   });
+  it("refuses to rewrite an existing receipt from stop to delete", () => {
+    const local = storage();
+    const stop = { ...receipt, kind: "stop" as const };
+    expect(writeSandboxOperationReceipt(local, actor, stop)).toBe(true);
+    expect(writeSandboxOperationReceipt(local, actor, stop)).toBe(true);
+    // The key excludes kind, so this is the regression boundary.
+    expect(writeSandboxOperationReceipt(local, actor, { ...receipt, kind: "delete" })).toBe(false);
+    expect(readSandboxOperationReceipts(local, actor)).toEqual([stop]);
+  });
 });
