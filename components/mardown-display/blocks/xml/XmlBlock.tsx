@@ -388,7 +388,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                 <button
                   aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`}
                   onClick={() => toggleCollapse(idx)}
-                  className="size-11 -my-2 mr-1 flex flex-shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors lg:size-auto lg:my-0 lg:mt-0.5 lg:p-0"
+                  className="size-11 mr-1 flex flex-shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors lg:size-auto lg:mt-0.5 lg:p-0"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5" />

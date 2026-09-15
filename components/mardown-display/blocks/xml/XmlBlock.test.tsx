@@ -138,6 +138,7 @@ describe("XmlBlock Markdown text rendering", () => {
     for (const action of actions) {
       expect(action.classList).toContain("size-11");
       expect(action.classList).toContain("lg:size-auto");
+      expect(action.classList).not.toContain("-my-2");
     }
   });
 
