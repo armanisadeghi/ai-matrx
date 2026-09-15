@@ -138,7 +138,19 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
     }
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
-      setError(null);
+      // 🚨 THE REFUSAL HAS TO BE VISIBLE FROM THE BUTTON — see the same block
+      // in EditRowModal for the failure this kills: the inline message lives
+      // inside the scrolling field list, so Save on an off-screen offender
+      // looked like a dead button. The summary goes in the always-visible
+      // banner the required-field refusal already uses.
+      const broken = fields.filter((field) => nextErrors[field.field_name]);
+      setError(
+        broken.length === 1
+          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]}`
+          : `These columns need fixing: ${broken
+              .map((field) => field.display_name)
+              .join(", ")}`,
+      );
       return;
     }
     setFieldErrors({});

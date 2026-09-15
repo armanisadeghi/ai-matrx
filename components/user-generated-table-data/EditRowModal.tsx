@@ -172,7 +172,23 @@ export default function EditRowModal({
     }
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
-      setError(null);
+      // 🚨 THE REFUSAL HAS TO BE VISIBLE FROM THE BUTTON. The inline message
+      // renders beside its own field, inside the scrolling list below — so on
+      // any table with more than a handful of columns the offending field is
+      // out of sight when Save is pressed, and the click reads as a dead
+      // button: nothing moves, nothing says no (found on live review
+      // 2026-09-15, where a refused 20-character Capital produced no visible
+      // response at all). The summary goes in the same always-visible banner
+      // the required-field refusal already uses, above the scroller; the
+      // inline messages stay where the fixing actually happens.
+      const broken = fields.filter((field) => nextErrors[field.field_name]);
+      setError(
+        broken.length === 1
+          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]}`
+          : `These columns need fixing: ${broken
+              .map((field) => field.display_name)
+              .join(", ")}`,
+      );
       return;
     }
     setFieldErrors({});
