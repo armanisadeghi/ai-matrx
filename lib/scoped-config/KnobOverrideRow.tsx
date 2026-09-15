@@ -418,7 +418,7 @@ export function KnobOverrideRow(props: {
         <div
           className={
             scopeKind === "user"
-              ? "w-full min-w-0"
+              ? "w-[20rem] max-w-full min-w-0"
               : "w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]"
           }
         >
