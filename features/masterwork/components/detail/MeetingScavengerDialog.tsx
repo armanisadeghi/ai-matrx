@@ -285,10 +285,23 @@ export function MeetingScavengerDialog({
     try {
       let rows: SpeakerRow[] = [];
       const seenNotes: string[] = [];
+      // 🚨 `callApi` resolves to `{ data, error }`, never the body itself.
+      // Reading it as the body (2026-09-15) made the speaker list silently
+      // empty while the server had answered 200 with three speakers, and the
+      // only thing on screen was "we couldn't find any speakers in that" — the
+      // product lying about a call that worked.
       const response = await store.dispatch(
         callApi({ path: PREVIEW_PATH, method: "POST", body: body as never }),
       );
-      const payload = (response as { meetings?: unknown[]; notes?: string[] }) ?? {};
+      const failed = (response as { error?: { message?: string } }).error;
+      if (failed) {
+        throw new Error(
+          failed.message ?? "We couldn't read that transcript. Try again.",
+        );
+      }
+      const payload =
+        (response as { data?: { meetings?: unknown[]; notes?: string[] } })
+          .data ?? {};
       for (const note of payload.notes ?? []) seenNotes.push(String(note));
       const merged = new Map<string, SpeakerRow>();
       for (const meeting of (payload.meetings ?? []) as {
