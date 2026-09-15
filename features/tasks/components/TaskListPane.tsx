@@ -68,6 +68,7 @@ import {
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   TASK_ROW_DOM_ATTR,
+  TASK_TITLE_DOM_ATTR,
   TasksListContextMenu,
 } from "@/features/tasks/components/TasksListContextMenu";
 import { toast } from "@/lib/toast";
@@ -493,19 +494,24 @@ function TaskRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5">
-          <EntityRef
-            token="task"
-            id={task.id}
-            name={task.title}
-            showIcon={false}
-            onOpen={onSelect}
-            className="flex-1 min-w-0 text-[13px] leading-tight"
-            labelClassName={
-              task.completed
-                ? "line-through text-muted-foreground"
-                : "text-foreground font-medium"
-            }
-          />
+          <span
+            {...{ [TASK_TITLE_DOM_ATTR]: task.id }}
+            className="flex-1 min-w-0"
+          >
+            <EntityRef
+              token="task"
+              id={task.id}
+              name={task.title}
+              showIcon={false}
+              onOpen={onSelect}
+              className="min-w-0 text-[13px] leading-tight"
+              labelClassName={
+                task.completed
+                  ? "line-through text-muted-foreground"
+                  : "text-foreground font-medium"
+              }
+            />
+          </span>
           {task.priority && (
             <span
               className={cn(
