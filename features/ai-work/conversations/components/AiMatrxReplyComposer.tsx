@@ -8,31 +8,31 @@
 // the SAME canonical conversation through the ordinary continuation route, and
 // an AI Matrx agent answers there.
 //
-// THE SENTENCE IS THE FEATURE. The one thing that makes this honest instead of
-// misleading is that the person is told, always and in plain sight (never a
-// tooltip, never on hover), that the coding tool will not see what they type.
-// `replyBoundarySentence` below is that promise; it renders unconditionally
-// whenever this control is on screen.
+// THE SENTENCE IS THE FEATURE — AND IT IS THE SERVER'S SENTENCE.
+// The one thing that makes this honest instead of misleading is that the
+// person is told, always and in plain sight (never a tooltip, never on hover),
+// WHO is about to answer and that the coding tool will not see what they type.
+// That sentence is `composer_label` from
+// `GET /coding-sessions/conversations/{id}/responder`, composed out of the same
+// resolution that picks the answering agent — so the label and the agent cannot
+// disagree, and re-binding the mandate relabels this composer with no frontend
+// release.
 //
-// The server decides WHICH agent answers — a layered platform setting, not a
-// client choice. This component never names, picks, or defaults an agent.
+// 🚨 NEVER re-derive, re-word or template that sentence here, and never keep a
+// client-side one as a fallback. Until the report lands this says nothing about
+// who answers; if the read fails it says the label could not be loaded. It used
+// to hardcode "AI Matrx is answering — Claude Code will not see this reply"
+// while production was silently taking the platform-default stand-in, because
+// no agent was bound for the job (V-XT/V3, 2026-09-15).
 
-import { useState } from "react";
-import { AlertTriangle, CircleAlert, Loader2, Send } from "lucide-react";
+import { useId, useState } from "react";
+import { AlertTriangle, CircleAlert, Info, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-
-/**
- * The verbatim boundary promise, with the provider's own label substituted and
- * NOTHING else changed. Exported so the guard test asserts the exact string
- * rather than a paraphrase of it.
- */
-export function replyBoundarySentence(providerLabel: string): string {
-  return `AI Matrx is answering — ${providerLabel} will not see this reply`;
-}
+import { useCodingReplyResponder } from "./useCodingReplyResponder";
 
 /** `source_feature` for every reply sent from this composer (registered slug). */
 export const CODING_SESSION_REPLY_SOURCE_FEATURE = "coding_session_reply";
@@ -62,14 +62,31 @@ function nextStepFor(status: number | undefined): string {
 
 export function AiMatrxReplyComposer({
   conversationId,
-  providerLabel,
   onAnswered,
 }: {
   conversationId: string;
-  providerLabel: string;
   onAnswered: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const labelId = useId();
+  // Read before the person types. This component only ever mounts on a
+  // coding-session transcript, so the read is never made on a page that
+  // already knows the conversation is not a mirror.
+  const responder = useCodingReplyResponder({ conversationId, enabled: true });
+  const report = responder.report;
+  // A conversation that is not a mirror gets the ordinary composer with no
+  // label at all — exactly what it had before this control existed.
+  const label =
+    report && report.is_coding_session_mirror
+      ? report.composer_label
+      : null;
+  const standInNotice =
+    report && report.responder?.used_platform_default
+      ? report.stand_in_notice
+      : null;
+  // Only the SERVER says a reply cannot be answered. A read that has not
+  // landed, or failed, never invents that verdict.
+  const replyRefused = report ? !report.can_reply : false;
   const [text, setText] = useState("");
   const [send, setSend] = useState<SendState>({ phase: "idle" });
   /**
@@ -82,14 +99,15 @@ export function AiMatrxReplyComposer({
   const [preview, setPreview] = useState("");
 
   const busy = send.phase === "answering";
-  const canSend = text.trim().length > 0 && !busy;
+  const inputBlocked = responder.status === "loading" || replyRefused;
+  const canSend = text.trim().length > 0 && !busy && !inputBlocked;
 
   async function submit() {
     const body = text.trim();
     // An empty or whitespace-only message NEVER sends: there is nothing for an
     // agent to answer, and a turn written from it would be a lie in the
     // transcript.
-    if (body.length === 0 || busy) return;
+    if (body.length === 0 || busy || inputBlocked) return;
 
     setSend({ phase: "answering" });
     setPreview("");
@@ -158,22 +176,57 @@ export function AiMatrxReplyComposer({
       <h2 className="text-sm font-medium text-foreground">
         Reply in AI Matrx
       </h2>
-      {/* The boundary promise. Always rendered, always visible, never a
-          tooltip — it is the only thing standing between this control and a
-          person believing they just messaged their coding tool. */}
-      <p className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <span>{replyBoundarySentence(providerLabel)}</span>
-      </p>
+      {/* WHO is answering, in the server's own sentence: always visible, never
+          a tooltip, and never a guess. It is the only thing standing between
+          this control and a person believing they just messaged their coding
+          tool — or that an agent nobody bound is the one replying. */}
+      {responder.status === "loading" ? (
+        <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+          <span>Checking who answers here…</span>
+        </p>
+      ) : responder.status === "error" ? (
+        <p className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Who answers here could not be loaded, so this page is not naming
+            anyone: {responder.error}
+          </span>
+        </p>
+      ) : label ? (
+        <p
+          id={labelId}
+          className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
+        >
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{label}</span>
+        </p>
+      ) : null}
+      {/* THE ANNOUNCED STAND-IN, on screen and not only in a log: visually
+          secondary to the label above, and present only when the server says
+          the platform default is standing in. */}
+      {standInNotice ? (
+        <p className="mt-1 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
+          <Info className="mt-0.5 h-3 w-3 shrink-0" />
+          <span>{standInNotice}</span>
+        </p>
+      ) : null}
 
       <Textarea
         value={text}
         onChange={(event) => setText(event.target.value)}
         rows={3}
-        disabled={busy}
-        placeholder="Ask AI Matrx about this session, or say what to do next."
+        disabled={busy || inputBlocked}
+        placeholder={
+          replyRefused
+            ? "No reply can be answered here yet."
+            : "Ask AI Matrx about this session, or say what to do next."
+        }
         className="mt-3 text-sm"
         aria-label="Your reply to AI Matrx"
+        // The visible reason a refused field cannot be typed in is the
+        // server's own sentence above it, not a tooltip.
+        aria-describedby={replyRefused && label ? labelId : undefined}
       />
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -198,6 +251,17 @@ export function AiMatrxReplyComposer({
           <span className="text-xs text-muted-foreground">
             AI Matrx is answering… the finished answer lands in this
             transcript.
+          </span>
+        ) : replyRefused ? (
+          // A disabled field with no explanation is the dead-looking control
+          // this product forbids: the reason is the sentence above, repeated
+          // here as the reason this cannot send.
+          <span className="text-xs text-muted-foreground">
+            This reply cannot be sent: {label}
+          </span>
+        ) : responder.status === "loading" ? (
+          <span className="text-xs text-muted-foreground">
+            Waiting to learn who answers here before you write.
           </span>
         ) : text.trim().length === 0 ? (
           <span className="text-xs text-muted-foreground">
