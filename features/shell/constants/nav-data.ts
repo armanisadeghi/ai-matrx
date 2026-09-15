@@ -45,6 +45,7 @@ import {
   hrTrainingHref,
 } from "@/features/hr/routes";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
+import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
 
 /**
@@ -2134,7 +2135,7 @@ export function flattenNavDestinations(): NavDestination[] {
 
 export const settingsItem: ShellNavItem = {
   label: "Settings",
-  href: "/settings",
+  href: SETTINGS_BASE,
   iconName: "Settings",
   section: "primary",
   profileMenu: true,
@@ -2144,7 +2145,7 @@ export const settingsItem: ShellNavItem = {
   children: [
     {
       label: "Settings",
-      href: "/settings",
+      href: SETTINGS_BASE,
       iconName: "Settings",
       description: "Manage your account and preferences",
       color: "slate",
