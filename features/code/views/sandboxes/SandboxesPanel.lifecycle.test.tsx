@@ -6,10 +6,18 @@ import type { SandboxInstance } from "@/types/sandbox";
 
 const dispatch = jest.fn();
 let selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
+let selectedUserId: string | null = "33333333-3333-4333-8333-333333333333";
+let authReady = true;
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
-  useAppSelector: () => selectedOrganizationId,
+  useAppSelector: (selector: { name: string }) => {
+    if (selector.name === "selectOrganizationId") return selectedOrganizationId;
+    if (selector.name === "selectUserId") return selectedUserId;
+    if (selector.name === "selectAuthReady") return authReady;
+    if (selector.name === "selectIsSuperAdmin") return false;
+    return null;
+  },
 }));
 jest.mock("../../CodeWorkspaceProvider", () => ({
   useCodeWorkspace: () => ({ setFilesystem: jest.fn(), setProcess: jest.fn() }),
@@ -132,7 +140,10 @@ describe("SandboxesPanel deletion", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    toast.loading.mockReset().mockImplementation(() => "create-toast");
     selectedOrganizationId = "22222222-2222-4222-8222-222222222222";
+    selectedUserId = "33333333-3333-4333-8333-333333333333";
+    authReady = true;
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -278,7 +289,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     expect(postCalls).toHaveLength(2); // create plus reconcile, never an automatic create retry
   });
 
-  it("keeps a newer scope request busy when an old scope response settles", async () => {
+  it("keeps a newer same-organization actor request busy when an old response settles", async () => {
     const resolves: Array<(value: ReturnType<typeof response>) => void> = [];
     toast.loading
       .mockImplementationOnce(() => "old-scope-toast")
@@ -293,7 +304,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     await act(async () => root.render(<SandboxesPanel />));
     await settle();
     await act(async () => (await openCreateModal(container)).click());
-    selectedOrganizationId = "55555555-5555-4555-8555-555555555555";
+    selectedUserId = "66666666-6666-4666-8666-666666666666";
     await act(async () => root.render(<SandboxesPanel />));
     await settle();
     await act(async () => (await openCreateModal(container)).click());
