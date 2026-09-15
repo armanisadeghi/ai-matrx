@@ -12,6 +12,7 @@ export type SandboxLifecycleSubmission = {
   rowId: string;
   sandboxId: string;
   kind: SandboxOperationKind;
+  graceful?: boolean;
 };
 
 export type SandboxLifecycleSubmissionResult =
@@ -30,12 +31,12 @@ export function useSandboxLifecycleSubmission(): {
   const store = useAppStore();
   const submittingRows = useRef(new Set<string>());
 
-  const submit = async ({ rowId, sandboxId, kind }: SandboxLifecycleSubmission): Promise<SandboxLifecycleSubmissionResult> => {
+  const submit = async ({ rowId, sandboxId, kind, graceful = true }: SandboxLifecycleSubmission): Promise<SandboxLifecycleSubmissionResult> => {
     const before = store.getState().sandboxLifecycle;
     if (!before.actorId || before.reservations.some((reservation) => reservation.row_id === rowId) || submittingRows.current.has(rowId)) return { admitted: false, reason: before.actorId ? "already_pending" : "not_ready" };
     const actorId = before.actorId;
     const generation = before.generation;
-    const receipt: SandboxOperationReceipt = { schema_version: 1, row_id: rowId, operation_id: crypto.randomUUID(), kind, observation: "prepared" };
+    const receipt: SandboxOperationReceipt = { schema_version: 1, row_id: rowId, operation_id: crypto.randomUUID(), kind, graceful, observation: "prepared" };
     submittingRows.current.add(rowId);
     dispatch(reserveTarget({ actorId, generation, reservation: receipt }));
     dispatch(upsertReceipt(receipt));
