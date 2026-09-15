@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "../redux/tasks/selectors";
 import { fetchScheduledTask } from "../redux/tasks/thunks";
@@ -57,11 +57,11 @@ export function useTaskDetail(taskId: string | null | undefined) {
       });
   }, [dispatch, taskId, alreadyLoaded, requestAttempt]);
 
-  const retry = useCallback(() => {
+  const retry = () => {
     if (!taskId) return;
     setRequestState(null);
     setRequestAttempt((attempt) => attempt + 1);
-  }, [taskId]);
+  };
 
   return { task, status, error, retry };
 }
