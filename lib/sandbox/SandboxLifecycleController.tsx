@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { applyView, dismissView, type SandboxLifecycleView } from "@/lib/redux/slices/sandboxLifecycleSlice";
 import { classifyDurableSandboxLifecycleResponse, createSandboxLifecycleOperationAdapter, type SandboxLifecycleOperationAdapter } from "@/lib/sandbox/lifecycle-operation";
 import type { SandboxOperationReceipt } from "@/lib/durable-run/sandbox-operation-receipt";
+import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
 
 const MAX_TRANSPORT_FAILURES = 3;
 const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
@@ -144,6 +145,7 @@ export function SandboxLifecycleController() {
   const controllerReceiptKeys = useRef<Map<string, string>>(new Map());
   const toastIds = useRef<Map<string, string | number>>(new Map());
   const toastSignatures = useRef<Map<string, string>>(new Map());
+  const notifiedTerminalSuccesses = useRef(new Set<string>());
   useEffect(() => { current.current = { actorId: lifecycle.actorId, generation: lifecycle.generation }; }, [lifecycle.actorId, lifecycle.generation]);
 
   // Actor generations own controller and notification identity. Receipt-list
@@ -155,6 +157,7 @@ export function SandboxLifecycleController() {
     for (const id of toastIds.current.values()) toast.dismiss(id);
     toastIds.current.clear();
     toastSignatures.current.clear();
+    notifiedTerminalSuccesses.current.clear();
     return () => {
       for (const controller of controllers.current.values()) controller.stop();
       controllers.current.clear();
@@ -162,6 +165,7 @@ export function SandboxLifecycleController() {
       for (const id of toastIds.current.values()) toast.dismiss(id);
       toastIds.current.clear();
       toastSignatures.current.clear();
+      notifiedTerminalSuccesses.current.clear();
     };
   }, [lifecycle.actorId, lifecycle.generation]);
 
@@ -188,7 +192,7 @@ export function SandboxLifecycleController() {
         recovery: (item) => `/api/sandbox/${item.row_id}/lifecycle-operations/${item.operation_id}/recover`,
       });
       const restored = lifecycle.views.find((view) => view.operation_id === receipt.operation_id)?.restored === true;
-      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, silenceInitialTerminal: restored, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => dispatch(applyView({ actorId, generation, view })) });
+      const controller = new SandboxLifecycleReceiptController({ receipt, actorId, generation, adapter, silenceInitialTerminal: restored, isCurrent: () => current.current.actorId === actorId && current.current.generation === generation, onView: (view) => { dispatch(applyView({ actorId, generation, view })); if (view.state === "success" && !notifiedTerminalSuccesses.current.has(view.operation_id)) { notifiedTerminalSuccesses.current.add(view.operation_id); notifyComputeTargetsChanged(); } } });
       controllers.current.set(receipt.operation_id, controller);
       controllerReceiptKeys.current.set(receipt.operation_id, receiptIdentity(receipt));
       controller.start();
