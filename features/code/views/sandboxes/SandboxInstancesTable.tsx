@@ -46,6 +46,7 @@ export interface SandboxInstancesTableProps {
   onStop: (row: SandboxInstance) => void;
   onDelete: (row: SandboxInstance) => void;
   stoppingIds: Set<string>;
+  busyIds?: Set<string>;
   showingHistory?: boolean;
   selection?: {
     selectedIds: Set<string>;
@@ -153,11 +154,13 @@ function ExpiryCell({ instance }: { instance: SandboxInstance }) {
 function SandboxRowActions({
   row,
   stopping,
+  busy,
   onStop,
   onDelete,
 }: {
   row: SandboxInstance;
   stopping: boolean;
+  busy: boolean;
   onStop: (row: SandboxInstance) => void;
   onDelete: (row: SandboxInstance) => void;
 }) {
@@ -170,7 +173,7 @@ function SandboxRowActions({
           variant="transparent"
           ariaLabel={stopping ? "Stopping sandbox" : "Stop sandbox"}
           tooltip={stopping ? "Stopping sandbox" : "Stop sandbox"}
-          disabled={stopping}
+          disabled={stopping || busy}
           onClick={() => onStop(row)}
         />
       ) : null}
@@ -178,8 +181,8 @@ function SandboxRowActions({
         variant="transparent"
         className="text-destructive"
         ariaLabel="Delete sandbox"
-        tooltip={stopping ? "Wait for stop to finish" : "Delete sandbox"}
-        disabled={stopping}
+        tooltip={busy ? "Deleting sandbox" : stopping ? "Wait for stop to finish" : "Delete sandbox"}
+        disabled={stopping || busy}
         onClick={() => onDelete(row)}
       />
     </>
@@ -198,6 +201,7 @@ export function SandboxInstancesTable({
   onStop,
   onDelete,
   stoppingIds,
+  busyIds = new Set(),
   showingHistory = false,
   selection,
 }: SandboxInstancesTableProps) {
@@ -456,6 +460,7 @@ export function SandboxInstancesTable({
           <SandboxRowActions
             row={row}
             stopping={stoppingIds.has(row.id)}
+            busy={busyIds.has(row.id)}
             onStop={onStop}
             onDelete={onDelete}
           />

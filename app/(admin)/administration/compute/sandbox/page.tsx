@@ -56,6 +56,11 @@ import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { sandboxInstanceSummary, formatSandboxTimestamp } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
+import {
+  classifySandboxLifecycleResponse,
+  sandboxLifecycleMessage,
+  sandboxLifecycleTransportUnknown,
+} from "@/lib/sandbox/lifecycle-response";
 import type {
   SandboxInstanceRow as SandboxInstance,
   SandboxAccessResponse,
@@ -178,6 +183,7 @@ export default function AdminSandboxManagementPage() {
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -233,16 +239,22 @@ export default function AdminSandboxManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stop" }),
       });
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to stop (HTTP ${resp.status})`);
+      const result = await classifySandboxLifecycleResponse(resp, "Failed to stop sandbox");
+      if (result.kind === "outcome_unknown") {
+        setError(sandboxLifecycleMessage(result));
+        toast.warning(sandboxLifecycleMessage(result));
+        await fetchInstances();
+        return;
       }
+      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
       await fetchInstances();
       toast.success(`Sandbox ${instance.sandbox_id} stopped`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to stop";
+      const msg = err instanceof TypeError
+        ? sandboxLifecycleTransportUnknown("stop").message
+        : err instanceof Error ? err.message : "Failed to stop";
       setError(msg);
-      toast.error(msg);
+      if (err instanceof TypeError) toast.warning(msg); else toast.error(msg);
     } finally {
       setStoppingIds((prev) => {
         const next = new Set(prev);
@@ -252,26 +264,36 @@ export default function AdminSandboxManagementPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (target: SandboxInstance) => {
     setDeleting(true);
+    setDeletingIds((previous) => new Set(previous).add(target.id));
     try {
-      const resp = await fetch(`/api/admin/sandbox/${deleteTarget.id}`, {
+      const resp = await fetch(`/api/admin/sandbox/${target.id}`, {
         method: "DELETE",
       });
-      if (!resp.ok && resp.status !== 204) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to delete (HTTP ${resp.status})`);
+      const result = await classifySandboxLifecycleResponse(resp, "Failed to delete sandbox");
+      if (result.kind === "outcome_unknown") {
+        setError(sandboxLifecycleMessage(result));
+        toast.warning(sandboxLifecycleMessage(result));
+        await fetchInstances();
+        return;
       }
-      setAccessibleSandboxes((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-      toast.success(`Sandbox ${deleteTarget.sandbox_id} deleted`);
-      setDeleteTarget(null);
+      if (result.kind === "failure") throw new Error(sandboxLifecycleMessage(result));
+      setAccessibleSandboxes((prev) => prev.filter((i) => i.id !== target.id));
+      toast.success(`Sandbox ${target.sandbox_id} deleted`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete";
+      const msg = err instanceof TypeError
+        ? sandboxLifecycleTransportUnknown("delete").message
+        : err instanceof Error ? err.message : "Failed to delete";
       setError(msg);
-      toast.error(msg);
+      if (err instanceof TypeError) toast.warning(msg); else toast.error(msg);
     } finally {
       setDeleting(false);
+      setDeletingIds((previous) => {
+        const next = new Set(previous);
+        next.delete(target.id);
+        return next;
+      });
     }
   };
 
@@ -683,9 +705,14 @@ export default function AdminSandboxManagementPage() {
                                   aria-label="Delete sandbox"
                                   title="Delete sandbox"
                                   onClick={() => setDeleteTarget(instance)}
+                                  disabled={stoppingIds.has(instance.id) || deletingIds.has(instance.id)}
                                   className="text-destructive hover:text-destructive"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  {deletingIds.has(instance.id) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Delete sandbox</TooltipContent>
@@ -823,7 +850,11 @@ export default function AdminSandboxManagementPage() {
         confirmLabel="Delete"
         variant="destructive"
         busy={deleting}
-        onConfirm={handleDelete}
+        onConfirm={() => {
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (target) void handleDelete(target);
+        }}
       />
 
       {/* SSH access dialog */}
