@@ -10,10 +10,12 @@
  *
  * 🚨 THE CLICK LAW (stated in full in `grid-selection.ts`): a single click may
  * SELECT, TOGGLE a two-state value, or OPEN a chooser — never drop the user
- * into a free-text buffer. So a checkbox, a rating and a choice column are
- * operable with one click, while text, numbers, dates and JSON still require a
- * deliberate double-click, Enter, or just typing. Select-and-copy must never
- * become an accidental edit.
+ * into a free-text buffer. So a checkbox and a rating are operable with one
+ * click; a choice column selects on the first click and opens its chooser on
+ * the second (or on Enter), so the cell can be copied, cut and navigated like
+ * any other; text, numbers, dates and JSON still require a deliberate
+ * double-click, Enter, or just typing. Select-and-copy must never become an
+ * accidental edit.
  *
  * Writes go through `udt_upsert_cell` (surgical jsonb_set — cannot touch
  * another field). A declared format owns the coercion; without one the storage
@@ -286,17 +288,26 @@ export function EditableCell({
             onDone={(next) => commitDirect(next)}
           />
         ) : directClickable ? (
-          // A choice column: one click opens the option list. Opening a menu is
-          // not a mutation, so this is safe under THE CLICK LAW.
+          // A choice column: the FIRST click selects the cell, a click on the
+          // already-selected cell opens the option list (the Airtable gesture).
+          // Opening a menu is not a mutation, so this is safe under THE CLICK
+          // LAW — but opening it on the very first click moved focus into the
+          // chooser's search box, and every grid shortcut (Cmd-C included)
+          // then went there instead of to the cell. Enter / Space on the
+          // selected cell open it too, so the keyboard path is one keystroke.
           <button
             type="button"
             className="w-full min-w-0 text-left"
             onClick={(e) => {
               e.stopPropagation();
-              onSelect?.();
-              onBeginEdit?.();
+              if (selected) onBeginEdit?.();
+              else onSelect?.();
             }}
-            title={`Choose ${fieldDisplayName}`}
+            title={
+              selected
+                ? `Choose ${fieldDisplayName}`
+                : `Click again to choose ${fieldDisplayName}`
+            }
           >
             {display}
           </button>

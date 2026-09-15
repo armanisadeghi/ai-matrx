@@ -12,10 +12,25 @@
  * focus has to come BACK or the next arrow key does nothing and the grid feels
  * dead. `refocusGrid` is that handoff, and it is why the container is
  * `tabIndex={0}`.
+ *
+ * THE CLIPBOARD HAS TWO DOORS, AND BOTH MUST WORK. A native `copy` / `cut` /
+ * `paste` event fires when the user goes through the browser's Edit menu or
+ * its own right-click "Paste", and it is the only path that can READ the
+ * clipboard without a permission prompt (`event.clipboardData`). But the
+ * browser does not reliably fire those events on a focused <div> with nothing
+ * text-selected — Chromium raised none for Cmd-C on this grid (2026-09-14) —
+ * so the keyboard chords are ALSO caught on keydown and, if no native event
+ * claims the gesture within a beat, served through the async Clipboard API.
+ * The pending flag is what stops a browser that fires both from copying twice.
+ * A chord is never intercepted while the user has real text highlighted inside
+ * the grid: the browser's own copy of that range must win.
  */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ClipboardEvent as ReactClipboardEvent } from "react";
+
+import { toast } from "@/components/ui/use-toast";
 
 import {
   cellDomKey,
@@ -40,17 +55,51 @@ export type GridSelectionApi = {
   endEdit: (move?: GridMove) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  /**
+   * Native clipboard events for the container — the Edit-menu / browser
+   * right-click door. Spread onto the same element as `onKeyDown`.
+   */
+  clipboardHandlers: {
+    onCopy: (e: ReactClipboardEvent<HTMLDivElement>) => void;
+    onCut: (e: ReactClipboardEvent<HTMLDivElement>) => void;
+    onPaste: (e: ReactClipboardEvent<HTMLDivElement>) => void;
+  };
+  /** Copy the selected cell (or `address`) — the context-menu door. */
+  copyCell: (address?: CellAddress) => void;
+  /** Copy then clear. Refused (no-op) when the grid is not editable. */
+  cutCell: (address?: CellAddress) => void;
+  /**
+   * Paste over the selected cell (or `address`) from the async Clipboard API.
+   * Needs a user gesture and, in some browsers, a one-time permission — the
+   * failure toast names the keyboard chord as the always-available way in.
+   */
+  pasteIntoCell: (address?: CellAddress) => Promise<void>;
   refocusGrid: () => void;
 };
+
+/**
+ * How long the keydown path waits for a native clipboard event to claim the
+ * same gesture before serving it through the async Clipboard API itself.
+ * Long enough that a browser which fires both never double-copies; short
+ * enough that a paste still feels instant when the native event never comes.
+ */
+const NATIVE_CLIPBOARD_GRACE_MS = 80;
 
 export function useGridSelection(args: {
   rowIds: readonly string[];
   fieldNames: readonly string[];
   editable: boolean;
-  /** Cmd/Ctrl+C on the selected cell. */
-  onCopyCell: (address: CellAddress) => void;
-  /** Delete / Backspace on the selected cell. */
+  /** The clipboard text for a cell. Read at copy time, never cached. */
+  getCellText: (address: CellAddress) => string;
+  /** A copy landed on the clipboard — the caller owns the "Copied" feedback. */
+  onCopied?: (address: CellAddress, text: string) => void;
+  /** Delete / Backspace on the selected cell, and the second half of a cut. */
   onClearCell: (address: CellAddress) => void;
+  /**
+   * Clipboard text arrived on a selected cell. The caller decides whether it
+   * is one value or a spreadsheet block and writes accordingly.
+   */
+  onPasteText: (address: CellAddress, text: string) => void;
   onUndo: () => void;
   onRedo: () => void;
 }): GridSelectionApi {
@@ -58,8 +107,10 @@ export function useGridSelection(args: {
     rowIds,
     fieldNames,
     editable,
-    onCopyCell,
+    getCellText,
+    onCopied,
     onClearCell,
+    onPasteText,
     onUndo,
     onRedo,
   } = args;
@@ -168,6 +219,161 @@ export function useGridSelection(args: {
     node?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [selected]);
 
+  // ─── clipboard ──────────────────────────────────────────────────────────
+
+  /** True when the user has real text highlighted inside the grid. */
+  const hasTextRangeInGrid = useCallback((): boolean => {
+    const sel = typeof window !== "undefined" ? window.getSelection() : null;
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+    const node = sel.getRangeAt(0).commonAncestorContainer;
+    return containerRef.current?.contains(node) === true;
+  }, []);
+
+  const writeClipboard = useCallback(
+    (address: CellAddress, text: string) => {
+      if (typeof navigator === "undefined" || !navigator.clipboard) {
+        toast({
+          title: "Could not copy",
+          description: "This browser exposes no clipboard to the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+      void navigator.clipboard.writeText(text).then(
+        () => onCopied?.(address, text),
+        () =>
+          toast({
+            title: "Could not copy",
+            description: "The browser refused clipboard access.",
+            variant: "destructive",
+          }),
+      );
+    },
+    [onCopied],
+  );
+
+  const copyCell = useCallback(
+    (address?: CellAddress) => {
+      const target = address ?? selected;
+      if (!target) return;
+      writeClipboard(target, getCellText(target));
+    },
+    [getCellText, selected, writeClipboard],
+  );
+
+  const cutCell = useCallback(
+    (address?: CellAddress) => {
+      const target = address ?? selected;
+      if (!target || !editable) return;
+      writeClipboard(target, getCellText(target));
+      onClearCell(target);
+    },
+    [editable, getCellText, onClearCell, selected, writeClipboard],
+  );
+
+  const pasteIntoCell = useCallback(
+    async (address?: CellAddress) => {
+      const target = address ?? selected;
+      if (!target || !editable) return;
+      let text: string;
+      try {
+        text = await navigator.clipboard.readText();
+      } catch {
+        toast({
+          title: "Could not read the clipboard",
+          description:
+            "The browser did not allow it. Click the cell and press Cmd-V (Ctrl-V) instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+      onPasteText(target, text);
+    },
+    [editable, onPasteText, selected],
+  );
+
+  // A keyboard chord waits for the native event to claim the gesture; if none
+  // does within the grace period, the chord is served through the async API.
+  const pendingChord = useRef<{
+    kind: "copy" | "cut" | "paste";
+    address: CellAddress;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+
+  const clearPendingChord = useCallback(() => {
+    if (pendingChord.current) clearTimeout(pendingChord.current.timer);
+    pendingChord.current = null;
+  }, []);
+
+  useEffect(() => clearPendingChord, [clearPendingChord]);
+
+  const armChord = useCallback(
+    (kind: "copy" | "cut" | "paste", address: CellAddress) => {
+      clearPendingChord();
+      pendingChord.current = {
+        kind,
+        address,
+        timer: setTimeout(() => {
+          pendingChord.current = null;
+          if (kind === "copy") copyCell(address);
+          else if (kind === "cut") cutCell(address);
+          else void pasteIntoCell(address);
+        }, NATIVE_CLIPBOARD_GRACE_MS),
+      };
+    },
+    [clearPendingChord, copyCell, cutCell, pasteIntoCell],
+  );
+
+  /** The grid may act on a native clipboard event: a cell is current, no editor is open, and no text is highlighted. */
+  const nativeEventIsOurs = useCallback(
+    () => selected !== null && editing === null && !hasTextRangeInGrid(),
+    [editing, hasTextRangeInGrid, selected],
+  );
+
+  const onCopy = useCallback(
+    (e: ReactClipboardEvent<HTMLDivElement>) => {
+      if (!nativeEventIsOurs() || !selected) return;
+      const text = getCellText(selected);
+      e.clipboardData.setData("text/plain", text);
+      e.preventDefault();
+      clearPendingChord();
+      onCopied?.(selected, text);
+    },
+    [clearPendingChord, getCellText, nativeEventIsOurs, onCopied, selected],
+  );
+
+  const onCut = useCallback(
+    (e: ReactClipboardEvent<HTMLDivElement>) => {
+      if (!nativeEventIsOurs() || !selected) return;
+      const text = getCellText(selected);
+      e.clipboardData.setData("text/plain", text);
+      e.preventDefault();
+      clearPendingChord();
+      onCopied?.(selected, text);
+      if (editable) onClearCell(selected);
+    },
+    [
+      clearPendingChord,
+      editable,
+      getCellText,
+      nativeEventIsOurs,
+      onClearCell,
+      onCopied,
+      selected,
+    ],
+  );
+
+  const onPaste = useCallback(
+    (e: ReactClipboardEvent<HTMLDivElement>) => {
+      if (!nativeEventIsOurs() || !selected || !editable) return;
+      const text = e.clipboardData.getData("text/plain");
+      e.preventDefault();
+      clearPendingChord();
+      onPasteText(selected, text);
+    },
+    [clearPendingChord, editable, nativeEventIsOurs, onPasteText, selected],
+  );
+
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       // An open editor owns its own keys — Escape, Enter and Tab are handled by
@@ -223,9 +429,15 @@ export function useGridSelection(args: {
           }
           break;
         case "copy":
-          // No preventDefault: if the user has a real text range selected we
-          // must let the browser's own copy win.
-          onCopyCell(selected);
+        case "cut":
+        case "paste":
+          // No preventDefault: a real highlighted range inside the grid is the
+          // browser's to copy, and the native event (when it fires) must still
+          // reach `clipboardHandlers`. The chord is only ARMED; whichever door
+          // opens first serves it.
+          if (hasTextRangeInGrid()) break;
+          if (action.kind !== "copy" && !editable) break;
+          armChord(action.kind, selected);
           break;
         case "escape":
           e.preventDefault();
@@ -234,13 +446,14 @@ export function useGridSelection(args: {
       }
     },
     [
+      armChord,
       beginEdit,
       clear,
       editable,
       editing,
       fieldNames,
+      hasTextRangeInGrid,
       onClearCell,
-      onCopyCell,
       onRedo,
       onUndo,
       rowIds,
@@ -272,6 +485,10 @@ export function useGridSelection(args: {
     endEdit,
     containerRef,
     onKeyDown,
+    clipboardHandlers: { onCopy, onCut, onPaste },
+    copyCell,
+    cutCell,
+    pasteIntoCell,
     refocusGrid,
   };
 }

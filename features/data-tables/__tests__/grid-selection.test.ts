@@ -146,6 +146,14 @@ describe("classifyGridKey", () => {
     expect(classifyGridKey(key({ key: "Backspace" }))).toEqual({ kind: "clearCell" });
   });
 
+  it("maps the clipboard chords to copy, cut and paste on the selected cell", () => {
+    expect(classifyGridKey(key({ key: "c", metaKey: true }))).toEqual({ kind: "copy" });
+    expect(classifyGridKey(key({ key: "x", ctrlKey: true }))).toEqual({ kind: "cut" });
+    expect(classifyGridKey(key({ key: "v", metaKey: true }))).toEqual({ kind: "paste" });
+    // Unmodified they are typing.
+    expect(classifyGridKey(key({ key: "v" }))).toEqual({ kind: "editSeeded", seed: "v" });
+  });
+
   it("returns null for keys the grid has no opinion about", () => {
     expect(classifyGridKey(key({ key: "F5" }))).toBeNull();
     expect(classifyGridKey(key({ key: "Shift" }))).toBeNull();

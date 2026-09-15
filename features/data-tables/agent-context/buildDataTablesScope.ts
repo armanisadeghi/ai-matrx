@@ -61,9 +61,9 @@ export interface DataTableScopeInput {
    */
   fullDataset: DataTableScopeRow[] | null;
   /**
-   * The cell whose full-content editor is open, if any. This grid has no
-   * persistent click-to-select cell, so this is the only sense in which a cell
-   * is "current".
+   * The current cell: the one whose full-content editor is open (its draft is
+   * the value), else the cell the user has SELECTED on the grid (click / arrow
+   * keys). Null when neither.
    */
   openCell: { rowId: string; fieldName: string; value: string } | null;
   /** The row whose row editor is open, if any. */

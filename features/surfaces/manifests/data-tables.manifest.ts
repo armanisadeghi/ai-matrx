@@ -61,7 +61,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Active selection",
     sortOrder: 300,
     description:
-      "The cell or row the user has open right now. Populated only while a row or cell editor is open.",
+      "The cell or row the user is on right now — the selected cell (a click, or the arrow keys) or the row whose editor is open.",
   },
   {
     key: "table_data",
@@ -148,7 +148,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_cell_value",
     label: "Current cell value",
     description:
-      "Value of the cell the user has open in the full-content editor, stringified. Empty unless that editor is open — this grid has no persistent click-to-select cell, so a cell is 'current' only while its expanded editor is on screen.",
+      "Value of the current cell, stringified. The current cell is the one the user has SELECTED on the grid (a single click, or the arrow keys — the cell with the ring) or, when the full-content editor is open, that editor's draft. Empty when no cell is selected and no editor is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 2000,
@@ -159,7 +159,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_column_name",
     label: "Current column",
     description:
-      "MACHINE field name of the column containing the open cell — the same value a cell write sends as `field_name`, not the display header. Empty when no cell editor is open.",
+      "MACHINE field name of the column containing the current (selected or open) cell — the same value a cell write sends as `field_name`, not the display header. Empty when no cell is selected or open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -170,7 +170,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_row_id",
     label: "Current row ID",
     description:
-      "UUID of the row whose cell editor or row editor is open. Empty when neither is open.",
+      "UUID of the row containing the current cell, or whose row editor is open. Empty when no cell is selected and no editor is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -181,7 +181,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_row_json",
     label: "Current row",
     description:
-      "The row named by `current_row_id` as a JSON object keyed by machine field name. Empty object when no row is open.",
+      "The row named by `current_row_id` as a JSON object keyed by machine field name. Empty object when no row is current.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
@@ -328,14 +328,14 @@ export const dataTablesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/data-tables",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope) and verified against the live page. Still missing: data-surface-value Locate anchors on the grid, and the /data LIST route emits nothing by design (no authored state there).",
+    "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope) and verified against the live page; the grid mounts the v3 right-click menu (cell / row / column sections) since 2026-09-14. Still missing: data-surface-value Locate anchors on the grid, and the /data LIST route emits nothing by design (no authored state there).",
   label: "Data Tables",
   urlPattern: "/data/[id]",
   intro: `<surface_intro>
 You are on the Data Tables surface: the user is looking at one table they created, at /data/[id] — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
 table_id / table_name / table_description identify the table. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
 The row bodies are visible_data_csv (the page on screen, whose first CSV column is row_id) and, when the viewer has already loaded it, full_table_json. row_count is the total after the user's search. search_term is the user's own filter — read it to know why rows are missing.
-current_cell_value / current_column_name / current_row_id / current_row_json describe the cell or row the user has open right now, and are empty when no editor is on screen. This grid has no persistent selected cell, so do not wait for one.
+current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection.
 This is the user's real data. You may write ONE cell at a time with cell_value, naming the row and column explicitly from what you have READ, and only for a row on the page currently on screen — that is what lets the user see the change land. You may write table_description. Everything else is theirs: columns and types are a migration that can destroy values, whole-table and whole-row replacement is unreviewable, deletes are human, and search_term is their filter.
 is_read_only tells you whether you may write at all; on a shared table you can read but every write is refused.
 </surface_intro>`,

@@ -20,6 +20,22 @@
  * copy into an accidental edit. `directClickKinds()` below is the whole list of
  * what a single click may act on; adding a free-text editor to it is a defect.
  *
+ * A CHOOSER OPENS ON THE SECOND CLICK. A choice cell's first click SELECTS it
+ * (so Cmd-C, Cmd-X, the arrow keys and the right-click menu all have a current
+ * cell); a click on the cell that is ALREADY selected opens the option list —
+ * the Airtable gesture. Opening the chooser on the very first click moved
+ * focus into its search box, and every keyboard shortcut then went to that box
+ * instead of the grid: a choice column could not be copied at all (2026-09-14).
+ * Checkboxes and ratings stay one-click: a mis-click on those is instantly
+ * undone in place and steals no focus.
+ *
+ * CLIPBOARD KEYS. Cmd-C / Cmd-X / Cmd-V on a selected cell act on THAT CELL —
+ * copy its value, cut it (copy + clear), paste over it. A paste carrying a
+ * spreadsheet block (tabs / line breaks) lands as a block from the selected
+ * cell downward and rightward (`grid-clipboard.ts`). None of these need an
+ * editor open, which is the whole point: a normal table copies what you point
+ * at, not only what you are typing into.
+ *
  * Addresses are (rowId, fieldName), never (rowIndex, colIndex): the grid
  * reloads after every write, and realtime reorders rows underneath the user. An
  * index-based selection silently jumps to a DIFFERENT cell when that happens —
@@ -51,6 +67,8 @@ export type GridKeyAction =
   | { kind: "editSeeded"; seed: string }
   | { kind: "clearCell" }
   | { kind: "copy" }
+  | { kind: "cut" }
+  | { kind: "paste" }
   | { kind: "escape" }
   | null;
 
@@ -201,6 +219,14 @@ export function classifyGridKey(e: {
     case "c":
     case "C":
       if (mod) return { kind: "copy" };
+      break;
+    case "x":
+    case "X":
+      if (mod) return { kind: "cut" };
+      break;
+    case "v":
+    case "V":
+      if (mod) return { kind: "paste" };
       break;
   }
 

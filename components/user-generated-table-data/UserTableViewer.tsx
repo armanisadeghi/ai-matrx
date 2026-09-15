@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -51,7 +51,7 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
 import {
   choicesForRow,
   useFieldChoiceMap,
@@ -91,12 +91,36 @@ import {
   type FieldDataType,
 } from "@/features/data-tables/types";
 import {
+  buildDuplicateOps,
   buildFillDownOps,
   buildSetColumnOps,
   capturePriorValues,
   orderSelectedRows,
   type SelectableRow,
 } from "@/features/data-tables/bulk-row-actions";
+import {
+  cellClipboardText,
+  gridToTsv,
+  parseClipboardGrid,
+  planPaste,
+  storedValuesEqual,
+} from "@/features/data-tables/grid-clipboard";
+import {
+  EMPTY_GRID_MENU_TARGET,
+  GRID_FIELD_DOM_ATTR,
+  GRID_ROW_DOM_ATTR,
+  buildGridCellMenuSection,
+  buildGridColumnMenuSection,
+  buildGridRowMenuSection,
+  resolveGridMenuTarget,
+  type GridMenuTarget,
+} from "@/features/data-tables/grid-context-menu";
+import {
+  buildDatasetTableMenuSection,
+  datasetTableEntityRef,
+} from "@/features/data-tables/dataset-table-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { BulkRowActions } from "@/features/data-tables/components/BulkRowActions";
 import {
   applyColumnFilters as applyFilters,
@@ -1935,30 +1959,30 @@ const UserTableViewer = ({
     [displayRows],
   );
 
-  const handleCopyCell = useCallback(
-    (address: CellAddress) => {
-      const raw = readCell(address);
-      const text =
-        raw === null || raw === undefined
-          ? ""
-          : typeof raw === "object"
-            ? JSON.stringify(raw)
-            : String(raw);
-      void navigator.clipboard.writeText(text).then(
-        () =>
-          toast({
-            title: "Copied",
-            description: text.slice(0, 80) || "Empty cell",
-          }),
-        () =>
-          toast({
-            title: "Could not copy",
-            description: "The browser refused clipboard access.",
-            variant: "destructive",
-          }),
-      );
-    },
+  /** What a cell puts on the clipboard — the same text a spreadsheet would. */
+  const getCellText = useCallback(
+    (address: CellAddress): string => cellClipboardText(readCell(address)),
     [readCell],
+  );
+
+  const handleCopied = useCallback((_address: CellAddress, text: string) => {
+    toast({ title: "Copied", description: text.slice(0, 80) || "Empty cell" });
+  }, []);
+
+  /**
+   * Coerce pasted text EXACTLY the way a hand edit does: the column's declared
+   * format owns the parse (currency strips "$", a number column yields a
+   * number, empty text becomes null). A second normalizer here is how a paste
+   * and a typed edit end up storing different things for the same characters.
+   */
+  const coerceForField = useCallback(
+    (field: TableField, raw: string): unknown =>
+      parseFieldInput(
+        raw,
+        resolveFieldFormat(field.data_type, field.metadata),
+        field.data_type,
+      ),
+    [],
   );
 
   /** Delete / Backspace on a selected cell. A write, so it is undoable. */
@@ -2070,6 +2094,158 @@ const UserTableViewer = ({
     [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
   );
 
+  /**
+   * Clipboard text landed on a selected cell (Cmd-V, the Edit menu, or the
+   * right-click Paste). One value writes one cell; a spreadsheet block (tabs /
+   * line breaks) lands from that cell downward and rightward over the rows on
+   * this page, in ONE transaction, every cell recorded on the undo stack.
+   *
+   * Rows that do not fit below the anchor are never dropped silently: the user
+   * is asked whether to append them as new rows or skip them. Columns that
+   * fall off the right edge are reported after the write lands.
+   */
+  const handlePasteText = useCallback(
+    async (anchor: CellAddress, text: string) => {
+      if (isReadOnly) return;
+      const block = parseClipboardGrid(text);
+      const plan = planPaste(anchor, block, rowIdsOnPage, fieldNamesInOrder);
+      if (!plan) {
+        toast({
+          title: "Nothing to paste into",
+          description:
+            "The selected cell is no longer on this page. Click a cell and paste again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const ops: BulkOp[] = [];
+      const priors = new Map<string, unknown>();
+      for (const cell of plan.cells) {
+        const field = fieldByName.get(cell.fieldName);
+        if (!field) continue;
+        const next = coerceForField(field, cell.raw);
+        const prior = readCell(cell) ?? null;
+        if (storedValuesEqual(next, prior)) continue;
+        ops.push({
+          op: "cell",
+          row_id: cell.rowId,
+          field_name: cell.fieldName,
+          value: next,
+        });
+        priors.set(`${cell.rowId}::${cell.fieldName}`, prior);
+      }
+
+      let appended = 0;
+      if (plan.overflowRows.length > 0) {
+        const n = plan.overflowRows.length;
+        const rowsWord = n === 1 ? "row" : "rows";
+        const colsWord = plan.fieldNames.length === 1 ? "column" : "columns";
+        const ok = await confirmDialog({
+          title: `Add ${n} new ${rowsWord}?`,
+          description: `The pasted block has ${n} more ${rowsWord} than this page has below the selected cell. Adding them creates ${n} new ${rowsWord} filled from the ${plan.fieldNames.length} pasted ${colsWord}; skipping keeps only the rows that fit.`,
+          confirmLabel: `Add ${n} ${rowsWord}`,
+          cancelLabel: "Skip them",
+        });
+        if (ok) {
+          for (const overflow of plan.overflowRows) {
+            const data: Record<string, unknown> = {};
+            plan.fieldNames.forEach((fieldName, i) => {
+              const field = fieldByName.get(fieldName);
+              if (field) data[fieldName] = coerceForField(field, overflow[i] ?? "");
+            });
+            ops.push({ op: "insert", data });
+            appended += 1;
+          }
+        }
+      }
+
+      const cellCount = ops.length - appended;
+      if (ops.length === 0) {
+        toast({
+          title: "Nothing changed",
+          description: "The pasted values match what is already there.",
+        });
+        return;
+      }
+
+      const describe =
+        `Pasted ${cellCount} cell${cellCount === 1 ? "" : "s"}` +
+        (appended > 0
+          ? ` and added ${appended} row${appended === 1 ? "" : "s"}`
+          : "");
+      // Inserting rows changes which rows exist, so that case refetches; a
+      // pure cell batch patches in place and stays undoable cell by cell.
+      const landed = await runBulkOps(ops, describe, appended > 0);
+      if (!landed) return;
+      for (const op of ops) {
+        if (op.op !== "cell") continue;
+        patchLocalCell(op.row_id, op.field_name, op.value);
+        cellUndo.record({
+          tableId,
+          rowId: op.row_id,
+          fieldName: op.field_name,
+          fieldDisplayName:
+            fieldByName.get(op.field_name)?.display_name ?? op.field_name,
+          priorValue: priors.get(`${op.row_id}::${op.field_name}`) ?? null,
+          nextValue: op.value,
+        });
+      }
+      if (plan.clippedColumns > 0) {
+        const c = plan.clippedColumns;
+        toast({
+          title: `${c} column${c === 1 ? "" : "s"} did not fit`,
+          description:
+            "The pasted block is wider than the columns to the right of the selected cell. Paste again from a column further left, or add columns first.",
+        });
+      }
+    },
+    [
+      cellUndo,
+      coerceForField,
+      fieldNamesInOrder,
+      fields,
+      isReadOnly,
+      patchLocalCell,
+      readCell,
+      rowIdsOnPage,
+      runBulkOps,
+      tableId,
+    ],
+  );
+
+  /** Duplicate ONE row from the right-click menu — the bulk-bar action, for one row. */
+  const handleDuplicateRow = useCallback(
+    async (rowId: string) => {
+      const row = displayRows.find((r) => r.id === rowId);
+      if (!row) return;
+      await runBulkOps(buildDuplicateOps([row]), "Duplicated 1 row");
+    },
+    [displayRows, runBulkOps],
+  );
+
+  /** Copy ONE row as a spreadsheet-ready TSV line, in the view's column order. */
+  const copyRowToClipboard = useCallback(
+    (rowId: string) => {
+      const row = displayRows.find((r) => r.id === rowId);
+      if (!row) return;
+      const text = gridToTsv([
+        viewFields.map((f) => row.data?.[f.field_name] ?? null),
+      ]);
+      void navigator.clipboard.writeText(text).then(
+        () => toast({ title: "Row copied", description: text.slice(0, 80) }),
+        () =>
+          toast({
+            title: "Could not copy",
+            description: "The browser refused clipboard access.",
+            variant: "destructive",
+          }),
+      );
+    },
+    [displayRows, viewFields],
+  );
+
   const handleBulkSetColumn = useCallback(
     async (fieldName: string, rawValue: string) => {
       const rows = orderSelectedRows(displayRows, selectedRowIds);
@@ -2109,11 +2285,68 @@ const UserTableViewer = ({
     rowIds: rowIdsOnPage,
     fieldNames: fieldNamesInOrder,
     editable: !isReadOnly,
-    onCopyCell: handleCopyCell,
+    getCellText,
+    onCopied: handleCopied,
     onClearCell: (address) => void handleClearCell(address),
+    // A block paste may open a confirm dialog; when it closes the grid must
+    // get focus back or the very next Cmd-Z goes nowhere.
+    onPasteText: (address, text) =>
+      void handlePasteText(address, text).finally(() => grid.refocusGrid()),
     onUndo: () => void cellUndo.undo(),
     onRedo: () => void cellUndo.redo(),
   });
+
+  // ─── The ONE right-click menu for the grid ──────────────────────────────
+  //
+  // Single-instance delegation (context-menu-v3): one `NonEditableContextMenu`
+  // wraps the scroll container and `resolveContextOnOpen` works out which
+  // cell / row / column was clicked from the DOM anchors the grid already
+  // renders. A ref keeps `getApplicationScope` (read at click time) truthful;
+  // the state is what re-renders the section labels with the clicked cell's
+  // column name. Right-clicking a cell SELECTS it, the way every spreadsheet
+  // does, so the menu's Cut / Paste / Clear act on the cell under the cursor.
+  const menuTargetRef = useRef<GridMenuTarget>(EMPTY_GRID_MENU_TARGET);
+  const [menuTarget, setMenuTarget] = useState<GridMenuTarget>(
+    EMPTY_GRID_MENU_TARGET,
+  );
+
+  const resolveGridMenu = (target: HTMLElement | null) => {
+    const next = resolveGridMenuTarget(target);
+    menuTargetRef.current = next;
+    setMenuTarget(next);
+    if (next.cell && !grid.isEditing(next.cell.rowId, next.cell.fieldName)) {
+      grid.select(next.cell);
+    }
+    // No per-row entity: a dataset row has no entity token of its own, so the
+    // menu-level `entity` (the dataset) stands for Attach To / Share.
+    return null;
+  };
+
+  const getMenuApplicationScope = () => {
+    const t = menuTargetRef.current;
+    // `content` is what the menu's own Copy verb copies: the clicked cell's
+    // text, else the clicked row as TSV. Never the whole grid's DOM text.
+    const content = t.cell
+      ? getCellText(t.cell)
+      : t.rowId
+        ? gridToTsv([
+            viewFields.map(
+              (f) =>
+                displayRows.find((r) => r.id === t.rowId)?.data?.[
+                  f.field_name
+                ] ?? null,
+            ),
+          ])
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection?.()?.toString() ?? "",
+      selectionRange: null,
+      contextData: {
+        ...(getSurfaceScope() as Record<string, unknown>),
+        content,
+      },
+    });
+  };
 
   if (loading && !tableInfo)
     return (
@@ -2207,6 +2440,10 @@ const UserTableViewer = ({
   // read-only, which refuses a write it could have allowed. Refusing early is
   // the safe direction; allowing early is not.
   const surfacePermissionKnown = tableInfo !== null && currentUserId !== null;
+  // The "current cell" an agent is told about: the one whose full-content
+  // editor is open wins (its draft is the live value); otherwise the cell the
+  // user has SELECTED on the grid. Before the grid had a persistent selection
+  // this was editor-only, and the manifest said so — now a click is enough.
   const surfaceOpenCell =
     showTextModal && expandedRowId && expandedFieldKey
       ? {
@@ -2214,7 +2451,13 @@ const UserTableViewer = ({
           fieldName: expandedFieldKey,
           value: expandedText ?? "",
         }
-      : null;
+      : grid.selected
+        ? {
+            rowId: grid.selected.rowId,
+            fieldName: grid.selected.fieldName,
+            value: getCellText(grid.selected),
+          }
+        : null;
 
   const surfaceWriteSnapshot: DataTableWriteLiveState = {
     tableId,
@@ -2260,6 +2503,93 @@ const UserTableViewer = ({
         ? { rowId: selectedRowId, data: selectedRowData }
         : null,
   };
+
+  const menuField = menuTarget.fieldName
+    ? (fields.find((f) => f.field_name === menuTarget.fieldName) ?? null)
+    : null;
+  const menuRow = menuTarget.rowId
+    ? (displayRows.find((r) => r.id === menuTarget.rowId) ?? null)
+    : null;
+  const gridMenuSections = [
+    buildGridCellMenuSection({
+      cell:
+        menuTarget.cell && menuField
+          ? { address: menuTarget.cell, displayName: menuField.display_name }
+          : null,
+      readOnly: isReadOnly,
+      on: {
+        cut: (address) => grid.cutCell(address),
+        paste: (address) => void grid.pasteIntoCell(address),
+        clear: (address) => void handleClearCell(address),
+        edit: (address) => grid.beginEdit(address),
+      },
+    }),
+    buildGridRowMenuSection({
+      row: menuRow
+        ? {
+            id: menuRow.id,
+            label:
+              viewFields
+                .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
+                .find(Boolean)
+                ?.slice(0, 40) ?? "row",
+          }
+        : null,
+      readOnly: isReadOnly,
+      on: {
+        edit: (rowId) => {
+          const row = displayRows.find((r) => r.id === rowId);
+          if (row) handleEditRow(row.id, row.data);
+        },
+        duplicate: (rowId) => void handleDuplicateRow(rowId),
+        copy: copyRowToClipboard,
+        history: (rowId) => setHistoryRowId(rowId),
+        reference: (rowId) => {
+          const row = displayRows.find((r) => r.id === rowId);
+          if (!row) return;
+          setReferenceRowId(row.id);
+          setReferenceRowData(row.data);
+          setShowReferenceModal(true);
+        },
+        remove: (rowId) => handleDeleteRow(rowId),
+      },
+    }),
+    buildGridColumnMenuSection({
+      column: menuField
+        ? {
+            fieldName: menuField.field_name,
+            displayName: menuField.display_name,
+            sortedBy: sortField === menuField.field_name ? sortDirection : null,
+          }
+        : null,
+      readOnly: isReadOnly,
+      isOnlyColumn: fields.length <= 1,
+      on: {
+        sortAsc: (fieldName) => void handleSort(fieldName, "asc"),
+        sortDesc: (fieldName) => void handleSort(fieldName, "desc"),
+        clearSort,
+        hide: (fieldName) =>
+          setHiddenColumns(
+            hiddenColumns.includes(fieldName)
+              ? hiddenColumns
+              : [...hiddenColumns, fieldName],
+          ),
+        configure: () => setShowTableConfigModal(true),
+        remove: (fieldName) => {
+          const field = fields.find((f) => f.field_name === fieldName);
+          if (field) void handleDeleteColumn(field);
+        },
+      },
+    }),
+    buildDatasetTableMenuSection({
+      getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
+      unavailable: {
+        // On the route itself the door leads to where the user already is.
+        "dataset-open-workspace":
+          emitSurfaceScope && "Already open in the Data Workspace",
+      },
+    }),
+  ];
 
   const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
@@ -2697,6 +3027,23 @@ const UserTableViewer = ({
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
           keeps the legacy content-sized cap. */}
+      <NonEditableContextMenu
+        sourceFeature="udt"
+        // Only the /data/[id] mount IS the data-tables surface; inside another
+        // surface's window the menu resolves the host surface instead.
+        surfaceName={emitSurfaceScope ? DATA_TABLES_SURFACE_NAME : undefined}
+        menuVersion={1}
+        getApplicationScope={getMenuApplicationScope}
+        resolveContextOnOpen={resolveGridMenu}
+        entity={
+          datasetTableEntityRef({
+            id: tableId,
+            name: tableInfo.table_name ?? null,
+          }) ?? undefined
+        }
+        contentSource={{ type: "raw" }}
+        extraSections={gridMenuSections}
+      >
       <div
         ref={grid.containerRef}
         // tabIndex makes the grid a focus target so arrow keys, Tab, Enter,
@@ -2707,6 +3054,9 @@ const UserTableViewer = ({
         tabIndex={0}
         role="grid"
         onKeyDown={grid.onKeyDown}
+        // The Edit-menu / browser-native door for copy, cut and paste on the
+        // selected cell (`useGridSelection` — THE CLIPBOARD HAS TWO DOORS).
+        {...grid.clipboardHandlers}
         className={
           fillHeight
             ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm outline-none [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
@@ -2740,6 +3090,7 @@ const UserTableViewer = ({
                 return (
                   <TableHead
                     key={field.id}
+                    {...{ [GRID_FIELD_DOM_ATTR]: field.field_name }}
                     className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
                   >
                     <div className="flex items-center justify-between gap-1">
@@ -2846,6 +3197,7 @@ const UserTableViewer = ({
               displayRows.map((row, index) => (
                 <TableRow
                   key={row.id}
+                  {...{ [GRID_ROW_DOM_ATTR]: row.id }}
                   className={`
                     ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
                     ${selectedRowIdSet.has(row.id) ? "bg-primary/5" : ""}
@@ -3173,6 +3525,7 @@ const UserTableViewer = ({
           </TableBody>
         </Table>
       </div>
+      </NonEditableContextMenu>
 
       {/* Pagination — pinned band in fillHeight mode, normal flow otherwise. */}
       {!loading && displayRows.length > 0 && (

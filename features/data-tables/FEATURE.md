@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-14`
 
 ---
 
@@ -109,7 +109,7 @@ cell — an off-list value goes amber and the user decides.
 - ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked. Today the user picks the destination by entering via `/data` (typed) or `/workbooks` (lossless).
 
 **Pending — small + clear (🚧 ready when you say go):**
-- 🚧 **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid.
+- ✅ **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid — Cmd-V on a selected cell lands a TSV block downward and rightward in one transaction (2026-09-14, see § Grid clipboard + right-click menu).
 - 🚧 **`udt_workbooks.original_file_id` linkage** to the universal file handler — store the uploaded XLSX/CSV blob so the lossless original can be downloaded / re-imported / passed to a "diff against original" view.
 
 ---
@@ -211,6 +211,9 @@ creates workbook UI and duplicate internal editor documents.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
+- `features/data-tables/grid-clipboard.ts` (TSV parse / serialize + `planPaste`, pure) and
+  `features/data-tables/grid-context-menu.ts` (the grid's cell / row / column menu sections +
+  the DOM-anchor resolver, pure `build*`) — consumed by `UserTableViewer` + `useGridSelection`.
 - `features/data-tables/components/TableCopyControls.tsx` + `table-copy.ts` — the shared user-table copy control (canonical `CopyButtons`; row/column shaping through the platform `copy-subset` window, `components/agent-copy/copy-subset/`) and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts the controls once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
 
 **Services / business logic**
@@ -723,7 +726,47 @@ blob must not also discard the column layout someone arranged. Bump
 `SAVED_VIEW_DEFINITION_VERSION` when the shape changes and teach the parser the
 older shapes.
 
+## Grid clipboard + right-click menu (2026-09-14)
+
+**Copy / cut / paste act on the SELECTED cell, no editor needed.** Cmd-C copies
+the cell's text; Cmd-X copies and clears it; Cmd-V writes the clipboard over it.
+A paste carrying a spreadsheet block (tabs / line breaks, Excel quoting) lands as
+a block from the selected cell downward and rightward, in ONE `udt_bulk_write`,
+every cell on the undo stack; rows that fall below the page are offered as new
+rows (confirm) and columns that fall off the right edge are reported. The pure
+model is [`grid-clipboard.ts`](./grid-clipboard.ts) (TSV parse / serialize,
+`planPaste`) with its tests; the React shell is `useGridSelection`, which
+serves BOTH clipboard doors — the native `copy` / `cut` / `paste` events (the
+browser Edit menu, `event.clipboardData`, no permission prompt) and the keyboard
+chords, which arm a pending gesture and fall back to the async Clipboard API
+only when no native event claims it (Chromium fires none on a focused `<div>`
+with nothing text-selected). A real text range highlighted inside the grid is
+always the browser's to copy.
+
+**A choice cell selects on the FIRST click and opens its chooser on the
+second** (or Enter). Opening it on the first click moved focus into the
+chooser's search box and every grid shortcut went there — a choice column could
+not be copied at all.
+
+**The grid mounts ONE v3 right-click menu** (`NonEditableContextMenu` around
+the scroll container; `resolveContextOnOpen` reads the clicked `<td data-cell>`
+/ `<tr data-row-id>` / `<th data-field>`). Right-clicking a cell selects it. The
+menu's own Copy copies the cell (scope `content` = the cell text). Sections from
+[`grid-context-menu.ts`](./grid-context-menu.ts) — **Cell** (Cut · Paste ·
+Clear · Edit), **Row** (Edit… · Duplicate · Copy row as TSV · Row history · Get
+reference… · Delete…), **Column** (Sort A→Z / Z→A · Clear sort · Hide · Column
+settings… · Delete…) — plus the shared dataset section
+(`buildDatasetTableMenuSection`, "Open in Data Workspace" disabled on the route
+itself). Every item delegates to a handler the toolbar / header menu / row
+actions already call; view-only tables keep every row, disabled with the reason.
+The menu carries `surfaceName` only on the `/data/[id]` mount (inside another
+surface's window it resolves the host). The surface's `current_cell_value` /
+`current_column_name` / `current_row_id` now follow the SELECTED cell, not only
+an open editor.
+
 ## Change log
+
+- `2026-09-14` — **Copy / cut / paste on a selected cell (spreadsheet blocks included), choice cells select-then-open, and the grid's first right-click menu.** See § Grid clipboard + right-click menu. Verified live on `/data/[id]` in the isolated browser: Cmd-C on a plain and on a choice cell wrote the cell text; a native paste event over a cell wrote it and Cmd-Z restored it; a two-row block on the last row raised the "Add 1 new row?" confirm, Skip wrote the fitting cell; the menu opened with the Cell / Row / Column sections and no INERT / VALUE MAPPING scream. Not verifiable in the isolated browser (it denies clipboard read and fires no native clipboard events): the Cmd-V async fallback was proven with a stubbed `readText`; the real-browser prompt path is untested.
 
 - `2026-09-13` — **Data's ambient assistant no longer shrinks list pages or covers the full-height table editor.** The route wrapper is padding-free and clipped; `/data` and `/data/create` now own their runway on the actual scrolling leaf. The launcher is exact-route limited so `/data/[id]` preserves its grid and pagination viewport. A forcing source-contract test locks the ownership and route boundary.
 
