@@ -88,11 +88,28 @@ export function FormulaExpressionEditor({
       expression: `${expression}${expression && !expression.endsWith(" ") ? " " : ""}{${displayName}}`,
     });
 
+  // A reference is judged against the table's columns HERE, not only at
+  // evaluation: "Valid" for `{Prize}` on a table with a `Price` column would
+  // be a lie the user only discovers as #ERROR in every row after saving.
+  // Same resolution the engine uses (`withComputedColumns`): machine name or
+  // display name, case-insensitive.
+  const knownReferences = new Set(
+    siblingFields.flatMap((f) => [f.field_name.toLowerCase(), f.display_name.toLowerCase()]),
+  );
+  const unknownReferences = parsed.ok
+    ? parsed.references.filter((name) => !knownReferences.has(name.toLowerCase()))
+    : [];
+
   const status = !expression.trim()
     ? { tone: "muted" as const, text: "No expression yet — the column will be empty." }
-    : parsed.ok
-      ? { tone: "ok" as const, text: `Valid · uses ${parsed.references.length} column${parsed.references.length === 1 ? "" : "s"}` }
-      : { tone: "error" as const, text: `${parsed.error} (at character ${parsed.position + 1})` };
+    : !parsed.ok
+      ? { tone: "error" as const, text: `${parsed.error} (at character ${parsed.position + 1})` }
+      : unknownReferences.length > 0
+        ? {
+            tone: "error" as const,
+            text: `This table has no column called ${unknownReferences.map((n) => `{${n}}`).join(", ")} — every row would show #ERROR. Pick a column from the chips below.`,
+          }
+        : { tone: "ok" as const, text: `Valid · uses ${parsed.references.length} column${parsed.references.length === 1 ? "" : "s"}` };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
