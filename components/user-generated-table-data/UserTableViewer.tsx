@@ -443,7 +443,6 @@ const UserTableViewer = ({
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
   const [showPasteRowsDialog, setShowPasteRowsDialog] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showTableConfigModal, setShowTableConfigModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
 
@@ -2700,7 +2699,6 @@ const UserTableViewer = ({
         showDeleteModal={showDeleteModal}
         showAddColumnModal={showAddColumnModal}
         showAddRowModal={showAddRowModal}
-        showExportModal={showExportModal}
         showTableConfigModal={showTableConfigModal}
         showReferenceOverlay={showReferenceOverlay}
         showRowOrderingModal={showRowOrderingModal}
@@ -2710,7 +2708,6 @@ const UserTableViewer = ({
         setShowDeleteModal={setShowDeleteModal}
         setShowAddColumnModal={setShowAddColumnModal}
         setShowAddRowModal={setShowAddRowModal}
-        setShowExportModal={setShowExportModal}
         setShowTableConfigModal={setShowTableConfigModal}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
@@ -2764,15 +2761,22 @@ const UserTableViewer = ({
           setAllSortedData(null);
           loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
-        copyControls={
+        copyControls={(onChooseReference) => (
           <TableCopyControls
             tableId={tableId}
             tableName={tableInfo.table_name}
             fields={fields}
+            hiddenColumns={hiddenColumns}
             selectedRowIds={selectedRowIds}
             loadRows={loadRowsForCopy}
+            loadAllRows={async () => {
+              const complete = await getCompleteTable({ tableId, sortField, sortDirection });
+              if (isServiceFailure(complete)) throw new Error(complete.error);
+              return complete.data.rows;
+            }}
+            onChooseReference={onChooseReference}
           />
-        }
+        )}
         mobileViewControls={
           <div className="space-y-2">
             {sortField && !isReadOnly ? (
