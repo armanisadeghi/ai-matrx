@@ -677,27 +677,37 @@ entries stay open. The error was sizing the class by *the guard's unacked backlo
 instead of by the live database — the backlog is a sample of recent DDL, never the
 population.
 
-**Not all 240 are defects, and this entry does not claim they are.** D262 already
-established the carve-out: a table whose `organization_id` IS its row identity
-(`iam.system_orgs`, `iam.org_industries`, `iam.organization_preferences`,
-`iam.api_keys`) is correctly un-backstopped. The finding is that **the ratio is
-unmeasured** — 240 tables match the predicate the guard treats as a defect, no one
-has separated the correct-by-design ones from the real gaps, and the guard cannot
-ever surface them because it only watches new DDL.
+**None of the 240 is a defect for lacking a backstop.** Under
+`../common-docs/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
+absent org and never chooses one; "a trigger or column default filling the org" and "a release
+guard treating an automatic org backstop as healthy" are defects), NOT NULL with no trigger and
+no default is the **target shape**. D262's org-keyed identity carve-out (`iam.system_orgs`,
+`iam.org_industries`, `iam.organization_preferences`, `iam.api_keys`) needs no writer change at
+all. What is unmeasured is **writer coverage** — whether every writer to the rest sends an
+explicit `organization_id` — and a guard that only tails new DDL cannot measure it.
 
-**Fix, in this order:**
+Re-run live 2026-09-14 (same trigger predicate over non-partition base/partitioned tables):
+**414** backstopped · **8** column-default only · **313** neither · **735** total.
 
-1. Classify the 240 — org-keyed identity (correct), inherits from a parent (wants
-   `inherit_org_from_parent`), or standalone org-scoped (wants `_stamp_org_default`).
-   The 131 `hr.*` tables are one decision, not 131, since they share a write path.
-2. Attach the backstop where it is wanted, per class, largest schema first.
-3. **Give the guard a census mode** so this cannot recur: a check that runs the
-   predicate against the whole database and compares against a declared exemption
-   list, rather than only tailing new DDL. Without step 3 the next steward run is
-   blind again, and the same undercount happens.
+**The fix (corrected 2026-09-14 to the PLAN, as D303 was; the earlier "classify, then attach
+`inherit_org_from_parent` / `_stamp_org_default` where wanted" plan contradicted it and must
+not be executed):**
 
-Guard rows acked 2026-09-09 with `p_reason` citing this entry; they re-fire on the
-next DDL touch until the triggers exist.
+1. **Never attach a backstop to a no-backstop table.** The open work per table is writer proof:
+   every insert/upsert/RPC carries an explicit org, and a child copies its parent's org
+   application-side before constructing the write (PLAN rules 1, 3 and 4). Direct-Supabase
+   writers are PLAN **FE-T05**, org-writing database functions **DB-T04**, aidream services
+   **AD-T02**. The 131 `hr.*` tables share a write path — one proof, not 131.
+2. **The backstopped tables are the debt.** Fix each family's writers, then detach per
+   **DB-T06** (`_stamp_org_default`) and **DB-T07** (parent/specialized assigners); the
+   column-default tables are **DB-T05**.
+3. **Census mode, pointed the right way:** the guard censuses the whole database for
+   assignment growth, not for missing backstops — **DB-T01** (inventory), **DB-T02** (invert
+   `platform._ddl_guard`, remove `org_not_null_no_backstop`), **DB-T03** (release/ORM gates
+   become `no_org_assignment`).
+
+Guard rows acked 2026-09-09 with `p_reason` citing this entry; they re-fire on the next DDL
+touch until DB-T02 removes the rule. Ack them as correct-by-law; never answer one with a trigger.
 
 ### D299 — ESLint is broken repo-wide: `eslint-plugin-react` crashes on ESLint 10
 
@@ -1336,7 +1346,7 @@ the deploy train once the file is committed) applies it, then re-checks `pnpm ch
 browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
 migration lands. **Live check 2026-09-12 05:50 UTC on the exact failing route:** the page loads, no `useEnsureCloudFile` error, and file metadata comes through the server boundary — but `features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts:173` still does ONE direct PostgREST read of `files.files` (40 ids, `id, deleted_at`), 145 ms at idle as the admin, i.e. still on the trapped plan; only the migration closes it.
 
-### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
+### D262 — seven `organization_id NOT NULL` tables with no org backstop are the correct shape; their writers must be proven to send an explicit org (2026-08-26)
 
 Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c), triaged live
 against the database, not against docs.
@@ -1357,19 +1367,30 @@ All seven have `organization_id` **NOT NULL, no column default, and no `_stamp_o
 
 **The scope guards are not backstops.** Each of those five `validate_*` functions was read live
 (`pg_proc.prosrc`): none assigns `NEW.organization_id`. They REJECT a mismatched scope; they never
-supply a missing one. So a caller that omits `organization_id` still hits the NOT NULL and the
-write 500s — exactly the failure `org_not_null_no_backstop` exists to prevent.
+supply a missing one — which is correct. A caller that omits `organization_id` hits the NOT NULL
+and is refused: the outcome `../common-docs/projects/no-db-assigned-org/PLAN.md` requires (owner
+ruling: the database never chooses an org; a trigger filling it is a defect). The defect, where one
+exists, is that caller.
 
 This is NOT the D241 false positive (fixed 2026-08-21, OID comparison) and NOT the `iam` org-keyed
-residue D241 names — those four are correctly un-backstopped because `organization_id` is their row
-identity. These seven inherit their org from a parent (site, brand, mandate) and should stamp it.
+residue D241 names — those four need no writer change because `organization_id` is their row
+identity. These seven take their org from a parent (site, brand, mandate).
 
-**Fix:** attach `inherit_org_from_parent` (or `_stamp_org_default` where there is no parent) in a
-migration per table, then re-run `pnpm check:ddl-guard-log`. The `seo.*`/`web.*` offering tables
-were created 2026-08-25/26 and are in-flight — fix them in the branch that is building them.
+**The fix (corrected 2026-09-14 to the PLAN, as D303 was; the earlier "attach
+`inherit_org_from_parent` / `_stamp_org_default`" recommendation contradicted it and must not be
+executed):**
 
-Guard rows acked 2026-08-26 with `p_reason` citing this entry; they will re-fire on the next DDL
-touch until the triggers exist.
+1. **Never attach a backstop to these seven.** Re-verified live 2026-09-14: all seven still carry no
+   assignment trigger and no column default — the target shape.
+2. **Prove the writers.** Every insert/upsert/RPC on each table puts an explicit `organization_id`
+   in its payload, copying the parent site's/brand's/mandate's org application-side before the write
+   (PLAN rules 1 and 4). Direct-Supabase writers are PLAN **FE-T05**, org-writing database functions
+   **DB-T04**, aidream services **AD-T02**.
+3. **The guard rule is the defect:** `org_not_null_no_backstop` rewards a backstop — **DB-T02**
+   inverts `platform._ddl_guard`; **DB-T03** inverts the release/ORM gates.
+
+Guard rows acked 2026-08-26 with `p_reason` citing this entry; they re-fire on the next DDL touch
+until DB-T02 removes the rule. Ack them as correct-by-law; never answer one with a trigger.
 
 ### D263 — nine kill-list columns nobody is tracking: `is_public` x5, `is_deleted` x3, `org_id` x1 (2026-08-26)
 

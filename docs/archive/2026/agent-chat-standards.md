@@ -1,4 +1,6 @@
 > ARCHIVED 2026-07-26 — superseded by `features/agents/components/chat/FEATURE.md` (the authoritative live-chat doc; its "Rendering & data-loading standards" section absorbs this file's still-true rules).
+>
+> **The cache guidance below never applied here (noted 2026-09-14):** `'use cache'`, `'use cache: remote'`, `'use cache: private'`, `cacheTag` and `cacheLife` are NOT available — `cacheComponents` is off in `next.config.js`, so the directive is a build error. Live rule: that FEATURE.md's caching bullet.
 
 # Agent/Chat/Conversation — Single Source of Truth
 

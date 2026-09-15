@@ -249,7 +249,7 @@ Lines counted from current HEAD (`4abb47663`):
 
 - **Phase 4** (`userSlice` split): layouts are already in their simpler post-decoupling form — splitting `userAuth` / `userProfile` edits are cleaner when the preferences wire-up isn't tangled in.
 - **Phase 9** (route group consolidation): all three layouts now have the same shape (all call `checkIsUserAdmin`, all set cookie-driven theme). Merging them into a single canonical group is a diff against three near-identical files — trivial after Phase 3.
-- **Phase 10** (`'use cache'` policy): public routes in any of these groups can now go `'use cache'` without the RPC dependency that would force them dynamic.
+- **Phase 10** (`'use cache'` policy): public routes in any of these groups can now go `'use cache'` without the RPC dependency that would force them dynamic. *(2026-09-14: `'use cache'` is NOT available — `cacheComponents` is off; public reads cache via `unstable_cache` + tags.)*
 
 ---
 
