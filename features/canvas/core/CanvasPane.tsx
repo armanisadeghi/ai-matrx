@@ -65,6 +65,7 @@ import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
 import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { CanvasArtifactDebugPanel } from "@/features/canvas/components/CanvasArtifactDebugPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // CanvasShareSheet pulls in markdown utilities and image picker — keep it
 // lazy so the canvas itself stays small on first paint.
@@ -93,6 +94,11 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const allItems = useAppSelector(selectCanvasItems);
   const currentItemId = useAppSelector(selectCurrentItemId);
   const isSplit = useAppSelector(selectCanvasIsSplit);
+  const isMobile = useIsMobile();
+  // Redux retains a desktop split so it can return when the viewport grows,
+  // but CanvasPanes renders one pane on a phone. Header controls must follow
+  // the pane the person can see, not hidden split state.
+  const isVisibleSplit = isSplit && !isMobile;
 
   const isAdmin = useAppSelector(selectIsAdmin);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
@@ -137,7 +143,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
     if (paneRole === "bottom") {
       // Close just the bottom pane = collapse the split.
       dispatch(unsplitCanvas());
-    } else if (paneRole === "top" && isSplit) {
+    } else if (paneRole === "top" && isVisibleSplit) {
       // Top pane in split mode → "close pane" = drop top, promote bottom.
       if (secondaryItem) {
         dispatch(setCurrentItem(secondaryItem.id));
@@ -210,7 +216,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const showNavigation = shouldShowCanvasSwitcher({
     paneRole,
     itemCount: allItems.length,
-    isSplit,
+    isSplit: isVisibleSplit,
   });
 
   // Primary pane header (single or top in split): put-away + avatar live here
@@ -302,7 +308,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
           {/* Split / Unsplit — only shown in single-pane mode (split) or on
               the top pane in split mode (offer unsplit). The bottom pane
               never owns split state; its X already collapses the split. */}
-          {paneRole === "single" && allItems.length > 1 && (
+          {paneRole === "single" && allItems.length > 1 && !isMobile && (
             <TapTargetButton
               icon={<Layers className="h-4 w-4" />}
               ariaLabel="Split canvas"
