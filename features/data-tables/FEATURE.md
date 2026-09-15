@@ -818,6 +818,14 @@ row data never see colors. Realtime does NOT yet push style changes to other vie
 
 ## Examples — the platform's read-only showcase tables
 
+**Read-only for EVERYONE (2026-09-15, found by the independent reviewer):** the examples are
+owned by `admin@admin.com` in the global system org, and `isReadOnly` was "not the owner and
+not a shared editor" — so the one account every agent signs in as could edit, rename and
+delete the showcase every user sees. `UserTableViewer` now resolves the system org
+(`resolveSystemOrgId`) and treats any table whose `organization_id` is that org as read-only
+regardless of ownership (the View Only notice says why); the Examples cards on `/data` render
+without rename/delete. The seed script is the examples' only writer.
+
 `/data` gains an **Examples** section: datasets owned by the Matrx System organization,
 listed by `public.udt_list_example_tables()` (SECURITY INVOKER — RLS decides; every
 signed-in user is a viewer through the platform-global tier, super admins can edit).
