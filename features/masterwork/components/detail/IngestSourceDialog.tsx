@@ -162,6 +162,14 @@ export interface IngestSummary {
    * expert touched but never explained — offered as "interview me about it".
    */
   followupSeed: string | null;
+  /**
+   * Sources this Rulebook ALREADY holds rules from, which this run refused to
+   * read again (`redistill="refuse"`, the default — aidream
+   * `source_identity.py`). `added` is then legitimately 0 for a reason that has
+   * nothing to do with the source being thin, so the summary must not say the
+   * distiller found nothing in it.
+   */
+  alreadyDistilled: number;
 }
 
 export function parseIngestSummary(raw: unknown): IngestSummary | null {
@@ -185,6 +193,9 @@ export function parseIngestSummary(raw: unknown): IngestSummary | null {
       typeof data.followup_seed === "string" && data.followup_seed.trim()
         ? data.followup_seed
         : null,
+    alreadyDistilled: Array.isArray(data.already_distilled)
+      ? data.already_distilled.length
+      : 0,
   };
 }
 
@@ -194,6 +205,7 @@ export function describeIngest({
   quotesUnverified,
   failedChunks,
   skippedWords,
+  alreadyDistilled = 0,
 }: IngestSummary): string {
   const missing = describeMissingIngestParts({ failedChunks, skippedWords });
   // 🚨 ZERO IS NEVER A CLEAN SUCCESS SENTENCE (2026-09-15, found by driving the
@@ -205,6 +217,17 @@ export function describeIngest({
   // broken. This is the ONE summary every lane's dialog prints, so the fix
   // belongs here and reaches all of them. A zero WITH a real cause (parts that
   // failed, everything a duplicate) keeps saying that cause instead.
+  if (added === 0 && alreadyDistilled > 0) {
+    // A zero with a REAL cause keeps its own cause. This Rulebook already holds
+    // rules from these sources and the run refused to read them twice — saying
+    // "we found nothing in it" here would be a flat lie about a source that
+    // already produced rules.
+    return (
+      `${alreadyDistilled} of these ${alreadyDistilled === 1 ? "source is" : "sources are"} ` +
+      "already in this Rulebook, so nothing was read again and nothing was added. " +
+      "Pick something new, or distil one again on purpose to replace what it wrote before."
+    );
+  }
   if (added === 0 && !missing && !duplicatesSkipped) {
     return (
       "We read your source and found nothing in it we could turn into a rule — " +
