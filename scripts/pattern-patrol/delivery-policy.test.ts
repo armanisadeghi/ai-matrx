@@ -73,14 +73,18 @@ describe("Pattern Patrol delivery policy", () => {
     expect(release).not.toContain(
       'fail "Pattern Patrol delivery records are missing independent exact-candidate certification.',
     );
-    const localAuthorization = release.indexOf('verify_patrol_delivery "$BRANCH"');
-    const remoteAuthorization = release.indexOf('verify_patrol_delivery "$REMOTE/$BRANCH"');
-    const leaseClaim = release.indexOf("\n    acquire_delivery_lease\n", localAuthorization);
+    const leaseClaim = release.indexOf("\n    acquire_delivery_lease\n");
     const fastForward = release.indexOf('git merge --ff-only "$REMOTE/$BRANCH"');
-    expect(localAuthorization).toBeGreaterThan(-1);
-    expect(remoteAuthorization).toBeGreaterThan(localAuthorization);
-    expect(leaseClaim).toBeGreaterThan(remoteAuthorization);
+    const synchronizedAuthorization = release.indexOf(
+      "\nverify_patrol_delivery\n",
+      fastForward,
+    );
+    expect(leaseClaim).toBeGreaterThan(-1);
     expect(fastForward).toBeGreaterThan(leaseClaim);
+    expect(synchronizedAuthorization).toBeGreaterThan(fastForward);
+    expect(release).not.toContain('verify_patrol_delivery "$BRANCH"');
+    expect(release).not.toContain('verify_patrol_delivery "$REMOTE/$BRANCH"');
+    expect(release).toContain("if $SHIP_MODE; then\n    verify_patrol_delivery");
     expect(release).not.toContain("git rebase ");
   });
 
