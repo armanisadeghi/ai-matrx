@@ -224,6 +224,8 @@ export async function listMapTopicStats(mapId: string, siteId?: string): Promise
  * All-or-nothing. Every validation problem raises SQLSTATE 22023 carrying the
  * whole list — the result has no `errors` key. Use {@link patchMapTopics} when
  * you want the good edits to land and the bad ones reported.
+ *
+ * `tree` is required (a NULL raises 22023); `[]` is a no-op.
  */
 export async function upsertMapTopics(mapId: string, tree: MapTopicTreeNode[]): Promise<MapTopicsUpsertResult> {
   const response = await (await seoDb()).rpc("upsert_map_topics", { p_map_id: mapId, p_tree: tree });
@@ -265,6 +267,10 @@ export async function mergeMapTopics(mapId: string, fromSlugs: string[], intoSlu
   return assertData(response.data as unknown as MapMergeResult, response.error);
 }
 
+/**
+ * Adds `children` under `slug` (upserted, parented to it); attachments stay on
+ * the parent. `children` is required (a NULL raises 22023).
+ */
 export async function splitMapTopic(mapId: string, slug: string, children: MapTopicTreeNode[]): Promise<MapMutationResult> {
   const response = await (await seoDb()).rpc("split_map_topic", { p_map_id: mapId, p_slug: slug, p_children: children });
   return assertData(response.data as unknown as MapMutationResult, response.error);
@@ -291,17 +297,25 @@ export async function setSiteMap(siteId: string, mapId: string): Promise<MapMuta
  * Raises SQLSTATE 42501 (`site_map_denied`) when the caller has no viewer
  * access to the site — a refusal, never a null. Callers that browse sites they
  * may not be able to see must handle that error rather than read "no map".
+ * A null site id raises 22023: null is only ever "this site uses no map".
  */
 export async function siteMapId(siteId: string): Promise<string | null> {
   const response = await (await seoDb()).rpc("site_map_id", { p_site_id: siteId });
   return assertData(response.data, response.error);
 }
 
+/**
+ * Replaces one page's topic coverage for one `source`. `topics` is required:
+ * `[]` clears that source's coverage on purpose (a NULL raises 22023 and
+ * deletes nothing). `source` is never sent as null (that is 22023 too); it
+ * defaults to `"mapper"`, the function's own declared default.
+ */
 export async function setPageMapTopics(pageId: string, topics: PageMapTopicsInput[], source: PageMapTopicsSource = "mapper"): Promise<MapMutationResult> {
   const response = await (await seoDb()).rpc("set_page_map_topics", { p_page_id: pageId, p_topics: topics, p_source: source });
   return assertData(response.data as unknown as MapMutationResult, response.error);
 }
 
+/** Creates or updates facet values for a brand. `values` is required (a NULL raises 22023). */
 export async function createMapFacetValues(brandId: string, facetKey: string, values: CreateMapFacetValueInput[]): Promise<MapMutationResult> {
   const response = await (await seoDb()).rpc("create_map_facet_values", { p_brand_id: brandId, p_facet_key: facetKey, p_values: values });
   return assertData(response.data as unknown as MapMutationResult, response.error);
@@ -310,11 +324,14 @@ export async function createMapFacetValues(brandId: string, facetKey: string, va
 /**
  * Whatever entity a facet value names, resolved through
  * `platform.resolve_entity_ref`. Null when the value names nothing (no
- * ref_type/ref_id) or the value itself is gone.
+ * ref_type/ref_id).
  *
- * Access is checked before existence: a value pointing at a row this caller
- * cannot see comes back as `{type, id, forbidden: true}`, never as a label and
- * never as `missing`. Narrow with `isResolvedEntityRef` before reading `label`.
+ * The facet value itself must be reachable, or the call raises 42501 — an
+ * unreachable value and an id that is no value at all are the same refusal.
+ * A reachable value pointing at a row this caller cannot open (forbidden,
+ * missing or unregistered alike) comes back as `{type, hidden: true}`: never
+ * that row's id, never a label. Narrow with `isResolvedEntityRef` before
+ * reading `label`.
  */
 export async function mapFacetValueRef(valueId: string): Promise<EntityRef | null> {
   const response = await (await seoDb()).rpc("map_facet_value_ref", { p_value_id: valueId });
@@ -324,8 +341,9 @@ export async function mapFacetValueRef(valueId: string): Promise<EntityRef | nul
 /**
  * Every facet that applies to one topic, keyed by facet key, inherited values
  * included (`inherited: true` means it came from an ancestor). Each entry's
- * `ref` is the same `platform.resolve_entity_ref` shape {@link mapFacetValueRef}
- * returns. Raises P0002 when the slug is not in the map.
+ * `ref` is the same {@link EntityRef} {@link mapFacetValueRef} returns
+ * (resolved, `{type, hidden: true}`, or null). Raises P0002 when the slug is
+ * not in the map.
  */
 export async function mapTopicFacets(mapId: string, slug: string): Promise<MapTopicFacetsResult> {
   const response = await (await seoDb()).rpc("map_topic_facets", { p_map_id: mapId, p_slug: slug });
@@ -342,6 +360,9 @@ export interface MapTreeOptions {
    * Opt-in keys: `description`, `status`, `counts`, `path`, `facets`,
    * `associations`, or any single association kind (`pages`, `facets`,
    * `keywords`, `planned`, or a raw entity token) to narrow the edges.
+   * Omitted means the minimal projection (slug and name). Associations follow
+   * {@link mapTopicAssociations}: what the caller cannot open is counted in a
+   * hidden entry, never listed.
    */
   include?: string[];
   /** Narrows the `counts` to one site. */
@@ -386,10 +407,12 @@ export async function patchMapTopics(mapId: string, edits: MapTopicPatch[]): Pro
  * payload under `parentSlug`, reports slugs pulled in from elsewhere in the map
  * as `moved_in`, and removes whatever is no longer there.
  *
- * `parentSlug: null` replaces the map's root level. `onRemoved` decides what
- * happens to a removed topic that still carries attachments — the default
- * `"error"` raises SQLSTATE 23514 naming every blocking topic rather than
- * silently discarding the work hanging off it.
+ * `parentSlug: null` replaces the map's root level. `children` is required:
+ * `[]` empties the section on purpose, and a NULL raises 22023 without
+ * touching anything. `onRemoved` decides what happens to a removed topic that
+ * still carries attachments — the default `"error"` raises SQLSTATE 23514
+ * naming every blocking topic rather than silently discarding the work
+ * hanging off it.
  */
 export async function replaceMapSection(
   mapId: string,
@@ -414,8 +437,9 @@ export async function replaceMapSection(
  *
  * `onAttachments` decides what happens to whatever still hangs off them; the
  * default `"error"` raises SQLSTATE 23514 listing every blocking topic and its
- * attachment counts. `liftChildren` (default true) re-parents each retired
- * topic's children onto its parent instead of stranding them.
+ * attachment counts. `liftChildren` (default true, which is also what the
+ * function reads a NULL as) re-parents each retired topic's children onto its
+ * parent instead of stranding them under a topic every reader hides.
  */
 export async function retireMapTopics(
   mapId: string,
@@ -434,8 +458,9 @@ export async function retireMapTopics(
 
 /**
  * Substring search over slug, name and description of the map's live topics.
- * Exact slug/name matches sort first, then tree order. `limit` is clamped to
- * 1..200 by the function.
+ * Exact slug/name matches sort first, then tree order. `query` is required
+ * (a NULL raises 22023); `""` lists every live topic. `limit` defaults to 25
+ * when omitted and is clamped to 1..200 by the function.
  */
 export async function searchMapTopics(mapId: string, query: string, limit?: number): Promise<MapTopicSearchHit[]> {
   const response = await (await seoDb()).rpc("search_map_topics", {
@@ -448,11 +473,13 @@ export async function searchMapTopics(mapId: string, query: string, limit?: numb
 
 /**
  * Sets topic coverage for many pages of one site in a single call. Each item
- * names its page by `page_id` or by `url` within the site.
+ * names its page by `page_id` or by `url` within the site and must carry a
+ * `topics` array (`[]` clears; see {@link SetPagesMapTopicsItem}).
  *
  * Per-page failures do not stop the batch: they come back as rows with
  * `ok: false` and a message, and the result's own `ok` is true only when
- * `failed` is 0. A bad `source` is rejected once, up front, as SQLSTATE 22023.
+ * `failed` is 0. A null or bad `source`, and a null `items`, are rejected
+ * once, up front, as SQLSTATE 22023.
  */
 export async function setPagesMapTopics(
   siteId: string,
@@ -472,9 +499,15 @@ export async function setPagesMapTopics(
  * resolved through `platform.resolve_entity_ref`. Plan nodes and keywords are
  * column links rather than association rows, and are presented as edges too.
  *
+ * An edge whose other end the caller cannot open is NOT listed — no id, no
+ * role, no payload. Such edges are counted instead, one
+ * {@link MapTopicAssociationHidden} row per (kind, direction), after the
+ * resolved rows. Narrow with `isHiddenMapTopicAssociation`.
+ *
  * `kinds` narrows to specific ends and accepts the friendly aliases `pages`,
- * `facets`, `keywords` and `planned` as well as raw entity tokens. Raises
- * P0002 when the slug is not in the map.
+ * `facets`, `keywords` and `planned` as well as raw entity tokens. Omit it
+ * (or pass null) for every kind; `[]` asks for no kinds and returns `[]`.
+ * Raises P0002 when the slug is not in the map.
  */
 export async function mapTopicAssociations(
   mapId: string,
