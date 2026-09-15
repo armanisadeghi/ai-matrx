@@ -116,6 +116,7 @@ export const SOURCE_FEATURES = [
   "builtin_categorize",
   "clean_pdf_extracted_content",
   "coding_session_native",
+  "coding_session_reply",
   "content_plan_acceptance",
   "content_plan_cms_fill",
   "content_plan_cms_fill_preview",
