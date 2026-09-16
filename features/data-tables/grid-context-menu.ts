@@ -138,6 +138,16 @@ export function resolveGridMenuTarget(
 const VIEW_ONLY = "View-only table — ask the owner for edit access";
 
 /**
+ * Why a write is unavailable. `readOnlyReason` overrides the default sentence,
+ * because the default one lies to the owner of a PLATFORM EXAMPLE table: that
+ * account IS the owner, and there is no edit access to ask for. Found on
+ * independent review 2026-09-15.
+ */
+function viewOnlyGate(readOnly: boolean, reason?: string): string | undefined {
+  return readOnly ? (reason ?? VIEW_ONLY) : undefined;
+}
+
+/**
  * The manual-highlight palette as a submenu: one row per color plus Clear.
  * `current` marks the color already applied so the user sees what they have.
  * Colors are the choice-chip palette (`table-style.ts`), never a picker.
@@ -190,6 +200,8 @@ export function buildGridCellMenuSection(opts: {
    */
   rangeCells?: CellAddress[] | null;
   readOnly: boolean;
+  /** Overrides the default view-only sentence when it would be untrue. */
+  readOnlyReason?: string;
   on: {
     /** Copy the range to the clipboard as TSV. Range only — see the header. */
     copy: (address: CellAddress) => void;
@@ -210,7 +222,7 @@ export function buildGridCellMenuSection(opts: {
   const many =
     opts.rangeCells && opts.rangeCells.length > 1 ? opts.rangeCells : null;
   const n = many?.length ?? 1;
-  const gate = !cell ? needs("a cell") : readOnly ? VIEW_ONLY : undefined;
+  const gate = !cell ? needs("a cell") : viewOnlyGate(readOnly, opts.readOnlyReason);
   const rowsSpanned = many ? new Set(many.map((c) => c.rowId)).size : 1;
 
   const items: ContextMenuExtraItem[] = [
@@ -310,6 +322,8 @@ export function buildGridCellMenuSection(opts: {
 export function buildGridRowMenuSection(opts: {
   row: { id: string; label: string; highlight?: StyleColor | null } | null;
   readOnly: boolean;
+  /** Overrides the default view-only sentence when it would be untrue. */
+  readOnlyReason?: string;
   on: {
     /** Open the new-row form. Rows are unordered, so there is no above/below. */
     add: () => void;
@@ -326,7 +340,7 @@ export function buildGridRowMenuSection(opts: {
   const { row, readOnly, on } = opts;
   const id = row?.id ?? null;
   const noRow = !row ? needs("a row") : undefined;
-  const writeGate = noRow ?? (readOnly ? VIEW_ONLY : undefined);
+  const writeGate = noRow ?? viewOnlyGate(readOnly, opts.readOnlyReason);
 
   const items: ContextMenuExtraItem[] = [
     {
@@ -396,7 +410,7 @@ export function buildGridRowMenuSection(opts: {
       items,
     },
     {
-      "grid-row-add": readOnly ? VIEW_ONLY : undefined,
+      "grid-row-add": viewOnlyGate(readOnly, opts.readOnlyReason),
       "grid-row-edit": writeGate,
       "grid-row-duplicate": writeGate,
       "grid-row-copy": noRow,
@@ -423,6 +437,8 @@ export function buildGridColumnMenuSection(opts: {
     isColorBy: boolean;
   } | null;
   readOnly: boolean;
+  /** Overrides the default view-only sentence when it would be untrue. */
+  readOnlyReason?: string;
   /** The table has one column left — it cannot be removed. */
   isOnlyColumn: boolean;
   on: {
@@ -445,7 +461,7 @@ export function buildGridColumnMenuSection(opts: {
   const { column, readOnly, isOnlyColumn, on } = opts;
   const name = column?.fieldName ?? null;
   const noColumn = !column ? needs("a column") : undefined;
-  const writeGate = noColumn ?? (readOnly ? VIEW_ONLY : undefined);
+  const writeGate = noColumn ?? viewOnlyGate(readOnly, opts.readOnlyReason);
 
   const items: ContextMenuExtraItem[] = [
     {
@@ -554,7 +570,7 @@ export function buildGridColumnMenuSection(opts: {
         (column && !column.canColorBy
           ? "Works on a choice or checkbox column"
           : undefined),
-      "grid-col-colors": readOnly ? VIEW_ONLY : undefined,
+      "grid-col-colors": viewOnlyGate(readOnly, opts.readOnlyReason),
       "grid-col-configure": writeGate,
       "grid-col-delete":
         writeGate ?? (isOnlyColumn ? "A table keeps at least one column" : undefined),

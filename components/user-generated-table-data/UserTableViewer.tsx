@@ -591,6 +591,13 @@ const UserTableViewer = ({
     };
   }, [tableInfo, currentUserId, isOwner, tableId]);
 
+  // Why the grid is read-only, in one sentence, for the context menu's
+  // disabled-item hints. The default "ask the owner for edit access" is a LIE
+  // on an example table for the account that seeded it — it IS the owner.
+  const readOnlyReason = isExampleTable
+    ? "Platform example table — read-only for everyone"
+    : undefined;
+
   // Show toast when trying to edit in read-only mode
   const showReadOnlyToast = () => {
     toast({
@@ -2918,6 +2925,7 @@ const UserTableViewer = ({
           ? grid.selectedCells
           : null,
       readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
       on: {
         copy: (address) => grid.copyCell(address),
         cut: (address) => grid.cutCell(address),
@@ -2959,6 +2967,7 @@ const UserTableViewer = ({
           }
         : null,
       readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
       on: {
         add: () => setShowAddRowModal(true),
         highlight: (rowId, color) =>
@@ -2992,6 +3001,7 @@ const UserTableViewer = ({
           }
         : null,
       readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
       isOnlyColumn: fields.length <= 1,
       on: {
         insert: (fieldName, side) => {
