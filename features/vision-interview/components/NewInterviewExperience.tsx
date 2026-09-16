@@ -28,12 +28,7 @@ import { toast } from "@/lib/toast";
 import { useDurableDraft } from "@ai-matrx/kit/drafts";
 import { createSession } from "../service";
 import { ROLE_ORDER, ROLES } from "../types";
-
-/** A readable title from the vision's opening words when none was given. */
-function titleFromVision(vision: string): string {
-  const words = vision.trim().split(/\s+/).slice(0, 7).join(" ");
-  return words.length > 60 ? `${words.slice(0, 57)}…` : words || "Untitled interview";
-}
+import { titleFromVision } from "../titleFromVision";
 
 export function NewInterviewExperience() {
   const router = useRouter();

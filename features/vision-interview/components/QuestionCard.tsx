@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { QuestionCategoryChip } from "./QuestionCategoryChip";
+import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 import {
   ROLES,
   type InterviewQuestionRow,
@@ -155,7 +156,8 @@ export function QuestionCard({
 
         {question.state === "partially_answered" && question.missing_part && (
           <p className="rounded-md border border-warning/30 bg-warning/5 px-2 py-1 text-[11px] leading-snug text-foreground">
-            Still missing: {question.missing_part}
+            Still missing:{" "}
+            {withoutRepeatedLead(question.missing_part, "Still missing")}
           </p>
         )}
 
