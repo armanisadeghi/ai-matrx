@@ -1,6 +1,6 @@
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { fetchAuthenticators } from "../authenticator-service";
-import { checkVaultDestination, createVaultItem } from "../vault-service";
+import { checkVaultDestination, createVaultItem, previewVaultLoginCsv } from "../vault-service";
 import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
 
@@ -9,8 +9,8 @@ const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 const mockGetSession = jest.fn(async () => ({
   data: { session: { access_token: ACCESS_TOKEN } },
 }));
-const mockGetUser = jest.fn(async () => ({
-  data: { user: { id: "user-1" } },
+const mockGetUser = jest.fn<Promise<{ data: { user: { id: string; email?: string } }; error: null }>, [string?]>(async () => ({
+  data: { user: { id: "user-1", email: "admin@admin.com" } },
   error: null,
 }));
 
@@ -75,6 +75,23 @@ describe("Vault and Authenticator organization transport", () => {
       Authorization: `Bearer ${ACCESS_TOKEN}`,
       "X-Organization-Id": ORGANIZATION_ID,
     });
+  });
+
+  test("export verifies the exact bearer token it sends", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ profile: "matrx_login_csv_v1", revision: "a".repeat(64), items: [] }));
+    await previewVaultLoginCsv({ profile: "matrx_login_csv_v1", item_ids: ["item-1"] }, { userId: "user-1", organizationId: ORGANIZATION_ID });
+    expect(mockGetUser).toHaveBeenCalledWith(ACCESS_TOKEN);
+    expect(mockGetUser.mock.calls.every((args) => args[0] === ACCESS_TOKEN)).toBe(true);
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${ACCESS_TOKEN}`, "X-Organization-Id": ORGANIZATION_ID });
+  });
+
+  test.each([
+    [{ detail: { code: "recent_auth_required" } }, "recent_auth_required"],
+    [{ detail: "recent_auth_required" }, "request_rejected"],
+    [{}, "request_rejected"],
+  ])("export classifies only the structured recent-auth response: %j", async (body, code) => {
+    fetchMock.mockResolvedValueOnce({ ...errorResponse(401), json: async () => body } as Response);
+    await expect(previewVaultLoginCsv({ profile: "matrx_login_csv_v1", item_ids: ["item-1"] }, { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code });
   });
 
   test("Vault JSON operations send the selected organization", async () => {

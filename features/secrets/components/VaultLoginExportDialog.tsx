@@ -234,6 +234,12 @@ export function VaultLoginExportDialog({
     setRunning(true);
     setError(null);
     try {
+      const beforeConfirmation = await getVaultExportActor();
+      if (!isCurrent(operation)) return;
+      if (!sameActor(beforeConfirmation, actor)) {
+        invalidate("Your account or organization changed. Start the export again from the current Vault.");
+        return;
+      }
       const supabase = createClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: actor.email,
@@ -345,7 +351,7 @@ export function VaultLoginExportDialog({
               <p className="text-xs text-muted-foreground">This export currently requires a Matrx password. Your connected-provider sign-in needs a separate confirmation method.</p>
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={close} disabled={running}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={close}>Cancel</Button>
                 <Button type="button" onClick={() => void confirmIdentity()} disabled={running}>
                   {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Confirm identity
@@ -389,7 +395,7 @@ export function VaultLoginExportDialog({
 
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={close} disabled={running}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={close}>Cancel</Button>
                 {preview ? (
                   <Button type="button" onClick={() => void download()} disabled={running || !plaintextAcknowledged || eligible === 0}>
                     {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

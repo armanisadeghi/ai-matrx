@@ -17,10 +17,12 @@ const actor = {
 let authListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
   | undefined;
+let selectedOrganization = actor.organizationId;
 const signInWithPasswordMock = jest.fn();
+const getClaimsMock = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => actor.organizationId,
+  useAppSelector: () => selectedOrganization,
 }));
 jest.mock("@/hooks/use-media-query", () => ({
   useMediaQuery: () => false,
@@ -33,7 +35,7 @@ jest.mock("@/utils/supabase/client", () => ({
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
       signInWithPassword: signInWithPasswordMock,
-      getClaims: jest.fn(),
+      getClaims: getClaimsMock,
     },
   }),
 }));
@@ -95,9 +97,13 @@ describe("VaultLoginExportDialog", () => {
     document.body.append(host);
     root = createRoot(host);
     getActorMock.mockReset();
+    selectedOrganization = actor.organizationId;
     previewMock.mockReset();
     downloadMock.mockReset();
     signInWithPasswordMock.mockReset();
+    getClaimsMock.mockReset();
+    createObjectUrl.mockClear();
+    revokeObjectUrl.mockClear();
     getActorMock.mockResolvedValue(actor);
     previewMock.mockResolvedValue({
       profile: "matrx_login_csv_v1",
@@ -128,6 +134,84 @@ describe("VaultLoginExportDialog", () => {
       );
     });
   }
+
+  async function requestConfirmation() {
+    previewMock.mockRejectedValue(new VaultLoginExportTransportError("recent_auth_required"));
+    await render();
+    const selection = document.querySelector('[role="checkbox"]');
+    if (!(selection instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => selection.click());
+    await act(async () => button("Review selected logins").click());
+    const password = document.querySelector("#vault-export-password");
+    if (!(password instanceof HTMLInputElement)) throw new Error("password missing");
+    password.value = "test-only-password";
+  }
+
+  test("refuses to sign back into a stale account before confirmation", async () => {
+    await requestConfirmation();
+    getActorMock.mockResolvedValue({ ...actor, userId: "other-user" });
+    await act(async () => button("Confirm identity").click());
+    expect(signInWithPasswordMock).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("Your account or organization changed");
+  });
+
+  test("fresh same-account password confirmation returns to an empty selection", async () => {
+    await requestConfirmation();
+    signInWithPasswordMock.mockResolvedValue({ data: { user: { id: actor.userId }, session: { access_token: "test-token" } }, error: null });
+    getClaimsMock.mockResolvedValue({ data: { claims: { amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }] } }, error: null });
+    await act(async () => button("Confirm identity").click());
+    expect(getClaimsMock).toHaveBeenCalledWith("test-token");
+    expect(document.querySelector("#vault-export-password")).toBeNull();
+    expect(document.body.textContent).toContain("0 selected of 1 shown");
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  test("refuses a different user returned by password confirmation", async () => {
+    await requestConfirmation();
+    signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "other-user" }, session: { access_token: "test-token" } }, error: null });
+    getClaimsMock.mockResolvedValue({ data: { claims: { amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }] } }, error: null });
+    await act(async () => button("Confirm identity").click());
+    expect(document.body.textContent).toContain("Identity confirmation could not be verified");
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  test("late sign-in after account invalidation does not restore export", async () => {
+    await requestConfirmation();
+    const pending = deferred<unknown>();
+    signInWithPasswordMock.mockReturnValue(pending.promise);
+    await act(async () => button("Confirm identity").click());
+    await act(async () => authListener?.("SIGNED_OUT", null));
+    getClaimsMock.mockResolvedValue({ data: { claims: {} }, error: null });
+    await act(async () => pending.resolve({ data: { user: { id: actor.userId }, session: { access_token: "test-token" } }, error: null }));
+    expect(document.body.textContent).toContain("Your account changed");
+    expect(document.querySelector("#vault-export-password")).toBeNull();
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  test.each(["cancel", "unmount", "organization"])("discards a pending download after %s", async (action) => {
+    const pending = deferred<Blob>();
+    downloadMock.mockReturnValue(pending.promise);
+    await render();
+    const selection = document.querySelector('[role="checkbox"]');
+    if (!(selection instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => selection.click());
+    await act(async () => button("Review selected logins").click());
+    const boxes = document.querySelectorAll('[role="checkbox"]');
+    const acknowledgement = boxes[boxes.length - 1];
+    if (!(acknowledgement instanceof HTMLElement)) throw new Error("acknowledgement missing");
+    await act(async () => acknowledgement.click());
+    await act(async () => button("Download CSV").click());
+    const signal = downloadMock.mock.calls[0]?.[2];
+    if (action === "cancel") await act(async () => button("Cancel").click());
+    else if (action === "unmount") await act(async () => root.render(null));
+    else {
+      selectedOrganization = "22222222-2222-4222-8222-222222222222";
+      await render();
+    }
+    expect(signal?.aborted).toBe(true);
+    await act(async () => pending.resolve(new Blob(["test-only-csv"])));
+    expect(createObjectUrl).not.toHaveBeenCalled();
+  });
 
   test("reviews exactly selected loaded items before allowing a plaintext download", async () => {
     await render();
