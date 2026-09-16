@@ -243,6 +243,16 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
   `features/agents/redux/execution-system/thunks/__tests__/follow-workflow-run-row-reconcile.test.ts`
   drives the real thunk over a real SSE replay that omits the terminal event
   with the row already `errored` — red against the old follower, green now.
+  🚨 **Boundaries alone were not enough, and only the live surface showed it:**
+  the events feed replays its backlog and then subscribes to LISTEN/NOTIFY,
+  holding the socket open with keepalive pings, so a terminal row produces NO
+  boundary — no `end`, no drop, and no stall either, because every ping rearms
+  the stall timer. With the boundary-only version on the preview the room sat
+  on "The room is working… Working…" over an `errored` row for a full minute.
+  The follower therefore also POLLS the row every `RECONCILE_POLL_MS` (20s),
+  and a poll that settles the run aborts the read; a seventeenth guard case
+  covers exactly that feed. Live proof, before and after, in
+  `common-docs/projects/masterwork-methods-census/fix-evidence/`.
 
 - **2026-09-15** — **The room can no longer sit on "Working…" over a run that
   does not exist (wall W9).** `handleInlineEvent` returned on every non-`data`

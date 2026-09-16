@@ -42,6 +42,22 @@ import {
 import { resolveBackendForConversation } from "./resolve-base-url";
 
 const STALL_TIMEOUT_MS = 45_000;
+/**
+ * How often the run ROW is polled while the feed is still open.
+ *
+ * 🚨 A HELD-OPEN FEED IS NOT A LIVE RUN. `build_run_events_stream` replays the
+ * backlog and then subscribes to LISTEN/NOTIFY, holding the socket open with
+ * keepalive pings for as long as the client stays. A run whose row went
+ * terminal WITHOUT a terminal event therefore never produces a boundary here
+ * at all: no `end` frame, no drop, and no stall either, because every ping
+ * rearms the stall timer. Reconciling only at boundaries is reconciling never.
+ *
+ * Measured live on 2026-09-15: over an `errored` row with a silent feed, the
+ * Vision Interview room sat on "The room is working… Working…" for a full
+ * minute with the boundary-only reconcile already in place. So the row is also
+ * polled, and a terminal row reaches the screen within one poll.
+ */
+const RECONCILE_POLL_MS = 20_000;
 const RECONNECT_LIMIT = 10;
 const RECONNECT_DELAY_MS = 2_000;
 
@@ -160,6 +176,12 @@ export interface FollowWorkflowRunOptions {
    * throw.
    */
   onEvent?: (event: WorkflowRunWireEvent) => void;
+  /**
+   * How often the run ROW is polled while the feed is open. Defaults to
+   * `RECONCILE_POLL_MS`; the regression guard shortens it so it does not have
+   * to sit through a real twenty-second poll. Production callers pass nothing.
+   */
+  reconcilePollMs?: number;
 }
 
 export function followWorkflowRunStream(
@@ -177,6 +199,9 @@ export function followWorkflowRunStream(
       );
       return;
     }
+    // Narrowed once: `followLoop` below is a hoisted function declaration, so
+    // the null check above does not narrow inside it.
+    const wire = backend;
 
     const routeEvent = (parsed: WorkflowRunWireEvent, seq: number | null) => {
       if (
@@ -222,6 +247,8 @@ export function followWorkflowRunStream(
     let failures = 0;
     /** Has this run been settled — by a feed event, or by the row itself? */
     let settled = false;
+    /** The in-flight attempt, so a poll that settles can stop the read. */
+    let attempt: AbortController | null = null;
 
     /**
      * Ask the run ROW whether the run is already over, and deliver the
@@ -233,10 +260,10 @@ export function followWorkflowRunStream(
     const reconcileWithRunRow = async (): Promise<boolean> => {
       if (settled || opts.signal.aborted) return settled;
       try {
-        const headers: Record<string, string> = { ...backend.headers };
+        const headers: Record<string, string> = { ...wire.headers };
         delete headers["Content-Type"]; // GET has no body
         headers["Accept"] = "application/json";
-        const res = await fetch(`${backend.baseUrl}/runs/${opts.runId}`, {
+        const res = await fetch(`${wire.baseUrl}/runs/${opts.runId}`, {
           method: "GET",
           headers,
           signal: opts.signal,
@@ -253,27 +280,41 @@ export function followWorkflowRunStream(
       }
     };
 
+    const poll = setInterval(() => {
+      void reconcileWithRunRow().then((done) => {
+        if (done) attempt?.abort();
+      });
+    }, opts.reconcilePollMs ?? RECONCILE_POLL_MS);
+
+    try {
+      await followLoop();
+    } finally {
+      clearInterval(poll);
+    }
+
+    async function followLoop(): Promise<void> {
     while (!opts.signal.aborted && failures < RECONNECT_LIMIT) {
       let endFrame = false;
-      const attempt = new AbortController();
-      const onOuterAbort = () => attempt.abort();
+      attempt = new AbortController();
+      const controller = attempt;
+      const onOuterAbort = () => controller.abort();
       opts.signal.addEventListener("abort", onOuterAbort, { once: true });
 
       let stallTimer: ReturnType<typeof setTimeout> | null = null;
       const armStall = () => {
         if (stallTimer !== null) clearTimeout(stallTimer);
-        stallTimer = setTimeout(() => attempt.abort(), STALL_TIMEOUT_MS);
+        stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
       };
 
       try {
-        const headers: Record<string, string> = { ...backend.headers };
+        const headers: Record<string, string> = { ...wire.headers };
         delete headers["Content-Type"]; // GET has no body
         headers["Accept"] = "text/event-stream";
         if (cursor > 0) headers["Last-Event-ID"] = String(cursor);
 
         const res = await fetch(
-          `${backend.baseUrl}/runs/${opts.runId}/events/stream`,
-          { method: "GET", headers, signal: attempt.signal },
+          `${wire.baseUrl}/runs/${opts.runId}/events/stream`,
+          { method: "GET", headers, signal: controller.signal },
         );
         if (!res.ok || !res.body) {
           throw new Error(`workflow run event stream failed: ${res.status}`);
@@ -342,5 +383,6 @@ export function followWorkflowRunStream(
     // stopping silently over a run the server already failed is the exact
     // spinner-over-a-dead-run this follower exists to prevent.
     await reconcileWithRunRow();
+    }
   };
 }

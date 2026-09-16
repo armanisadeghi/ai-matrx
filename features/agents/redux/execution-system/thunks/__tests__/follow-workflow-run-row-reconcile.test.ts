@@ -78,6 +78,40 @@ function makeStore() {
   return store;
 }
 
+/** The feed a HELD-OPEN stream produces: backlog, then pings, forever.
+ *  Honours the request's AbortSignal exactly as a real fetch body does — the
+ *  follower must be able to stop it once the ROW has settled the run. */
+function heldOpenBody(signal: AbortSignal | undefined): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  let ticks = 0;
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const frame of REPLAY_WITHOUT_TERMINAL.slice(0, 3)) {
+        controller.enqueue(encoder.encode(frame));
+      }
+      signal?.addEventListener("abort", () => {
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      });
+    },
+    async pull(controller) {
+      await new Promise((r) => setTimeout(r, 100));
+      if (signal?.aborted || ticks++ > 200) {
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+        return;
+      }
+      controller.enqueue(encoder.encode(": ping\n\n"));
+    },
+  });
+}
+
 function install(rowResponse: { status: number; body?: unknown }) {
   const calls: string[] = [];
   const fetchStub = jest.fn(async (url: unknown) => {
@@ -164,6 +198,60 @@ describe("a replay that omits the terminal event must still render the truth", (
     expect(
       events.filter((e) => String(e.event).startsWith("run_")).map((e) => e.event),
     ).toEqual(["run_started"]);
+  }, 20_000);
+});
+
+describe("a feed that never ends is not a live run", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    (globalThis as { fetch: unknown }).fetch = realFetch;
+  });
+
+  /**
+   * THE CASE THAT BIT US ON THE LIVE SURFACE (2026-09-15).
+   * `build_run_events_stream` replays the backlog and then subscribes to
+   * LISTEN/NOTIFY, holding the socket open with keepalive pings. A run whose
+   * row went terminal without a terminal EVENT produces no boundary at all:
+   * no `end`, no drop, and no stall — every ping rearms the stall timer. With
+   * boundary-only reconciliation the room sat on "Working…" over an `errored`
+   * row for a full minute. Only the POLL closes this.
+   */
+  test("row terminal + feed held open with pings → the poll still settles it", async () => {
+    const fetchStub = jest.fn(async (url: unknown, init?: { signal?: AbortSignal }) => {
+      const href = String(url);
+      if (href.endsWith("/events/stream")) {
+        return {
+          ok: true,
+          status: 200,
+          body: heldOpenBody(init?.signal),
+        } as unknown as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: RUN_ID, status: "errored", error: { message: "It stopped." } }),
+      } as unknown as Response;
+    });
+    (globalThis as { fetch: unknown }).fetch = fetchStub;
+
+    const store = makeStore();
+    const events: WorkflowRunWireEvent[] = [];
+    const controller = new AbortController();
+    await (store.dispatch as unknown as (t: unknown) => Promise<void>)(
+      followWorkflowRunStream({
+        runId: RUN_ID,
+        requestId: REQ,
+        conversationId: CONV,
+        signal: controller.signal,
+        onEvent: (e) => events.push(e),
+        reconcilePollMs: 250,
+      }) as unknown,
+    );
+    controller.abort();
+
+    const terminal = events.find((e) => e.event === "run_errored");
+    expect(terminal).toBeDefined();
+    expect(terminal?.error_message).toBe("It stopped.");
   }, 20_000);
 });
 
