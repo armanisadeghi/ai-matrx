@@ -4127,7 +4127,7 @@ and be proven on this view). Class: a gated read that receives no actor must
 FAIL loudly, never return an empty list that reads as "nothing exists".
 
 
-### D326 — Every display-override setter on `instanceUIState` silently drops the write (2026-09-16)
+### D326 — Every display-override setter on `instanceUIState` silently drops the write (2026-09-16) — FIXED 2026-09-16
 
 Found while fixing the Masterwork interview's generic hero (jobs-bar-2026-09-16, lanes-a item 24).
 `setDisplayNameOverride`, `setDisplayDescriptionOverride` and `setDisplayIconNameOverride` in
@@ -4145,5 +4145,27 @@ three overrides on mount for the same reason and has the same race — so the Co
 `ScoutInterviewPanel.tsx` by gating on the row (`instanceReady`); NOT fixed at the slice, because
 every setter in that file shares the pattern and creating a partial entry from one of them would
 invent an instance with none of its required fields. Class: **a reducer that cannot apply a write
-must not swallow it** — either queue it for the instance that is coming, or raise. Decides:
-whoever owns the agent execution-system slices.
+must not swallow it** — either queue it for the instance that is coming, or raise.
+
+**FIXED at the slice, 2026-09-16.** All 44 setters now go through ONE write path,
+`stageOrApply`: when the entry is missing it creates it at the slice's own documented defaults
+(the canonical factory is `initInstanceUIState` itself, so a provisional entry is COMPLETE, never
+partial — which is what blocked this fix before), applies the write, logs a `console.error`
+naming the action, and records the written fields in a new `pendingByConversationId` ledger.
+`initInstanceUIState` — which replaces the whole entry — then REPLAYS those fields for every
+field the creation did not state itself, and clears the ledger; `destroyInstance` clears it too,
+so a staged write is never replayed onto a later instance with the same id. Toggles and nested
+merges read through `readField`, which sees the staged value. The local `instanceReady` gates in
+`ScoutInterviewPanel.tsx` and `ConductorPanel.tsx` are GONE — one path remains.
+
+Guard:
+`features/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
+— behaviour (write → create → still there; creation's own value wins; toggles and merges; no
+replay after destroy) plus a source census that fails if any setter returns to `if (entry)`.
+Proven failing against the pre-fix slice (4 of 6 failed), passing after.
+
+Verified live 2026-09-16 on `/masterwork/<id>/interview` with the workaround removed: the console
+carries `setDisplayNameOverride arrived … before its UI-state entry existed` followed by
+`… was created after 3 write(s) … they were replayed on top of the new entry`, and the hero reads
+"Your interviewer" — not "Ready to run". `setDisplayMode` hits the same race on that screen and is
+now kept as well.

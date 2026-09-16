@@ -414,19 +414,12 @@ function InterviewColumn({
   // hero is display state, so the surface that knows what the conversation is
   // for says so.
   //
-  // 🚨 AND IT WAITS FOR THE INSTANCE TO EXIST. `setDisplayNameOverride` and its
-  // two siblings are `if (entry) …` reducers: dispatched against a conversation
-  // whose instance UI-state row has not been created yet they do NOTHING, and
-  // say nothing, so the override is dropped and the hero keeps its generic text.
-  // A launcher mints the conversation id before that row lands, which is exactly
-  // when a mount-once effect fires — verified live on 2026-09-16, where the
-  // override was dispatched and the screen still read "Ready to run". Gating on
-  // the row's existence is what makes the write land.
-  const instanceReady = useAppSelector((state) =>
-    Boolean(state.instanceUIState.byConversationId[conversationId]),
-  );
+  // The dispatch does not wait for the instance row any more: the slice keeps a
+  // write that arrives before the row and replays it when the row lands (D326,
+  // fixed 2026-09-16). This surface had to gate on the row's existence until
+  // then, which was a local workaround for a defect every setter in that slice
+  // shared.
   useEffect(() => {
-    if (!instanceReady) return;
     dispatch(
       setDisplayNameOverride({ conversationId, value: "Your interviewer" }),
     );
@@ -443,7 +436,7 @@ function InterviewColumn({
     dispatch(
       setDisplayIconNameOverride({ conversationId, value: "BrainCircuit" }),
     );
-  }, [conversationId, dispatch, instanceReady]);
+  }, [conversationId, dispatch]);
 
   // "What did it get wrong?" entry: stage the run context in the composer so
   // the Expert only finishes the sentence. Keyed by the seed text so opening

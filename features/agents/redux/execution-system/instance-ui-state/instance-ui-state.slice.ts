@@ -56,6 +56,16 @@ export interface InstanceUIStateSlice {
   byConversationId: Record<string, InstanceUIState>;
 
   /**
+   * THE PROVISIONAL LEDGER (D326). Writes that arrived for a conversation whose
+   * entry did not exist yet, keyed by conversation id. `stageOrApply` records
+   * every such field here while it keeps the provisional entry alive; the real
+   * `initInstanceUIState` — which REPLACES the whole entry — replays them on
+   * top of the created row for every field the creation did not state itself,
+   * and then clears the record. Cleared by destroy/remove as well.
+   */
+  pendingByConversationId: Record<string, Partial<InstanceUIState>>;
+
+  /**
    * Admin/pilot feature — when true, chat renders in "block format" where each
    * message is a distinct, collapsible block instead of a continuous thread.
    *
@@ -112,6 +122,7 @@ export interface InstanceUIStateSlice {
 
 const initialState: InstanceUIStateSlice = {
   byConversationId: {},
+  pendingByConversationId: {},
   isBlockMode: false,
   isSnapshot: false,
   isMemoryToggleRequested: false,
@@ -173,6 +184,89 @@ export interface InitInstanceUIStatePayload {
   showUserMessageOptions?: boolean;
   showAssistantMessageOptions?: boolean;
   bufferStream?: boolean;
+}
+
+
+// =============================================================================
+// THE NO-DROPPED-WRITE RULE (D326)
+// =============================================================================
+
+/**
+ * Every setter in this slice used to read
+ * `const entry = state.byConversationId[id]; if (entry) { … }` — so a write
+ * aimed at a conversation whose UI-state entry did not exist YET was discarded
+ * in silence, and the calling code read as though it had taken effect.
+ *
+ * That window is not exotic, it is the normal order of things: a launcher hands
+ * a surface its `conversationId` before `createInstanceFull` writes the row,
+ * which is exactly when a mount-once effect fires. It cost the Masterwork
+ * interview its "Your interviewer" hero and the Conductor its "who is in the
+ * room" introduction — both surfaces dispatched their three display overrides
+ * on mount, both were no-ops whenever the row landed a beat later, and neither
+ * logged a thing (D326, 2026-09-16). Every other setter here shared the bug.
+ *
+ * `stageOrApply` is now the ONE write path. When the entry exists it applies
+ * the patch. When it does not, it creates the entry at this slice's own
+ * documented defaults (the canonical factory is `initInstanceUIState` itself,
+ * so a provisional entry is a COMPLETE entry, never a partial one), applies the
+ * patch on top, says so once in the console, and records the written fields in
+ * `pendingByConversationId` so the real creation — which replaces the entry
+ * wholesale — replays them instead of undoing them.
+ *
+ * A reducer that cannot apply a write must queue it or raise. It must never
+ * swallow it.
+ */
+function stageOrApply(
+  state: InstanceUIStateSlice,
+  conversationId: string,
+  actionName: string,
+  patch: Partial<InstanceUIState>,
+): void {
+  const existing = state.byConversationId[conversationId];
+  if (existing) {
+    Object.assign(existing, patch);
+    // Still provisional: keep the ledger current so the real creation replays
+    // this field too.
+    const pending = state.pendingByConversationId[conversationId];
+    if (pending) Object.assign(pending, patch);
+    return;
+  }
+
+  console.error(
+    `[instance-ui-state] ${actionName} arrived for conversation ` +
+      `"${conversationId}" before its UI-state entry existed. The entry is ` +
+      `being created at defaults and the write kept; it will be replayed on ` +
+      `top of the real instance when it lands. If the instance never lands, ` +
+      `the surface launched its UI without a conversation.`,
+  );
+
+  instanceUIStateSlice.caseReducers.initInstanceUIState(
+    state,
+    instanceUIStateSlice.actions.initInstanceUIState({ conversationId }),
+  );
+  Object.assign(state.byConversationId[conversationId], patch);
+  state.pendingByConversationId[conversationId] = { ...patch };
+}
+
+/**
+ * Read a field for a setter that needs the CURRENT value (a toggle, a merge
+ * into a nested object). Falls back to this slice's documented default when
+ * neither the entry nor a staged write has a value, so a toggle dispatched
+ * before the instance exists flips from the same starting point it would have
+ * flipped from after.
+ */
+function readField<K extends keyof InstanceUIState>(
+  state: InstanceUIStateSlice,
+  conversationId: string,
+  key: K,
+  fallback: InstanceUIState[K],
+): InstanceUIState[K] {
+  const entry = state.byConversationId[conversationId];
+  if (entry && entry[key] !== undefined) return entry[key];
+  const pending = state.pendingByConversationId[conversationId];
+  if (pending && pending[key] !== undefined)
+    return pending[key] as InstanceUIState[K];
+  return fallback;
 }
 
 // =============================================================================
@@ -268,6 +362,31 @@ const instanceUIStateSlice = createSlice({
         showAssistantMessageOptions,
         bufferStream,
       };
+
+      // THE REPLAY (D326). Writes that landed before this entry existed were
+      // kept on the provisional entry and recorded in the ledger. This creation
+      // REPLACED that entry, so put them back — except for any field this
+      // creation stated itself, which is the more recent intent and wins.
+      const staged = state.pendingByConversationId[conversationId];
+      if (staged) {
+        delete state.pendingByConversationId[conversationId];
+        const stated = new Set(Object.keys(action.payload));
+        const replayed = (Object.keys(staged) as (keyof InstanceUIState)[])
+          .filter((key) => !stated.has(key as string));
+        if (replayed.length > 0) {
+          const entry = state.byConversationId[conversationId];
+          for (const key of replayed) {
+            (entry as Record<string, unknown>)[key as string] = staged[key];
+          }
+          console.warn(
+            `[instance-ui-state] conversation "${conversationId}" was created ` +
+              `after ${replayed.length} write(s) had already been made against ` +
+              `it (${replayed.join(", ")}); they were replayed on top of the ` +
+              `new entry. A surface is writing display state before its ` +
+              `instance exists — that is handled, but it is worth knowing.`,
+          );
+        }
+      }
     },
 
     setResponseDensity(
@@ -277,10 +396,9 @@ const instanceUIStateSlice = createSlice({
         density: "comfortable" | "compact";
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.responseDensity = action.payload.density;
-      }
+      stageOrApply(state, action.payload.conversationId, "setResponseDensity", {
+        responseDensity: action.payload.density,
+      });
     },
 
     setDisplayNameOverride(
@@ -290,10 +408,9 @@ const instanceUIStateSlice = createSlice({
         value: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.displayNameOverride = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setDisplayNameOverride", {
+        displayNameOverride: action.payload.value,
+      });
     },
 
     setDisplayDescriptionOverride(
@@ -303,10 +420,9 @@ const instanceUIStateSlice = createSlice({
         value: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.displayDescriptionOverride = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setDisplayDescriptionOverride", {
+        displayDescriptionOverride: action.payload.value,
+      });
     },
 
     setDisplayIconNameOverride(
@@ -316,10 +432,9 @@ const instanceUIStateSlice = createSlice({
         value: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.displayIconNameOverride = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setDisplayIconNameOverride", {
+        displayIconNameOverride: action.payload.value,
+      });
     },
 
     setInputPlaceholder(
@@ -329,56 +444,63 @@ const instanceUIStateSlice = createSlice({
         value: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.inputPlaceholder = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setInputPlaceholder", {
+        inputPlaceholder: action.payload.value,
+      });
     },
 
     setShowFreeformInput(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.showFreeformInput = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setShowFreeformInput", {
+        showFreeformInput: action.payload.value,
+      });
     },
 
     setShowAttachments(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.showAttachments = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setShowAttachments", {
+        showAttachments: action.payload.value,
+      });
     },
 
     setShowMicrophone(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.showMicrophone = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setShowMicrophone", {
+        showMicrophone: action.payload.value,
+      });
     },
 
     setShowUserMessageOptions(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.showUserMessageOptions = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setShowUserMessageOptions", {
+        showUserMessageOptions: action.payload.value,
+      });
     },
 
     setShowAssistantMessageOptions(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.showAssistantMessageOptions = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setShowAssistantMessageOptions", {
+        showAssistantMessageOptions: action.payload.value,
+      });
     },
 
     setBufferStream(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) entry.bufferStream = action.payload.value;
+      stageOrApply(state, action.payload.conversationId, "setBufferStream", {
+        bufferStream: action.payload.value,
+      });
     },
 
     setDisplayMode(
@@ -388,100 +510,95 @@ const instanceUIStateSlice = createSlice({
         displayMode: ResultDisplayMode;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.displayMode = action.payload.displayMode;
-        entry.modeState = {};
-      }
+      stageOrApply(state, action.payload.conversationId, "setDisplayMode", {
+        displayMode: action.payload.displayMode,
+        modeState: {},
+      });
     },
 
     setAutoRun(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.autoRun = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setAutoRun", {
+        autoRun: action.payload.value,
+      });
     },
 
     setAllowChat(
       state,
       action: PayloadAction<{ conversationId: string; allow: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.allowChat = action.payload.allow;
-      }
+      stageOrApply(state, action.payload.conversationId, "setAllowChat", {
+        allowChat: action.payload.allow,
+      });
     },
 
     setUsePreExecutionInput(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.showPreExecutionGate = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setUsePreExecutionInput", {
+        showPreExecutionGate: action.payload.value,
+      });
     },
 
     setPreExecutionSatisfied(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.preExecutionSatisfied = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setPreExecutionSatisfied", {
+        preExecutionSatisfied: action.payload.value,
+      });
     },
 
     // ── Visibility controls ──────────────────────────────────────────────────
 
     toggleVariablePanel(state, action: PayloadAction<string>) {
-      const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.showVariablePanel = !entry.showVariablePanel;
-      }
+      stageOrApply(state, action.payload, "toggleVariablePanel", {
+        showVariablePanel: !readField(
+          state,
+          action.payload,
+          "showVariablePanel",
+          false,
+        ),
+      });
     },
 
     setShowVariablePanel(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.showVariablePanel = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setShowVariablePanel", {
+        showVariablePanel: action.payload.value,
+      });
     },
 
     setShowDefinitionMessages(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.showDefinitionMessages = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setShowDefinitionMessages", {
+        showDefinitionMessages: action.payload.value,
+      });
     },
 
     setShowDefinitionMessageContent(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.showDefinitionMessageContent = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setShowDefinitionMessageContent", {
+        showDefinitionMessageContent: action.payload.value,
+      });
     },
 
     setHiddenMessageCount(
       state,
       action: PayloadAction<{ conversationId: string; count: number }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.hiddenMessageCount = action.payload.count;
-      }
+      stageOrApply(state, action.payload.conversationId, "setHiddenMessageCount", {
+        hiddenMessageCount: action.payload.count,
+      });
     },
 
     /**
@@ -494,19 +611,13 @@ const instanceUIStateSlice = createSlice({
       state,
       action: PayloadAction<{ conversationId: string; showVariables: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        const resolved = resolveVisibilitySettings(
-          action.payload.showVariables,
-        );
-        if (resolved.showVariablePanel !== undefined)
-          entry.showVariablePanel = resolved.showVariablePanel;
-        if (resolved.showDefinitionMessages !== undefined)
-          entry.showDefinitionMessages = resolved.showDefinitionMessages;
-        if (resolved.showDefinitionMessageContent !== undefined)
-          entry.showDefinitionMessageContent =
-            resolved.showDefinitionMessageContent;
-      }
+      const resolved = resolveVisibilitySettings(action.payload.showVariables);
+      stageOrApply(
+        state,
+        action.payload.conversationId,
+        "applyShowVariablesConfig",
+        resolved,
+      );
     },
 
     // ── Widget handle ────────────────────────────────────────────────────────
@@ -518,19 +629,17 @@ const instanceUIStateSlice = createSlice({
         widgetHandleId: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.widgetHandleId = action.payload.widgetHandleId;
-      }
+      stageOrApply(state, action.payload.conversationId, "setWidgetHandleId", {
+        widgetHandleId: action.payload.widgetHandleId,
+      });
     },
 
     // ── Layout & interaction ─────────────────────────────────────────────────
 
     toggleExpanded(state, action: PayloadAction<string>) {
-      const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.isExpanded = !entry.isExpanded;
-      }
+      stageOrApply(state, action.payload, "toggleExpanded", {
+        isExpanded: !readField(state, action.payload, "isExpanded", true),
+      });
     },
 
     updateModeState(
@@ -541,10 +650,12 @@ const instanceUIStateSlice = createSlice({
       }>,
     ) {
       const { conversationId, changes } = action.payload;
-      const entry = state.byConversationId[conversationId];
-      if (entry) {
-        Object.assign(entry.modeState, changes);
-      }
+      stageOrApply(state, conversationId, "updateModeState", {
+        modeState: {
+          ...readField(state, conversationId, "modeState", {}),
+          ...changes,
+        },
+      });
     },
 
     setExpandedVariableId(
@@ -554,27 +665,29 @@ const instanceUIStateSlice = createSlice({
         variableId: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.expandedVariableId = action.payload.variableId;
-      }
+      stageOrApply(state, action.payload.conversationId, "setExpandedVariableId", {
+        expandedVariableId: action.payload.variableId,
+      });
     },
 
     toggleCreatorDebug(state, action: PayloadAction<string>) {
-      const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.showCreatorDebug = !entry.showCreatorDebug;
-      }
+      stageOrApply(state, action.payload, "toggleCreatorDebug", {
+        showCreatorDebug: !readField(
+          state,
+          action.payload,
+          "showCreatorDebug",
+          false,
+        ),
+      });
     },
 
     setSubmitOnEnter(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.submitOnEnter = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setSubmitOnEnter", {
+        submitOnEnter: action.payload.value,
+      });
     },
 
     /**
@@ -586,10 +699,9 @@ const instanceUIStateSlice = createSlice({
       state,
       action: PayloadAction<{ conversationId: string; tabIds: string[] }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.editorContextDisabledTabs = action.payload.tabIds;
-      }
+      stageOrApply(state, action.payload.conversationId, "setEditorContextDisabledTabs", {
+        editorContextDisabledTabs: action.payload.tabIds,
+      });
     },
 
     /**
@@ -610,17 +722,23 @@ const instanceUIStateSlice = createSlice({
         url: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.serverOverrideUrl = action.payload.url;
-        // Clearing the URL clears the paired token — keeping a stale
-        // bearer around with no target it can authenticate against
-        // would just be a bug factory.
-        if (action.payload.url === null) {
-          entry.serverOverrideAuthToken = null;
-          entry.serverOverrideAuthTokenError = null;
-        }
-      }
+      stageOrApply(
+        state,
+        action.payload.conversationId,
+        "setServerOverrideUrl",
+        {
+          serverOverrideUrl: action.payload.url,
+          // Clearing the URL clears the paired token — keeping a stale
+          // bearer around with no target it can authenticate against
+          // would just be a bug factory.
+          ...(action.payload.url === null
+            ? {
+                serverOverrideAuthToken: null,
+                serverOverrideAuthTokenError: null,
+              }
+            : {}),
+        },
+      );
     },
 
     /**
@@ -635,13 +753,15 @@ const instanceUIStateSlice = createSlice({
         token: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.serverOverrideAuthToken = action.payload.token;
-        if (action.payload.token) {
-          entry.serverOverrideAuthTokenError = null;
-        }
-      }
+      stageOrApply(
+        state,
+        action.payload.conversationId,
+        "setServerOverrideAuthToken",
+        {
+          serverOverrideAuthToken: action.payload.token,
+          ...(action.payload.token ? { serverOverrideAuthTokenError: null } : {}),
+        },
+      );
     },
 
     /**
@@ -660,57 +780,45 @@ const instanceUIStateSlice = createSlice({
         error: string | null;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.serverOverrideAuthTokenError = action.payload.error;
-      }
+      stageOrApply(state, action.payload.conversationId, "setServerOverrideAuthTokenError", {
+        serverOverrideAuthTokenError: action.payload.error,
+      });
     },
 
     setShowAutoClearToggle(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.showAutoClearToggle = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setShowAutoClearToggle", {
+        showAutoClearToggle: action.payload.value,
+      });
     },
     setAutoClearConversation(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.autoClearConversation = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setAutoClearConversation", {
+        autoClearConversation: action.payload.value,
+      });
     },
 
     setReuseConversationId(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.reuseConversationId = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setReuseConversationId", {
+        reuseConversationId: action.payload.value,
+      });
     },
 
     /**
-     * CREATE-OR-SCREAM — never drop a per-run pick.
-     *
-     * This used to be `if (entry) { ... }`: a write for a conversation whose
-     * UI-state entry did not exist YET was discarded in silence. That window is
-     * real on `/chat/new` — the landing composer renders against the minted
-     * conversation id BEFORE the launcher's create effect runs (`ChatRoomClient`
-     * gates it on `ready: !isInitializing && isFreshRoute`) — so a person could
-     * attach an MCP server or a tool, see nothing happen, and send a run without
-     * it. A silent drop of a deliberate user pick is exactly what law 4 forbids.
-     *
-     * Now the entry is created at its documented defaults and the change is
-     * applied on top, with a loud console error naming the conversation so the
-     * ordering defect is still visible to us. `createInstanceFull` carries the
-     * per-run additions across its own re-init (see extraReducers below), so the
-     * pick survives the real create landing a beat later.
+     * Never drop a per-run pick. On `/chat/new` the landing composer renders
+     * against the minted conversation id BEFORE the launcher's create effect
+     * runs (`ChatRoomClient` gates it on `ready: !isInitializing &&
+     * isFreshRoute`), so a person could attach an MCP server or a tool, see
+     * nothing happen, and send a run without it. `stageOrApply` (see above) is
+     * what keeps it — and `createInstanceFull` additionally carries the
+     * per-run additions across a genuine RE-create (see extraReducers below).
      */
     setBuilderAdvancedSettings(
       state,
@@ -720,32 +828,23 @@ const instanceUIStateSlice = createSlice({
       }>,
     ) {
       const { conversationId, changes } = action.payload;
-      if (!state.byConversationId[conversationId]) {
-        console.error(
-          `[instance-ui-state] setBuilderAdvancedSettings arrived for conversation ` +
-            `"${conversationId}" before its UI-state entry existed — creating the entry ` +
-            `at defaults so the pick is kept. The conversation record is expected to ` +
-            `land moments later; if it never does, the surface launched its composer ` +
-            `without a conversation.`,
-        );
-        instanceUIStateSlice.caseReducers.initInstanceUIState(
-          state,
-          instanceUIStateSlice.actions.initInstanceUIState({ conversationId }),
-        );
-      }
-      Object.assign(
-        state.byConversationId[conversationId].builderAdvancedSettings,
-        changes,
-      );
+      stageOrApply(state, conversationId, "setBuilderAdvancedSettings", {
+        builderAdvancedSettings: {
+          ...readField(
+            state,
+            conversationId,
+            "builderAdvancedSettings",
+            DEFAULT_BUILDER_ADVANCED_SETTINGS,
+          ),
+          ...changes,
+        },
+      });
     },
 
     resetBuilderAdvancedSettings(state, action: PayloadAction<string>) {
-      const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.builderAdvancedSettings = {
-          ...DEFAULT_BUILDER_ADVANCED_SETTINGS,
-        };
-      }
+      stageOrApply(state, action.payload, "resetBuilderAdvancedSettings", {
+        builderAdvancedSettings: { ...DEFAULT_BUILDER_ADVANCED_SETTINGS },
+      });
     },
 
     setStructuredInstruction(
@@ -755,50 +854,64 @@ const instanceUIStateSlice = createSlice({
         changes: Record<string, unknown>;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        Object.assign(
-          entry.builderAdvancedSettings.structuredInstruction,
-          action.payload.changes,
-        );
-      }
+      const { conversationId, changes } = action.payload;
+      const current = readField(
+        state,
+        conversationId,
+        "builderAdvancedSettings",
+        DEFAULT_BUILDER_ADVANCED_SETTINGS,
+      );
+      stageOrApply(state, conversationId, "setStructuredInstruction", {
+        builderAdvancedSettings: {
+          ...current,
+          structuredInstruction: {
+            ...current.structuredInstruction,
+            ...changes,
+          },
+        },
+      });
     },
 
     resetStructuredInstruction(state, action: PayloadAction<string>) {
-      const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.builderAdvancedSettings.structuredInstruction = {};
-      }
+      const conversationId = action.payload;
+      stageOrApply(state, conversationId, "resetStructuredInstruction", {
+        builderAdvancedSettings: {
+          ...readField(
+            state,
+            conversationId,
+            "builderAdvancedSettings",
+            DEFAULT_BUILDER_ADVANCED_SETTINGS,
+          ),
+          structuredInstruction: {},
+        },
+      });
     },
 
     setHideReasoning(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.hideReasoning = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setHideReasoning", {
+        hideReasoning: action.payload.value,
+      });
     },
 
     setHideToolResults(
       state,
       action: PayloadAction<{ conversationId: string; value: boolean }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.hideToolResults = action.payload.value;
-      }
+      stageOrApply(state, action.payload.conversationId, "setHideToolResults", {
+        hideToolResults: action.payload.value,
+      });
     },
 
     setPreExecutionMessage(
       state,
       action: PayloadAction<{ conversationId: string; message: string | null }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.preExecutionMessage = action.payload.message;
-      }
+      stageOrApply(state, action.payload.conversationId, "setPreExecutionMessage", {
+        preExecutionMessage: action.payload.message,
+      });
     },
 
     setVariablesPanelStyle(
@@ -808,24 +921,23 @@ const instanceUIStateSlice = createSlice({
         style: VariablesPanelStyle;
       }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.variablesPanelStyle = action.payload.style;
-      }
+      stageOrApply(state, action.payload.conversationId, "setVariablesPanelStyle", {
+        variablesPanelStyle: action.payload.style,
+      });
     },
 
     setOriginalText(
       state,
       action: PayloadAction<{ conversationId: string; text: string | null }>,
     ) {
-      const entry = state.byConversationId[action.payload.conversationId];
-      if (entry) {
-        entry.originalText = action.payload.text;
-      }
+      stageOrApply(state, action.payload.conversationId, "setOriginalText", {
+        originalText: action.payload.text,
+      });
     },
 
     removeInstanceUIState(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
+      delete state.pendingByConversationId[action.payload];
     },
 
     setUseBlockMode(state, action: PayloadAction<boolean>) {
@@ -921,6 +1033,9 @@ const instanceUIStateSlice = createSlice({
       // still-mounted surface — the hooks never re-register after an
       // external unregister, so every later launch carried a dead id.
       delete state.byConversationId[conversationId];
+      // The instance is gone; a write staged for an instance that will never
+      // arrive must not be replayed onto a future one with the same id.
+      delete state.pendingByConversationId[conversationId];
     });
   },
 });

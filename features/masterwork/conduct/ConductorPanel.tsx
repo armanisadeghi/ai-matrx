@@ -303,15 +303,11 @@ function ConductorColumn({
   // variables the Expert never sees — so the one instruction on the page
   // pointed at something that does not exist, and nothing on the screen said
   // what this conversation is FOR. Same mechanism the agent apps use.
-  // The overrides are a MUTATION of an existing entry — `initInstanceUIState`
-  // creates it a beat later than this component mounts, and a dispatch that
-  // lands first is silently dropped by the reducer's `if (entry)` guard. So the
-  // effect waits for the entry to exist and re-runs the moment it does.
-  const instanceReady = useAppSelector((state) =>
-    Boolean(state.instanceUIState.byConversationId[conversationId]),
-  );
+  // No wait for the instance row: the slice keeps a write that arrives before
+  // the row and replays it when the row lands (D326, fixed 2026-09-16). This
+  // panel gated on the row's existence until then — the same local workaround
+  // the interview panel carried, for a defect the slice has now fixed once.
   useEffect(() => {
-    if (!instanceReady) return;
     dispatch(
       setDisplayNameOverride({
         conversationId,
@@ -333,7 +329,7 @@ function ConductorColumn({
         value: "BrainCircuit",
       }),
     );
-  }, [conversationId, dispatch, instanceReady, rulebookName]);
+  }, [conversationId, dispatch, rulebookName]);
 
   const lastChipRef = useRef<string | null>(null);
   const stageChip = (text: string) => {
