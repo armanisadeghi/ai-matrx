@@ -7,6 +7,13 @@ description: "End-of-task routine: health checks, fixes, then commit and push. U
 
 Complete the owned feature with proportionate checks, then commit and push. Scheduled release owners follow the ship-first policy below; they do not run the feature-author checklist as an unconditional release prerequisite.
 
+## Before anything else: is the outcome there, from the user's seat?
+
+Finishing means the user can do what he asked, the way he meets the product — not that the
+checks are green. Before running a single check, do what the user described and confirm what
+he will see; if you cannot, the task is not at its end, and green checks will only make the
+gap harder to notice ([reality is the referee](../../../../common-docs/policies/reality-is-the-referee.md)).
+
 ## The commit/push contract (read first)
 
 The user task and repository instructions determine commit authorization; invoking a skill grants no additional authority. Two independent decisions — **scope** (what to stage) and **delivery** (commit vs push vs hold). Read both from the user's words.

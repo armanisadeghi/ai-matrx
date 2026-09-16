@@ -37,11 +37,19 @@ fan-out where server and client proceed independently *"because the APIs, data s
 are already fully decided."* **Prescribe the process; let the agent derive the product.**
 
 ### 2. Demand discovery before design
-The assignment ordered familiarization first: know the live database, its conventions and RLS
-before designing anything; research the best products in the world and pick one primary + one
-secondary reference (default set: `policies/champions.md`); scope capabilities explicitly (what's IN, what's deliberately deferred).
+The assignment ordered familiarization first: know what already exists — the live system as its
+users meet it, the live database and its conventions — before designing anything; research the
+best products in the world and pick one primary + one secondary reference (default set:
+`policies/champions.md`); scope capabilities explicitly (what's IN, what's deliberately deferred).
 The coordinator ran these as parallel zero-assumption recon agents whose reports went to FILES.
-Every later spec stood on verified ground instead of assumption.
+**Discovery is briefed so that it can return what the coordinator does not already know**
+([reality is the referee](/policies/reality-is-the-referee.md)): the situation and the result
+wanted, never the files to open, the words to search for, or the path to walk — a brief that
+carries the answer is confirmation, and every later spec then stands on the coordinator's blind
+spots. What the coordinator does know is withheld and used as the test of the report. The
+coordinator has met reality itself — the product from the user's seat, the user's words verbatim —
+before writing any brief; a brief written minutes after the vision arrives is the signature of the
+disease, not of speed.
 
 ### 3. Order the adversarial review BEFORE commitment
 Verbatim: *"before we take the next step... I want you to have an opus 5 agent who tries to poke
@@ -73,7 +81,11 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
 
 1. **Externalize everything; make yourself replaceable.** One register as the single tracking
    home (stable IDs; no parallel status docs; **an index, not a store** — a decision lives in
-   its item and the register only points at it). Frozen specs. A rulings ledger. A log line for
+   its item and the register only points at it). The register opens with the owner's words
+   verbatim and holds only decisions and reality-checked facts — each entry says how to check
+   it against the live system; an item that changes nothing the user will see is suspect on
+   sight, and a log line that changes no decision is not written. A register that records
+   activity becomes the single source of lies every later lane inherits. Frozen specs. A rulings ledger. A log line for
    EVERY processed event, committed and pushed immediately — *unpushed work doesn't exist*. A
    `COORDINATOR.md` succession brief so any fresh session takes the chair with one sentence.
    This is why context wipes cost nothing: the head is a cache, the repo is the truth.
@@ -165,14 +177,14 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
 | # | Phase | Exit criterion |
 |---|---|---|
 | 0 | **Mandate** (owner) | The mandate names the vision, the theory of past failure, the process shape, and the done-means-done law (Part 1 §1, §4). |
-| 1 | **Discovery** | Parallel recon agents (lanes named) have written to files: own-system conventions verified against live code/DB, the champion for each discipline named with why it is the reference (`policies/champions.md` — parity is the floor), capability scope IN/DEFERRED — and every load-bearing claim in them is verified, not asserted. |
+| 1 | **Discovery** | Parallel recon agents (lanes named) have written to files: what already exists, found from the user's seat and verified against live code/DB, the champion for each discipline named with why it is the reference (`policies/champions.md` — parity is the floor), capability scope IN/DEFERRED — every load-bearing claim verified, not asserted, and every report checked against what the coordinator withheld (a report that misses what the coordinator already knew is discarded, and the brief is rewritten). |
 | 2 | **Scope + attack** | A feature tree / scope list exists; a zero-authorship `plan-attack` has run; every finding adjudicated (FIX / REJECT with reason / OWNER-ONLY). The register is opened as the single tracking home; questions that are sharp-but-blocked are items, questions not yet phrasable stay named **fog** (never pre-sliced into fake items), and work past the destination is **out of scope** — closed with one line, never "deferred" back onto the frontier. |
 | 3 | **Interview + readiness** | Each lane's readiness doc front-loads its unknowns and resolves what it can itself; the coordinator runs the residue through the `ask-arman` gate, then ONE `grilling` interview in rounds (one complex question per round; the rest wait in the Question Ledger). A question that exists only because the owner is also a customer of one organization is the user's, not the boss's — it becomes an onboarding step or a knob, never his question. Exit: the frontier is empty (answered, decided-with-override, or deferred with a date). **After this, no lane ever stops to ask the owner** — a new unknown is a coordinator ruling. |
 | 4 | **Freeze (G1)** | Specs, contracts, types/mocks, and fixtures are frozen and hashed; the core schema is certified. From here a contract change is an amendment (changelog + register note + regeneration), never a silent edit. |
 | 5 | **Core** (serial) | The single critical-path core lands and certifies in order — never parallelized. |
 | 6 | **Fan-out** (parallel) | Lanes dispatched with exclusive file/schema ownership and frozen interfaces; shared inputs verified to exist BEFORE parallel dispatch (a bad ref fails here, not inside six agents). |
 | 7 | **First vertical (G2)** | One org runs one end-to-end path in production shape with real non-admin users — before the remaining lanes merge their surfaces. |
-| 8 | **Verification + defect rounds** | Per lane: D15 — explicit targets (a real user action on a real surface, never "tests pass") proven by a zero-authorship verifier on the deployed surface with real data; conformance gates green; a review-queue row filed; reopen-on-fail is normal. The five-pass battery has run and the plan names each pass: breadth sweep, adversarial depth, hostile re-verify, closing verifier + production sweep, owner's own hands (Part 2 §3). Defects are fixed by class (Part 2 §4), never by instance. |
+| 8 | **Verification + defect rounds** | Per lane: D15 — explicit targets (a real user action on a real surface, never "tests pass") proven by a zero-authorship verifier on the deployed surface with real data, briefed with the owner's words and the outcome — never the builder's file list or path (a verifier that inherits the builder's frame is the builder's hands); conformance gates green; a review-queue row filed; reopen-on-fail is normal. The five-pass battery has run and the plan names each pass: breadth sweep, adversarial depth, hostile re-verify, closing verifier + production sweep, owner's own hands (Part 2 §3). Defects are fixed by class (Part 2 §4), never by instance. |
 | 9 | **Close (G3)** | Every target Met on independent evidence and confirmed LIVE (deploy trains carried it; verify the deployed SHA, never the pushed one); the rulings list delivered to the owner; the retro banked (Part 2 §5); handoffs deleted, register and docs groomed; residual follow-ups filed where they'll be seen. |
 
 ## Part 4 — Launching one (the owner's copy-paste protocol)
@@ -180,7 +192,7 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
 1. Write the mandate: the vision, the theory of past failure, and the process shape (core →
    frozen specs → parallel fan-out → independent verification). Name what "done" means using
    the Part 1 §4 language verbatim.
-2. Tell the agent to run discovery first (own-system recon + market reference + scope), then
+2. Tell the agent to run discovery first (what exists, from the user's seat + market reference + scope), then
    bring the scope list — and order the hole-poking review on it (`plan-attack`).
 3. Answer the defaults-carrying interview one round at a time (one complex question per round,
    each with a recommendation; only un-defaultable items need words — skipping ships the default).
@@ -200,6 +212,12 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
   taken; their model of who owns correctness was not.
 
 **Changelog**
+- 2026-09-16 — [Reality is the referee](/policies/reality-is-the-referee.md) folded in: discovery
+  is briefed to return the unknown (the coordinator withholds what it knows as the test), the
+  coordinator meets reality before modeling it, the register holds decisions and checkable facts
+  only, verifiers carry the owner's words never the builder's frame. Learned from the Agent Change
+  Impact campaign (`projects/agent-change-impact/`), which followed every step here and delivered
+  nothing where the owner looks.
 - 2026-09-13 (law alignment) — questions to the owner now route through the `ask-arman` gate and
   the Question Ledger, one complex question per round in the five-part shape (law 10, Arman
   2026-09-10/12) — "batched" wording removed from §6, gate 3, and Part 4; gate 1 names the champion

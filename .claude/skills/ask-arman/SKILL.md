@@ -42,6 +42,10 @@ Run them in order. The first that says "not a question" ends the matter.
    [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md). Arman, 2026-09-12:
    *"they're not asking me as the developer building this platform. They're asking me as the
    user and that's a horrible waste of our development resources."*
+0b. **Would the answer change what he will see?** A question whose every answer leaves the
+   user-visible outcome the same is not his — decide it, record it, move on. Asking him to
+   approve deleting a test row, or to choose between two internal shapes, is the disease
+   wearing diligence ([reality is the referee](/policies/reality-is-the-referee.md)).
 1. **Is it a fact?** Anything code, the database, a document, or the web can settle is looked
    up, never asked. "Does X exist", "which table", "what does the endpoint return", "what did
    the last run do" — dispatch a `quick` lane if it is tedious. Record where you looked.
@@ -139,6 +143,7 @@ with a reversible default available · a fork with no recommendation · any code
 section number in his sentence · re-asking anything dated in a `DECISIONS.md` · asking a fact.
 
 ## Changelog
+- 2026-09-16 — Gate 0b: a question whose answer changes nothing the user will see never reaches him.
 
 - **2026-09-12 (in-app Question Desk)** — noted under § The row that the desk mirrors researched
   rows into the in-app Question Desk (the `question_desk` MCP tool): the ledger row stays the
