@@ -24,6 +24,7 @@ const detail = (over: Partial<RunDetail>): RunDetail =>
   ({
     run_id: "r1",
     status: "processing",
+    error: null,
     liveness: "stalled",
     source: { input_data_type: "topic", summary: "", file_urls: [] },
     podcast_type: "educational",
@@ -154,6 +155,19 @@ describe("detailToRunState", () => {
     expect(state.progress).toBe(100);
     expect(state.currentLabel).toBe("Episode ready");
     expect(state.error).toBeNull();
+  });
+
+  it("preserves the durable content-gate error for the recovery banner", () => {
+    const state = detailToRunState(
+      detail({
+        liveness: "failed",
+        error:
+          "Content gate failed: only 457 chars of usable content (need ≥ 1000).",
+      }),
+    );
+
+    expect(state.status).toBe("error");
+    expect(state.error).toContain("only 457 chars");
   });
 });
 

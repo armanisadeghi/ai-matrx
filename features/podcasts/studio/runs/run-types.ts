@@ -72,6 +72,8 @@ export interface RunRecovery {
 }
 
 export interface RunDetail extends RunSummary {
+  /** Durable terminal failure detail from chat.agent_run.error. */
+  error: string | null;
   description: string | null;
   script: string | null;
   audio_url: string | null;
