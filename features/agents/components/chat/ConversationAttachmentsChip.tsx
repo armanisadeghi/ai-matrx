@@ -29,6 +29,7 @@ import {
 } from "@ai-matrx/design-system";
 import { attachmentKey } from "@/features/connectors/attachable-resources";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
+import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
 
 export function ConversationAttachmentsChip({
   conversationId,
@@ -36,7 +37,17 @@ export function ConversationAttachmentsChip({
   conversationId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const attachments = useConversationAttachments(conversationId);
+  // The header does not know this chat's own connections, so it asks the
+  // account-wide catalog the narrower question the capability gate needs:
+  // does ANY connection offer resources to choose from? If none does, the
+  // feature is not present and the header stays silent rather than warning
+  // every reader about something nobody has.
+  const { serverStates } = useMcpCatalog();
+  const attachments = useConversationAttachments(conversationId, {
+    hasAttachableConnection: serverStates.some(
+      (server) => server.attachable.length > 0,
+    ),
+  });
   const items = attachments.items;
 
   // Nothing attached and nothing wrong — the header stays quiet rather than

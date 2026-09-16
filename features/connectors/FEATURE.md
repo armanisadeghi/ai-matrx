@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-12`
+**Last updated:** `2026-09-15`
 
 ---
 
@@ -27,6 +27,15 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/connectors/rotation.ts` — pure randomized-bag selection and persisted-state parser.
 - `features/marketing/google/hooks.ts` and `service.ts` — the shared Google inventory query is **auth-gated twice**: Redux prevents pre-hydration scheduling, and the service requires a live Supabase bearer token immediately before PostgREST. Redux identity can briefly outlive a signed-out client; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`. The browser selects generated `credential_present` / `credential_stable` facts; `credential_item_id` and `vault_secret_key` remain private server-side references.
 
+- `features/connectors/attachable-resources.ts` — the ONE decision separating a **plain** connection (a pure MCP server: nothing to choose) from an **attachable** one (GitHub, Google: the useful act is choosing WHICH repositories or files). Pure; driven only by the availability payload's `attachable` list, with NO provider list in the client.
+- `features/connectors/attachments.service.ts` — `/api/connections/resources` + `/api/conversations/{id}/attachments` (list / attach / detach). Errors are raised, never swallowed into an empty list.
+- `features/connectors/redux/attachments.slice.ts` — `conversationAttachments`: landed `rows`, held `pending` picks, read status, write error.
+- `features/connectors/useConversationAttachments.ts` — the ONE container every attachment surface reads through, including the `/chat/new` handoff and the capability gate.
+- `features/connectors/ResourceAttachPicker.tsx` — the chooser. One picker for every provider; inventory providers filter locally, live providers search on a debounce and SAY they are searching.
+- `features/connectors/AttachResourceDialog.tsx` — overlay container binding the picker to the conversation.
+- `features/connectors/AttachedResourcesSection.tsx` — the attached list with per-item remove and an "Add more" door; mounted in the Tools picker.
+- `features/connectors/useAttachResourcePicker.ts` — the ONE door to the chooser (`attachResourcePicker` overlay).
+
 **Config**
 
 - `features/connectors/registry.ts` — `CONNECTORS`, `connectorsFor(surface)`, `getConnector(id)`.
@@ -38,7 +47,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
 - `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
-**Redux slice(s)** — none. This feature holds no state.
+**Redux slice(s)** — `conversationAttachments` (`redux/attachments.slice.ts`). The connector catalogue itself still holds no state; what a person CHOSE out of a connection does, keyed by conversation.
 
 **API endpoints** — none owned.
 
@@ -84,6 +93,27 @@ Each visit consumes the next three ids from a shuffled bag. No provider repeats 
 
 The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalogue entries whose server status is `active`, `beta`, or `community`, whose sanitized `connection_ready` gate is true, and which can be used from the web app now. Disconnected providers also need a real remote endpoint and a direct OAuth, GitHub, or no-auth route. An already-connected remote provider remains visible so its management door is never lost. Unproven, local-only (`stdio`), and `coming_soon` entries never appear.
 
+### (d2) Two kinds of connection, and choosing what rides this chat
+
+Arman, 2026-09-15: *"You are not differentiating between things that are just
+purely a connection to an MCP and those that allow us to select something."*
+
+The server's availability payload carries `attachable: [{resource_type, source,
+label}]` per server — `github` → `github_repository` from our synced inventory;
+`google` → `google_drive_file` / `google_sheet` live; a pure MCP server → `[]`.
+A non-empty list makes the connection **attachable**, and its chip gains a
+chooser door named in the provider's own words (`Choose repositories…`) plus a
+count of what is already attached. An empty list keeps the chip **plain**,
+because a door onto nothing is a dead control.
+
+The chooser writes `platform.associations` edges through aidream. Picks made on
+`/chat/new` — before the conversation row exists — are held against that same
+minted id and flushed the instant the attachments GET proves the row is there;
+until then they render as their own pending chips rather than passing for
+attached. The full list, the remove controls and "Add more" live in the Tools
+picker (the composer rail is one 16px line); the chat header carries a summary
+where every item opens at the provider.
+
 ### (e) A connector we do not support yet
 
 `comingSoonId` set → status is `unavailable` regardless of the connected-set, the chip is dashed + `soon`, and clicking calls `announceComingSoon(id)` against `lib/coming-soon/registry.ts`. **Never a bare "coming soon" string.** Notion no longer uses this path: it is an active MCP-backed connector.
@@ -106,6 +136,10 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - **One line, 16px, always.** It sits under a chat input; it may never wrap or compete. Overflow scrolls horizontally (`overflow-x-auto scrollbar-hide`) — this is why nothing breaks at 375px.
 - **Touch targets:** the visual chips stay 16px tall; a `before:` pseudo-element expands the hit area to 40px on mobile only (`sm:before:hidden`) without adding a pixel of layout height.
 - **Artwork failure stays branded.** Only after every provider-artwork candidate fails may `ConnectorMark` fall back to the catalogue brand color and provider initial, without shifting layout. No emoji or generic provider icon.
+- **A connection is account-wide; an attachment is not.** "GitHub is connected" and "this chat works on `aidream` and `ai-matrx`" are different facts. Attachments are keyed by conversation and never by slug.
+- **No provider list decides attachability.** `attachable` comes from the server, labels included, so a new attachable provider is a server change and no frontend change. The one provider-specific branch in the picker is GitHub's access door in the empty state, because GitHub is the only provider whose empty result has a fix the user can perform.
+- **Three states are never collapsed:** a read that FAILED is not "nothing attached"; a held pick is not "attached"; a pick that could not be carried over stays on screen with the server's own sentence.
+- **The read is gated on the capability existing.** No connection declaring `attachable` → nothing is fetched and nothing renders. This is what makes the frontend half safe to ship before the server half: an ungated read would put an amber warning in the header of every conversation on the platform about a feature nobody has. Guard: `__tests__/nothing-is-read-when-nothing-is-attachable.test.tsx`.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
 ---
@@ -136,6 +170,32 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-15` — **A connection you can choose things out of is not a
+  connection you can only connect to.** Every chip in the composer rail and the
+  Tools picker wore the same name-plus-state treatment, which is the whole
+  truth for a pure MCP server and half the truth for GitHub or Google, where
+  the useful act is choosing WHICH repositories or files ride this chat
+  (Arman: *"You are not differentiating between things that are just purely a
+  connection to an MCP and those that allow us to select something"*). The
+  split is driven only by the server's `attachable` payload, so no slug is
+  special-cased: `attachable-resources.ts` decides the chip kind and writes the
+  chooser's label in the provider's own words, `ResourceAttachPicker` is the
+  one chooser for every provider (inventory filters locally, live search
+  debounces and announces itself), and `redux/attachments.slice.ts` keeps what
+  was chosen per conversation as `platform.associations` edges — including
+  picks made on `/chat/new` before the row existed, which are held against the
+  same minted id and flushed when the read proves it is there. The reaper
+  (`destroyInstanceIfAbandoned`) now counts choosing what a chat works on as
+  work, closing the same class that took per-run tool additions until
+  2026-09-14. Guards, each proven failing-then-passing:
+  `attachable-connections-are-distinct.test.tsx`,
+  `attachments-survive-the-new-chat-handoff.test.ts`,
+  `nothing-is-read-when-nothing-is-attachable.test.tsx`. **Pending:** the
+  aidream half of the contract (`/api/connections/resources`,
+  `/api/conversations/{id}/attachments`, and `attachable` on the availability
+  payload) was not on `origin/main` when this shipped, so nothing here has been
+  exercised against a live server yet; the capability gate keeps the surfaces
+  silent until it is.
 - `2026-09-13` — **Three honest MCP states, one derivation.** Every connection
   indicator in the chat hierarchy decided from `tool.mcp_user_conn.status`
   alone, so eight of admin@admin.com's servers whose access token expired days

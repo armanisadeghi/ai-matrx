@@ -30,7 +30,11 @@ export function AttachResourceDialog({
   providerName,
   attachable,
 }: AttachResourceDialogProps) {
-  const attachments = useConversationAttachments(conversationId);
+  // The picker is only reachable FROM an attachable connection, so the
+  // capability is proven by the fact that this dialog is open at all.
+  const attachments = useConversationAttachments(conversationId, {
+    hasAttachableConnection: true,
+  });
   const alreadyAttachedRefs = attachments.items
     .filter((item) => item.provider === provider)
     .map((item) => item.resource_ref);

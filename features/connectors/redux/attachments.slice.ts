@@ -25,7 +25,11 @@
  * connection (Arman, 2026-09-13).
  */
 
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
 import {
   attachmentKey,
   type ConversationAttachment,
@@ -76,7 +80,12 @@ function entryFor(
 ): ConversationAttachmentsEntry {
   const existing = state.byConversationId[conversationId];
   if (existing) return existing;
-  const created: ConversationAttachmentsEntry = { ...EMPTY_ATTACHMENTS_ENTRY, rows: [], pending: [], busyKeys: [] };
+  const created: ConversationAttachmentsEntry = {
+    ...EMPTY_ATTACHMENTS_ENTRY,
+    rows: [],
+    pending: [],
+    busyKeys: [],
+  };
   state.byConversationId[conversationId] = created;
   return created;
 }
@@ -114,7 +123,11 @@ export const attachResource = createAsyncThunk(
     conversationExists: boolean;
   }) => {
     if (!conversationExists) {
-      return { conversationId, pick, row: null as ConversationAttachment | null };
+      return {
+        conversationId,
+        pick,
+        row: null as ConversationAttachment | null,
+      };
     }
     const row = await attachConversationResource(conversationId, pick);
     return { conversationId, pick, row };
@@ -131,10 +144,7 @@ export const attachResource = createAsyncThunk(
  */
 export const flushPendingAttachments = createAsyncThunk(
   "conversationAttachments/flushPending",
-  async (
-    { conversationId }: { conversationId: string },
-    { getState },
-  ) => {
+  async ({ conversationId }: { conversationId: string }, { getState }) => {
     const state = getState() as {
       conversationAttachments: AttachmentsSliceState;
     };
@@ -210,7 +220,9 @@ const attachmentsSlice = createSlice({
         entry.status = "succeeded";
         entry.error = null;
         // A pick that landed while we were not looking stops being pending.
-        const landed = new Set(action.payload.rows.map((row) => attachmentKey(row)));
+        const landed = new Set(
+          action.payload.rows.map((row) => attachmentKey(row)),
+        );
         entry.pending = entry.pending.filter(
           (pick) => !landed.has(attachmentKey(pick)),
         );
@@ -218,7 +230,8 @@ const attachmentsSlice = createSlice({
       .addCase(loadConversationAttachments.rejected, (state, action) => {
         const entry = entryFor(state, action.meta.arg.conversationId);
         entry.status = "failed";
-        entry.error = action.error.message ?? "Could not read this chat's attachments.";
+        entry.error =
+          action.error.message ?? "Could not read this chat's attachments.";
       })
 
       .addCase(attachResource.pending, (state, action) => {
@@ -241,9 +254,7 @@ const attachmentsSlice = createSlice({
           entry.pending = entry.pending.filter(
             (pick) => attachmentKey(pick) !== key,
           );
-        } else if (
-          !entry.pending.some((pick) => attachmentKey(pick) === key)
-        ) {
+        } else if (!entry.pending.some((pick) => attachmentKey(pick) === key)) {
           entry.pending.push(action.payload.pick);
         }
       })
@@ -260,7 +271,9 @@ const attachmentsSlice = createSlice({
         const entry = entryFor(state, action.payload.conversationId);
         for (const row of action.payload.landed) {
           const key = attachmentKey(row);
-          if (!entry.rows.some((candidate) => attachmentKey(candidate) === key)) {
+          if (
+            !entry.rows.some((candidate) => attachmentKey(candidate) === key)
+          ) {
             entry.rows.push(row);
           }
         }
@@ -285,7 +298,8 @@ const attachmentsSlice = createSlice({
       .addCase(detachResource.pending, (state, action) => {
         const entry = entryFor(state, action.meta.arg.conversationId);
         const row = entry.rows.find(
-          (candidate) => candidate.association_id === action.meta.arg.associationId,
+          (candidate) =>
+            candidate.association_id === action.meta.arg.associationId,
         );
         if (row && !entry.busyKeys.includes(attachmentKey(row))) {
           entry.busyKeys.push(attachmentKey(row));
@@ -295,10 +309,12 @@ const attachmentsSlice = createSlice({
       .addCase(detachResource.fulfilled, (state, action) => {
         const entry = entryFor(state, action.payload.conversationId);
         const row = entry.rows.find(
-          (candidate) => candidate.association_id === action.payload.associationId,
+          (candidate) =>
+            candidate.association_id === action.payload.associationId,
         );
         entry.rows = entry.rows.filter(
-          (candidate) => candidate.association_id !== action.payload.associationId,
+          (candidate) =>
+            candidate.association_id !== action.payload.associationId,
         );
         if (row) {
           entry.busyKeys = entry.busyKeys.filter(
@@ -309,7 +325,8 @@ const attachmentsSlice = createSlice({
       .addCase(detachResource.rejected, (state, action) => {
         const entry = entryFor(state, action.meta.arg.conversationId);
         const row = entry.rows.find(
-          (candidate) => candidate.association_id === action.meta.arg.associationId,
+          (candidate) =>
+            candidate.association_id === action.meta.arg.associationId,
         );
         if (row) {
           entry.busyKeys = entry.busyKeys.filter(
@@ -339,4 +356,5 @@ interface StateWithAttachments {
 export const selectConversationAttachmentsEntry =
   (conversationId: string) =>
   (state: StateWithAttachments): ConversationAttachmentsEntry =>
-    state.conversationAttachments.byConversationId[conversationId] ?? EMPTY_ATTACHMENTS_ENTRY;
+    state.conversationAttachments.byConversationId[conversationId] ??
+    EMPTY_ATTACHMENTS_ENTRY;

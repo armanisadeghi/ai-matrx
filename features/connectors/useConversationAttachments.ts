@@ -21,6 +21,24 @@
  * Choosing the GET as the proof matters: the first send and the row's creation
  * are not the same instant, and flushing on "a message appeared" produced 404s
  * against a conversation that was seconds away from existing.
+ *
+ * ## The capability gate, and why it is not a silent fallback
+ *
+ * `hasAttachableConnection` is the caller's answer to "does anything on this
+ * chat actually offer resources to choose from?", read from the server's own
+ * availability payload. When nothing does, this hook asks for nothing and
+ * every attachment surface renders nothing — because there is nothing, not
+ * because something failed.
+ *
+ * That distinction is what makes the two halves of this feature independently
+ * shippable. A half-deployed cross-repo feature is the dangerous state
+ * (CLAUDE.md § Release), and the failure mode to avoid is specific: reading
+ * attachments unconditionally would put an amber "could not read this chat's
+ * attachments" warning in the header of EVERY conversation on the platform for
+ * as long as the server half is unshipped. A warning that fires for everyone
+ * about a feature nobody has is noise, and noise is how real warnings stop
+ * being read. Once a connection declares `attachable`, the capability exists
+ * and every failure from here on is loud again.
  */
 
 import { useCallback, useEffect } from "react";
@@ -56,8 +74,17 @@ export interface ConversationAttachmentsHandle {
   reload: () => void;
 }
 
+export interface UseConversationAttachmentsOptions {
+  /**
+   * True when at least one connection on this chat declares attachable
+   * resources. False means the capability is not present — ask for nothing.
+   */
+  hasAttachableConnection: boolean;
+}
+
 export function useConversationAttachments(
   conversationId: string | null | undefined,
+  { hasAttachableConnection }: UseConversationAttachmentsOptions,
 ): ConversationAttachmentsHandle {
   const dispatch = useAppDispatch();
   // Coalesced to the ONE shared empty entry: a store that has never seen this
@@ -66,14 +93,14 @@ export function useConversationAttachments(
   const entry =
     useAppSelector(selectConversationAttachmentsEntry(conversationId ?? "")) ??
     EMPTY_ATTACHMENTS_ENTRY;
-  const messageCount = useAppSelector(
-    selectMessageCount(conversationId ?? ""),
-  );
+  const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
 
   // A conversation with no messages at all has no row to read; asking would
   // be a guaranteed 404 that teaches the user nothing. The read starts the
-  // moment the conversation has produced anything.
-  const shouldRead = Boolean(conversationId) && messageCount > 0;
+  // moment the conversation has produced anything AND something on this chat
+  // can actually be chosen out of.
+  const shouldRead =
+    Boolean(conversationId) && messageCount > 0 && hasAttachableConnection;
 
   useEffect(() => {
     if (!conversationId || !shouldRead) return;

@@ -52,18 +52,22 @@ export function AttachedResourcesSection({
   connections: readonly AttachableConnectionSummary[];
   className?: string;
 }) {
-  const attachments = useConversationAttachments(conversationId);
   const openPicker = useAttachResourcePicker();
   const attachableConnections = connections.filter(
     (connection) => connection.attachable.length > 0,
   );
+  const attachments = useConversationAttachments(conversationId, {
+    hasAttachableConnection: attachableConnections.length > 0,
+  });
 
   // No attachable connection on this chat means there is genuinely nothing to
   // say — and an empty section headed "Attached" would read as a loss.
   if (attachableConnections.length === 0) return null;
 
   return (
-    <div className={cn("shrink-0 border-b border-border px-2.5 py-2", className)}>
+    <div
+      className={cn("shrink-0 border-b border-border px-2.5 py-2", className)}
+    >
       <div className="mb-1 flex items-center gap-1.5">
         <Paperclip className="h-3.5 w-3.5 text-primary" />
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -166,7 +170,9 @@ function AttachedChip({
   const body = (
     <>
       <span className="max-w-[10rem] truncate">{item.display_name}</span>
-      {item.link && <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-70" />}
+      {item.link && (
+        <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-70" />
+      )}
     </>
   );
   return (

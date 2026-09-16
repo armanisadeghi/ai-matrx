@@ -80,7 +80,6 @@ export function ChatConnectionsStrip({
   const { serverStates } = useMcpCatalog();
   const openRunControlsWindow = useOpenRunControlsWindow();
   const openAttachPicker = useAttachResourcePicker();
-  const attachments = useConversationAttachments(conversationId);
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -123,6 +122,11 @@ export function ChatConnectionsStrip({
     : [];
 
   const broken = connections.filter((c) => c.state !== "connected").length;
+  // Nothing on this chat offers resources to choose from → ask the server for
+  // nothing. See the capability gate in `useConversationAttachments`.
+  const attachments = useConversationAttachments(conversationId, {
+    hasAttachableConnection: connections.some((c) => c.kind === "attachable"),
+  });
 
   const openPicker = () => {
     if (!conversationId) return;
