@@ -71,5 +71,20 @@ export const destroyInstanceIfAbandoned =
       Boolean(added?.addedMcpServers?.length) ||
       Boolean(added?.addedSkills?.length);
     if (hasRunConfiguration) return;
+    // CHOOSING WHAT THE CHAT WORKS ON IS WORK TOO. On `/chat/new` a person
+    // picks repositories or Drive files BEFORE typing, and those picks are
+    // held against this same minted id until the conversation row exists
+    // (`features/connectors/redux/attachments.slice.ts`). Reaping the instance
+    // on message-and-composer emptiness alone would take the picks with it —
+    // the identical loss that per-run tool/MCP additions suffered until
+    // 2026-09-14, one attachment system later.
+    const attachments =
+      state.conversationAttachments?.byConversationId?.[conversationId];
+    if (
+      Boolean(attachments?.pending?.length) ||
+      Boolean(attachments?.rows?.length)
+    ) {
+      return;
+    }
     dispatch(destroyInstance(conversationId));
   };

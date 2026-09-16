@@ -56,7 +56,12 @@ interface AttachmentsSliceState {
 
 const initialState: AttachmentsSliceState = { byConversationId: {} };
 
-const EMPTY_ENTRY: ConversationAttachmentsEntry = {
+/**
+ * The stable "nothing known yet" entry. Exported because every consumer must
+ * coalesce to the SAME object — a fresh `{}` per render would re-run every
+ * effect downstream of it forever.
+ */
+export const EMPTY_ATTACHMENTS_ENTRY: ConversationAttachmentsEntry = {
   rows: [],
   pending: [],
   status: "idle",
@@ -71,7 +76,7 @@ function entryFor(
 ): ConversationAttachmentsEntry {
   const existing = state.byConversationId[conversationId];
   if (existing) return existing;
-  const created: ConversationAttachmentsEntry = { ...EMPTY_ENTRY, rows: [], pending: [], busyKeys: [] };
+  const created: ConversationAttachmentsEntry = { ...EMPTY_ATTACHMENTS_ENTRY, rows: [], pending: [], busyKeys: [] };
   state.byConversationId[conversationId] = created;
   return created;
 }
@@ -334,4 +339,4 @@ interface StateWithAttachments {
 export const selectConversationAttachmentsEntry =
   (conversationId: string) =>
   (state: StateWithAttachments): ConversationAttachmentsEntry =>
-    state.conversationAttachments.byConversationId[conversationId] ?? EMPTY_ENTRY;
+    state.conversationAttachments.byConversationId[conversationId] ?? EMPTY_ATTACHMENTS_ENTRY;

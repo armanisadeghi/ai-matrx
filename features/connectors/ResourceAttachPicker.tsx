@@ -28,7 +28,7 @@
  * that account — and each gets its own sentence with its own remedy.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -45,7 +45,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import {
@@ -77,12 +77,27 @@ export interface ResourceAttachPickerProps {
   onAttach: (picks: PendingAttachment[]) => Promise<void> | void;
 }
 
-interface LoadState {
-  status: "idle" | "loading" | "succeeded" | "failed";
+/** One settled answer, tagged with the request it answers. */
+interface FetchResult {
+  key: string;
+  rows: AttachableCandidate[];
   error: string | null;
 }
 
-export function ResourceAttachPicker({
+export function ResourceAttachPicker(props: ResourceAttachPickerProps) {
+  // Remounting on open (and on a change of provider) is what makes the
+  // chooser's state a FRESH CHOICE every time, with no reset effect to forget:
+  // a selection left over from the last time this dialog was open would attach
+  // things the person never looked at.
+  return (
+    <ResourceAttachPickerBody
+      key={`${props.provider}:${props.isOpen}`}
+      {...props}
+    />
+  );
+}
+
+function ResourceAttachPickerBody({
   isOpen,
   onClose,
   provider,
@@ -97,80 +112,78 @@ export function ResourceAttachPicker({
   const noun = nouns[0] ?? "items";
 
   const [query, setQuery] = useState("");
-  const [candidates, setCandidates] = useState<AttachableCandidate[]>([]);
-  const [load, setLoad] = useState<LoadState>({ status: "idle", error: null });
-  const [selected, setSelected] = useState<Record<string, AttachableCandidate>>({});
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [result, setResult] = useState<FetchResult | null>(null);
+  const [selected, setSelected] = useState<Record<string, AttachableCandidate>>(
+    {},
+  );
   const [cursor, setCursor] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const listRef = useRef<HTMLUListElement | null>(null);
   const attached = new Set(alreadyAttachedRefs);
 
-  // Every open is a fresh choice — a stale selection from the last time this
-  // dialog was open would attach things the person never looked at.
+  /**
+   * The request this render WANTS. An inventory provider asks once and filters
+   * in the browser, so typing costs nothing and the key never changes. A live
+   * provider re-asks on the debounced text, because only the provider can
+   * answer what matches.
+   *
+   * Loading is DERIVED from this (`result.key !== requestKey`) rather than
+   * stored, so there is no second source of truth to fall out of step with the
+   * request actually in flight — and nothing sets state synchronously inside an
+   * effect to keep them aligned.
+   */
+  const requestKey = live ? `${provider}|${debouncedQuery}` : provider;
+
   useEffect(() => {
-    if (!isOpen) return;
-    setQuery("");
-    setSelected({});
-    setCursor(0);
-    setSaveError(null);
-  }, [isOpen, provider]);
+    if (!live) return;
+    const timer = setTimeout(
+      () => setDebouncedQuery(query),
+      query ? LIVE_SEARCH_DEBOUNCE_MS : 0,
+    );
+    return () => clearTimeout(timer);
+  }, [live, query]);
 
-  const runFetch = useCallback(
-    (searchText: string, signal: AbortSignal) => {
-      setLoad({ status: "loading", error: null });
-      fetchAttachableResources({
-        provider,
-        query: searchText || undefined,
-        live,
-        limit: 50,
-        signal,
-      })
-        .then((rows) => {
-          if (signal.aborted) return;
-          setCandidates(rows);
-          setLoad({ status: "succeeded", error: null });
-          setCursor(0);
-        })
-        .catch((error: unknown) => {
-          if (signal.aborted) return;
-          setCandidates([]);
-          setLoad({
-            status: "failed",
-            // The server's own sentence, verbatim — it was written for a
-            // person, and paraphrasing it loses the remedy it carries.
-            error:
-              error instanceof Error
-                ? error.message
-                : `We could not read your ${noun}.`,
-          });
-        });
-    },
-    [provider, live, noun],
-  );
-
-  // An inventory provider is fetched ONCE and filtered in the browser, so
-  // typing costs nothing. A live provider re-queries on a debounce, because
-  // only the provider can answer what matches.
   useEffect(() => {
     if (!isOpen) return;
     const controller = new AbortController();
-    if (!live) {
-      runFetch("", controller.signal);
-      return () => controller.abort();
-    }
-    const timer = setTimeout(
-      () => runFetch(query, controller.signal),
-      query ? LIVE_SEARCH_DEBOUNCE_MS : 0,
-    );
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [isOpen, live, query, runFetch]);
+    fetchAttachableResources({
+      provider,
+      query: live && debouncedQuery ? debouncedQuery : undefined,
+      live,
+      limit: 50,
+      signal: controller.signal,
+    })
+      .then((rows) => {
+        if (controller.signal.aborted) return;
+        setResult({ key: requestKey, rows, error: null });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setResult({
+          key: requestKey,
+          rows: [],
+          // The server's own sentence, verbatim — it was written for a person,
+          // and paraphrasing it loses the remedy it carries.
+          error:
+            error instanceof Error
+              ? error.message
+              : `We could not read your ${noun}.`,
+        });
+      });
+    return () => controller.abort();
+  }, [isOpen, provider, live, debouncedQuery, requestKey, noun]);
 
-  const matches = live ? candidates : filterCandidates(candidates, query);
+  const settled = result?.key === requestKey ? result : null;
+  const loading = settled === null;
+  const loadError = settled?.error ?? null;
+  const matches = live
+    ? (settled?.rows ?? [])
+    : filterCandidates(settled?.rows ?? [], query);
   const selectedList = Object.values(selected);
+  // Clamped at render rather than corrected by an effect: a shorter result set
+  // must never leave the keyboard cursor pointing past the end of the list.
+  const activeIndex = Math.min(cursor, Math.max(matches.length - 1, 0));
 
   const toggle = (candidate: AttachableCandidate) => {
     if (attached.has(candidate.resource_ref)) return;
@@ -186,13 +199,13 @@ export function ResourceAttachPicker({
   const onListKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setCursor((index) => Math.min(index + 1, Math.max(matches.length - 1, 0)));
+      setCursor(Math.min(activeIndex + 1, Math.max(matches.length - 1, 0)));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setCursor((index) => Math.max(index - 1, 0));
-    } else if (event.key === "Enter" && matches[cursor]) {
+      setCursor(Math.max(activeIndex - 1, 0));
+    } else if (event.key === "Enter" && matches[activeIndex]) {
       event.preventDefault();
-      toggle(matches[cursor]);
+      toggle(matches[activeIndex]);
     }
   };
 
@@ -228,7 +241,8 @@ export function ResourceAttachPicker({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            Choose {joinWithOr(nouns.length ? nouns : [noun])} from {providerName}
+            Choose {joinWithOr(nouns.length ? nouns : [noun])} from{" "}
+            {providerName}
           </DialogTitle>
           <DialogDescription>
             What you pick stays attached to this chat — you can add more or
@@ -242,12 +256,14 @@ export function ResourceAttachPicker({
             autoFocus
             aria-label={`Search ${providerName} ${noun}`}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={onListKeyDown}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setQuery(event.target.value)
+            }
+            onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) =>
+              onListKeyDown(event)
+            }
             placeholder={
-              live
-                ? `Search your ${providerName} ${noun}…`
-                : `Search ${noun}…`
+              live ? `Search your ${providerName} ${noun}…` : `Search ${noun}…`
             }
             className="h-9 pl-8 text-base sm:text-sm"
           />
@@ -255,7 +271,7 @@ export function ResourceAttachPicker({
 
         {/* A live search MUST announce itself — an input that silently does
             nothing for 300ms then repaints reads as a broken box. */}
-        {live && load.status === "loading" && (
+        {live && loading && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             Searching your {providerName} {noun}…
@@ -263,7 +279,6 @@ export function ResourceAttachPicker({
         )}
 
         <ul
-          ref={listRef}
           role="listbox"
           aria-multiselectable
           aria-label={`${providerName} ${noun}`}
@@ -271,12 +286,12 @@ export function ResourceAttachPicker({
           onKeyDown={onListKeyDown}
           className="max-h-64 overflow-y-auto rounded-md border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          {load.status === "failed" ? (
+          {loadError ? (
             <li className="flex items-start gap-1.5 px-3 py-4 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>{load.error}</span>
+              <span>{loadError}</span>
             </li>
-          ) : load.status === "loading" && !live ? (
+          ) : loading && !live ? (
             <li className="px-3 py-4 text-center text-xs text-muted-foreground">
               Loading your {noun}…
             </li>
@@ -296,7 +311,7 @@ export function ResourceAttachPicker({
                   <div
                     className={cn(
                       "flex items-center gap-2 border-b border-border/60 px-2 py-1.5 text-xs last:border-b-0",
-                      index === cursor && "bg-accent/60",
+                      index === activeIndex && "bg-accent/60",
                       isSelected && "bg-primary/5",
                     )}
                   >
@@ -330,7 +345,9 @@ export function ResourceAttachPicker({
                           for a Drive file. */}
                       {candidate.detail && (
                         <span className="shrink-0 truncate text-[11px] text-muted-foreground">
-                          {isAttached ? `${candidate.detail} · attached` : candidate.detail}
+                          {isAttached
+                            ? `${candidate.detail} · attached`
+                            : candidate.detail}
                         </span>
                       )}
                     </button>
@@ -372,7 +389,12 @@ export function ResourceAttachPicker({
               : `${matches.length} ${noun}`}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              disabled={saving}
+            >
               Cancel
             </Button>
             <Button
@@ -409,7 +431,8 @@ export function filterCandidates(
   const needle = query.trim().toLowerCase();
   if (!needle) return [...candidates];
   return candidates.filter((candidate) => {
-    const haystack = `${candidate.display_name} ${candidate.resource_ref} ${candidate.detail ?? ""}`.toLowerCase();
+    const haystack =
+      `${candidate.display_name} ${candidate.resource_ref} ${candidate.detail ?? ""}`.toLowerCase();
     return needle.split(/\s+/).every((term) => haystack.includes(term));
   });
 }

@@ -13,6 +13,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
+import { ConversationAttachmentsChip } from "./ConversationAttachmentsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { ConversationPageMenu } from "./ConversationPageMenu";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
@@ -124,6 +125,14 @@ export function ChatRunHeader({
             empty control. */}
         {conversationId && (
           <ConversationRecordsChip conversationId={conversationId} />
+        )}
+        {/* WHAT this chat is pointed at — which repositories, files and sheets
+            ride it. The composer rail has one 16px line for a count; twenty
+            turns later the question is "which repos?", and the answer belongs
+            where it costs no vertical space and every item opens
+            (Arman, 2026-09-15). Silent until something is attached. */}
+        {conversationId && (
+          <ConversationAttachmentsChip conversationId={conversationId} />
         )}
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />

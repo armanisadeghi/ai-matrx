@@ -27,6 +27,7 @@ import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
+  EMPTY_ATTACHMENTS_ENTRY,
   attachResource,
   detachResource,
   dropPendingAttachment,
@@ -59,9 +60,12 @@ export function useConversationAttachments(
   conversationId: string | null | undefined,
 ): ConversationAttachmentsHandle {
   const dispatch = useAppDispatch();
-  const entry = useAppSelector(
-    selectConversationAttachmentsEntry(conversationId ?? ""),
-  );
+  // Coalesced to the ONE shared empty entry: a store that has never seen this
+  // conversation (and any surface rendering against a stubbed store) must get
+  // the same stable object, not a fresh one per render.
+  const entry =
+    useAppSelector(selectConversationAttachmentsEntry(conversationId ?? "")) ??
+    EMPTY_ATTACHMENTS_ENTRY;
   const messageCount = useAppSelector(
     selectMessageCount(conversationId ?? ""),
   );

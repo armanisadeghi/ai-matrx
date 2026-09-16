@@ -78,6 +78,7 @@ import {
   type RunMcpAttachment,
 } from "@/features/connectors/run-attachments";
 import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
+import { AttachedResourcesSection } from "@/features/connectors/AttachedResourcesSection";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 export function RunToolPicker({ conversationId }: { conversationId: string }) {
@@ -423,6 +424,29 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
           </div>
         </div>
       )}
+
+      {/* ── What this chat is POINTED AT ──────────────────────────────── */}
+      {/* A connection is account-wide; these are not. GitHub connected is not
+          the same fact as "this chat works on aidream and ai-matrx", and the
+          rail above the composer has one 16px line to say it in — so the full
+          list, every item's own door, and the remove controls live here
+          (Arman, 2026-09-15). */}
+      <AttachedResourcesSection
+        conversationId={conversationId}
+        connections={serverStates
+          .filter((server) => server.attachable.length > 0)
+          .filter(
+            (server) =>
+              server.entry.connectionId !== null ||
+              addedMcp.has(server.entry.slug) ||
+              mcpList.includes(server.entry.slug),
+          )
+          .map((server) => ({
+            slug: server.entry.slug,
+            name: server.entry.name,
+            attachable: server.attachable,
+          }))}
+      />
 
       {/* ── Section 2: add registry tools to THIS run ─────────────────── */}
       {!modelSupportsTools ? (
