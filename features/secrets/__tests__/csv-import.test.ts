@@ -25,6 +25,18 @@ const actor = {
 };
 
 describe("Vault CSV import", () => {
+  test("does not count a standard final record terminator as an invalid login", () => {
+    const preview = parseCsvText('\uFEFFname,url,username,password,notes\r\nExample,https://example.test,user,password,"line one\r\nline two"\r\n', { ...limits, maxRecords: 1 });
+    expect(preview.rows).toHaveLength(1);
+    expect(preview.issues).toBe(0);
+    expect(preview.rows[0]?.cells[4]).toBe("line one\r\nline two");
+  });
+
+  test("retains explicit blank rows and their source row numbers", () => {
+    const preview = parseCsvText("name,password\nExample,password\n\n", limits);
+    expect(preview.rows).toHaveLength(2);
+    expect(preview.rows[1]).toMatchObject({ rowNumber: 3, issue: "invalid" });
+  });
   test("preserves quoted multiline and unknown source cells only in encrypted fields", () => {
     const preview = parseCsvText(
       'name,username,password,note,custom\r\nExample,me,"p,ass","line one\nline two",=not-a-formula',

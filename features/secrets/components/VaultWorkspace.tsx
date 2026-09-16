@@ -539,7 +539,7 @@ export function VaultWorkspace({
                   credential{filtered.length === 1 ? "" : "s"}
                 </p>
                 {canCreate && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
                     {canExport && (
                       <Button
                         variant="ghost"
