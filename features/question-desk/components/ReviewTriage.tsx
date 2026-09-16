@@ -156,10 +156,15 @@ export function ReviewTriage({
   // THE CARD NAMES THE BATCH THAT JUST FINISHED, NOT THE NEXT ONE (V3
   // observation N1, 2026-09-16: on finishing batch 1 the card read "batch 2
   // done" beside a counter that correctly read "batch 2 of 3 · 1 batch done").
-  // The finished batch is the one the answered rows just filled — the ceiling
-  // of answered / size — which is also right for a short last batch (26 rows
-  // in tens: answering all 26 finishes batch 3, not batch 2).
-  const finishedBatchNumber = Math.min(batchCount, Math.max(1, Math.ceil(answeredCount / size)));
+  // The finished batch is the number this batch wore while it was open: the
+  // rows answered OUTSIDE it, in batches of `size`, plus one. Right for a
+  // short last batch (26 rows in tens: the last 6 close batch 3) and for a
+  // pinned batch smaller than `size` (three open rows after nine answered
+  // elsewhere still read "batch 1 of 2" while open, so they close batch 1).
+  const finishedBatchNumber = Math.min(
+    batchCount,
+    Math.floor(Math.max(0, answeredCount - batch.length) / size) + 1,
+  );
 
   // THE ROW ADVANCES ON ANSWER — derived, never latched. The chosen row is
   // state; the EFFECTIVE focus is the chosen row while it is open, else the

@@ -34,8 +34,14 @@
  * published by the chrome itself; 0px when nothing floats there). V2 finding 7 /
  * V3 2026-09-16: a bottom padding inside the rail could not protect a line that
  * was mid-scroll under the chip; a shorter rail can. */
+/* The rail is sticky under the shell header, so a full-viewport height put its
+ * bottom 40px below the fold (measured 2026-09-16: rail bottom 760 in a 720
+ * viewport) and the corner chip still covered the last line. The header's
+ * height is the shell's own variable, never a guessed rem. */
 @media (min-width: 1024px) {
   .qd-rail {
-    height: calc(100dvh - var(--shell-fixed-corner-clearance, 0px));
+    height: calc(
+      100dvh - var(--shell-header-h, 0px) - var(--shell-fixed-corner-clearance, 0px)
+    );
   }
 }

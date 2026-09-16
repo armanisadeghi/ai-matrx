@@ -86,7 +86,9 @@ describe("the shell's bottom-left chrome publishes what it occupies", () => {
       "",
     );
     expect(css).toMatch(
-      new RegExp(`\\.qd-rail\\s*\\{[^}]*calc\\(100dvh - var\\(${VAR}, 0px\\)\\)`),
+      new RegExp(
+        `\\.qd-rail\\s*\\{[^}]*calc\\(\\s*100dvh - var\\(--shell-header-h, 0px\\) - var\\(${VAR}, 0px\\)\\s*\\)`,
+      ),
     );
   });
 });
