@@ -144,6 +144,7 @@
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:assist-priority": "tsx scripts/check-assist-priority.ts",
+    "check:migration-judgment": "tsx scripts/check-migration-judgment.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "db:apply": "tsx scripts/apply-migration.ts",
     "db:capture-go-signal": "tsx scripts/gate-corpus/capture-go-signal.ts",

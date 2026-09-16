@@ -1,0 +1,11 @@
+-- expect: branch=refuse:not-additive production=refuse:not-additive
+-- target: branch,production
+-- additive: yes
+-- guard: custom/system_enabled
+--
+-- Shape 2 — policies are OR'd, so a `USING (true)` policy opens every row of the table it names
+-- and is 'additive' by every structural reading of the word.
+-- A file that NAMES production is judged by the allow-list on EVERY run, its branch rehearsal
+-- included: the contract binds the FILE, not the run, so the rehearsal returns the verdict production will.
+--
+create policy zz_judgment_open on custom.zz_thing for select using (true);

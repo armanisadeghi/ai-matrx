@@ -1,5 +1,11 @@
--- target: branch,production
 -- chair-step: the down-migration for rule 30's go-signal capture table; it DROPs, which is irreversible, and it refuses while any capture row exists because the capture is this campaign's only evidence of what production looked like at the go signal.
+-- (RE-HEADED 2026-09-16, ATTACK-7 finding 2: this file used to carry `-- target: branch,production`
+--  ABOVE the chair-step line. That header is judged by the ALLOW-LIST in both runners, and
+--  `-- chair-step:` waives nothing there — it waived everything in one runner and nothing in
+--  the other, so this file was ACCEPTED by `pnpm db:apply --target production` and REFUSED by
+--  `uv run python db/apply_migrations.py`. A header-less chair step is the ONE route: it
+--  rehearses on the branch with --target branch and reaches production only at a terminal,
+--  from the same bytes. See migrations/JUDGMENT.md.)
 --
 -- The inverse of migrations/campaign/custom_campaign_go_signal_capture.sql.
 --

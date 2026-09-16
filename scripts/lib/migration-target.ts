@@ -106,10 +106,24 @@ export interface BranchRef {
   readonly path: string;
 }
 
-export class TargetRefusal extends Error {}
+export class TargetRefusal extends Error {
+  /**
+   * The STABLE reason token this refusal carries — `migrations/JUDGMENT.md`'s
+   * vocabulary, not the prose. The prose is for the human at 3 a.m. and is free to
+   * differ between the two runners; the token is what the conformance corpus
+   * compares, so a divergence in JUDGMENT between `pnpm db:apply` and
+   * `uv run python db/apply_migrations.py` is a red test rather than a coin flip
+   * decided by which command a tired lane typed (ATTACK-7 findings 1–4).
+   */
+  readonly code: string;
+  constructor(message: string, code = "refused") {
+    super(message);
+    this.code = code;
+  }
+}
 
-function fail(lines: string[]): never {
-  throw new TargetRefusal(lines.join("\n"));
+function fail(lines: string[], code = "refused"): never {
+  throw new TargetRefusal(lines.join("\n"), code);
 }
 
 /**
@@ -282,7 +296,7 @@ export function readHeader(sql: string): MigrationHeader {
           `\`-- target: ${t[1]}\` names something that is not a target: ${bad.join(", ")}.`,
           `  Valid headers: \`-- target: branch\`, \`-- target: production\`,`,
           `  \`-- target: branch,production\`.`,
-        ]);
+        ], "header-target-unknown");
       }
       targets = parts as Target[];
     }
@@ -295,7 +309,7 @@ export function readHeader(sql: string): MigrationHeader {
         `\`${line.trim()}\` is not a guard key.`,
         `  platform.feature_knob's primary key is TWO columns, (feature, key), so the guard`,
         `  is written \`-- guard: <feature>/<key>\` — e.g. \`-- guard: custom/associations_guard\`.`,
-      ]);
+      ], "header-guard-malformed");
     }
     const a = line.match(HEADER_ALLOWS_RE);
     if (a) {
@@ -307,7 +321,7 @@ export function readHeader(sql: string): MigrationHeader {
           `  The ONE form is \`-- allows: revoke <schema>\` — one lowercase schema token, e.g.`,
           `  \`-- allows: revoke custom\`. It is deliberately not a general escape hatch: it`,
           `  suppresses the "a REVOKE" reason and nothing else.`,
-        ]);
+        ], "header-allows-unknown");
       }
       const schema = r[1]!;
       if (REVOKE_PROTECTED_SCHEMAS.includes(schema)) {
@@ -317,13 +331,13 @@ export function readHeader(sql: string): MigrationHeader {
           `  exemption. Protected: ${REVOKE_PROTECTED_SCHEMAS.join(", ")}.`,
           `  A REVOKE inside one of those is a chair step with its own inverse migration —`,
           `  never a header line.`,
-        ]);
+        ], "header-allows-revoke-protected");
       }
       if (allowsRevokeSchema && allowsRevokeSchema !== schema) {
         fail([
           `${line.trim()} — the file already carries \`-- allows: revoke ${allowsRevokeSchema}\`.`,
           `  The exemption names ONE schema. Two of them is two exemptions; split the file.`,
-        ]);
+        ], "header-allows-revoke-two-schemas");
       }
       allowsRevokeSchema = schema;
     }
@@ -335,7 +349,7 @@ export function readHeader(sql: string): MigrationHeader {
           `\`${line.trim()}\` does not say why.`,
           `  \`-- chair-step:\` is the escape from the header-less production judgement, so it`,
           `  carries the reason a human will read at 3 a.m. — at least a sentence, not a word.`,
-        ]);
+        ], "header-chair-step-no-reason");
       }
       chairStep = why;
     }
@@ -459,7 +473,7 @@ export function assertRevokeExemptionIsContained(
     fail([
       `${filename} carries \`-- allows: revoke ${schema}\` but its body contains no REVOKE at all.`,
       `  An exemption nobody uses is an exemption nobody reviewed. Delete the header line.`,
-    ]);
+    ], "revoke-exemption-unused");
   }
   for (const st of statements) {
     const foreign = st.schemas.filter((s) => s !== schema);
@@ -478,7 +492,7 @@ export function assertRevokeExemptionIsContained(
           : `  as \`ON SCHEMA ${schema}\` / \`ON ALL … IN SCHEMA ${schema}\` — or, for default\n` +
             `  privileges, as \`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} REVOKE … FROM …\`,\n` +
             `  which is the only legal way to bound that statement to a schema.`,
-      ].filter(Boolean));
+      ].filter(Boolean), "revoke-exemption-uncontained");
     }
   }
   return statements;
@@ -646,6 +660,12 @@ export const REGISTRY_INSERT_TABLES: readonly string[] = [
   "campaign_watch.go_signal_capture",
 ] as const;
 
+/**
+ * The registry table that is a fixture on the branch and a LIVE TOKEN MINT on
+ * production, named once so both the allow-list and `JUDGMENT.md` cite the same string.
+ */
+export const ENTITY_TYPES_TABLE = "platform.entity_types";
+
 /** Session GUCs §6b.3 REQUIRES every production file to set explicitly. */
 const ALLOWED_SET_GUCS = ["lock_timeout", "statement_timeout", "idle_in_transaction_session_timeout"];
 
@@ -654,6 +674,12 @@ export interface AllowListContext {
   readonly allowRevokeSchema?: string | null;
   /** function names the file declares with `-- based-on:` (lowercased, unqualified-or-qualified as written). */
   readonly basedOnNames?: ReadonlySet<string>;
+  /**
+   * WHICH database this judgement is for. One shape is target-dependent and says so
+   * out loud: an `INSERT` into `platform.entity_types` is a rehearsal fixture on the
+   * branch and a production token mint on production (ATTACK-7 finding 3).
+   */
+  readonly flagTarget?: Target;
 }
 
 /** `{ ok }` or the reason this statement is not one of the enumerated shapes. */
@@ -743,6 +769,21 @@ function additiveVerdictOf(stmt: string, ctx: AllowListContext): string | null {
   const ins = /^insert\s+into\s+(?:only\s+)?([a-z0-9_."]+)/.exec(head);
   if (ins) {
     const t = ins[1]!.replace(/"/g, "");
+    // 🚨 ATTACK-7 finding 3, second half. `platform.entity_types` is a registry table
+    // like the others on the branch — and on PRODUCTION it is the table whose rows are
+    // live entity tokens: one INSERT mints a production `custom:` token, which
+    // `pnpm check:entity-types` reds and `scripts/release.sh` turns into a halted
+    // frontend release train for every unrelated lane, and which `W1-REG`'s own
+    // `must not touch` cell forbids. So the allowance is the branch's, not
+    // production's, and the refusal says which target it is talking about.
+    if (t === ENTITY_TYPES_TABLE && ctx.flagTarget === "production")
+      return (
+        `an INSERT into ${ENTITY_TYPES_TABLE} at --target production — on the branch that is a ` +
+        `rehearsal fixture, on production it MINTS A LIVE ENTITY TOKEN (it reds ` +
+        `pnpm check:entity-types, which halts the frontend release train, and W1-REG's ` +
+        `\`must not touch\` forbids it). Rehearse it with --target branch; a production token ` +
+        `is a chair step with its own inverse`
+      );
     if (REGISTRY_INSERT_TABLES.includes(t)) return null;
     return `an INSERT into ${t}, which is not one of the registry tables (${REGISTRY_INSERT_TABLES.join(", ")})`;
   }
@@ -765,11 +806,16 @@ function additiveVerdictOf(stmt: string, ctx: AllowListContext): string | null {
  */
 export function nonAdditiveReasons(
   strippedSql: string,
-  opts?: { readonly allowRevokeSchema?: string | null; readonly basedOnNames?: ReadonlySet<string> },
+  opts?: {
+    readonly allowRevokeSchema?: string | null;
+    readonly basedOnNames?: ReadonlySet<string>;
+    readonly flagTarget?: Target;
+  },
 ): string[] {
   const ctx: AllowListContext = {
     allowRevokeSchema: opts?.allowRevokeSchema ?? null,
     basedOnNames: opts?.basedOnNames,
+    flagTarget: opts?.flagTarget,
   };
   const out: string[] = [];
   for (const stmt of topLevelStatements(strippedSql)) {
@@ -805,6 +851,73 @@ export function guardUnreadBy(
     `it replaces a live definition (or creates a policy) and its body never names ` +
     `${guard.feature}/${guard.key} — the knob that is supposed to hold it OFF:\n` +
     `      ${gates[0]!.slice(0, 160)}${gates[0]!.length > 160 ? " …" : ""}`
+  );
+}
+
+
+/**
+ * A NEW TRIGGER ON A LIVE TABLE MUST NAME ITS GUARD (ATTACK-7 finding 3, first half).
+ *
+ * 🚨 `guardUnreadBy` is written for "a `CREATE OR REPLACE` of a live definition, or a
+ * `CREATE POLICY`". A **new** function bound to a **live** table by a **new** trigger is
+ * neither shape — both statements are on the allow-list, both are literally additive —
+ * and it changes production behaviour on EVERY WRITE to that table while every
+ * mechanical check reports additive, guarded and OFF. ATTACK-7 planted exactly that:
+ *
+ *     create function custom.zz_hook() returns trigger language plpgsql
+ *       as $$ begin raise exception 'boom'; end $$;
+ *     create trigger zz_hook_trg before insert on platform.associations
+ *       for each row execute function custom.zz_hook();
+ *
+ * headed `-- target: branch,production` + `-- additive: yes` + `-- guard: custom/system_enabled`,
+ * and it PASSED in both runners — a trigger that stops every write to
+ * `platform.associations`, behind a knob nothing reads.
+ *
+ * So: a file that names production and creates a trigger on a table OUTSIDE schema
+ * `custom` must NAME its guard's feature and key somewhere in the file (the trigger
+ * function's body is the place; this check cannot prove the read is on the right branch,
+ * only that the file mentions the thing that is supposed to hold it OFF — same honesty
+ * as `guardUnreadBy`). Schema `custom` is exempt because the whole schema is this
+ * campaign's own new namespace: nothing reads it until the switch, so a trigger there
+ * cannot change a live path.
+ *
+ * An UNQUALIFIED table name is treated as outside `custom`: it resolves through
+ * `search_path` at execution time, so nothing static can prove where it lands.
+ */
+export function triggerOnLiveTableUnguardedBy(
+  guard: { feature: string; key: string } | null,
+  seedsGuards: boolean,
+  strippedSql: string,
+): string | null {
+  const body = strippedSql.toLowerCase();
+  const offenders: string[] = [];
+  for (const stmt of topLevelStatements(strippedSql)) {
+    const m =
+      /^create\s+(?:constraint\s+)?(?:or\s+replace\s+)?trigger\s+[a-z0-9_."]+[\s\S]*?\son\s+(?:only\s+)?([a-z0-9_."]+)/i.exec(
+        stmt.replace(/\s+/g, " ").trim(),
+      );
+    if (!m) continue;
+    const table = m[1]!.replace(/"/g, "").toLowerCase();
+    const schema = table.includes(".") ? table.split(".")[0]! : null;
+    if (schema === "custom") continue;
+    offenders.push(`${stmt.slice(0, 160)}${stmt.length > 160 ? " …" : ""} (table ${table})`);
+  }
+  if (offenders.length === 0) return null;
+  if (seedsGuards)
+    return (
+      `it claims \`-- seeds-guards: yes\` and creates a trigger on a live table:\n      ` +
+      offenders.join(`\n      `) +
+      `\n  The register file seeds the knobs; it may not also bind behaviour to a live table.`
+    );
+  if (!guard)
+    return (
+      `it creates a trigger on a live table and names no \`-- guard:\`:\n      ` + offenders.join(`\n      `)
+    );
+  if (body.includes(guard.feature.toLowerCase()) && body.includes(guard.key.toLowerCase())) return null;
+  return (
+    `it creates a trigger on a live table and the file never names ${guard.feature}/${guard.key} — ` +
+    `the knob that is supposed to hold it OFF:\n      ` +
+    offenders.join(`\n      `)
   );
 }
 
@@ -858,22 +971,35 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   const alreadyLedgered = input.alreadyLedgered !== false;
 
   if (flagTarget === "branch") {
-    if (named === null) {
+    // 🚨 ATTACK-7 finding 2 / finding 12. A header-less file is production-only BY
+    // AMNESTY — that is the ~3,567 migrations written before `--target` existed — and
+    // amnesty is not a reason to keep the rehearsal branch out of reach of the ONE
+    // shape that most needs rehearsing. A `-- chair-step:` file is not legacy: somebody
+    // wrote that line on purpose, it is by construction the non-additive, irreversible
+    // kind, and it is exactly the file a lane wants to run on the disposable database
+    // FIRST. Without this, rule 27's "the inverse was RUN on the branch" had no route
+    // for an inverse and switch-checklist step 3's GRANT had no route at all: the only
+    // remaining path was to head the file `-- target: branch,production`, which is the
+    // waiver this round abolished.
+    if (named === null && !header.chairStep) {
       fail([
         `${filename} carries no \`-- target:\` header, so it cannot be applied to the rehearsal branch.`,
         `  A file with no header is production-only — that is every migration written before`,
         `  --target existed, and their behaviour is unchanged.`,
         `  Remedy: add \`-- target: branch\` (or \`-- target: branch,production\`) as the file's`,
-        `  first line if this file really is part of the rehearsal.`,
-      ]);
+        `  first line if this file really is part of the rehearsal — or, if it is a chair`,
+        `  step (an inverse, a GRANT, anything non-additive by construction), keep it`,
+        `  header-less and give it \`-- chair-step: <why>\`, which rehearses HERE and runs on`,
+        `  production only at a terminal, from the SAME bytes.`,
+      ], "branch-needs-target-header");
     }
-    if (!named.includes("branch")) {
+    if (named !== null && !named.includes("branch")) {
       fail([
         `${filename} is headed \`-- target: ${named.join(",")}\` but you passed --target branch.`,
         `  file header: ${named.join(",")}`,
         `  command flag: branch`,
         `  Refusing. Change one of them deliberately; the runner will not choose.`,
-      ]);
+      ], "header-flag-disagree");
     }
   } else if (named !== null && !named.includes("production")) {
     fail([
@@ -884,7 +1010,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       `  only after its header is changed on purpose and it is re-reviewed.`,
       `  A rehearsal-only file belongs in \`migrations/rehearsal/\`, which no release path`,
       `  scans — see REHEARSAL_DIRNAME in this module.`,
-    ]);
+    ], "header-flag-disagree");
   }
 
   // 🚨 ATTACK-5 finding 3. A file with NO `-- target:` line used to reach production
@@ -907,6 +1033,11 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   // production; the book must say so rather than claim the runner enforces it.
   const chairStep = header.chairStep;
   let headerlessChairStep: AgreementVerdict["chairStep"] = null;
+  // The verdict carries the chair step on BOTH targets, so the runner announces the
+  // reason and the whole body when the file rehearses on the branch too — the same
+  // file, the same bytes, the same loudness. Only the CONFIRMATION is production-only.
+  if (flagTarget === "branch" && named === null && chairStep)
+    headerlessChairStep = { why: chairStep, reasons: [] };
   if (flagTarget === "production" && named === null && !alreadyLedgered) {
     // The DENY-list, deliberately: this is the header-less path, which is every
     // ordinary migration every other lane writes. See the list's own comment.
@@ -928,7 +1059,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `       runner then prints that reason AND this file's entire body before executing`,
         `       a single byte of it.`,
         `  (An already-ledgered file is never judged here: applied SQL is frozen history.)`,
-      ]);
+      ], "headerless-non-additive");
     }
     if (chairStep) headerlessChairStep = { why: chairStep, reasons };
   }
@@ -961,26 +1092,34 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
     };
   }
 
+  // 🚨 ATTACK-7 finding 2 — THE WAIVER IS GONE, AND THE TWO RUNNERS NOW AGREE.
+  // This used to return here: on a header that NAMED production, `-- chair-step:`
+  // stood in for `-- additive: yes`, for `-- guard:` AND for the whole allow-list,
+  // with the TTY prompt as the only surviving control. `db/migration_target.py` never
+  // did that — it set its chair-step verdict only on the header-LESS path — so ONE
+  // FILE, `migrations/inverse/custom_entity_types_detail_variant_down.sql`, was
+  // ACCEPTED by `pnpm db:apply --target production` and REFUSED by
+  // `uv run python db/apply_migrations.py`, and §8.9 step 3a's outcome depended on
+  // which command a tired chair typed at 3 a.m. One judgement, and it is the stricter
+  // one: a header that names production is judged by the allow-list, with no waiver.
+  //
+  // The chair-step route is the HEADER-LESS one, and it is not a downgrade: the same
+  // bytes rehearse on the branch (see the branch arm above) and reach production only
+  // through a terminal. So a file carrying BOTH is a contradiction, and a contradiction
+  // that silently resolves in favour of the stricter reading is a comment nobody reads
+  // — it is refused, by name, with the one-line remedy.
   if (namesProduction && chairStep) {
-    // A CHAIR STEP that names production. It is by construction not additive and not
-    // knob-guardable — reversing a constraint, adding an enum value, dropping the
-    // campaign's own object. `-- chair-step:` stands in for `-- additive: yes` AND
-    // `-- guard:`, and excuses the non-additive reasons, in exchange for being the
-    // loudest thing the runner does: the reason and the ENTIRE FILE are printed
-    // before a byte executes. It never suppresses the revoke-containment check above,
-    // and it never applies to a file the runner reached by SWEEPING — an inverse lives
-    // in `migrations/inverse/`, which nothing sweeps, and is named with --only.
-    return {
-      guard: header.guard,
-      revokeExemption,
-      chairStep: {
-        why: chairStep,
-        reasons: nonAdditiveReasons(strippedSql, {
-          allowRevokeSchema: header.allowsRevokeSchema,
-          basedOnNames: input.basedOnNames,
-        }),
-      },
-    };
+    fail([
+      `${filename} carries BOTH \`-- target: ${named!.join(",")}\` and \`-- chair-step:\`.`,
+      `  \`-- chair-step:\` is the HEADER-LESS route and it waives nothing here: a file that`,
+      `  names production in its \`-- target:\` header is judged by the ALLOW-LIST, in both`,
+      `  runners, with no exception. Carrying both means one of the two lines does nothing,`,
+      `  and which one it is used to depend on which runner you typed.`,
+      `  Remedy: DELETE the \`-- target:\` line. A header-less \`-- chair-step:\` file rehearses`,
+      `  on the branch with --target branch and reaches production only at a terminal, from`,
+      `  the same bytes — or, if the file really is additive and guarded, delete the`,
+      `  \`-- chair-step:\` line instead and let the allow-list judge it.`,
+    ], "chair-step-names-production");
   }
 
   if (namesProduction) {
@@ -995,7 +1134,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `  A file that names production is accepted only when it states that it is additive and`,
         `  names the knob that holds it OFF. Add both header lines, or split the file.`,
         because,
-      ]);
+      ], "production-not-declared-additive");
     }
     if (!header.guard && !header.seedsGuards) {
       fail([
@@ -1006,14 +1145,14 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `  seeds the register, \`-- seeds-guards: yes\`, which restricts it to`,
         `  ${KNOB_REGISTER_TABLES.join(", ")} and nothing else.`,
         because,
-      ]);
+      ], "production-no-guard");
     }
     if (header.seedsGuards) {
       if (header.guard) {
         fail([
           `${filename} carries both \`-- seeds-guards: yes\` and \`-- guard:\`.`,
           `  A register file seeds the guards; it is not itself guarded. Keep one.`,
-        ]);
+        ], "seeds-guards-with-guard");
       }
       const touched = writeTargetsOf(strippedSql).filter(
         (t) => !KNOB_REGISTER_TABLES.includes(t as (typeof KNOB_REGISTER_TABLES)[number]),
@@ -1024,7 +1163,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
           `  That exemption exists only for the knob register itself — it may touch`,
           `  ${KNOB_REGISTER_TABLES.join(", ")} and nothing else, because it is the one file`,
           `  that cannot name a guard that already resolves. Split the rest into a guarded file.`,
-        ]);
+        ], "seeds-guards-out-of-bounds");
       }
     }
     // 🚨 THE ALLOW-LIST (ATTACK-6 finding 2). Every statement must be one of the
@@ -1032,6 +1171,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
     const reasons = nonAdditiveReasons(strippedSql, {
       allowRevokeSchema: header.allowsRevokeSchema,
       basedOnNames: input.basedOnNames,
+      flagTarget,
     });
     if (reasons.length) {
       fail([
@@ -1053,7 +1193,27 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
             `  \`-- allows: revoke <schema>\`, which admits that statement and nothing else.`
           : ``,
         because,
-      ].filter(Boolean));
+      ].filter(Boolean), "not-additive");
+    }
+    // 🚨 A NEW TRIGGER ON A LIVE TABLE MUST NAME ITS GUARD (ATTACK-7 finding 3).
+    const unguardedTrigger = triggerOnLiveTableUnguardedBy(
+      header.guard,
+      header.seedsGuards,
+      strippedSql,
+    );
+    if (unguardedTrigger) {
+      fail([
+        `${filename} is headed \`-- target: ${headerText}\` and ${unguardedTrigger}`,
+        ``,
+        `  A new function bound to a live table by a new trigger is two allow-listed`,
+        `  statements and a changed production write path: it fires on every INSERT or`,
+        `  UPDATE that table takes, while the additive scan, the guard header and`,
+        `  assert_guard_resolves_off all read green. Either read the knob in the trigger`,
+        `  function's body (platform.knob_resolve('<feature>', '<key>', null)) and return`,
+        `  early when it is false, or move the trigger to a \`-- target: branch\` file and`,
+        `  land it on production as a chair step at the switch.`,
+        because,
+      ], "trigger-guard-unnamed");
     }
     // 🚨 A GUARDED BODY MUST READ ITS GUARD (ATTACK-6 finding 2, second half).
     const unread = guardUnreadBy(header.guard, strippedSql);
@@ -1066,7 +1226,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `  the body (platform.knob_resolve('${header.guard!.feature}', '${header.guard!.key}', null)),`,
         `  or split the replacement out of this file.`,
         because,
-      ]);
+      ], "guard-unread");
     }
   }
   return { guard: header.guard, revokeExemption, chairStep: headerlessChairStep };
@@ -1140,6 +1300,23 @@ export const INVERSE_DIRNAME = "inverse";
  *     `campaign_watch.build_lock` on the branch to be held by the calling `--lane`.
  *     A lane that failed its rehearsal, or that does not hold its lock, cannot land.
  */
+/**
+ * The CONFORMANCE CORPUS — fixture migrations that exist to be JUDGED and never
+ * applied (ATTACK-7: "two runners, two judges").
+ *
+ * 🚨 Every file in `migrations/judgment-corpus/` carries an `-- expect:` line naming the
+ * verdict BOTH runners must return for it at each target, and `pnpm check:migration-judgment`
+ * / `uv run python scripts/check_migration_judgment.py` run the whole directory through
+ * both judges and fail on any disagreement with the expectation OR between the two
+ * runners. The corpus deliberately contains bodies nobody may ever execute — `DROP TABLE`,
+ * `GRANT USAGE ON SCHEMA custom TO authenticated`, a trigger that raises on every write to
+ * `platform.associations` — so the directory is refused by LOCATION on every apply path, at
+ * every target, in both runners, on top of being invisible to every (non-recursive) sweep.
+ *
+ * The one normative description of what those verdicts mean is `migrations/JUDGMENT.md`.
+ */
+export const JUDGMENT_CORPUS_DIRNAME = "judgment-corpus";
+
 export const CAMPAIGN_DIRNAME = "campaign";
 
 /** The one `--source` value that may name a file in `migrations/campaign/`. */

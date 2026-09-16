@@ -1,0 +1,11 @@
+-- expect: branch=refuse:chair-step-names-production production=refuse:chair-step-names-production
+-- target: branch,production
+-- chair-step: narrowing the constraint back is not additive by construction; the chair is awake
+--
+-- ATTACK-7 finding 2 — THE FILE. This is the shape of
+-- migrations/inverse/custom_entity_types_detail_variant_down.sql as ATTACK-7 found it: a header
+-- that NAMES production plus `-- chair-step:`. It was ACCEPTED by pnpm db:apply (the chair step
+-- waived the allow-list) and REFUSED by the Python runner, so §8.9 step 3a's outcome depended on
+-- which command the chair typed. One judgement now, and the contradiction is refused by name.
+--
+alter table platform.entity_types drop constraint entity_types_rls_variant_valid;

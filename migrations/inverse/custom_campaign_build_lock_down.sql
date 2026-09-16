@@ -1,5 +1,11 @@
--- target: branch,production
 -- chair-step: dropping campaign_watch.build_lock is the campaign's teardown, not an additive change; it runs with the campaign stopped and the chair awake
+-- (RE-HEADED 2026-09-16, ATTACK-7 finding 2: this file used to carry `-- target: branch,production`
+--  ABOVE the chair-step line. That header is judged by the ALLOW-LIST in both runners, and
+--  `-- chair-step:` waives nothing there — it waived everything in one runner and nothing in
+--  the other, so this file was ACCEPTED by `pnpm db:apply --target production` and REFUSED by
+--  `uv run python db/apply_migrations.py`. A header-less chair step is the ONE route: it
+--  rehearses on the branch with --target branch and reaches production only at a terminal,
+--  from the same bytes. See migrations/JUDGMENT.md.)
 --
 -- THE INVERSE of `custom_campaign_build_lock.sql` (§4.13: every migration carries its own
 -- down-migration in the same commit).

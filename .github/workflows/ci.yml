@@ -761,6 +761,64 @@ jobs:
         run: pnpm check:realtime-publication
 
   # ---------------------------------------------------------------------------
+  # migration-judgment — ONE JUDGEMENT, OR THE CAMPAIGN HAS TWO (ATTACK-7).
+  #
+  # Two runners execute migrations for this platform: `pnpm db:apply` here and
+  # `uv run python db/apply_migrations.py` in aidream — and THAT is the one both
+  # release trains execute, including this repo's (release.sh resolves the applier
+  # out of the sibling aidream checkout). On 2026-09-16 they did not enforce the
+  # same rules: `-- chair-step:` was an owner-awake step here and a print statement
+  # there; a header naming production was judged by the allow-list here and waived
+  # by one comment line there, so the abort checklist's only production undo ran on
+  # one command and was refused by the other; `--source campaign` demanded its
+  # target there and silently defaulted to PRODUCTION here.
+  #
+  # This job runs migrations/judgment-corpus/ through BOTH runners' read-only
+  # `--judge-only` mode and fails on any disagreement — with each other or with the
+  # fixture's own `-- expect:` line. It opens NO database connection and needs no
+  # Supabase secret; it needs the aidream checkout, which lives in a DIFFERENT
+  # GitHub org, so it is gated on AIDREAM_REPO_TOKEN exactly like
+  # realtime-publication and SKIPS as UNMEASURED rather than reporting green.
+  # Spec: migrations/JUDGMENT.md. The blocking copy is in both release scripts.
+  # ---------------------------------------------------------------------------
+  migration-judgment:
+    name: both migration runners judge the same bytes the same way (UNMEASURED without the token)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+    env:
+      AIDREAM_DIR: ${{ github.workspace }}/aidream
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out aidream's migration runner
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          sparse-checkout: |
+            db
+            scripts
+            pyproject.toml
+            uv.lock
+          sparse-checkout-cone-mode: false
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - name: Install the Python runner's dependencies
+        working-directory: aidream
+        run: uv sync --frozen --no-install-project
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The corpus, through both runners, verdict for verdict
+        run: pnpm check:migration-judgment
+
+  # ---------------------------------------------------------------------------
   # settings-guards — all five Unified Settings Platform guards
   # (common-docs/projects/unified-settings-platform/EXECUTION.md § LANE C).
   # `check:settings-env-toggles` is static: a behavioural env var read in a

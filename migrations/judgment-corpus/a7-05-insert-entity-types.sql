@@ -1,0 +1,11 @@
+-- expect: branch=accept production=refuse:not-additive
+-- target: branch,production
+-- additive: yes
+-- guard: custom/system_enabled
+--
+-- ATTACK-7 finding 3, second half. On the branch an INSERT into platform.entity_types is a
+-- rehearsal fixture; on production it MINTS A LIVE ENTITY TOKEN, which reds
+-- pnpm check:entity-types (halting the frontend release train) and which W1-REG's own
+-- `must not touch` cell forbids.
+--
+insert into platform.entity_types (token, rls_variant) values ('custom:zz', 'entity');

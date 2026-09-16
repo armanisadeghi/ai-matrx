@@ -506,6 +506,33 @@ Fix the failures above (or re-run from aidream:
     fi
 }
 
+# ── ONE JUDGEMENT, OR NO RELEASE (ATTACK-7) ──────────────────────────────────
+# Two runners execute migrations for this platform, and this train runs the OTHER
+# one (apply_frontend_migrations resolves the applier out of the sibling aidream
+# checkout). Until 2026-09-16 they did not enforce the same rules: `-- chair-step:`
+# was an owner-awake step in one and a print statement in the other, a header naming
+# production was allow-listed in one and waived in the other, and `--source campaign`
+# demanded its target in one and defaulted to PRODUCTION in the other. So before a
+# single migration is applied, the conformance corpus is run through BOTH runners and
+# this release STOPS if they disagree — with each other or with the corpus. The check
+# opens no database connection. A missing aidream checkout is UNMEASURED, which is a
+# failure here for the same reason: this train applies migrations through that
+# checkout's runner. Spec: migrations/JUDGMENT.md.
+if $DRY_RUN; then
+    info "Checking migration judgment (dry-run — read-only)..."
+    if pnpm check:migration-judgment; then
+        ok "Both migration runners judge the corpus identically."
+    else
+        warn "The two migration runners DISAGREE. A real release would stop here."
+    fi
+else
+    info "Checking that both migration runners judge the same bytes the same way..."
+    if ! pnpm check:migration-judgment; then
+        fail "The two migration runners DISAGREE about the conformance corpus. Every \"both runners\" guarantee in the campaign is void until they do not — fix the runner or the rule (migrations/JUDGMENT.md), never the expectation alone. Nothing was applied."
+    fi
+    ok "Both migration runners judge the corpus identically."
+fi
+
 apply_frontend_migrations
 
 # ── Entity registry drift gate (live DB ↔ installed @ai-matrx/associations) ───

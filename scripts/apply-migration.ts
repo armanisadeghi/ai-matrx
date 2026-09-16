@@ -119,7 +119,16 @@
  */
 import { createHash, randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
-import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
@@ -140,6 +149,8 @@ import {
   REHEARSAL_DIRNAME,
   CAMPAIGN_DIRNAME,
   CAMPAIGN_SOURCE,
+  JUDGMENT_CORPUS_DIRNAME,
+  TARGETS,
   basedOnFunctionNames,
   TargetRefusal,
   type Target,
@@ -613,6 +624,27 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // The flag is an ASSERTION ABOUT THE FILE, checked both ways, so neither half can
   // drift into a habit: a campaign file without `--source campaign` is refused, and
   // `--source campaign` naming a file that is not a campaign file is refused too.
+  // 🚨 THE CONFORMANCE CORPUS IS NEVER APPLIED, TO ANYTHING. Its files exist to be
+  // JUDGED — they carry `DROP TABLE`, `GRANT USAGE ON SCHEMA custom TO authenticated`
+  // and a trigger that raises on every write to `platform.associations`, on purpose —
+  // so the refusal is by LOCATION, before a header is read, at every target, and it is
+  // not softened by --dry-run or --reapply. `--judge-only` is the one thing that reads
+  // this directory.
+  const corpusDir = resolve(MIGRATIONS_DIR, JUDGMENT_CORPUS_DIRNAME);
+  if (!outsideMigrations && !relative(corpusDir, path).startsWith("..")) {
+    console.error(
+      `${TAG.fail}${relative(ROOT, path)} is in migrations/${JUDGMENT_CORPUS_DIRNAME}/, the ` +
+        `conformance corpus.\n` +
+        `  Those files are FIXTURES: they exist so that both runners can be proven to judge\n` +
+        `  the same bytes the same way (pnpm check:migration-judgment,\n` +
+        `  uv run python scripts/check_migration_judgment.py), and several of them would do\n` +
+        `  real damage if they ran. Refusing by LOCATION, at every target, before the header\n` +
+        `  is even read. To see what the judges say about one:\n` +
+        `    pnpm db:apply --judge-only ${relative(ROOT, path)}`,
+    );
+    return 1;
+  }
+
   const campaignDir = resolve(MIGRATIONS_DIR, CAMPAIGN_DIRNAME);
   const inCampaign = !outsideMigrations && !relative(campaignDir, path).startsWith("..");
   if (inCampaign && !campaignSource) {
@@ -749,12 +781,13 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
 
   // A chair step is the loudest thing this runner does: the reason, then the ENTIRE
   // file, before anything connects. An escape nobody can see is not an escape.
-  if (chairStep && target === "production") {
+  if (chairStep) {
     console.log(
       `${TAG.warn}${C.bold}-- chair-step${C.reset}: ${chairStep.why}\n` +
         `       ${C.dim}this file is NOT additive` +
         (chairStep.reasons.length ? ` — it carries ${chairStep.reasons.join(", ")}` : "") +
-        ` and is about to run against PRODUCTION. Its entire body follows.${C.reset}`,
+        ` and is about to run against ${target === "production" ? "PRODUCTION" : "the REHEARSAL BRANCH"}.` +
+        ` Its entire body follows.${C.reset}`,
     );
     for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
   }
@@ -1714,6 +1747,80 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
   return 0;
 }
 
+/**
+ * `--judge-only [path…]` — THE JUDGEMENT, AND NOTHING ELSE (ATTACK-7).
+ *
+ * 🚨 The campaign has two sanctioned runners. Until this existed, the only way to know
+ * whether they judged a file the same way was to read both implementations — and they
+ * did not: `-- chair-step:` waived the allow-list here and nothing there, `--source
+ * campaign` demanded its target there and defaulted to PRODUCTION here. So both runners
+ * now expose the same read-only mode over the same corpus, and
+ * `pnpm check:migration-judgment` / `uv run python scripts/check_migration_judgment.py`
+ * fail on any disagreement.
+ *
+ * It opens NO connection, reads no environment and writes nothing: one JSON object per
+ * (file, target) on stdout. It judges the HEADER, exactly as an apply would — with
+ * `alreadyLedgered: false`, because a fixture has never run — and deliberately not the
+ * LOCATION rules (which directory a file sits in), which are the runner's, not the judge's.
+ */
+function judgeOnly(paths: readonly string[]): number {
+  const files: string[] = [];
+  for (const p of paths) {
+    if (!existsSync(p)) {
+      console.error(`${TAG.fail}--judge-only: no such file or directory: ${p}`);
+      return 1;
+    }
+    if (statSync(p).isDirectory()) {
+      for (const name of readdirSync(p).sort()) if (name.endsWith(".sql")) files.push(resolve(p, name));
+    } else files.push(resolve(p));
+  }
+  if (files.length === 0) {
+    console.error(`${TAG.fail}--judge-only: nothing to judge in ${paths.join(", ")}`);
+    return 1;
+  }
+  for (const file of files) {
+    const sql = readFileSync(file, "utf8");
+    const name = basename(file);
+    for (const target of TARGETS) {
+      let line: Record<string, unknown>;
+      try {
+        const header = readHeader(sql);
+        const verdict = assertHeaderAgreesWithFlag({
+          filename: name,
+          flagTarget: target,
+          header,
+          strippedSql: stripForDetection(sql),
+          alreadyLedgered: false,
+          basedOnNames: basedOnFunctionNames(sql),
+        });
+        line = {
+          runner: "matrx-frontend",
+          file: name,
+          target,
+          verdict: "accept",
+          code: "accept",
+          guard: verdict.guard ? `${verdict.guard.feature}/${verdict.guard.key}` : null,
+          chair_step: Boolean(verdict.chairStep),
+          excused: verdict.chairStep ? verdict.chairStep.reasons.length : 0,
+          revoke_exemption: verdict.revokeExemption ? verdict.revokeExemption.schema : null,
+        };
+      } catch (err) {
+        if (!(err instanceof TargetRefusal)) throw err;
+        line = {
+          runner: "matrx-frontend",
+          file: name,
+          target,
+          verdict: "refuse",
+          code: err.code,
+          detail: err.message.split("\n")[0],
+        };
+      }
+      console.log(JSON.stringify(line));
+    }
+  }
+  return 0;
+}
+
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
@@ -1745,6 +1852,14 @@ async function main(): Promise<number> {
     throw err;
   }
 
+  if (argv.includes("--judge-only")) {
+    const i = argv.indexOf("--judge-only");
+    const given = argv.slice(i + 1).filter((a) => !a.startsWith("--"));
+    const paths = given.length
+      ? given.map((a) => (existsSync(resolve(process.cwd(), a)) ? resolve(process.cwd(), a) : resolve(MIGRATIONS_DIR, a)))
+      : [resolve(MIGRATIONS_DIR, JUDGMENT_CORPUS_DIRNAME)];
+    return judgeOnly(paths);
+  }
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
 
@@ -1768,6 +1883,34 @@ async function main(): Promise<number> {
     return 1;
   }
   const campaignSource = sourceArg === CAMPAIGN_SOURCE;
+  // 🚨 ATTACK-7 finding 4. `--target` DEFAULTS to production — deliberately, so every
+  // migration written before it behaves as it did — and a CAMPAIGN file must never
+  // inherit that default, because the default is the database that must not be reached
+  // by accident. aidream's runner has refused this by name since ATTACK-6; this one
+  // filled the missing flag in with production and printed
+  // `[ OK ] target production` as if the caller had asked for it. Rule 27's own loop
+  // (apply on the branch, apply again, run the inverse, re-apply the up) is where both
+  // production authorisations — the rehearsal ledger row and the lane's build lock —
+  // are already satisfied, so ONE omitted `--target branch` inside that loop lands the
+  // campaign file on production in the middle of its own rehearsal.
+  if (
+    campaignSource &&
+    !argv.includes("--target") &&
+    !argv.some((a) => a.startsWith("--target="))
+  ) {
+    console.error(
+      `${TAG.fail}--source ${CAMPAIGN_SOURCE} requires an explicitly NAMED --target.\n` +
+        `  \`production\` is this runner's default for every migration written before --target\n` +
+        `  existed; a campaign file never inherits a default, because the default is the\n` +
+        `  database that must not be reached by accident.\n` +
+        `  The one command:\n` +
+        `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} ` +
+        `--target branch --lane <lane>\n` +
+        `  …and, once that rehearsal is ledgered on the branch and the lane holds its lock,\n` +
+        `  the same command with --target production.`,
+    );
+    return 1;
+  }
 
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
   // the flag's VALUE, never the migration file. Same for --source and --lane.
