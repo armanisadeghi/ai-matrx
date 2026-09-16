@@ -67,12 +67,14 @@ jest.mock("@/features/scheduling/redux/tasks/thunks", () => ({
 }));
 
 let superAdmin = true;
+let selectedOrganizationId: string | null = "org-admin";
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: { name?: string }) => {
     const name = selector?.name ?? "";
     if (name.includes("SuperAdmin")) return superAdmin;
     if (name.includes("AuthReady")) return true;
     if (name.includes("AccessToken")) return "token";
+    if (name.includes("OrganizationId")) return selectedOrganizationId;
     if (name.includes("Email")) return "admin@admin.com";
     return undefined;
   },
@@ -220,6 +222,7 @@ async function expand(): Promise<void> {
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   superAdmin = true;
+  selectedOrganizationId = "org-admin";
   fetchOpenOutages.mockReset();
   fetchSystemScheduleAlarms.mockReset();
   muteSystemScheduleAlarm.mockClear();
@@ -238,6 +241,15 @@ afterEach(async () => {
 });
 
 describe("AdminAttentionDock", () => {
+  it("waits for an explicit organization before polling either source", async () => {
+    selectedOrganizationId = null;
+    await mount();
+
+    expect(fetchSystemScheduleAlarms).not.toHaveBeenCalled();
+    expect(fetchOpenOutages).not.toHaveBeenCalled();
+    expect(container.innerHTML).toBe("");
+  });
+
   it("is one card for every source: three rows, two sections, one title", async () => {
     fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
     fetchOpenOutages.mockResolvedValue([

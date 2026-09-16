@@ -5,6 +5,10 @@ person responsible for the platform — with a way out. Mounted once in
 `app/DeferredSingletonCore.tsx`; super-admin only; absent when nothing needs
 a person.
 
+The dock waits for auth and an explicit active organization before it polls.
+The transport is deliberately fail-closed without that scope, so this prevents
+a shell-startup request from becoming a false Error Inspector incident.
+
 **Why it exists (Arman, 2026-09-14).** Two floating notices had grown side by
 side — the schedule alarm (bottom-right) and the provider outage notice
 (top-centre) — each with its own snooze, mute store, layout marker and idea
