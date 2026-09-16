@@ -8599,7 +8599,7 @@ export type Database = {
           error: Json | null
           fidelity: string
           id: string
-          last_seen_at: string
+          last_seen_at: string | null
           metadata: Json
           organization_id: string
           origin: string
@@ -8628,7 +8628,7 @@ export type Database = {
           error?: Json | null
           fidelity: string
           id?: string
-          last_seen_at?: string
+          last_seen_at?: string | null
           metadata?: Json
           organization_id: string
           origin: string
@@ -8657,7 +8657,7 @@ export type Database = {
           error?: Json | null
           fidelity?: string
           id?: string
-          last_seen_at?: string
+          last_seen_at?: string | null
           metadata?: Json
           organization_id?: string
           origin?: string
@@ -65151,6 +65151,15 @@ export type Database = {
         Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      carrying_cycle_is_declared: {
+        Args: {
+          p_a_id: string
+          p_a_type: string
+          p_b_id: string
+          p_b_type: string
+        }
+        Returns: boolean
+      }
       carrying_cycles: {
         Args: never
         Returns: {
@@ -65210,6 +65219,16 @@ export type Database = {
         }[]
       }
       confirmation_stamp_coverage_ok: { Args: never; Returns: boolean }
+      containment_reaches: {
+        Args: {
+          p_from_id: string
+          p_from_type: string
+          p_max_nodes?: number
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: boolean
+      }
       continued_access_allows: {
         Args: { p_feature_key: string; p_org: string; p_user: string }
         Returns: boolean
@@ -66128,6 +66147,16 @@ export type Database = {
           inserted: number
           removed: number
           updated: number
+        }[]
+      }
+      undeclared_carrying_cycles: {
+        Args: never
+        Returns: {
+          a_id: string
+          a_type: string
+          b_id: string
+          b_type: string
+          shape: string
         }[]
       }
       upsert_output_feedback: {

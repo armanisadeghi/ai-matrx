@@ -1,45 +1,59 @@
 #!/usr/bin/env npx tsx
 /**
- * DD-263 — THE ACCESS KERNEL'S WALK IS BOUNDED, AND NO CARRYING CYCLE CAN BE WRITTEN.
+ * DD-263 / DD-263b — THE ACCESS KERNEL'S WALK IS BOUNDED IN **WORK**, AND NO CARRYING RING OF ANY
+ * LENGTH CAN BE WRITTEN.
  *
- * THE DEFECT THIS GUARD EXISTS FOR (found by the seeded gate corpus, 2026-09-15)
+ * THE DEFECT THIS GUARD EXISTS FOR (found by the seeded gate corpus; narrowed twice)
  * -----------------------------------------------------------------------------
- * `iam.has_access_for_base` resolved containment by CALLING ITSELF — once over
- * `platform.reachability`, once over the `platform.entity_relationships` FK parent chain — with
- * no visited set and no depth bound. Its only cycle protection stopped a record that contains
- * ITSELF and nothing one hop longer. So a NEGATIVE access question about a record inside a cycle
- * (A contains B, B contains A) recursed until Postgres killed the statement with
- * `54001 stack depth limit exceeded`: not a refusal, a broken page, reachable by any signed-in
- * person who can create two ordinary relations, at unbounded server cost per attempt.
+ * DD-263 (2026-09-15): `iam.has_access_for_base` resolved containment by CALLING ITSELF — once over
+ * `platform.reachability`, once over the `platform.entity_relationships` FK parent chain — with no
+ * visited set and no depth bound. A NEGATIVE access question about a record inside a two-node cycle
+ * recursed until `54001 stack depth limit exceeded`.
  *
- * A POSITIVE question about the same loop answers `true` in microseconds — the recursion
- * short-circuits on the first container. Only the walk that must exhaust every path goes round
- * forever. That is why this guard's planted case asks about a principal who holds NOTHING.
+ * DD-263b (V-115, the same day): the DD-263 fix was narrower than the class, in two ways this guard
+ * now plants directly.
+ *   * The write door decided by asking `platform.reachability`, whose builder stops at `depth < 8`.
+ *     A 9-node ring was refused; a TEN-node ring was ACCEPTED.
+ *   * `p_path` made every PATH acyclic but did not bound the number of paths. With a ten-node ring
+ *     present a negative question never returned — 60 s+ statement timeout, not 54001. So the guard
+ *     below asks its planted question under a TIGHT statement timeout: "answers false in bounded
+ *     time" is the assertion, and a timeout is a failure.
+ *
+ * A POSITIVE question about the same ring answers `true` in microseconds — the walk short-circuits
+ * on the first container. Only the walk that must exhaust the graph goes round. That is why this
+ * guard's planted case asks about a principal who holds NOTHING.
  *
  * WHAT IT ASSERTS (every plant inside ONE transaction that is ALWAYS ROLLED BACK)
  * -----------------------------------------------------------------------------
  *  1. The on-stack frame is refused    — hand the kernel a path already containing its own frame.
  *  2. The depth ceiling is refused     — hand it a path of 40 frames.
- *  3. A REAL PLANTED CYCLE answers     — two folders that contain each other through a carrying
- *     association type, asked about a principal with no grant: must return `false` in bounded
- *     time. This is the exact shape that raised 54001 before DD-263.
- *  4. The association write door refuses a cycle when the relation type does not declare
- *     `allows_loops`, and accepts it when it does.
+ *  3. A REAL PLANTED TEN-NODE RING answers — ten folders each contained by the next through a
+ *     carrying association type declared `allows_loops`, asked about a principal with no grant:
+ *     must return `false` inside RING_ANSWER_TIMEOUT. This is the exact shape that timed out
+ *     before DD-263b and raised 54001 before DD-263.
+ *  4. The association write door refuses the closing edge of a TEN-node ring (the one the depth-8
+ *     cache could not see) when the relation type does not declare `allows_loops`, and accepts it
+ *     when it does.
  *  5. The FK-parent write door refuses a folder loop.
  *  6. Both refusal triggers are BOUND and ENABLED, and EVERY self-referential registered
  *     composition/containment relationship has one — so a new one added later is caught here.
- *  7. `platform.carrying_cycles()` is empty on the live graph.
+ *  7. `platform.undeclared_carrying_cycles()` is empty on the live graph. DECLARED loops
+ *     (`allows_loops = true`, as the gate corpus builds on purpose) are legal and are NOT counted:
+ *     a guard that is red for a legal state is a guard nobody can keep green.
  *
  * NOTHING IS LEFT BEHIND. There is no code path in this file that commits.
  *
  * THE SELF-TEST (prove the guard can fail)
  * ----------------------------------------
  *   pnpm check:access-kernel-bounded:self-test
- * installs the REAL pre-DD-263 kernel body — captured verbatim from production and kept at
- * `scripts/fixtures/dd263-pre-fix-kernel.sql` — inside the transaction, and requires the
- * planted-cycle assertion to raise `54001`. Then it rolls back. A guard that cannot be shown failing is
- * not a guard. It REFUSES to run against production (it replaces a function, however briefly);
- * point it at a branch with ACCESS_KERNEL_GUARD_DATABASE_URL.
+ * installs the REAL pre-DD-263b kernel body — captured verbatim from production and kept at
+ * `scripts/fixtures/dd263b-pre-fix-kernel.sql`, the body whose sha256 the DD-263b migration declares
+ * in its `-- based-on:` header — inside the transaction, and requires the planted TEN-NODE RING
+ * assertion to fail with `57014` (statement timeout) or `54001` (stack depth). Then it rolls back.
+ * `--self-test=dd263` installs the older pre-DD-263 body from `dd263-pre-fix-kernel.sql` instead,
+ * which fails the same assertion with 54001. A guard that cannot be shown failing is not a guard.
+ * It REFUSES to run against production (it replaces a function, however briefly); point it at a
+ * branch with ACCESS_KERNEL_GUARD_DATABASE_URL.
  *
  *   pnpm check:access-kernel-bounded            # loud, non-blocking (exit 0)
  *   pnpm check:access-kernel-bounded:strict     # exit 1 on any failed assertion
@@ -54,10 +68,16 @@ import pg from "pg";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 
 const STRICT = process.argv.includes("--strict");
-const SELF_TEST = process.argv.includes("--self-test");
+const SELF_TEST = process.argv.some((a) => a === "--self-test" || a.startsWith("--self-test="));
+/** Which pre-fix body the self-test installs: the DD-263b one (default) or the older DD-263 one. */
+const SELF_TEST_BODY = process.argv.find((a) => a.startsWith("--self-test="))?.split("=")[1] ?? "dd263b";
 const OVERRIDE_URL = process.env.ACCESS_KERNEL_GUARD_DATABASE_URL ?? "";
 const PRODUCTION_MARKERS = ["brsgrqvjdzwihsvnfqkf", "db.matrxserver.com"];
-const PRE_FIX_KERNEL = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures", "dd263-pre-fix-kernel.sql");
+const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
+const PRE_FIX_KERNEL = resolve(
+  FIXTURES,
+  SELF_TEST_BODY === "dd263" ? "dd263-pre-fix-kernel.sql" : "dd263b-pre-fix-kernel.sql",
+);
 
 const C = {
   reset: "\x1b[0m",
@@ -72,17 +92,24 @@ const C = {
 const PFX = "c0000000-0000-4dd2-8630-00000000";
 const FOLDER_A = `${PFX}0a01`;
 const FOLDER_B = `${PFX}0a02`;
-const FOLDER_C = `${PFX}0a03`;
-const FOLDER_D = `${PFX}0a04`;
-const ASSOC_1 = `${PFX}0d01`;
-const ASSOC_2 = `${PFX}0d02`;
-const ASSOC_3 = `${PFX}0d03`;
-const ASSOC_4 = `${PFX}0d04`;
 const NOBODY = `${PFX}0f01`;
 
-/** The edge that would CLOSE the C/D loop. Refused, or accepted, depending on `allows_loops`. */
-const CLOSE_THE_LOOP_SQL = `insert into platform.associations (id, source_type, source_id, target_type, target_id, label)
-   values ($1,'folder',$2,'folder',$3,'dd263-guard')`;
+/**
+ * TEN, deliberately. `platform.derive_reachability` stops the closure at `depth < 8`, so the
+ * closing edge of a ring of nine is still visible in the cache and one of ten is not — which is
+ * exactly the door DD-263b had to move off the cache and onto the edges. A ring of nine would pass
+ * against the broken door.
+ */
+const RING_N = 10;
+/** The planted ring must be ANSWERED, not merely survived: the pre-DD-263b body needs 60 s+. */
+const RING_ANSWER_TIMEOUT = "15s";
+const LABEL = "dd263-guard";
+/** Ring A (declared loop-safe, closed) and chain B (open; its closing edge is the door's exam). */
+const ringId = (set: "a" | "b", i: number) => `${PFX}${set === "a" ? "1" : "2"}${String(i).padStart(3, "0")}`;
+
+/** The edge that would CLOSE a ring. Refused, or accepted, depending on `allows_loops`. */
+const CLOSE_THE_RING_SQL = `insert into platform.associations (id, source_type, source_id, target_type, target_id, label)
+   values (gen_random_uuid(),'folder',$1,'folder',$2,'${LABEL}')`;
 
 type Finding = { name: string; ok: boolean; detail: string };
 const findings: Finding[] = [];
@@ -127,66 +154,76 @@ async function expectRaise(client: pg.Client, sql: string, params: unknown[] = [
   }
 }
 
-/** Two folders that contain each other through a carrying relation type declared loop-safe. */
-async function plantCycle(client: pg.Client): Promise<void> {
-  const org = (await client.query<{ id: string }>("select id::text as id from iam.organizations limit 1")).rows[0];
-  const user = (await client.query<{ id: string }>("select id::text as id from auth.users limit 1")).rows[0];
-  if (!org || !user) throw new Error("no organization or user to hang the planted folders on");
+/**
+ * On production `folder` is registered and this is a no-op. A Supabase BRANCH is transplanted
+ * schema-only, so its registry is empty and the association type below would fail its FK to
+ * platform.entity_types - which would look like a guard failure rather than an empty branch.
+ */
+async function ensureFolderType(client: pg.Client): Promise<void> {
   await client.query("set local app.actor_system = 'check-access-kernel-bounded'");
-  // On production `folder` is registered and this is a no-op. A Supabase BRANCH is transplanted
-  // schema-only, so its registry is empty and the association type below would fail its FK to
-  // platform.entity_types - which would look like a guard failure rather than an empty branch.
   await client.query(
     `insert into platform.entity_types (token, schema_name, table_name, label)
      values ('folder','files','folders','Folder')
      on conflict (token) do nothing`,
   );
+}
+
+/** Two plain folders with no relation of any kind — the FK-parent door's own subjects. */
+async function plantPlainFolders(client: pg.Client): Promise<void> {
+  const org = (await client.query<{ id: string }>("select id::text as id from iam.organizations limit 1")).rows[0];
+  const user = (await client.query<{ id: string }>("select id::text as id from auth.users limit 1")).rows[0];
+  if (!org || !user) throw new Error("no organization or user to hang the planted folders on");
+  await ensureFolderType(client);
   await client.query(
     `insert into files.folders (id, created_by, folder_path, folder_name, organization_id, visibility)
-     values ($1,$3,'/dd263-guard-a','dd263 guard A',$2,'internal'),
-            ($4,$3,'/dd263-guard-b','dd263 guard B',$2,'internal')`,
+     values ($1,$3,'/dd263-guard-fk-a','dd263 guard fk A',$2,'internal'),
+            ($4,$3,'/dd263-guard-fk-b','dd263 guard fk B',$2,'internal')`,
     [FOLDER_A, org.id, user.id, FOLDER_B],
   );
+}
+
+/** The one folder -> folder carrying type (its primary key is (source_type, target_type)). */
+async function setRelationType(client: pg.Client, allowsLoops: boolean): Promise<void> {
+  await ensureFolderType(client);
   await client.query(
     `insert into platform.association_types
        (source_type, target_type, label, container_side, conveys_max, is_active, allows_loops, notes)
-     values ('folder','folder','dd263-guard','target','viewer',true,true,
-             'check:access-kernel-bounded - always rolled back')`,
-  );
-  await client.query(
-    `insert into platform.associations (id, source_type, source_id, target_type, target_id, label)
-     values ($1,'folder',$2,'folder',$3,'dd263-guard'),
-            ($4,'folder',$3,'folder',$2,'dd263-guard')`,
-    [ASSOC_1, FOLDER_A, FOLDER_B, ASSOC_2],
+     values ('folder','folder',$1,'target','viewer',true,$2,
+             'check:access-kernel-bounded - always rolled back')
+     on conflict (source_type, target_type) do update set allows_loops = excluded.allows_loops,
+       label = excluded.label, container_side = excluded.container_side, is_active = true`,
+    [LABEL, allowsLoops],
   );
 }
 
 /**
- * Two more folders, C containing D, through the SAME relation type (its primary key is
- * (source_type, target_type), so there can only be one folder -> folder row). The edge that would
- * close THIS pair's loop is the write the door has to refuse — asked from scratch, rather than by
- * undoing the pair above, whose deletion would churn the very cache the door reads.
+ * A chain of RING_N folders, each contained by the previous one, through the carrying type above.
+ * The CLOSING edge (node 0 contained by node N-1) is left to the caller: closing it is what the
+ * write door has to refuse, and closing it under a declared exemption is what the kernel has to
+ * answer. TEN nodes, because the depth-8 closure cannot see the edge that closes a ring of ten —
+ * a ring of nine passes even against the door DD-263b replaced.
  */
-async function plantHalfOpenPair(client: pg.Client): Promise<void> {
+async function plantChain(client: pg.Client, set: "a" | "b"): Promise<string[]> {
   const org = (await client.query<{ id: string }>("select id::text as id from iam.organizations limit 1")).rows[0];
   const user = (await client.query<{ id: string }>("select id::text as id from auth.users limit 1")).rows[0];
   if (!org || !user) throw new Error("no organization or user to hang the planted folders on");
+  await ensureFolderType(client);
+  const ids = Array.from({ length: RING_N }, (_, i) => ringId(set, i));
   await client.query(
     `insert into files.folders (id, created_by, folder_path, folder_name, organization_id, visibility)
-     values ($1,$3,'/dd263-guard-c','dd263 guard C',$2,'internal'),
-            ($4,$3,'/dd263-guard-d','dd263 guard D',$2,'internal')`,
-    [FOLDER_C, org.id, user.id, FOLDER_D],
+     select u.id::uuid, $2, '/dd263-guard-' || $4 || '/' || u.ord, 'dd263 guard ' || $4 || ' ' || u.ord,
+            $1, 'internal'
+     from unnest($3::text[]) with ordinality as u(id, ord)`,
+    [org.id, user.id, ids, set],
   );
-  await client.query(
-    `insert into platform.associations (id, source_type, source_id, target_type, target_id, label)
-     values ($1,'folder',$2,'folder',$3,'dd263-guard')`,
-    [ASSOC_3, FOLDER_D, FOLDER_C],
-  );
-  // The loop above was planted under a declared exemption; the door is now asked the real question.
-  await client.query(
-    `update platform.association_types set allows_loops = false
-     where source_type='folder' and target_type='folder' and label='dd263-guard'`,
-  );
+  for (let i = 1; i < RING_N; i += 1) {
+    await client.query(
+      `insert into platform.associations (id, source_type, source_id, target_type, target_id, label)
+       values (gen_random_uuid(),'folder',$1,'folder',$2,'${LABEL}')`,
+      [ids[i], ids[i - 1]],
+    );
+  }
+  return ids;
 }
 
 async function main(): Promise<void> {
@@ -202,7 +239,7 @@ async function main(): Promise<void> {
 
   console.log(
     `${C.white}check:access-kernel-bounded${C.reset} ${C.dim}on ${where}` +
-      `${SELF_TEST ? " (SELF-TEST: the pre-DD-263 kernel is installed, then rolled back)" : ""}${C.reset}\n`,
+      `${SELF_TEST ? ` (SELF-TEST: the pre-${SELF_TEST_BODY} kernel is installed, then rolled back)` : ""}${C.reset}\n`,
   );
   let exitCode = 0;
   try {
@@ -233,49 +270,53 @@ async function main(): Promise<void> {
       record(name, r.rows[0]?.a === false, `${why} -> ${String(r.rows[0]?.a)}`);
     }
 
-    // 3 - a REAL planted cycle, asked negatively. The exact shape that raised 54001.
-    await plantCycle(client);
+    // 3 - a REAL planted TEN-NODE RING, asked negatively, under a TIGHT timeout. The exact shape
+    //     that raised 54001 before DD-263 and then timed out at 60 s+ before DD-263b. The ring is
+    //     closed under a DECLARED exemption, because the door below must refuse an undeclared one:
+    //     the read end and the write end are two different assertions and each needs its own plant.
+    await setRelationType(client, true);
+    const ringA = await plantChain(client, "a");
+    await client.query(CLOSE_THE_RING_SQL, [ringA[0], ringA[RING_N - 1]]);
     const started = Date.now();
-    let cycleAnswer: string;
-    let cycleOk = false;
+    let ringAnswer: string;
+    let ringOk = false;
     try {
+      await client.query(`set local statement_timeout = '${RING_ANSWER_TIMEOUT}'`);
       const r = await client.query<{ a: boolean | null }>(
         "select iam.has_access_for_base($1::uuid,'folder',$2::uuid,'viewer'::public.permission_level,true) as a",
-        [NOBODY, FOLDER_B],
+        [NOBODY, ringA[RING_N - 5]],
       );
-      cycleAnswer = String(r.rows[0]?.a);
-      cycleOk = r.rows[0]?.a === false;
+      ringAnswer = String(r.rows[0]?.a);
+      ringOk = r.rows[0]?.a === false;
+      await client.query("set local statement_timeout = '120s'");
     } catch (error) {
-      // The pre-DD-263 failure: the statement dies and takes the transaction with it. Start a new
-      // one and re-plant so the remaining assertions still run and report.
-      cycleAnswer = `${(error as { code?: string }).code ?? "?"} ${(error as Error).message}`;
+      // The pre-fix failure: the statement dies (57014 timeout, or 54001 before DD-263) and takes
+      // the transaction with it. Start a new one and re-plant so the rest still runs and reports.
+      ringAnswer = `${(error as { code?: string }).code ?? "?"} ${(error as Error).message}`;
       await client.query("rollback");
       await client.query("begin");
       await client.query("set local statement_timeout = '120s'");
-      await plantCycle(client);
     }
     record(
-      "a negative question inside a real carrying cycle answers false",
-      cycleOk,
-      `${cycleAnswer} in ${Date.now() - started} ms (pre-DD-263: 54001 stack depth limit exceeded)`,
+      `a negative question inside a real ${RING_N}-node carrying ring answers false`,
+      ringOk,
+      `${ringAnswer} in ${Date.now() - started} ms (pre-DD-263b: 57014 statement timeout; pre-DD-263: 54001)`,
     );
 
-    // 4 - the association write door, both ways. A SECOND pair of folders and a SECOND relation
-    // type, so the half-open edge of the pair above is never disturbed: the door is asked about a
-    // loop it has to refuse from scratch, not about undoing one that already exists.
-    await plantHalfOpenPair(client);
-    const refused = await expectRaise(client, CLOSE_THE_LOOP_SQL, [ASSOC_4, FOLDER_C, FOLDER_D]);
+    // 4 - the association write door, both ways, asked about a ring of TEN. Nine would not prove
+    //     anything: `platform.derive_reachability` stops the closure at depth 8, so the old
+    //     cache-reading door still refused a nine-node ring and accepted this one.
+    await setRelationType(client, false);
+    const ringB = await plantChain(client, "b");
+    const refused = await expectRaise(client, CLOSE_THE_RING_SQL, [ringB[0], ringB[RING_N - 1]]);
     record(
-      "the association write door refuses a carrying cycle",
+      `the association write door refuses a carrying ring of ${RING_N}`,
       refused === "23514",
-      `sqlstate ${refused ?? "none - THE CYCLE WAS ACCEPTED"}`,
+      `sqlstate ${refused ?? "none - THE RING WAS ACCEPTED (the door is reading the depth-8 cache)"}`,
     );
 
-    await client.query(
-      `update platform.association_types set allows_loops = true
-       where source_type='folder' and target_type='folder' and label='dd263-guard'`,
-    );
-    const allowed = await expectRaise(client, CLOSE_THE_LOOP_SQL, [ASSOC_4, FOLDER_C, FOLDER_D]);
+    await setRelationType(client, true);
+    const allowed = await expectRaise(client, CLOSE_THE_RING_SQL, [ringB[0], ringB[RING_N - 1]]);
     record(
       "allows_loops = true is the declared escape hatch",
       allowed === null,
@@ -283,6 +324,7 @@ async function main(): Promise<void> {
     );
 
     // 5 - the FK-parent write door.
+    await plantPlainFolders(client);
     await client.query("update files.folders set parent_id = $1 where id = $2", [FOLDER_A, FOLDER_B]);
     const fkRefused = await expectRaise(client, "update files.folders set parent_id = $1 where id = $2", [
       FOLDER_B,
@@ -327,9 +369,13 @@ async function main(): Promise<void> {
     // 7 - the live graph is clean. Taken AFTER the rollback, so the plants above cannot flatter it.
     await client.query("rollback");
     const cycles = (
-      await client.query<{ n: string }>("select count(*)::text as n from platform.carrying_cycles()")
+      await client.query<{ n: string }>("select count(*)::text as n from platform.undeclared_carrying_cycles()")
     ).rows[0]?.n;
-    record("the live containment graph carries no cycle", cycles === "0", `${cycles} cycle(s)`);
+    record(
+      "the live containment graph carries no UNDECLARED cycle",
+      cycles === "0",
+      `${cycles} undeclared cycle(s) (a declared allows_loops loop is legal and is not counted)`,
+    );
 
     const failed = findings.filter((f) => !f.ok);
     console.log("");
@@ -338,14 +384,15 @@ async function main(): Promise<void> {
       // must fail with 54001 specifically - a timeout or a wrong answer would mean the guard is
       // catching something other than the unbounded recursion.
       const planted = findings.find((f) => f.name.startsWith("a negative question"));
-      if (planted?.ok || !planted?.detail.includes("54001")) {
+      const died = planted?.detail.includes("57014") || planted?.detail.includes("54001");
+      if (planted?.ok || !died) {
         console.error(
-          `${C.red}SELF-TEST FAILED: with the pre-DD-263 kernel live the planted cycle gave "${planted?.detail}" - expected 54001 stack depth limit exceeded. This guard proves nothing.${C.reset}`,
+          `${C.red}SELF-TEST FAILED: with the pre-${SELF_TEST_BODY} kernel live the planted ${RING_N}-node ring gave "${planted?.detail}" - expected 57014 (statement timeout) or 54001 (stack depth). This guard proves nothing.${C.reset}`,
         );
         exitCode = 1;
       } else {
         console.log(
-          `${C.green}SELF-TEST GREEN: with the pre-DD-263 kernel live the planted cycle raised 54001 - the guard is load-bearing.${C.reset}`,
+          `${C.green}SELF-TEST GREEN: with the pre-${SELF_TEST_BODY} kernel live the planted ${RING_N}-node ring died instead of answering - the guard is load-bearing.${C.reset}`,
         );
       }
     } else if (failed.length > 0) {
