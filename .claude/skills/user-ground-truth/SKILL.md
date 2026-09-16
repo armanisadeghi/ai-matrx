@@ -63,13 +63,32 @@ Why "no other resources": a summarizer that has seen the codebase or the plan su
 them. Why appended, never replacing: the raw text is the check on the summary. A reader who
 doubts a summary sentence finds the message it came from, or finds that it has none.
 
+Commit the file after the summary is appended — an uncommitted summary is one regeneration from gone.
+
 Known trap: his messages are often dictated. A transcription slip ("contact slots" for "context
 slots") can be carried into the summary as a confident wrong term. The summarizer may not fix what
 it cannot be sure of; the judge below, who knows the system, can.
 
+## Poison and runaway — the two ways this turns on itself
+
+**Poison.** The only source is the transcript. The words are regenerated from it on every run
+and never edited; the script writes a marker under them, keeps whatever was appended below the
+marker, refuses to overwrite a file that has no marker (it cannot tell appended text from the
+words), and `--verify` recomputes the words and exits non-zero if the file's upper part differs —
+a tampered ground truth is found in one command. A summary is derived from the words, never
+from an earlier summary; a judge's note is derived from words + summary + the agent's claims, and
+the claims are read as claims. Nothing derived is ever written above the marker. The first time
+this skill was used, an uncommitted summary was lost to a regeneration — commit what you append.
+
+**Runaway.** This is reached for at a decision — before a dispatch, a freeze, a "done", a
+handoff, after a compaction — never on a clock and never every N messages ([no unapproved
+schedules](/policies/no-unapproved-schedules.md)). One judge per checkpoint; never a judge of the
+judge. The judge writes to the working agent, not to the owner; if it finds nothing, it says one
+line and stops. A judge that runs constantly is noise wearing a badge.
+
 ## 3. Judge — optional, adversarial, and only useful if it looks at reality too
 
-At a checkpoint — every N messages, a gate, before a handoff — a fresh agent gets three things:
+At a decision point — a dispatch, a freeze, a "done", a handoff, a resume after compaction — a fresh agent gets three things:
 the raw file, the summary, and whatever the working agent currently claims (its plan, its last
 status, its register). Its question is one: **is the work still what he asked for?** — where he
 said it should appear, what he said it should do, what he said mattered most.
@@ -81,8 +100,9 @@ brief carries the concept, not a method: reality is the referee; go to the live 
 live data as the person he describes, and report where his words, the plan and reality disagree.
 Tell the working agent, in his terms, where it is off; never a score, never a checklist.
 
-Cheap enough to run often (a `quick` lane on the raw file is minutes); it is not a substitute for
-the working agent asking itself the three questions in the policy.
+Cheap per run (a `quick` lane on the raw file is minutes); the judge that actually goes to the
+product costs more and is the one worth paying for. It is not a substitute for the working agent
+asking itself the three questions in the policy.
 
 ## Changelog
 - 2026-09-16 — Created after the Agent Change Impact failure: the owner's dictated vision was
