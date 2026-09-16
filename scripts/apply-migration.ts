@@ -118,6 +118,7 @@
  * failure · 2 unexpected error / creds absent.
  */
 import { createHash, randomBytes } from "node:crypto";
+import { createInterface } from "node:readline";
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
@@ -132,10 +133,14 @@ import {
   assertServerMatchesTarget,
   loadBranchDbEnv,
   loadBranchRef,
+  type BranchRef,
   INVERSE_DIRNAME,
   parseTargetFlag,
   readHeader,
   REHEARSAL_DIRNAME,
+  CAMPAIGN_DIRNAME,
+  CAMPAIGN_SOURCE,
+  basedOnFunctionNames,
   TargetRefusal,
   type Target,
 } from "./lib/migration-target";
@@ -383,9 +388,150 @@ async function ledgerRow(
   return out.rows[0] ?? null;
 }
 
+
+/**
+ * A CAMPAIGN FILE MAY LAND ON PRODUCTION ONLY BEHIND ITS OWN REHEARSAL AND ITS OWN
+ * LOCK (ATTACK-6 findings 1 and 8).
+ *
+ * Both facts live on the REHEARSAL BRANCH and nowhere else — that is the database
+ * §4.7 names, and it is named here in code so nobody has to read a book to find out:
+ *   · the rehearsal is a `public._schema_migrations` row for the SAME basename whose
+ *     checksum is the checksum of the bytes about to run on production. §6b.1's "it
+ *     is the same file" stops being an assurance and becomes a check;
+ *   · the lock is a `campaign_watch.build_lock` row whose `held_by` is this `--lane`.
+ *     A lane that failed, stopped, or released its lock cannot land on production,
+ *     and two lanes can never apply to the same object at once (§4.14).
+ *
+ * Read-only on the branch; opens and closes its own connection; refuses on any error
+ * rather than assuming. NOTHING about this check is the environment's to decide.
+ */
+async function assertCampaignProductionIsAuthorised(
+  filename: string,
+  checksum: string,
+  lane: string,
+  branchRef: BranchRef,
+): Promise<string | null> {
+  let branchEnv;
+  try {
+    branchEnv = loadBranchDbEnv(ROOT, branchRef);
+  } catch (err) {
+    return err instanceof TargetRefusal
+      ? err.message
+      : `could not read the rehearsal branch's connection: ${String(err)}`;
+  }
+  const branch = new pg.Client({
+    host: branchEnv.host,
+    port: branchEnv.port,
+    user: branchEnv.user,
+    password: branchEnv.password,
+    database: branchEnv.database,
+    ssl: { rejectUnauthorized: false },
+    application_name: "db:apply (campaign authorisation, read only)",
+  });
+  try {
+    await branch.connect();
+    const rehearsal = await branch.query<{ checksum: string; applied_at: string }>(
+      `select checksum, applied_at::text as applied_at from public._schema_migrations
+         where source = $1 and filename = $2`,
+      [SOURCE, filename],
+    );
+    const row = rehearsal.rows[0];
+    if (!row)
+      return (
+        `${filename} has NO rehearsal ledger row on the branch ${branchRef.branchRef}.\n` +
+        `  §6b.1: nothing reaches production that has not passed its exit on the branch. Run\n` +
+        `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/${filename} --source ${CAMPAIGN_SOURCE} --target branch --lane ${lane}\n` +
+        `  first, prove the lane's exit there, then come back.`
+      );
+    if (row.checksum !== checksum)
+      return (
+        `${filename} was rehearsed on the branch at ${row.applied_at}, but the bytes have MOVED\n` +
+        `  since: branch ledger ${row.checksum}\n` +
+        `         this file   ${checksum}\n` +
+        `  "It is the same file" is the whole of §6b.1's byte-identity argument. Re-rehearse the\n` +
+        `  current bytes on the branch (--reapply) before landing them on production.`
+      );
+    const lock = await branch.query<{ held_by: string; taken_at: string; lock_name: string }>(
+      `select lock_name, held_by, taken_at::text as taken_at from campaign_watch.build_lock
+         where held_by = $1`,
+      [lane],
+    );
+    if (lock.rows.length === 0) {
+      const anyLock = await branch.query<{ lock_name: string; held_by: string }>(
+        `select lock_name, held_by from campaign_watch.build_lock order by lock_name`,
+      );
+      return (
+        `lane ${lane} holds NO campaign_watch.build_lock row on the branch ${branchRef.branchRef}.\n` +
+        `  §4.14: the production apply happens WHILE the lane holds its object lock, so two lanes\n` +
+        `  never land on the same object at once and a lane that failed cannot land at all.\n` +
+        (anyLock.rows.length
+          ? `  Held right now: ${anyLock.rows.map((r) => `${r.lock_name} by ${r.held_by}`).join(", ")}.\n`
+          : `  No lock is held by anybody right now.\n`) +
+        `  Take yours on the BRANCH first:\n` +
+        `    insert into campaign_watch.build_lock (lock_name, held_by, note)\n` +
+        `    values ('<custom|platform|iam>', '${lane}', '<what for>')\n` +
+        `    on conflict (lock_name) do nothing returning lock_name, held_by, taken_at;`
+      );
+    }
+    console.log(
+      `${TAG.ok}campaign authorisation ${C.dim}— rehearsed on the branch at ${row.applied_at}, ` +
+        `byte-identical; lock ${lock.rows.map((r) => r.lock_name).join(", ")} held by ${lane} ` +
+        `since ${lock.rows[0]!.taken_at}${C.reset}`,
+    );
+    return null;
+  } catch (err) {
+    return (
+      `the campaign authorisation could not be READ on the branch, so it is refused rather than\n` +
+      `  assumed: ${err instanceof Error ? err.message : String(err)}`
+    );
+  } finally {
+    await branch.end().catch(() => {});
+  }
+}
+
+/**
+ * `-- chair-step:` IS A CHAIR STEP (ATTACK-6 finding 4).
+ *
+ * 🚨 It stands in for `-- additive: yes` AND `-- guard:` and excuses every non-additive
+ * reason, and what it did in exchange was `console.log`. Rule 9 ("nothing irreversible
+ * on production, in any lane, ever") and §4.9 ("refused by both, in every lane, with no
+ * exception") were therefore false of one comment line — on a path two unattended
+ * 30-minute crons run. "With the owner awake" now means what it says: a non-TTY stdin
+ * is refused outright, and a TTY must TYPE the filename back.
+ */
+async function confirmChairStep(filename: string, why: string): Promise<string | null> {
+  if (!process.stdin.isTTY) {
+    return (
+      `\`-- chair-step: ${why}\` reached --target production from a process with NO TERMINAL.\n` +
+      `  A chair step is an owner-awake step: it stands in for \`-- additive: yes\` and\n` +
+      `  \`-- guard:\` and excuses every non-additive reason, so the one thing it may never be\n` +
+      `  is unattended. Both release trains run exactly like this, on a 30-minute cron.\n` +
+      `  Run it by hand, from a terminal, and type the filename when it asks.`
+    );
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await new Promise<string>((res) =>
+      rl.question(
+        `${C.bold}Type the filename to run this chair step against PRODUCTION${C.reset} ` +
+          `(${filename}), or anything else to abort: `,
+        (a) => res(a.trim()),
+      ),
+    );
+    if (answer !== filename)
+      return `chair step NOT confirmed — you typed ${JSON.stringify(answer)}, not ${filename}. Nothing ran.`;
+    return null;
+  } finally {
+    rl.close();
+  }
+}
+
 function usage(): void {
   console.log(
     `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min]${C.reset}\n` +
+      `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
+      `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
+      `                                     release path, sweep, CI job or scheduled job scans\n` +
       `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
       `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
       `  --target defaults to production, so every file written before --target existed behaves\n` +
@@ -402,12 +548,16 @@ interface ApplyOpts {
   statementTimeout: string;
   /** WHICH database this file may land on. Default `production` — see lib/migration-target.ts. */
   target: Target;
+  /** `--source campaign` — the ONE route into `migrations/campaign/`. */
+  campaignSource: boolean;
+  /** `--lane <id>` — whose `campaign_watch.build_lock` row authorises a production apply. */
+  lane: string | null;
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
  *  exactly the code an agent runs, not a paraphrase of it. */
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
-  const { dryRun, reapply, statementTimeout, target } = opts;
+  const { dryRun, reapply, statementTimeout, target, campaignSource, lane } = opts;
   const outsideMigrations = relative(MIGRATIONS_DIR, path).startsWith("..");
   // 🚨 THE ONE CARVE-OUT, and it is a filename pattern, not a flag. --target-self-test
   // writes its scratch file into a per-run temp directory instead of into the SHARED
@@ -458,8 +608,49 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // header checks then print the reason and the whole body before it executes.
   const inverseDir = resolve(MIGRATIONS_DIR, INVERSE_DIRNAME);
   const inInverse = !outsideMigrations && !relative(inverseDir, path).startsWith("..");
+
+  // 🚨 ATTACK-6 finding 1 — `migrations/campaign/` and the plan's own command.
+  // The flag is an ASSERTION ABOUT THE FILE, checked both ways, so neither half can
+  // drift into a habit: a campaign file without `--source campaign` is refused, and
+  // `--source campaign` naming a file that is not a campaign file is refused too.
+  const campaignDir = resolve(MIGRATIONS_DIR, CAMPAIGN_DIRNAME);
+  const inCampaign = !outsideMigrations && !relative(campaignDir, path).startsWith("..");
+  if (inCampaign && !campaignSource) {
+    console.error(
+      `${TAG.fail}${relative(ROOT, path)} is in migrations/${CAMPAIGN_DIRNAME}/, which no release ` +
+        `path scans.\n` +
+        `  The ONE route to either database is the plan's own command:\n` +
+        `    pnpm db:apply ${relative(ROOT, path)} --source ${CAMPAIGN_SOURCE} --target branch --lane <lane>\n` +
+        `  and, after that rehearsal is ledgered on the branch and while this lane holds its\n` +
+        `  campaign_watch.build_lock row, the same file with --target production.\n` +
+        `  Refusing by LOCATION, before its header is read.`,
+    );
+    return 1;
+  }
+  if (campaignSource && !inCampaign) {
+    console.error(
+      `${TAG.fail}--source ${CAMPAIGN_SOURCE} names ${relative(ROOT, path)}, which is not in ` +
+        `migrations/${CAMPAIGN_DIRNAME}/.\n` +
+        `  That flag is an assertion about WHERE the file lives, not a mode. An ordinary\n` +
+        `  migration is applied without it; a campaign migration is moved into\n` +
+        `  migrations/${CAMPAIGN_DIRNAME}/ first, so that no sweep in either repo can ever see it.`,
+    );
+    return 1;
+  }
+  if (inCampaign && !lane) {
+    console.error(
+      `${TAG.fail}${relative(ROOT, path)} is a campaign migration and no --lane was named.\n` +
+        `  Every campaign apply is attributable to ONE lane: the lane id is what the\n` +
+        `  campaign_watch.build_lock row on the rehearsal branch is checked against before a\n` +
+        `  production apply, and what the rehearsal is read back under. Pass --lane <lane id>.`,
+    );
+    return 1;
+  }
+
   const filename =
-    outsideMigrations || inRehearsal || inInverse ? basename(path) : relative(MIGRATIONS_DIR, path);
+    outsideMigrations || inRehearsal || inInverse || inCampaign
+      ? basename(path)
+      : relative(MIGRATIONS_DIR, path);
   const sql = readFileSync(path, "utf8");
   const checksum = sha256(sql);
 
@@ -515,10 +706,11 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // databases are named `postgres` and both connect as `postgres`, so until this
   // existed nothing in this runner could tell the rehearsal branch from
   // production. See scripts/lib/migration-target.ts.
-  let branchRef;
+  let branchRef: BranchRef;
   let guard: { feature: string; key: string } | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
   let chairStep: { why: string; reasons: string[] } | null = null;
+  let chairStepConfirmed: string | null = null;
   let headerNamesProduction = false;
   try {
     const header = readHeader(sql);
@@ -528,6 +720,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT);
     ({ guard, revokeExemption, chairStep } = assertHeaderAgreesWithFlag({
+      basedOnNames: basedOnFunctionNames(sql),
       filename,
       flagTarget: target,
       header,
@@ -564,6 +757,25 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         ` and is about to run against PRODUCTION. Its entire body follows.${C.reset}`,
     );
     for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
+  }
+
+  // The chair step's confirmation, and the campaign's own two production conditions.
+  // Both happen BEFORE any production credential is loaded: a refusal here never
+  // opened a connection.
+  if (chairStep && target === "production" && !dryRun) {
+    const refused = await confirmChairStep(filename, chairStep.why);
+    if (refused) {
+      console.error(`${TAG.fail}${refused}`);
+      return 1;
+    }
+    chairStepConfirmed = chairStep.why;
+  }
+  if (inCampaign && target === "production" && !dryRun) {
+    const refused = await assertCampaignProductionIsAuthorised(filename, checksum, lane!, branchRef);
+    if (refused) {
+      console.error(`${TAG.fail}${refused}`);
+      return 1;
+    }
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
@@ -742,6 +954,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     if (target === "production" && !existing) {
       try {
         const late = assertHeaderAgreesWithFlag({
+          basedOnNames: basedOnFunctionNames(sql),
           filename,
           flagTarget: target,
           header: readHeader(sql),
@@ -756,6 +969,15 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
               `about to run against PRODUCTION. Its entire body follows.${C.reset}`,
           );
           for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
+          if (!dryRun) {
+            const refused = await confirmChairStep(filename, late.chairStep.why);
+            if (refused) {
+              console.error(`${TAG.fail}${refused}`);
+              await client.query("rollback").catch(() => {});
+              return 1;
+            }
+            chairStepConfirmed = late.chairStep.why;
+          }
         }
       } catch (err) {
         if (err instanceof TargetRefusal) {
@@ -822,13 +1044,29 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `set local lock_timeout = '${LOCK_TIMEOUT}';\n` +
       `set local statement_timeout = '${statementTimeout}';\n` +
       `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true);`;
+    // A CONFIRMED CHAIR STEP IS LOGGED TO THE LEDGER (ATTACK-6 finding 4). The
+    // column is added idempotently on the one path that writes it, so the record of
+    // who waived the additive rule and why outlives the terminal it was typed into.
+    // Nullable, no default, no live reader — every other insert names its columns.
+    const chairStepLog = chairStepConfirmed
+      ? `alter table public._schema_migrations add column if not exists chair_step text;\n`
+      : ``;
     const ledgerUpsert =
-      `insert into public._schema_migrations (source, filename, checksum, duration_ms)\n` +
+      chairStepLog +
+      `insert into public._schema_migrations (source, filename, checksum, duration_ms` +
+      (chairStepConfirmed ? `, chair_step` : ``) +
+      `)\n` +
       `values (${lit(SOURCE)}, ${lit(filename)}, ${lit(checksum)},\n` +
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
-      `                     - current_setting('matrx.db_apply_t0')::timestamptz) * 1000)::int))\n` +
+      `                     - current_setting('matrx.db_apply_t0')::timestamptz) * 1000)::int)` +
+      (chairStepConfirmed
+        ? `,\n        ${lit(`${chairStepConfirmed} — confirmed at a terminal by ${process.env.USER ?? "unknown"}`)}`
+        : ``) +
+      `)\n` +
       `on conflict (source, filename) do update set\n` +
-      `  checksum = excluded.checksum, applied_at = now(), duration_ms = excluded.duration_ms;`;
+      `  checksum = excluded.checksum, applied_at = now(), duration_ms = excluded.duration_ms` +
+      (chairStepConfirmed ? `, chair_step = excluded.chair_step` : ``) +
+      `;`;
 
     if (dryRun) {
       console.log(`${TAG.info}--dry-run — nothing was sent. Exactly what would run, in ONE transaction:`);
@@ -980,6 +1218,8 @@ async function selfTest(statementTimeout: string): Promise<number> {
     reapply: false,
     statementTimeout,
     target: "production",
+      campaignSource: false,
+    lane: null,
   };
 
   try {
@@ -1508,12 +1748,35 @@ async function main(): Promise<number> {
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
 
+  // `--source campaign` / `--lane <id>` — the plan's own command, and the ONLY
+  // route into `migrations/campaign/` (ATTACK-6 finding 1).
+  const valueOf = (flag: string): string | null => {
+    const eq = argv.find((a) => a.startsWith(`${flag}=`));
+    if (eq) return eq.slice(flag.length + 1).trim() || null;
+    const i = argv.indexOf(flag);
+    return i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--") ? argv[i + 1]!.trim() : null;
+  };
+  const sourceArg = valueOf("--source");
+  const lane = valueOf("--lane");
+  if (sourceArg !== null && sourceArg !== CAMPAIGN_SOURCE) {
+    console.error(
+      `${TAG.fail}--source ${sourceArg} is not a source this runner knows. The ONE value is ` +
+        `\`--source ${CAMPAIGN_SOURCE}\`,\n` +
+        `  which names a file in migrations/${CAMPAIGN_DIRNAME}/ and nothing else. Ordinary ` +
+        `migrations take no --source at all.`,
+    );
+    return 1;
+  }
+  const campaignSource = sourceArg === CAMPAIGN_SOURCE;
+
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
-  // the flag's VALUE, never the migration file.
-  const bareTargetIdx = argv.indexOf("--target");
-  const positional = argv.filter(
-    (a, i) => !a.startsWith("--") && !(bareTargetIdx >= 0 && i === bareTargetIdx + 1),
-  );
+  // the flag's VALUE, never the migration file. Same for --source and --lane.
+  const valueIdxs = new Set<number>();
+  for (const flag of ["--target", "--source", "--lane", "--statement-timeout"]) {
+    const i = argv.indexOf(flag);
+    if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
+  }
+  const positional = argv.filter((a, i) => !a.startsWith("--") && !valueIdxs.has(i));
 
   if (positional.length !== 1) {
     usage();
@@ -1527,7 +1790,7 @@ async function main(): Promise<number> {
     console.error(`${TAG.fail}No such file: ${positional[0]}`);
     return 1;
   }
-  return applyFile(path, { dryRun, reapply, statementTimeout, target });
+  return applyFile(path, { dryRun, reapply, statementTimeout, target, campaignSource, lane });
 }
 
 main().then(

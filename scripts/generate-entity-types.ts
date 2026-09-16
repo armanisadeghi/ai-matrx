@@ -152,6 +152,20 @@ const FIX =
  */
 const SCRATCH_PREFIX = "zz_";
 
+/** The named live-but-not-installed delta. Read from disk so it is one file to audit. */
+interface EntityTypeAllowlist {
+  readonly allowed?: ReadonlyArray<{ token: string; reason: string; added: string }>;
+  readonly allowedFields?: ReadonlyArray<{
+    token: string;
+    field: string;
+    reason: string;
+    added: string;
+  }>;
+}
+const ALLOWLIST: EntityTypeAllowlist = JSON.parse(
+  readFileSync(join(import.meta.dirname ?? __dirname, "entity-types-allowlist.json"), "utf8"),
+) as EntityTypeAllowlist;
+
 export function findScratchRegistrations(
   liveRows: ReadonlyArray<Pick<EntityTypeSourceRow, "token" | "schema_name">>,
   installed: Readonly<Record<string, { schema: string }>>,
@@ -196,8 +210,48 @@ async function main(): Promise<void> {
   // 1. Token-set parity.
   const liveTokens = new Set(rows.map((r) => r.token));
   const installedTokens = new Set<string>(ENTITY_TYPE_TOKENS);
-  const missing = [...liveTokens].filter((t) => !installedTokens.has(t));
+  const allMissing = [...liveTokens].filter((t) => !installedTokens.has(t));
   const extra = [...installedTokens].filter((t) => !liveTokens.has(t));
+
+  // 1a. THE NAMED DELTA (ATTACK-6 findings 5 and 9c). The vocabulary ships in the
+  // package and the package is `latest` — never pinned (THE LATEST LAW) — so a token
+  // registered on production by ANY lane makes this gate red for EVERY release in this
+  // repo until the package is regenerated and published. `release.sh:526` calls `fail`,
+  // so that window is a stopped platform, not a stopped lane. A token listed in
+  // scripts/entity-types-allowlist.json with a reason and a date is subtracted here and
+  // ANNOUNCED; anything else still fails. A STALE entry fails too — see below — which is
+  // what stops this file becoming a place tokens go to be forgotten.
+  const allowed = new Map<string, { reason: string; added: string }>(
+    (ALLOWLIST.allowed ?? []).map((a) => [a.token, { reason: a.reason, added: a.added }]),
+  );
+  const staleAllowed = [...allowed.keys()].filter(
+    (t) => installedTokens.has(t) || !liveTokens.has(t),
+  );
+  if (staleAllowed.length > 0) {
+    console.error(
+      `\n  ✗ scripts/entity-types-allowlist.json is STALE — ${staleAllowed.length} entr` +
+        `${staleAllowed.length === 1 ? "y is" : "ies are"} no longer a live delta: ` +
+        `${staleAllowed.join(", ")}.` +
+        "\n    Each of these is now either shipped in the installed package or no longer live," +
+        "\n    so the waiver has nothing left to waive. Delete the entr" +
+        `${staleAllowed.length === 1 ? "y" : "ies"} from that file.\n`,
+    );
+    process.exit(1);
+  }
+  const missing = allMissing.filter((t) => !allowed.has(t));
+  const waived = allMissing.filter((t) => allowed.has(t));
+  if (waived.length > 0) {
+    // Nothing passes silently either: the waiver is as loud as the failure.
+    console.log(
+      `  ! ${waived.length} live token(s) are NOT in the installed @ai-matrx/associations ` +
+        `and are allowed by name (scripts/entity-types-allowlist.json):`,
+    );
+    for (const t of waived) {
+      const a = allowed.get(t)!;
+      console.log(`      ${t}  [allowed ${a.added}] ${a.reason}`);
+    }
+  }
+
   if (missing.length > 0 || extra.length > 0) {
     console.error(
       `\n  ✗ Installed @ai-matrx/associations vocabulary (${installedTokens.size} tokens) ` +
@@ -209,21 +263,58 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 2. Per-token field parity.
+  // 2. Per-token field parity. A waived token has no installed metadata to compare —
+  // that is what "not installed" means — so it is skipped here and nowhere else.
+  const waivedSet = new Set(waived);
+  // A FIELD delta is the same class as a token delta: the live row moved and the package
+  // has not been republished yet. Same file, same reason-and-date, same staleness rule.
+  const allowedFields = new Map<string, { reason: string; added: string }>(
+    (ALLOWLIST.allowedFields ?? []).map((a) => [`${a.token}.${a.field}`, a]),
+  );
+  const usedFieldWaivers = new Set<string>();
+  const drifted: string[] = [];
   for (const row of rows) {
+    if (waivedSet.has(row.token)) continue;
     const meta = ENTITY_TYPE_METADATA[row.token as keyof typeof ENTITY_TYPE_METADATA];
     const want = rowToMeta(row);
     for (const [field, value] of Object.entries(want)) {
       const got = (meta as unknown as Record<string, unknown>)[field];
       if (got !== value) {
-        console.error(
-          `\n  ✗ Token "${row.token}" field "${field}" drifted: installed ` +
-            `${JSON.stringify(got)} vs live ${JSON.stringify(value)}.` +
-            FIX,
+        const key = `${row.token}.${field}`;
+        const waiver = allowedFields.get(key);
+        if (waiver) {
+          usedFieldWaivers.add(key);
+          console.log(
+            `  ! ${key} drifted (installed ${JSON.stringify(got)} vs live ` +
+              `${JSON.stringify(value)}) and is allowed by name [allowed ${waiver.added}] ` +
+              `${waiver.reason}`,
+          );
+          continue;
+        }
+        drifted.push(
+          `${row.token}.${field}: installed ${JSON.stringify(got)} vs live ${JSON.stringify(value)}`,
         );
-        process.exit(1);
       }
     }
+  }
+  // Every drift at once. A gate that names one of twenty makes you run it twenty times.
+  if (drifted.length > 0) {
+    console.error(
+      `\n  ✗ ${drifted.length} installed/live field drift(s) in @ai-matrx/associations:` +
+        drifted.map((d) => `\n    ${d}`).join("") +
+        FIX,
+    );
+    process.exit(1);
+  }
+  const staleFieldWaivers = [...allowedFields.keys()].filter((k) => !usedFieldWaivers.has(k));
+  if (staleFieldWaivers.length > 0) {
+    console.error(
+      `\n  ✗ scripts/entity-types-allowlist.json is STALE — ${staleFieldWaivers.length} field ` +
+        `waiver(s) no longer describe a drift: ${staleFieldWaivers.join(", ")}.` +
+        "\n    The installed package and the live row agree again, so the waiver has nothing" +
+        "\n    left to waive. Delete those entries.\n",
+    );
+    process.exit(1);
   }
 
   // 3. Display-map parity against their actual sources: SCHEMA_DISPLAY

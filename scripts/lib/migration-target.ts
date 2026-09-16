@@ -501,7 +501,20 @@ function writeTargetsOf(strippedSql: string): string[] {
   return [...out];
 }
 
-/** The body checks `-- target: branch,production` must pass to be applied to both. */
+/**
+ * THE DENY-LIST — for a HEADER-LESS file only (rule 8's amnesty half).
+ *
+ * A file that NAMES production is judged by the ALLOW-LIST below; this list is what
+ * an unledgered file with no `-- target:` line at all is judged by, and it must stay
+ * a deny-list for the reason rule 8 already records: an allow-list here would refuse
+ * every ordinary migration every other lane in these two repos writes.
+ *
+ * 🚨 Extended 2026-09-16 (ATTACK-6 finding 3) with the privilege-widening shapes that
+ * are RARE in ordinary work and catastrophic when they land unjudged. `GRANT` is
+ * deliberately NOT here — hundreds of ordinary migrations carry
+ * `grant execute on function … to authenticated` — but it is off the allow-list, so
+ * every file that names production is refused for it by name.
+ */
 const NON_ADDITIVE_RES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bDROP\s+(TABLE|COLUMN|SCHEMA|TYPE|CONSTRAINT|POLICY|TRIGGER|INDEX|FUNCTION|VIEW)\b/i, "a DROP"],
   [/\bREVOKE\b/i, "a REVOKE"],
@@ -510,14 +523,21 @@ const NON_ADDITIVE_RES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bALTER\s+COLUMN\s+\S+\s+SET\s+NOT\s+NULL\b/i, "SET NOT NULL on an existing column"],
   [/\bTRUNCATE\b/i, "a TRUNCATE"],
   [/\bDELETE\s+FROM\b/i, "a DELETE"],
+  // ── the eight ATTACK-6 ran through the old scan, minus GRANT (see above) ──
+  [/\bCREATE\s+POLICY\b[\s\S]*?\b(?:USING|WITH\s+CHECK)\s*\(\s*true\s*\)/i, "CREATE POLICY with a `true` predicate"],
+  [/\bDISABLE\s+ROW\s+LEVEL\s+SECURITY\b/i, "DISABLE ROW LEVEL SECURITY"],
+  [/\bNO\s+FORCE\s+ROW\s+LEVEL\s+SECURITY\b/i, "NO FORCE ROW LEVEL SECURITY"],
+  [/\bALTER\s+TABLE\b[\s\S]*?\bDISABLE\s+TRIGGER\b/i, "ALTER TABLE … DISABLE TRIGGER"],
+  [/\bALTER\s+POLICY\b/i, "ALTER POLICY on a live policy"],
+  [/\bALTER\s+DEFAULT\s+PRIVILEGES\b[\s\S]*?\bGRANT\b/i, "ALTER DEFAULT PRIVILEGES … GRANT"],
+  [/\bALTER\s+FUNCTION\b[^;]*?\bSECURITY\s+DEFINER\b/i, "ALTER FUNCTION … SECURITY DEFINER"],
 ];
 
 /**
- * Why this body is not additive. `allowRevokeSchema` suppresses the `a REVOKE`
- * reason and NOTHING else — every other reason still lands. The caller has
- * already proven, separately, that every REVOKE stays inside that schema.
+ * Why a HEADER-LESS body is not additive, by the deny-list above. `allowRevokeSchema`
+ * suppresses the `a REVOKE` reason and NOTHING else.
  */
-export function nonAdditiveReasons(
+export function nonAdditiveReasonsDenyList(
   strippedSql: string,
   opts?: { readonly allowRevokeSchema?: string | null },
 ): string[] {
@@ -526,6 +546,268 @@ export function nonAdditiveReasons(
     ([re, what]) => re.test(strippedSql) && !(allowRevoke && what === "a REVOKE"),
   ).map(([, what]) => what);
 }
+
+// ── ATTACK-6 finding 2: "additive" is an ALLOW-LIST, not a blacklist ────────
+//
+// 🚨 The blacklist below `NON_ADDITIVE_RES` used to be the WHOLE judgement, and a
+// blacklist only knows what somebody thought of. ATTACK-6 ran the old
+// `nonAdditiveReasons` against eight privilege-widening bodies and every one of
+// them returned `[]` — including `GRANT USAGE ON SCHEMA custom TO authenticated`,
+// which is switch-checklist step 3, the statement the OFF switch's whole security
+// boundary consists of REVOKING. A file headed `-- target: branch,production` +
+// `-- additive: yes` + `-- guard: custom/system_enabled` carrying that GRANT passed
+// header agreement, passed the additive scan and passed `assert_guard_resolves_off`
+// (the knob really is false) — so every mechanical check said OFF while the schema
+// was open to every signed-in user. `CREATE POLICY … USING (true)` is literally
+// additive and opens every row of the table it names; policies are OR'd.
+//
+// So a file that NAMES production is now judged by an ALLOW-LIST: its body is split
+// into statements and EVERY statement must match one of the enumerated additive
+// shapes below. Anything else is refused WITH THE STATEMENT NAMED. A shape nobody
+// enumerated is refused rather than ignored, which is the only direction a safety
+// scan may fail in.
+//
+// ⚠️ THE ALLOW-LIST APPLIES TO FILES THAT NAME PRODUCTION IN A `-- target:` HEADER,
+//    WHICH IS THIS CAMPAIGN'S CONTRACT AND NOTHING ELSE. A header-less file keeps
+//    the blacklist (extended, see `nonAdditiveReasonsDenyList`), because an
+//    allow-list there would refuse every ordinary migration every other lane in
+//    these two repos writes — `GRANT EXECUTE ON FUNCTION … TO authenticated` is in
+//    hundreds of them. Same reasoning rule 8 already records for `-- additive: yes`
+//    and `-- guard:`: the campaign's contract binds the campaign, and widening it to
+//    the whole repo buys nothing and breaks the world.
+
+/** One statement of a comment-stripped body, dollar-quote aware. */
+export function topLevelStatements(strippedSql: string): string[] {
+  const out: string[] = [];
+  let buf = "";
+  let i = 0;
+  while (i < strippedSql.length) {
+    const tag = /^\$([A-Za-z_]\w*)?\$/.exec(strippedSql.slice(i));
+    if (tag) {
+      const close = strippedSql.indexOf(tag[0], i + tag[0].length);
+      const end = close < 0 ? strippedSql.length : close + tag[0].length;
+      buf += strippedSql.slice(i, end);
+      i = end;
+      continue;
+    }
+    const ch = strippedSql[i]!;
+    if (ch === "'") {
+      let j = i + 1;
+      while (j < strippedSql.length) {
+        if (strippedSql[j] === "'") {
+          if (strippedSql[j + 1] === "'") {
+            j += 2;
+            continue;
+          }
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      buf += strippedSql.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (ch === ";") {
+      out.push(buf);
+      buf = "";
+      i += 1;
+      continue;
+    }
+    buf += ch;
+    i += 1;
+  }
+  out.push(buf);
+  return out.map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+/** Every function name a file declares it was written against (`-- based-on:`). */
+export function basedOnFunctionNames(rawSql: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of rawSql.matchAll(/^\s*--\s*based-on:\s*([a-z0-9_."]+)\s*\(/gim)) {
+    out.add(m[1]!.replace(/"/g, "").toLowerCase());
+  }
+  return out;
+}
+
+/**
+ * The tables an `INSERT` may name inside a production-naming campaign file.
+ * Registrations no live code reads are rule 4's third exception; a write into any
+ * other table is data movement and is a chair step.
+ */
+export const REGISTRY_INSERT_TABLES: readonly string[] = [
+  "platform.feature_knob",
+  "platform.knob_override",
+  "platform.knob_rung_lock",
+  "platform.entity_types",
+  "platform.entity_relationships",
+  "platform.client_callable_door",
+  "campaign_watch.build_lock",
+  "campaign_watch.go_signal_capture",
+] as const;
+
+/** Session GUCs §6b.3 REQUIRES every production file to set explicitly. */
+const ALLOWED_SET_GUCS = ["lock_timeout", "statement_timeout", "idle_in_transaction_session_timeout"];
+
+export interface AllowListContext {
+  /** `-- allows: revoke <schema>` — containment is proven separately. */
+  readonly allowRevokeSchema?: string | null;
+  /** function names the file declares with `-- based-on:` (lowercased, unqualified-or-qualified as written). */
+  readonly basedOnNames?: ReadonlySet<string>;
+}
+
+/** `{ ok }` or the reason this statement is not one of the enumerated shapes. */
+function additiveVerdictOf(stmt: string, ctx: AllowListContext): string | null {
+  const s = stmt.replace(/\s+/g, " ").trim();
+  const head = s.toLowerCase();
+
+  // — CREATE SCHEMA: creating a namespace grants nobody anything. The GRANT that
+  //   would open it is NOT on this list.
+  if (/^create\s+schema\b/.test(head)) return null;
+  // — CREATE TABLE / CREATE TYPE / CREATE INDEX / CREATE SEQUENCE: new objects.
+  if (/^create\s+(?:unlogged\s+)?table\b/.test(head)) return null;
+  if (/^create\s+type\b/.test(head)) return null;
+  if (/^create\s+(?:unique\s+)?index\b/.test(head)) return null;
+  if (/^create\s+sequence\b/.test(head)) return null;
+  // — CREATE VIEW: a NEW view only. `OR REPLACE` rewrites a live body.
+  if (/^create\s+(?:materialized\s+)?view\b/.test(head)) return null;
+  if (/^create\s+or\s+replace\s+(?:materialized\s+)?view\b/.test(head))
+    return `CREATE OR REPLACE VIEW rewrites a live view body with no concurrency check`;
+  // — a NEW function, or a replacement that DECLARES the body it saw (DD-220).
+  const fn = /^create\s+(or\s+replace\s+)?(?:function|procedure)\s+([a-z0-9_."]+)\s*\(/.exec(head);
+  if (fn) {
+    if (!fn[1]) return null;
+    const name = fn[2]!.replace(/"/g, "");
+    const declared = ctx.basedOnNames ?? new Set<string>();
+    if (declared.has(name) || [...declared].some((d) => d.endsWith(`.${name}`) || name.endsWith(`.${d}`)))
+      return null;
+    return (
+      `CREATE OR REPLACE FUNCTION ${name} replaces a live body and the file declares no ` +
+      `\`-- based-on:\` line for it (pnpm db:based-on ${name})`
+    );
+  }
+  // — CREATE TRIGGER: new only. `OR REPLACE TRIGGER` rewrites a live one.
+  if (/^create\s+(?:constraint\s+)?trigger\b/.test(head)) return null;
+  if (/^create\s+or\s+replace\s+trigger\b/.test(head))
+    return `CREATE OR REPLACE TRIGGER rewrites a live trigger`;
+  // — CREATE POLICY, and the predicate may not be literally true. Policies are
+  //   OR'd: a `USING (true)` policy opens every row of the table it names, and it
+  //   is "additive" by every structural reading of the word.
+  if (/^create\s+policy\b/.test(head)) {
+    if (/\b(?:using|with\s+check)\s*\(\s*true\s*\)/.test(head))
+      return `CREATE POLICY with a \`true\` predicate opens every row of the table (policies are OR'd)`;
+    return null;
+  }
+  if (/^alter\s+policy\b/.test(head))
+    return `ALTER POLICY rewrites a live policy's predicate`;
+  // — ALTER TABLE: only ADD COLUMN (nullable or defaulted), ADD CONSTRAINT … NOT
+  //   VALID, and ENABLE ROW LEVEL SECURITY. Everything else, including every
+  //   DISABLE, is refused.
+  if (/^alter\s+table\b/.test(head)) {
+    if (/\benable\s+(?:row\s+level\s+security|always\s+trigger|replica\s+trigger)\b/.test(head))
+      return null;
+    if (/\bforce\s+row\s+level\s+security\b/.test(head) && !/\bno\s+force\b/.test(head)) return null;
+    if (/\bdisable\s+row\s+level\s+security\b/.test(head))
+      return `ALTER TABLE … DISABLE ROW LEVEL SECURITY removes the table's row boundary`;
+    if (/\bno\s+force\s+row\s+level\s+security\b/.test(head))
+      return `ALTER TABLE … NO FORCE ROW LEVEL SECURITY exempts the owner from the table's policies`;
+    if (/\bdisable\s+trigger\b/.test(head))
+      return `ALTER TABLE … DISABLE TRIGGER turns off a live trigger`;
+    if (/\badd\s+column\b/.test(head)) {
+      if (/\bnot\s+null\b/.test(head) && !/\bdefault\b/.test(head))
+        return `ADD COLUMN … NOT NULL with no DEFAULT rewrites and locks the whole table and fails on existing rows`;
+      if (/\b(?:drop|alter)\s+column\b/.test(head))
+        return `an ALTER TABLE that ADDs and also DROPs/ALTERs a column is not one additive shape`;
+      return null;
+    }
+    if (/\badd\s+constraint\b/.test(head)) {
+      if (/\bnot\s+valid\b/.test(head)) return null;
+      return `ADD CONSTRAINT without NOT VALID validates every existing row under an ACCESS EXCLUSIVE lock`;
+    }
+    return `ALTER TABLE in a shape the allow-list does not enumerate`;
+  }
+  // — ALTER DEFAULT PRIVILEGES: REVOKE narrows, GRANT widens.
+  if (/^alter\s+default\s+privileges\b/.test(head)) {
+    if (/\brevoke\b/.test(head)) return null;
+    return `ALTER DEFAULT PRIVILEGES … GRANT widens every future object's privileges`;
+  }
+  // — a REVOKE, only under the bounded `-- allows: revoke <schema>` exemption whose
+  //   containment assertRevokeExemptionIsContained has already proven.
+  if (/^revoke\b/.test(head)) {
+    if (ctx.allowRevokeSchema) return null;
+    return `a REVOKE (the bounded route is \`-- allows: revoke <schema>\`)`;
+  }
+  if (/^grant\b/.test(head))
+    return `a GRANT widens privileges — the OFF switch's boundary IS the absence of these`;
+  // — INSERT, only into a registry table.
+  const ins = /^insert\s+into\s+(?:only\s+)?([a-z0-9_."]+)/.exec(head);
+  if (ins) {
+    const t = ins[1]!.replace(/"/g, "");
+    if (REGISTRY_INSERT_TABLES.includes(t)) return null;
+    return `an INSERT into ${t}, which is not one of the registry tables (${REGISTRY_INSERT_TABLES.join(", ")})`;
+  }
+  // — COMMENT ON: documentation.
+  if (/^comment\s+on\b/.test(head)) return null;
+  // — the timeouts §6b.3 requires the file itself to set.
+  const set = /^set\s+(?:local\s+)?([a-z_]+)\b/.exec(head);
+  if (set && ALLOWED_SET_GUCS.includes(set[1]!)) return null;
+  if (/^do\b/.test(head))
+    return `a DO block builds DDL at run time, so the allow-list cannot read what it will execute`;
+  return `a statement in no enumerated additive shape`;
+}
+
+/**
+ * Why this body is not additive — the ALLOW-LIST judgement, one reason per statement
+ * that is not one of the enumerated shapes, each naming the statement.
+ *
+ * `allowRevokeSchema` admits `REVOKE` and nothing else; the caller has already proven,
+ * separately, that every REVOKE stays inside that schema.
+ */
+export function nonAdditiveReasons(
+  strippedSql: string,
+  opts?: { readonly allowRevokeSchema?: string | null; readonly basedOnNames?: ReadonlySet<string> },
+): string[] {
+  const ctx: AllowListContext = {
+    allowRevokeSchema: opts?.allowRevokeSchema ?? null,
+    basedOnNames: opts?.basedOnNames,
+  };
+  const out: string[] = [];
+  for (const stmt of topLevelStatements(strippedSql)) {
+    const why = additiveVerdictOf(stmt, ctx);
+    if (why) out.push(`${why}:\n      ${stmt.slice(0, 200)}${stmt.length > 200 ? " …" : ""}`);
+  }
+  return out;
+}
+
+/**
+ * A GUARDED BODY MUST READ ITS GUARD (ATTACK-6 finding 2, second half).
+ *
+ * Nothing compared the `-- guard:` key to the body, so a `CREATE OR REPLACE FUNCTION`
+ * that replaced a live SECURITY DEFINER body — `public._provision_new_user_personal_org()`
+ * is the trigger every signup runs — and never read the knob satisfied every mechanical
+ * check, and the only defence was the lane's self-reported OFF-path diff. This is a
+ * STATIC check: the feature and the key must both appear in the body that replaces a
+ * live definition or creates a policy. It cannot prove the read is on the right branch;
+ * it can prove the body never mentions the thing that is supposed to hold it OFF.
+ */
+export function guardUnreadBy(
+  guard: { feature: string; key: string } | null,
+  strippedSql: string,
+): string | null {
+  if (!guard) return null;
+  const body = strippedSql.toLowerCase();
+  const gates = topLevelStatements(strippedSql).filter((s) =>
+    /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
+  );
+  if (gates.length === 0) return null;
+  if (body.includes(guard.feature.toLowerCase()) && body.includes(guard.key.toLowerCase())) return null;
+  return (
+    `it replaces a live definition (or creates a policy) and its body never names ` +
+    `${guard.feature}/${guard.key} — the knob that is supposed to hold it OFF:\n` +
+    `      ${gates[0]!.slice(0, 160)}${gates[0]!.length > 160 ? " …" : ""}`
+  );
+}
+
 
 export interface AgreementInput {
   readonly filename: string;
@@ -541,6 +823,12 @@ export interface AgreementInput {
    * Every caller that CAN answer must pass it, and both runners do.
    */
   readonly alreadyLedgered?: boolean;
+  /**
+   * Every function name the file declares with `-- based-on:`, from the RAW sql —
+   * `strippedSql` has the comments removed, so the allow-list cannot see them.
+   * Compute with `basedOnFunctionNames(sql)`. Absent means "declared none".
+   */
+  readonly basedOnNames?: ReadonlySet<string>;
 }
 
 /**
@@ -620,7 +908,9 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   const chairStep = header.chairStep;
   let headerlessChairStep: AgreementVerdict["chairStep"] = null;
   if (flagTarget === "production" && named === null && !alreadyLedgered) {
-    const reasons = nonAdditiveReasons(strippedSql, {
+    // The DENY-list, deliberately: this is the header-less path, which is every
+    // ordinary migration every other lane writes. See the list's own comment.
+    const reasons = nonAdditiveReasonsDenyList(strippedSql, {
       allowRevokeSchema: header.allowsRevokeSchema,
     });
     if (reasons.length && !chairStep) {
@@ -685,7 +975,10 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       revokeExemption,
       chairStep: {
         why: chairStep,
-        reasons: nonAdditiveReasons(strippedSql, { allowRevokeSchema: header.allowsRevokeSchema }),
+        reasons: nonAdditiveReasons(strippedSql, {
+          allowRevokeSchema: header.allowsRevokeSchema,
+          basedOnNames: input.basedOnNames,
+        }),
       },
     };
   }
@@ -734,21 +1027,46 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         ]);
       }
     }
+    // 🚨 THE ALLOW-LIST (ATTACK-6 finding 2). Every statement must be one of the
+    // enumerated additive shapes; anything else is refused with the statement named.
     const reasons = nonAdditiveReasons(strippedSql, {
       allowRevokeSchema: header.allowsRevokeSchema,
+      basedOnNames: input.basedOnNames,
     });
     if (reasons.length) {
       fail([
-        `${filename} is headed \`-- target: ${headerText}\` but its body contains ${reasons.join(", ")}.`,
-        `  A file that names production must be additive and reversible by construction. Split`,
-        `  the non-additive half into its own \`-- target: branch\` file, or make it a chair step`,
-        `  with its own inverse migration.`,
-        reasons.includes("a REVOKE")
+        `${filename} is headed \`-- target: ${headerText}\` and ${reasons.length} statement(s) in its`,
+        `  body are not one of the enumerated ADDITIVE shapes:`,
+        ...reasons.map((r) => `  • ${r}`),
+        ``,
+        `  A file that names production is judged by an ALLOW-LIST, not a blacklist: CREATE`,
+        `  SCHEMA/TABLE/TYPE/INDEX/SEQUENCE/VIEW/TRIGGER, a NEW function (or a replacement that`,
+        `  declares its \`-- based-on:\`), CREATE POLICY with a predicate that is not \`true\`,`,
+        `  ALTER TABLE ADD COLUMN (nullable or defaulted) / ADD CONSTRAINT … NOT VALID / ENABLE`,
+        `  ROW LEVEL SECURITY, INSERT into a registry table, ALTER DEFAULT PRIVILEGES … REVOKE,`,
+        `  COMMENT ON, and SET of the three timeout GUCs. Everything else — every GRANT`,
+        `  included — is refused here by name.`,
+        `  Split the rest into its own \`-- target: branch\` file, or make it a chair step with`,
+        `  its own inverse migration.`,
+        reasons.some((r) => r.startsWith("a REVOKE"))
           ? `  A REVOKE confined to ONE schema this campaign created has a sanctioned path:\n` +
-            `  \`-- allows: revoke <schema>\`, which suppresses this one reason and nothing else.`
+            `  \`-- allows: revoke <schema>\`, which admits that statement and nothing else.`
           : ``,
         because,
       ].filter(Boolean));
+    }
+    // 🚨 A GUARDED BODY MUST READ ITS GUARD (ATTACK-6 finding 2, second half).
+    const unread = guardUnreadBy(header.guard, strippedSql);
+    if (unread) {
+      fail([
+        `${filename} is headed \`-- guard: ${header.guard!.feature}/${header.guard!.key}\` but ${unread}`,
+        ``,
+        `  A guard that the body never reads is a comment, not a switch: the OFF proof rests`,
+        `  on the lane's own self-reported diff and nothing mechanical. Either read the knob in`,
+        `  the body (platform.knob_resolve('${header.guard!.feature}', '${header.guard!.key}', null)),`,
+        `  or split the replacement out of this file.`,
+        because,
+      ]);
     }
   }
   return { guard: header.guard, revokeExemption, chairStep: headerlessChairStep };
@@ -796,6 +1114,36 @@ export const REHEARSAL_DIRNAME = "rehearsal";
  * `-- chair-step:` is what stands in for `-- additive: yes` and `-- guard:` here.
  */
 export const INVERSE_DIRNAME = "inverse";
+
+/**
+ * THE CAMPAIGN'S OWN DIRECTORY — the third one no release path scans, and the one
+ * that closes ATTACK-6 finding 1.
+ *
+ * 🚨 `migrations/rehearsal/` closed the INSTANCE (a `-- target: branch` file) and left
+ * the CLASS open. Every closure ATTACK-5 built keys on the header naming `branch`
+ * alone — but every campaign DDL file by contract sits in `migrations/`, headed
+ * `-- target: branch,production`, additive and guarded, which is the exact shape both
+ * unattended 30-minute sweeps are built to APPLY. So the campaign's own files reached
+ * production before the lane's branch exit had passed, outside the object lock, and
+ * whether or not the lane ever got there: §6b.1, §6b.5 and §4.14 were all false.
+ *
+ * A campaign file lives HERE, and the ONLY route to either database is the plan's own
+ * command — `--source campaign --target branch|production`, one named file at a time:
+ *   · every migration glob in both repos is non-recursive, so no sweep can see it
+ *     (guards: `db/tests/test_campaign_dir_is_never_swept.py`,
+ *     `scripts/__tests__/migration-target-refusals.test.ts`);
+ *   · a file here applied without `--source campaign` is refused by LOCATION;
+ *   · `--source campaign` naming a file that is NOT here is refused too — the flag is
+ *     an assertion about the file, not a mood;
+ *   · at `--target production` the runner additionally requires the SAME bytes to
+ *     already carry a rehearsal ledger row on the BRANCH, and
+ *     `campaign_watch.build_lock` on the branch to be held by the calling `--lane`.
+ *     A lane that failed its rehearsal, or that does not hold its lock, cannot land.
+ */
+export const CAMPAIGN_DIRNAME = "campaign";
+
+/** The one `--source` value that may name a file in `migrations/campaign/`. */
+export const CAMPAIGN_SOURCE = "campaign";
 
 export interface ConfiguredConnection {
   readonly user: string;

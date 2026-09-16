@@ -1,0 +1,62 @@
+{
+  "$comment": [
+    "LIVE-BUT-NOT-INSTALLED entity-type tokens, each with the reason it is allowed and the date it was allowed.",
+    "",
+    "The vocabulary ships in @ai-matrx/associations and is declared \"latest\" here (THE LATEST LAW: no @ai-matrx",
+    "dependency is ever pinned). A token that lands in platform.entity_types therefore makes `pnpm check:entity-types`",
+    "RED for every release in this repo \u2014 release.sh:526 calls fail() \u2014 until the package is regenerated and published.",
+    "That window belongs to whoever added the token, not to every unrelated lane's deploy.",
+    "",
+    "An entry here is a NAMED delta, not a blanket waiver. The check still FAILS on:",
+    "  - any live token that is not listed here,",
+    "  - any token installed but not live,",
+    "  - any per-token field drift, and",
+    "  - a STALE entry: a token listed here that the installed package now carries, or that is no longer live.",
+    "A stale entry failing is what stops this file becoming a place tokens go to be forgotten.",
+    "",
+    "ATTACK-6 findings 5 and 9c, 2026-09-16: rule 24 told the chair to PIN the package to 0.9.16 before W1-REG.",
+    "At 0.9.16 this gate exits 1, so executing rule 24 as written would have frozen the frontend release train for",
+    "the whole 59-hour campaign, taking every unrelated lane's deploys with it - and the pin also inverts the",
+    "workspace's standing law that @ai-matrx dependencies are latest/workspace:*. The pin is deleted; this is what",
+    "replaces it.",
+    "A field delta is the same class as a token delta: the live row moved, the package has not been republished yet. Listed per token+field, with the same staleness rule."
+  ],
+  "allowed": [
+    {
+      "token": "integration_connection",
+      "reason": "Added to platform.entity_types on production by the integrations work, not by this campaign. @ai-matrx/associations 0.9.16 is installed; the token is not in it. Retire this entry by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
+      "added": "2026-09-16"
+    },
+    {
+      "token": "integration_connection_resource",
+      "reason": "Same registration as integration_connection, same remedy.",
+      "added": "2026-09-16"
+    }
+  ],
+  "allowedFields": [
+    {
+      "token": "seo_map_facet",
+      "field": "category",
+      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
+      "added": "2026-09-16"
+    },
+    {
+      "token": "seo_map_facet_value",
+      "field": "category",
+      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
+      "added": "2026-09-16"
+    },
+    {
+      "token": "seo_map_topic",
+      "field": "category",
+      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
+      "added": "2026-09-16"
+    },
+    {
+      "token": "seo_topical_map",
+      "field": "category",
+      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
+      "added": "2026-09-16"
+    }
+  ]
+}

@@ -141,6 +141,24 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "`pnpm check:cron-pause` — reads production's cron.job (SELECT only) and ledgers what it saw on the rehearsal branch. Imports migration-target for the branch identity. A guard, run by hand and by the chair's loop.",
     },
     {
+        id: "gate-corpus-capture-go-signal",
+        file: "scripts/gate-corpus/capture-go-signal.ts",
+        kind: "tooling",
+        why: "`pnpm db:capture-go-signal` — rule 30's go-signal capture producer (ATTACK-6 finding 6). Reads production SELECT-only inside a `begin read only`, writes campaign_watch.go_signal_capture on the rehearsal branch. Imports migration-target for the branch identity. Run by the chair; never part of a served request.",
+    },
+    {
+        id: "gate-corpus-boundary-verdict",
+        file: "scripts/gate-corpus/boundary-verdict.ts",
+        kind: "tooling",
+        why: "restore-graph --verify's per-table verdict, extracted so it can be tested without running the copy (ATTACK-6 finding 7). Pure arithmetic, no database.",
+    },
+    {
+        id: "restore-graph-boundary-floor-test",
+        file: "scripts/__tests__/restore-graph-boundary-floor.test.ts",
+        kind: "tooling",
+        why: "Jest proof that the recorded boundary is a FLOOR and not an equality, so --verify does not turn red at H+19.75 (ATTACK-6 finding 7). No database, no credential.",
+    },
+    {
         id: "hr-settings-service",
         file: "features/hr/settings/service.ts",
         kind: "preexisting",

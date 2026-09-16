@@ -562,6 +562,9 @@ async function main(): Promise<number> {
   // Set when a `-- target: branch` file is found at the TOP LEVEL of migrations/ —
   // i.e. inside the directory every release path sweeps. Always an error.
   let branchOnlyInSweptDir = 0;
+  // Set when a CAMPAIGN file (a header naming production plus `-- additive: yes` /
+  // `-- guard:` / `-- seeds-guards:`) is found at the TOP LEVEL of migrations/.
+  const campaignInSweptDir: string[] = [];
   const local = new Map<string, string>(); // filename -> checksum
   const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
@@ -579,8 +582,23 @@ async function main(): Promise<number> {
     // and did not) would be lost in a permanent false positive. It is listed
     // separately instead, so it is visible and not silent.
     // (`-- target: branch,production` files ARE pending here: they land on both.)
-    if (readHeader(sql).targets?.join(",") === "branch") {
+    const hdr = readHeader(sql);
+    if (hdr.targets?.join(",") === "branch") {
       branchOnly.push(f);
+      continue;
+    }
+    // ATTACK-6 finding 1 - the CAMPAIGN's own contract shape, in the swept
+    // directory. `-- target: branch,production` + `-- additive: yes` + `-- guard:` is
+    // what every DDL lane writes, and it is exactly the shape both 30-minute release
+    // crons are built to APPLY: they carried it to production before the lane's branch
+    // exit, outside its object lock, and even for a lane that had failed. A campaign
+    // file belongs in `migrations/campaign/`, which nothing scans.
+    if (
+      hdr.targets !== null &&
+      hdr.targets.includes("production") &&
+      (hdr.additive || hdr.guard !== null || hdr.seedsGuards)
+    ) {
+      campaignInSweptDir.push(f);
       continue;
     }
     if (SELF_LEDGER_RE.test(stripForDetection(sql))) selfLedgering.push(f);
@@ -611,6 +629,25 @@ async function main(): Promise<number> {
         `  from a sibling checkout at whatever commit that directory holds.${C.reset}`,
     );
     branchOnlyInSweptDir = branchOnly.length;
+  }
+
+  if (campaignInSweptDir.length) {
+    console.log();
+    console.error(
+      `${TAG.fail}${campaignInSweptDir.length} CAMPAIGN file(s) sit in migrations/, which EVERY ` +
+        `release sweeps:`,
+    );
+    for (const f of campaignInSweptDir)
+      console.error(
+        `  ${C.white}- ${f}${C.reset} ${C.dim}[CAMPAIGN CONTRACT, IN THE SWEPT DIRECTORY]${C.reset}`,
+      );
+    console.error(
+      `  ${C.dim}Move each to migrations/campaign/ - no release path, sweep, CI job or scheduled` +
+        `\n  job scans it - and apply it with` +
+        `\n    pnpm db:apply migrations/campaign/<file> --source campaign --target branch --lane <lane>` +
+        `\n  A campaign file reaches production only while its lane holds its build lock and after` +
+        `\n  its branch rehearsal is ledgered; an unattended 30-minute cron knows neither.${C.reset}`,
+    );
   }
 
   if (selfLedgering.length) {
@@ -762,6 +799,7 @@ async function main(): Promise<number> {
   // A rehearsal-only file in the swept directory fails in EVERY mode, strict or
   // not: it is the exact shape that reached production unattended on 2026-09-16.
   if (branchOnlyInSweptDir) return 1;
+  if (campaignInSweptDir.length) return 1;
 
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
     return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking) &&

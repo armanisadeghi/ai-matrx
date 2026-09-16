@@ -88,6 +88,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { loadDbEnv } from "../lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef } from "../lib/migration-target";
+import { boundaryVerdict } from "./boundary-verdict";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -559,6 +560,7 @@ async function assertCopyOrder(branch: pg.Client): Promise<string[]> {
   }
   return COPY_NAMES;
 }
+
 
 async function main(): Promise<number> {
   const verifyOnly = process.argv.includes("--verify");
@@ -1041,15 +1043,9 @@ async function main(): Promise<number> {
         );
         for (const t of TABLES) {
           const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
-          const want = Number(boundary.counts[t] ?? NaN) + Number(boundary.extras[t] ?? 0);
-          if (!Number.isFinite(want)) fail(`${t}: the recorded boundary holds no count for it`);
-          else if (n !== want)
-            fail(`${t}: branch holds ${n}, the recorded boundary says ${boundary.counts[t]} restored + ${boundary.extras[t] ?? 0} branch-only = ${want}`);
-          else
-            console.log(
-              `${OK}${t.padEnd(30)} ${n} — the boundary's ${boundary.counts[t]}` +
-                (boundary.extras[t] ? ` + ${boundary.extras[t]} branch-only` : ""),
-            );
+          const verdict = boundaryVerdict(t, n, boundary.counts[t], boundary.extras[t]);
+          if (verdict.ok) console.log(`${OK}${verdict.message}`);
+          else fail(verdict.message);
         }
       }
     }

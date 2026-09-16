@@ -18,8 +18,11 @@
  */
 import {
   assertHeaderAgreesWithFlag,
+  basedOnFunctionNames,
+  nonAdditiveReasons,
   readHeader,
   TargetRefusal,
+  topLevelStatements,
   type Target,
 } from "../lib/migration-target";
 
@@ -38,6 +41,7 @@ const judge = (sql: string, flagTarget: Target = "production") =>
     flagTarget,
     header: readHeader(sql),
     strippedSql: strip(sql),
+    basedOnNames: basedOnFunctionNames(sql),
   });
 
 const refusal = (sql: string, flagTarget: Target = "production"): string => {
@@ -62,9 +66,10 @@ describe("a header that NAMES production is judged (ATTACK-4 finding 3)", () => 
   });
 
   it("refuses a `-- target: production` file whose body holds a DROP, by name", () => {
-    expect(
-      refusal(`-- target: production\n-- additive: yes\n-- guard: custom/k\n${DROP}`),
-    ).toContain("a DROP");
+    // The ALLOW-LIST quotes the statement it refused (ATTACK-6 finding 2).
+    const message = refusal(`-- target: production\n-- additive: yes\n-- guard: custom/k\n${DROP}`);
+    expect(message).toContain("not one of the enumerated ADDITIVE shapes");
+    expect(message).toContain("drop table platform.associations");
   });
 
   it("says out loud that header-less files are deliberately untouched", () => {
@@ -169,8 +174,10 @@ describe("`-- allows: revoke <schema>` (ATTACK-4 finding 4)", () => {
       `${REVOKE_HEAD}-- allows: revoke custom\n` +
         "revoke usage on schema custom from authenticated;\ndrop table custom.things;\n",
     );
-    expect(message).toContain("a DROP");
-    expect(message).not.toContain("a REVOKE");
+    // The ALLOW-LIST names and QUOTES the statement it refused (ATTACK-6 finding 2):
+    // the exemption admits the REVOKE and nothing else.
+    expect(message).toContain("drop table custom.things");
+    expect(message).not.toContain("revoke usage on schema custom");
   });
 
   it("does not excuse `-- additive: yes` or `-- guard:`", () => {
@@ -341,5 +348,131 @@ describe("a header-less UNLEDGERED file is judged on production (ATTACK-5 findin
     expect(refusal("-- target: branch\ncreate table custom.t (id int);\n")).toContain(
       "migrations/rehearsal/",
     );
+  });
+});
+
+// ── ATTACK-6 finding 2: "additive" is an ALLOW-LIST ─────────────────────────
+
+/**
+ * The exact eight bodies ATTACK-6 put through `nonAdditiveReasons`.
+ *
+ * Measured against the pre-fix library, every one returned `[]` — including
+ * `GRANT USAGE ON SCHEMA custom TO authenticated`, which is switch-checklist step 3,
+ * the statement the OFF switch's whole security boundary consists of REVOKING. A file
+ * headed `-- target: branch,production` + `-- additive: yes` +
+ * `-- guard: custom/system_enabled` carrying it passed header agreement, passed the
+ * additive scan and passed `assert_guard_resolves_off`: every mechanical check said OFF
+ * while schema `custom` stood open to every signed-in user. Policies are OR'd, so
+ * `CREATE POLICY … USING (true)` is literally additive and opens every row it names.
+ *
+ * Restore the blacklist in scripts/lib/migration-target.ts and all eight go RED.
+ */
+const EIGHT: ReadonlyArray<readonly [string, string]> = [
+  ["GRANT USAGE ON SCHEMA custom TO authenticated;", "a GRANT"],
+  [
+    "CREATE POLICY open ON platform.associations FOR SELECT USING (true);",
+    "CREATE POLICY with a `true` predicate",
+  ],
+  ["ALTER TABLE platform.associations DISABLE ROW LEVEL SECURITY;", "DISABLE ROW LEVEL SECURITY"],
+  ["ALTER TABLE platform.associations DISABLE TRIGGER trg_x;", "DISABLE TRIGGER"],
+  ["ALTER POLICY p ON iam.permissions USING (true);", "ALTER POLICY"],
+  [
+    "CREATE OR REPLACE FUNCTION iam.has_access_for_base() RETURNS bool LANGUAGE sql AS $$ select true $$;",
+    "declares no `-- based-on:`",
+  ],
+  [
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA custom GRANT ALL ON TABLES TO anon;",
+    "ALTER DEFAULT PRIVILEGES … GRANT",
+  ],
+  ["ALTER FUNCTION x() SECURITY DEFINER;", "no enumerated additive shape"],
+];
+
+describe("the eight privilege-widening shapes are refused with the statement named (ATTACK-6 finding 2)", () => {
+  it.each(EIGHT)("refuses %s", (body, needle) => {
+    const reasons = nonAdditiveReasons(body);
+    expect(reasons.length).toBeGreaterThan(0);
+    expect(reasons.join("\n")).toContain(needle);
+    // "with the statement named" is the requirement, not just the reason.
+    expect(reasons.join("\n").toLowerCase()).toContain(body.split(" ")[0]!.toLowerCase());
+  });
+
+  it.each(EIGHT)("refuses %s inside a real campaign header", (body) => {
+    expect(() =>
+      judge(
+        `-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n${body}\n`,
+      ),
+    ).toThrow(/not one of the enumerated ADDITIVE shapes/);
+  });
+});
+
+describe("the allow-list still admits what the campaign actually writes", () => {
+  // An allow-list that refuses everything is not a guard: this is the positive control.
+  const ALLOWED = [
+    "create schema if not exists custom;",
+    "create table if not exists custom.record (id uuid primary key);",
+    "create unique index if not exists ix_r on custom.record (id);",
+    "create type custom.kind as enum ('a','b');",
+    "alter table custom.record add column note text;",
+    "alter table custom.record add column n int not null default 0;",
+    "alter table custom.record enable row level security;",
+    "create policy p on custom.record for select using (org_id = any (iam.accessible_entity_ids()));",
+    "insert into platform.feature_knob (feature, key) values ('custom','system_enabled');",
+    "alter default privileges in schema custom revoke all on tables from anon;",
+    "comment on table custom.record is 'the record';",
+    "set local lock_timeout = '3s';",
+    "create function custom.fresh() returns int language sql as $$ select 1; $$;",
+  ];
+  it.each(ALLOWED)("admits %s", (body) => {
+    expect(nonAdditiveReasons(body)).toEqual([]);
+  });
+
+  it("splits statements without cutting a dollar-quoted body in half", () => {
+    expect(
+      topLevelStatements("create function f() returns int language sql as $$ select 1; $$;"),
+    ).toHaveLength(1);
+  });
+
+  it("admits a replacement that declares the body it was written against", () => {
+    const sql =
+      "-- based-on: iam.accessible_entity_ids(uuid) " +
+      "0000000000000000000000000000000000000000000000000000000000000000\n" +
+      "create or replace function iam.accessible_entity_ids(p uuid) returns setof uuid " +
+      "language sql as $$ select 1 $$;";
+    expect(nonAdditiveReasons(strip(sql), { basedOnNames: basedOnFunctionNames(sql) })).toEqual([]);
+  });
+
+  it("refuses the SAME replacement when the based-on line is missing", () => {
+    const sql =
+      "create or replace function iam.accessible_entity_ids(p uuid) returns setof uuid " +
+      "language sql as $$ select 1 $$;";
+    expect(nonAdditiveReasons(sql, { basedOnNames: basedOnFunctionNames(sql) })).toHaveLength(1);
+  });
+});
+
+describe("a guarded body must READ its guard (ATTACK-6 finding 2, second half)", () => {
+  // Nothing compared the `-- guard:` key to the body, so a CREATE OR REPLACE FUNCTION
+  // that replaced a live SECURITY DEFINER body and never read the knob satisfied every
+  // mechanical check. `public._provision_new_user_personal_org()` is the trigger every
+  // signup runs.
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const BASED_ON =
+    "-- based-on: public._provision_new_user_personal_org() " +
+    "0000000000000000000000000000000000000000000000000000000000000000\n";
+  const body = (inner: string) =>
+    `create or replace function public._provision_new_user_personal_org() returns trigger ` +
+    `language plpgsql security definer as $$ begin ${inner} return new; end $$;`;
+
+  it("refuses a replacement whose body never names its guard", () => {
+    expect(() => judge(HEAD + BASED_ON + body(""))).toThrow(/never names custom\/system_enabled/);
+  });
+
+  it("admits the SAME body when it reads the knob", () => {
+    const inner =
+      "if not platform.knob_resolve('custom', 'system_enabled', null) then return new; end if;";
+    expect(judge(HEAD + BASED_ON + body(inner))).toBeTruthy();
+  });
+
+  it("does not ask a file that replaces nothing to read its guard", () => {
+    expect(judge(HEAD + "create table if not exists custom.record (id uuid primary key);")).toBeTruthy();
   });
 });
