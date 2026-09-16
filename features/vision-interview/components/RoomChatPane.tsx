@@ -71,6 +71,11 @@ import {
   type InterviewStage,
   type RoleKey,
 } from "../types";
+import {
+  LEAD_ROLE,
+  OpeningVisionSend,
+  RoleHeroIdentity,
+} from "./RoomOpening";
 import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
 import { StageTabs } from "./StageTabs";
@@ -663,7 +668,9 @@ export function RoomChatPane({
       <div className="relative min-h-0 flex-1">
         {/* The chat stays MOUNTED while a document is open — reading the
             record never interrupts a live stream. */}
-        <div className={cn("h-full", activeDoc && "hidden")}>
+        <div
+          className={cn("flex h-full min-h-0 flex-col", activeDoc && "hidden")}
+        >
           {binding ? (
             /* Origin stamp — every dictation started in this room's composer
                is saved by the shared recorder WITH attribution to this
@@ -678,20 +685,44 @@ export function RoomChatPane({
                   : "/masterwork/vision-interview",
               }}
             >
-              <ChatRoomClient
-                key={binding.conversationId}
-                agentId={binding.agentId}
+              {/* WHO IS IN THE ROOM — this expert's own name, first words
+                  and icon on the empty hero, never the shared "Ready to run"
+                  wireframe. Keyed per role, because six experts open six
+                  rooms. */}
+              <RoleHeroIdentity
+                role={role}
                 conversationId={binding.conversationId}
-                variablesPanelStyle="hidden"
-                /* The binding's conversation id is a RESERVATION until someone
-                   speaks in this room — the server writes `chat.conversation`
-                   on the first turn and tells us here which of the two this
-                   is. Saying so is what stops an unwritten room from wearing
-                   "Couldn't load this conversation" forever (census W1). */
-                conversationMaterialization={
-                  binding.conversationStarted ? "existing" : "reserved"
-                }
               />
+              {/* WHAT YOU ALREADY SAID — the paragraph typed into "What do
+                  you see?" is handed to the lead expert as the first user
+                  turn, once. Renders a banner ONLY if that could not start. */}
+              {session && role === LEAD_ROLE && (
+                <OpeningVisionSend
+                  sessionId={session.id}
+                  visionStatement={session.vision_statement}
+                  role={role}
+                  binding={binding}
+                />
+              )}
+              {/* The chat takes whatever height is left — the opening-send
+                  banner above it is the only thing that ever takes any. */}
+              <div className="min-h-0 flex-1">
+                <ChatRoomClient
+                  key={binding.conversationId}
+                  agentId={binding.agentId}
+                  conversationId={binding.conversationId}
+                  variablesPanelStyle="hidden"
+                  /* The binding's conversation id is a RESERVATION until
+                     someone speaks in this room — the server writes
+                     `chat.conversation` on the first turn and tells us here
+                     which of the two this is. Saying so is what stops an
+                     unwritten room from wearing "Couldn't load this
+                     conversation" forever (census W1). */
+                  conversationMaterialization={
+                    binding.conversationStarted ? "existing" : "reserved"
+                  }
+                />
+              </div>
               <PendingAnswersRider conversationId={binding.conversationId} />
               {/* A finished exchange is reported to the Scribe from here —
                   the hijack's client half (useObserveRoleTurns). */}

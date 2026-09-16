@@ -234,6 +234,27 @@ export interface RoleMeta {
   description: string;
   icon: LucideIcon;
   /**
+   * The SAME icon as `icon`, by its lucide name, for surfaces that resolve an
+   * icon from a string rather than a component — the chat hero's
+   * `displayIconNameOverride` (`IconResolver`, `@ai-matrx/icons`). Keep the
+   * two in step: they are one icon written twice because two different
+   * renderers need two different forms of it.
+   */
+  iconName: string;
+  /**
+   * THE EXPERT'S OWN FIRST WORDS — what this expert says to a completely
+   * non-technical person the moment their room opens and nothing has been
+   * said yet. First person, plain English, no product jargon: who is here and
+   * what happens next.
+   *
+   * This is the room's half of `displayDescriptionOverride`. Without it every
+   * expert's room opened on the shared default hero — a wireframe glyph over
+   * "Ready to run" and "Type a message below to start." — which names no
+   * expert, says nothing about the interview, and speaks a programmer's word
+   * ("run") to an artist describing their vision.
+   */
+  opening: string;
+  /**
    * Theme-aware accent classes (chart tokens — semantic, defined for light
    * AND dark in globals.css). `avatar` styles the presence/turn avatar disc;
    * `text` colors the speaker name; `ring` is the active-speaker halo.
@@ -262,6 +283,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "Listens first — reflects your vision back so you hear what you actually said.",
     icon: Ear,
+    iconName: "Ear",
+    opening:
+      "I listen first. Tell me what you see — all of it, in whatever order it comes out, out loud or in writing. Nothing has to be tidy. When you have said it, I say it back to you, so you can hear what you actually said.",
     accent: {
       avatar: "bg-chart-6/15 text-chart-6",
       text: "text-chart-6",
@@ -274,6 +298,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "Pushes the vision further — surfaces what you haven't articulated yet.",
     icon: Megaphone,
+    iconName: "Megaphone",
+    opening:
+      "I am here to push your vision further. Tell me where it stands now and I will ask about the parts you have not put into words yet — the bigger, braver version of what you already believe.",
     accent: {
       avatar: "bg-chart-1/15 text-chart-1",
       text: "text-chart-1",
@@ -286,6 +313,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "Maps the terrain — names what exists, and states what the name fails to capture.",
     icon: MapIcon,
+    iconName: "Map",
+    opening:
+      "I give the pieces their proper names. Walk me through what your vision is made of and I will help you name each part — and tell you honestly where a name still does not quite fit.",
     accent: {
       avatar: "bg-chart-2/15 text-chart-2",
       text: "text-chart-2",
@@ -297,6 +327,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     name: "Archaeologist",
     description: "Digs for buried assumptions and unstated constraints.",
     icon: Landmark,
+    iconName: "Landmark",
+    opening:
+      "I dig for what is underneath. Tell me how this works today, and I will keep asking until we reach the things everybody on your team assumes and nobody ever says out loud.",
     accent: {
       avatar: "bg-chart-3/15 text-chart-3",
       text: "text-chart-3",
@@ -308,6 +341,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     name: "Adversary",
     description: "Attacks claims to find where the vision breaks.",
     icon: Swords,
+    iconName: "Swords",
+    opening:
+      "My job is to try to break this — early, and on your side. Tell me the part you are most certain about, and I will look for where it could go wrong, so it does not go wrong later.",
     accent: {
       avatar: "bg-chart-5/15 text-chart-5",
       text: "text-chart-5",
@@ -319,6 +355,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     name: "Architect",
     description: "Shapes the vision into a buildable structure.",
     icon: DraftingCompass,
+    iconName: "DraftingCompass",
+    opening:
+      "I turn a vision into something that can actually be built. Tell me what it has to do for the people who use it, and I will shape it into the pieces someone could start making.",
     accent: {
       avatar: "bg-chart-4/15 text-chart-4",
       text: "text-chart-4",
@@ -331,6 +370,9 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "The only writer — keeps the living document and the question ledger.",
     icon: PenLine,
+    iconName: "PenLine",
+    opening:
+      "I keep the written record of this interview. Everything said in these rooms ends up here. Ask me to write something down, change how it reads, or read the document back to you.",
     accent: {
       avatar: "bg-primary/15 text-primary",
       text: "text-primary",
