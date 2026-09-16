@@ -158,6 +158,7 @@ export function parseTargetFlag(argv: readonly string[]): Target {
 
 const HEADER_TARGET_RE = /^\s*--\s*target\s*:\s*(.+?)\s*$/i;
 const HEADER_ADDITIVE_RE = /^\s*--\s*additive\s*:\s*yes\s*$/i;
+const HEADER_SEEDS_GUARDS_RE = /^\s*--\s*seeds-guards\s*:\s*yes\s*$/i;
 const HEADER_GUARD_RE = /^\s*--\s*guard\s*:\s*([a-z0-9_]+)\s*\/\s*([a-z0-9_.]+)\s*$/i;
 
 export interface MigrationHeader {
@@ -165,12 +166,26 @@ export interface MigrationHeader {
   readonly targets: Target[] | null;
   readonly additive: boolean;
   readonly guard: { feature: string; key: string } | null;
+  /**
+   * THE ONE EXEMPTION from the guard requirement, and it is bounded.
+   *
+   * Every other two-target file must name a knob that already resolves OFF. The
+   * file that SEEDS those knobs cannot: it is what makes them resolvable, and
+   * before it runs `platform.knob_resolve` raises P0001 on every one of them.
+   * So `-- seeds-guards: yes` stands in for `-- guard:` — and the runner then
+   * REFUSES the file unless its body touches nothing but the knob register
+   * itself (`platform.feature_knob`, `platform.knob_override`,
+   * `platform.knob_rung_lock`). A register file cannot smuggle anything else
+   * past the guard rule.
+   */
+  readonly seedsGuards: boolean;
 }
 
 /** Read the `-- target:` / `-- additive:` / `-- guard:` lines out of a file's head. */
 export function readHeader(sql: string): MigrationHeader {
   let targets: Target[] | null = null;
   let additive = false;
+  let seedsGuards = false;
   let guard: { feature: string; key: string } | null = null;
   for (const line of sql.split("\n", 40)) {
     const t = line.match(HEADER_TARGET_RE);
@@ -190,6 +205,7 @@ export function readHeader(sql: string): MigrationHeader {
       targets = parts as Target[];
     }
     if (HEADER_ADDITIVE_RE.test(line)) additive = true;
+    if (HEADER_SEEDS_GUARDS_RE.test(line)) seedsGuards = true;
     const g = line.match(HEADER_GUARD_RE);
     if (g) guard = { feature: g[1]!, key: g[2]! };
     if (/^\s*--\s*guard\s*:/.test(line) && !g) {
@@ -200,7 +216,24 @@ export function readHeader(sql: string): MigrationHeader {
       ]);
     }
   }
-  return { targets, additive, guard };
+  return { targets, additive, guard, seedsGuards };
+}
+
+/** What a `-- seeds-guards: yes` file is allowed to touch, and nothing else. */
+const KNOB_REGISTER_TABLES = [
+  "platform.feature_knob",
+  "platform.knob_override",
+  "platform.knob_rung_lock",
+] as const;
+
+/** Every `<schema>.<table>` a statement writes to, however crudely — this is a
+ *  containment check, so it errs toward FINDING things. */
+function writeTargetsOf(strippedSql: string): string[] {
+  const out = new Set<string>();
+  const re =
+    /\b(?:insert\s+into|update|delete\s+from|alter\s+table(?:\s+if\s+exists)?|create\s+table(?:\s+if\s+not\s+exists)?|truncate(?:\s+table)?)\s+(?:only\s+)?([a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)/gi;
+  for (const m of strippedSql.matchAll(re)) out.add(m[1]!.toLowerCase());
+  return [...out];
 }
 
 /** The body checks `-- target: branch,production` must pass to be applied to both. */
@@ -275,13 +308,34 @@ export function assertHeaderAgreesWithFlag(
         `  names the knob that holds it OFF. Add both header lines, or split the file.`,
       ]);
     }
-    if (!header.guard) {
+    if (!header.guard && !header.seedsGuards) {
       fail([
         `${filename} is headed \`-- target: branch,production\` without a \`-- guard:\` line.`,
         `  Every shared object this campaign changes on production lands behind a`,
         `  platform.feature_knob row that is OFF, so the old path is untouched until the switch.`,
-        `  Add \`-- guard: <feature>/<key>\` naming a seeded knob.`,
+        `  Add \`-- guard: <feature>/<key>\` naming a seeded knob — or, if this IS the file that`,
+        `  seeds the register, \`-- seeds-guards: yes\`, which restricts it to`,
+        `  ${KNOB_REGISTER_TABLES.join(", ")} and nothing else.`,
       ]);
+    }
+    if (header.seedsGuards) {
+      if (header.guard) {
+        fail([
+          `${filename} carries both \`-- seeds-guards: yes\` and \`-- guard:\`.`,
+          `  A register file seeds the guards; it is not itself guarded. Keep one.`,
+        ]);
+      }
+      const touched = writeTargetsOf(strippedSql).filter(
+        (t) => !KNOB_REGISTER_TABLES.includes(t as (typeof KNOB_REGISTER_TABLES)[number]),
+      );
+      if (touched.length) {
+        fail([
+          `${filename} claims \`-- seeds-guards: yes\` but writes to ${touched.join(", ")}.`,
+          `  That exemption exists only for the knob register itself — it may touch`,
+          `  ${KNOB_REGISTER_TABLES.join(", ")} and nothing else, because it is the one file`,
+          `  that cannot name a guard that already resolves. Split the rest into a guarded file.`,
+        ]);
+      }
     }
     const reasons = nonAdditiveReasons(strippedSql);
     if (reasons.length) {

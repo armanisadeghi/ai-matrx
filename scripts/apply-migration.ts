@@ -609,13 +609,25 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     if (existing === undefined) return 2;
 
     if (existing) {
-      if (existing.checksum === checksum) {
+      if (existing.checksum === checksum && !reapply) {
         console.log(
           `${TAG.ok}Already applied, byte-identical (ledgered ${existing.applied_at}). Nothing to do.`,
         );
         return 0;
       }
-      if (!reapply) {
+      if (existing.checksum === checksum) {
+        // --reapply means EXECUTE THESE BYTES AGAIN. Until 2026-09-16 it did
+        // nothing when the ledgered checksum MATCHED, so the one workflow the
+        // campaign's rollback rule depends on — run a file's down-migration,
+        // then put the file back — was impossible through this runner: the down
+        // leaves the up's ledger row standing, and the up then short-circuits on
+        // its own unchanged checksum. aidream's runner has always had this as
+        // `--rerun PREFIX`. Reproduced live on the rehearsal branch.
+        console.log(
+          `${TAG.warn}--reapply: re-executing bytes the ledger already holds ` +
+            `(applied ${existing.applied_at}). The ledger row is rewritten with the same checksum.`,
+        );
+      } else if (!reapply) {
         const known = SHA256_RE.test(existing.checksum)
           ? `a DIFFERENT SHA-256 (${existing.checksum})`
           : `${JSON.stringify(existing.checksum)}, which is not a SHA-256 at all — what ran was never recorded`;
