@@ -86,7 +86,13 @@ export function AgentEmptyMessageDisplay({
         )}
         {!displayDescription && (
           <p className="text-sm text-muted-foreground mt-1">
-            Fill in any variables below and type a message to start.
+            {/* A SCREEN NEVER POINTS AT SOMETHING THAT ISN'T THERE
+                (jobs-bar-2026-09-16, item 4). This used to read "Fill in any
+                variables below and type a message to start." on every surface,
+                including the many that show no variables at all — and
+                "variables" is a programmer's word in front of a
+                non-technical Expert. What is always true is the composer. */}
+            Type a message below to start.
           </p>
         )}
       </div>

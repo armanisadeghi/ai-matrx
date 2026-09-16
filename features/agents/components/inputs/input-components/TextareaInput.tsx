@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
+import { variableInputPlaceholder } from "./variablePlaceholder";
 
 interface TextareaInputProps {
   value: string;
@@ -16,6 +17,11 @@ interface TextareaInputProps {
    * of inserting a newline (Shift / Cmd / Ctrl + Enter still insert one).
    */
   onEnterAdvance?: () => void;
+  /**
+   * Set ONLY when the caller hides the field's label — then the placeholder
+   * carries the field's identity. See `variablePlaceholder.ts`.
+   */
+  labelIsHidden?: boolean;
 }
 
 /**
@@ -31,6 +37,7 @@ export function TextareaInput({
   autoFocus = true,
   wizardMode = false,
   onEnterAdvance,
+  labelIsHidden = false,
 }: TextareaInputProps) {
   const hasSelectedRef = useRef(false);
 
@@ -49,7 +56,9 @@ export function TextareaInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={handleFocus}
-      placeholder={`Enter ${variableName.toLowerCase()}... (hover for voice input)`}
+      placeholder={variableInputPlaceholder({
+        labelWhenHidden: labelIsHidden ? variableName : undefined,
+      })}
       className={isCompact ? "min-h-[60px] text-xs" : "min-h-[160px] text-sm"}
       rows={isCompact ? 2 : undefined}
       autoFocus={autoFocus}
