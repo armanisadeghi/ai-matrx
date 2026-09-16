@@ -55,6 +55,7 @@ import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
 import type { paths } from "@/types/python-generated/api-types";
 import { MasterworkDictationOrigin } from "../MasterworkDictationOrigin";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
+import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../durable-run/useRunResultOnce";
 import type { Rulebook } from "../types";
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
@@ -273,6 +274,19 @@ export function PredictionLedgerDialog({
   const running = run.running;
   const summary = run.result;
   useRunResultOnce(run, onChanged);
+
+  // 🚨 THE ANSWER MUST REACH THE PERSON, NOT JUST THE DOM (census wall W17,
+  // 2026-09-16). This dialog's body scrolls. Driven live with one scored call,
+  // the server refused honestly — "Still waiting on outcomes: 1 of your 2
+  // prediction(s) have an answer, and this needs 5…", durably recorded on
+  // `platform.masterwork_run` — and this dialog rendered that exact sentence
+  // BELOW THE FOLD, behind the footer. On screen: an unchanged dialog and no
+  // rules. A refusal nobody can see is the silent zero, so both the refusal and
+  // the "read them and added nothing" summary scroll themselves into view.
+  const noticeRef = useScrollIntoViewOnAppear<HTMLDivElement>(
+    Boolean(run.error) || Boolean(summary),
+    run.error ?? (summary ? `result:${run.runId ?? "done"}` : null),
+  );
 
   const reportWrite = (status: "saved" | "conflict" | "not_found"): boolean => {
     if (status === "saved") return true;
@@ -609,7 +623,7 @@ export function PredictionLedgerDialog({
         </div>
 
         {/* ───────────────── Distil ───────────────── */}
-        <div className="space-y-2 border-t border-border pt-3">
+        <div ref={noticeRef} className="space-y-2 border-t border-border pt-3">
           {summary ? (
             <p className="text-sm text-foreground">
               {describePredictionDistill(summary)}

@@ -28,6 +28,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useScrollIntoViewOnAppear } from "./useScrollIntoViewOnAppear";
 
 export interface DurableRunFailureProps {
   /** The row's own reason. Null/empty renders nothing at all. */
@@ -51,9 +52,16 @@ export function DurableRunFailure({
   running,
   children,
 }: DurableRunFailureProps): React.ReactElement | null {
+  // A reason the person cannot see is a silent failure — these dialogs scroll,
+  // and a failure that lands below the fold reads as "nothing happened"
+  // (census wall W17). See `useScrollIntoViewOnAppear`.
+  const ref = useScrollIntoViewOnAppear<HTMLDivElement>(Boolean(error), error);
   if (!error) return null;
   return (
-    <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+    <div
+      ref={ref}
+      className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3"
+    >
       <div className="flex items-start gap-2">
         <AlertTriangle
           className="mt-0.5 size-4 shrink-0 text-destructive"

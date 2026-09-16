@@ -30,6 +30,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import {
@@ -163,6 +164,15 @@ export function ShadowInboxDialog({
   });
   const running = run.running || preparing;
   const summary = run.result ? describeIngest(run.result) : null;
+
+  // A summary the person has to scroll to find is a silent zero — this lane's
+  // honest "we read it and found nothing" sentence is the whole answer to a run
+  // that added no rules. Same class as census wall W17; see
+  // `useScrollIntoViewOnAppear`.
+  const summaryRef = useScrollIntoViewOnAppear<HTMLDivElement>(
+    Boolean(summary),
+    summary,
+  );
 
   const resetPicker = () => {
     setRows(null);
@@ -407,7 +417,7 @@ export function ShadowInboxDialog({
       <DurableRunStopped message={run.stoppedMessage} retry={run.retry} />
 
       {summary ? (
-        <div className="space-y-3">
+        <div ref={summaryRef} className="space-y-3">
           <p className="text-sm text-foreground">{summary}</p>
           <div className="flex flex-wrap gap-2">
             <Button
