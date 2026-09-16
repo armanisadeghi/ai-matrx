@@ -167,7 +167,9 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
     (expectedActor.userId !== user.id ||
       expectedActor.organizationId !== organizationId)
   ) {
-    throw new VaultImportTransportError("context_changed");
+    throw expectedActor
+      ? new VaultLoginExportTransportError("context_changed")
+      : new VaultImportTransportError("context_changed");
   }
   return {
     organizationId,
@@ -216,7 +218,25 @@ async function exportFailureCode(resp: Response): Promise<
   // The structured recent-auth code is intentionally the only detail the
   // browser reads. Never match server prose, which is neither a stable wire
   // contract nor a safe place for sensitive diagnostics.
-  if (resp.status === 401) return "recent_auth_required";
+  if (resp.status === 401) {
+    try {
+      const body: unknown = await resp.json();
+      if (
+        body &&
+        typeof body === "object" &&
+        "detail" in body &&
+        body.detail &&
+        typeof body.detail === "object" &&
+        "code" in body.detail &&
+        body.detail.code === "recent_auth_required"
+      ) {
+        return "recent_auth_required";
+      }
+    } catch {
+      // An unparseable response is not evidence of the reauthentication gate.
+    }
+    return "request_rejected";
+  }
   if (resp.status === 404) return "missing_or_forbidden";
   if (resp.status === 413) return "limit_exceeded";
   if (resp.status === 409) {

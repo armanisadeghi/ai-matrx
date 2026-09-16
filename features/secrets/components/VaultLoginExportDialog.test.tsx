@@ -17,6 +17,7 @@ const actor = {
 let authListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
   | undefined;
+const signInWithPasswordMock = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => actor.organizationId,
@@ -31,7 +32,7 @@ jest.mock("@/utils/supabase/client", () => ({
         authListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
-      signInWithPassword: jest.fn(),
+      signInWithPassword: signInWithPasswordMock,
       getClaims: jest.fn(),
     },
   }),
@@ -55,10 +56,12 @@ const items = [
   {
     id: "item-1",
     display_name: "Example login",
+    definition_key: "website_login",
   },
   {
     id: "item-2",
-    display_name: "Skipped login",
+    display_name: "OAuth connection",
+    definition_key: "oauth_token_set",
   },
 ] as never;
 
@@ -88,19 +91,13 @@ describe("VaultLoginExportDialog", () => {
     getActorMock.mockReset();
     previewMock.mockReset();
     downloadMock.mockReset();
+    signInWithPasswordMock.mockReset();
     getActorMock.mockResolvedValue(actor);
     previewMock.mockResolvedValue({
       profile: "matrx_login_csv_v1",
       revision: "a".repeat(64),
       items: [
         { item_id: "item-1", title: "Example login", eligible: true },
-        {
-          item_id: "item-2",
-          title: "Skipped login",
-          eligible: false,
-          reason: "not_website_login",
-          omissions: { attachments: 1 },
-        },
       ],
     });
     Object.defineProperty(URL, "createObjectURL", {
@@ -138,8 +135,7 @@ describe("VaultLoginExportDialog", () => {
       actor,
       expect.any(AbortSignal),
     );
-    expect(document.body.textContent).toContain("1 eligible of 2 selected");
-    expect(document.body.textContent).toContain("attachments");
+    expect(document.body.textContent).toContain("1 eligible of 1 selected");
     expect(button("Download CSV").disabled).toBe(true);
   });
 
@@ -187,6 +183,33 @@ describe("VaultLoginExportDialog", () => {
     await act(async () => button("Review selected logins").click());
     await act(async () => authListener?.("SIGNED_OUT", null));
     expect(document.body.textContent).toContain("Your account changed");
-    expect(document.body.textContent).toContain("0 selected of 2 loaded");
+    expect(document.body.textContent).toContain("0 selected of 1 shown");
+  });
+
+  test("offers only currently loaded website logins for selection", async () => {
+    await render();
+    expect(document.body.textContent).toContain("Showing 1 website logins from 2 credentials");
+    expect(document.body.textContent).not.toContain("OAuth connection");
+    expect(document.querySelectorAll('[role="checkbox"]')).toHaveLength(1);
+  });
+
+  test("shows a wrong-password error during identity confirmation", async () => {
+    previewMock.mockRejectedValue(
+      new VaultLoginExportTransportError("recent_auth_required"),
+    );
+    signInWithPasswordMock.mockResolvedValue({ data: {}, error: new Error("wrong password") });
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await act(async () => button("Review selected logins").click());
+    const password = document.querySelector("#vault-export-password");
+    if (!(password instanceof HTMLInputElement)) throw new Error("password missing");
+    await act(async () => {
+      password.value = "wrong-password";
+      password.dispatchEvent(new Event("input", { bubbles: true }));
+      button("Confirm identity").click();
+    });
+    expect(document.body.textContent).toContain("That password could not confirm your identity");
   });
 });
