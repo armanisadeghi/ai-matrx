@@ -1087,17 +1087,17 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
 
   const path = resolve(MIGRATIONS_DIR, TARGET_SELFTEST_FILE);
   const self = resolve(ROOT, "scripts", "apply-migration.ts");
-  const run = (args: string[], env: NodeJS.ProcessEnv) =>
+  const run = (args: string[], env: Record<string, string>) =>
     spawnSync("npx", ["tsx", self, ...args], {
       cwd: ROOT,
       encoding: "utf8",
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...env } as NodeJS.ProcessEnv,
       timeout: 180_000,
     });
 
   // The branch's five variables, so a production credential is never in the
   // spawned process for proofs 2 and 3.
-  const branchAsMatrix: NodeJS.ProcessEnv = {
+  const branchAsMatrix: Record<string, string> = {
     SUPABASE_MATRIX_USER: branchEnv.user,
     SUPABASE_MATRIX_PASSWORD: branchEnv.password,
     SUPABASE_MATRIX_HOST: branchEnv.host,

@@ -74,6 +74,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { readHeader } from "./lib/migration-target";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -557,6 +558,7 @@ async function main(): Promise<number> {
 
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
+  const branchOnly: string[] = [];
   const local = new Map<string, string>(); // filename -> checksum
   const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
@@ -565,8 +567,35 @@ async function main(): Promise<number> {
       skipped.push(f);
       continue;
     }
+    // ── `-- target: branch` is not pending on PRODUCTION ─────────────────────
+    // This check reads production's ledger. A file headed `-- target: branch`
+    // is rehearsal-only by construction — `db:apply --target production`
+    // refuses it by name — so reporting it as UNAPPLIED would mean this gate
+    // could never go green again while a rehearsal file sat in migrations/,
+    // and the honest reading of "unapplied" (a file that was meant to run here
+    // and did not) would be lost in a permanent false positive. It is listed
+    // separately instead, so it is visible and not silent.
+    // (`-- target: branch,production` files ARE pending here: they land on both.)
+    if (readHeader(sql).targets?.join(",") === "branch") {
+      branchOnly.push(f);
+      continue;
+    }
     if (SELF_LEDGER_RE.test(stripForDetection(sql))) selfLedgering.push(f);
     local.set(f, sha256(sql));
+  }
+
+  if (branchOnly.length) {
+    console.log();
+    console.log(
+      `${TAG.info}${branchOnly.length} file(s) are headed \`-- target: branch\` — rehearsal-only, ` +
+        `never pending on production.`,
+    );
+    for (const f of branchOnly)
+      console.log(`  ${C.white}- ${f}${C.reset} ${C.dim}[BRANCH-ONLY]${C.reset}`);
+    console.log(
+      `  ${C.dim}Apply them with \`pnpm db:apply <file> --target branch\`; ` +
+        `\`--target production\` refuses them by name.${C.reset}`,
+    );
   }
 
   if (selfLedgering.length) {
