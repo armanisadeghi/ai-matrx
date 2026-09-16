@@ -409,6 +409,15 @@ async function syncGrants(client: Client, ref: BranchRef): Promise<void> {
     ).map((r) => r.k),
   );
 
+  // FUNCTION EXECUTE. A table grant is not enough: `platform`'s RLS policies call
+  // `public.is_platform_admin()` and its siblings, so the first authenticated read
+  // answered `403 permission denied for function is_platform_admin` even with the
+  // schema exposed and the table grants copied (measured 2026-09-16). Production
+  // holds 3,600 EXECUTE grants for the three API roles across 39 schemas; the
+  // branch held 688.
+  let fnDone = 0;
+  const fnSkipped = new Set<string>();
+
   let usageDone = 0;
   let usageSkipped = 0;
   for (const r of schemaRows) {
@@ -432,15 +441,71 @@ async function syncGrants(client: Client, ref: BranchRef): Promise<void> {
     );
     tableDone += 1;
   }
+  // Functions, by IDENTITY (schema, name, argument types) — an overload production
+  // has and the branch does not is skipped and counted, never granted by name alone.
+  const prodFns = await (async () => {
+    const p2 = new Client({
+      host: e.SUPABASE_MATRIX_HOST,
+      port: Number(e.SUPABASE_MATRIX_PORT),
+      user: e.SUPABASE_MATRIX_USER,
+      password: e.SUPABASE_MATRIX_PASSWORD,
+      database: e.SUPABASE_MATRIX_DATABASE_NAME,
+      ssl: { rejectUnauthorized: false },
+    });
+    await p2.connect();
+    try {
+      await p2.query("begin transaction read only");
+      const r = await p2.query(`
+        select n.nspname as schema,
+               p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as ident,
+               r.rolname as grantee
+          from pg_proc p
+          join pg_namespace n on n.oid = p.pronamespace
+          cross join (select rolname from pg_roles where rolname in ('anon','authenticated','service_role')) r
+         where n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema'
+           and has_function_privilege(r.rolname, p.oid, 'EXECUTE')
+         order by 1, 2, 3`);
+      await p2.query("rollback");
+      return r.rows as Array<{ schema: string; ident: string; grantee: string }>;
+    } finally {
+      await p2.end();
+    }
+  })();
+  const haveFns = new Set(
+    (
+      (await client.query(`
+        select n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as k
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace`)).rows as Array<{ k: string }>
+    ).map((r) => r.k),
+  );
+  for (const f of prodFns) {
+    const key = `${f.schema}.${f.ident}`;
+    if (!haveFns.has(key)) {
+      fnSkipped.add(key);
+      continue;
+    }
+    try {
+      await client.query(`grant execute on function "${f.schema}".${f.ident} to "${f.grantee}"`);
+      fnDone += 1;
+    } catch (err) {
+      fnSkipped.add(`${key} (${(err as Error).message.slice(0, 60)})`);
+    }
+  }
+
+  console.log(
+    `${OK}function EXECUTE copied from production: ${fnDone} grant(s) ` +
+      `(${fnSkipped.size} skipped — production has the overload and this branch does not, or the ` +
+      `grant was refused). Without these, an authenticated read of an RLS-protected table answers ` +
+      `403 permission denied for function, with the schema exposed and the table grants in place.`,
+  );
   console.log(
     `${OK}grants copied from production: ${usageDone} schema USAGE grant(s) ` +
       `(${usageSkipped} skipped — the schema is not on this branch), ${tableDone} table grant(s) ` +
       `(${skippedTables.size} object(s) skipped — production has them and this branch does not).`,
   );
   console.log(
-    `${OK}NOT copied, and said out loud: ALTER DEFAULT PRIVILEGES, function EXECUTE grants and ` +
-      `column-level grants. A table a lane CREATES on the branch therefore carries the branch's ` +
-      `own defaults, not production's.`,
+    `${OK}NOT copied, and said out loud: ALTER DEFAULT PRIVILEGES and column-level grants. A table ` +
+      `a lane CREATES on the branch therefore carries the branch's own defaults, not production's.`,
   );
 }
 

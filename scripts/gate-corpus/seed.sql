@@ -99,8 +99,14 @@ delete from admin.admins where user_id::text like 'a0000000-0000-4000-8000-%';
 delete from admin.admin_audit_log where target_user_id::text like 'a0000000-0000-4000-8000-%';
 delete from platform.rulebook where id::text like 'b0000000-%';
 delete from seo.starter_pack where id::text like 'b0000000-%';
+-- ...and the rows this file wrote for a SHARED token before the mark existed: a
+-- registry row whose organization_id is a corpus organization is the corpus's,
+-- whatever its resource_type. Without this clause the corpus organization cannot
+-- be deleted at all — `platform_shareable_resource_registry_organization_id_fkey`
+-- refuses it — and the seed aborts on its own teardown (measured 2026-09-16).
 delete from platform.shareable_resource_registry where resource_type like 'corpus%'
-   or metadata->>'gate_corpus' = 'true';
+   or metadata->>'gate_corpus' = 'true'
+   or organization_id::text like 'c0000000-%';
 delete from platform.entity_types where token like 'corpus%'
    or id::text like 'c5000000-%';
 delete from iam.org_industries where organization_id::text like 'c0000000-%';

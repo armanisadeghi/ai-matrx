@@ -127,7 +127,12 @@ const RESTORED_GRAPH_SQL = `
       where token not like 'corpus%' and id::text not like 'c5000000-%')::int as entity_types,
     (select count(*) from platform.shareable_resource_registry
       where resource_type not like 'corpus%'
-        and coalesce(metadata->>'gate_corpus','') <> 'true')::int as registry,
+        and coalesce(metadata->>'gate_corpus','') <> 'true'
+        -- ...and not a row this corpus wrote for a SHARED token before the mark
+        -- existed: a registry row owned by a corpus ORGANIZATION is the corpus's,
+        -- whatever its resource_type, and counting it as production's made the
+        -- first run after the teardown fix read a drop it had not caused.
+        and coalesce(organization_id::text, '') not like 'c0000000-%')::int as registry,
     (select count(*) from iam.organizations where id::text not like 'c0000000-%')::int as organizations,
     (select count(*) from iam.permissions where id::text not like 'f0000000-%')::int as permissions`;
 

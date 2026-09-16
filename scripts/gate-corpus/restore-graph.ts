@@ -213,6 +213,8 @@ const INFO = `${C.dim}[INFO]${C.reset}`;
 interface CopyTable {
   readonly table: string;
   readonly policy: "upsert" | "replace";
+  /** A statement run on the BRANCH right after this table's rows land, announced by `note`. */
+  readonly afterCopy?: { readonly sql: string; readonly note: string };
   /** A SHELL: only these columns are read from production. See `auth.users`. */
   readonly columns?: readonly string[];
   readonly columnsNote?: string;
@@ -242,6 +244,15 @@ const COPY_TABLES: readonly CopyTable[] = [
      */
     columns: [
       "id",
+      // `instance_id` is NOT a secret — it is the zero UUID on every Supabase
+      // project — and leaving it NULL made every copied row INVISIBLE TO GOTRUE,
+      // not merely unable to sign in: the branch's own auth admin API answered
+      // `404 user_not_found` for `test@test.com` while the row sat in
+      // `auth.users` with the right id and the right email (measured
+      // 2026-09-16). W0-CORPUS's exit needs that identity to EXIST on the branch
+      // before it can be given a branch-only password, and four wave-6 client
+      // lanes sign in as it.
+      "instance_id",
       "aud",
       "role",
       "email",
@@ -257,9 +268,38 @@ const COPY_TABLES: readonly CopyTable[] = [
       "deleted_at",
       "is_anonymous",
     ],
+    /**
+     * 🚨 AN OMITTED COLUMN IS NOT ALWAYS AN EMPTY ONE (measured 2026-09-16).
+     *
+     * `confirmation_token`, `recovery_token`, `email_change_token_new` and
+     * `email_change` have no default on this table, so leaving them out wrote
+     * NULL — and GoTrue scans all four into Go `string`s. The branch's own auth
+     * admin API therefore answered
+     *   500 {"error_code":"unexpected_failure","msg":"Database error loading user"}
+     * for EVERY copied identity: not "cannot sign in", which is the intent, but
+     * "cannot be read at all", which is not. An empty credential is the empty
+     * string; NULL is a missing column. This normalisation runs after the copy,
+     * is counted, and is printed.
+     */
+    afterCopy: {
+      sql:
+        `update auth.users set confirmation_token = coalesce(confirmation_token, ''), ` +
+        `recovery_token = coalesce(recovery_token, ''), ` +
+        `email_change_token_new = coalesce(email_change_token_new, ''), ` +
+        `email_change = coalesce(email_change, '') ` +
+        `where confirmation_token is null or recovery_token is null ` +
+        `or email_change_token_new is null or email_change is null`,
+      note:
+        "auth.users: the four credential columns with no default were written EMPTY rather than " +
+        "NULL — GoTrue reads them as strings and a NULL makes the whole identity unreadable by " +
+        "the branch's own auth API. No password and no token was copied; an empty credential is " +
+        "still an empty credential",
+    },
     columnsNote:
       "shell — every password, token and email/phone-change column is left unset; no copied " +
-      "user can sign in on the branch",
+      "user can sign in on the branch until a lane gives that identity a BRANCH-ONLY password " +
+      "through the branch's own auth admin API (W0-CORPUS does exactly that for test@test.com " +
+      "and admin@admin.com, and for nobody else)",
     /**
      * `auth.users` and `auth.oauth_clients` are owned by `supabase_auth_admin`,
      * not by `postgres`, so `ALTER TABLE … DISABLE TRIGGER` is refused there
@@ -502,6 +542,45 @@ async function pkOf(client: pg.Client, qualified: string): Promise<string[]> {
     [qualified],
   );
   return r.rows.map((x) => x.attname);
+}
+
+/**
+ * THE UNIQUE KEYS THAT ARE NOT THE PRIMARY KEY — and why an `upsert` is not
+ * complete without them (measured 2026-09-16, and it aborted the whole copy).
+ *
+ * `on conflict (<pk>) do update` reconciles the PRIMARY key and nothing else, so a
+ * production row that is NEW by id and COLLIDES by natural key with a row the branch
+ * already holds raises 23505 and takes the run down. It happened on the real branch:
+ *
+ *   duplicate key value violates unique constraint
+ *   "permissions_resource_type_resource_id_granted_to_user_id_key"
+ *   Key (resource_type, resource_id, granted_to_user_id)=(hr_workflow_instance, …) already exists
+ *
+ * — a grant production revoked and re-issued under a new id since the last copy. The
+ * branch is meant to hold PRODUCTION's rows, so the branch's stale row goes, by name and
+ * with a count, before the incoming row lands.
+ */
+async function secondaryUniquesOf(
+  client: pg.Client,
+  qualified: string,
+  pk: readonly string[],
+): Promise<string[][]> {
+  const r = await client.query<{ conname: string; cols: string[] }>(
+    `select c.conname,
+            -- attname is of type name, and node-pg has no array parser for name[]:
+            -- without the ::text cast this comes back as the STRING "{a,b}" and every
+            -- use of it as an array throws.
+            array(select a.attname::text
+                    from unnest(c.conkey) with ordinality k(attnum, ord)
+                    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum
+                   order by k.ord) as cols
+       from pg_constraint c
+      where c.conrelid = $1::regclass and c.contype = 'u'
+      order by c.conname`,
+    [qualified],
+  );
+  const pkKey = [...pk].sort().join(",");
+  return r.rows.map((x) => x.cols).filter((cols) => [...cols].sort().join(",") !== pkKey);
 }
 
 /** The boundary the copy recorded, so `--verify` never re-reads a moving source. */
@@ -826,6 +905,22 @@ async function main(): Promise<number> {
     restoreGuardsRef = restoreGuards;
 
     if (!verifyOnly) {
+      // 🚨 ONE TRANSACTION ON THE BRANCH, FROM THE FIRST TRIGGER DISABLE TO THE LAST
+      //    CONSTRAINT PUT BACK (measured 2026-09-16 — the failure mode is not theoretical).
+      //
+      //    `platform.associations` and `platform.reachability` are `replace`: they are
+      //    EMPTIED and then refilled. Until this line the two halves were separate
+      //    autocommitted statements, so a failure anywhere between them left the branch
+      //    holding an EMPTY GRAPH with the run's own error as the only notice. It happened:
+      //    `iam.permissions` raised 23505 on a natural key, the run aborted, triggers were
+      //    put back, and the branch was left with 0 associations and 0 reachability rows —
+      //    the exact state ATTACK-8 finding 3 reported the gate cannot see.
+      //
+      //    DDL is transactional in Postgres, so the trigger disables and the FK drops roll
+      //    back with the data. A rollback therefore restores the branch to what it was and
+      //    `restoreGuards()` has nothing left to do — which is why the catch below rolls
+      //    back FIRST and says so.
+      await branch.query("begin");
       // ── Disable USER triggers by name, and drop the two NOT VALID FKs ─────
       for (const { table: t, notOurs } of COPY_TABLES) {
         if (notOurs) continue; // proven above to have nothing to disable or drop
@@ -925,6 +1020,9 @@ async function main(): Promise<number> {
           .filter((c) => !pk.includes(c.name))
           .map((c) => `"${c.name}" = excluded."${c.name}"`)
           .join(", ");
+        const secondaryUniques =
+          policy === "upsert" ? await secondaryUniquesOf(prod, t, pk) : [];
+        let displaced = 0;
         const rowsPerBatch = Math.max(1, Math.floor(MAX_PARAMS / cols.length));
         const prodKeys = new Set<string>();
         const unresolvedRefs = new Map<string, number>();
@@ -954,6 +1052,32 @@ async function main(): Promise<number> {
             });
             return `(${ph.join(",")})`;
           });
+          // Clear the branch's stale rows that collide on a NATURAL key before the
+          // incoming rows land. `on conflict (<pk>)` cannot see them, and one of them
+          // aborted the whole copy on 2026-09-16.
+          for (const uk of secondaryUniques) {
+            const ukCols = uk.filter((c) => cols.some((x) => x.name === c));
+            if (ukCols.length !== uk.length) continue; // a shell that does not carry the key
+            const carried = [...new Set([...ukCols, ...pk])];
+            const typeOf = (name: string) => cols.find((c) => c.name === name)!.typ;
+            const dv: unknown[] = [];
+            const dTuples = page.rows.map((row, i) => {
+              const r = row as Record<string, unknown>;
+              const ph = carried.map((c, j) => {
+                dv.push(r[c]);
+                return `$${i * carried.length + j + 1}::${typeOf(c)}`;
+              });
+              return `(${ph.join(",")})`;
+            });
+            const on = ukCols.map((c) => `b."${c}" = p."${c}"`).join(" and ");
+            const differs = pk.map((c) => `b."${c}" is distinct from p."${c}"`).join(" or ");
+            const res = await branch.query(
+              `delete from ${t} b using (values ${dTuples.join(",")}) ` +
+                `as p(${carried.map((c) => `"${c}"`).join(", ")}) where ${on} and (${differs})`,
+              dv,
+            );
+            displaced += res.rowCount ?? 0;
+          }
           const conflict =
             policy === "upsert" && setList
               ? ` on conflict (${pkQuoted}) do update set ${setList}`
@@ -968,6 +1092,18 @@ async function main(): Promise<number> {
         }
         copiedKeys.set(t, prodKeys);
         console.log(`${OK}${t.padEnd(30)} ${policy} — ${copied} production row(s) written`);
+        if (entry.afterCopy) {
+          const res = await branch.query(entry.afterCopy.sql);
+          console.log(
+            `${INFO}${entry.afterCopy.note} — ${res.rowCount ?? 0} row(s) normalised`,
+          );
+        }
+        if (displaced)
+          console.log(
+            `${C.yellow}[WARN]${C.reset} ${t}: ${displaced} branch row(s) were removed because a ` +
+              `production row carried the same NATURAL key under a different primary key — a grant ` +
+              `or registry row re-issued since the last copy. The branch holds production's row.`,
+          );
         for (const [col, n] of nulled) {
           const fk = outside.find((f) => f.column === col)!;
           console.log(
@@ -1006,6 +1142,11 @@ async function main(): Promise<number> {
 
       // ── Put everything back, then PROVE it is back ────────────────────────
       await restoreGuards();
+      await branch.query("commit");
+      console.log(
+        `${OK}the copy committed as ONE transaction — until it did, the branch held its ` +
+          `previous graph, and a failure would have left it exactly as it was found`,
+      );
     }
 
     // ── PROOF 1: every user trigger is enabled again ────────────────────────
@@ -1199,8 +1340,34 @@ async function main(): Promise<number> {
     else console.log(`${OK}platform.reachability_drift() = 0 on the branch with ${reach} reachability rows present`);
   } catch (err) {
     console.error(`${FAIL}restore-graph aborted: ${err instanceof Error ? err.message : String(err)}`);
-    console.error(`${INFO}restoring the branch's triggers and constraints before exiting…`);
-    await restoreGuardsRef?.();
+    // ROLL BACK FIRST. The whole copy — the emptied `replace` tables, the disabled
+    // triggers, the dropped constraints — is one transaction, so this puts the branch back
+    // exactly as it was found. `restoreGuards()` afterwards would try to ADD constraints
+    // that the rollback already brought back, so it is not called on this path; the
+    // rollback's result is read back and printed rather than assumed.
+    const rolledBack = await branch
+      .query("rollback")
+      .then(() => true)
+      .catch((e) => {
+        console.error(`${FAIL}the rollback itself failed: ${(e as Error).message}`);
+        return false;
+      });
+    if (rolledBack) {
+      const left = await branch
+        .query<{ a: string; r: string }>(
+          `select (select count(*)::text from platform.associations) a,
+                  (select count(*)::text from platform.reachability) r`,
+        )
+        .then((x) => x.rows[0])
+        .catch(() => undefined);
+      console.error(
+        `${INFO}rolled back — the branch is as it was found` +
+          (left ? ` (${left.a} associations, ${left.r} reachability rows).` : "."),
+      );
+    } else {
+      console.error(`${INFO}restoring the branch's triggers and constraints before exiting…`);
+      await restoreGuardsRef?.();
+    }
     throw err;
   } finally {
     await prod.query("rollback").catch(() => {});
