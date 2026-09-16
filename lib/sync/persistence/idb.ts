@@ -23,6 +23,13 @@ import { extractErrorMessage } from "@/utils/errors";
 
 export const IDB_NAME = "matrx-sync";
 export const IDB_SCHEMA_VERSION = 1;
+/**
+ * Browser IndexedDB requests can remain pending indefinitely (most commonly
+ * while a tab is being restored or another context has a blocked upgrade).
+ * Persistence is a cache, so it must yield to its localStorage mirror and
+ * remote reconciliation rather than keeping sync hydration pending forever.
+ */
+export const IDB_OPERATION_TIMEOUT_MS = 1_000;
 
 /**
  * Per-slice record. `key` is the compound primary key
@@ -59,6 +66,53 @@ interface MatrxSyncDb extends Dexie {
 
 let dbPromise: Promise<MatrxSyncDb | null> | null = null;
 
+function invalidateDb(db: MatrxSyncDb): void {
+  if (dbPromise) dbPromise = null;
+  try {
+    db.close();
+  } catch {
+    // Closing a browser-owned, already-broken IDB connection is best effort.
+  }
+}
+
+/**
+ * A pending IDB request is not a valid reason for the app's persisted-state
+ * boot to remain pending. On timeout, abandon this connection so the next
+ * operation can make a clean attempt instead of inheriting its stuck queue.
+ */
+async function completeIdbOperation<T>(
+  db: MatrxSyncDb,
+  operation: string,
+  request: Promise<T>,
+): Promise<T | null> {
+  let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
+  const started = typeof performance !== "undefined" ? performance.now() : 0;
+  const outcome = await Promise.race([
+    request.then(
+      (value) => ({ type: "value" as const, value }),
+      (error) => ({ type: "error" as const, error }),
+    ),
+    new Promise<{ type: "timeout" }>((resolve) => {
+      timeoutHandle = globalThis.setTimeout(
+        () => resolve({ type: "timeout" }),
+        IDB_OPERATION_TIMEOUT_MS,
+      );
+    }),
+  ]);
+  if (timeoutHandle !== null) globalThis.clearTimeout(timeoutHandle);
+
+  if (outcome.type === "value") return outcome.value;
+  if (outcome.type === "error") throw outcome.error;
+
+  const elapsed = typeof performance !== "undefined" ? performance.now() - started : 0;
+  logger.warn("idb.operation.timeout", {
+    ms: elapsed,
+    meta: { operation, timeoutMs: IDB_OPERATION_TIMEOUT_MS },
+  });
+  invalidateDb(db);
+  return null;
+}
+
 export function openDb(): Promise<MatrxSyncDb | null> {
   if (dbPromise) return dbPromise;
   dbPromise = (async () => {
@@ -73,7 +127,8 @@ export function openDb(): Promise<MatrxSyncDb | null> {
         // Secondary indexes let us purge by identity or slice.
         slices: "key, identityKey, sliceName",
       });
-      await db.open();
+      const opened = await completeIdbOperation(db, "open", db.open());
+      if (opened === null) return null;
       logger.info("idb.open.success", {
         meta: { schemaVersion: IDB_SCHEMA_VERSION },
       });
@@ -126,8 +181,11 @@ export async function readSlice(
   const db = await openDb();
   if (!db) return null;
   try {
-    const record =
-      (await db.slices.get(buildKey(identityKey, sliceName, version))) ?? null;
+    const record = await completeIdbOperation(
+      db,
+      "read",
+      db.slices.get(buildKey(identityKey, sliceName, version)),
+    );
     if (!record) return null;
     if (record.version !== version) {
       // Mismatched version — orphan, treat as missing.
@@ -165,7 +223,8 @@ export async function writeSlice(
     persistedAt: Date.now(),
   };
   try {
-    await db.slices.put(record);
+    const written = await completeIdbOperation(db, "write", db.slices.put(record));
+    if (written === null) return;
     logger.debug("idb.write", {
       sliceName,
       meta: { identityKey, version, bytes: approximateBytes(body) },
@@ -187,7 +246,11 @@ export async function deleteSlice(
   const db = await openDb();
   if (!db) return;
   try {
-    await db.slices.delete(buildKey(identityKey, sliceName, version));
+    await completeIdbOperation(
+      db,
+      "delete",
+      db.slices.delete(buildKey(identityKey, sliceName, version)),
+    );
   } catch (err) {
     logger.warn("idb.delete.error", {
       sliceName,
@@ -204,14 +267,15 @@ export async function clearIdentity(identityKey: string): Promise<number> {
   const db = await openDb();
   if (!db) return 0;
   try {
-    const count = await db.slices
-      .where("identityKey")
-      .equals(identityKey)
-      .delete();
+    const count = await completeIdbOperation(
+      db,
+      "clearIdentity",
+      db.slices.where("identityKey").equals(identityKey).delete(),
+    );
     logger.info("identity.purge", {
       meta: { fromIdentity: identityKey, recordsRemoved: count },
     });
-    return count;
+    return count ?? 0;
   } catch (err) {
     logger.warn("idb.clearIdentity.error", {
       meta: { error: extractErrorMessage(err) },
@@ -227,7 +291,7 @@ export async function clearAll(): Promise<void> {
   const db = await openDb();
   if (!db) return;
   try {
-    await db.slices.clear();
+    await completeIdbOperation(db, "clearAll", db.slices.clear());
   } catch (err) {
     logger.warn("idb.clearAll.error", {
       meta: { error: extractErrorMessage(err) },
