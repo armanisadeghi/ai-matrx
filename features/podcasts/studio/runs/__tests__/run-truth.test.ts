@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
+import { INITIAL_RUN_STATE } from "@/features/podcasts/generator/types";
 
 import { deriveRecoveryState } from "../recovery";
 import { detailToRunState } from "../mapping";
@@ -7,7 +8,12 @@ import {
   trueLiveness,
   trueSummaryLiveness,
 } from "../run-truth";
-import { isEpisodeSettled, mergeAncillarySlots } from "../reconcile";
+import {
+  bestRunFailureReason,
+  isEpisodeSettled,
+  mergeAncillarySlots,
+  reconcileRunState,
+} from "../reconcile";
 import type { RunDetail, RunSummary } from "../run-types";
 
 /**
@@ -168,6 +174,61 @@ describe("detailToRunState", () => {
 
     expect(state.status).toBe("error");
     expect(state.error).toContain("only 457 chars");
+  });
+});
+
+describe("bestRunFailureReason", () => {
+  const reconcileReason =
+    "This run stopped before it produced any audio. You can resume or re-run from your source.";
+
+  it("preserves the durable content-gate cause over a generic reconcile summary", () => {
+    expect(
+      bestRunFailureReason(
+        "Content gate failed: only 457 chars of usable content (need ≥ 1000).",
+        reconcileReason,
+      ),
+    ).toContain("only 457 chars");
+  });
+
+  it("lets reconcile improve an empty or known fallback error", () => {
+    expect(bestRunFailureReason(null, reconcileReason)).toBe(reconcileReason);
+    expect(
+      bestRunFailureReason(
+        "This run was interrupted before finishing.",
+        reconcileReason,
+      ),
+    ).toBe(reconcileReason);
+  });
+});
+
+describe("reconcileRunState", () => {
+  it("keeps a specific durable error through the actual failed-state transition", () => {
+    const durableError =
+      "Content gate failed: only 457 chars of usable content (need ≥ 1000).";
+    const next = reconcileRunState(
+      { ...INITIAL_RUN_STATE, status: "error", error: durableError },
+      {
+        run_id: "r1",
+        outcome: "failed",
+        status: "failed",
+        reason:
+          "This run stopped before it produced any audio. You can resume or re-run from your source.",
+        essential: { script: "failed", audio: "pending", episode: "pending" },
+        audio_url: null,
+        script: null,
+        episode_id: null,
+        episode_slug: null,
+        total_cost_usd: 0,
+        progress: { done: 0, failed: 1, total: 1 },
+        stages: [],
+        ancillary_pending: [],
+        poll_after_seconds: null,
+      },
+    );
+
+    expect(next.status).toBe("error");
+    expect(next.currentLabel).toBe("Finished with errors");
+    expect(next.error).toBe(durableError);
   });
 });
 

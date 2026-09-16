@@ -59,7 +59,7 @@ import { isOrphanedServerRun, trueLiveness } from "./run-truth";
 import {
   hasDeliverableEpisode,
   isEpisodeSettled,
-  mergeAncillarySlots,
+  reconcileRunState,
   reconcileRun,
   type ReconcileResult,
 } from "./reconcile";
@@ -419,38 +419,9 @@ export function useStudioRun(runId: string): UseStudioRun {
      */
     function applyReconcile(rec: ReconcileResult): void {
       const deliverable = hasDeliverableEpisode(rec);
-      setState((s) => ({
-        ...s,
-        // Ancillary slots the server says are still coming / have failed. A
-        // pending cover has no asset row yet (rows are written when a stage
-        // FINISHES), so without this the page would claim nothing is pending
-        // while three paid renders are in flight, then pop them in later.
-        images: mergeAncillarySlots(s.images, rec.ancillary_pending, "image"),
-        videos: mergeAncillarySlots(s.videos, rec.ancillary_pending, "video"),
-        status: deliverable
-          ? "done"
-          : rec.outcome === "failed"
-            ? "error"
-            : s.status,
-        progress: deliverable ? 100 : s.progress,
-        currentLabel: deliverable
-          ? "Episode ready"
-          : rec.outcome === "failed"
-            ? "Finished with errors"
-            : s.currentLabel,
-        audioUrl: rec.audio_url ?? s.audioUrl,
-        script: rec.script ?? s.script,
-        episodeId: rec.episode_id ?? s.episodeId,
-        episodeSlug: rec.episode_slug ?? s.episodeSlug,
-        // Only a run with NOTHING to show reports an error. A delivered episode
-        // with a failed cover is not an error state — the failed asset renders
-        // as its own retryable card.
-        error: deliverable
-          ? null
-          : rec.outcome === "failed"
-            ? rec.reason
-            : s.error,
-      }));
+      // The pure reducer owns the complete render-state transition, including
+      // specific-error precedence and ancillary slot reconciliation.
+      setState((s) => reconcileRunState(s, rec));
       if (deliverable) {
         setCanReconnect(false);
         setStalled(false);
