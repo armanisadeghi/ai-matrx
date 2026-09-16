@@ -26,6 +26,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -51,6 +52,7 @@ export function RoomHeader({
   onFinishRun,
 }: RoomHeaderProps) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const session = useAppSelector(selectRoomSession);
   const runPhase = useAppSelector(selectRunPhase);
   const [editing, setEditing] = useState(false);
@@ -152,11 +154,17 @@ export function RoomHeader({
                 }}
                 title="Rename"
               >
-                <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                {/* THE TITLE YIELDS, FINISH DOES NOT. The route header splits
+                    what the shell leaves it between these two, and an
+                    unbounded title ate it: Finish shrank to 41px and painted
+                    its own label outside itself. The title is the one thing
+                    here that is still legible truncated. */}
+                <span className="min-w-0 max-w-[5.5rem] truncate text-sm font-medium text-foreground sm:max-w-none">
                   {session?.title ?? "Interview"}
                 </span>
+                {/* Hover-only, so it is not printed where nothing hovers. */}
                 <Pencil
-                  className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  className="hidden h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block"
                   aria-hidden
                 />
               </button>
@@ -165,14 +173,20 @@ export function RoomHeader({
         }
         right={
           session && stage ? (
-            <span className="flex items-center gap-1.5">
+            <span className="flex shrink-0 items-center gap-1.5">
               {/* Round chip stays md+ only — on xs it collided with the title
                 and the Advance control (Arman's screenshots, 2026-08-16).
                 The stage position lives in the StageRail on every size. */}
               <span className="hidden rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground md:inline">
                 Round {session.current_round}
               </span>
-              {stage.next && (
+              {/* ADVANCE IS DESKTOP-ONLY (jobs-bar-2026-09-16, item 19). At
+                  phone width its label was hidden and its 12px arrow read as
+                  an empty box beside an empty box — two blank controls next to
+                  a truncated title. The step it takes is not lost: the room's
+                  phone bar carries it, spelled out, inside the sheet that
+                  names the step you are on. */}
+              {stage.next && !isMobile && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -201,16 +215,20 @@ export function RoomHeader({
                   <ArrowRight className="h-3 w-3 sm:ml-1" aria-hidden />
                 </Button>
               )}
+              {/* FINISH ALWAYS CARRIES ITS WORD. It is the one door to the
+                  Vision and Requirements documents, and below `sm` it used to
+                  be a bare 12px flag — an unlabelled icon for the single most
+                  consequential control in the room. */}
               <Button
                 variant={finishReady ? "default" : "outline"}
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className="h-8 px-2.5 text-xs"
                 title={finishTitle}
                 onClick={() => setFinishOpen(true)}
                 aria-label="Finish the interview and write the documents"
               >
-                <Flag className="h-3 w-3 sm:mr-1" aria-hidden />
-                <span className="hidden sm:inline">Finish</span>
+                <Flag className="mr-1 h-3.5 w-3.5" aria-hidden />
+                Finish
               </Button>
             </span>
           ) : null

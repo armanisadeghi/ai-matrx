@@ -65,6 +65,14 @@ export interface MobileShellPanel {
   label: string;
   icon?: LucideIcon;
   content: React.ReactNode;
+  /**
+   * How many things in this panel are waiting on the user (open questions,
+   * unread items, failures). Printed beside the panel's name in the picker,
+   * and summed onto the header trigger — otherwise a phone user has no way to
+   * know a drawer they cannot see is holding work for them. `0`/undefined
+   * prints nothing; a panel with nothing pending must not wear a "0".
+   */
+  badge?: number;
   /** Keep mounted (hidden) instead of lazy-mounting on first open. */
   alwaysMount?: boolean;
   /** Optional controlled state for stacked disclosures. */
@@ -143,6 +151,13 @@ export function MobilePanelShell({
 
   const hasPanels = Boolean(panels && panels.length > 0);
   const openPanel = panels?.find((p) => p.id === openPanelId) ?? null;
+  // What the drawers are holding, added up for the one control that can be
+  // seen. A panel behind a "…" is invisible; a count is the only honest way to
+  // say it is not empty.
+  const pendingTotal = (panels ?? []).reduce(
+    (sum, p) => sum + Math.max(0, p.badge ?? 0),
+    0,
+  );
 
   const show = (id: string) => {
     setEverOpened((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
@@ -194,11 +209,25 @@ export function MobilePanelShell({
     <>
       {hasPanels && (
         <PageHeaderRightPortal>
-          <TapTargetButton
-            icon={<MenuIcon className="h-4 w-4" />}
-            ariaLabel={menuLabel}
-            onClick={() => setMenuOpen(true)}
-          />
+          <span className="relative inline-flex">
+            <TapTargetButton
+              icon={<MenuIcon className="h-4 w-4" />}
+              ariaLabel={
+                pendingTotal > 0
+                  ? `${menuLabel} — ${pendingTotal} waiting on you`
+                  : menuLabel
+              }
+              onClick={() => setMenuOpen(true)}
+            />
+            {pendingTotal > 0 && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute right-0 top-0.5 min-w-[17px] rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-[17px] text-primary-foreground"
+              >
+                {pendingTotal > 99 ? "99+" : pendingTotal}
+              </span>
+            )}
+          </span>
         </PageHeaderRightPortal>
       )}
 
@@ -248,6 +277,11 @@ export function MobilePanelShell({
                     <Icon className="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
                   <span className="flex-1 text-[15px]">{p.label}</span>
+                  {(p.badge ?? 0) > 0 && (
+                    <span className="ml-3 rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary">
+                      {p.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

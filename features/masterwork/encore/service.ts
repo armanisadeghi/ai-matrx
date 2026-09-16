@@ -3,8 +3,10 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
 import { getUserOrganizations } from "@/features/organizations/service";
 import {
+  listRecentRunsForMasterworks,
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
+  type MasterworkRun,
 } from "../service";
 import {
   latestScoreByRulebook,
@@ -201,19 +203,23 @@ export async function getEncoreMasterwork(
   return withRef ?? null;
 }
 
-export interface EncoreRun {
-  id: string;
-  status: string;
-  created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-}
+/**
+ * An Encore history row IS a Masterwork run row. Encore used to define its own
+ * five-column shape with no preview, no cost and no duration, which is why its
+ * "Your recent runs" was eight identical lines (jobs-bar-2026-09-16, item 18).
+ * One shape, one reader, one row component.
+ */
+export type EncoreRun = MasterworkRun;
 
 const ENCORE_RUN_LIMIT = 10;
 
 /**
  * THIS Operator's recent runs of one Masterwork — their own history, never
  * the whole ledger. A preview surface: bounded read is correct.
+ *
+ * The read itself is the platform's one recent-runs reader, so this history
+ * carries exactly what the Masterworks lane carries: what the run said, what
+ * it cost, and how long it took.
  */
 export async function listMyEncoreRuns(
   masterworkId: string,
@@ -222,21 +228,9 @@ export async function listMyEncoreRuns(
   // DECLARED `mine` (DD-137c / §3.3): this preview is THIS Operator's own history of one
   // Masterwork, never the whole ledger — said through the registry helper rather than assumed.
   const ownerOnly = await scopeToOwner("workflow_run", "mine");
-  let runQuery = supabase
-    .schema("workflow")
-    .from("run")
-    .select("id,status,created_at,started_at,completed_at")
-    .eq("definition_id", masterworkId);
-  if (ownerOnly) runQuery = runQuery.eq("created_by", userId);
-  const { data, error } = await runQuery
-    .order("created_at", { ascending: false })
-    .limit(ENCORE_RUN_LIMIT);
-  if (error) throw operationFailed("list your recent runs", error);
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    status: String(row.status),
-    created_at: row.created_at,
-    started_at: row.started_at,
-    completed_at: row.completed_at,
-  }));
+  const byMasterwork = await listRecentRunsForMasterworks([masterworkId], {
+    perMasterwork: ENCORE_RUN_LIMIT,
+    onlyCreatedBy: ownerOnly ? userId : null,
+  });
+  return byMasterwork[masterworkId] ?? [];
 }

@@ -14,15 +14,28 @@
 // gone with it.
 //
 // Body wrapper is `h-full overflow-hidden` (core-route rules — never a
-// header-height calc); mobile stacks the three panels behind a pane switcher.
+// header-height calc).
+//
+// ON A PHONE THIS ROOM USED TO BE UNUSABLE (jobs-bar-2026-09-16, item 19). It
+// carried its OWN three-way pane switcher — a bespoke copy of a thing the
+// platform already owns — and the switcher was the smaller half of the
+// problem: the "Room" pane then spent a third of a 390px screen on six wrapped
+// expert tabs before a single word of the conversation, with the document
+// controls stranded as unlabeled icons in the gap beside them.
+//
+// It now uses `MobilePanelShell`, the same primitive every other multi-pane
+// route on the platform uses (the code editor, the transcript studio, the RAG
+// stores, agent connections…): the CONVERSATION is the whole phone column, and
+// the questions and the expert feed are bottom drawers off one header control
+// — which carries the open-question count, because a drawer you cannot see
+// must still be able to say it is holding work for you.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Panel } from "react-resizable-panels";
-import { ListTodo, MessagesSquare, Radio } from "lucide-react";
+import { ListTodo, PanelsTopLeft, Radio } from "lucide-react";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   activeRoleTabDefaulted,
@@ -44,8 +57,6 @@ import { RoomHeader } from "./RoomHeader";
 // misshaping the three-panel group.
 const LAYOUT_COOKIE = "vision-interview-room-layout-v3";
 
-type MobilePane = "questions" | "room" | "feed";
-
 export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   const { retryRoles } = useInterviewRoom(sessionId);
   // Stamps dictation audio (already durably saved) onto the human turn the
@@ -53,8 +64,6 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   useTurnAudioAttachment(sessionId);
   const { start, resume } = useInterviewRun(sessionId);
   const dispatch = useAppDispatch();
-  const isMobile = useIsMobile();
-  const [mobilePane, setMobilePane] = useState<MobilePane>("room");
   const openQuestions = useAppSelector(selectOpenQuestionCount);
   const hydrated = useAppSelector(selectRoomHydrated);
   const session = useAppSelector(selectRoomSession);
@@ -84,6 +93,14 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   const startInterview = () => start();
   const finishInterview = () => resume({ message: "", done: true });
 
+  const conversation = (
+    <RoomChatPane
+      onGotoStage={gotoStage}
+      onRetryRoles={retryRoles}
+      onAdvanceStage={advanceStage}
+    />
+  );
+
   return (
     <>
       <RoomHeader
@@ -95,81 +112,65 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
         className="matrx-touch-targets flex h-full flex-col overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
-        {isMobile ? (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
-              {(
-                [
-                  ["questions", "Questions", ListTodo],
-                  ["room", "Room", MessagesSquare],
-                  ["feed", "Feed", Radio],
-                ] as const
-              ).map(([key, label, Icon]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setMobilePane(key)}
-                  className={cn(
-                    "inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-sm",
-                    mobilePane === key
-                      ? "bg-muted font-medium text-foreground"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {label}
-                  {key === "questions" && openQuestions > 0 && (
-                    <span className="rounded-full bg-primary/10 px-1.5 py-px text-[11px] font-medium text-primary">
-                      {openQuestions}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="min-h-0 flex-1">
-              {mobilePane === "questions" ? (
-                <QuestionsPanel />
-              ) : mobilePane === "feed" ? (
-                <ExpertFeedPanel />
-              ) : (
-                <RoomChatPane
-                  onGotoStage={gotoStage}
-                  onRetryRoles={retryRoles}
-                />
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1">
-            <ClientGroup
-              id="vision-interview-room-v3"
-              cookieName={LAYOUT_COOKIE}
-              orientation="horizontal"
-              className="h-full w-full"
-            >
-              <Panel id="questions" defaultSize="22%" minSize="14%">
-                <div className="h-full overflow-hidden border-r border-border">
-                  <QuestionsPanel />
-                </div>
-              </Panel>
-              <Handle />
-              <Panel id="room" defaultSize="50%" minSize="32%">
-                <div className="h-full overflow-hidden">
-                  <RoomChatPane
-                    onGotoStage={gotoStage}
-                    onRetryRoles={retryRoles}
-                  />
-                </div>
-              </Panel>
-              <Handle />
-              <Panel id="feed" defaultSize="28%" minSize="16%">
-                <div className="h-full overflow-hidden border-l border-border">
-                  <ExpertFeedPanel />
-                </div>
-              </Panel>
-            </ClientGroup>
-          </div>
-        )}
+        <div className="min-h-0 w-full min-w-0 flex-1">
+          <MobilePanelShell
+            menuIcon={PanelsTopLeft}
+            menuLabel="Questions and what the experts wrote"
+            mainClassName="min-w-0 overflow-hidden"
+            main={conversation}
+            panels={[
+              {
+                id: "questions",
+                label: "Questions for you",
+                icon: ListTodo,
+                badge: openQuestions,
+                // Both panels own their scrolling and size themselves to their
+                // container, so the drawer gives them a REAL height — dropped
+                // into an auto-height sheet body an `h-full` panel collapses to
+                // nothing.
+                content: (
+                  <div className="h-[68dvh] min-w-0">
+                    <QuestionsPanel />
+                  </div>
+                ),
+              },
+              {
+                id: "feed",
+                label: "What the experts wrote",
+                icon: Radio,
+                content: (
+                  <div className="h-[68dvh] min-w-0">
+                    <ExpertFeedPanel />
+                  </div>
+                ),
+              },
+            ]}
+            desktop={
+              <ClientGroup
+                id="vision-interview-room-v3"
+                cookieName={LAYOUT_COOKIE}
+                orientation="horizontal"
+                className="h-full w-full"
+              >
+                <Panel id="questions" defaultSize="22%" minSize="14%">
+                  <div className="h-full overflow-hidden border-r border-border">
+                    <QuestionsPanel />
+                  </div>
+                </Panel>
+                <Handle />
+                <Panel id="room" defaultSize="50%" minSize="32%">
+                  <div className="h-full overflow-hidden">{conversation}</div>
+                </Panel>
+                <Handle />
+                <Panel id="feed" defaultSize="28%" minSize="16%">
+                  <div className="h-full overflow-hidden border-l border-border">
+                    <ExpertFeedPanel />
+                  </div>
+                </Panel>
+              </ClientGroup>
+            }
+          />
+        </div>
       </div>
     </>
   );

@@ -14,16 +14,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock3, SquareArrowOutUpRight, Wrench } from "lucide-react";
+import { Clock3, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { cn } from "@/lib/utils";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { runHref } from "@/features/workflow-runtime/run-doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { MasterworkRunRow } from "../components/masterworks/MasterworksPage";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
 import { getBenchProof, UNAVAILABLE, type BenchProofState } from "./benchProof";
@@ -36,28 +35,6 @@ import {
   type EncoreMasterwork,
   type EncoreRun,
 } from "./service";
-
-function runWhen(run: EncoreRun): string {
-  return formatRelativeTime(run.created_at, { style: "short" });
-}
-
-const RUN_STATUS_STYLES: Record<string, string> = {
-  completed: "bg-primary",
-  failed: "bg-destructive",
-  errored: "bg-destructive",
-  abandoned: "bg-destructive",
-  cancelled: "bg-muted-foreground",
-};
-
-const RUN_STATUS_LABELS: Record<string, string> = {
-  completed: "Finished",
-  failed: "Didn't finish",
-  errored: "Didn't finish",
-  abandoned: "Didn't finish",
-  cancelled: "Stopped",
-  running: "Working",
-  pending: "Starting",
-};
 
 export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const userId = useAppSelector(selectUserId);
@@ -277,50 +254,36 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Your recent runs
             </h3>
+            {/* ONE RUN ROW, NOT TWO (jobs-bar-2026-09-16, item 18). This list
+                used to print its own line — a dot, a status word and an age —
+                so eight runs of the same Masterwork read as eight copies of
+                "Finished · 1d ago" with nothing to tell them apart, while the
+                Masterworks lane, three clicks away, showed the first line of
+                what each run actually said. `MasterworkRunRow` is that row;
+                Encore mounts it and hangs its own sign-off off `trailing`. */}
             <div className="mt-2">
               {runs.map((run) => (
-                <div
+                <MasterworkRunRow
                   key={run.id}
-                  // PHONE: the sign-off buttons are ~230px wide, so on a 390px
-                  // screen a single flex row squeezed the run's own line down to
-                  // one character per line ("F / i / n / i ..."). The row stacks
-                  // below `sm` and the link keeps its words intact.
-                  className="flex flex-col items-start gap-1 rounded px-1.5 py-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"
-                >
-                  {/* THE DOOR IS IN THIS APP (wall W36): an Operator's finished
-                      run is read at its own permalink here, never in the
-                      author's Studio on another host. */}
-                  <Link
-                    href={runHref(run.id)}
-                    className="group flex w-full min-w-0 items-center gap-2 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground sm:w-auto sm:flex-1"
-                  >
-                    <span
-                      className={cn(
-                        "h-1.5 w-1.5 shrink-0 rounded-full",
-                        RUN_STATUS_STYLES[run.status] ??
-                          "bg-muted-foreground/50",
-                      )}
-                    />
-                    <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
-                    <span>· {runWhen(run)}</span>
-                    <SquareArrowOutUpRight className="ml-1 h-3 w-3 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" />
-                  </Link>
-                  {/* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
-                      the thumbs the moment a run ends, and then forgets the run
-                      on purpose — so without this, an Expert who came back an
-                      hour later had no way to say "yes, that one was mine" and
-                      the most important signal we have was lost to a page
-                      reload. Same control, same row in
-                      `platform.output_feedback`. Only a FINISHED run: there is
-                      nothing to sign on a run that failed. */}
-                  {run.status === "completed" ? (
-                    <ExpertSignOff
-                      subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
-                      subjectId={run.id}
-                      showPrompt={false}
-                    />
-                  ) : null}
-                </div>
+                  run={run}
+                  trailing={
+                    /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
+                       the thumbs the moment a run ends, and then forgets the
+                       run on purpose — so without this, an Expert who came
+                       back an hour later had no way to say "yes, that one was
+                       mine" and the most important signal we have was lost to
+                       a page reload. Same control, same row in
+                       `platform.output_feedback`. Only a FINISHED run: there
+                       is nothing to sign on a run that failed. */
+                    run.status === "completed" ? (
+                      <ExpertSignOff
+                        subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+                        subjectId={run.id}
+                        showPrompt={false}
+                      />
+                    ) : null
+                  }
+                />
               ))}
             </div>
           </div>

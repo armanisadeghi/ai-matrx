@@ -489,24 +489,49 @@ function runErrorMessage(error: unknown): string | null {
  */
 const EMISSIONS_SCANNED_PER_RUN = 20;
 
+export interface RecentRunsOptions {
+  /** How many runs to keep per Masterwork. Defaults to the lane's five. */
+  perMasterwork?: number;
+  /**
+   * Narrow to the caller's own runs. The SCOPE WORD is declared by the caller
+   * (`scopeToOwner`) and the answer passed in — this reader never decides a
+   * surface's scope for it.
+   */
+  onlyCreatedBy?: string | null;
+}
+
 /**
- * Recent runs per Masterwork, with per-run cost summed from node outcomes. Two
- * bounded reads (runs, then their node costs) — a preview surface, so a bare
- * select with limits is correct here, never a completeness read.
+ * Recent runs per Masterwork, with per-run cost summed from node outcomes and
+ * the first line of what each one PRESENTED. Three bounded reads (runs, their
+ * node costs, their last emissions) — a preview surface, so a bare select with
+ * limits is correct here, never a completeness read.
+ *
+ * 🚨 THIS IS THE ONLY READER OF "recent runs of a Masterwork". Encore had its
+ * own, which selected five columns and no preview, and that is exactly why its
+ * history was eight rows of "Finished · 1d ago" with nothing to tell them apart
+ * while the Masterworks lane showed the answer each run gave
+ * (jobs-bar-2026-09-16, item 18). A second implementation of one question is a
+ * defect even when it works: the two drift, and the poorer one wins wherever
+ * it happens to be mounted.
  */
 export async function listRecentRunsForMasterworks(
   masterworkIds: string[],
+  options: RecentRunsOptions = {},
 ): Promise<Record<string, MasterworkRun[]>> {
   if (masterworkIds.length === 0) return {};
-  const { data: runs, error } = await supabase
+  const perMasterwork = options.perMasterwork ?? RUNS_PER_MASTERWORK;
+  let runQuery = supabase
     .schema("workflow")
     .from("run")
     .select(
       "id,definition_id,status,created_at,started_at,completed_at,steps_executed,error",
     )
-    .in("definition_id", masterworkIds)
+    .in("definition_id", masterworkIds);
+  if (options.onlyCreatedBy)
+    runQuery = runQuery.eq("created_by", options.onlyCreatedBy);
+  const { data: runs, error } = await runQuery
     .order("created_at", { ascending: false })
-    .limit(RUNS_PER_MASTERWORK * masterworkIds.length);
+    .limit(perMasterwork * masterworkIds.length);
   if (error) throw operationFailed("list the recent runs of these Masterworks", error);
 
   const byMasterwork: Record<string, MasterworkRun[]> = {};
@@ -514,7 +539,7 @@ export async function listRecentRunsForMasterworks(
   for (const row of runs ?? []) {
     const masterworkId = String(row.definition_id);
     const bucket = (byMasterwork[masterworkId] ??= []);
-    if (bucket.length >= RUNS_PER_MASTERWORK) continue;
+    if (bucket.length >= perMasterwork) continue;
     bucket.push({
       id: row.id,
       status: String(row.status),

@@ -434,6 +434,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-16` — **"Your recent runs" on the Encore run page tells one run from another
+  (jobs-bar-2026-09-16, item 18).** It listed eight runs of the same Masterwork as eight
+  identical lines — "Finished · 1d ago", eight times — because Encore had its OWN recent-runs
+  reader (five columns, no preview, no cost) and its OWN row, while the Masterworks lane over
+  the same table already showed the first line of what each run handed over. One question, two
+  implementations. `listRecentRunsForMasterworks` is now the only reader (it takes
+  `perMasterwork` and `onlyCreatedBy`; the scope WORD is still declared at the call site), and
+  `EncoreRun` is `MasterworkRun`. `MasterworkRunRow` is now the only row — it grew a `trailing`
+  slot for Encore's "That's mine" sign-off, it stacks below `sm` so that ~230px control can
+  never squeeze the run's line to one character per row again, its open-door arrow is visible on
+  touch, and the Operator status words ("Finished", "Didn't finish") moved into it from Encore's
+  copy so both doors stop printing `errored` and `abandoned` at people. Guard:
+  `encore/__tests__/encore-history-says-what-each-run-said.test.tsx`, over the same verbatim
+  `workflow.node_events` fixtures the lane's own guard uses.
+
 - `2026-09-16` — **The Jobs bar, lanes A: the five capture lanes walked as a first-timer, at
   desktop and phone width.** Twenty-two findings, fixed at the place each one belongs. The Capture
   Plan opens with the Expert's own description in the goal box instead of an empty field behind a

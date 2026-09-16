@@ -225,6 +225,26 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- **2026-09-16** — **The room is usable on a phone (jobs-bar-2026-09-16, item
+  19).** At 390px the centre panel opened with six expert tabs wrapped over
+  three rows — a third of the screen before one word of the conversation — the
+  document controls beside them were unlabelled glyphs (`hidden sm:inline` on
+  their only words), Advance and Finish were two blank boxes next to a
+  truncated title, and a horizontal scrollbar ran under the whole thread. The
+  room carried its own three-way pane switcher instead of `MobilePanelShell`,
+  the primitive every other multi-pane route uses, so it inherited none of
+  that work. It uses it now: the conversation IS the phone column, and the
+  questions and expert feed are bottom drawers off one header control that
+  carries the open-question count (`badge` — added to the shared primitive, so
+  every route gets it). `RoomChatPane` gains a one-row phone bar: the live
+  expert, and the documents, each behind one labelled control and one
+  `BottomSheet`; the header's Advance moved into the expert sheet, spelled
+  out, and Finish always carries its word. Desktop is byte-identical — proven
+  by `components/__tests__/room-on-a-phone.test.tsx`, whose fourth case fails
+  if the six-tab rail ever stops rendering at desktop width. The scrollbar was
+  `MessageTimestamp`: a hover-only stamp kept in layout by `opacity-0`, under
+  every chat in the app.
+
 - **2026-09-15** — **And it can no longer sit on "Working…" over a run that is
   already DEAD (wall W9, second half).** A run's terminal STATUS and its
   terminal EVENT are written by two different places: `run_store.apply_status`
