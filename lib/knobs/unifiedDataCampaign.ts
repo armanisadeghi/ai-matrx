@@ -27,6 +27,12 @@
 // `common-docs/policies/env-vars-are-values-not-toggles.md`).
 
 import { knobBool } from "./featureKnobs";
+import {
+    CAMPAIGN_MODULES,
+    CAMPAIGN_STORE_TABLES,
+    ENTRY_POINTS,
+    RUNTIME_ENTRY_POINTS,
+} from "./unifiedDataCampaign.register";
 
 /** The registry address of the switch. One place, both halves of the repo. */
 export const UNIFIED_DATA_CAMPAIGN_FEATURE = "custom";
@@ -35,20 +41,16 @@ export const UNIFIED_DATA_CAMPAIGN_KEY = "code_paths_enabled";
 /** What the switch reads as when it cannot be read at all. */
 export const UNIFIED_DATA_CAMPAIGN_DEFAULT = false;
 
-/**
- * One campaign code path. Every entry MUST be reached only through
- * `UNIFIED_DATA_CAMPAIGN.enabled()`; `unifiedDataCampaign.test.ts` audits the
- * named file for the gate and fails when an entry is not gated. The list is
- * empty today — the switch ships before the first campaign code path does.
- */
-export interface CampaignEntryPoint {
-    /** Stable id, for the test's failure message. */
-    id: string;
-    /** Repo-relative path to the module that owns the entry point. */
-    file: string;
-}
-
-const ENTRY_POINTS: readonly CampaignEntryPoint[] = [];
+export {
+    CAMPAIGN_MODULES,
+    CAMPAIGN_STORE_TABLES,
+    ENTRY_POINTS,
+    RUNTIME_ENTRY_POINTS,
+} from "./unifiedDataCampaign.register";
+export type {
+    CampaignEntryPoint,
+    CampaignEntryPointKind,
+} from "./unifiedDataCampaign.register";
 
 async function enabled(): Promise<boolean> {
     try {
@@ -72,5 +74,8 @@ export const UNIFIED_DATA_CAMPAIGN = {
     KEY: UNIFIED_DATA_CAMPAIGN_KEY,
     DEFAULT: UNIFIED_DATA_CAMPAIGN_DEFAULT,
     ENTRY_POINTS,
+    RUNTIME_ENTRY_POINTS,
+    CAMPAIGN_MODULES,
+    CAMPAIGN_STORE_TABLES,
     enabled,
 } as const;
