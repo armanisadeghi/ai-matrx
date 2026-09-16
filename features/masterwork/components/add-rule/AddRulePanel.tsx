@@ -24,6 +24,10 @@ import { Check, Keyboard, Plus, BrainCircuit, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -136,10 +140,10 @@ export function AddRulePanel({
   const landRule = useCallback(
     async (values: RuleFieldValues, opts: { draft: boolean; note?: string }) => {
       if (!rulebook) return;
-      if (!values.name.trim() || !values.statement.trim()) {
-        toast.error("A rule needs at least a short name and the rule itself.");
-        return;
-      }
+      // Gated on the "Add rule" button, which names the missing field in
+      // muted words. Empty fields are a PROMPT, not an alarm (class sweep,
+      // 2026-09-16).
+      if (!values.name.trim() || !values.statement.trim()) return;
       // Refused HERE as well as on the write path, so the person reads a
       // sentence instead of a thrown error (W50).
       const identical = findIdenticalRule(rulebook.rules, {
@@ -521,13 +525,23 @@ export function AddRulePanel({
               autoFocusName={false}
             />
             <div className="flex justify-end">
-              <Button
+              <GatedActionButton
                 disabled={saving}
                 onClick={() => void landRule(fields, { draft: false })}
+                reason={firstBlockingReason([
+                  {
+                    when: !fields.name.trim(),
+                    reason: "Give the rule a short name",
+                  },
+                  {
+                    when: !fields.statement.trim(),
+                    reason: "Write the rule itself",
+                  },
+                ])}
               >
                 <Plus className="h-4 w-4" />
                 {saving ? "Adding…" : "Add rule"}
-              </Button>
+              </GatedActionButton>
             </div>
           </div>
         )}

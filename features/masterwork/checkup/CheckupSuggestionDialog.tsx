@@ -211,11 +211,10 @@ export function CheckupSuggestionDialog({
   };
 
   const saveEdit = () => {
+    // Gated on the button, so a half-filled rule cannot reach here. Empty
+    // fields are a PROMPT, not an alarm (class sweep, 2026-09-16).
     if (!fields) return;
-    if (!fields.name.trim() || !fields.statement.trim()) {
-      toast.error("A rule needs a short name and the rule itself.");
-      return;
-    }
+    if (!fields.name.trim() || !fields.statement.trim()) return;
     if (!proposal) return;
     onProposal(finding.id, toProposal(fields, proposal));
     toast.success("Saved your wording.", {
@@ -326,7 +325,21 @@ export function CheckupSuggestionDialog({
               Rewrite it
             </GatedActionButton>
           ) : (
-            <Button onClick={saveEdit}>Save my version</Button>
+            <GatedActionButton
+              onClick={saveEdit}
+              reason={firstBlockingReason([
+                {
+                  when: !fields?.name.trim(),
+                  reason: "Give the rule a short name to save it",
+                },
+                {
+                  when: !fields?.statement.trim(),
+                  reason: "Write the rule itself to save it",
+                },
+              ])}
+            >
+              Save my version
+            </GatedActionButton>
           )}
         </DialogFooter>
       </DialogContent>

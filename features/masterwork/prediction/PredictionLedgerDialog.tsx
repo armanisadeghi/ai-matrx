@@ -306,12 +306,22 @@ export function PredictionLedgerDialog({
     return false;
   };
 
+  /**
+   * What is still missing before a call can be recorded, in plain words —
+   * the gate on the button, never a red complaint after the press.
+   */
+  const missingCallFields = validateNewPrediction({
+    caseLabel,
+    prediction,
+    why,
+    dueAt,
+  });
+
   const submitCall = async () => {
-    const refusal = validateNewPrediction({ caseLabel, prediction, why, dueAt });
-    if (refusal) {
-      toast.error(refusal);
-      return;
-    }
+    // Gated on the button, which carries this same sentence as its reason.
+    // A call that is not filled in yet is a PROMPT, not an alarm — this used
+    // to fire the sentence as a red toast (class sweep, 2026-09-16).
+    if (missingCallFields) return;
     setSaving(true);
     try {
       const result = await appendPrediction(rulebook.id, {
@@ -500,13 +510,15 @@ export function PredictionLedgerDialog({
               </div>
 
               {canEdit ? (
-                <Button
+                <GatedActionButton
                   onClick={() => void submitCall()}
                   disabled={saving}
                   className="w-full"
+                  wrapperClassName="w-full flex-col items-stretch justify-start"
+                  reason={missingCallFields}
                 >
                   {saving ? "Recording…" : "Record this call"}
-                </Button>
+                </GatedActionButton>
               ) : (
                 <p className="text-xs text-muted-foreground">
                   You are looking at someone else&apos;s Rulebook, so you cannot

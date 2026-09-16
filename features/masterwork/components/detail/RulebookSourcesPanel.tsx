@@ -43,6 +43,10 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AssociationCaptureToolbar } from "@ai-matrx/associations/react";
@@ -420,10 +424,11 @@ export function RulebookSourcesPanel({
   }, [run.running]);
 
   const launchDump = async () => {
-    if (totalSources === 0) {
-      toast.error("Attach at least one source first.");
-      return;
-    }
+    // Gated on the button, which names the missing precondition instead of
+    // sitting dark (it was `disabled` with nothing said) and instead of
+    // firing a red toast at a person who has simply not attached anything
+    // yet (class sweep, 2026-09-16).
+    if (totalSources === 0) return;
     await run.launch(
       {
         rulebook_id: rulebook.id,
@@ -797,11 +802,18 @@ export function RulebookSourcesPanel({
 
               {!run.result ? (
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
-                  <Button
+                  <GatedActionButton
                     size="sm"
                     className="h-10 w-full shrink-0 sm:h-8 sm:w-auto"
+                    wrapperClassName="w-full sm:w-auto"
                     onClick={() => void launchDump()}
-                    disabled={run.running || totalSources === 0}
+                    disabled={run.running}
+                    reason={firstBlockingReason([
+                      {
+                        when: totalSources === 0,
+                        reason: "Attach at least one source first",
+                      },
+                    ])}
                   >
                     {run.running ? (
                       <Loader2 className="mr-1 h-4 w-4 animate-spin" />
@@ -811,12 +823,7 @@ export function RulebookSourcesPanel({
                     {run.running
                       ? "Turning it into rules…"
                       : "Turn this into rules"}
-                  </Button>
-                  {totalSources === 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      Attach at least one source first.
-                    </span>
-                  ) : null}
+                  </GatedActionButton>
                 </div>
               ) : null}
             </div>

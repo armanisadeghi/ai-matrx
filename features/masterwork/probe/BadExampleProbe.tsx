@@ -80,7 +80,6 @@ export function BadExampleProbe({
   const [caseBrief, setCaseBrief] = useState("");
   const [rounds, setRounds] = useState<ProbeRound[]>([]);
   const [critique, setCritique] = useState("");
-  const [refusal, setRefusal] = useState<string | null>(null);
   const [lastCatch, setLastCatch] = useState<string | null>(null);
   const [finished, setFinished] = useState<ProbeRoundResult | null>(null);
 
@@ -154,14 +153,17 @@ export function BadExampleProbe({
   const current = rounds.length ? rounds[rounds.length - 1] : null;
   const started = rounds.length > 0 || finished !== null;
   const roundCount = result?.roundCount || knobs.rounds;
+  /** What is still missing before a probe can start, in plain words. */
+  const caseBriefProblem = validateCaseBrief(caseBrief);
 
   const send = async (finish: boolean) => {
-    setRefusal(null);
-    const problem = validateCaseBrief(caseBrief);
-    if (problem) {
-      setRefusal(problem);
-      return;
-    }
+    // THE GATE IS THE BUTTON, NOT A BANNER. `caseBriefProblem` is already the
+    // reason on "Write the first one", so a press with an empty case cannot
+    // reach here; once the probe has started the case is locked and valid.
+    // A not-yet-typed field is a PROMPT, never an alarm — this used to paint
+    // the same sentence in destructive red the moment somebody pressed the
+    // first button on the screen (cold walk, 2026-09-16).
+    if (caseBriefProblem) return;
     // The Expert's answer rides on the LAST round, because that is the one the
     // server distils. Building it anywhere but here would let the screen send
     // an answer attached to the wrong example.
@@ -238,19 +240,19 @@ export function BadExampleProbe({
         ) : null}
       </section>
 
-      {refusal ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {refusal}
-        </p>
-      ) : null}
-
       {/* ── THE START ────────────────────────────────────────────────────── */}
       {!started ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button onClick={() => void send(false)} disabled={running}>
+          <GatedActionButton
+            onClick={() => void send(false)}
+            disabled={running}
+            wrapperClassName="flex-col items-stretch sm:flex-row sm:items-center sm:justify-start"
+            reasonClassName="sm:max-w-sm"
+            reason={caseBriefProblem}
+          >
             {running ? <Loader2 className="animate-spin" /> : null}
             Write the first one
-          </Button>
+          </GatedActionButton>
           {/* THE COST, NAMED BEFORE THE CLICK. A round is two paid calls —
               writing the example and reading the answer — and a probe runs up
               to the organization's round knob. A confirm() per round would be

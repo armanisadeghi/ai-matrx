@@ -21,8 +21,11 @@
 
 import { useState } from "react";
 import { GitCompareArrows, Lock } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -142,11 +145,21 @@ export function CompareTwoDialog({
   });
   const verdict = run.result;
 
+  /** What is still missing before the two answers can be compared. */
+  const missingAnswers = firstBlockingReason([
+    {
+      when: textOne.trim().length < 50,
+      reason: "Paste the first answer — a paragraph at least",
+    },
+    {
+      when: textTwo.trim().length < 50,
+      reason: "Paste the second answer — a paragraph at least",
+    },
+  ]);
+
   const compare = () => {
-    if (textOne.trim().length < 50 || textTwo.trim().length < 50) {
-      toast.error("Paste both answers first — at least a paragraph each.");
-      return;
-    }
+    // Gated on the button; see `missingAnswers`.
+    if (missingAnswers) return;
     run.reset();
     void run.launch(
       {
@@ -268,11 +281,15 @@ export function CompareTwoDialog({
               />
             </div>
 
-            <Button onClick={compare} disabled={run.running}>
+            <GatedActionButton
+              onClick={compare}
+              disabled={run.running}
+              reason={missingAnswers}
+            >
               {run.running
                 ? (run.stage ?? "Judging blind…")
                 : "Compare, blind"}
-            </Button>
+            </GatedActionButton>
             {run.error ? (
               <p className="text-sm text-destructive">{run.error}</p>
             ) : null}

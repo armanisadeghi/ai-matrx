@@ -188,21 +188,18 @@ export function buildProbeRequest(input: {
   return body;
 }
 
-/** Refusals of a probe that cannot start, each naming what to do about it. */
+/** What is still missing before a probe can start, each a next step. */
 export function validateCaseBrief(caseBrief: string): string | null {
   const brief = caseBrief.trim();
   if (!brief) {
-    return (
-      "Tell us what kind of work to fake first — the job you actually do, in " +
-      "your own words. We write a version of it that looks right and is not, " +
-      "and you tell us what is wrong with it."
-    );
+    // PHRASED AS AN INSTRUCTION, NOT A COMPLAINT. These sentences are the
+    // `reason` on the gated start button, where a person who has not typed
+    // yet reads them on the screen's FIRST paint — so they are short next
+    // steps, and they are never dressed as an error.
+    return "Say what kind of work to fake first";
   }
   if (brief.length < 10) {
-    return (
-      "A few more words, so we can write something that looks like your real " +
-      "work — what you are deciding, or what you are producing."
-    );
+    return "A few more words, so we can write something like your real work";
   }
   return null;
 }

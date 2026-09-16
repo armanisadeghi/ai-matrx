@@ -439,12 +439,10 @@ export function IngestSourceDialog({
       await ingestFile();
       return;
     }
-    if (text.trim().length < MIN_SOURCE_CHARS) {
-      toast.error(
-        "Paste a real chunk of source material first (at least a few paragraphs).",
-      );
-      return;
-    }
+    // Gated on the button, which says the same thing in muted words before
+    // the press. Too little pasted YET is a PROMPT, not an alarm (class
+    // sweep, 2026-09-16).
+    if (text.trim().length < MIN_SOURCE_CHARS) return;
     // WHAT YOU PASTE IS A SOURCE (census D5) — kept BEFORE the run, so it is
     // listed in Sources whether the distillation succeeds, fails, or is
     // rejoined after a reload that took `text` with it.
@@ -468,12 +466,9 @@ export function IngestSourceDialog({
   };
 
   const ingestTimeline = async () => {
-    if (text.trim().length < MIN_SOURCE_CHARS) {
-      toast.error(
-        "Paste the case as it happened — at least a few paragraphs, in order.",
-      );
-      return;
-    }
+    // Gated on the button; see the timeline `reason` on it (class sweep,
+    // 2026-09-16).
+    if (text.trim().length < MIN_SOURCE_CHARS) return;
     // The timeline lane is a paste lane too — same law (census D5).
     await recordPastedSource({
       rulebookId: rulebook.id,
@@ -494,14 +489,10 @@ export function IngestSourceDialog({
   };
 
   const ingestFile = async () => {
-    if (!file) {
-      toast.error(
-        monologue
-          ? "Record something, or choose a recording you already have."
-          : "Choose a document or a recording first.",
-      );
-      return;
-    }
+    // Gated on the button, which already says "Choose a file to turn into
+    // rules" / "Record what you'd say…" in muted words (class sweep,
+    // 2026-09-16).
+    if (!file) return;
     // The upload happens BEFORE the run exists — there is no run row to rejoin
     // until the server has the file, so a reload during the upload legitimately
     // loses only the upload, and nothing has been paid for yet.
@@ -985,6 +976,24 @@ export function IngestSourceDialog({
                   // unlock — caught by `monologue-door.test.tsx`.
                   when: !monologue && shape !== "file" && !text.trim(),
                   reason: "Paste the material first",
+                },
+                {
+                  when:
+                    timeline && text.trim().length < MIN_SOURCE_CHARS,
+                  reason:
+                    "Paste the case as it happened — a few paragraphs, in order",
+                },
+                {
+                  // The length threshold used to live ONLY inside `ingest`,
+                  // where it became a red toast after the press. The gate
+                  // says it before the press instead.
+                  when:
+                    !timeline &&
+                    !monologue &&
+                    shape !== "file" &&
+                    text.trim().length > 0 &&
+                    text.trim().length < MIN_SOURCE_CHARS,
+                  reason: "A few paragraphs at least, so there is something to read",
                 },
               ])}
             >

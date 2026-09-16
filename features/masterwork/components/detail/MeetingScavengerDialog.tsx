@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileUp, Mic, Users } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -268,19 +272,29 @@ export function MeetingScavengerDialog({
     return { text };
   }, [tab, selected, fileId, text]);
 
+  /**
+   * What is still missing before the meetings can be read, in plain words —
+   * the gate on the button, never a red toast after the press.
+   */
+  const missingSource = firstBlockingReason([
+    {
+      when: tab === "platform" && selected.size === 0,
+      reason: "Pick at least one meeting first",
+    },
+    { when: tab === "upload" && !fileId, reason: "Choose a transcript file first" },
+    {
+      when: tab !== "platform" && tab !== "upload" && text.trim().length < 40,
+      reason: "Paste a real transcript first",
+    },
+  ]);
+
   /** Read the chosen meetings and list the voices. No AI, no writes, no cost. */
   const readVoices = async () => {
     const body = sourceBody();
-    if (!body) {
-      toast.error(
-        tab === "platform"
-          ? "Pick at least one meeting first."
-          : tab === "upload"
-            ? "Choose a transcript file first."
-            : "Paste a real transcript first.",
-      );
-      return;
-    }
+    // Gated on the button, which carries `missingSource` in muted words. A
+    // source not chosen YET is a PROMPT, not an alarm (class sweep,
+    // 2026-09-16).
+    if (!body) return;
     setPreviewing(true);
     try {
       let rows: SpeakerRow[] = [];
@@ -716,9 +730,13 @@ export function MeetingScavengerDialog({
                 : "Pull out what I said"}
             </Button>
           ) : (
-            <Button onClick={readVoices} disabled={busy}>
+            <GatedActionButton
+              onClick={readVoices}
+              disabled={busy}
+              reason={missingSource}
+            >
               {previewing ? "Reading the meetings…" : "See who is in them"}
-            </Button>
+            </GatedActionButton>
           )}
         </DialogFooter>
       </DialogContent>

@@ -27,6 +27,10 @@ import { ListFilter, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -37,7 +41,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { toast } from "@/lib/toast";
 import { useRunOutcome } from "../durable-run/useRunOutcome";
 import { useTriageRun } from "./useTriageRun";
 import { triageSummary } from "./types";
@@ -119,10 +122,10 @@ export function TriageDraftsDialog({
   };
 
   const start = async () => {
-    if (!keep.trim()) {
-      toast.error("Say what this Rulebook is for — one sentence is enough.");
-      return;
-    }
+    // Gated on the button below; an empty "keep" cannot reach here. A field
+    // nobody has typed in yet is a PROMPT, not an alarm (class sweep,
+    // 2026-09-16).
+    if (!keep.trim()) return;
     await run.start({
       keep: keep.trim(),
       setAside: setAside.trim(),
@@ -232,7 +235,16 @@ export function TriageDraftsDialog({
           >
             Close
           </Button>
-          <Button onClick={() => void start()} disabled={run.running}>
+          <GatedActionButton
+            onClick={() => void start()}
+            disabled={run.running}
+            reason={firstBlockingReason([
+              {
+                when: !keep.trim(),
+                reason: "Say what this Rulebook is for first",
+              },
+            ])}
+          >
             {run.running ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -243,7 +255,7 @@ export function TriageDraftsDialog({
             ) : (
               `Sort ${draftCount} draft${draftCount === 1 ? "" : "s"}`
             )}
-          </Button>
+          </GatedActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

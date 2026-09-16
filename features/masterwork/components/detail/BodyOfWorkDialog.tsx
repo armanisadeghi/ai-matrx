@@ -5,6 +5,10 @@ import Link from "next/link";
 import { ExternalLink, FileUp, Link2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
@@ -234,10 +238,9 @@ export function BodyOfWorkDialog({
 
   const launch = async () => {
     const urls = parseUrls(urlsText);
-    if (files.length === 0 && urls.length === 0) {
-      toast.error("Add at least one file or paste at least one link first.");
-      return;
-    }
+    // Gated on the button; nothing attached cannot reach here. Nothing
+    // attached YET is a PROMPT, not an alarm (class sweep, 2026-09-16).
+    if (files.length === 0 && urls.length === 0) return;
     if (files.length + urls.length > MAX_PIECES) {
       toast.error(
         `That's more than ${MAX_PIECES} pieces — split your body of work into batches. Every batch lands on this same Rulebook.`,
@@ -561,13 +564,22 @@ export function BodyOfWorkDialog({
                 onOpenChange(false);
               }}
             />
-            <Button onClick={() => void launch()} disabled={running}>
+            <GatedActionButton
+              onClick={() => void launch()}
+              disabled={running}
+              reason={firstBlockingReason([
+                {
+                  when: pieceCount === 0,
+                  reason: "Add a file or paste a link first",
+                },
+              ])}
+            >
               {running
                 ? "Distilling…"
                 : pieceCount > 0
                   ? `Distill my body of work (${pieceCount} ${pieceCount === 1 ? "piece" : "pieces"})`
                   : "Distill my body of work"}
-            </Button>
+            </GatedActionButton>
           </DialogFooter>
         ) : null}
     </>

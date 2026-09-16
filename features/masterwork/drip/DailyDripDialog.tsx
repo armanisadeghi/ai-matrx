@@ -39,6 +39,10 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -325,10 +329,9 @@ export function DailyDripDialog({
   };
 
   const submitAnswer = async (day: DripDay) => {
-    if (!answer.trim()) {
-      toast.error("Say something first — a sentence is plenty.");
-      return;
-    }
+    // Gated on the button, so an empty answer never reaches here. Not having
+    // typed yet is a PROMPT, not an alarm (class sweep, 2026-09-16).
+    if (!answer.trim()) return;
     setAnswering(true);
     try {
       const result = await answerDripDay(
@@ -464,10 +467,21 @@ export function DailyDripDialog({
                     minHeight={90}
                     autoGrow
                   />
-                  <Button size="sm" disabled={answering} onClick={() => submitAnswer(today)}>
+                  <GatedActionButton
+                    size="sm"
+                    disabled={answering}
+                    wrapperClassName="justify-start"
+                    reason={firstBlockingReason([
+                      {
+                        when: !answer.trim(),
+                        reason: "Say something first — a sentence is plenty",
+                      },
+                    ])}
+                    onClick={() => submitAnswer(today)}
+                  >
                     {answering ? <LoadingSpinner size="sm" /> : null}
                     Save my answer
-                  </Button>
+                  </GatedActionButton>
                 </>
               ) : null}
             </section>

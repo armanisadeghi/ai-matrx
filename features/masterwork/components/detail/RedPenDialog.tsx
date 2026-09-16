@@ -318,12 +318,10 @@ export function RedPenDialog({
 
   const saveCorrection = () => {
     if (!pending) return;
-    if (!comment.trim()) {
-      toast.error(
-        "Say what is wrong with that passage and what you would do instead.",
-      );
-      return;
-    }
+    // Gated on the Save button, which says this in muted words before the
+    // press. Nothing typed YET is a PROMPT, not an alarm (class sweep,
+    // 2026-09-16).
+    if (!comment.trim()) return;
     setCorrections((list) => [
       ...list,
       {
@@ -569,9 +567,20 @@ export function RedPenDialog({
                   onTranscriptionComplete={() => setSpoke(true)}
                 />
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={saveCorrection}>
+                  <GatedActionButton
+                    size="sm"
+                    onClick={saveCorrection}
+                    wrapperClassName="justify-start"
+                    reason={firstBlockingReason([
+                      {
+                        when: !comment.trim(),
+                        reason:
+                          "Say what is wrong with it and what you would do instead",
+                      },
+                    ])}
+                  >
                     Save this correction
-                  </Button>
+                  </GatedActionButton>
                   <Button
                     size="sm"
                     variant="ghost"

@@ -293,10 +293,10 @@ export function ChatImportDialog({
   };
 
   const prepareUpload = async () => {
-    if (!file) {
-      toast.error("Choose your export file first.");
-      return;
-    }
+    // Gated on the button, which names the missing file instead of sitting
+    // dark or firing a red toast at somebody who has not picked one yet
+    // (class sweep, 2026-09-16).
+    if (!file) return;
     setPreparing(true);
     try {
       const uploaded = await upload(
@@ -319,10 +319,9 @@ export function ChatImportDialog({
   };
 
   const preparePaste = async () => {
-    if (text.trim().length < 40) {
-      toast.error("Paste a real conversation first.");
-      return;
-    }
+    // Gated on the button, which says "Paste at least 40 characters to
+    // import" in muted words before the press (class sweep, 2026-09-16).
+    if (text.trim().length < 40) return;
     setPreparing(true);
     try {
       await previewSource({ text });
@@ -452,8 +451,9 @@ export function ChatImportDialog({
   // ── launch ───────────────────────────────────────────────────────────────
 
   const distill = async () => {
+    // Gated on the button, which names this in muted words before the press
+    // (class sweep, 2026-09-16).
     if (selected.size === 0) {
-      toast.error("Select at least one conversation.");
       return;
     }
     if (selected.size > MAX_SELECTED) {
@@ -809,21 +809,30 @@ export function ChatImportDialog({
               }}
             />
             {rows ? (
-              <Button
+              <GatedActionButton
                 onClick={() => void distill()}
-                disabled={running || selected.size === 0}
+                disabled={running}
+                reason={firstBlockingReason([
+                  {
+                    when: selected.size === 0,
+                    reason: "Pick at least one conversation to distil",
+                  },
+                ])}
               >
                 {running
                   ? "Distilling…"
                   : `Distill ${selected.size || ""} conversation${selected.size === 1 ? "" : "s"}`}
-              </Button>
+              </GatedActionButton>
             ) : tab === "upload" ? (
-              <Button
+              <GatedActionButton
                 onClick={() => void prepareUpload()}
-                disabled={running || !file}
+                disabled={running}
+                reason={firstBlockingReason([
+                  { when: !file, reason: "Choose your export file first" },
+                ])}
               >
                 {preparing ? "Reading…" : "Read the export"}
-              </Button>
+              </GatedActionButton>
             ) : tab === "paste" ? (
               /* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */
               <GatedActionButton

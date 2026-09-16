@@ -30,6 +30,10 @@ import { CalendarClock, CheckCircle2, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { knobInt } from "@/lib/knobs/featureKnobs";
@@ -87,10 +91,10 @@ export function DripAnswerPage({
   }, []);
 
   const submit = async (day: DripDay) => {
-    if (!answer.trim()) {
-      toast.error("Say something first — a sentence is plenty.");
-      return;
-    }
+    // The button is gated on the same condition, so an empty answer cannot
+    // reach here. A person who has not typed yet is NOT in an error state —
+    // this used to fire a red toast at them (class sweep, 2026-09-16).
+    if (!answer.trim()) return;
     setSaving(true);
     try {
       const result = await answerDripDay(
@@ -165,15 +169,19 @@ export function DripAnswerPage({
               autoGrow
               autoFocus
             />
-            <Button
+            <GatedActionButton
               size="lg"
               className="w-full"
+              wrapperClassName="w-full flex-col items-stretch justify-start"
               disabled={saving}
+              reason={firstBlockingReason([
+                { when: !answer.trim(), reason: "Say something first — a sentence is plenty" },
+              ])}
               onClick={() => submit(question)}
             >
               {saving ? <LoadingSpinner size="sm" /> : null}
               Send my answer
-            </Button>
+            </GatedActionButton>
             <p className="text-xs text-muted-foreground">
               It goes straight into {rulebook.name}, in your own words, with today&apos;s
               date and this question attached to it.

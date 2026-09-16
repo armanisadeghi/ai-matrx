@@ -553,19 +553,19 @@ export function NewRulebookFlow() {
   };
 
   const handleContinue = () => {
-    if (!goal.trim()) {
-      toast.error("Tell us what you're trying to build first.");
-      return;
-    }
+    // Gated on the Continue button, which already carries this sentence as
+    // its muted reason. A goal nobody has typed yet is a PROMPT, not an
+    // alarm, so it never becomes a red toast (class sweep, 2026-09-16).
+    if (!goal.trim()) return;
     toStep(2);
   };
 
   const create = async () => {
     const approach = startable?.find((a) => a.key === effectiveKey);
-    if (!approach) {
-      toast.error("Pick how you'd like to do this first.");
-      return;
-    }
+    // The sticky bar already says "Pick how you'd like to do this" in muted
+    // words beside a dark Start; saying it again in red after the press would
+    // dress a normal first paint as a failure (class sweep, 2026-09-16).
+    if (!approach) return;
     // THE ACTION WAITS FOR THE WORKSPACE (wall W39). Pressing Start used to
     // read the workspace once and refuse with "still loading — try again in a
     // moment": wrong while the bootstrap was milliseconds from landing, and a

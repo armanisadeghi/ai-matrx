@@ -312,10 +312,9 @@ export function ShadowInboxDialog({
   });
 
   const prepareUpload = async () => {
-    if (!file) {
-      toast.error("Choose your exported thread first.");
-      return;
-    }
+    // Gated on the button, which says this in muted words before the press
+    // (class sweep, 2026-09-16).
+    if (!file) return;
     setPreparing(true);
     try {
       const uploaded = await upload(
@@ -338,10 +337,8 @@ export function ShadowInboxDialog({
   };
 
   const preparePaste = async () => {
-    if (text.trim().length < 40) {
-      toast.error("Paste a real thread first.");
-      return;
-    }
+    // Gated on the button; see `prepareUpload`.
+    if (text.trim().length < 40) return;
     setPreparing(true);
     try {
       await previewSource({ ...sourceBody(), text });
@@ -357,10 +354,8 @@ export function ShadowInboxDialog({
   // ── launch ───────────────────────────────────────────────────────────────
 
   const distill = async () => {
-    if (door !== "connected" && selected.size === 0) {
-      toast.error("Select at least one thread.");
-      return;
-    }
+    // Gated on the button; see `prepareUpload`.
+    if (door !== "connected" && selected.size === 0) return;
     if (selected.size > MAX_SELECTED) {
       toast.error(
         `That's ${selected.size} threads — keep a pass under ${MAX_SELECTED} (you can come back for the rest).`,

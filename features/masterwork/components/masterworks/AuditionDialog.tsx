@@ -26,6 +26,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -265,11 +269,21 @@ export function AuditionDialog({
     refreshHistory();
   }, [run.status, run.runId, verdict, handledRunId, onGapsCaptured, refreshHistory]);
 
+  /** What is still missing before the two texts can be judged. */
+  const missingTexts = firstBlockingReason([
+    {
+      when: candidate.trim().length < 50,
+      reason: "Paste our version first — a paragraph at least",
+    },
+    {
+      when: reference.trim().length < 50,
+      reason: "Paste the original too — a paragraph at least",
+    },
+  ]);
+
   const audition = () => {
-    if (candidate.trim().length < 50 || reference.trim().length < 50) {
-      toast.error("Paste both texts first — ours and the original.");
-      return;
-    }
+    // Gated on the button; see `missingTexts`.
+    if (missingTexts) return;
     if (compareVanilla && vanillaInput.trim().length < 20) {
       toast.error(
         "To compare against vanilla AI, paste the same input you gave your Masterwork.",
@@ -440,9 +454,13 @@ export function AuditionDialog({
               ) : null}
             </div>
           </div>
-          <Button onClick={audition} disabled={run.running}>
+          <GatedActionButton
+            onClick={audition}
+            disabled={run.running}
+            reason={missingTexts}
+          >
             {run.running ? (run.stage ?? "Judging rule by rule…") : "Compare"}
-          </Button>
+          </GatedActionButton>
           {run.running && run.stages.length > 0 ? (
             <p className="text-xs text-muted-foreground">{run.stage}</p>
           ) : null}
