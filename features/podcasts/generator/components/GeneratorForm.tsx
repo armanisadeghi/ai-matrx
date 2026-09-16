@@ -104,6 +104,7 @@ import {
 import { useVoices } from "../useVoices";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { usePodcastCastPreview } from "../usePodcastCastPreview";
+import { getPodcastSourceReadiness } from "../sourceReadiness";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
@@ -269,16 +270,22 @@ export function GeneratorForm({
   }
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
   const isRtl = isRtlLanguage(language);
+  const sourceText = activeSource.control === "resolve" ? resolvedText : text;
+  const sourceReadiness = getPodcastSourceReadiness(
+    activeSource.inputDataType,
+    sourceText,
+  );
+  const hasSourceInput =
+    activeSource.control === "urls"
+      ? cleanUrls.length > 0
+      : sourceText.trim().length > 0;
 
   const canGenerate =
     !busy &&
     !resolverBusy &&
     !!activeSource.inputDataType &&
-    (activeSource.control === "urls"
-      ? cleanUrls.length > 0
-      : activeSource.control === "resolve"
-        ? resolvedText.trim().length > 0
-        : text.trim().length > 0);
+    hasSourceInput &&
+    sourceReadiness.ready;
 
   /** The exact request the form would submit right now, or null when the
    *  selected source has no wired input type. Shared by Generate and the
@@ -663,6 +670,17 @@ export function GeneratorForm({
               onBusyChange={setResolverBusy}
             />
           ) : null}
+          {activeSource.control !== "urls" &&
+            hasSourceInput &&
+            !sourceReadiness.ready && (
+              <p
+                role="alert"
+                aria-live="polite"
+                className="text-sm text-destructive"
+              >
+                {sourceReadiness.message}
+              </p>
+            )}
         </div>
 
         {/* Topic-only: agent-assisted idea picker. Fills the topic field via

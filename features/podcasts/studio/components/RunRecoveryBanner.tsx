@@ -60,16 +60,22 @@ export function RunRecoveryBannerFor({
    *  real distinction, not drift. Everything else is derived and must stay so. */
   audioMissing?: boolean;
 }) {
+  // Once durable detail exists, its source-aware recovery derivation is the
+  // authority. The legacy reactive flags only cover the pre-detail/orphan
+  // path; OR-ing them back in would resurrect actions that Gate 1 suppressed.
+  const canReconnect = run.detail
+    ? run.recovery.canResume
+    : run.canReconnect;
+  const canRerun = run.detail ? run.recovery.canRerun : run.canRerun;
+
   return (
     <RunRecoveryBanner
       status={run.state.status}
       streaming={run.streaming}
       stalled={run.stalled}
       backgroundWorking={run.backgroundWorking}
-      canReconnect={run.canReconnect}
-      // Either source of a re-runnable request counts: the durable record, or
-      // the pc_studio_runs row (the only one an orphaned run has).
-      canRerun={run.recovery.canRerun || run.canRerun}
+      canReconnect={canReconnect}
+      canRerun={canRerun}
       orphaned={run.orphaned}
       audioMissing={audioMissing ?? !run.state.audioUrl}
       error={run.state.error}
@@ -154,6 +160,43 @@ export function RunRecoveryBanner({
     );
   }
 
+  // A terminal error outranks every optimistic connection signal. A stale
+  // background-poll flag must not make a finished failure look in progress.
+  if (status === "error") {
+    const h = humanizeGenerationError(error);
+    return (
+      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0 break-words">
+            <p className="font-medium">{h.short}</p>
+            <p className="mt-0.5 text-destructive/70">
+              {h.hint ??
+                (canReconnect
+                  ? "Resume picks up from the failed step — finished work isn't redone."
+                  : "Re-run starts fresh from your saved source.")}
+            </p>
+            {h.detail && (
+              <details className="mt-1 text-xs text-destructive/60">
+                <summary className="cursor-pointer select-none">Technical details</summary>
+                <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words font-mono">
+                  {h.detail}
+                </p>
+              </details>
+            )}
+          </div>
+        </div>
+        <Actions
+          canReconnect={canReconnect}
+          canRerun={canRerun}
+          onResume={onResume}
+          onRerun={onRerun}
+          tone="border-destructive/40"
+        />
+      </div>
+    );
+  }
+
   // Connection dropped, but the backend keeps generating server-side — we're
   // polling the durable record. This is the calm, common case (audio is long).
   if (backgroundWorking) {
@@ -187,41 +230,6 @@ export function RunRecoveryBanner({
           onResume={onResume}
           onRerun={onRerun}
           tone="border-amber-500/40"
-        />
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    const h = humanizeGenerationError(error);
-    return (
-      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0 break-words">
-            <p className="font-medium">{h.short}</p>
-            <p className="mt-0.5 text-destructive/70">
-              {h.hint ??
-                (canReconnect
-                  ? "Resume picks up from the failed step — finished work isn't redone."
-                  : "Re-run starts fresh from your saved source.")}
-            </p>
-            {h.detail && (
-              <details className="mt-1 text-xs text-destructive/60">
-                <summary className="cursor-pointer select-none">Technical details</summary>
-                <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words font-mono">
-                  {h.detail}
-                </p>
-              </details>
-            )}
-          </div>
-        </div>
-        <Actions
-          canReconnect={canReconnect}
-          canRerun={canRerun}
-          onResume={onResume}
-          onRerun={onRerun}
-          tone="border-destructive/40"
         />
       </div>
     );

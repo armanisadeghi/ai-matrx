@@ -25,6 +25,7 @@ import {
   reduce,
   settleStaleAssets,
 } from "@/features/podcasts/generator/reduce";
+import { canRerunPodcastSource } from "@/features/podcasts/generator/sourceReadiness";
 import { podcastService } from "@/features/podcasts/service";
 import {
   INITIAL_RUN_STATE,
@@ -111,9 +112,9 @@ export interface UseStudioRun {
    *  2026-08-01→04 outage: the DB refused writes, so no run row was created.
    *  Re-run from source still works — the request payload is on the row. */
   orphaned: boolean;
-  /** A saved request payload is loaded, so `rerunFromSource` will actually do
-   *  something. Sourced from the durable record OR the pc_studio_runs row, so
-   *  it stays true for a run the server never recorded. */
+  /** A saved request payload is loaded and passes the deterministic source
+   *  gate, so `rerunFromSource` will actually do something. Sourced from the
+   *  durable record OR the pc_studio_runs row, including orphaned runs. */
   canRerun: boolean;
   reconnect: () => void;
   /** Start a fresh run from the saved source (when resume can't proceed). */
@@ -249,10 +250,11 @@ export function useStudioRun(runId: string): UseStudioRun {
     setCanRerun(false);
 
     // requestRef is a ref (read inside stream callbacks) but the banner needs a
-    // reactive flag — set both through one seam so they can never disagree.
+    // reactive, source-aware flag — set both through one seam so an orphaned
+    // row cannot offer a rerun the server will deterministically reject.
     function setRequest(req: PodcastGenerateRequest | null) {
       requestRef.current = req;
-      setCanRerun(req !== null);
+      setCanRerun(canRerunPodcastSource(req));
     }
     imgUrlsRef.current = [];
     vidUrlsRef.current = [];

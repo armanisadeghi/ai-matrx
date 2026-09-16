@@ -18,9 +18,13 @@ export function MetadataHero({ state }: MetadataHeroProps) {
   const hasMeta = state.title.trim().length > 0;
   const rtl = state.podcastType === "persian";
 
-  if (!hasMeta) {
+  // Metadata is pending only while the pipeline is running. A terminal run
+  // that failed before metadata must never keep animating a composition claim.
+  if (!hasMeta && state.status === "running") {
     return <PodcastCompositionPlaceholder />;
   }
+
+  if (!hasMeta) return null;
 
   return (
     <div className="space-y-3" dir={rtl ? "rtl" : undefined}>

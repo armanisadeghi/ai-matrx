@@ -8,6 +8,7 @@
 // detail available behind a disclosure rather than dumped on the page.
 
 export type GenerationErrorKind =
+  | "content_gate"
   | "moderation"
   | "rate_limit"
   | "timeout"
@@ -26,6 +27,12 @@ export interface HumanizedError {
 }
 
 const PATTERNS: { kind: GenerationErrorKind; re: RegExp; short: string; hint: string | null }[] = [
+  {
+    kind: "content_gate",
+    re: /content gate failed|only \d+ chars of usable content|need [≥>=]\s*1000/i,
+    short: "This source is too short to turn into an episode.",
+    hint: "Add more source material, or paste a complete formatted podcast script.",
+  },
   {
     kind: "moderation",
     re: /safety system|content policy|content_policy|moderation|\bflagged\b|\bblocked\b|safety filter|responsible ai|prohibited|disallowed|violat/i,

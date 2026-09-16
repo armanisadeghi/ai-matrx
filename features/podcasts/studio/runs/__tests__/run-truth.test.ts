@@ -129,6 +129,20 @@ describe("deriveRecoveryState", () => {
     expect(state.canResume).toBe(true);
     expect(state.showBanner).toBe(true);
   });
+
+  it("suppresses recovery for the captured 457-character content-gate failure", () => {
+    const state = deriveRecoveryState(
+      detail({
+        liveness: "failed",
+        request: {
+          input_data_type: "full_content",
+          input_data: "x".repeat(457),
+        },
+      }),
+    );
+    expect(state.canResume).toBe(false);
+    expect(state.canRerun).toBe(false);
+  });
 });
 
 describe("detailToRunState", () => {
