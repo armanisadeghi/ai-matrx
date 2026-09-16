@@ -68,6 +68,7 @@ import {
   duplicateColumn,
   type TableShape,
 } from "../../tables/editing/tableMutations";
+import { useSpecimenMode } from "../../specimen/SpecimenContext";
 import {
   parseMarkdownTable,
   cleanTableHeaderKey,
@@ -321,6 +322,12 @@ const StreamingTableRendererCore: React.FC<
   const toast = useToastManager();
   const isMobile = useIsMobile();
   const openTableWindow = useOpenTableViewerWindow();
+  // A DECLARED SPECIMEN CARRIES NO ACTIONS (feedback 729b59bd). Inside a
+  // specimen document this whole toolbar is absent — Export, Send to
+  // Workbook, Send to Google Sheet, Save as data, Edit, and Window (which
+  // re-renders the table OUTSIDE the specimen provider, toolbar and all).
+  // RichDocument prints the banner that says so.
+  const specimenMode = useSpecimenMode();
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
 
   // State Management
@@ -783,7 +790,9 @@ const StreamingTableRendererCore: React.FC<
 
   // Double-click anywhere on the table to enter edit mode (same gate as the
   // visible "Edit" button) and focus the exact cell that was clicked.
-  const canEnterEditMode = tableIsComplete;
+  // …and never inside a specimen: with the toolbar gone there would be no
+  // Save or Cancel to leave edit mode with — a dead end on a fake document.
+  const canEnterEditMode = tableIsComplete && !specimenMode;
   const { handleTableDoubleClick, bindCellTextareaRef } = useDoubleClickEdit({
     canEnterEditMode,
     editMode,
@@ -1024,7 +1033,7 @@ const StreamingTableRendererCore: React.FC<
           )}
 
           {/* Action Buttons - Only show when not streaming and table is complete */}
-          {tableIsComplete && (
+          {tableIsComplete && !specimenMode && (
             <div
               className={cn(
                 "flex gap-2 mt-2",

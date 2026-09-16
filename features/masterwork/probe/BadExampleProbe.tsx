@@ -333,10 +333,22 @@ export function BadExampleProbe({
             <h2 className="mb-2 text-base font-semibold text-foreground">
               {current.example_title || `A ${caseBrief.trim() || "work"} that looks right`}
             </h2>
+            {/* 🚨 A SPECIMEN CARRIES NO ACTIONS (jobs-bar-2026-09-16 lanes-b
+                item C, feedback 729b59bd). `actionsVariant="none"` only silenced
+                RichDocument's OWN surface — the tables inside this deliberately
+                false certificate still drew Export / Send to Workbook / Send to
+                Google Sheet / Edit, so the Expert could file our knowingly-wrong
+                document as if it were a real record. `specimen` declares what
+                this is to every renderer underneath. */}
             <RichDocument
               content={current.example_body}
               source={{ type: "raw" }}
               actionsVariant="none"
+              specimen={{
+                label: "This is the example we made up",
+                notice:
+                  "It is meant to look right and be wrong, so there is nothing here to export, send to a workbook or a sheet, or edit — tell us what is wrong with it instead.",
+              }}
               contentClassName="text-sm"
             />
           </section>

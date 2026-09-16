@@ -37,6 +37,10 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -657,10 +661,12 @@ export function PredictionLedgerDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
+          {/* One statement, not two: when the action is blocked the gate beside
+              the button carries the sentence, so this line stops repeating it. */}
           <p className="text-xs text-muted-foreground">
             {enoughToDistill
               ? `${counts.resolved} answered calls ready to learn from.`
-              : `${stillNeeded} more ${stillNeeded === 1 ? "answer" : "answers"} and your calls can be turned into rules.`}
+              : `${counts.resolved} of your ${counts.resolved + counts.open} calls ${counts.resolved === 1 ? "has" : "have"} an answer so far.`}
           </p>
           <div className="flex gap-2">
             <Button
@@ -670,15 +676,38 @@ export function PredictionLedgerDialog({
             >
               Close
             </Button>
-            {/* NEVER disabled-looking-and-silent: below the threshold this
-                still clicks, and the server answers with the sentence that
-                says exactly how many more outcomes are needed. */}
+            {/* 🚨 THE SENTENCE AND THE BUTTON AGREE (jobs-bar lanes-B, W17,
+                2026-09-16). The footer already says "4 more answers and your
+                calls can be turned into rules" — and the button beside it sat
+                fully enabled and blue, so the screen said two different things
+                at once and pressing it spent a round trip to be told what was
+                already written next to it. `GatedActionButton` is the ONE way
+                this repo says no: the reason is rendered beside the control,
+                wired by `aria-describedby`, never a dead button and never a
+                silent one. The threshold is a knob, so the sentence names the
+                live numbers rather than a constant. Nothing is hidden: if the
+                server still refuses for a reason the client cannot know, that
+                refusal now scrolls itself onto the screen (see `noticeRef`). */}
             {canEdit ? (
-              <Button onClick={() => void distill()} disabled={running}>
+              <GatedActionButton
+                onClick={() => void distill()}
+                disabled={running}
+                reason={firstBlockingReason([
+                  {
+                    when: counts.resolved === 0,
+                    reason:
+                      "None of your calls has an answer yet — score one when the outcome lands",
+                  },
+                  {
+                    when: !enoughToDistill,
+                    reason: `${stillNeeded} more ${stillNeeded === 1 ? "answer" : "answers"} before these can become rules`,
+                  },
+                ])}
+              >
                 {running
                   ? "Reading your calls…"
                   : "Turn the answered ones into rules"}
-              </Button>
+              </GatedActionButton>
             ) : null}
           </div>
         </DialogFooter>
