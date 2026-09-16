@@ -108,6 +108,9 @@ export interface BuildRunHandle {
 const BUILD_USUAL_MS = 60_000;
 /** How often the waiting sentence re-reads the clock. */
 const BUILD_TICK_MS = 5_000;
+/** What the Expert can do when a Build step fails — never a bare "it failed". */
+const BUILD_FAILURE_REMEDY =
+  "Start the Build again; if it stops here a second time, tell us and we will look at it.";
 
 export function useBuildRun(
   rulebookId: string,
@@ -207,13 +210,19 @@ export function useBuildRun(
     });
     return {
       title: progressTitle,
+      failureRemedy: BUILD_FAILURE_REMEDY,
       description: run.rejoinedTarget
         ? "This Build kept running while you were away — picking it back up."
-        : estimateSentence({
+        : // The SAME `items` rendered below, not a parallel notion of health:
+          // this sentence once read "Nothing has failed" above a step pill
+          // reading "Failed" (cold walk 2026-09-16, finding #2).
+          estimateSentence({
             elapsedMs,
             usualMs: BUILD_USUAL_MS,
             doing: "Building",
             keepsGoingWithoutYou: true,
+            steps: items,
+            failureRemedy: BUILD_FAILURE_REMEDY,
           }),
       items,
     };

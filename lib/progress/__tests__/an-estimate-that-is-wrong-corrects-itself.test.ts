@@ -45,6 +45,9 @@ describe("the sentence a person reads while they wait", () => {
       usualMs: MINUTE,
       doing: "Building",
       keepsGoingWithoutYou: true,
+      // Every step healthy: the time-based sentences below are only reachable
+      // when the rows agree. See the step-aware suite at the bottom.
+      steps: [{ label: "Building the parts", status: "running" }],
     });
 
   it("promises the usual time while the promise still holds", () => {
@@ -77,6 +80,7 @@ describe("the sentence a person reads while they wait", () => {
         elapsedMs: 3 * MINUTE,
         usualMs: MINUTE,
         doing: "Checking every rule",
+        steps: [{ label: "Checking rule 4", status: "running" }],
       }),
     ).not.toContain("keeps going without you");
   });
@@ -138,5 +142,52 @@ describe("the live-turn state cannot scroll away", () => {
 
   it("says what is happening in plain words a non-technical person reads", () => {
     expect(bar).toContain('label = "Working…"');
+  });
+});
+
+/**
+ * Cold walk 2026-09-16, finding #2 — the reassurance that contradicted the
+ * rows rendered beneath it. The clock never outranks a failed step.
+ */
+describe("a failed step outranks every word the clock would say", () => {
+  const withFailure = (elapsedMs: number) =>
+    estimateSentence({
+      elapsedMs,
+      usualMs: MINUTE,
+      doing: "Building",
+      keepsGoingWithoutYou: true,
+      steps: [
+        { label: "Reading the rules you approved", status: "completed" },
+        { label: "Building the parts that do the work", status: "failed" },
+        { label: "Saving it to your library", status: "waiting" },
+      ],
+    });
+
+  it("never says nothing has failed when a rendered step has", () => {
+    expect(withFailure(3 * MINUTE)).not.toMatch(/nothing (has )?failed/i);
+    // And not only after the estimate is overtaken — the early sentence is
+    // just as much a lie while a step is red.
+    expect(withFailure(10_000)).not.toContain("this usually takes");
+  });
+
+  it("names the step and says what to do about it", () => {
+    const sentence = withFailure(3 * MINUTE);
+    expect(sentence).toContain("Building the parts that do the work");
+    expect(sentence).toMatch(/try it again/i);
+  });
+
+  it("counts the other failures rather than hiding them", () => {
+    const sentence = estimateSentence({
+      elapsedMs: 3 * MINUTE,
+      usualMs: MINUTE,
+      doing: "Building",
+      steps: [
+        { label: "First part", status: "failed" },
+        { label: "Second part", status: "failed" },
+        { label: "Third part", status: "failed" },
+      ],
+    });
+    expect(sentence).toContain("First part");
+    expect(sentence).toContain("2 other steps failed too");
   });
 });

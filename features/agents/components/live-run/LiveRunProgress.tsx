@@ -3,6 +3,7 @@
 import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { honestProgressSummary } from "@/lib/progress/honestSummary";
 import { isJsonObject } from "@/types/json";
 
 export type LiveRunProgressStatus =
@@ -19,6 +20,12 @@ export interface LiveRunProgressItem {
 export interface LiveRunProgressState {
   title: string;
   description?: string;
+  /**
+   * What the person can do when a step fails. Optional: `honestProgressSummary`
+   * supplies a sensible default, so a surface never ships a failure with no
+   * way out. See `lib/progress/honestSummary.ts`.
+   */
+  failureRemedy?: string;
   items: LiveRunProgressItem[];
 }
 
@@ -65,6 +72,9 @@ export function parseLiveRunProgressState(
     ...(typeof value.description === "string"
       ? { description: value.description }
       : {}),
+    ...(typeof value.failureRemedy === "string"
+      ? { failureRemedy: value.failureRemedy }
+      : {}),
     items,
   };
 }
@@ -96,6 +106,18 @@ export function LiveRunProgress({
   ).length;
   const finished = completed + failed;
 
+  // 🚨 ONE SOURCE OF TRUTH. The sentence above the rows is DERIVED from the
+  // very rows below it, never handed straight through from the caller. The
+  // Quick Build dialog once said "Nothing has failed" directly above a step
+  // pill reading "Failed" (cold walk 2026-09-16, finding #2) because the
+  // caller's description and the item list were computed independently. Every
+  // consumer of this renderer inherits the fix; none can opt out of it.
+  const summary = honestProgressSummary({
+    steps: progress.items,
+    description: progress.description,
+    remedy: progress.failureRemedy,
+  });
+
   return (
     <div className="h-full overflow-y-auto p-5 sm:p-6">
       <div className="mx-auto max-w-2xl space-y-5">
@@ -108,9 +130,14 @@ export function LiveRunProgress({
               {finished} of {progress.items.length}
             </span>
           </div>
-          {progress.description ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {progress.description}
+          {summary ? (
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                failed > 0 ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {summary}
             </p>
           ) : null}
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted">
