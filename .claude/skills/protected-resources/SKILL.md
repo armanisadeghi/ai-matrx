@@ -115,7 +115,7 @@ Mandatory pieces:
    END IF;
    ```
 5. A `public.X_audit_log` table with the same shape as `admin_audit_log` (or extend `admin_audit_log` if it makes sense).
-6. An `AFTER INSERT OR UPDATE OR DELETE` trigger that writes audit rows. The trigger is `SECURITY DEFINER` so it works regardless of caller.
+6. An `AFTER INSERT OR UPDATE OR DELETE` trigger that writes audit rows. The trigger is `SECURITY DEFINER` so it works regardless of caller. **The trigger must supply `organization_id` on every audit INSERT** — it is NOT NULL with no default (the DDL guard refuses a default), so omitting it makes every write to the audited table die on `23502`; a row that belongs to no customer carries the platform tenant, read from `iam.system_orgs` where `key = 'system'`, never hardcoded.
 7. `GRANT EXECUTE ON FUNCTION ... TO authenticated;` for each RPC.
 
 ### 3. API routes
