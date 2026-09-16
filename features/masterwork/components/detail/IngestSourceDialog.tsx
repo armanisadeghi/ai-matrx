@@ -223,7 +223,9 @@ export function describeIngest({
     // "we found nothing in it" here would be a flat lie about a source that
     // already produced rules.
     return (
-      `${alreadyDistilled} of these ${alreadyDistilled === 1 ? "source is" : "sources are"} ` +
+      (alreadyDistilled === 1
+        ? "That source is "
+        : `${alreadyDistilled} of these sources are `) +
       "already in this Rulebook, so nothing was read again and nothing was added. " +
       "Pick something new, or distil one again on purpose to replace what it wrote before."
     );
