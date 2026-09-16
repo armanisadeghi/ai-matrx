@@ -226,11 +226,8 @@ async function exportFailureCode(resp: Response): Promise<
       if (
         body &&
         typeof body === "object" &&
-        "detail" in body &&
-        body.detail &&
-        typeof body.detail === "object" &&
-        "code" in body.detail &&
-        body.detail.code === "recent_auth_required"
+        "code" in body &&
+        body.code === "recent_auth_required"
       ) {
         return "recent_auth_required";
       }
@@ -247,9 +244,8 @@ async function exportFailureCode(resp: Response): Promise<
       if (
         body &&
         typeof body === "object" &&
-        "detail" in body &&
-        typeof body.detail === "string" &&
-        body.detail === "preview_stale"
+        "code" in body &&
+        body.code === "preview_stale"
       ) {
         return "preview_stale";
       }

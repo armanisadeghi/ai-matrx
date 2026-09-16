@@ -86,7 +86,8 @@ describe("Vault and Authenticator organization transport", () => {
   });
 
   test.each([
-    [{ detail: { code: "recent_auth_required" } }, "recent_auth_required"],
+    [{ code: "recent_auth_required", error: "unauthorized" }, "recent_auth_required"],
+    [{ detail: { code: "recent_auth_required" } }, "request_rejected"],
     [{ detail: "recent_auth_required" }, "request_rejected"],
     [{}, "request_rejected"],
   ])("export classifies only the structured recent-auth response: %j", async (body, code) => {
