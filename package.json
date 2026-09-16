@@ -235,6 +235,8 @@
     "check:archived-items-law:self-test": "tsx scripts/check-archived-items-law.ts --self-test",
     "check:canonical-pickers": "tsx scripts/check-canonical-pickers.ts",
     "check:signout-scope": "tsx scripts/check-signout-scope.ts",
+    "check:campaign-entry-points": "tsx scripts/check-campaign-entry-points.ts",
+    "check:campaign-entry-points:self-test": "tsx scripts/check-campaign-entry-points.ts --self-test",
     "check:signout-scope:self-test": "tsx scripts/check-signout-scope.ts --self-test",
     "check:canonical-pickers:self-test": "tsx scripts/check-canonical-pickers.ts --self-test",
     "check:run-is-over": "tsx scripts/check-run-is-over.ts",

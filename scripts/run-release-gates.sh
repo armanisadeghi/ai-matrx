@@ -101,6 +101,20 @@ if $STRICT; then
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
+        # THE UNIFIED-DATA CAMPAIGN SWITCH MUST COVER SOMETHING. The campaign's
+        # code ships continuously — any lane's `release*:` commit builds the
+        # whole pushed range — so campaign code must be inert until
+        # platform.feature_knob custom.code_paths_enabled is on. Until
+        # 2026-09-15 the switch existed, defaulted OFF, and was wired to NOTHING:
+        # ENTRY_POINTS was [] and its only test asserted audit([]) == [], green
+        # forever (ATTACK-4 finding 5). This resolves every import in the tree
+        # through the TypeScript AST and fails on any file that reaches the
+        # campaign store or a campaign module without being on the register —
+        # and on any `runtime` entry that never calls the gate. Static, no
+        # credential, no sibling checkout; UNMEASURED and exit 1 if it cannot
+        # list the tree. `pnpm check:campaign-entry-points:self-test` proves it
+        # can fail from committed fixtures.
+        "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
@@ -608,6 +622,8 @@ else
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
+        # See the strict lane above for why this class is a shipped-code hazard.
+        "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,
         # like every other gate in the advisory list.
