@@ -1579,7 +1579,19 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     writeFileSync(path, revokeBody, "utf8");
     const r3b = run([path, "--target", "production"], { ...branchAsMatrix });
     const out3b = `${r3b.stdout ?? ""}${r3b.stderr ?? ""}`;
-    if (r3b.status !== 1 || !/body contains a REVOKE/.test(out3b))
+    // The assertion is on the ALLOW-LIST's own vocabulary, not on a sentence. It used
+    // to read `/body contains a REVOKE/` — the wording of the blacklist this campaign
+    // replaced — so from the moment ATTACK-4 finding 3 turned the judgement into an
+    // allow-list, W0-TGT-FE's exit proof FAILED on a refusal that was working perfectly:
+    // the file WAS refused, by name, naming the statement. Measured 2026-09-16, the
+    // lane could not report DONE and wave zero stopped at lane 1 of 47. `not one of the
+    // enumerated ADDITIVE shapes` + `a REVOKE` is what `nonAdditiveReasons` prints and
+    // what `migrations/JUDGMENT.md` pins as `refuse:not-additive`.
+    if (
+      r3b.status !== 1 ||
+      !/not one of the enumerated ADDITIVE shapes/.test(out3b) ||
+      !/a REVOKE/.test(out3b)
+    )
       fail(`a REVOKE with no \`-- allows:\` line was not refused by name:\n${out3b.slice(0, 900)}`);
     else pass("a REVOKE with no `-- allows:` line is refused by name");
 
@@ -1593,7 +1605,9 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     );
     const r3c = run([path, "--target", "production"], { ...branchAsMatrix });
     const out3c = `${r3c.stdout ?? ""}${r3c.stderr ?? ""}`;
-    if (/body contains a REVOKE/.test(out3c))
+    // The same stale phrase made THIS assertion vacuous rather than red: it could never
+    // fire, so "the exemption suppresses the reason" was never actually measured.
+    if (/a REVOKE \(the bounded route is/.test(out3c))
       fail(`\`-- allows: revoke\` did not suppress the REVOKE reason:\n${out3c.slice(0, 900)}`);
     else if (!new RegExp(`revoke exemption .*-- allows: revoke ${selftestSchema}`).test(out3c))
       fail(`the used exemption was not ANNOUNCED — it passed silently:\n${out3c.slice(0, 900)}`);
