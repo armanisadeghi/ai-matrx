@@ -3076,7 +3076,10 @@ const UserTableViewer = ({
 
       {/* Read-only banner for shared tables */}
       {isReadOnly && (
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm">
+        <div
+          data-surface-value="is_read_only"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
+        >
           <Eye className="h-4 w-4" />
           <span className="font-medium">Shared Table</span>
           <span className="text-purple-500 dark:text-purple-400">
@@ -3570,6 +3573,9 @@ const UserTableViewer = ({
       >
       <div
         ref={grid.containerRef}
+        data-surface-value={
+          selectedRangeTsv ? "selected_range_cell_count" : undefined
+        }
         // tabIndex makes the grid a focus target so arrow keys, Tab, Enter,
         // Delete and Cmd-Z actually arrive. `outline-none` because the SELECTED
         // CELL's ring is the real focus indicator — a second ring around the
@@ -3591,6 +3597,7 @@ const UserTableViewer = ({
         )}
       >
         <Table
+          data-surface-value="visible_data_csv"
           // A fixed layout divides the width evenly, which is right for a
           // handful of columns and unreadable past that — the 26-column
           // example table rendered every cell 40px wide with the text of
@@ -3630,6 +3637,7 @@ const UserTableViewer = ({
                   <TableHead
                     key={field.id}
                     {...{ [GRID_FIELD_DOM_ATTR]: field.field_name }}
+                    data-surface-value="table_schema"
                     // Clicking the header's own surface (not its sort label
                     // or its menu) selects the whole column — the Excel and
                     // Sheets gesture. Ctrl/Cmd+Space does the same from the
@@ -3642,9 +3650,17 @@ const UserTableViewer = ({
                     title={`Click to select the ${field.display_name} column`}
                     className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
                   >
-                    <div className="flex items-center justify-between gap-1">
+                    <div
+                      data-surface-value="column_list"
+                      className="flex items-center justify-between gap-1"
+                    >
                       <button
                         type="button"
+                        data-surface-value={
+                          surfaceOpenCell?.fieldName === field.field_name
+                            ? "current_column_name"
+                            : undefined
+                        }
                         onClick={() => handleSort(field.field_name)}
                         className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
                         title={`Sort by ${field.display_name}`}
@@ -3756,6 +3772,12 @@ const UserTableViewer = ({
                 <TableRow
                   key={row.id}
                   {...{ [GRID_ROW_DOM_ATTR]: row.id }}
+                  data-surface-value={
+                    surfaceOpenCell?.rowId === row.id ||
+                    (showEditModal && selectedRowId === row.id)
+                      ? "current_row_json"
+                      : undefined
+                  }
                   // Zebra → color tint (table-style.ts) → selection. `cn`
                   // (tailwind-merge) keeps the LAST background, so a tinted
                   // row shows its tint and a selected row still reads selected.
@@ -3773,6 +3795,12 @@ const UserTableViewer = ({
                   )}
                 >
                   <TableCell
+                    data-surface-value={
+                      surfaceOpenCell?.rowId === row.id ||
+                      (showEditModal && selectedRowId === row.id)
+                        ? "current_row_id"
+                        : undefined
+                    }
                     className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
                     // The checkbox ticks the row for bulk actions; the cell
                     // AROUND it selects the row's cells as a range (Shift+
@@ -3882,6 +3910,13 @@ const UserTableViewer = ({
                           rowId: row.id,
                           fieldName: field.field_name,
                         })}
+                        data-surface-value={
+                          grid.isSelected(row.id, field.field_name)
+                            ? "current_cell_value"
+                            : grid.isInRange(row.id, field.field_name)
+                              ? "selected_range_tsv"
+                              : undefined
+                        }
                         // THE SELECTION RING OUTLINES THE WHOLE CELL. An inset
                         // ring on the <td> follows the cell's real edges; drawn
                         // on the inner content div it boxed the text and left
@@ -4237,7 +4272,10 @@ const UserTableViewer = ({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <span className="whitespace-nowrap md:ml-4">
+            <span
+              data-surface-value="row_count"
+              className="whitespace-nowrap md:ml-4"
+            >
               of {effectiveTotalCount} rows
               {hasColumnFilters && " (filtered)"}
             </span>
