@@ -15,6 +15,42 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D327 — The SERVER's Expert corpus has the same authorship bug the Record just fixed (2026-09-16)
+
+**aidream, not this repo — filed here because this repo found it and owns the number.**
+
+`aidream/services/masterwork_corpus/corpus.py:474-479` (`load_expert_corpus`) reads the Expert's
+interview turns with `.values("id", "conversation_id", "content", "position", "created_at")` and
+then `text = _message_text(row.get("content")).strip()`. It never reads `chat.message.user_content`.
+
+`content` on a `role: 'user'` row is the COMPLETE PROVIDER PAYLOAD by the server's own contract
+(`packages/matrx-ai/matrx_ai/config/message_config.py`, `UnifiedMessage.user_content`): the agent
+definition's own seeded user turn, plus resolved launch variables, plus what the human typed. The
+Masterwork Scout's definition (`agent.definition` 4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8) seeds
+*"Let's get started. Follow the mode you were given above, then ask your first concrete question."*
+and the server persists it newline-joined in front of her real answer. So every corpus segment from
+an interview carries that sentence, and `expert_turn_count` / `expert_chars` count it.
+
+Blast radius is wider than the card this came from: the corpus is the ONE record handed to the
+Final Checkup auditor and to any Hindsight pass, so an auditor is judging the Expert's rules partly
+against the interviewer's own cue.
+
+**Fix:** select `user_content` too and project it exactly as aidream already does in
+`aidream/services/vision_interview/live_turns.py::transcript_message_text` — `user_content` when the
+row is a user row and it is not NULL, else `content`. Drop a segment whose human projection is
+empty. The frontend twin landed 2026-09-16 as
+`features/agents/utils/human-authored-text.ts` + `features/masterwork/record/format.ts::summariseExpertTurns`,
+guarded by `features/masterwork/record/__tests__/the-machines-cue-is-not-what-the-expert-said.test.ts`.
+
+**Also open, and the real class remainder:** a user-role turn the host INJECTS wholesale — the
+orchestrator's `⚠️ SYSTEM NOTICE (not from the user)` nudges
+(`packages/matrx-ai/matrx_ai/orchestrator/change_claims.py:79`, `executor.py:5756/6113/6175`) — is
+persisted with `source='user'` and `user_content` NULL, so it is indistinguishable from a typed turn
+from any reader's seat. Live example: `chat.message` 363252d8-08d4-444e-9795-b139a607d3ad. The
+Record dodges it today only because it filters interview associations to `role='interview'` and
+these land in `conducting` sessions. The server must stamp authorship on the turns it injects
+(`user_content: []`); no client can infer it.
+
 ### D324 — EVERY release is blocked: `@ai-matrx/associations` is installed twice, and the remedy needs an install the shared preview refuses (2026-09-15)
 
 **Live release blocker, not mine, and it blocks the `Matrx frontend release watch` automation too** —
