@@ -159,6 +159,36 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Jest proof that the recorded boundary is a FLOOR and not an equality, so --verify does not turn red at H+19.75 (ATTACK-6 finding 7). No database, no credential.",
     },
     {
+        id: "restore-graph-boundary-age-test",
+        file: "scripts/__tests__/restore-graph-boundary-age.test.ts",
+        kind: "tooling",
+        why: "Jest proof of the copy's freshness ceiling — the 12 h boundary age W7-GATE breaches at H+49 (ATTACK-7 finding 6/14). No database, no credential.",
+    },
+    {
+        id: "db-objects-diff",
+        file: "scripts/db-objects-diff.ts",
+        kind: "tooling",
+        why: "pnpm db:objects-diff — W0-TGT-FE's named object-level diff of branch against production, inside a read-only transaction (ATTACK-7 finding 7.1). A script a human runs; it serves nothing.",
+    },
+    {
+        id: "gate-corpus-branch-api",
+        file: "scripts/gate-corpus/branch-api.ts",
+        kind: "tooling",
+        why: "The rehearsal branch's API layer — pgrst.db_schemas, production's grants, and the branch-only grant/expose of the campaign's schema (ATTACK-8 finding 2). A script a human runs against the BRANCH; it refuses production twice and serves nothing to a user.",
+    },
+    {
+        id: "gate-corpus-seed-contract",
+        file: "scripts/gate-corpus/seed-contract.ts",
+        kind: "tooling",
+        why: "The file-shape checkers that keep seed.sql and run.ts able to coexist with W0-DATA's restore (ATTACK-8 findings 1 and 3). Pure string judgment, no database.",
+    },
+    {
+        id: "gate-corpus-seed-contract-test",
+        file: "scripts/__tests__/gate-corpus-seed-contract.test.ts",
+        kind: "tooling",
+        why: "Jest proof of that contract, RED against the files as they stood at 3027f152d5. No database, no credential.",
+    },
+    {
         id: "hr-settings-service",
         file: "features/hr/settings/service.ts",
         kind: "preexisting",

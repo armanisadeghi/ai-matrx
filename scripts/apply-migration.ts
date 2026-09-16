@@ -118,7 +118,6 @@
  * failure · 2 unexpected error / creds absent.
  */
 import { createHash, randomBytes } from "node:crypto";
-import { createInterface } from "node:readline";
 import {
   existsSync,
   mkdtempSync,
@@ -156,6 +155,7 @@ import {
   TargetRefusal,
   type Target,
 } from "./lib/migration-target";
+import { confirmChairStep } from "./lib/chair-step";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -498,43 +498,6 @@ async function assertCampaignProductionIsAuthorised(
     );
   } finally {
     await branch.end().catch(() => {});
-  }
-}
-
-/**
- * `-- chair-step:` IS A CHAIR STEP (ATTACK-6 finding 4).
- *
- * 🚨 It stands in for `-- additive: yes` AND `-- guard:` and excuses every non-additive
- * reason, and what it did in exchange was `console.log`. Rule 9 ("nothing irreversible
- * on production, in any lane, ever") and §4.9 ("refused by both, in every lane, with no
- * exception") were therefore false of one comment line — on a path two unattended
- * 30-minute crons run. "With the owner awake" now means what it says: a non-TTY stdin
- * is refused outright, and a TTY must TYPE the filename back.
- */
-async function confirmChairStep(filename: string, why: string): Promise<string | null> {
-  if (!process.stdin.isTTY) {
-    return (
-      `\`-- chair-step: ${why}\` reached --target production from a process with NO TERMINAL.\n` +
-      `  A chair step is an owner-awake step: it stands in for \`-- additive: yes\` and\n` +
-      `  \`-- guard:\` and excuses every non-additive reason, so the one thing it may never be\n` +
-      `  is unattended. Both release trains run exactly like this, on a 30-minute cron.\n` +
-      `  Run it by hand, from a terminal, and type the filename when it asks.`
-    );
-  }
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await new Promise<string>((res) =>
-      rl.question(
-        `${C.bold}Type the filename to run this chair step against PRODUCTION${C.reset} ` +
-          `(${filename}), or anything else to abort: `,
-        (a) => res(a.trim()),
-      ),
-    );
-    if (answer !== filename)
-      return `chair step NOT confirmed — you typed ${JSON.stringify(answer)}, not ${filename}. Nothing ran.`;
-    return null;
-  } finally {
-    rl.close();
   }
 }
 

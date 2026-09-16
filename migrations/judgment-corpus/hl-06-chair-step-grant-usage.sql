@@ -1,0 +1,16 @@
+-- expect: branch=accept production=accept
+-- chair-step: switch-checklist step 3 — the schema grant, with the owner awake
+--
+-- THE ONE FILE THE CHAIR ACTUALLY RUNS ON THE GO DAY, and nothing pinned its verdict.
+-- `a6-01` is the same statement headed `-- target: branch,production`, which the allow-list
+-- refuses by name (`refuse:not-additive`) — every GRANT is off the allow-list. §11.3 step 3's
+-- sanctioned route is therefore this shape: HEADER-LESS, carrying `-- chair-step:`, living in
+-- `migrations/inverse/` where no sweep reaches it, rehearsed on the branch from the SAME bytes.
+--
+-- Both runners must accept it at both targets with `chair_step=yes` and the same `excused`
+-- count, and both must then refuse a non-TTY stdin and demand the filename typed back before a
+-- byte executes — which is the half `--judge-only` cannot reach, and which
+-- `scripts/__tests__/chair-step-confirmation.test.ts` and
+-- `aidream/db/tests/test_chair_step_confirmation.py` drive through a real pty.
+--
+grant usage on schema custom to authenticated;

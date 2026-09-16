@@ -291,6 +291,14 @@ const COPY_TABLES: readonly CopyTable[] = [
   // ── the containment half — unchanged ─────────────────────────────────────
   { table: "platform.edge_payload_kind", policy: "upsert" },
   { table: "platform.entity_types", policy: "upsert" },
+  // The sharing registry. `iam.has_permission_for` reads it, and until 2026-09-16
+  // it was not copied at all: the branch was left carrying the GATE CORPUS's own
+  // rows for `scope` and `rulebook` (url_path_template `/corpus/...`, `scope`
+  // pointing at `corpus.corpus_scope` instead of `context.scopes`), so every
+  // sharing answer the rehearsal gave for those two tokens was measured against a
+  // registry production does not have. `upsert` keeps the corpus's own
+  // `corpus%` rows and puts production's back over the top of the clobbered ones.
+  { table: "platform.shareable_resource_registry", policy: "upsert" },
   { table: "platform.association_types", policy: "upsert" },
   { table: "platform.entity_relationships", policy: "upsert" },
   { table: "platform.associations", policy: "replace" },

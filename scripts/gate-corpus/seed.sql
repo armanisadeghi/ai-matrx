@@ -10,15 +10,19 @@
 -- reports every disagreement. A disagreement is either a corpus bug or a
 -- finding; the report says which, it is never passed over.
 --
--- WHERE IT MAY RUN. A throwaway Supabase branch ONLY. `run.ts` refuses any host
--- that is not a branch, and this file itself refuses if the production
--- organization rows are present (see the guard at the top of section 0).
+-- WHERE IT MAY RUN. The rehearsal branch ONLY. `run.ts` proves that from the
+-- connected server's own `pg_control_system()` against `plan/BRANCH-REF`, and
+-- this file refuses PRODUCTION by the same number (section 0).
 --
--- REQUIRES. The live schema (schemas `platform`, `iam`, `admin`, `seo`, `auth`)
--- restored onto the branch — see GATE-CORPUS.md, "Branch bootstrap". The branch
--- carries no data, so this file also seeds the registry rows (`entity_types`,
--- `entity_relationships`, `association_types`, `membership_grant`) that the
--- kernel reads; on production those rows exist already.
+-- REQUIRES. The live schema AND the restored graph — `restore-graph.ts`
+-- (BUILD-BOOK `W0-DATA`) runs FIRST and this file seeds ON TOP of it. Section 0
+-- asserts that, because a corpus seeded beside an empty graph measures nothing
+-- the gate later diffs. The registry rows the kernel reads (`entity_types`,
+-- `entity_relationships`, `association_types`, `membership_grant`,
+-- `shareable_resource_registry`) come from the restore for every token
+-- production owns; this file adds ONLY its own `corpus%` tokens, and adds a
+-- shared token (`scope`, `rulebook`, `seo_starter_pack`) only when the restore
+-- did not bring one — marked as corpus-owned so the teardown can tell.
 -- ============================================================================
 
 begin;
@@ -27,33 +31,62 @@ begin;
 set local app.actor_system = 'gate-corpus-seed';
 
 -- ---------------------------------------------------------------------------
--- 0. Refuse to run anywhere but an empty branch.
+-- 0. Refuse PRODUCTION — by the server's own identity, never by how empty it is.
+--
+-- THE OLD GUARD REFUSED THE STATE WAVE ZERO CREATES. It demanded that
+-- `iam.organizations` and `auth.users` hold nothing but corpus rows — the exact
+-- state `W0-DATA`'s restore destroys — so `W0-CORPUS`, whose own entry condition
+-- is "`W0-DATA` reports DONE", refused itself at lane 3 of 47. Measured on the
+-- rehearsal branch 2026-09-16, the guard's own two expressions: 422 organizations,
+-- 478 users, and the file raised.
+--
+-- What has to be refused is PRODUCTION, and the one identity a client reads from
+-- the connected SERVER rather than from its own arguments is
+-- `pg_control_system().system_identifier` — the same judgment
+-- `scripts/lib/migration-target.ts` and `aidream/db/migration_target.py` make,
+-- from the same number: `parent_system_identifier` in `plan/BRANCH-REF`.
 -- ---------------------------------------------------------------------------
 do $$
-declare v_orgs bigint; v_users bigint;
+declare v_sysid text; v_graph bigint; v_registry bigint;
 begin
-  select count(*) into v_orgs from iam.organizations
-   where id not in ('c0000000-0000-4000-8000-000000000001',
-                    'c0000000-0000-4000-8000-000000000002',
-                    'c0000000-0000-4000-8000-000000000003');
-  select count(*) into v_users from auth.users where id::text not like 'a0000000-0000-4000-8000-%';
-  if v_orgs > 0 or v_users > 0 then
+  select system_identifier::text into v_sysid from pg_control_system();
+  -- plan/BRANCH-REF: parent_system_identifier = 7642734024280108049 (production).
+  if v_sysid = '7642734024280108049' then
     raise exception
-      'REFUSED: this database holds % organizations and % users that are not corpus rows. '
-      'The gate corpus writes only to a throwaway branch.', v_orgs, v_users;
+      'REFUSED: this is PRODUCTION (pg_control_system().system_identifier %). The gate corpus '
+      'seeds the rehearsal branch only. Nothing was written.', v_sysid;
+  end if;
+
+  -- The corpus seeds ON TOP OF the real graph, never beside an empty one.
+  select count(*) into v_graph from platform.reachability
+   where container_type not like 'corpus%' and item_type not like 'corpus%';
+  select count(*) into v_registry from platform.entity_types where token not like 'corpus%';
+  if v_graph = 0 or v_registry = 0 then
+    raise exception
+      'REFUSED: the restored graph is not here — % non-corpus platform.reachability rows, '
+      '% non-corpus platform.entity_types rows. REMEDY: run W0-DATA first '
+      '(npx tsx scripts/gate-corpus/restore-graph.ts), then re-run this. A corpus seeded '
+      'beside an empty graph measures nothing the switch gate later diffs.', v_graph, v_registry;
   end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
 -- 1. Tear down the previous run (idempotency), newest dependency first.
+--
+-- 🚨 EVERY statement here is keyed on an IDENTIFIER THE CORPUS OWNS — an id
+-- prefix it coined, or a `corpus%` token. None is keyed on a TYPE. `scope`,
+-- `rulebook` and `seo_starter_pack` are PRODUCTION's tokens, and the type-keyed
+-- deletes this file used to carry would have taken, out of the copy the gate
+-- diffs against (measured on the branch 2026-09-16): 3 `platform.entity_types`
+-- rows, 183 `platform.reachability` rows and 2
+-- `platform.shareable_resource_registry` rows. A corpus run must leave the
+-- restored graph bit-for-bit as `W0-DATA` left it.
 -- ---------------------------------------------------------------------------
 drop schema if exists corpus cascade;
 create schema corpus;
 
 delete from platform.reachability
- where container_type like 'corpus%' or item_type like 'corpus%'
-    or container_type in ('scope','rulebook','seo_starter_pack')
-    or item_type in ('scope','rulebook','seo_starter_pack');
+ where container_type like 'corpus%' or item_type like 'corpus%';
 delete from platform.associations where id::text like 'd0000000-%';
 delete from platform.association_types where source_type like 'corpus%' or target_type like 'corpus%';
 delete from platform.entity_relationships where child_type like 'corpus%' or parent_type like 'corpus%';
@@ -67,9 +100,9 @@ delete from admin.admin_audit_log where target_user_id::text like 'a0000000-0000
 delete from platform.rulebook where id::text like 'b0000000-%';
 delete from seo.starter_pack where id::text like 'b0000000-%';
 delete from platform.shareable_resource_registry where resource_type like 'corpus%'
-   or resource_type in ('scope','rulebook','seo_starter_pack');
+   or metadata->>'gate_corpus' = 'true';
 delete from platform.entity_types where token like 'corpus%'
-   or token in ('scope','rulebook','seo_starter_pack');
+   or id::text like 'c5000000-%';
 delete from iam.org_industries where organization_id::text like 'c0000000-%';
 delete from iam.industries where id::text like 'c0000000-0000-4000-8000-0000000000f%';
 delete from iam.organizations where id::text like 'c0000000-%';
@@ -187,10 +220,29 @@ values
  ('corpus_loop_b','corpus','corpus_loop_b','Corpus Loop B',1,false,false,true,'personal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'organization','organization',false,'standard'),
  ('corpus_private','corpus','corpus_private','Corpus Private',1,false,false,true,'personal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'private','organization',false,'standard'),
  ('corpus_public','corpus','corpus_public','Corpus Public',1,false,false,true,'public',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'public','organization',false,'standard'),
- ('scope','corpus','corpus_scope','Corpus Scope',1,false,false,true,'personal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'organization','organization',false,'standard'),
- ('corpus_detail','corpus','corpus_detail','Corpus Detail',1,false,false,true,'personal',true,true,false,true,false,true,false,'component',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,null,null,false,'standard'),
- ('rulebook','platform','rulebook','Rulebook',1,false,true,true,'internal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'organization','organization',false,'standard'),
- ('seo_starter_pack','seo','starter_pack','SEO Starter Pack',1,false,true,true,'internal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,'organization','organization',false,'standard');
+ ('corpus_detail','corpus','corpus_detail','Corpus Detail',1,false,false,true,'personal',true,true,false,true,false,true,false,'component',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false, gen_random_uuid(), false,null,null,false,'standard');
+
+-- THE THREE TOKENS PRODUCTION OWNS. `scope` (arm 12), `rulebook` (arm 4) and
+-- `seo_starter_pack` (arm 3) are named by the LIVE kernel itself — `public.
+-- _edu_can_read_via_assignment` matches `target_type = 'scope'` as a literal and
+-- `iam.has_access_for_base` branches on the other two by name — so the corpus
+-- cannot rename them. On a restored branch they are ALREADY HERE, as production's
+-- own rows (`scope` -> `context.scopes`, `rulebook` -> `platform.rulebook`,
+-- `seo_starter_pack` -> `seo.starter_pack`), and production's row is the one the
+-- rehearsal has to measure. So: insert only what the restore did not bring, under
+-- an id the teardown recognises, and never overwrite.
+insert into platform.entity_types
+  (token, schema_name, table_name, label, base_tier, is_versioned, has_soft_delete, is_active,
+   default_visibility, is_listed, is_component, is_module, default_members_can_add,
+   default_needs_approval, default_scopeable, default_auto_ingest, rls_variant, reference_pickable,
+   agent_writable, allow_preview, version_store, audit_class, reference_candidate_predicates,
+   lifecycle_enlisted, relation_kind, suppress_platform_admin_lane,
+   component_anon_read_via_public_parent, id, confirmation_enabled, data_class, default_list_scope, client_read_only, origin)
+values
+ ('scope','corpus','corpus_scope','Corpus Scope',1,false,false,true,'personal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false,'c5000000-0000-4000-8000-000000000001', false,'organization','organization',false,'standard'),
+ ('rulebook','platform','rulebook','Rulebook',1,false,true,true,'internal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false,'c5000000-0000-4000-8000-000000000002', false,'organization','organization',false,'standard'),
+ ('seo_starter_pack','seo','starter_pack','SEO Starter Pack',1,false,true,true,'internal',true,false,false,true,false,true,false,'entity',true,true,true,'history','entity','{}'::jsonb,false,'table',false,false,'c5000000-0000-4000-8000-000000000003', false,'organization','organization',false,'standard')
+on conflict do nothing;
 
 -- The sharing registry (db-rules §6c): a token may not be a grant's
 -- `resource_type` until it is registered here, so every Table the corpus shares
@@ -201,11 +253,16 @@ insert into platform.shareable_resource_registry
    version, visibility)
 select et.token, et.schema_name, et.table_name, 'id', 'created_by', et.label,
        '/corpus/' || et.token || '/{id}', true, true,
-       'c0000000-0000-4000-8000-000000000001', '{}'::jsonb, 1, 'internal'
+       'c0000000-0000-4000-8000-000000000001',
+       -- Corpus-owned, so the teardown deletes it by that mark rather than by its
+       -- type: the three shared tokens' rows, when the restore brought them, are
+       -- production's and this file never writes or removes them.
+       jsonb_build_object('gate_corpus', true), 1, 'internal'
 from platform.entity_types et
 where et.token in ('corpus_home_a','corpus_home_b','corpus_item','corpus_note','corpus_loop_a',
                    'corpus_loop_b','corpus_private','corpus_public','corpus_detail','scope',
-                   'rulebook','seo_starter_pack');
+                   'rulebook','seo_starter_pack')
+on conflict do nothing;
 
 -- The FK parent chain (arm 16). `corpus_detail` is a composition child of
 -- `corpus_home_a`; nothing is ever shared on it directly.
@@ -336,9 +393,14 @@ insert into iam.memberships (id, organization_id, container_type, container_id, 
 -- ---------------------------------------------------------------------------
 -- 9. Build the pair cache from the edges the relations just made.
 -- ---------------------------------------------------------------------------
+-- ONLY the corpus's own containers (`b0000000-%`). The restored cache holds
+-- production's 6,773 rows and `platform.reachability_drift()` reads 0 over them;
+-- re-deriving the whole branch would drag ~6,000 containers of production's graph
+-- through this file and make the corpus's own population unreadable.
 insert into platform.reachability (container_type, container_id, item_type, item_id, depth, max_level, refreshed_at)
 select c.container_type, c.container_id, d.item_type, d.item_id, d.depth, d.max_level, now()
-from (select distinct ce.container_type, ce.container_id from platform.containment_edges ce) c
+from (select distinct ce.container_type, ce.container_id from platform.containment_edges ce
+       where ce.container_id::text like 'b0000000-%') c
 cross join lateral platform.derive_reachability(c.container_type, c.container_id) d
 on conflict do nothing;
 
