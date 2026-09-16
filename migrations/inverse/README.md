@@ -14,10 +14,22 @@ ATTACK-5 finding 1's "the abort checklist cannot undo it", literally.
   `listSql` — so a file here is invisible to `release.sh` and to
   `pnpm check:migrations`. The marker's job is done structurally, by location.
 - **A production apply must be a declared chair step.** An inverse is non-additive by
-  construction — that is what reversing means — so `-- target: branch,production` plus
-  `-- chair-step: <why>` is the header. `-- chair-step:` stands in for `-- additive: yes`
-  and `-- guard:` and excuses the non-additive body scan, and in exchange the runner
-  prints the reason **and the file's entire body** before a single byte executes.
+  construction — that is what reversing means — so the header is **`-- chair-step: <why>`
+  and NO `-- target:` line at all**. 🚨 Re-headed 2026-09-16 (ATTACK-7 finding 2): these
+  four files used to carry `-- target: branch,production` above the chair-step line, and
+  that header is judged by the ALLOW-LIST, which `-- chair-step:` does not waive. It
+  waived everything in `pnpm db:apply` and nothing in `uv run python
+  db/apply_migrations.py`, so §8.9 step 3a was accepted by one command and refused by the
+  other. A file carrying both is now refused by name, in both runners.
+  `-- chair-step:` stands in for `-- additive: yes` and `-- guard:` on a header-less file
+  and excuses its deny-list scan, and in exchange the runner prints the reason **and the
+  file's entire body** before a single byte executes — and at `--target production`, in
+  BOTH runners, refuses a non-TTY stdin, demands the filename typed back, and writes the
+  reason into `public._schema_migrations.chair_step`.
+- **The SAME bytes rehearse on the branch.** A header-less `-- chair-step:` file is
+  accepted at `--target branch` precisely so rule 27's "the inverse was RUN on the branch"
+  has a route that does not change a byte between the rehearsal and production.
+  The one normative description of all of this is [`../JUDGMENT.md`](../JUDGMENT.md).
 - **It is never swept, so it is always named.** Run one deliberately:
 
 ```
