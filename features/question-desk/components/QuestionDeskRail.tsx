@@ -56,7 +56,7 @@ export function QuestionDeskRail({
   const percent = totalCount === 0 ? 0 : (answeredCount / totalCount) * 100;
 
   return (
-    <aside className="flex flex-col gap-4 border-b border-border bg-muted/40 px-4 py-4 lg:sticky lg:top-0 lg:h-dvh lg:w-[260px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+    <aside className="qd-rail flex flex-col gap-4 border-b border-border bg-muted/40 px-4 py-4 lg:sticky lg:top-0 lg:w-[260px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
       <div>
         <h1 className="qd-editorial text-xl leading-tight font-semibold tracking-tight text-foreground">
           {interview.title}
@@ -127,18 +127,16 @@ export function QuestionDeskRail({
 
       {/* The app shell parks fixed chrome (the error chip) in the bottom-left
           corner, on top of this legend (verifier finding 6, 2026-09-12; the
-          guessed `pb-14` only moved the collision one line up, so at 1440x900
-          the chip still covered the rail's last line — V2 finding 7). The
-          clearance is now the band that chrome ACTUALLY occupies, published by
-          the chrome itself as `--shell-fixed-corner-clearance` and therefore
-          right at every viewport and in every shape it takes. Nothing floating
-          there means 0, and no reserved gap. */}
-      <div
-        className="mt-auto space-y-2 border-t border-border pt-3.5"
-        style={{
-          paddingBottom: "var(--shell-fixed-corner-clearance, 0px)",
-        }}
-      >
+          guessed `pb-14` only moved the collision one line up — V2 finding 7).
+          The chrome publishes the band it ACTUALLY occupies as
+          `--shell-fixed-corner-clearance`. A bottom padding on this block was
+          the first answer and was still wrong at 1280×720 (V3, 2026-09-16):
+          the rail is a scroll container, so when its content is taller than
+          the viewport the line under the chip is whatever is mid-scroll, and
+          padding at the END of the content protects nothing. The rail's own
+          height now stops above the band (`.qd-rail` in question-desk.css), so
+          no rail content can ever sit under the chip at any scroll position. */}
+      <div className="mt-auto space-y-2 border-t border-border pt-3.5">
         {/* A phone has no keyboard, so a key legend there is an affordance
             that cannot be used. It is not dimmed or disabled — it is absent. */}
         <dl className="hidden grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground lg:grid">

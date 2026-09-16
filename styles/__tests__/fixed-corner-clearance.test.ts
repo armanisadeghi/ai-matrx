@@ -65,15 +65,28 @@ describe("the shell's bottom-left chrome publishes what it occupies", () => {
     expect(badge.match(/ref=\{cornerRef\}/g) ?? []).toHaveLength(2);
   });
 
-  it("the Question Desk rail reserves the measured band, never a guess", () => {
+  it("the Question Desk rail ENDS above the measured band, never a guess", () => {
     const rail = read(
       "features",
       "question-desk",
       "components",
       "QuestionDeskRail.tsx",
     );
-    expect(rail).toContain(`var(${VAR}, 0px)`);
-    // The guessed padding this replaced. It must not come back.
-    expect(rail.replace(/\/\*[\s\S]*?\*\//g, "")).not.toContain("lg:pb-14");
+    const railCode = rail.replace(/\/\*[\s\S]*?\*\//g, "");
+    // The rail is a scroll container: a padding at the END of its content
+    // cannot protect a line that is mid-scroll under the chip (V3 2026-09-16,
+    // 1280×720). Its HEIGHT stops above the band instead — via the stylesheet
+    // class, never a guessed Tailwind height and never the guessed padding.
+    expect(railCode).toContain("qd-rail");
+    expect(railCode).not.toContain("lg:h-dvh");
+    expect(railCode).not.toContain("paddingBottom");
+    expect(railCode).not.toContain("lg:pb-14");
+    const css = read("features", "question-desk", "question-desk.css").replace(
+      /\/\*[\s\S]*?\*\//g,
+      "",
+    );
+    expect(css).toMatch(
+      new RegExp(`\\.qd-rail\\s*\\{[^}]*calc\\(100dvh - var\\(${VAR}, 0px\\)\\)`),
+    );
   });
 });

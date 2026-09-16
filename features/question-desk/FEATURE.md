@@ -154,3 +154,18 @@ Built 2026-09-12 as lane L2 of the Question Desk campaign, then re-worked the sa
 - `2026-09-12` — L2 (Claude Opus 5): the Undo window became the `question_desk.undo_window_ms` knob (a peer lane registered the row and mirrored the literal here; reading the row is the honest version of that mirror).
 - `2026-09-14` — QD-023/024 (Claude Opus 5): the refused-save class fix + identity line; `ReviewTable` replaced by `ReviewTriage` (batches, one-liners, Y/N/J/K/Enter, live `status_note`); knob `review_batch_size`.
 - `2026-09-12` — L2 (Claude Opus 5): built the feature — interview list with the archive axis, the one-question-per-screen interview with the full keyboard contract, the dense review and ask tables, read-aloud, voice answers, per-question drafts, the undo, realtime, and the three knobs.
+
+## 2026-09-16 — V3 observations closed (QD-030)
+
+- **N1** the between-batches card named the NEXT batch ("batch 2 done" on finishing
+  batch 1). It now names the batch the answered rows just filled
+  (`ceil(answered / size)`), which is also right for a short last batch.
+- **N2** an ask row never showed its own follow-through. `AskTable`'s verdict cell and
+  `QuestionScreen`'s answered card now render the row's `status_note` ("recording…",
+  "recorded", "recording failed — …") and, once recorded, `recorded_in`.
+- **V2-7** the error chip covered the rail's last line at 1280×720 even with the measured
+  clearance as bottom padding: the rail is a scroll container, so padding at the END of
+  its content cannot protect a line that is mid-scroll under the chip. The rail's HEIGHT
+  now stops above the band (`.qd-rail` in `question-desk.css`:
+  `calc(100dvh - var(--shell-fixed-corner-clearance, 0px))`). Guard:
+  `styles/__tests__/fixed-corner-clearance.test.ts` (RED on the padding, GREEN on the height).

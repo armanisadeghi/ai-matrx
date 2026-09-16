@@ -119,6 +119,20 @@ export function AskTable({
                   {answered
                     ? (VERDICT_LABEL[question.verdict as Verdict] ?? "Answered")
                     : "—"}
+                  {/* THE ROW SHOWS ITS OWN FOLLOW-THROUGH (V3 observation N2,
+                      2026-09-16): "recording…" → "recorded" used to exist only
+                      in the database and the rail's aggregate line, so an ask
+                      row never said what became of its answer. Same note the
+                      triage row shows, with where it landed once recorded. */}
+                  {answered && question.status_note ? (
+                    <span
+                      className="mt-1 block font-mono text-[10.5px] text-muted-foreground"
+                      aria-live="polite"
+                      title={question.recorded_in ?? undefined}
+                    >
+                      {question.status_note}
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-2.5 py-2.5 align-top text-foreground/80">
                   <span className="line-clamp-3 whitespace-pre-wrap">

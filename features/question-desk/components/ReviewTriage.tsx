@@ -153,6 +153,13 @@ export function ReviewTriage({
   const batchesDone = Math.floor(answeredCount / size);
   const batchCount = Math.max(1, Math.ceil(total / size));
   const batchNumber = Math.min(batchCount, batchesDone + 1);
+  // THE CARD NAMES THE BATCH THAT JUST FINISHED, NOT THE NEXT ONE (V3
+  // observation N1, 2026-09-16: on finishing batch 1 the card read "batch 2
+  // done" beside a counter that correctly read "batch 2 of 3 · 1 batch done").
+  // The finished batch is the one the answered rows just filled — the ceiling
+  // of answered / size — which is also right for a short last batch (26 rows
+  // in tens: answering all 26 finishes batch 3, not batch 2).
+  const finishedBatchNumber = Math.min(batchCount, Math.max(1, Math.ceil(answeredCount / size)));
 
   // THE ROW ADVANCES ON ANSWER — derived, never latched. The chosen row is
   // state; the EFFECTIVE focus is the chosen row while it is open, else the
@@ -528,7 +535,7 @@ export function ReviewTriage({
       {batchAllAnswered ? (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
           <span className="font-mono text-[11px] text-muted-foreground">
-            batch {batchNumber} done · {remainingOpen} left
+            batch {finishedBatchNumber} done · {remainingOpen} left
           </span>
           {remainingOpen > 0 ? (
             <Button

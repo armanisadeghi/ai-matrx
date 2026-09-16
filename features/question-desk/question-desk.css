@@ -28,3 +28,14 @@
 .qd-disclosure[open] > summary::before {
   content: "– ";
 }
+
+/* The rail on a wide screen: sticky, its own scroll, and it ENDS above the band
+ * the shell's floating corner chrome occupies (`--shell-fixed-corner-clearance`,
+ * published by the chrome itself; 0px when nothing floats there). V2 finding 7 /
+ * V3 2026-09-16: a bottom padding inside the rail could not protect a line that
+ * was mid-scroll under the chip; a shorter rail can. */
+@media (min-width: 1024px) {
+  .qd-rail {
+    height: calc(100dvh - var(--shell-fixed-corner-clearance, 0px));
+  }
+}
