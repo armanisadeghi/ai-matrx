@@ -50,6 +50,36 @@ export interface InstanceVariableValuesEntry {
    */
   surfaceValueNames: string[];
 
+  /**
+   * Names inside `userValues` that the HOST wired at launch — never typed,
+   * dictated or chosen by the person in the room.
+   *
+   * 🚨 WHY THIS EXISTS (cold walk, jobs-bar-2026-09-16; ruling 2026-09-16).
+   * A surface that launches a purpose-built conversation hands the agent its
+   * whole job as named variables (THE USER-INPUT LAW) — the Conductor sends
+   * `rulebook_id`, `attachments` and the entire rendered `rulebook_document`;
+   * the Scout interview sends the mode, the probes and the Expert's goal.
+   * Those are correct: they are named, they are the launch request's
+   * `variables`, and they are what the Mandate's provision offers. What was
+   * wrong is WHERE THEY LANDED — in `userValues`, the tier that means "the
+   * person set this" — so `FirstTurnVariables` printed them back inside her
+   * own message bubble, in the host's vocabulary:
+   *
+   *   "Rulebook Document: # … Rulebook id: a84d1c5e-… Status: draft"
+   *   "Interview Probes: story_time · Interview Context Mode: blank_slate"
+   *
+   * 296518e291 hid that from an Expert with the audience gate. This is the
+   * honest half: a value the host wired is marked as the host's, so the user
+   * bubble never claims it for ANY audience, and the gate stays as belt and
+   * braces. Resolution, the three-tier merge and the outbound request are
+   * DELIBERATELY unchanged — a host value still wins over scope and default,
+   * and still ships. This flag decides authorship, never delivery.
+   *
+   * The moment the person edits one of these through the ordinary user path,
+   * the name leaves this list: it is now genuinely hers.
+   */
+  hostValueNames: string[];
+
   /** Per-conversation overrides for media-variable resource-family policy. */
   resourcePolicies: Record<string, VariableResourceContextConfig>;
 }
@@ -65,6 +95,20 @@ const initialState: InstanceVariableValuesState = {
 // =============================================================================
 // Slice
 // =============================================================================
+
+/**
+ * A value the person has just set is HERS, whatever wired it first. Called by
+ * every ordinary user-value reducer so authorship can only ever move one way.
+ */
+function releaseHostNames(
+  entry: InstanceVariableValuesEntry,
+  names: string[],
+): void {
+  if (!entry.hostValueNames?.length) return;
+  entry.hostValueNames = entry.hostValueNames.filter(
+    (name) => !names.includes(name),
+  );
+}
 
 const instanceVariableValuesSlice = createSlice({
   name: "instanceVariableValues",
@@ -94,6 +138,7 @@ const instanceVariableValuesSlice = createSlice({
         userValues: {},
         scopeValues,
         surfaceValueNames: [],
+        hostValueNames: [],
         resourcePolicies: {},
       };
     },
@@ -114,6 +159,7 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[conversationId];
       if (entry) {
         entry.userValues[name] = value;
+        releaseHostNames(entry, [name]);
       }
     },
 
@@ -131,7 +177,34 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[conversationId];
       if (entry) {
         Object.assign(entry.userValues, values);
+        releaseHostNames(entry, Object.keys(values));
       }
+    },
+
+    /**
+     * Set values the HOST wired at launch, on the person's behalf.
+     *
+     * Identical to `setUserVariableValues` for resolution and for the outbound
+     * request — the only difference is authorship: these names are recorded in
+     * `hostValueNames`, so nothing may render them as words the person said.
+     * Every `runtime.variables` payload a launcher passes comes through here.
+     */
+    setHostVariableValues(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        values: Record<string, unknown>;
+      }>,
+    ) {
+      const { conversationId, values } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      Object.assign(entry.userValues, values);
+      const names = entry.hostValueNames ?? [];
+      for (const name of Object.keys(values)) {
+        if (!names.includes(name)) names.push(name);
+      }
+      entry.hostValueNames = names;
     },
 
     /**
@@ -145,6 +218,7 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[conversationId];
       if (entry) {
         delete entry.userValues[name];
+        releaseHostNames(entry, [name]);
       }
     },
 
@@ -226,6 +300,7 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[action.payload];
       if (entry) {
         entry.userValues = {};
+        entry.hostValueNames = [];
       }
     },
 
@@ -283,6 +358,7 @@ const instanceVariableValuesSlice = createSlice({
         userValues: {},
         scopeValues: variables?.scopeValues ?? {},
         surfaceValueNames: [],
+        hostValueNames: [],
         resourcePolicies: {},
       };
     });
@@ -297,6 +373,7 @@ export const {
   initInstanceVariables,
   setUserVariableValue,
   setUserVariableValues,
+  setHostVariableValues,
   clearUserVariableValue,
   setScopeVariableValues,
   setRuntimeVariableResourcePolicy,

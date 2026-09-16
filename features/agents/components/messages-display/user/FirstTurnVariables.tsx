@@ -26,7 +26,7 @@
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectOwnVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
@@ -80,6 +80,13 @@ export function UserMessageVariables({
 export function FirstTurnVariables({
   conversationId,
 }: FirstTurnVariablesProps) {
-  const userValues = useAppSelector(selectUserVariableValues(conversationId));
-  return <UserMessageVariables values={userValues} />;
+  // 🚨 THE PERSON'S OWN VALUES, NEVER THE HOST'S (ruling, 2026-09-16). This
+  // bubble is her turn: it may show what she filled in and nothing else. The
+  // values a surface wired at launch — the Conductor's whole rendered Rulebook,
+  // the interview's probes and mode — are correct as named launch variables and
+  // still ship, but printing them here put the host's vocabulary in her mouth
+  // ("Interview Probes: story_time"). `selectOwnVariableValues` drops them for
+  // EVERY audience; the expert audience gate above stays as belt and braces.
+  const ownValues = useAppSelector(selectOwnVariableValues(conversationId));
+  return <UserMessageVariables values={ownValues} />;
 }

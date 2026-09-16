@@ -64,7 +64,7 @@ import {
 import { executeInstance } from "./execute-instance.thunk";
 import {
   replaceSurfaceVariableValues,
-  setUserVariableValues,
+  setHostVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import {
   replaceSurfaceContextEntries,
@@ -681,7 +681,11 @@ export const launchAgentExecution = createAsyncThunk<
     onConversationCreated?.(conversationId);
 
     if (variables && Object.keys(variables).length > 0) {
-      dispatch(setUserVariableValues({ conversationId, values: variables }));
+      // HOST-WIRED, not typed. `runtime.variables` is what this SURFACE knows —
+      // it ships exactly as before, but it is recorded as the host's so the
+      // user bubble never presents it as the person's own words (see
+      // `hostValueNames` in instance-variable-values.slice.ts).
+      dispatch(setHostVariableValues({ conversationId, values: variables }));
     }
     if (runtimeContext && Object.keys(runtimeContext).length > 0) {
       // Deferred tier: these land in the request's `context` dict, not the
@@ -891,7 +895,11 @@ export const launchAgentExecution = createAsyncThunk<
     }
 
     if (variables && Object.keys(variables).length > 0) {
-      dispatch(setUserVariableValues({ conversationId, values: variables }));
+      // HOST-WIRED, not typed. `runtime.variables` is what this SURFACE knows —
+      // it ships exactly as before, but it is recorded as the host's so the
+      // user bubble never presents it as the person's own words (see
+      // `hostValueNames` in instance-variable-values.slice.ts).
+      dispatch(setHostVariableValues({ conversationId, values: variables }));
     }
     if (runtimeContext && Object.keys(runtimeContext).length > 0) {
       // Deferred tier: these land in the request's `context` dict, not the
@@ -948,7 +956,11 @@ export const launchAgentExecution = createAsyncThunk<
     onConversationCreated?.(conversationId);
 
     if (variables && Object.keys(variables).length > 0) {
-      dispatch(setUserVariableValues({ conversationId, values: variables }));
+      // HOST-WIRED, not typed. `runtime.variables` is what this SURFACE knows —
+      // it ships exactly as before, but it is recorded as the host's so the
+      // user bubble never presents it as the person's own words (see
+      // `hostValueNames` in instance-variable-values.slice.ts).
+      dispatch(setHostVariableValues({ conversationId, values: variables }));
     }
     if (runtimeContext && Object.keys(runtimeContext).length > 0) {
       // Deferred tier: these land in the request's `context` dict, not the

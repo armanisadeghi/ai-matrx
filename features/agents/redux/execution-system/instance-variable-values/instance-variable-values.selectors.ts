@@ -45,6 +45,49 @@ export const selectUserVariableValues =
     EMPTY_RECORD;
 
 /**
+ * The names in `userValues` the HOST wired at launch — see the field's own
+ * header in the slice. Never rendered as the person's own words.
+ */
+export const selectHostVariableNames =
+  (conversationId: string) =>
+  (state: RootState): string[] =>
+    state.instanceVariableValues.byConversationId[conversationId]
+      ?.hostValueNames ?? EMPTY_NAMES;
+
+/**
+ * The launch values a conversation may present AS THE PERSON'S OWN — the user
+ * tier with every host-wired name removed.
+ *
+ * 🚨 This is the one primitive the user bubble reads, for EVERY audience. The
+ * Conductor's `rulebook_document`, the Scout interview's `interview_probes` and
+ * every other value a surface wired on the person's behalf are correct as named
+ * launch variables and ship unchanged — they are simply not hers to show. When
+ * a surface wires everything (which is the normal case for a purpose-built
+ * conversation) this is empty and the strip renders nothing at all.
+ *
+ * KNOWN LIMIT, deliberately not hidden: a conversation REHYDRATED from
+ * `cx_conversation.variables` cannot tell host values from typed ones — the DB
+ * column stores the merged payload and carries no authorship. On that path the
+ * audience gate is still what keeps them away from an Expert. Closing it needs
+ * authorship persisted with the row.
+ */
+export const selectOwnVariableValues = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceVariableValues.byConversationId[conversationId],
+    (entry) => {
+      if (!entry) return EMPTY_RECORD;
+      const hostNames = entry.hostValueNames ?? [];
+      if (hostNames.length === 0) return entry.userValues;
+      const own: Record<string, unknown> = {};
+      for (const [name, value] of Object.entries(entry.userValues)) {
+        if (!hostNames.includes(name)) own[name] = value;
+      }
+      return Object.keys(own).length === 0 ? EMPTY_RECORD : own;
+    },
+  );
+
+/**
  * Raw scope-resolved values for an instance.
  */
 export const selectScopeVariableValues =
