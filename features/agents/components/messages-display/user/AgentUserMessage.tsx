@@ -324,7 +324,18 @@ export function AgentUserMessage({
                 with. Display-only, sourced from the instance variable slice, so
                 live and reloaded conversations render identically. Shown once,
                 on turn 1. */}
-            {isFirstTurnMessage && (
+            {/* 🚨 AND THE LAUNCH VARIABLES ARE A BUILDER'S VIEW TOO. Found
+                live on 2026-09-16 while verifying the tool-frame fix: with
+                every tool card gone, the Conductor's first bubble still opened
+                with "Attachments: … Rulebook Document: # … Rulebook id:
+                a84d1c5e-… Status: draft · Version: 25", and the interview's
+                with "Interview Probes: story_time / Interview Context Mode:
+                blank_slate". Those are the values the HOST wired, in the
+                host's vocabulary — the Expert neither typed them nor can act
+                on them, and a raw enum token in her own message bubble is the
+                purest form of the machine talking to itself. Creator mode
+                still shows every one. */}
+            {machineFramesVisible && isFirstTurnMessage && (
               <FirstTurnVariables conversationId={conversationId} />
             )}
 

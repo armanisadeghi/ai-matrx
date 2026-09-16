@@ -164,6 +164,20 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
       "{machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
     );
   });
+
+  it("the first-turn launch variables are gated too", () => {
+    // Also found live on 2026-09-16: the Conductor's first bubble opened with
+    // "Attachments: … Rulebook Document: # … Rulebook id: a84d1c5e-… Status:
+    // draft · Version: 25", and the interview's with "Interview Probes:
+    // story_time / Interview Context Mode: blank_slate" — the host's own
+    // wiring, in the host's vocabulary, inside the Expert's message bubble.
+    const source = read(
+      "features/agents/components/messages-display/user/AgentUserMessage.tsx",
+    );
+    expect(source).toContain(
+      "{machineFramesVisible && isFirstTurnMessage && (",
+    );
+  });
 });
 
 describe("the expert-facing hosts declare themselves", () => {
