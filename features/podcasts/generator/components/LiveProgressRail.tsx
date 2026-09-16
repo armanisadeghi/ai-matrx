@@ -75,9 +75,10 @@ function StageIcon({ stage }: { stage: DisplayStage }) {
 
 export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
   const [open, setOpen] = useState(true);
-  const { stages, doneCount, total, featuredLabel, progress } =
+  const { stages, doneCount, failedCount, total, featuredLabel, progress } =
     useStageDisplay(state);
   const running = state.status === "running";
+  const failed = state.status === "error";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -107,23 +108,20 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
           <div className="flex shrink-0 items-center gap-3 text-xs tabular-nums text-muted-foreground">
             <ElapsedTimer startedAt={startedAt} running={running} />
             <span className="font-semibold text-foreground">
-              {Math.round(progress)}%
+              {failed ? "Stopped" : `${Math.round(progress)}%`}
             </span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={cn(
-              "h-full rounded-full transition-[width] duration-500 ease-out",
-              state.status === "error"
-                ? "bg-destructive"
-                : "bg-gradient-to-r from-primary via-primary to-secondary",
-            )}
-            style={{ width: `${Math.min(100, Math.max(2, progress))}%` }}
-          />
-        </div>
+        {!failed && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-secondary transition-[width] duration-500 ease-out"
+              style={{ width: `${Math.min(100, Math.max(2, progress))}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Stage timeline — all steps, scrolls only past the viewport */}
@@ -131,7 +129,9 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between border-t border-border px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
             <span>
-              {doneCount} of {total} steps done
+              {failed
+                ? `${doneCount} completed${failedCount ? ` · ${failedCount} failed` : ""}`
+                : `${doneCount} of ${total} steps done`}
             </span>
             <ChevronDown
               className={cn("h-4 w-4 transition-transform", open && "rotate-180")}

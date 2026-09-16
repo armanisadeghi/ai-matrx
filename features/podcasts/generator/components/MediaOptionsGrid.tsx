@@ -83,11 +83,23 @@ export function MediaOptionsGrid({
   const [showAllImages, setShowAllImages] = useState(false);
   const [showAllVideos, setShowAllVideos] = useState(false);
 
-  const imagesDone = state.images.filter((s) => s.status === "done").length;
-  const videosDone = state.videos.filter((s) => s.status === "done").length;
+  // A terminal run cannot truthfully leave speculative slots looking queued or
+  // rendering. Keep real delivered/failed artifacts visible, but suppress slots
+  // the pipeline never reached (the content gate commonly fails before media).
+  const images =
+    state.status === "error"
+      ? state.images.filter((s) => s.status === "done" || s.status === "failed")
+      : state.images;
+  const videos =
+    state.status === "error"
+      ? state.videos.filter((s) => s.status === "done" || s.status === "failed")
+      : state.videos;
 
-  const hasImages = state.images.length > 0 && only !== "video";
-  const hasVideos = state.videos.length > 0 && only !== "image";
+  const imagesDone = images.filter((s) => s.status === "done").length;
+  const videosDone = videos.filter((s) => s.status === "done").length;
+
+  const hasImages = images.length > 0 && only !== "video";
+  const hasVideos = videos.length > 0 && only !== "image";
 
   if (!hasImages && !hasVideos) return null;
 
@@ -133,12 +145,12 @@ export function MediaOptionsGrid({
 
   const visibleImages =
     editable && !showAllImages
-      ? state.images.slice(0, VISIBLE_IMAGES)
-      : state.images;
+      ? images.slice(0, VISIBLE_IMAGES)
+      : images;
   const visibleVideos =
     editable && !showAllVideos
-      ? state.videos.slice(0, VISIBLE_VIDEOS)
-      : state.videos;
+      ? videos.slice(0, VISIBLE_VIDEOS)
+      : videos;
 
   return (
     <div className="space-y-6">
@@ -148,12 +160,12 @@ export function MediaOptionsGrid({
             icon={ImageIcon}
             title="Cover art options"
             done={imagesDone}
-            total={state.images.length}
+            total={images.length}
           />
-          {!editable && state.images.length === 5 ? (
+          {!editable && images.length === 5 ? (
             // Bento — 2 large + 3 small fills the row cleanly. Live-run view.
             <div className="grid grid-cols-6 gap-3">
-              {state.images.map((slot, i) => (
+              {images.map((slot, i) => (
                 <div
                   key={`img-${slot.index}`}
                   className={i < 2 ? "col-span-3" : "col-span-2"}
@@ -169,7 +181,7 @@ export function MediaOptionsGrid({
               ))}
               {editable &&
                 onAddAsset &&
-                (showAllImages || state.images.length <= VISIBLE_IMAGES) && (
+                (showAllImages || images.length <= VISIBLE_IMAGES) && (
                   <AddAssetCard
                     kind="image"
                     busy={addBusy("image")}
@@ -178,7 +190,7 @@ export function MediaOptionsGrid({
                 )}
             </div>
           )}
-          {editable && state.images.length > VISIBLE_IMAGES && (
+          {editable && images.length > VISIBLE_IMAGES && (
             <button
               type="button"
               onClick={() => setShowAllImages((v) => !v)}
@@ -186,7 +198,7 @@ export function MediaOptionsGrid({
             >
               {showAllImages
                 ? "Show fewer"
-                : `See all ${state.images.length} images`}
+                : `See all ${images.length} images`}
             </button>
           )}
         </section>
@@ -198,7 +210,7 @@ export function MediaOptionsGrid({
             icon={Clapperboard}
             title="Video options"
             done={videosDone}
-            total={state.videos.length}
+            total={videos.length}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {visibleVideos.map((slot) => (
@@ -206,7 +218,7 @@ export function MediaOptionsGrid({
             ))}
             {editable &&
               onAddAsset &&
-              (showAllVideos || state.videos.length <= VISIBLE_VIDEOS) && (
+              (showAllVideos || videos.length <= VISIBLE_VIDEOS) && (
                 <AddAssetCard
                   kind="video"
                   busy={addBusy("video")}
@@ -214,7 +226,7 @@ export function MediaOptionsGrid({
                 />
               )}
           </div>
-          {editable && state.videos.length > VISIBLE_VIDEOS && (
+          {editable && videos.length > VISIBLE_VIDEOS && (
             <button
               type="button"
               onClick={() => setShowAllVideos((v) => !v)}
@@ -222,7 +234,7 @@ export function MediaOptionsGrid({
             >
               {showAllVideos
                 ? "Show fewer"
-                : `See all ${state.videos.length} clips`}
+                : `See all ${videos.length} clips`}
             </button>
           )}
         </section>

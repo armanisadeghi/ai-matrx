@@ -25,6 +25,7 @@ export interface DisplayStage {
 export interface StageDisplay {
   stages: DisplayStage[];
   doneCount: number;
+  failedCount: number;
   total: number;
   featuredLabel: string;
   progress: number;
@@ -109,6 +110,19 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
   let insertedSynthetic = false;
   for (const s of state.stages) {
     if (PREPARE_KEYS.has(s.stage) && plan) {
+      // Synthetic rows are only an in-flight narration aid. If the real parent
+      // fails, preserve that failure instead of letting `prepareSettled` turn
+      // the whole synthetic plan into completed work.
+      if (s.status === "failed") {
+        stages.push({
+          key: s.stage,
+          label: formatStageLabel(s.stage, s.label),
+          status: "failed",
+          kind: stageKind(s.stage),
+        });
+        insertedSynthetic = true;
+        continue;
+      }
       if (!insertedSynthetic) {
         insertedSynthetic = true;
         plan.steps.forEach((step, i) => {
@@ -132,8 +146,9 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
     });
   }
 
-  const completed = stages.filter((s) => s.status !== "running").length;
-  const runningCount = stages.length - completed;
+  const completed = stages.filter((s) => s.status === "done").length;
+  const failedCount = stages.filter((s) => s.status === "failed").length;
+  const runningCount = stages.length - completed - failedCount;
   const denom = Math.max(stages.length, state.totalSteps, 12);
   const progress =
     state.status === "done"
@@ -160,6 +175,7 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
   return {
     stages,
     doneCount: completed,
+    failedCount,
     total: stages.length,
     featuredLabel,
     progress,
