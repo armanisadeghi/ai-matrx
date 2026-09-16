@@ -104,7 +104,9 @@ export function ExpertSignOff({
     try {
       await setVerdict("positive");
       toast.success(
-        signed ? "Signature removed" : "Signed — that's your judgment, working",
+        signed
+          ? "Taken back — this one is no longer marked as yours"
+          : "Marked as yours — that's your judgment, working",
       );
     } catch (error) {
       toast.error(
@@ -182,7 +184,12 @@ export function ExpertSignOff({
           ) : (
             <ThumbsUp className="h-3.5 w-3.5" />
           )}
-          {signed ? "Signed" : "Yes, that's mine"}
+          {/* ONE VOCABULARY (jobs-bar-2026-09-16, item 7). Pressing "Yes,
+              that's mine" used to turn the button into "Signed" — a word that
+              appears nowhere else on the page, in front of someone who has
+              never heard a run called a signature. The filled variant and
+              `aria-pressed` already say it is on; the words stay the words. */}
+          {signed ? "That's mine" : "Yes, that's mine"}
         </Button>
         <Button
           size="sm"

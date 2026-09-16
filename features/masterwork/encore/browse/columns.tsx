@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   DATE_FILTER_OPTIONS,
   Muted,
+  TextCell,
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
@@ -20,7 +21,7 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
       header: "Name",
       filter: "text",
       cell: (row) => (
-        <span className="truncate font-medium text-foreground">{row.name}</span>
+        <TextCell value={row.name} className="font-medium text-foreground" />
       ),
     },
   },
@@ -32,8 +33,7 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
       accessorFn: (row) => row.rulebook?.expert ?? "",
       header: "Expert",
       filter: "text",
-      cell: (row) =>
-        row.rulebook ? <span>{row.rulebook.expert}</span> : <Muted>—</Muted>,
+      cell: (row) => <TextCell value={row.rulebook?.expert} />,
     },
   },
   {

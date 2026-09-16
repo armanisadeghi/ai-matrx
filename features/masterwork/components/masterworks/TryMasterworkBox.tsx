@@ -680,14 +680,19 @@ export function TryMasterworkBox({
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
-          <Play className={submitLabel ? "mr-1 h-4 w-4" : "h-4 w-4"} />
+          {/* THE PRIMARY ACTION ALWAYS HAS WORDS (jobs-bar-2026-09-16, item 6).
+              Without a `submitLabel` this rendered a bare blue play triangle —
+              the only button on the Understudy card, and the one thing a
+              first-timer has to press. An icon is a decoration, never the
+              instruction. */}
+          <Play className="mr-1 h-4 w-4" />
           {rejoining
             ? "Checking…"
             : starting
               ? "Starting…"
               : running
                 ? "Working…"
-                : (submitLabel ?? "")}
+                : (submitLabel ?? "Run it")}
         </Button>
         {onCompare && !candidateText && !noResultReason ? (
           <span className="text-xs text-muted-foreground">

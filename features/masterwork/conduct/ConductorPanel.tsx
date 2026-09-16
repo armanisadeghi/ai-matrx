@@ -53,6 +53,11 @@ import { useConversationResume } from "@/features/agents/hooks/useConversationRe
 import { useMandate } from "@/features/mandates/useMandate";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import {
+  setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
+  setDisplayNameOverride,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
@@ -290,6 +295,45 @@ function ConductorColumn({
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // WHO IS IN THE ROOM, AND WHAT DO I DO NOW (jobs-bar-2026-09-16, item 3).
+  // Before this, the Conductor's first screen was the generic agent hero:
+  // "Ready to run" over "Fill in any variables below and type a message to
+  // start." There are no variables below — the Rulebook rides in as named
+  // variables the Expert never sees — so the one instruction on the page
+  // pointed at something that does not exist, and nothing on the screen said
+  // what this conversation is FOR. Same mechanism the agent apps use.
+  // The overrides are a MUTATION of an existing entry — `initInstanceUIState`
+  // creates it a beat later than this component mounts, and a dispatch that
+  // lands first is silently dropped by the reducer's `if (entry)` guard. So the
+  // effect waits for the entry to exist and re-runs the moment it does.
+  const instanceReady = useAppSelector((state) =>
+    Boolean(state.instanceUIState.byConversationId[conversationId]),
+  );
+  useEffect(() => {
+    if (!instanceReady) return;
+    dispatch(
+      setDisplayNameOverride({
+        conversationId,
+        value: "Let's build your Masterwork",
+      }),
+    );
+    dispatch(
+      setDisplayDescriptionOverride({
+        conversationId,
+        value:
+          `I have read "${rulebookName}" and I build the working system from it. ` +
+          "Tell me what you want it to do for you — or press one of the questions " +
+          "below and I'll start there.",
+      }),
+    );
+    dispatch(
+      setDisplayIconNameOverride({
+        conversationId,
+        value: "BrainCircuit",
+      }),
+    );
+  }, [conversationId, dispatch, instanceReady, rulebookName]);
 
   const lastChipRef = useRef<string | null>(null);
   const stageChip = (text: string) => {

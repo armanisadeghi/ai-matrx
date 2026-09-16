@@ -28,6 +28,7 @@
 
 import { BadgeCheck, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { BenchProofState } from "./benchProof";
 import { benchFacts } from "./benchFacts";
@@ -121,20 +122,23 @@ function BenchLine({ bench }: { bench: BenchProofState }) {
   }
 
   // "unavailable" and "none" both say the true thing and what would change it.
+  const benchHeadline =
+    bench.status === "none"
+      ? "No bench proof yet"
+      : "Bench proof: can't tell from here";
   return (
     <div className="mt-2 rounded-md border border-dashed border-border px-2 py-1.5">
       <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>
-          {bench.status === "none"
-            ? "No bench proof yet"
-            : "Bench proof: can't tell from here"}
-        </span>
+        <span>{benchHeadline}</span>
       </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{bench.reason}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {withoutRepeatedLead(bench.reason, benchHeadline)}
+      </p>
     </div>
   );
 }
+
 
 export function AuditionProof({
   score,

@@ -281,14 +281,18 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
               {runs.map((run) => (
                 <div
                   key={run.id}
-                  className="flex flex-wrap items-center gap-2 rounded px-1.5 py-1"
+                  // PHONE: the sign-off buttons are ~230px wide, so on a 390px
+                  // screen a single flex row squeezed the run's own line down to
+                  // one character per line ("F / i / n / i ..."). The row stacks
+                  // below `sm` and the link keeps its words intact.
+                  className="flex flex-col items-start gap-1 rounded px-1.5 py-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"
                 >
                   {/* THE DOOR IS IN THIS APP (wall W36): an Operator's finished
                       run is read at its own permalink here, never in the
                       author's Studio on another host. */}
                   <Link
                     href={runHref(run.id)}
-                    className="group flex min-w-0 flex-1 items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                    className="group flex w-full min-w-0 items-center gap-2 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground sm:w-auto sm:flex-1"
                   >
                     <span
                       className={cn(
@@ -299,7 +303,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                     />
                     <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
                     <span>· {runWhen(run)}</span>
-                    <SquareArrowOutUpRight className="ml-1 h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                    <SquareArrowOutUpRight className="ml-1 h-3 w-3 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" />
                   </Link>
                   {/* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
                       the thumbs the moment a run ends, and then forgets the run

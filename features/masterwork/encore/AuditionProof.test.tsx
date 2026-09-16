@@ -111,8 +111,24 @@ describe("the Audition score is presented as a quick check, never as proof", () 
     render(NONE);
     const text = host.textContent ?? "";
     expect(text).toContain("No bench proof yet");
-    expect(text).toContain("five-arm Bench run");
     expect(text).toContain("command line");
+  });
+
+  /**
+   * 2026-09-16 Jobs-bar walk, item 5. The live Encore run page read:
+   *
+   *   No bench proof yet
+   *   No bench proof yet. Proof is a five-arm Bench run (A0/A1/A2/B/C/GT) …
+   *
+   * The heading lives here and the sentence under it comes from aidream, which
+   * deploys on its own clock — so the panel itself has to refuse the repeat.
+   */
+  it("(b2) never prints its own headline twice, whatever the server sends", () => {
+    render(NONE);
+    const text = host.textContent ?? "";
+    const occurrences = text.split("No bench proof yet").length - 1;
+    expect(occurrences).toBe(1);
+    expect(text).toContain("Proof is a five-arm Bench run");
   });
 
   it("(c) shows the record's own claim, arm, budget, panel and cost", () => {
