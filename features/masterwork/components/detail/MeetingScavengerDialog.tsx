@@ -639,12 +639,15 @@ export function MeetingScavengerDialog({
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
+                {/* Read as a sentence, not as a setting with a threshold.
+                    "Shortest moment to read" named a number, not a decision
+                    (jobs-bar-2026-09-16 lanes-b, item 17). */}
                 <Label htmlFor="meeting-min-words" className="text-sm">
-                  Shortest moment to read
+                  Skip anything you said shorter than
                 </Label>
                 <div className="text-xs text-muted-foreground">
-                  Anything shorter is “yeah”, “agreed”, “next one” — not a
-                  judgment.
+                  A shorter turn is “yeah”, “agreed”, “next one” — not a
+                  judgment worth keeping.
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -708,11 +711,13 @@ export function MeetingScavengerDialog({
           ) : null}
           {speakers ? (
             <Button onClick={scavenge} disabled={busy}>
-              {run.running ? "Scavenging…" : "Scavenge these meetings"}
+              {run.running
+                ? "Reading what you said…"
+                : "Pull out what I said"}
             </Button>
           ) : (
             <Button onClick={readVoices} disabled={busy}>
-              {previewing ? "Reading…" : "Read who spoke"}
+              {previewing ? "Reading the meetings…" : "See who is in them"}
             </Button>
           )}
         </DialogFooter>

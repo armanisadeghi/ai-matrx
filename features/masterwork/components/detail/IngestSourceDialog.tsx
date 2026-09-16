@@ -136,7 +136,7 @@ const MODE_OPTIONS: {
   },
   {
     value: "exemplar",
-    title: "It IS the finished work",
+    title: "It is the finished work",
     blurb:
       "Examples of great output — the rules behind them get worked out for you.",
   },
@@ -592,8 +592,8 @@ export function IngestSourceDialog({
                 "do X\u201d. They arrive as drafts for you to approve one by one."
               : "Bring in source material — paste a chapter or a playbook, or upload " +
                 "a document or a recording of you explaining your method out loud. " +
-                "The system distills candidate rules and adds them as drafts for you " +
-                "to approve one by one. Nothing goes live without you."}
+                "We read it and write the rules behind it, and they arrive as " +
+                "drafts for you to approve one by one. Nothing goes live without you."}
           </DialogDescription>
         </DialogHeader>
 
@@ -877,8 +877,8 @@ export function IngestSourceDialog({
               {!draft.available ? (
                 <p className="text-xs text-amber-600 dark:text-amber-500">
                   This browser will not let us keep a copy of what you type
-                  here, so nothing is saved until you press Distill. Copy long
-                  text somewhere safe first.
+                  here, so nothing is saved until you press the button below.
+                  Copy long text somewhere safe first.
                 </p>
               ) : null}
               <ProTextarea
@@ -896,7 +896,12 @@ export function IngestSourceDialog({
                       : "Paste the text here — long is fine; it gets split automatically."
                 }
                 rows={10}
-                enableTextStats
+                // NOT `enableTextStats`. This box pinned a monospace strip
+                // reading "0 chars 0 whitespace 0 words 0 lines 0 paragraphs"
+                // under a paste field aimed at a non-technical Expert
+                // (jobs-bar-2026-09-16 lanes-b, item 1). The prop exists for
+                // long-form AUTHORING, which this is not — nothing here is
+                // decided by a whitespace count.
               />
             </div>
             )}
@@ -961,21 +966,36 @@ export function IngestSourceDialog({
               reason={firstBlockingReason([
                 {
                   when: monologue && !file,
-                  reason: "Record what you'd say (or upload a recording) to distill it",
+                  reason:
+                    "Record what you'd say, or upload a recording, and we'll turn it into rules",
                 },
                 {
                   when: !timeline && !monologue && shape === "file" && !file,
-                  reason: "Choose a file to distill",
+                  reason: "Choose a file to turn into rules",
+                },
+                // THE PASTE DOOR HAD NO GATE AT ALL (jobs-bar-2026-09-16
+                // lanes-b, item 18): with an empty box the primary action was
+                // fully blue and clickable, so a first-timer's first press
+                // spent a paid run on nothing.
+                {
+                  // `monologue` is a RECORDING door that leaves `shape` alone,
+                  // so it must be excluded here or its own button would never
+                  // unlock — caught by `monologue-door.test.tsx`.
+                  when: !monologue && shape !== "file" && !text.trim(),
+                  reason: "Paste the material first",
                 },
               ])}
             >
+              {/* The Rulebook page's own control for this exact outcome says
+                  "Turn this into rules". Two verbs for one job, one of them a
+                  word ("distil") a first-timer has never met. */}
               {running
-                ? "Distilling…"
+                ? "Turning it into rules…"
                 : timeline
-                  ? "Distill this case"
+                  ? "Turn this case into rules"
                   : monologue
-                    ? "Distill what I said"
-                    : "Distill rules"}
+                    ? "Turn what I said into rules"
+                    : "Turn this into rules"}
             </GatedActionButton>
           </DialogFooter>
         ) : null}

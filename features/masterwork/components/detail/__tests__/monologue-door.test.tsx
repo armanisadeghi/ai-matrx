@@ -193,7 +193,7 @@ describe("the monologue Approach's door", () => {
 
   it("cannot be submitted until something has actually been said", async () => {
     await mount();
-    expect(buttonByText("Distill what I said").disabled).toBe(true);
+    expect(buttonByText("Turn what I said into rules").disabled).toBe(true);
   });
 
   it("promises a measured wait once the recording exists — never a bare spinner", async () => {
@@ -201,7 +201,7 @@ describe("the monologue Approach's door", () => {
     await finishRecording(3600);
     // An hour of talking → the honest over-estimate, stated as a range.
     expect(text()).toMatch(/usually takes about \d+–\d+ minutes/);
-    expect(buttonByText("Distill what I said").disabled).toBe(false);
+    expect(buttonByText("Turn what I said into rules").disabled).toBe(false);
   });
 
   it("launches the recording down the file lane, as a real named file", async () => {
@@ -209,7 +209,7 @@ describe("the monologue Approach's door", () => {
     await finishRecording(95);
 
     await act(async () => {
-      buttonByText("Distill what I said").dispatchEvent(
+      buttonByText("Turn what I said into rules").dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true }),
       );
     });

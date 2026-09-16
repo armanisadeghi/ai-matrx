@@ -35,6 +35,10 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -253,7 +257,8 @@ export function TriadGamePage({
             ))}
           </div>
           <p className="text-center text-xs text-muted-foreground">
-            Leave it alone and we use whatever your organization set.
+            You can skip this — we use your organization&rsquo;s usual one, and
+            the question above the three cards tells you which you got.
           </p>
         </div>
 
@@ -467,15 +472,28 @@ export function TriadGamePage({
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-background/95 pb-safe pt-3 backdrop-blur sm:flex-row-reverse">
-          <Button
+          {/* NEVER SILENTLY DISABLED (jobs-bar-2026-09-16 lanes-b, item 9).
+              This was a bare `disabled={!pick || !reason.trim()}`: a first-timer
+              picked a card, watched the button stay grey, and was told nothing.
+              Two steps, no sentence. `GatedActionButton` names the ONE next
+              thing to do and wires it to the button for a screen reader too. */}
+          <GatedActionButton
             size="lg"
             className="min-h-12 flex-1 text-base"
-            disabled={!pick || !reason.trim()}
+            wrapperClassName="flex-1 flex-col items-stretch sm:flex-row sm:items-center sm:justify-end"
+            reasonClassName="text-center sm:text-right"
+            reason={firstBlockingReason([
+              { when: !pick, reason: "Pick one of the three first" },
+              {
+                when: !reason.trim(),
+                reason: "Say why in a line — that line is the rule",
+              },
+            ])}
             onClick={answerAndAdvance}
           >
             {remaining > 1 ? "Save and next" : "Save and finish"}
             <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          </GatedActionButton>
           <Button
             size="lg"
             variant="ghost"
@@ -503,10 +521,17 @@ function LastCardStatus({ state }: { state: SaveState | undefined }) {
     );
   }
   if (state.kind === "failed") {
+    // THE REASON WAS ALREADY IN HAND AND THROWN AWAY. `SaveState` carries the
+    // server's own sentence and this row rendered four flat words over it, so a
+    // failure arrived with no cause and no next step (jobs-bar-2026-09-16
+    // lanes-b, item 10).
     return (
-      <span className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
-        <TriangleAlert className="h-4 w-4" />
-        Last one didn't save
+      <span className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          Last one didn&rsquo;t save — {state.message} Your answer is not lost:
+          keep playing, and deal that kind of card again to say it once more.
+        </span>
       </span>
     );
   }

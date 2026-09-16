@@ -310,10 +310,16 @@ export function RulebookLaneRoute({
             href={`/masterwork/${rulebookId}`}
             ariaLabel="Back to the Rulebook"
           />
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            {title}
+          {/* PHONE FIRST: the lane's own name never truncates, the Rulebook's
+              always may. `truncate` on the <h1> alone did nothing here — the
+              name is an inline child, so at 375px it ran past the header's
+              `overflow-hidden` edge and was HARD CUT mid-word with no ellipsis
+              (jobs-bar-2026-09-16 lanes-b, item 2). A flex row with an explicit
+              `min-w-0` on the shrinking half is what actually ellipsises. */}
+          <h1 className="ml-2 flex min-w-0 items-baseline gap-2 text-sm font-medium text-foreground">
+            <span className="shrink-0">{title}</span>
             {rulebook ? (
-              <span className="ml-2 font-normal text-muted-foreground">
+              <span className="min-w-0 truncate font-normal text-muted-foreground">
                 {rulebook.name}
               </span>
             ) : null}
@@ -333,8 +339,14 @@ export function RulebookLaneRoute({
       <>
         {header}
         <div className={shellClass}>
-          <div className="flex h-full flex-1 items-center justify-center">
+          {/* A NAKED SPINNER SAYS NOTHING (P8). The other two waiting states on
+              this scaffold already name what they are doing; this one — the
+              first thing a first-timer sees on every lane route — did not. */}
+          <div className="flex h-full flex-1 flex-col items-center justify-center gap-3">
             <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">
+              Opening {title.toLowerCase()}…
+            </p>
           </div>
         </div>
       </>

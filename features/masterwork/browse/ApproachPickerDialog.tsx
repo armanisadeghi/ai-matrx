@@ -80,8 +80,13 @@ export function ApproachPickerDialog({
             </Button>
           </div>
         ) : loading || approaches === null ? (
-          <div className="flex justify-center py-12">
+          // A naked spinner in the middle of a 5-column dialog told the person
+          // nothing about what they were waiting for (P8).
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
             <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">
+              Fetching every way to add to this Rulebook…
+            </p>
           </div>
         ) : (
           <div className="space-y-6">

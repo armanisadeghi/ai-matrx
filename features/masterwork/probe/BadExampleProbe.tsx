@@ -31,6 +31,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Check, Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RichDocument } from "@/features/rich-document/RichDocument";
@@ -253,8 +257,9 @@ export function BadExampleProbe({
               intolerable on a lane whose whole point is momentum, so the price
               is stated plainly here, once, before anything is spent. */}
           <p className="text-xs text-muted-foreground">
-            Up to {roundCount} rounds. Each one writes a fresh example and reads
-            your answer — two AI calls, a minute or so.
+            Up to {roundCount} rounds, and you can stop after any one of them.
+            Each round takes about a minute: we write the example, you say what
+            is wrong with it, and we read your answer.
           </p>
         </div>
       ) : null}
@@ -322,8 +327,11 @@ export function BadExampleProbe({
               <AlertTriangle className="size-3.5" />
               We wrote this. It is meant to look right and be wrong.
             </p>
+            {/* NEVER "Untitled". A grey placeholder word in the heading slot
+                reads as a half-built screen; the case the Expert typed is the
+                true name of what we wrote for them. */}
             <h2 className="mb-2 text-base font-semibold text-foreground">
-              {current.example_title || "Untitled"}
+              {current.example_title || `A ${caseBrief.trim() || "work"} that looks right`}
             </h2>
             <RichDocument
               content={current.example_body}
@@ -333,7 +341,11 @@ export function BadExampleProbe({
             />
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
+          {/* The example runs for screens; the answer box was pinned to the top
+              of its column, so by the time you had read the thing you were
+              meant to criticise, the box to criticise it in was off screen
+              (jobs-bar-2026-09-16 lanes-b, item 13). */}
+          <section className="rounded-lg border border-border bg-card p-4 lg:sticky lg:top-4 lg:self-start">
             <div className="mb-2 flex items-baseline justify-between gap-2">
               <Label htmlFor="probe-critique" className="text-sm font-medium">
                 What&apos;s wrong with this, and what would you do?
@@ -363,12 +375,22 @@ export function BadExampleProbe({
               className="text-base sm:text-sm"
             />
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <Button
+              {/* Was a bare `disabled` with nothing beside it: the payoff button
+                  of the whole round sat grey and said nothing
+                  (jobs-bar-2026-09-16 lanes-b, item 12). */}
+              <GatedActionButton
                 onClick={() => void send(false)}
-                disabled={running || !critique.trim()}
+                disabled={running}
+                wrapperClassName="flex-col items-stretch sm:flex-row sm:items-center"
+                reason={firstBlockingReason([
+                  {
+                    when: !critique.trim(),
+                    reason: "Say what is wrong with it first",
+                  },
+                ])}
               >
                 Send this and show me the next one
-              </Button>
+              </GatedActionButton>
               <Button
                 variant="outline"
                 onClick={() => void send(true)}

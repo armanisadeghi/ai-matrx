@@ -109,6 +109,9 @@ const VOICE_DEFAULT_ON = true;
 /** Enough of a work piece to be worth reviewing. */
 const MIN_WORK_CHARS = 120;
 
+/** The not-yet-saved selection, marked in the work like a real correction. */
+const PENDING_ID = "__pending__";
+
 /**
  * What can be dropped in as the work piece. DELIBERATELY NARROW AND HONEST:
  * these are the types the browser can read into text with no server round
@@ -257,9 +260,33 @@ export function RedPenDialog({
     if (run.error) toast.error(run.error);
   }, [run.error]);
 
+  // THE PASSAGE YOU ARE TALKING ABOUT HAS TO BE VISIBLE WHILE YOU TALK ABOUT
+  // IT (jobs-bar-2026-09-16 lanes-b, item 3). Only SAVED corrections were
+  // marked, so the moment a selection became "pending" the browser's own
+  // highlight was lost on the next render and the work went back to plain grey
+  // — leaving a box asking "what's wrong with it?" above a passage the Expert
+  // could no longer see. The pending span is segmented like any other so the
+  // offsets on screen are exactly the offsets we will send.
   const segments = useMemo(
-    () => segmentWork(workText, corrections),
-    [workText, corrections],
+    () =>
+      segmentWork(
+        workText,
+        pending
+          ? [
+              ...corrections,
+              {
+                id: PENDING_ID,
+                span: pending.span,
+                start: pending.start,
+                end: pending.end,
+                comment: "",
+                voice: false,
+                at: "",
+              },
+            ]
+          : corrections,
+      ),
+    [workText, corrections, pending],
   );
 
   /** A highlight is only a correction once the Expert has said what is wrong. */
@@ -489,9 +516,10 @@ export function RedPenDialog({
           /* ── STEP 2: the markup ────────────────────────────────────── */
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Select any passage below to mark it.{" "}
+              Drag across any part of the work below to mark it, then say what
+              is wrong with it.{" "}
               {corrections.length === 0
-                ? `You need ${MIN_CORRECTIONS} corrections before this can be distilled.`
+                ? `Mark ${MIN_CORRECTIONS} before we can turn them into rules — a standard shows up across several, not one.`
                 : shortBy > 0
                   ? `${corrections.length} marked — ${shortBy} more to go.`
                   : `${corrections.length} marked.`}
@@ -508,7 +536,10 @@ export function RedPenDialog({
                   data-work-start={segment.start}
                   className={cn(
                     segment.correctionId &&
+                      segment.correctionId !== PENDING_ID &&
                       "rounded bg-rose-500/20 underline decoration-rose-500 decoration-wavy underline-offset-4",
+                    segment.correctionId === PENDING_ID &&
+                      "rounded bg-rose-500/30 font-medium ring-2 ring-rose-500/60",
                   )}
                 >
                   {segment.text}
@@ -519,7 +550,9 @@ export function RedPenDialog({
             {pending ? (
               <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/5 p-3">
                 <p className="text-xs text-muted-foreground">
-                  You struck through:
+                  {/* Nothing is struck through anywhere on this screen — the
+                      passage is highlighted. Say what the screen does. */}
+                  The bit you highlighted, marked above:
                 </p>
                 <p className="text-sm italic text-foreground">
                   &ldquo;{pending.span}&rdquo;
@@ -551,9 +584,14 @@ export function RedPenDialog({
                     Never mind
                   </Button>
                   {VOICE_DEFAULT_ON ? (
+                    // "press the microphone" pointed at a control that only
+                    // appears once the pointer is inside the box, so on a
+                    // desktop first pass there was no microphone to press
+                    // (jobs-bar-2026-09-16 lanes-b, item 4).
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Mic className="size-3" aria-hidden />
-                      or press the microphone and say it
+                      or move onto the box above and use its microphone instead
+                      of typing
                     </span>
                   ) : null}
                 </div>
@@ -652,9 +690,15 @@ export function RedPenDialog({
                     },
                   ])}
                 >
+                  {/* "Distil 0 corrections" was the label a first-timer met on
+                      arriving at this step — a zero on a button, in a verb the
+                      rest of the product does not use (the Rulebook page's own
+                      control says "Turn this into rules"). */}
                   {running
-                    ? "Distilling…"
-                    : `Distil ${corrections.length} correction${corrections.length === 1 ? "" : "s"}`}
+                    ? "Turning them into rules…"
+                    : corrections.length === 0
+                      ? "Turn your corrections into rules"
+                      : `Turn ${corrections.length} correction${corrections.length === 1 ? "" : "s"} into rules`}
                 </GatedActionButton>
               </>
             )}

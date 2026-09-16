@@ -107,11 +107,11 @@ export const MODE_COPY: Record<
   best_one: {
     label: "Pick the best one",
     question: "Which one would you actually use?",
-    hint: "Tap the one you'd go with.",
+    hint: "Pick the one you'd go with.",
   },
   odd_one_out: {
     label: "Spot the odd one out",
     question: "Two of these are alike. Which is the odd one?",
-    hint: "Tap the one that doesn't belong.",
+    hint: "Pick the one that doesn't belong.",
   },
 };

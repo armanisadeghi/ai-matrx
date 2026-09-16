@@ -42,7 +42,12 @@ import {
 } from "./scoring";
 
 const CHART_CONFIG = {
-  buckets: { label: "Your calls", color: "var(--chart-1)" },
+  // hsl(...) IS REQUIRED. `--chart-1` holds raw HSL CHANNELS ("12 76% 61%"),
+  // not a colour, so `var(--chart-1)` is an invalid `fill` and recharts fell
+  // back to pure black — a dot that is invisible on a dark card
+  // (jobs-bar-2026-09-16 lanes-b, item 15). Every other chart in the repo
+  // wraps it; this one did not.
+  buckets: { label: "Your calls", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 /** A long date the way a person says it, e.g. "1 October 2026". */
@@ -172,7 +177,11 @@ export function CalibrationReadout({
                 { x: 0, y: 0 },
                 { x: 100, y: 100 },
               ]}
-              stroke="var(--muted-foreground)"
+              // Same channels-are-not-a-colour bug as the fill above: this
+              // line was DECLARED and never drawn, while the caption under
+              // the chart explained it to the reader ("the dotted line is
+              // dead-on"). A legend for an invisible mark is a screen lying.
+              stroke="hsl(var(--muted-foreground))"
               strokeDasharray="4 4"
               ifOverflow="extendDomain"
             />
