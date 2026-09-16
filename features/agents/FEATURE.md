@@ -251,63 +251,20 @@ A user agent and its system (`builtin`) twin are linked by `source_agent_id` on 
 
 ### Find Usages & Drift
 
-Find every place an agent is used and detect when a usage no longer matches the agent. **"Pinned to active" = `agx_version.version_number == agx_agent.version`** — a promoted older version is fine; numeric-latest is irrelevant.
+ONE window answers "where is this agent used, and what did I just risk?" — the **Find Usages** window (`agent options menu → Find Usages` / `Find Usages (Admin)`, and the post-save **reaches N** badge + toast **Review** door from `useAgentChangeReach`). Engine: `components/usages/AgentUsagesEngine.tsx` (one component, mode `user | admin`; also the drift report's detail pane). Layout (2026-09-16, Arman: *"a simple KPI view at the top … one table … instant access to the other agent"*):
 
-- **Forward-looking usages only** (a usage can re-invoke the agent later): shortcuts, apps, prompt apps, scheduled tasks, surface bindings, SMS lines, workflow nodes, derived agents, comparisons, and **code-registered usages** (backend pins in `agx_usage_registry`). Conversations/runs are history — counted as muted context, never drift-checked. **Workflow-node scanning is dormant:** current `wf_definition` nodes bind a _model_, not an `agent_id`, so the `workflow_node` branch (matches `nodes[].data.config.agent_id`) finds nothing today — it's the forward hook for when agent-pinning nodes ship; confirm the real JSON path then.
-- **Severity (worst→least), one source `components/usages/severity.ts`:** `breaking` (a stored variable is gone / required var unmet on a non-interactive usage / agent disabled) · `silent_breaking` (a stored context policy was renamed — still injected, but as default context, so its rules are silently ignored) · `warning` (stale pin) · `info` (pinned older but the variable+mandate contract is unchanged).
-- **Drift is computed against the _effective_ definition:** pinned usages compare to the pinned snapshot (the stale pin is its own finding); follow-active usages compare to live `agx_agent`.
-- **Entry points:** agent options menu → "Find Usages" / "Find Usages (Admin)" (super-admin, `selectIsSuperAdmin`) windows; "Drift Report" menu link + severity-tinted `AgentsListHeader` button on `/agents/all` → `/reports/agent-drift` (weekly-scan-fed alerts, show-once via `viewed_at`).
-- **Privacy (user variant):** own + org-managed usages in full detail; everyone else's collapse to aggregate counts (not a security wall — a "don't decide for others" wall, enforced in the RPC). Org usages the caller can't manage carry `org_manager_user_ids` for "Notify managers".
-- **Remediation is one-click, never automatic:** `repin_active` (default — move the version pin to the active version; this is agent.usage version pinning, NOT a Mandate Rebind) or `follow_active`, single + bulk, gated to owner / org owner-admin / super admin. Stored-config keys are never auto-deleted.
-- **Redux:** `features/agents/redux/usages/` (slice `agentUsages`); engine `components/usages/AgentUsagesEngine.tsx` (one component, mode `user | admin`) powers both windows + the report detail pane. **RPCs:** `agx_usage_scan` / `agx_usage_scan_admin` / `agx_usage_report` / `agx_usage_report_admin` / `agx_usage_update_to_active` / `agx_usage_update_all_to_active` / `agx_usage_history_counts` (migrations `agx_usage_001`–`004`). Backend: code-usage registry sync + weekly drift scan + DM notifier in aidream `services/agent_usage/`. See the **Agents admin map** at `/agents/admin`.
-- **Alert access follows the agent token, never a project FK.** `agent.drift_alert` is a component of `agent.definition`; its RLS resolves through `iam.has_access('agent', agent_id, ...)`. Agent/project context is an optional `platform.associations` edge, so `platform.entity_relationships` must not declare an `agent.definition.project_id` containment path.
+1. **Counts strip** (`UsageKpiStrip.tsx`) — every dimension we watch as a chip with its count **including zero** (`dimensions.ts`: Mandates · Shortcuts · Agent apps · Scheduled tasks · Workflow nodes · Surface bindings · SMS lines · Derived agents · Comparisons · Code usages · History). 0 means checked-and-empty; a failed read shows `?`, never 0. Flagged / behind sub-counts ride the chip. Click = filter the table; click again = clear. History (conversations, runs, …) is context only, never drift-checked.
+2. **Status line** — red flags in words, the server's withheld sentence ("N rungs withheld: …", counted never listed), and the doors: **Compare versions & test** (opens `impactBatchWindow` focused on this agent — version history + quick test), **Move all green mandates (N)**, **Move all stale usages (N)**, **Put back last batch (N)**.
+3. **ONE table** — the canonical `MatrxDataTable`, one row per usage (`unified-rows.ts` → `UnifiedUsageRow`): Name (with doors, `UsageNameCell.tsx`), Type, Runs → newest, Risk, What changed (one phrase in the grader's words), Owner (admin), Actions (**Move to vN** / **Put back** / **Notify**). Row click opens the grader's own findings in a table-owned window (`RowDetail`: `VerdictDetail` for mandates, `UsageRowDetail` for the rest). Checkbox selection + bulk bar; only rows the caller may move are selectable.
 
----
+**Two graders, neither re-derived here.** Mandates come from the server's impact read (`POST /mandates/impact` for admins, `/mandates/impact/mine` otherwise — `useAgentMandateImpact.ts` → `features/mandates/admin/impact.ts`, THE ONE GRADER, with duplicated descendants, R4) and move through `useImpactAdvance` (one write path, 72-hour put back). Everything else comes from `agx_usage_scan` / `agx_usage_scan_admin` and moves through `updateUsageToActive`. **One risk ladder** (Arman's ranking, MANDATE.md 2026-09-11) maps both: `red` = variables / context slots (scan `breaking`, `silent_breaking`; impact `red`) · `orange` = output shape / tools / provider (scan `warning`; impact `orange`) · `green` = model / prompt / settings only (scan `info`; impact `green`) · `clean` (impact `identical`, or follows active). `severity.ts` keeps the scan's four-tier presentation for the drift report and DM chips.
 
-## Entry points
-
-**Routes**
-
-- `app/(authenticated)/agents/[id]/build/page.tsx` — Builder
-- `app/(core)/agents/[id]/run/page.tsx` — Runner
-- `app/(admin)/administration/agents/system-agents/agents/[id]/run/page.tsx` — System-agent admin runner; shares the runner shell/sidebar with admin-aware navigation
-- `app/(authenticated)/chat/...` — Chat (🚧 not yet built; legacy at `features/cx-conversation/` + `features/cx-chat/`, deprecated stub at `app/(authenticated)/deprecated/chat/`)
-- `app/(authenticated)/ai/agents/[id]/connections` — tool/integration config
-- `app/(authenticated)/ai/shortcuts/` — shortcut admin
-- `app/(core)/agents/orchestras/page.tsx` — Orchestras list · `orchestras/[conductorId]/page.tsx` — Orchestra Builder (React Flow canvas, code-split). See [`docs/ORCHESTRAS.md`](./docs/ORCHESTRAS.md)
-
-**API endpoints**
-
-- `POST /ai/agents/{id}` — first turn of a new conversation (agent mode)
-- `POST /ai/agent-assignments` — start/resume a durable coordinated variable batch
-- `GET /ai/agent-assignments/sessions/{id}` — read durable batch progress/results
-- `POST /ai/agent-assignments/sessions/{id}/cancel` — cancel unfinished batch items
-- `POST /ai/conversations/{conversationId}` — subsequent turns
-- `POST /ai/chat` — ephemeral turns (no DB persistence)
-- `POST /ai/manual` — Builder-mode raw request; live definition + client-held history on every turn
-- `POST /ai/conversations/{id}/tool_results` — durable + widget tool result submission
-
-**Key thunks** (`features/agents/redux/execution-system/thunks/`)
-
-- `launch-conversation.thunk.ts` — single entry point every surface hands a `ConversationInvocation` to
-- `launch-agent-execution.thunk.ts` — low-level launch delegate
-- `execute-instance.thunk.ts` — body assembly, fetch, stream parsing (agent mode)
-- `execute-chat-instance.thunk.ts` — same but for ephemeral/chat mode
-- `resume-conversation.ts` — rehydrate after refresh
-- `submit-tool-results.ts` — durable tool call result submission
-
-**Services**
-
-- `features/agents/services/mcp.service.ts` — MCP catalog + metadata-only connection upsert (`upsert_mcp_connection` carries NO tokens)
-- `features/agents/services/mcp-connections.service.ts` — vault-backed MCP operations via aidream `/api/mcp-connections/*` (availability/discover/invoke/refresh/credentials/disconnect); availability always receives an explicit active organization and never selects a personal fallback; the browser never holds an MCP token (vault Phase 4 — see `features/secrets/FEATURE.md` § MCP connections)
-- `features/agents/services/mcp-client/` — tool schema types only (the browser JSON-RPC client + token refresh were deleted in the vault cutover)
-- `features/agents/services/mcp-oauth/` — MCP OAuth discovery/PKCE helpers for the Next.js start/callback boundary; discovered RFC 9728 `resource` identity is sent in both RFC 8707 authorization and token requests
-
----
-
-## Data model (Redux — four layers)
-
-All state lives under `features/agents/redux/`. The four layers:
+- **Forward-looking usages only** (a usage can re-invoke the agent later): mandates, shortcuts, apps, prompt apps, scheduled tasks, surface bindings, SMS lines, workflow nodes, derived agents, comparisons, and **code-registered usages** (backend pins in `agx_usage_registry`). Conversations/runs are history — counted in the strip, never drift-checked. **Workflow-node scanning is dormant:** current `wf_definition` nodes bind a _model_, not an `agent_id`, so the `workflow_node` branch finds nothing today.
+- **Drift is computed against the _effective_ definition:** pinned usages compare to the pinned snapshot; follow-active usages compare to live `agx_agent`. Mandates: pinned version vs the newest SNAPSHOT (`R7`).
+- **Doors (no dead ends):** mandate name opens in place (`useOpenMandateWindow`) + new tab (`/administration/mandates/<key>` for super admins, `/mandates/<key>` otherwise); derived agent = `EntityRef` (route / new tab / peek) + open-in-window; shortcut / app / scheduled task / workflow node = `EntityRef` on their token; surface bindings, SMS lines, comparisons, code usages have no page in this app yet and print plainly (the hover says so). A mandate reached through a duplicate names the duplicate as a door too.
+- **Privacy (user variant):** own + org-managed usages in full detail; everyone else's collapse to aggregate rows ("N owned by other people", counted, never named) with **Notify**. Withheld mandate rungs are a count + reason from the server.
+- **Remediation is one-click, never automatic:** `repin_active` for shortcuts / apps / derived agents; mandates through `useImpactAdvance` (consequence-first dialog, per-row server sentence, put back). Stored-config keys are never auto-deleted.
+- **Redux:** `features/agents/redux/usages/` (slice `agentUsages`). **RPCs:** `agx_usage_scan` / `agx_usage_scan_admin` / `agx_usage_report` / `agx_usage_report_admin` / `agx_usage_update_to_active` / `agx_usage_update_all_to_active` / `agx_usage_history_counts` (migrations `agx_usage_001`–`005`). Backend: code-usage registry sync + weekly drift scan + DM notifier in aidream `services/agent_usage/`; mandate grading in aidream `services/agent_impact/`. See the **Agents admin map** at `/agents/admin`.
 
 ### Layer 1 — Agent Source (static definitions)
 
@@ -446,6 +403,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-16` — **Find Usages is ONE table with a counts strip, and it knows mandates.** The window Arman opens to ask "where is this agent used?" never listed mandates — the September Agent Change Impact campaign built mandate awareness as a separate post-save badge + batch window, so the one place a person looks said nothing about the thing that mattered (Arman, 2026-09-16: *"the UI I'm seeing is horrible and useless … wasting massive space and not giving me what I need"*). `components/usages/AgentUsagesEngine.tsx` is rebuilt: a counts strip with every dimension including zero (`dimensions.ts`, `UsageKpiStrip.tsx` — mandates first; a failed read is `?`, never 0), one status line with the bulk doors, and ONE canonical `MatrxDataTable` over `UnifiedUsageRow` (`unified-rows.ts`) fed by both graders — the mandate impact read (`useAgentMandateImpact.ts` → `fetchImpact`, descendants on) and `agx_usage_scan` — on one risk ladder (red / orange / green / clean, Arman's ranking). Names are doors (`UsageNameCell.tsx`: mandate window + new tab, `EntityRef` + open-in-window for derived agents); row click opens the grader's findings in a table-owned window; actions say what they do ("Move to v12", "Put back"); history is a chip count, not a folded row. The post-save **reaches N** badge and its toast's Review door now open THIS window (`useAgentChangeReach` → `useOpenAgentFindUsagesWindow`); **Compare versions & test** inside it opens the batch window focused on the agent (version history + quick test), so nothing was lost. Deleted: `UsageGroupList`, `UsageRow`, `RedFlagsStrip`, `AggregateUsagesSection`, `UsageHistoricalContext`, `UsageFiltersBar`, `PinStateBadge`. Verified live 2026-09-16 as admin@admin.com on *Text to Speech Converter* (`/agents/ef66f940-…/build`): the strip read Mandates 1 · Derived agents 1 (1 behind) · nine zeros · History 80; the mandate `ambient.spoken_summary` (on duplicate *Listening Summary*, tracks latest) appeared for the first time; mandate name → mandate window in place; row → detail window; Compare versions & test → batch window with Version history + Quick test; admin variant read through `/mandates/impact` with the Owner column. Tests: `features/mandates/admin/__tests__/agent-change-reach.test.tsx` (13 green).
 - `2026-09-14` — Assistant-message hover controls now show the exact local date, time down to seconds, and time zone directly beside the actions, with the rounded age retained as secondary context. The canonical timestamp display is also wired into the older `cx-chat` and `cx-conversation` message surfaces.
 - `2026-09-14` — **After a save, the header says which jobs the change reaches (Agent Change Impact I6).** `useAgentSaveAction` calls `useAgentChangeReach` (`features/mandates/admin/useAgentChangeReach.tsx`) after `saveAgent` succeeds — never on the save's critical path — and exposes `reachBadge` (desktop: a "reaches N" chip in `AgentSaveStatus`) and `reachTapBadge` (mobile: `AgentSaveTapButton` shows it in the save slot while the record is clean, because the header row has no room for a seventh 44pt target). Both open the impact window scoped to the agent; zero reach shows nothing; a failed read is an honest, dismissible notice. Details and the knob in `features/mandates/FEATURE.md`.
 - `2026-09-13` — **Ambient first turns survive the handoff to Quick Chat.** The shared abandoned-conversation cleanup now preserves pending submissions, message parts, and drafts instead of deleting a message-less conversation during the async first-turn boundary. Quick Chat adopts the handed conversation's agent, supplies it as the canonical picker's active row, and no longer overrides that picker's resolved label with “Select an agent.” Guards cover the cleanup state matrix and picker wiring; localhost sends passed for single-line, multiline, and text-plus-voice launchers, followed by an agent switch and second successful send.

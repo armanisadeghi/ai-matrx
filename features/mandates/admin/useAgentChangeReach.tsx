@@ -41,7 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
-import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
+import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
 import {
   autoAdvanceCandidates,
   countBatchTiers,
@@ -222,7 +222,7 @@ export function describeAutoAdvance(
 
 export function useAgentChangeReach(agentId: string) {
   const dispatch = useAppDispatch();
-  const openImpactBatchWindow = useOpenImpactBatchWindow();
+  const openFindUsagesWindow = useOpenAgentFindUsagesWindow();
   const [reach, setReach] = useState<AgentReach | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -232,18 +232,12 @@ export function useAgentChangeReach(agentId: string) {
     actorUserId: actorUserId ?? null,
   };
 
-  // The name is passed in, not read from state: the toast's Review door is a
-  // closure from the render that started the read, before any state landed.
-  const openPanel = (name: string | null) =>
-    openImpactBatchWindow({
-      agentIds: [agentId],
-      mode: "post_batch",
-      posture: "mine",
-      focusAgentId: agentId,
-      batchLabel: `Edit of ${name ?? "agent"}`,
-      sourceSentence: `You just saved ${name ?? "this agent"} — these are the jobs that change reaches.`,
-      surfaceName: "agent-post-edit",
-    });
+  // ONE surface answers "where is this agent used and what did I just risk?":
+  // the Find Usages window (mandates, derived agents, shortcuts, apps, … in one
+  // table, graded). The badge and the toast's Review door open THAT — never a
+  // second panel with its own rules. Version history and the quick test are
+  // one click away inside it ("Compare versions & test").
+  const openPanel = (_name: string | null) => openFindUsagesWindow({ agentId });
 
   /**
    * Call after a save has succeeded. Resolves when the read has answered; the

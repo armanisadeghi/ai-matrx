@@ -7,8 +7,9 @@ import type { AiModel } from "../types";
 
 let duplicate: (model: AiModel) => Promise<void>;
 let rows: AiModel[] = [];
+let refresh: () => Promise<void>;
 const push = jest.fn();
-jest.mock("./AiModelTable", () => ({ __esModule: true, default: (props: { models: AiModel[]; onDuplicate: typeof duplicate }) => { duplicate = props.onDuplicate; rows = props.models; return null; } }));
+jest.mock("./AiModelTable", () => ({ __esModule: true, default: (props: { models: AiModel[]; onDuplicate: typeof duplicate; onRefresh: typeof refresh }) => { refresh = props.onRefresh; duplicate = props.onDuplicate; rows = props.models; return null; } }));
 jest.mock("./AiModelTabBar", () => ({ __esModule: true, default: () => null }));
 jest.mock("./AiModelDetailPanel", () => ({ __esModule: true, default: () => null }));
 jest.mock("./DeprecatedModelsAudit", () => ({ __esModule: true, default: () => null }));
@@ -53,6 +54,53 @@ it("blocks concurrent duplicate requests, reports failure, and permits a success
   } finally {
     await act(async () => root.unmount());
     errorLog.mockRestore();
+    jest.useRealTimers();
+  }
+});
+
+it("shows a persistent catalog failure and recovers through Retry", async () => {
+  jest.useFakeTimers();
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  jest.mocked(aiModelService.fetchAll).mockRejectedValueOnce(new Error("offline")).mockResolvedValue([model]);
+  jest.mocked(aiModelService.fetchProviders).mockResolvedValue([]);
+  const errorLog = jest.spyOn(console, "error").mockImplementation(() => {});
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<AiModelsContainer />));
+    await act(async () => { jest.runOnlyPendingTimers(); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Could not load the model catalog");
+    const retry = Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Retry");
+    expect(retry).toBeDefined();
+    await act(async () => retry?.click());
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(rows.map(row => row.id)).toEqual(["source"]);
+  } finally {
+    await act(async () => root.unmount());
+    errorLog.mockRestore();
+    jest.useRealTimers();
+  }
+});
+
+it("keeps the latest refresh result when an older request finishes later", async () => {
+  jest.useFakeTimers();
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  jest.mocked(aiModelService.fetchAll).mockResolvedValue([model]);
+  jest.mocked(aiModelService.fetchProviders).mockResolvedValue([]);
+  const root = createRoot(document.createElement("div"));
+  try {
+    await act(async () => root.render(<AiModelsContainer />));
+    await act(async () => { jest.runOnlyPendingTimers(); });
+    let resolveOld!: (rows: AiModel[]) => void;
+    jest.mocked(aiModelService.fetchAll).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }));
+    let oldRequest!: Promise<void>;
+    await act(async () => { oldRequest = refresh(); });
+    jest.mocked(aiModelService.fetchAll).mockResolvedValueOnce([{ ...model, id: "latest" }]);
+    await act(async () => { await refresh(); });
+    await act(async () => { resolveOld([{ ...model, id: "stale" }]); await oldRequest; });
+    expect(rows.map(row => row.id)).toEqual(["latest"]);
+  } finally {
+    await act(async () => root.unmount());
     jest.useRealTimers();
   }
 });

@@ -71,9 +71,9 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
         </div>
       }
       onClose={onClose}
-      width={920}
-      height={680}
-      minWidth={520}
+      width={1120}
+      height={720}
+      minWidth={640}
       minHeight={400}
       bodyClassName="p-0"
     >

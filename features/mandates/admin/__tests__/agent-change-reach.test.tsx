@@ -34,8 +34,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ userAuth: { id: viewer.userId, adminLevel: viewer.isSuperAdmin ? "super_admin" : null } }),
 }));
-jest.mock("@/features/overlays/openers/impactBatchWindow", () => ({
-  useOpenImpactBatchWindow: () => openWindowMock,
+jest.mock("@/features/overlays/openers/agentFindUsagesWindow", () => ({
+  useOpenAgentFindUsagesWindow: () => openWindowMock,
 }));
 jest.mock("@/lib/toast", () => ({
   toast: {
@@ -223,23 +223,14 @@ describe("the badge and the toast", () => {
     // The knob is off by default, so nothing opened on its own.
     expect(openWindowMock).not.toHaveBeenCalled();
 
+    // The badge opens the ONE surface — the Find Usages window for this agent.
     act(() => badge!.click());
     expect(openWindowMock).toHaveBeenCalledTimes(1);
-    expect(openWindowMock.mock.calls[0][0]).toMatchObject({
-      agentIds: ["agent-1"],
-      mode: "post_batch",
-      posture: "mine",
-      focusAgentId: "agent-1",
-      surfaceName: "agent-post-edit",
-      batchLabel: "Edit of Quick Test Agent",
-    });
-    // The toast's Review door opens the same scoped panel, named the same.
+    expect(openWindowMock.mock.calls[0][0]).toMatchObject({ agentId: "agent-1" });
+    // The toast's Review door opens the same window.
     act(() => options.action.onClick());
     expect(openWindowMock).toHaveBeenCalledTimes(2);
-    expect(openWindowMock.mock.calls[1][0]).toMatchObject({
-      batchLabel: "Edit of Quick Test Agent",
-      focusAgentId: "agent-1",
-    });
+    expect(openWindowMock.mock.calls[1][0]).toMatchObject({ agentId: "agent-1" });
   });
 
   it("opens the panel by itself only when the organization knob says so", async () => {
