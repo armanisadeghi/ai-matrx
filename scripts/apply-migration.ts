@@ -124,6 +124,18 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { connectDirect, DB_VARS, loadDbEnv, type DbEnv } from "./lib/direct-db";
+import {
+  assertConfiguredHostMatchesTarget,
+  assertGuardResolvesOff,
+  assertHeaderAgreesWithFlag,
+  assertServerMatchesTarget,
+  loadBranchDbEnv,
+  loadBranchRef,
+  parseTargetFlag,
+  readHeader,
+  TargetRefusal,
+  type Target,
+} from "./lib/migration-target";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -370,8 +382,11 @@ async function ledgerRow(
 
 function usage(): void {
   console.log(
-    `${C.bold}pnpm db:apply <migrations/file.sql> [--dry-run] [--reapply] [--statement-timeout=10min]${C.reset}\n` +
+    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min]${C.reset}\n` +
       `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
+      `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
+      `  --target defaults to production, so every file written before --target existed behaves\n` +
+      `  exactly as it did. --target branch needs the file to be headed \`-- target: branch\`.\n` +
       `  Applies the WHOLE file in one transaction on a direct Postgres connection and\n` +
       `  ledgers the SHA-256 of the bytes it executed. The only sanctioned apply path\n` +
       `  for matrx-frontend migrations (see CLAUDE.md § Migrations).`,
@@ -382,12 +397,14 @@ interface ApplyOpts {
   dryRun: boolean;
   reapply: boolean;
   statementTimeout: string;
+  /** WHICH database this file may land on. Default `production` — see lib/migration-target.ts. */
+  target: Target;
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
  *  exactly the code an agent runs, not a paraphrase of it. */
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
-  const { dryRun, reapply, statementTimeout } = opts;
+  const { dryRun, reapply, statementTimeout, target } = opts;
   if (relative(MIGRATIONS_DIR, path).startsWith("..")) {
     console.error(
       `${TAG.fail}${relative(ROOT, path)} is not in migrations/. Every applied file lives in ` +
@@ -447,7 +464,59 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     return 1;
   }
 
-  const env = loadDbEnv();
+  // ── --target: WHICH database, refused BEFORE a connection exists ──────────
+  // The environment SELECTS a connection; it has never AUTHORISED one. Both
+  // databases are named `postgres` and both connect as `postgres`, so until this
+  // existed nothing in this runner could tell the rehearsal branch from
+  // production. See scripts/lib/migration-target.ts.
+  let branchRef;
+  let guard: { feature: string; key: string } | null = null;
+  try {
+    const header = readHeader(sql);
+    // BRANCH-REF is read for EVERY apply, not only --target branch: the
+    // production half needs the branch's identity to refuse a file that would
+    // land on the branch while claiming production.
+    branchRef = loadBranchRef(ROOT);
+    ({ guard } = assertHeaderAgreesWithFlag({
+      filename,
+      flagTarget: target,
+      header,
+      strippedSql: stripped,
+    }));
+  } catch (err) {
+    if (err instanceof TargetRefusal) {
+      console.error(`${TAG.fail}${err.message}`);
+      return 1;
+    }
+    throw err;
+  }
+
+  let env: DbEnv | { missing: string[]; looked: string[] };
+  if (target === "branch") {
+    try {
+      const b = loadBranchDbEnv(ROOT, branchRef);
+      env = { ...b };
+    } catch (err) {
+      if (err instanceof TargetRefusal) {
+        console.error(`${TAG.fail}${err.message}`);
+        return 1;
+      }
+      throw err;
+    }
+  } else {
+    env = loadDbEnv();
+  }
+  if (!("missing" in env)) {
+    try {
+      assertConfiguredHostMatchesTarget(env, target, branchRef);
+    } catch (err) {
+      if (err instanceof TargetRefusal) {
+        console.error(`${TAG.fail}${err.message}`);
+        return 1;
+      }
+      throw err;
+    }
+  }
   if ("missing" in env) {
     console.error(
       `${TAG.fail}No direct database connection — need ${DB_VARS.join(", ")}\n` +
@@ -481,6 +550,58 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   }
 
   try {
+    // ── --target, second half: the SERVER's own identity, not the argument ───
+    // `pg_control_system().system_identifier` is the cluster's control-file id.
+    // Both databases answer `postgres` to current_database() and `postgres` to
+    // current_user; this is the one thing that differs and does not move. Read
+    // from the server, so a wrong --target is caught by the database's answer.
+    try {
+      const sysid = await assertServerMatchesTarget(
+        (text) => client.query(text) as Promise<{ rows: Array<Record<string, unknown>> }>,
+        target,
+        branchRef,
+        filename,
+      );
+      console.log(
+        `${TAG.ok}target ${C.bold}${target}${C.reset} ${C.dim}(server system_identifier ${sysid}, ` +
+          `from ${branchRef.path})${C.reset}`,
+      );
+      // A `-- target: branch,production` file lands on production only while its
+      // named knob is OFF — the knob's platform value, which is
+      // coalesce(value, default_value): platform.knob_scope_kind has no `system`
+      // rung and never did.
+    } catch (err) {
+      if (err instanceof TargetRefusal) {
+        console.error(`${TAG.fail}${err.message}`);
+        return 1;
+      }
+      console.error(
+        `${TAG.fail}Could not read the connected server's identity — ${formatPgError(err)}`,
+      );
+      return 2;
+    }
+
+    if (guard && target === "production") {
+      try {
+        await assertGuardResolvesOff(
+          (text) => client.query(text) as Promise<{ rows: Array<Record<string, unknown>> }>,
+          guard,
+          filename,
+        );
+        console.log(
+          `${TAG.ok}guard ${C.bold}${guard.feature}/${guard.key}${C.reset} ` +
+            `${C.dim}resolves false — the old path is untouched by this apply${C.reset}`,
+        );
+      } catch (err) {
+        if (err instanceof TargetRefusal) {
+          console.error(`${TAG.fail}${err.message}`);
+          return 1;
+        }
+        console.error(`${TAG.fail}Could not resolve the guard — ${formatPgError(err)}`);
+        return 2;
+      }
+    }
+
     const existing = await ledgerRow(client, filename).catch((err: unknown) => {
       console.error(`${TAG.fail}Could not read the ledger — ${formatPgError(err)}`);
       return undefined;
@@ -723,7 +844,12 @@ async function selfTest(statementTimeout: string): Promise<number> {
     failures += 1;
     console.error(`${TAG.fail}self-test: ${what}`);
   };
-  const opts: ApplyOpts = { dryRun: false, reapply: false, statementTimeout };
+  const opts: ApplyOpts = {
+    dryRun: false,
+    reapply: false,
+    statementTimeout,
+    target: "production",
+  };
 
   try {
     // ── RED ──────────────────────────────────────────────────────────────────
@@ -895,6 +1021,187 @@ async function selfTest(statementTimeout: string): Promise<number> {
   return 0;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// --target-self-test — the refusal proven RED then GREEN, on the BRANCH only
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Four proofs, each run by SPAWNING THIS SCRIPT, so what is proven is exactly
+// what an agent runs — not a paraphrase of it:
+//
+//   1. header vs flag           refused with NO connection at all
+//   2. configured host vs flag  refused with NO production credential in the
+//                               process (SUPABASE_BRANCH_DATABASE_URL is pointed
+//                               at a production-SHAPED DSN carrying a fake
+//                               password; nothing is opened)
+//   3. connected server vs flag `--target production` while the five
+//                               SUPABASE_MATRIX_* are the BRANCH's -> refused by
+//                               pg_control_system().system_identifier, which is
+//                               read from the server and not from the argument
+//   4. GREEN                    a `-- target: branch` file APPLIES to the branch,
+//                               leaves a real object, and ledgers on the branch
+//
+// Production is never connected to and no file ever lands on it here.
+const TARGET_SELFTEST_FILE = "zz_db_apply_target_selftest.sql";
+const TARGET_SELFTEST_SCHEMA = "zz_w0_target_selftest";
+
+async function targetSelfTest(statementTimeout: string): Promise<number> {
+  const { spawnSync } = await import("node:child_process");
+  let failures = 0;
+  const fail = (what: string) => {
+    failures += 1;
+    console.error(`${TAG.fail}target-self-test: ${what}`);
+  };
+  const pass = (what: string) => console.log(`${TAG.ok}target-self-test: ${what}`);
+
+  let ref;
+  try {
+    ref = loadBranchRef(ROOT);
+  } catch (err) {
+    console.error(
+      `${TAG.fail}target-self-test cannot run: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 2;
+  }
+  let branchEnv;
+  try {
+    branchEnv = loadBranchDbEnv(ROOT, ref);
+  } catch (err) {
+    console.error(
+      `${TAG.fail}target-self-test cannot run: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 2;
+  }
+
+  const path = resolve(MIGRATIONS_DIR, TARGET_SELFTEST_FILE);
+  const self = resolve(ROOT, "scripts", "apply-migration.ts");
+  const run = (args: string[], env: NodeJS.ProcessEnv) =>
+    spawnSync("npx", ["tsx", self, ...args], {
+      cwd: ROOT,
+      encoding: "utf8",
+      env: { ...process.env, ...env },
+      timeout: 180_000,
+    });
+
+  // The branch's five variables, so a production credential is never in the
+  // spawned process for proofs 2 and 3.
+  const branchAsMatrix: NodeJS.ProcessEnv = {
+    SUPABASE_MATRIX_USER: branchEnv.user,
+    SUPABASE_MATRIX_PASSWORD: branchEnv.password,
+    SUPABASE_MATRIX_HOST: branchEnv.host,
+    SUPABASE_MATRIX_PORT: String(branchEnv.port),
+    SUPABASE_MATRIX_DATABASE_NAME: branchEnv.database,
+  };
+
+  const branchBody =
+    `-- target: branch\n` +
+    `create schema if not exists ${TARGET_SELFTEST_SCHEMA};\n` +
+    `create table if not exists ${TARGET_SELFTEST_SCHEMA}.landed (id int primary key);\n` +
+    `insert into ${TARGET_SELFTEST_SCHEMA}.landed (id) values (1) on conflict do nothing;\n`;
+
+  try {
+    // ── 1. header vs flag, no connection ───────────────────────────────────
+    writeFileSync(
+      path,
+      `-- target: production\ncreate schema if not exists ${TARGET_SELFTEST_SCHEMA};\n`,
+      "utf8",
+    );
+    const r1 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch"], {
+      ...branchAsMatrix,
+    });
+    const out1 = `${r1.stdout ?? ""}${r1.stderr ?? ""}`;
+    if (r1.status !== 1) fail(`a production-headed file with --target branch exited ${r1.status}, expected 1`);
+    else if (!/file header: production/.test(out1) || !/command flag: branch/.test(out1))
+      fail(`the header/flag refusal did not print both identities:\n${out1.slice(0, 600)}`);
+    else pass("a `-- target: production` file is refused by --target branch, before any connection");
+
+    // ── 2. configured host vs flag, no production credential ───────────────
+    writeFileSync(path, branchBody, "utf8");
+    const r2 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch"], {
+      [ref.passwordEnvVar]: `postgresql://postgres.${ref.parentRef}:not-a-real-password@${ref.poolerHost}:${ref.poolerPort}/${ref.database}`,
+    });
+    const out2 = `${r2.stdout ?? ""}${r2.stderr ?? ""}`;
+    if (r2.status !== 1) fail(`--target branch against a production-shaped DSN exited ${r2.status}, expected 1`);
+    else if (!new RegExp(`does not point at the branch ${ref.branchRef}`).test(out2))
+      fail(`the pre-connection refusal did not name the branch:\n${out2.slice(0, 600)}`);
+    else pass("--target branch against a production-shaped DSN is refused with nothing opened");
+
+    // ── 3. connected server vs flag ────────────────────────────────────────
+    // The file says both targets and is additive and guarded, so the header and
+    // the flag AGREE — only the server can refuse this one.
+    writeFileSync(
+      path,
+      `-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n` +
+        `create schema if not exists ${TARGET_SELFTEST_SCHEMA};\n`,
+      "utf8",
+    );
+    const r3 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "production"], {
+      ...branchAsMatrix,
+    });
+    const out3 = `${r3.stdout ?? ""}${r3.stderr ?? ""}`;
+    if (r3.status !== 1) fail(`--target production while connected to the branch exited ${r3.status}, expected 1`);
+    else if (!new RegExp(`the rehearsal branch ${ref.branchRef}`).test(out3))
+      fail(`the server-identity refusal did not name what it was really connected to:\n${out3.slice(0, 900)}`);
+    else
+      pass(
+        "--target production while connected to the branch is refused by the server's own " +
+          "system_identifier",
+      );
+
+    // ── 4. GREEN — a real migration lands on the branch and reads back ──────
+    writeFileSync(path, branchBody, "utf8");
+    const r4 = run(
+      [`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch", `--statement-timeout=${statementTimeout}`],
+      {},
+    );
+    const out4 = `${r4.stdout ?? ""}${r4.stderr ?? ""}`;
+    if (r4.status !== 0) {
+      fail(`the GREEN branch apply exited ${r4.status}, expected 0:\n${out4.slice(0, 900)}`);
+    } else {
+      const c = await connectDirect(
+        {
+          user: branchEnv.user,
+          password: branchEnv.password,
+          host: branchEnv.host,
+          port: branchEnv.port,
+          database: branchEnv.database,
+          from: branchEnv.from,
+        },
+        "matrx-frontend db:apply --target-self-test",
+      );
+      try {
+        const back = await c.query<{ n: string; ledger: string }>(
+          `select (select count(*)::text from ${TARGET_SELFTEST_SCHEMA}.landed) as n,
+                  (select count(*)::text from public._schema_migrations
+                     where source = ${lit(SOURCE)} and filename = ${lit(TARGET_SELFTEST_FILE)}) as ledger`,
+        );
+        if (back.rows[0]?.n !== "1") fail(`the branch object did not read back (rows: ${back.rows[0]?.n})`);
+        else if (back.rows[0]?.ledger !== "1")
+          fail(`the branch ledger row is missing (rows: ${back.rows[0]?.ledger})`);
+        else pass("a `-- target: branch` file applied to the branch, read back, and ledgered there");
+        await c.query(`drop schema if exists ${TARGET_SELFTEST_SCHEMA} cascade`);
+        await c.query(
+          `delete from public._schema_migrations where source = ${lit(SOURCE)} and filename = ${lit(TARGET_SELFTEST_FILE)}`,
+        );
+      } finally {
+        await c.end();
+      }
+    }
+  } finally {
+    if (existsSync(path)) unlinkSync(path);
+  }
+
+  if (failures) {
+    console.error(`${TAG.fail}db:apply --target-self-test FAILED (${failures} assertion(s))`);
+    return 1;
+  }
+  console.log(
+    `${TAG.ok}db:apply --target-self-test passed — the refusal holds in both places and the ` +
+      `branch apply is real`,
+  );
+  return 0;
+}
+
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
@@ -915,22 +1222,40 @@ async function main(): Promise<number> {
     statementTimeout = value;
   }
 
+  let target: Target;
+  try {
+    target = parseTargetFlag(argv);
+  } catch (err) {
+    if (err instanceof TargetRefusal) {
+      console.error(`${TAG.fail}${err.message}`);
+      return 1;
+    }
+    throw err;
+  }
+
+  if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
-  const positional = argv.filter((a) => !a.startsWith("--"));
+
+  // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
+  // the flag's VALUE, never the migration file.
+  const bareTargetIdx = argv.indexOf("--target");
+  const positional = argv.filter(
+    (a, i) => !a.startsWith("--") && !(bareTargetIdx >= 0 && i === bareTargetIdx + 1),
+  );
 
   if (positional.length !== 1) {
     usage();
     return 1;
   }
 
-  const target = resolve(process.cwd(), positional[0]!);
+  const given = resolve(process.cwd(), positional[0]!);
   const alt = resolve(MIGRATIONS_DIR, positional[0]!);
-  const path = existsSync(target) ? target : existsSync(alt) ? alt : null;
+  const path = existsSync(given) ? given : existsSync(alt) ? alt : null;
   if (!path) {
     console.error(`${TAG.fail}No such file: ${positional[0]}`);
     return 1;
   }
-  return applyFile(path, { dryRun, reapply, statementTimeout });
+  return applyFile(path, { dryRun, reapply, statementTimeout, target });
 }
 
 main().then(
