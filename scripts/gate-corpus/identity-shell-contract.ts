@@ -27,6 +27,21 @@
  *
  * Put any one of those columns back into `columns` without a `synthesize`
  * entry and the live-file test goes RED again.
+ *
+ * WHY IT COVERS EVERY `auth.*` TABLE (chair's ruling, 2026-09-16, after V0's
+ * re-verify §R6). The fix above left the class open: this module audited
+ * `auth.users` and nothing else, so `auth.oauth_clients` — in `COPY_TABLES`
+ * with no column list and no filter — put **87 `client_secret_hash` values** on
+ * the branch while every guard read green. The ruling is one sentence: **no
+ * secret or credential column is ever read from production into the branch.**
+ * It is enforced here as a column-NAME DENY-LIST (`*secret*`, `*token*`,
+ * `*hash*`, `*password*`, `phone`, `email`) over EVERY `auth.*` entry of the
+ * copy set, with one exact-keyed, reasoned exemption list (`NOT_A_SECRET`) and
+ * nothing else. A pattern covers the table nobody has added yet; a census
+ * covers only the tables somebody remembered.
+ *
+ * Its RED proof is the same shape: at `a2117adc0b`, `checkAuthSecretColumns`
+ * returns `auth-table-has-no-column-list` for `auth.oauth_clients`.
  */
 import { readFileSync } from "node:fs";
 
@@ -60,14 +75,80 @@ export const IDENTIFYING_COLUMNS: readonly string[] = [
 /** The marker that makes GoTrue itself refuse a shell, not just the missing hash. */
 const UNUSABLE_MARKER = "banned_until";
 
+/**
+ * THE SECRET DENY-LIST — the chair's ruling of 2026-09-16, in one place:
+ * **no secret or credential column is ever read from production into the
+ * branch**, on ANY `auth.*` table the copy touches, not just `auth.users`.
+ *
+ * It is written as NAME PATTERNS rather than a column census because the census
+ * is what failed: `identity-shell-contract.ts` knew every column of
+ * `auth.users` and nothing at all about `auth.oauth_clients`, whose
+ * `client_secret_hash` was copied 87 times onto a branch with a public
+ * PostgREST API while every guard read green (V0 re-verify §R6). A pattern
+ * covers the table nobody has added yet.
+ */
+export const SECRET_COLUMN_PATTERNS: readonly { readonly pattern: RegExp; readonly what: string }[] =
+  [
+    { pattern: /secret/, what: "a secret" },
+    { pattern: /password/, what: "a password" },
+    { pattern: /hash/, what: "a hash of a credential" },
+    { pattern: /token/, what: "a token" },
+    { pattern: /email/, what: "an email address" },
+    { pattern: /phone/, what: "a phone number" },
+  ] as const;
+
+/**
+ * The patterns above whose match is a CREDENTIAL rather than an identifier. A
+ * credential's stand-in must be a CONSTANT: an expression derived from the row
+ * would carry the real value's shape (its length, its cost factor, whether two
+ * rows share one) across the wire, which is the thing the ruling forbids. An
+ * address may be derived from the id, because it must stay unique.
+ */
+const CREDENTIAL_PATTERNS: readonly RegExp[] = [/secret/, /password/, /hash/, /token/];
+
+/**
+ * 🚨 THE ONLY WAY PAST THE DENY-LIST, and every entry costs a written reason.
+ *
+ * A column whose NAME matches a pattern but which carries no secret and names
+ * no person. Keyed `<schema>.<table>.<column>`, exact — never a pattern, so
+ * widening this is one line per column in a diff a reviewer cannot miss.
+ */
+export const NOT_A_SECRET: Readonly<Record<string, string>> = {
+  "auth.users.email_confirmed_at":
+    "a timestamp. It says WHEN a row confirmed an address, never what the address is, and " +
+    "GoTrue reads it to decide whether the identity is confirmed at all.",
+  "auth.oauth_clients.token_endpoint_auth_method":
+    "an OAuth 2.0 protocol constant naming HOW a client authenticates " +
+    "('client_secret_basic' / 'none'), not a credential. It is NOT NULL with no default, and " +
+    "the extension and desktop lanes read it back.",
+} as const;
+
+/** The `COPY_TABLES` literal, as source text — nothing else in the file counts. */
+function copyTablesBlock(source: string): string | null {
+  const m = source.match(/const COPY_TABLES[^[]*\[/);
+  if (!m || m.index === undefined) return null;
+  const start = m.index + m[0].length;
+  const end = source.indexOf("\n];", start);
+  return source.slice(start, end < 0 ? source.length : end);
+}
+
+/** Every entry of `COPY_TABLES`, as `{ table, text }`. */
+function copyEntries(source: string): { table: string; text: string }[] {
+  const block = copyTablesBlock(source);
+  if (block === null) return [];
+  const out: { table: string; text: string }[] = [];
+  const starts = [...block.matchAll(/table: "([a-z_]+\.[a-z_]+)"/g)];
+  for (let i = 0; i < starts.length; i++) {
+    const from = starts[i]!.index!;
+    const to = i + 1 < starts.length ? starts[i + 1]!.index! : block.length;
+    out.push({ table: starts[i]![1]!, text: block.slice(from, to) });
+  }
+  return out;
+}
+
 /** The `auth.users` entry of `COPY_TABLES`, as source text. */
 function authUsersEntry(source: string): string | null {
-  const start = source.indexOf(`table: "auth.users"`);
-  if (start < 0) return null;
-  // The entry ends where the next entry of the list begins. Every entry in
-  // COPY_TABLES opens with `table: "` — including the one after this.
-  const next = source.indexOf(`table: "`, start + 10);
-  return source.slice(start, next < 0 ? source.length : next);
+  return copyEntries(source).find((e) => e.table === "auth.users")?.text ?? null;
 }
 
 /** The names inside `columns: [ … ]`, comments and all stripped. */
@@ -89,9 +170,109 @@ function synthesizeMap(entry: string): Record<string, string> {
   return out;
 }
 
+/**
+ * The `columnsNote` string, however it is spelled. Line-based rather than
+ * regex-to-the-next-`/**`, because the note is a run of `+`-joined literals and
+ * what follows it differs per entry — and a disclosure this function could not
+ * see would be reported as a MISSING disclosure, which is a guard crying wolf.
+ */
 function disclosure(entry: string): string {
-  const m = entry.match(/columnsNote:\s*([\s\S]*?),\n {4}\/\*\*/);
-  return m ? m[1]! : "";
+  const lines = entry.split("\n");
+  const at = lines.findIndex((l) => /^\s*columnsNote:/.test(l));
+  if (at < 0) return "";
+  const parts: string[] = [lines[at]!.replace(/^\s*columnsNote:/, "")];
+  for (let i = at + 1; i < lines.length; i++) {
+    const l = lines[i]!;
+    // The note continues while the line is an indented string literal (possibly
+    // `+`-joined). Anything else — a new key, a comment, a closing brace — ends it.
+    if (!/^\s*(\+\s*)?["'`]/.test(l)) break;
+    parts.push(l);
+  }
+  return parts.join("\n");
+}
+
+/**
+ * THE CHAIR'S RULING, over EVERY `auth.*` table of the copy set: no secret or
+ * credential column is read from production into the branch, and a column whose
+ * NAME says it holds one is copied only through a `synthesize` expression —
+ * a CONSTANT one, for the credential half of the deny-list.
+ */
+export function checkAuthSecretColumns(source: string): IdentityShellViolation[] {
+  const v: IdentityShellViolation[] = [];
+  const auth = copyEntries(source).filter((e) => e.table.startsWith("auth."));
+  if (auth.length === 0) {
+    return [
+      {
+        code: "no-auth-entries",
+        detail:
+          `COPY_TABLES names no auth.* table at all — this guard cannot see what the copy takes ` +
+          `out of production's auth schema.`,
+      },
+    ];
+  }
+  for (const { table, text } of auth) {
+    const cols = columnList(text);
+    if (cols.length === 0) {
+      v.push({
+        code: "auth-table-has-no-column-list",
+        detail:
+          `${table} names no \`columns\` list, so EVERY column production's ${table} has is ` +
+          `copied — including any secret, token or address it grows later. An auth.* table is ` +
+          `copied column by column or not at all. (This is exactly how 87 client_secret_hash ` +
+          `values reached the branch.)`,
+      });
+      continue;
+    }
+    const synth = synthesizeMap(text);
+    for (const c of cols) {
+      const hit = SECRET_COLUMN_PATTERNS.find((p) => p.pattern.test(c));
+      if (!hit) continue;
+      if (NOT_A_SECRET[`${table}.${c}`]) continue;
+      const e = synth[c];
+      if (!e) {
+        v.push({
+          code: "copies-a-secret-column",
+          detail:
+            `${table} copies "${c}" straight from production, and its name says it holds ` +
+            `${hit.what}. No secret or credential column is ever read from production into the ` +
+            `branch: give it a \`synthesize\` expression, or — if it truly holds nothing secret ` +
+            `— add "${table}.${c}" to NOT_A_SECRET with the reason.`,
+        });
+        continue;
+      }
+      if (CREDENTIAL_PATTERNS.some((p) => p.test(c)) && /"[a-z_]+"/.test(e)) {
+        v.push({
+          code: "synthetic-credential-is-not-a-constant",
+          detail:
+            `${table} synthesises "${c}" as ${e}, which reads a column of the production row. A ` +
+            `credential's stand-in must be a CONSTANT — anything derived from the real value ` +
+            `carries its shape across the wire.`,
+        });
+      }
+    }
+    if (Object.keys(synth).length) {
+      const note = disclosure(text);
+      if (!note) {
+        v.push({
+          code: "no-disclosure",
+          detail: `${table} has no columnsNote, so the run announces nothing about what it took.`,
+        });
+      } else {
+        for (const c of Object.keys(synth)) {
+          if (!note.includes(c)) {
+            v.push({
+              code: "disclosure-omits-a-synthesised-column",
+              detail:
+                `${table}'s disclosure never names "${c}", which is synthesised rather than ` +
+                `copied. A disclosure that is true about the columns it names and silent about ` +
+                `the rest is how 336 addresses were taken while the terminal said "shell".`,
+            });
+          }
+        }
+      }
+    }
+  }
+  return v;
 }
 
 /**
@@ -99,6 +280,11 @@ function disclosure(entry: string): string {
  * is the contract held.
  */
 export function checkIdentityShell(source: string): IdentityShellViolation[] {
+  return [...authUsersShell(source), ...checkAuthSecretColumns(source)];
+}
+
+/** The `auth.users`-only half: what "id-only shell" means beyond the deny-list. */
+function authUsersShell(source: string): IdentityShellViolation[] {
   const v: IdentityShellViolation[] = [];
   const entry = authUsersEntry(source);
   if (!entry) {
@@ -171,25 +357,6 @@ export function checkIdentityShell(source: string): IdentityShellViolation[] {
     });
   }
 
-  const note = disclosure(entry);
-  if (!note) {
-    v.push({
-      code: "no-disclosure",
-      detail: `auth.users has no columnsNote, so the run announces nothing about what it took.`,
-    });
-  } else {
-    for (const c of Object.keys(synth)) {
-      if (!note.includes(c)) {
-        v.push({
-          code: "disclosure-omits-a-synthesised-column",
-          detail:
-            `the run's disclosure never names "${c}", which is synthesised rather than copied. ` +
-            `A disclosure that is true about the columns it names and silent about the rest is ` +
-            `how 336 addresses were taken while the terminal said "shell".`,
-        });
-      }
-    }
-  }
   return v;
 }
 

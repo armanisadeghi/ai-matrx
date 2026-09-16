@@ -219,7 +219,11 @@ const INFO = `${C.dim}[INFO]${C.reset}`;
  *
  * `auth.oauth_clients` is in the set because `W0-DATA`'s exit names it and
  * §5.9's extension and desktop lanes sign in through it — not because an access
- * arm reads it (none does).
+ * arm reads it (none does). It is a SHELL too: its `client_secret_hash` is
+ * synthesised to a constant, because NO SECRET OR CREDENTIAL COLUMN IS EVER READ
+ * FROM PRODUCTION INTO THE BRANCH (chair's ruling, 2026-09-16). That rule is
+ * enforced over EVERY `auth.*` entry of this list, without a database, by
+ * `identity-shell-contract.ts`.
  */
 interface CopyTable {
   readonly table: string;
@@ -380,7 +384,75 @@ const COPY_TABLES: readonly CopyTable[] = [
      */
     notOurs: true,
   },
-  { table: "auth.oauth_clients", policy: "upsert", notOurs: true },
+  {
+    table: "auth.oauth_clients",
+    policy: "upsert",
+    /**
+     * 🚨 NO CREDENTIAL COLUMN IS EVER READ FROM PRODUCTION (chair's ruling,
+     * 2026-09-16, the same class as the identity shells above).
+     *
+     * THE DEFECT THIS SHAPE CLOSES (V0's re-verify §R6). This entry was
+     * `{ table, policy, notOurs }` — no column list and no filter — so the copy
+     * took ALL of production's `auth.oauth_clients`, including **87
+     * `client_secret_hash` values**, onto a branch whose PostgREST API is on the
+     * public internet. `W0-DATA`'s row described a two-row copy; the code took
+     * the table whole. Nothing named a person, which is why it was a ruling and
+     * not a second FAIL — but a credential hash is a credential, and the guard
+     * that would have caught it (`identity-shell-contract.ts`) audited
+     * `auth.users` alone.
+     *
+     * WHAT CROSSES THE WIRE NOW. The `id` the extension and the desktop client
+     * present, and the non-secret registration facts §5.9's lanes read back
+     * (`redirect_uris`, `grant_types`, `client_name`/`client_uri`/`logo_uri`,
+     * `registration_type`, `client_type`, `token_endpoint_auth_method`, the
+     * timestamps). `client_secret_hash` is SYNTHESISED to one constant,
+     * unusable string, so production's hashes are never read, never
+     * transmitted and never held by this process.
+     *
+     * CONSEQUENCE, stated rather than discovered at 3 a.m.: NO CLIENT CAN
+     * COMPLETE A CONFIDENTIAL-CLIENT FLOW ON THE BRANCH with a production
+     * secret — the stored value is not a bcrypt digest at all, so the compare
+     * fails for every secret including the real one. A branch lane that needs a
+     * working OAuth client registers its own and gives it its own secret, the
+     * same way `mintSignInIdentities()` mints the two sign-in identities.
+     */
+    columns: [
+      "id",
+      "client_secret_hash",
+      "registration_type",
+      "redirect_uris",
+      "grant_types",
+      "client_name",
+      "client_uri",
+      "logo_uri",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+      "client_type",
+      "token_endpoint_auth_method",
+    ],
+    /**
+     * A CONSTANT, and deliberately not a hash-shaped one. GoTrue compares the
+     * presented secret against this with bcrypt; a string that is not a bcrypt
+     * digest can never compare equal, and it SAYS what it is when an operator
+     * reads the column instead of looking like a credential somebody might try
+     * to crack. It derives from no production value, so nothing about the real
+     * secret — not its length, not its cost factor, not whether two clients
+     * share one — survives the copy.
+     */
+    synthesize: {
+      client_secret_hash: `'NO-PRODUCTION-SECRET-WAS-COPIED-ONTO-THIS-REHEARSAL-BRANCH'`,
+    },
+    columnsNote:
+      "NO CREDENTIAL IS COPIED. COPIED from production: the client id and the non-secret " +
+      "registration facts the extension and desktop lanes read (redirect_uris, grant_types, " +
+      "client_name, client_uri, logo_uri, registration_type, client_type, " +
+      "token_endpoint_auth_method, the timestamps). SYNTHESISED, never read from production: " +
+      "client_secret_hash — one constant, unusable string that is not a bcrypt digest, so no " +
+      "confidential-client flow on this branch can succeed with a production secret. A branch " +
+      "lane that needs a working OAuth client registers its own",
+    notOurs: true,
+  },
   { table: "iam.organizations", policy: "upsert" },
   // AFTER organizations: `iam_industries_organization_id_fkey` is a validated FK
   // to `iam.organizations` (measured 2026-09-16 — the copy aborted 23503 on it
