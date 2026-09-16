@@ -36,6 +36,7 @@ import type {
   Scope as AgentConnectionsScope,
 } from "@/features/agent-connections/types";
 import type { OverlayId } from "@/features/overlays/catalogue";
+import type { AttachableResource } from "@/features/connectors/attachable-resources";
 import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import type { CodeFile as MultiFileCoreCodeFile } from "@/features/code-editor/multi-file-core/types";
@@ -754,6 +755,10 @@ const MasterworkYourWordsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/masterwork/YourWordsWindow"),
   { ssr: false },
 );
+const AttachResourceDialog = lazyOverlay(
+  () => import("@/features/connectors/AttachResourceDialog"),
+  { ssr: false },
+);
 const AddToRulebookDialog = lazyOverlay(
   () => import("@/features/masterwork/oracle/AddToRulebookDialog"),
   { ssr: false },
@@ -1250,6 +1255,9 @@ export default function OverlayController() {
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
+    attachResourcePicker: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "attachResourcePicker"),
+    ),
     agentTestCasesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentTestCasesWindow"),
     ),
@@ -1639,6 +1647,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
+    ) as Record<string, unknown> | null,
+    attachResourcePicker: useAppSelector((s) =>
+      selectOverlayData(s, "attachResourcePicker"),
     ) as Record<string, unknown> | null,
     agentTestCasesWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentTestCasesWindow"),
@@ -3017,6 +3028,40 @@ export default function OverlayController() {
               typeof data?.initialQuestion === "string"
                 ? data.initialQuestion
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* attachResourcePicker — choose WHICH repositories / files / sheets
+          out of an attachable connection ride this chat (Arman, 2026-09-15).
+          One picker for every provider and every entry point. */}
+      {(() => {
+        const isOpen = isOpenById.attachResourcePicker;
+        const data = dataById.attachResourcePicker as
+          Record<string, unknown> | null | undefined;
+        const conversationId =
+          typeof data?.conversationId === "string" ? data.conversationId : null;
+        const provider =
+          typeof data?.provider === "string" ? data.provider : null;
+        if (!isOpen || !conversationId || !provider) return null;
+        return (
+          <AttachResourceDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "attachResourcePicker" }))
+            }
+            conversationId={conversationId}
+            provider={provider}
+            providerName={
+              typeof data?.providerName === "string"
+                ? data.providerName
+                : provider
+            }
+            attachable={
+              Array.isArray(data?.attachable)
+                ? (data.attachable as AttachableResource[])
+                : []
             }
           />
         );

@@ -21,6 +21,10 @@ import {
   deriveMcpConnectionState,
   type McpConnectionTruth,
 } from "@/features/connectors/connection-state";
+import {
+  normalizeAttachable,
+  type AttachableResource,
+} from "@/features/connectors/attachable-resources";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
@@ -80,6 +84,10 @@ export function useMcpCatalog() {
               : undefined,
         }),
         toolCount: availability[entry.slug]?.tool_count ?? null,
+        // What this server lets a person CHOOSE from, in the server's own
+        // vocabulary. Empty for a pure MCP connection — which is precisely
+        // the difference the chips have to make visible.
+        attachable: normalizeAttachable(availability[entry.slug]?.attachable),
       })),
     [catalog, availability, githubStatus],
   );
@@ -130,6 +138,12 @@ export interface McpServerState {
   truth: McpConnectionTruth;
   /** Tools this server contributes, once aidream has said. */
   toolCount: number | null;
+  /**
+   * Resource kinds this connection lets a person attach to a conversation.
+   * Empty means a pure MCP connection: there is nothing to pick, and a chip
+   * that offered a chooser anyway would be a dead control.
+   */
+  attachable: AttachableResource[];
 }
 
 // ─── useMcpServerTools ───────────────────────────────────────────────────────

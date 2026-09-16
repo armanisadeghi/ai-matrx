@@ -14,7 +14,7 @@ import {
   type ManualAuthMethod,
 } from "@/features/agents/services/mcp-connections.service";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
-import type { McpAvailability } from "@/features/connectors/connection-state";
+import type { AttachableAvailability } from "@/features/connectors/attachable-resources";
 
 // ---------------------------------------------------------------------------
 // State
@@ -48,7 +48,7 @@ interface McpSliceState {
    * token may still be renewable; GitHub's bearer is not an MCP grant at
    * all), so this is what every indicator prefers once it arrives.
    */
-  availability: Record<string, McpAvailability>;
+  availability: Record<string, AttachableAvailability>;
   /** The explicit organization that owns the availability currently in state. */
   availabilityOrganizationId: string | null;
   availabilityStatus: "idle" | "loading" | "succeeded" | "failed";
@@ -67,7 +67,7 @@ const initialState: McpSliceState = {
   availabilityError: null,
 };
 
-const EMPTY_MCP_AVAILABILITY: Record<string, McpAvailability> = {};
+const EMPTY_MCP_AVAILABILITY: Record<string, AttachableAvailability> = {};
 
 // ---------------------------------------------------------------------------
 // Thunks

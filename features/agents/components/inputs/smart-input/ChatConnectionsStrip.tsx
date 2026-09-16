@@ -46,7 +46,7 @@
  */
 
 import { useState } from "react";
-import { AlertTriangle, Check, Server } from "lucide-react";
+import { AlertTriangle, Check, Paperclip, Server } from "lucide-react";
 import { BottomSheet } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -63,6 +63,9 @@ import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-sys
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
+import { attachActionLabel } from "@/features/connectors/attachable-resources";
+import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
+import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { RunToolPicker } from "./RunToolPicker";
 
 export interface ChatConnectionsStripProps {
@@ -76,6 +79,8 @@ export function ChatConnectionsStrip({
 }: ChatConnectionsStripProps) {
   const { serverStates } = useMcpCatalog();
   const openRunControlsWindow = useOpenRunControlsWindow();
+  const openAttachPicker = useAttachResourcePicker();
+  const attachments = useConversationAttachments(conversationId);
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -108,6 +113,10 @@ export function ChatConnectionsStrip({
           name: s.entry.name,
           state: s.truth.state,
           reason: s.truth.reason,
+          // The server says what this connection lets a person choose from —
+          // repositories, files, sheets. Empty for a pure MCP server, and
+          // that emptiness is what makes its chip plain.
+          attachable: s.attachable,
         })),
         runAttachments,
       })
@@ -201,46 +210,102 @@ export function ChatConnectionsStrip({
             connection.runAttachment,
           );
           const isBroken = presentation.kind === "broken";
+          // The ONE difference between the two kinds of connection, made
+          // visible: an attachable one carries a chooser door and a count of
+          // what has been chosen; a pure MCP one carries neither, because it
+          // has nothing to choose and a door onto nothing is a dead control.
+          const chooserLabel =
+            connection.kind === "attachable"
+              ? attachActionLabel(connection.attachable)
+              : null;
+          const attachedCount = attachments.items.filter(
+            (item) => item.provider === connection.slug,
+          ).length;
           return (
-            <button
+            <span
               key={connection.slug}
-              type="button"
-              onClick={openPicker}
-              title={
-                presentation.reason ??
-                (presentation.toolCount != null
-                  ? `${connection.name} — ${presentation.toolCount} tools reached this run`
-                  : `${connection.name} — connected`)
-              }
               className={cn(
                 // `before:` expands the touch target on mobile without adding
                 // a pixel of height (same trick as ConnectorStrip).
-                "group relative inline-flex h-4 shrink-0 items-center gap-1 rounded-full border pl-1 pr-1.5 text-[10px] font-medium leading-none transition-colors",
+                "group relative inline-flex h-4 shrink-0 items-center rounded-full border text-[10px] font-medium leading-none",
                 "before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] sm:before:hidden",
-                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isBroken
-                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
-                  : "border-border/50 bg-card/50 text-foreground/80 hover:border-border hover:bg-accent",
+                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : "border-border/50 bg-card/50 text-foreground/80",
               )}
             >
-              {isBroken ? (
-                <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
-              ) : (
-                <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
-              )}
-              <span className="max-w-[6rem] truncate sm:max-w-[10rem]">
-                {connection.name}
-              </span>
-              {isBroken && presentation.status && (
-                <span className="font-normal">{presentation.status}</span>
-              )}
-              {/* A count only when the run actually reported one. */}
-              {!isBroken && presentation.toolCount != null && (
-                <span className="font-normal tabular-nums text-muted-foreground">
-                  {presentation.toolCount} tools
+              <button
+                type="button"
+                onClick={openPicker}
+                aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open the Tools picker.`}
+                title={
+                  presentation.reason ??
+                  (presentation.toolCount != null
+                    ? `${connection.name} — ${presentation.toolCount} tools reached this run`
+                    : `${connection.name} — connected`)
+                }
+                className={cn(
+                  "inline-flex h-4 items-center gap-1 rounded-l-full pl-1 pr-1.5 transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  isBroken
+                    ? "hover:bg-amber-500/20"
+                    : "hover:bg-accent",
+                  !chooserLabel && "rounded-r-full",
+                )}
+              >
+                {isBroken ? (
+                  <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
+                ) : (
+                  <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
+                )}
+                <span className="max-w-[6rem] truncate sm:max-w-[10rem]">
+                  {connection.name}
                 </span>
+                {isBroken && presentation.status && (
+                  <span className="font-normal">{presentation.status}</span>
+                )}
+                {/* A count only when the run actually reported one. */}
+                {!isBroken && presentation.toolCount != null && (
+                  <span className="font-normal tabular-nums text-muted-foreground">
+                    {presentation.toolCount} tools
+                  </span>
+                )}
+              </button>
+
+              {chooserLabel && conversationId && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    openAttachPicker({
+                      conversationId,
+                      provider: connection.slug,
+                      providerName: connection.name,
+                      attachable: connection.attachable,
+                    })
+                  }
+                  aria-label={`${chooserLabel} from ${connection.name}${attachedCount > 0 ? ` — ${attachedCount} attached to this chat` : ""}`}
+                  title={
+                    attachedCount > 0
+                      ? `${attachedCount} attached to this chat — ${chooserLabel}`
+                      : chooserLabel
+                  }
+                  className={cn(
+                    "inline-flex h-4 items-center gap-0.5 rounded-r-full border-l border-border/50 pl-1 pr-1.5 transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    attachedCount > 0
+                      ? "bg-primary/10 text-primary hover:bg-primary/20"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <Paperclip className="h-2.5 w-2.5" aria-hidden />
+                  {attachedCount > 0 ? (
+                    <span className="tabular-nums">{attachedCount}</span>
+                  ) : (
+                    <span className="font-normal">{chooserLabel}</span>
+                  )}
+                </button>
               )}
-            </button>
+            </span>
           );
         })}
       </div>

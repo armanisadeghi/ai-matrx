@@ -589,6 +589,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  attachResourcePicker: {
+    label: "Choose what to attach",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
     instanceMode: "singleton",

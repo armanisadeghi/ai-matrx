@@ -22,6 +22,12 @@
 
 import type { McpConnectionState } from "./connection-state";
 import type { RunMcpAttachment } from "./run-attachments";
+import {
+  chatConnectionKind,
+  normalizeAttachable,
+  type AttachableResource,
+  type ChatConnectionKind,
+} from "./attachable-resources";
 
 /** One catalog server as the caller already knows it. */
 export interface ChatConnectionCatalogEntry {
@@ -29,6 +35,12 @@ export interface ChatConnectionCatalogEntry {
   name: string;
   state: McpConnectionState;
   reason: string | null;
+  /**
+   * What this connection lets a person CHOOSE from. Empty (or absent) means a
+   * pure MCP connection. Straight from the server's availability payload —
+   * never inferred from the slug.
+   */
+  attachable?: readonly AttachableResource[] | null;
 }
 
 /** One server this conversation is wired to, with the truth about it. */
@@ -43,6 +55,15 @@ export interface ChatConnection {
   origin: "agent" | "run";
   /** What the last run actually did with it, when the run said. */
   runAttachment: RunMcpAttachment | undefined;
+  /**
+   * `plain` — the connection is the whole story (a pure MCP server).
+   * `attachable` — the connection is also a door to a chooser, and the chip
+   * owes the person that door plus a count of what they have chosen
+   * (Arman, 2026-09-15).
+   */
+  kind: ChatConnectionKind;
+  /** The resource kinds behind that door, in the provider's own words. */
+  attachable: AttachableResource[];
 }
 
 export interface SelectChatConnectionsInput {
@@ -94,6 +115,7 @@ export function selectChatConnections({
     ([slug, origin]) => {
       const entry = bySlug.get(slug);
       const runAttachment = runAttachments[slug];
+      const attachable = normalizeAttachable(entry?.attachable);
       return {
         slug,
         name: entry?.name ?? slug,
@@ -102,6 +124,8 @@ export function selectChatConnections({
         reason: runAttachment?.reason ?? entry?.reason ?? null,
         origin,
         runAttachment,
+        kind: chatConnectionKind(attachable),
+        attachable,
       };
     },
   );
