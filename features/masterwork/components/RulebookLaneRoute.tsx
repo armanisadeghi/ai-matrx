@@ -75,15 +75,36 @@ export interface RulebookLaneRenderArgs {
   reload: () => void;
 }
 
-export function RulebookLaneRoute({
-  rulebookId,
-  lane,
-  title,
-  requireOwner = false,
-  ownerMessage,
-  body = "scroll",
-  children,
-}: {
+/**
+ * 🚨 A RULEBOOK PAGE NEVER CARRIES THE PREVIOUS RULEBOOK'S WORDS
+ * (jobs-bar-2026-09-16 cold walk 2, finding #1's strongest remaining lead).
+ *
+ * Every lane route under `/masterwork/[id]/<lane>` is the SAME React element
+ * position, so a Rulebook→Rulebook navigation changes a prop and nothing else:
+ * React keeps the mounted instance, and every `useState` initialiser in the
+ * scaffold AND in the lane body keeps whatever it computed from the FIRST
+ * Rulebook. The live instance of that: `CapturePlanPage` seeds its goal field
+ * from `rulebook.description` in a `useState` initialiser, so opening Rulebook
+ * B's plan form after Rulebook A's showed A's sentence in B's form — a
+ * first-timer reads that as their work landing on the wrong record, and there
+ * is no way on screen to tell the two apart. The scaffold also kept the
+ * previous Rulebook in state while the next one loaded, so children briefly
+ * rendered the old row's name, rules and organization for real.
+ *
+ * ONE line closes the whole class for all 14 lanes at once: the identity of a
+ * record-scoped page IS the record, so the mount is keyed by it. A different
+ * Rulebook is a different page — fresh state everywhere below, and the load
+ * starts from `loading` instead of from the last Rulebook's row. Fix the
+ * class, never the instance: no lane may hand-roll a per-id reset, and a new
+ * lane inherits this without knowing it exists.
+ *
+ * Guard: `features/masterwork/__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx`.
+ */
+export function RulebookLaneRoute(props: RulebookLaneRouteProps) {
+  return <RulebookLaneRouteInstance key={props.rulebookId} {...props} />;
+}
+
+interface RulebookLaneRouteProps {
   rulebookId: string;
   /** Lane slug published on the surface scope, e.g. "sources", "conduct". */
   lane: string;
@@ -103,7 +124,17 @@ export function RulebookLaneRoute({
    */
   body?: "scroll" | "fill" | "bare";
   children: (args: RulebookLaneRenderArgs) => ReactNode;
-}) {
+}
+
+function RulebookLaneRouteInstance({
+  rulebookId,
+  lane,
+  title,
+  requireOwner = false,
+  ownerMessage,
+  body = "scroll",
+  children,
+}: RulebookLaneRouteProps) {
   const userId = useAppSelector(selectUserId);
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);

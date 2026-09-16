@@ -61,7 +61,6 @@ import { Provider } from "react-redux";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { makeStore } from "@/lib/redux/store";
-import type { RulebookRow } from "@/features/masterwork/types";
 import { RulebookLaneRoute } from "@/features/masterwork/components/RulebookLaneRoute";
 import { CapturePlanPage } from "@/features/masterwork/capture-plan/CapturePlanPage";
 import { associateInterviewWhenPersisted } from "@/features/masterwork/record/service";
@@ -69,204 +68,39 @@ import { associateInterviewWhenPersisted } from "@/features/masterwork/record/se
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
 
-// Two Rulebooks with near-identical names — the cold walk's actual confusion.
-const RULEBOOK_A = "f1375ab5-1111-4111-8111-111111111111";
-const RULEBOOK_B = "a84d1c5e-2222-4222-8222-222222222222";
-const ORG_ID = "0e3f1c90-3333-4333-8333-333333333333";
-const USER_ID = "7c2b6d41-4444-4444-8444-444444444444";
-const CONVERSATION_A = "c0111111-5555-4555-8555-555555555555";
-const CONVERSATION_B = "c0222222-6666-4666-8666-666666666666";
-/**
- * One interview per Rulebook, keyed off the Rulebook — because that is where
- * the real panel's conversation comes from too: `useAgentLauncher` mints it
- * INSIDE the lane's subtree, so the conversation and the Rulebook it belongs
- * to always come out of the same render.
- */
-const CONVERSATION_FOR: Record<string, string> = {
-  [RULEBOOK_A]: CONVERSATION_A,
-  [RULEBOOK_B]: CONVERSATION_B,
-};
+// The transport, the knob values and the fixtures are shared with the sibling
+// guard that watches what a Rulebook page SHOWS; nothing that decides a record
+// id lives there. See `./rulebookWire`.
+import {
+  associationAdds,
+  CONVERSATION_A,
+  CONVERSATION_B,
+  CONVERSATION_FOR,
+  filterValue,
+  installMatchMedia,
+  RULEBOOK_A,
+  RULEBOOK_B,
+  rulebookRow,
+  rulebookRows,
+  updates,
+  USER_ID,
+} from "./rulebookWire";
 
-// ── the recording wire ──────────────────────────────────────────────────────
+jest.mock("@/utils/supabase/client", () => require("./rulebookWire").supabaseWire);
 
-interface Statement {
-  schema: string;
-  table: string;
-  op: "select" | "update";
-  filters: Array<{ column: string; value: unknown }>;
-  payload?: Record<string, unknown>;
-}
-
-/** Every UPDATE the real service code sent, in order. */
-const updates: Statement[] = [];
-/** Every association edge `linkInterviewConversation` asked for, in order. */
-const associationAdds: Array<{ sourceId: string; targetId: string; role?: string }> = [];
-
-const rulebookRows = new Map<string, RulebookRow>();
-
-function filterValue(statement: Statement, column: string): unknown {
-  const hit = statement.filters.find((f) => f.column === column);
-  return hit ? hit.value : undefined;
-}
-
-/**
- * The `platform.approach` row the plan schedules against. Typed and complete in
- * the columns `fetchDistillationApproaches` selects. (A live row could not be
- * captured: this session's Supabase MCP connector refused the read — the shape
- * is taken from the select list in `features/masterwork/browse/approaches.ts`
- * and the posture map in `capture-plan/methods.ts`.)
- */
-const APPROACH_ROWS = [
-  {
-    id: "9a0b1c2d-7777-4777-8777-777777777777",
-    key: "monologue",
-    label: "Talk for five minutes",
-    blurb: "Say one thing you did this week, out loud.",
-    what_it_needs: "Five minutes and your voice.",
-    cost_time_shape: "start now — rules within minutes",
-    mandate_key: "masterwork.monologue_distiller",
-    intake_query: { conduct: "1" },
-    sort_order: 10,
-    enabled: true,
-    metadata: { availability: "available" },
-  },
-];
-
-function resolve(statement: Statement): { data: unknown; error: null } {
-  const { schema, table, op } = statement;
-  if (schema === "platform" && table === "approach") {
-    return { data: APPROACH_ROWS, error: null };
-  }
-  if (schema === "workflow" && table === "definition") {
-    return { data: [], error: null };
-  }
-  if (schema === "chat" && table === "conversation") {
-    // The interview title pass. No row → the real code returns without writing.
-    return { data: null, error: null };
-  }
-  if (schema === "platform" && table === "rulebook") {
-    const id = filterValue(statement, "id");
-    const row = typeof id === "string" ? rulebookRows.get(id) : undefined;
-    if (op === "select") return { data: row ?? null, error: null };
-    updates.push(statement);
-    if (!row) return { data: null, error: null };
-    // The real compare-and-swap must still be honoured, or a conflict retry
-    // would silently look like a success.
-    if (filterValue(statement, "version") !== row.version) {
-      return { data: null, error: null };
-    }
-    const next = {
-      ...row,
-      ...(statement.payload ?? {}),
-      version: row.version + 1,
-    } as RulebookRow;
-    rulebookRows.set(next.id, next);
-    return { data: next, error: null };
-  }
-  throw new Error(
-    `The test wire was asked for ${schema}.${table}, which it does not serve. ` +
-      "Serve it deliberately rather than letting it read as empty.",
-  );
-}
-
-class QueryBuilder implements PromiseLike<{ data: unknown; error: null }> {
-  private statement: Statement;
-
-  constructor(schema: string, table: string) {
-    this.statement = { schema, table, op: "select", filters: [] };
-  }
-
-  select() {
-    return this;
-  }
-  update(payload: Record<string, unknown>) {
-    this.statement.op = "update";
-    this.statement.payload = payload;
-    return this;
-  }
-  eq(column: string, value: unknown) {
-    this.statement.filters.push({ column, value });
-    return this;
-  }
-  is(column: string, value: unknown) {
-    this.statement.filters.push({ column, value });
-    return this;
-  }
-  in(column: string, value: unknown) {
-    this.statement.filters.push({ column, value });
-    return this;
-  }
-  order() {
-    return this;
-  }
-  maybeSingle() {
-    return Promise.resolve(resolve(this.statement));
-  }
-  then<TResult1 = { data: unknown; error: null }, TResult2 = never>(
-    onfulfilled?:
-      | ((value: { data: unknown; error: null }) => TResult1 | PromiseLike<TResult1>)
-      | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-  ): PromiseLike<TResult1 | TResult2> {
-    return Promise.resolve()
-      .then(() => resolve(this.statement))
-      .then(onfulfilled, onrejected);
-  }
-}
-
-jest.mock("@/utils/supabase/client", () => ({
-  supabase: {
-    schema: (schema: string) => ({
-      from: (table: string) => new QueryBuilder(schema, table),
-    }),
-    from: (table: string) => new QueryBuilder("public", table),
-  },
-}));
-
-jest.mock("@/features/scopes/service/associationsService", () => ({
-  associationsService: {
-    add: (args: { sourceId: string; targetId: string; role?: string }) => {
-      associationAdds.push({
-        sourceId: args.sourceId,
-        targetId: args.targetId,
-        role: args.role,
-      });
-      return Promise.resolve({ ok: true, data: null });
-    },
-  },
-}));
+jest.mock(
+  "@/features/scopes/service/associationsService",
+  () => require("./rulebookWire").associationsWire,
+);
 
 jest.mock(
   "@/features/agents/redux/execution-system/conversations/conversation-persistence",
   () => ({ waitForConversationPersisted: () => Promise.resolve(true) }),
 );
 
-const KNOB_VALUES: Record<string, unknown> = {
-  "masterwork.capture_plan.session_minutes": 15,
-  "masterwork.capture_plan.sessions_per_day": 1,
-  "masterwork.capture_plan.cadence": "daily",
-  "masterwork.capture_plan.reminder_channel": "in_app",
-  "masterwork.capture_plan.reminder_lead_minutes": 15,
-  "masterwork.capture_plan.reminder_horizon_hours": 48,
-  "masterwork.capture_plan.methods_allowed": "all",
-  "masterwork.capture_plan.stop_rule": "either",
-  "masterwork.capture_plan.flatten_window": 3,
-  "masterwork.capture_plan.horizon_days": 14,
-  "masterwork.capture_plan.target_rules": 40,
-  "masterwork.capture_plan.voice_default_on": false,
-};
-
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
-  ensureEffectiveKnob: (
-    _org: string,
-    _user: string | null,
-    key: string,
-  ): Promise<unknown> => {
-    if (!(key in KNOB_VALUES)) {
-      return Promise.reject(new Error(`unseeded knob ${key}`));
-    }
-    return Promise.resolve(KNOB_VALUES[key]);
-  },
+  ensureEffectiveKnob: (...args: [string, string | null, string]) =>
+    require("./rulebookWire").knobWire.ensureEffectiveKnob(...args),
 }));
 
 jest.mock("@/lib/api/call-api", () => ({
@@ -311,55 +145,12 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
-// ── fixtures ────────────────────────────────────────────────────────────────
-
-function rulebookRow(id: string, name: string): RulebookRow {
-  return {
-    assurance_level: null,
-    created_at: "2026-09-16T20:00:00.000Z",
-    created_by: USER_ID,
-    deleted_at: null,
-    description: `How I decide what to do about ${name}.`,
-    id,
-    industry_id: null,
-    metadata: {},
-    name,
-    organization_id: ORG_ID,
-    rules: [],
-    sections: {},
-    slug: name.toLowerCase().replace(/\W+/g, "-"),
-    source: {},
-    source_authority: null,
-    source_rulebook_id: null,
-    source_synced_at: null,
-    source_version: null,
-    status: "draft",
-    updated_at: "2026-09-16T20:00:00.000Z",
-    updated_by: null,
-    version: 1,
-    visibility: "private",
-  } satisfies RulebookRow;
-}
-
 let container: HTMLDivElement;
 let root: Root;
 let store: ReturnType<typeof makeStore>;
 
 beforeAll(() => {
-  // jsdom ships no matchMedia; the shell's mobile hook calls it on first paint.
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: (query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    }),
-  });
+  installMatchMedia();
   jest.useFakeTimers();
   store = makeStore();
   store.dispatch({ type: "userAuth/setUserAuth", payload: { id: USER_ID } });

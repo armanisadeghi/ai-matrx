@@ -704,7 +704,28 @@ export function RuleRow({
   );
 }
 
+/**
+ * 🚨 A RULEBOOK PAGE NEVER CARRIES THE PREVIOUS RULEBOOK'S WORDS
+ * (jobs-bar-2026-09-16 cold walk 2, finding #1's strongest remaining lead).
+ *
+ * `/masterwork/<id>` is one element position: a Rulebook→Rulebook navigation
+ * changes a prop, React keeps the mounted instance, and every piece of state
+ * derived from the first Rulebook survives into the second — the search box,
+ * the chosen KPI view, an open rule editor holding the other Rulebook's rule,
+ * the staged draft, the description expansion. The record IS the page's
+ * identity, so the mount is keyed by it: a different Rulebook is a different
+ * page. Its lane twin does the same at
+ * `features/masterwork/components/RulebookLaneRoute.tsx`; between the two,
+ * every rulebook-scoped route in the module is covered, and neither a lane nor
+ * a dialog below has to hand-roll a per-id reset.
+ *
+ * Guard: `features/masterwork/__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx`.
+ */
 export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
+  return <RulebookDetailPageInstance key={rulebookId} rulebookId={rulebookId} />;
+}
+
+function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman

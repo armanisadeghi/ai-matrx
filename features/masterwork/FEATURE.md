@@ -47,7 +47,10 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 7. **Every `/masterwork/[id]/*` lane route renders inside `components/RulebookLaneRoute.tsx`** —
    it owns `SurfaceRuntimeProvider`, `buildRulebookSurfaceScope`, the
    `masterwork_refresh_rulebook` client tool, and `<AccessGate token="rulebook" id/>`. Never
-   hand-roll any of the four, and never swallow a denial in a `.catch`.
+   hand-roll any of the four, and never swallow a denial in a `.catch`. It also mounts its
+   instance **keyed by the rulebook id** (as `RulebookDetailPage` does): a different Rulebook is
+   a different page, so no lane may carry state derived from the previous record. Never add a
+   per-lane id reset instead.
 8. **`getExpertCorpus` assembles NOTHING** — it calls `GET /masterworks/{rulebook_id}/corpus`.
    A second corpus assembly in any repo is a defect. Any surface showing the corpus **must
    render `limits`**; a partial record presented as complete is the failure that contract exists
@@ -433,6 +436,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   two ways.
 
 ## Change Log
+
+- `2026-09-16` — 🚨 **A Rulebook page carried the PREVIOUS Rulebook's words** (jobs-bar cold
+  walk 2, finding #1's closing lead). Both rulebook-scoped page scaffolds are one element
+  position, so a Rulebook→Rulebook navigation changed a prop and React kept the mounted
+  instance: `CapturePlanPage` seeds its goal from `rulebook.description` in a `useState`
+  initialiser, so Rulebook B's plan form opened holding Rulebook A's sentence — which from the
+  Expert's seat is indistinguishable from the cross-record WRITE the walk thought it saw (that
+  write was clean). `RulebookLaneRoute` also kept the previous Rulebook in state while the next
+  loaded, so the old row really did render under the new URL. Fixed at the class, one line each
+  and no lane edits: `RulebookLaneRoute` (all 14 lanes) and `RulebookDetailPage` now mount their
+  instance keyed by the rulebook id — a different Rulebook is a different page, so every derived
+  `useState`, open dialog, staged draft and in-flight load starts fresh. Guard:
+  `__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx` — the real lane
+  → real page → real read, two Rulebooks in ONE mounted app; 3 cases, proven RED with the key
+  removed (B's form showed A's sentence, verbatim as photographed) and green restored. The
+  wire is shared with the sibling write guard at `__tests__/rulebookWire.tsx`.
 
 - `2026-09-16` — **"Your recent runs" on the Encore run page tells one run from another
   (jobs-bar-2026-09-16, item 18).** It listed eight runs of the same Masterwork as eight
