@@ -73,6 +73,12 @@ function button(text: string): HTMLButtonElement {
   return found;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => { resolve = next; });
+  return { promise, resolve };
+}
+
 describe("VaultLoginExportDialog", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -179,12 +185,17 @@ describe("VaultLoginExportDialog", () => {
   });
 
   test("cancels the pending export when the authenticated account changes", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof previewVaultLoginCsv>>>();
+    previewMock.mockReturnValue(pending.promise);
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');
     if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
     await act(async () => checkbox.click());
     await act(async () => button("Review selected logins").click());
+    const signal = previewMock.mock.calls[0]?.[2];
     await act(async () => authListener?.("SIGNED_OUT", null));
+    expect(signal?.aborted).toBe(true);
+    await act(async () => pending.resolve({ profile: "matrx_login_csv_v1", revision: "a".repeat(64), items: [] }));
     expect(document.body.textContent).toContain("Your account changed");
     expect(document.body.textContent).toContain("0 selected of 1 shown");
   });
