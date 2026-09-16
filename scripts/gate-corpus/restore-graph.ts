@@ -73,6 +73,7 @@
  *
  *   npx tsx scripts/gate-corpus/restore-graph.ts            copy + prove
  *   npx tsx scripts/gate-corpus/restore-graph.ts --verify   prove only, copy nothing
+ *   …--verify --max-boundary-age=<hours>                    move the freshness ceiling
  *
  * `--verify` compares the branch to the BOUNDARY THE COPY RECORDED — a row in
  * `restore_graph.run` on the branch holding the production snapshot id,
@@ -81,7 +82,19 @@
  * all day; a verifier that re-reads it fails because the world moved, which says
  * nothing about whether the copy is intact.
  *
- * Exit 0 only when all five proofs pass.
+ * 🚨 AND THAT BOUNDARY HAS A MAXIMUM AGE THAT FAILS (ATTACK-7 finding 6). Because
+ * the comparison is against the recorded copy, `--verify` used to pass no matter
+ * how old the copy was, while printing "production's 4603" — a snapshot wearing
+ * the present tense. Production takes ≈18 new `iam.permissions` grants an hour, so
+ * across the campaign's 56-hour critical path the branch copy can be ≈1,000 grants
+ * behind. Every `--verify` now measures the boundary's age IN THE DATABASE —
+ * `now() - prod_taken_at`, the expression `W7-GATE`'s exit names, which is why
+ * `prod_taken_at` is a `timestamptz` and not the `text` it used to be (ATTACK-7
+ * finding 14) — prints it pass or fail alongside the effective ceiling, and EXITS
+ * NON-ZERO by name when it is over, with the remedy: re-run the copy (`W0-DATA`'s
+ * restore) and re-verify. See `./boundary-age.ts` for why the default is 12 hours.
+ *
+ * Exit 0 only when all five proofs pass and the boundary is inside the ceiling.
  */
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,6 +102,12 @@ import pg from "pg";
 import { loadDbEnv } from "../lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef } from "../lib/migration-target";
 import { boundaryVerdict } from "./boundary-verdict";
+import {
+  DEFAULT_MAX_BOUNDARY_AGE_HOURS,
+  boundaryAgeVerdict,
+  formatAgeHours,
+  parseMaxBoundaryAgeHours,
+} from "./boundary-age";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -492,11 +511,38 @@ async function ensureRunTable(branch: pg.Client): Promise<void> {
        id bigserial primary key,
        ran_at timestamptz not null default now(),
        prod_snapshot text not null,
-       prod_taken_at text not null,
+       prod_taken_at timestamptz not null,
        counts jsonb not null,
        extras jsonb not null default '{}'::jsonb
      )`,
   );
+  // 🚨 ATTACK-7 finding 14. `prod_taken_at` was `text`, so `W7-GATE`'s exit
+  // clause — written as `now() - prod_taken_at` — raised
+  //   42883: operator does not exist: timestamp with time zone - text
+  // and the staleness check the book requires could not run at all. The column is
+  // a POINT IN TIME, so it is stored as one; casting at every read site would have
+  // left the next reader to remember the cast, and the gate's own text names the
+  // uncast expression. Existing rows migrate in place and keep reading: every
+  // value ever written came from production's `now()::text`
+  // (`2026-09-16 03:49:55.480409+00`), which `::timestamptz` parses exactly.
+  // Idempotent, and it does nothing at all on a table already converted.
+  const current = (
+    await branch.query<{ t: string }>(
+      `select data_type t from information_schema.columns
+        where table_schema = $1 and table_name = 'run' and column_name = 'prod_taken_at'`,
+      [RUN_SCHEMA],
+    )
+  ).rows[0]?.t;
+  if (current && current !== "timestamp with time zone") {
+    await branch.query(
+      `alter table ${RUN_TABLE}
+         alter column prod_taken_at type timestamptz using prod_taken_at::timestamptz`,
+    );
+    console.log(
+      `${OK}${RUN_TABLE}.prod_taken_at migrated ${current} → timestamptz ` +
+        `${C.dim}(ATTACK-7 finding 14: \`now() - prod_taken_at\` raised 42883)${C.reset}`,
+    );
+  }
 }
 
 /**
@@ -564,6 +610,22 @@ async function assertCopyOrder(branch: pg.Client): Promise<string[]> {
 
 async function main(): Promise<number> {
   const verifyOnly = process.argv.includes("--verify");
+  // Parsed BEFORE a connection is opened: a typo'd ceiling must refuse here, not
+  // become the default halfway through a run that then reports itself green.
+  let maxBoundaryAge: { hours: number; explicit: boolean };
+  try {
+    maxBoundaryAge = parseMaxBoundaryAgeHours(process.argv);
+  } catch (err) {
+    console.error(`${FAIL}${err instanceof Error ? err.message : String(err)}`);
+    return 2;
+  }
+  console.log(
+    `${INFO}boundary freshness ceiling: ${formatAgeHours(maxBoundaryAge.hours)}` +
+      (maxBoundaryAge.explicit
+        ? ` ${C.yellow}(set explicitly with --max-boundary-age; the default is ` +
+          `${formatAgeHours(DEFAULT_MAX_BOUNDARY_AGE_HOURS)})${C.reset}`
+        : ` ${C.dim}(the default; --max-boundary-age=<hours> moves it)${C.reset}`),
+  );
   const ref = loadBranchRef(ROOT);
   const branchEnv = loadBranchDbEnv(ROOT, ref);
   const prodEnv = loadDbEnv();
@@ -598,6 +660,12 @@ async function main(): Promise<number> {
   await branch.connect();
 
   let failures = 0;
+  /** WHEN the snapshot every floor line is measured against was taken. Carried so
+   *  those lines can name it: "production's 4603" was a snapshot wearing the
+   *  present tense (ATTACK-7 finding 6), and a reader at 3 a.m. read it as a live
+   *  count. On a copy run it is this run's own snapshot; on `--verify` it is the
+   *  recorded boundary's. */
+  let boundaryTakenAt: string | undefined;
   /** production's primary keys per table, collected during the copy, so PROOF 3
    *  is an exact set comparison and not a count that two errors could cancel. */
   const copiedKeys = new Map<string, Set<string>>();
@@ -717,6 +785,7 @@ async function main(): Promise<number> {
       snapshot: (await prod.query<{ s: string }>("select pg_current_snapshot()::text s")).rows[0]!.s,
       takenAt: (await prod.query<{ t: string }>("select now()::text t")).rows[0]!.t,
     };
+    boundaryTakenAt = snap.takenAt;
     for (const t of TABLES) {
       snap.counts[t] = Number((await prod.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
     }
@@ -1019,17 +1088,31 @@ async function main(): Promise<number> {
       if (!failures) {
         await ensureRunTable(branch);
         await branch.query(
-          `insert into ${RUN_TABLE} (prod_snapshot, prod_taken_at, counts, extras) values ($1, $2, $3::jsonb, $4::jsonb)`,
+          // $2 is cast by name: `snap.takenAt` is production's `now()::text`, and the
+          // column is a timestamptz (ATTACK-7 finding 14) — never left to inference.
+          `insert into ${RUN_TABLE} (prod_snapshot, prod_taken_at, counts, extras) values ($1, $2::timestamptz, $3::jsonb, $4::jsonb)`,
           [snap.snapshot, snap.takenAt, JSON.stringify(snap.counts), JSON.stringify(extrasKept)],
         );
         console.log(`${OK}boundary recorded in ${RUN_TABLE} — this is what --verify compares against`);
       }
     } else {
       await ensureRunTable(branch);
+      // `now() - prod_taken_at` is `W7-GATE`'s own expression, measured by the
+      // database and not by this process's clock — the branch is the one clock both
+      // the gate and the copy agree on. It runs because the column is a timestamptz
+      // (ATTACK-7 finding 14); before that it raised 42883.
       const last = await branch.query<{
-        ran_at: string; prod_snapshot: string; prod_taken_at: string;
+        ran_at: string; prod_snapshot: string; prod_taken_at: string; age_hours: string | null;
         counts: Record<string, number>; extras: Record<string, number>;
-      }>(`select ran_at::text, prod_snapshot, prod_taken_at, counts, extras from ${RUN_TABLE} order by id desc limit 1`);
+      }>(
+        `select ran_at::text,
+                prod_snapshot,
+                prod_taken_at::text,
+                (extract(epoch from (now() - prod_taken_at)) / 3600.0)::text as age_hours,
+                counts,
+                extras
+           from ${RUN_TABLE} order by id desc limit 1`,
+      );
       const boundary = last.rows[0];
       if (!boundary) {
         fail(
@@ -1041,6 +1124,15 @@ async function main(): Promise<number> {
           `${INFO}boundary: the copy of ${boundary.ran_at} against production snapshot ` +
             `${boundary.prod_snapshot} taken ${boundary.prod_taken_at}`,
         );
+        boundaryTakenAt = boundary.prod_taken_at;
+        // 🚨 ATTACK-7 finding 6 — THE CEILING. Printed every run, pass or fail.
+        const ageVerdict = boundaryAgeVerdict(
+          Number(boundary.age_hours ?? Number.NaN),
+          maxBoundaryAge.hours,
+          boundary.prod_taken_at,
+        );
+        if (ageVerdict.ok) console.log(`${OK}${ageVerdict.message}`);
+        else fail(ageVerdict.message);
         for (const t of TABLES) {
           const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
           const verdict = boundaryVerdict(t, n, boundary.counts[t], boundary.extras[t]);
@@ -1054,9 +1146,18 @@ async function main(): Promise<number> {
     // ATTACK-4 findings 1 and 25. `W7-GATE`'s anti-vacuity clause counted the
     // two tables that were being copied and could not see the tables that were
     // empty. This proof counts the ones whose emptiness makes an access proof
-    // pass over nothing, against production's own snapshot count, and it is the
-    // list a gate clause cites.
+    // pass over nothing, against the count THE COPY'S SNAPSHOT of production held,
+    // and it is the list a gate clause cites.
+    //
+    // 🚨 ATTACK-7 finding 6 — TENSE. This line used to read
+    //   [ OK ] floor iam.permissions 4609 ≥ production's 4603
+    // which reads as a live production count and is not one: on `--verify` it is a
+    // number frozen at the copy, hours old. It now names the snapshot and when it
+    // was taken, so nobody has to know which run produced it.
     {
+      const asOf = boundaryTakenAt
+        ? `the copy's snapshot of production, taken ${boundaryTakenAt}`
+        : `the copy's snapshot of production`;
       const floorSource = verifyOnly
         ? (
             await branch.query<{ counts: Record<string, number> }>(
@@ -1074,10 +1175,10 @@ async function main(): Promise<number> {
             fail(`${t} is in the anti-vacuity floor but the boundary holds no count for it — the copy set and the floor disagree.`);
           else if (n < floor)
             fail(
-              `ANTI-VACUITY: ${t} holds ${n} row(s) on the branch, production's snapshot held ${floor}. ` +
+              `ANTI-VACUITY: ${t} holds ${n} row(s) on the branch, ${asOf} held ${floor}. ` +
                 `Every "over the copied real graph" clause would pass over a set this size and prove nothing.`,
             );
-          else console.log(`${OK}floor ${t.padEnd(30)} ${n} ≥ production's ${floor}`);
+          else console.log(`${OK}floor ${t.padEnd(30)} ${n} ≥ ${floor} — ${asOf}`);
         }
       }
     }
