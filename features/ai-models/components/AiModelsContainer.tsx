@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
@@ -175,7 +176,11 @@ export default function AiModelsContainer() {
     closePanel();
   };
 
+  const duplicatingModels = useRef(new Set<string>());
   const handleDuplicate = async (model: AiModel) => {
+    if (duplicatingModels.current.has(model.id)) return;
+    duplicatingModels.current.add(model.id);
+    const notice = toast.loading(`Duplicating ${model.common_name || model.name}…`);
     try {
       const {
         id: _id,
@@ -194,8 +199,15 @@ export default function AiModelsContainer() {
       });
       setModels((prev) => [duplicate, ...prev]);
       openModel(duplicate);
+      toast.success("Model duplicated", { id: notice });
     } catch (err) {
       console.error("Duplicate failed", err);
+      toast.error("Could not duplicate model", {
+        id: notice,
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      duplicatingModels.current.delete(model.id);
     }
   };
 
