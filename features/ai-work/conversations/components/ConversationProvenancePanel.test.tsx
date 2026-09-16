@@ -341,3 +341,62 @@ test("when every binding is an unclaimed offer, nothing is picked as the deliver
   expect(text).not.toContain("No coding-session binding is attached");
   expect(text).not.toContain("this conversation was created inside AI Matrx");
 });
+
+/**
+ * A REBIND'S TURNS: the screen must say where they actually went.
+ *
+ * Seen live on 2026-09-15 (XT-FIX-5) on a real carried rebind: this panel said
+ * "its turns before the move stayed on conversation <id>" while the server had
+ * just MOVED those turns onto this very transcript and said so in its verdict.
+ * The sentence read `rebound_from_conversation_id` and nothing else, so it was
+ * the same sentence for two opposite outcomes — a screen asserting a fact it
+ * had not looked at. The server now records exactly one of `carried_messages`
+ * or `prior_context_conversation_id`, and this renders whichever it is.
+ */
+describe("a rebind says where the moved session's earlier turns went", () => {
+  function reboundBinding(handoffExtras: Record<string, unknown>) {
+    const binding = codexBinding({ claimed: true });
+    const metadata = (binding as unknown as { metadata: Record<string, unknown> })
+      .metadata;
+    metadata.handoff = {
+      ...(metadata.handoff as Record<string, unknown>),
+      rebound_from_conversation_id: "e39de40f-e3c5-5a17-9661-2b26a1de40cf",
+      ...handoffExtras,
+    };
+    return binding;
+  }
+
+  it("carried turns are described as moved, never as left behind", async () => {
+    const text = await render([
+      reboundBinding({ carried_messages: 2, prior_context_conversation_id: null }),
+      claudeBinding(),
+    ]);
+    expect(text).toContain("2 turns it had already produced moved with it");
+    expect(text).toContain("appended at the end of this transcript");
+    expect(text).not.toContain("stayed on conversation");
+  });
+
+  it("turns too many to move are named where they still live", async () => {
+    const text = await render([
+      reboundBinding({
+        carried_messages: 0,
+        prior_context_conversation_id: "e39de40f-e3c5-5a17-9661-2b26a1de40cf",
+        prior_context_messages: 412,
+      }),
+      claudeBinding(),
+    ]);
+    expect(text).toContain("412 earlier turns stayed on conversation");
+    expect(text).toContain("linked here as prior context");
+    expect(text).not.toContain("moved with it");
+  });
+
+  it("a rebind of an empty conversation says exactly that", async () => {
+    const text = await render([
+      reboundBinding({ carried_messages: 0, prior_context_conversation_id: null }),
+      claudeBinding(),
+    ]);
+    expect(text).toContain("held no turns of its own");
+    expect(text).not.toContain("stayed on conversation");
+    expect(text).not.toContain("moved with it");
+  });
+});

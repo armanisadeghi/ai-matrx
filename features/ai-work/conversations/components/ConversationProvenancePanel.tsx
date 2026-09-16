@@ -282,12 +282,40 @@ function BindingCard({
               <>
                 {" "}
                 This tool&apos;s session was already bound elsewhere, so that
-                binding was moved here rather than duplicated — its turns before
-                the move stayed on conversation{" "}
-                <span className="font-mono text-[11px]">
-                  {handoff.reboundFromConversationId}
-                </span>
-                .
+                binding was moved here rather than duplicated
+                {handoff.carriedMessages ? (
+                  <>
+                    {" "}
+                    — and the {handoff.carriedMessages} turn
+                    {handoff.carriedMessages === 1 ? "" : "s"} it had already
+                    produced moved with it, appended at the end of this
+                    transcript.
+                  </>
+                ) : handoff.priorContextConversationId ? (
+                  <>
+                    {" "}
+                    — its{" "}
+                    {handoff.priorContextMessages
+                      ? `${handoff.priorContextMessages} earlier turn${
+                          handoff.priorContextMessages === 1 ? "" : "s"
+                        }`
+                      : "earlier turns"}{" "}
+                    stayed on conversation{" "}
+                    <span className="font-mono text-[11px]">
+                      {handoff.priorContextConversationId}
+                    </span>
+                    , linked here as prior context.
+                  </>
+                ) : (
+                  <>
+                    {" "}
+                    — conversation{" "}
+                    <span className="font-mono text-[11px]">
+                      {handoff.reboundFromConversationId}
+                    </span>{" "}
+                    held no turns of its own.
+                  </>
+                )}
               </>
             ) : null}
           </span>

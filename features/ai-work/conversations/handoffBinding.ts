@@ -46,6 +46,14 @@ export interface HandoffRecord {
   /** Set when the receiving session already had a binding of its own and that
    *  row was MOVED here rather than duplicated. */
   reboundFromConversationId: string | null;
+  /** How many turns moved WITH the binding on that rebind (appended to the end
+   *  of this conversation's transcript, each carrying its own provenance). */
+  carriedMessages: number | null;
+  /** Set instead when there were too many turns to move inside one
+   *  transaction: the conversation that still holds them, linked here as prior
+   *  context, and how many. Never set together with `carriedMessages`. */
+  priorContextConversationId: string | null;
+  priorContextMessages: number | null;
 }
 
 function record(value: Json | null): Record<string, Json> | null {
@@ -56,6 +64,12 @@ function record(value: Json | null): Record<string, Json> | null {
 
 function text(value: Json | undefined): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function count(value: Json | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
 }
 
 function state(value: Json | undefined): HandoffState | null {
@@ -83,6 +97,17 @@ export function handoffRecord(metadata: Json | null): HandoffRecord | null {
     offeredAt: text(handoff.offered_at),
     claimedAt: text(handoff.claimed_at),
     reboundFromConversationId: text(handoff.rebound_from_conversation_id),
+    // Where the turns that session had already produced ended up. Exactly one
+    // of these is ever set by the server: `carriedMessages` when they moved
+    // WITH the binding (appended to this transcript), or
+    // `priorContextConversationId` + `priorContextMessages` when there were
+    // too many to move inside one transaction and the old conversation is
+    // linked as prior context instead. Reading neither and asserting "its
+    // turns stayed behind" is a screen telling a lie about a move it did not
+    // look at (seen live 2026-09-15 on a carried rebind).
+    carriedMessages: count(handoff.carried_messages),
+    priorContextConversationId: text(handoff.prior_context_conversation_id),
+    priorContextMessages: count(handoff.prior_context_messages),
   };
 }
 
