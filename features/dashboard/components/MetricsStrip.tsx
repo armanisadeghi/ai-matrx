@@ -6,6 +6,7 @@ import {
   MetricNavigation,
   type MetricNavigationItem,
 } from "@/components/navigation/MetricNavigation";
+import { formatMetricNumber } from "@/components/navigation/metricNumber";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
@@ -49,8 +50,11 @@ function FeaturedCard({
         {loading ? (
           <div className="h-8 w-14 animate-pulse rounded-md bg-muted" />
         ) : (
-          <div className="text-3xl font-semibold tabular-nums leading-none text-foreground">
-            {value.toLocaleString()}
+          <div
+            aria-label={value.toLocaleString("en-US")}
+            className="text-3xl font-semibold tabular-nums leading-none text-foreground"
+          >
+            {formatMetricNumber(value)}
           </div>
         )}
         <div className="mt-1.5 text-sm font-medium text-foreground">

@@ -118,6 +118,7 @@
 
 ## Change log
 
+- `2026-09-16` — Codex: Prevented six-digit dashboard metrics from wrapping on two-column phone cards. The shared metric formatter now keeps values below 100,000 exact and uses standard compact `K` / `M` / `B` notation from 100,000 upward across featured cards and secondary metric pills, while featured-card accessible labels retain the exact count.
 - `2026-09-11` — Codex: extracted Dashboard secondary metric pills into the shared presentation-only `MetricNavigation` primitive. Dashboard keeps its live RPC, loading/error behavior, and count semantics; other homes can supply their own real destinations and independently honest count states.
 
 - `2026-08-26` — Codex: Repaired pinned-card unpin affordance positioning and polish. The 44 px tap target now sits in an actual trailing overlay wrapper, with an inset, vertically centered glass-circle X that reveals on hover/focus instead of leaking the SVG onto the card border; touch-only devices retain a visible control.
