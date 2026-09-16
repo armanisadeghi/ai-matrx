@@ -15,40 +15,81 @@
 import { useEffect, useState } from "react";
 
 import {
+  getCachedToolRenderer,
   getCachedToolMeta,
+  isKnownNoToolRenderer,
   loadToolRenderer,
   type ToolRendererMeta,
 } from "./toolRendererCache";
 import { useToolRendererVersion } from "./useToolRendererVersion";
 
-export function useDbToolMeta(
-  toolName: string | null | undefined,
-): ToolRendererMeta | null {
-  // Bumps when the tool's renderer row is invalidated mid-session (D115) —
-  // re-fires the fetch so the collapsed label tracks the agent's edit.
-  const version = useToolRendererVersion(toolName);
+export type DbToolRendererResolution = "resolving" | "custom" | "generic";
 
-  // Warm first paint: the initializer reads the cache, so a prefetched tool
-  // renders its label with no flash. The effect drives the cold path.
-  const [meta, setMeta] = useState<ToolRendererMeta | null>(() =>
-    toolName ? getCachedToolMeta(toolName) : null,
+export interface DbToolRendererState {
+  meta: ToolRendererMeta | null;
+  resolution: DbToolRendererResolution;
+}
+
+interface VersionedDbToolRendererState extends DbToolRendererState {
+  toolName: string | null;
+  version: number;
+}
+
+function readRendererState(
+  toolName: string | null | undefined,
+  version: number,
+): VersionedDbToolRendererState {
+  if (!toolName) {
+    return { toolName: null, version, meta: null, resolution: "generic" };
+  }
+
+  return {
+    toolName,
+    version,
+    meta: getCachedToolMeta(toolName),
+    resolution: getCachedToolRenderer(toolName)
+      ? "custom"
+      : isKnownNoToolRenderer(toolName)
+        ? "generic"
+        : "resolving",
+  };
+}
+
+/**
+ * Resolve both the DB-authored shell metadata and whether the tool actually
+ * has a compiled custom renderer. The explicit resolution state matters to
+ * the shell: `null` metadata alone cannot distinguish a cache miss still in
+ * flight from a confirmed generic fallback.
+ */
+export function useDbToolRendererState(
+  toolName: string | null | undefined,
+): DbToolRendererState {
+  const version = useToolRendererVersion(toolName);
+  const [state, setState] = useState<VersionedDbToolRendererState>(() =>
+    readRendererState(toolName, version),
   );
+
+  const current =
+    state.toolName === (toolName ?? null) && state.version === version
+      ? state
+      : readRendererState(toolName, version);
 
   useEffect(() => {
     if (!toolName) return undefined;
     let cancelled = false;
-    // `loadToolRenderer` is the SHARED, deduped fetch the body renderer already
-    // fires; it populates the metadata cache the moment the row lands (before
-    // compile). Resolves immediately when warm / negative-cached, so the only
-    // state write is async — no synchronous setState-in-effect. Reading the
-    // cache inside `.then` keeps `meta` reactive (compiler-safe).
     void loadToolRenderer(toolName).then(() => {
-      if (!cancelled) setMeta(getCachedToolMeta(toolName));
+      if (!cancelled) setState(readRendererState(toolName, version));
     });
     return () => {
       cancelled = true;
     };
   }, [toolName, version]);
 
-  return meta;
+  return { meta: current.meta, resolution: current.resolution };
+}
+
+export function useDbToolMeta(
+  toolName: string | null | undefined,
+): ToolRendererMeta | null {
+  return useDbToolRendererState(toolName).meta;
 }
