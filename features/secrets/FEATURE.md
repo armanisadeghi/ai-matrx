@@ -113,6 +113,24 @@ the ORG `all_members` ↔ `restricted` flip only.
   the password; `can_manage` adds reveal + edit. Only the owner may share,
   transfer, or delete. **Ratified 2026-07-26** — the share UI states it.
 
+## Selected login CSV export (2026-09-16)
+
+`VaultLoginExportDialog` is available only in the currently loaded **Mine**
+scope. It sends an exact selected-ID list to a value-free preview, then requires
+a second, plaintext-acknowledged download using the returned revision. It never
+presents the loaded count as a complete Vault or offers Export all.
+`matrx_login_csv_v1` is a migration profile, not a full backup or universal
+vendor format; extra URLs, attachments, OTP/passkeys, provenance, and custom
+fields remain explicit omissions.
+
+The download Blob stays event-local: `URL.createObjectURL` is revoked after
+the click and bytes never enter React state, Redux, storage, analytics, logs,
+or model context. Preview/download bind `getUser(access_token)` to the exact
+sent bearer and recheck the frozen actor/request organization afterward.
+`recent_auth_required` opens a read-only current-email password ceremony;
+passwords are uncontrolled and cleared on submit/cancel. Provider-only
+confirmation is unsupported until a real ceremony exists.
+
 ## Destination login and browser fill (2026-07-26)
 
 Items carry PLAINTEXT destination metadata — `login_urls`, `uri_match_mode`
@@ -248,6 +266,7 @@ Personal and organization credentials render through the same
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode, including authenticator, protected files, and first-class recovery-code copy/Mark-used behavior, plus share, transfer, fork, soft delete, and audit trail.                                                                                                                     |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                                                                      |
 | [`components/VaultCsvImportDialog.tsx`](./components/VaultCsvImportDialog.tsx) | Local CSV, plain-Bitwarden-JSON, and 1Password 1PUX import session: bounded worker parsing with required request IDs, masked preflight, frozen idempotent commands, and truthful partial-result accounting.                                                                                                                                         |
+| [`components/VaultLoginExportDialog.tsx`](./components/VaultLoginExportDialog.tsx) | Mine-only selected-login CSV preview, plaintext warning, current-password confirmation, and short-lived browser download. |
 | [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata plus the signed-in owner's short-lived current-code request; never a seed.                                                                                                                                                                                                                                 |
 | [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                                                                              |
 | [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | Authenticator metadata/manage hook: list, rename, enable/disable, and remove. Login creation/enrollment stays in the canonical Vault form.                                                                                                                                                                                                          |
@@ -301,6 +320,7 @@ the sealed setup seed has no reveal path at any privilege.
 7. Every mutation surfaces its error via toast; catalog rows failing schema validation are skipped LOUDLY (`console.error`).
 8. **The context menu never carries a secret.** A revealed `SecretValue` puts plaintext in the DOM, so the vault menu must never let the v3 shell self-resolve `content` from the subtree and must never carry the user's `selection` — it passes an explicit `getApplicationScope` built from names, type, provider, host, status, tags and FIELD KEYS only. Never a field value, never `notes`, never a non-secret custom field's value (a user can and does paste a secret into a free-text box). No `entity` is passed either, so Attach To / Share stay hidden: a credential is not agent context.
 9. **Password-manager imports stay local until per-row confirmation.** `VaultCsvImportDialog` uses Papa Parse for CSV and bounded dedicated workers for plain Bitwarden JSON and 1Password 1PUX. Each JSON worker receives the selected file and returns a required request ID; the UI accepts only its matching response. A source/principal/request-org change, deadline, error, close, or unmount sends matching cancellation, terminates the worker, and prevents late replies from reviving the draft. Bitwarden worker failures use a fixed source-free public error. JSON shows one selected destination origin, skips possible duplicates by default, and separately accounts for selected, skipped, invalid, unsupported, deleted, and archived records before and after import. Every frozen row calls canonical `POST /items` with `source=system_import`, its UUID idempotency key, explicit principal and a fresh expected actor/request-org check; retry reuses only the unresolved command and UUID. Source cells remain in encrypted `import_source_record`; raw files never enter network, global state, or storage. Import never enters `useVault.run()` organization replay.
+10. **Login CSV export never escapes its function scope.** `VaultLoginExportDialog` holds only value-free selection/preview metadata; the Blob becomes a private object URL, clicks once, and is revoked. Account, organization, close, and cancellation invalidate preview/download state; reauthentication never auto-resumes an export.
 
 ## MCP connections (Phase 4 cutover, 2026-07-23)
 
@@ -329,6 +349,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-09-16** — Added Mine-only selected login CSV export with explicit loaded-item selection, value-free revision preview, loss accounting, plaintext acknowledgement, current-password reauthentication, actor/request-organization cancellation, and private Blob cleanup.
 
 - **2026-09-12** — Unified existing Bitwarden JSON and 1Password 1PUX worker envelopes around required request IDs and matching cancellation. Bitwarden file decoding now stays inside its worker, and worker exceptions project to a fixed source-free import error.
 

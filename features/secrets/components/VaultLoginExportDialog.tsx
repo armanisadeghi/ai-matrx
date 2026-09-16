@@ -1,0 +1,381 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Download, Loader2, ShieldAlert } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaContent,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/ui/credenza-modal/credenza";
+import { Input } from "@ai-matrx/design-system";
+import { Label } from "@/components/ui/label";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { createClient } from "@/utils/supabase/client";
+import {
+  downloadVaultLoginCsv,
+  getVaultExportActor,
+  previewVaultLoginCsv,
+  VaultLoginExportTransportError,
+  type VaultLoginCsvPreviewResponse,
+  type VaultVerifiedExportActor,
+} from "../vault-service";
+import type { VaultItem } from "../types";
+
+const CSV_PROFILE = "matrx_login_csv_v1" as const;
+const EXPORT_FILENAME = "matrx-login-export.csv";
+
+function sameActor(
+  left: VaultVerifiedExportActor,
+  right: VaultVerifiedExportActor,
+): boolean {
+  return (
+    left.userId === right.userId &&
+    left.organizationId === right.organizationId
+  );
+}
+
+function hasFreshPasswordAmr(claims: unknown): boolean {
+  if (!claims || typeof claims !== "object" || !("amr" in claims)) return false;
+  const { amr } = claims;
+  if (!Array.isArray(amr)) return false;
+  const now = Math.floor(Date.now() / 1_000);
+  return amr.some((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const value = entry as Record<string, unknown>;
+    return (
+      value.method === "password" &&
+      typeof value.timestamp === "number" &&
+      Number.isFinite(value.timestamp) &&
+      value.timestamp > 0 &&
+      value.timestamp <= now &&
+      now - value.timestamp <= 900
+    );
+  });
+}
+
+function omissionsText(omissions: Record<string, number> | undefined): string | null {
+  if (!omissions) return null;
+  const entries = Object.entries(omissions).filter(([, count]) => count > 0);
+  if (entries.length === 0) return null;
+  return entries.map(([reason, count]) => `${count} ${reason.replaceAll("_", " ")}`).join(", ");
+}
+
+export function VaultLoginExportDialog({
+  open,
+  onOpenChange,
+  items,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Exactly the currently loaded Mine list. It is never treated as exhaustive. */
+  items: VaultItem[];
+}) {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const passwordInput = useRef<HTMLInputElement | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const expectedActor = useRef<VaultVerifiedExportActor | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [preview, setPreview] = useState<VaultLoginCsvPreviewResponse | null>(null);
+  const [identityConfirmation, setIdentityConfirmation] =
+    useState<VaultVerifiedExportActor | null>(null);
+  const [plaintextAcknowledged, setPlaintextAcknowledged] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const cancelPending = () => {
+    controller.current?.abort();
+    controller.current = null;
+    setRunning(false);
+  };
+  const clear = () => {
+    cancelPending();
+    expectedActor.current = null;
+    passwordInput.current && (passwordInput.current.value = "");
+    setSelectedIds(new Set());
+    setPreview(null);
+    setIdentityConfirmation(null);
+    setPlaintextAcknowledged(false);
+    setError(null);
+  };
+  const close = () => {
+    clear();
+    onOpenChange(false);
+  };
+  const invalidate = (message: string) => {
+    cancelPending();
+    expectedActor.current = null;
+    passwordInput.current && (passwordInput.current.value = "");
+    setSelectedIds(new Set());
+    setPreview(null);
+    setPlaintextAcknowledged(false);
+    setError(message);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const { data } = createClient().auth.onAuthStateChange((_event, session) => {
+      const actor = expectedActor.current;
+      if (!actor) return;
+      if (!session?.user || session.user.id !== actor.userId) {
+        invalidate("Your account changed. Start the export again from the current Vault.");
+      }
+    });
+    return () => data.subscription.unsubscribe();
+  }, [open]);
+
+  useEffect(() => {
+    const actor = expectedActor.current;
+    if (actor && actor.organizationId !== organizationId) {
+      invalidate("Your request organization changed. Start the export again from the current Vault.");
+    }
+  }, [organizationId]);
+
+  const updateSelection = (id: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    setPreview(null);
+    setPlaintextAcknowledged(false);
+    setError(null);
+  };
+
+  const handleExportError = (cause: unknown) => {
+    if (cause instanceof DOMException && cause.name === "AbortError") return;
+    if (cause instanceof VaultLoginExportTransportError) {
+      if (cause.code === "recent_auth_required") {
+        const actor = expectedActor.current;
+        setPreview(null);
+        setSelectedIds(new Set());
+        setPlaintextAcknowledged(false);
+        setIdentityConfirmation(actor);
+        setError(null);
+        return;
+      }
+      if (cause.code === "context_changed") {
+        invalidate(cause.message);
+        return;
+      }
+      setPreview(null);
+      setPlaintextAcknowledged(false);
+      setError(cause.message);
+      return;
+    }
+    setError("Vault export could not be completed. Start again from the current Vault.");
+  };
+
+  const reviewSelection = async () => {
+    if (selectedIds.size === 0) {
+      setError("Select one or more loaded credentials to review for export.");
+      return;
+    }
+    cancelPending();
+    const request = new AbortController();
+    controller.current = request;
+    setRunning(true);
+    setError(null);
+    try {
+      const actor = await getVaultExportActor();
+      expectedActor.current = actor;
+      const nextPreview = await previewVaultLoginCsv(
+        { profile: CSV_PROFILE, item_ids: [...selectedIds] },
+        actor,
+        request.signal,
+      );
+      if (request.signal.aborted) return;
+      setPreview(nextPreview);
+      setPlaintextAcknowledged(false);
+    } catch (cause) {
+      handleExportError(cause);
+    } finally {
+      if (controller.current === request) controller.current = null;
+      setRunning(false);
+    }
+  };
+
+  const confirmIdentity = async () => {
+    const actor = identityConfirmation;
+    const password = passwordInput.current?.value ?? "";
+    passwordInput.current && (passwordInput.current.value = "");
+    if (!actor || !password) {
+      setError("Enter your current Matrx password to confirm your identity.");
+      return;
+    }
+    setRunning(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: actor.email,
+        password,
+      });
+      if (signInError || !data.user || !data.session) {
+        setError("That password could not confirm your identity. Try again.");
+        return;
+      }
+      const { data: claimData, error: claimsError } = await supabase.auth.getClaims(
+        data.session.access_token,
+      );
+      const actual = await getVaultExportActor();
+      if (
+        claimsError ||
+        data.user.id !== actor.userId ||
+        !sameActor(actual, actor) ||
+        !hasFreshPasswordAmr(claimData?.claims)
+      ) {
+        invalidate("Identity confirmation could not be verified for this Vault. Start the export again.");
+        return;
+      }
+      expectedActor.current = actual;
+      setIdentityConfirmation(null);
+      setError(null);
+    } catch {
+      setError("Identity confirmation is unavailable. Try again.");
+    } finally {
+      passwordInput.current && (passwordInput.current.value = "");
+      setRunning(false);
+    }
+  };
+
+  const download = async () => {
+    const actor = expectedActor.current;
+    if (!actor || !preview || !plaintextAcknowledged) return;
+    cancelPending();
+    const request = new AbortController();
+    controller.current = request;
+    setRunning(true);
+    setError(null);
+    try {
+      const blob = await downloadVaultLoginCsv(
+        {
+          profile: CSV_PROFILE,
+          item_ids: [...selectedIds],
+          revision: preview.revision,
+        },
+        actor,
+        request.signal,
+      );
+      const actual = await getVaultExportActor();
+      if (request.signal.aborted || !sameActor(actual, actor)) {
+        throw new VaultLoginExportTransportError("context_changed");
+      }
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = EXPORT_FILENAME;
+        link.click();
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+      close();
+    } catch (cause) {
+      handleExportError(cause);
+    } finally {
+      if (controller.current === request) controller.current = null;
+      setRunning(false);
+    }
+  };
+
+  const eligible = preview?.items.filter((item) => item.eligible).length ?? 0;
+
+  return (
+    <Credenza open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
+      <CredenzaContent className="md:max-w-2xl">
+        <CredenzaHeader>
+          <CredenzaTitle>Export selected logins</CredenzaTitle>
+        </CredenzaHeader>
+        <CredenzaBody className="space-y-4 px-4 pb-6 md:px-0">
+          {identityConfirmation ? (
+            <section className="space-y-3">
+              <div className="flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Confirm your identity before requesting a new export preview. Provider-only confirmation is not supported in this first export.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vault-export-email">Current account</Label>
+                <Input id="vault-export-email" value={identityConfirmation.email} readOnly />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vault-export-password">Current Matrx password</Label>
+                <Input
+                  ref={passwordInput}
+                  id="vault-export-password"
+                  type="password"
+                  autoComplete="current-password"
+                  disabled={running}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Your connected-provider sign-in needs a separate confirmation method.</p>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={close} disabled={running}>Cancel</Button>
+                <Button type="button" onClick={() => void confirmIdentity()} disabled={running}>
+                  {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Confirm identity
+                </Button>
+              </div>
+            </section>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">Select from the {items.length} credentials currently loaded in Mine. This is not an Export all action and does not assume the list is complete.</p>
+              <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-border p-2" aria-label="Loaded personal credentials">
+                {items.map((item) => (
+                  <label key={item.id} className="flex cursor-pointer items-center gap-2 rounded p-2 text-sm hover:bg-muted/50">
+                    <Checkbox checked={selectedIds.has(item.id)} onCheckedChange={(checked) => updateSelection(item.id, checked === true)} disabled={running} />
+                    <span className="min-w-0 flex-1 truncate">{item.display_name}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">{selectedIds.size} selected of {items.length} loaded.</p>
+
+              {preview && (
+                <section className="space-y-3 rounded-lg border border-border p-3">
+                  <div>
+                    <p className="font-medium">Export preview</p>
+                    <p className="text-sm text-muted-foreground">{eligible} eligible of {preview.items.length} selected. The server will recheck this snapshot before any file is created.</p>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    {preview.items.map((item) => (
+                      <li key={item.item_id} className="rounded bg-muted/50 p-2">
+                        <p>{item.title}: {item.eligible ? "will export" : item.reason ?? "will be skipped"}</p>
+                        {omissionsText(item.omissions) && <p className="mt-1 text-xs text-muted-foreground">Omitted: {omissionsText(item.omissions)}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                    <Checkbox checked={plaintextAcknowledged} onCheckedChange={(checked) => setPlaintextAcknowledged(checked === true)} />
+                    <span>I understand this downloads a plaintext <code>matrx_login_csv_v1</code> migration file. Import it into a password manager; do not open it as a spreadsheet. This is not a full backup or a universal manager export.</span>
+                  </div>
+                </section>
+              )}
+
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={close} disabled={running}>Cancel</Button>
+                {preview ? (
+                  <Button type="button" onClick={() => void download()} disabled={running || !plaintextAcknowledged || eligible === 0}>
+                    {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    Download CSV
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={() => void reviewSelection()} disabled={running || selectedIds.size === 0}>
+                    {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Review selected logins
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </CredenzaBody>
+      </CredenzaContent>
+    </Credenza>
+  );
+}

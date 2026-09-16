@@ -14,6 +14,7 @@ import { useState } from "react";
 import {
   AlertCircle,
   Building2,
+  Download,
   KeyRound,
   List,
   Plus,
@@ -71,6 +72,7 @@ import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
+import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 
 export interface VaultWorkspaceProps {
@@ -146,6 +148,7 @@ export function VaultWorkspace({
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
     string | null
   >(null);
@@ -158,6 +161,9 @@ export function VaultWorkspace({
   // Creating is meaningless in "Shared with me" — those items are owned by
   // someone else.
   const canCreate = orgAdmin && !isShared;
+  // Export is deliberately narrower than the general item capabilities: only
+  // the currently loaded Mine scope can request a selected personal export.
+  const canExport = principal.type === "user" && scope.kind === "mine";
 
   const familiesPresent = (() => {
     const present = new Set<CredentialFamily>();
@@ -534,6 +540,18 @@ export function VaultWorkspace({
                 </p>
                 {canCreate && (
                   <div className="flex items-center gap-1">
+                    {canExport && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setExportOpen(true)}
+                        disabled={vault.busy || vault.loading}
+                      >
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Export selected logins
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -701,6 +719,13 @@ export function VaultWorkspace({
             onCommitted={vault.refresh}
           />
         )}
+        {canExport && (
+          <VaultLoginExportDialog
+            open={exportOpen}
+            onOpenChange={setExportOpen}
+            items={vault.items}
+          />
+        )}
       </div>,
     );
   }
@@ -844,6 +869,18 @@ export function VaultWorkspace({
 
         {canCreate && (
           <>
+            {canExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => setExportOpen(true)}
+                disabled={vault.busy || vault.loading}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                Export selected logins
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -995,6 +1032,13 @@ export function VaultWorkspace({
             loginUrls: item.login_urls,
           }))}
           onCommitted={vault.refresh}
+        />
+      )}
+      {canExport && (
+        <VaultLoginExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          items={vault.items}
         />
       )}
     </div>,
