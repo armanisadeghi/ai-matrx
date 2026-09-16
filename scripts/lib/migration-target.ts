@@ -130,6 +130,24 @@ function fail(lines: string[], code = "refused"): never {
  * Read `BRANCH-REF`. Absent, unreadable or short of a required key is a refusal
  * with the remedy — never a fallback.
  */
+/**
+ * `--branch-ref=<path>` / `MATRX_BRANCH_REF` — the override the refusal already PROMISED.
+ *
+ * 🚨 ATTACK-7 finding 10: the ref is resolved from the repo root's PARENT, so inside a
+ * throwaway worktree — the working mode rules 2, 10 and 27 and `W3-ASSERT`/`V3` all
+ * require — every `--target` run refused with `BRANCH-REF not found at …` and the printed
+ * remedy named a flag no runner implemented. A remedy that does not exist is a screen
+ * lying about what the operator can do. Both runners take it now, and it is read exactly
+ * like the checked-in file: a missing or unreadable override is still a refusal, never a
+ * fallback to whatever `SUPABASE_MATRIX_*` holds.
+ */
+export function branchRefOverride(argv: readonly string[]): string | undefined {
+  const arg = argv.find((a) => a.startsWith("--branch-ref="));
+  if (arg) return resolve(arg.slice("--branch-ref=".length).trim());
+  const env = process.env.MATRX_BRANCH_REF;
+  return env ? resolve(env) : undefined;
+}
+
 export function loadBranchRef(root: string, overridePath?: string): BranchRef {
   const path = overridePath ?? resolve(root, BRANCH_REF_PATH);
   if (!existsSync(path)) {
@@ -137,7 +155,9 @@ export function loadBranchRef(root: string, overridePath?: string): BranchRef {
       `BRANCH-REF not found at ${path}.`,
       `  --target reads the rehearsal branch's identity from that checked-in file and`,
       `  refuses rather than falling back to whatever SUPABASE_MATRIX_* holds.`,
-      `  Remedy: check out common-docs beside this repo, or pass --branch-ref=<path>.`,
+      `  Remedy: check out common-docs beside this repo, or pass --branch-ref=<path>`,
+      `  (or set MATRX_BRANCH_REF) — which is what a run from a throwaway worktree needs,`,
+      `  since the ref is resolved from this repo's PARENT directory.`,
     ]);
   }
   let text: string;

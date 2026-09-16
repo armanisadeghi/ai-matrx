@@ -476,3 +476,129 @@ describe("a guarded body must READ its guard (ATTACK-6 finding 2, second half)",
     expect(judge(HEAD + "create table if not exists custom.record (id uuid primary key);")).toBeTruthy();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ATTACK-7 — the two runners had two judgements. These are the rules that changed,
+// as unit cases; `pnpm check:migration-judgment` proves the OTHER runner agrees
+// with every one of them over migrations/judgment-corpus/.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("ATTACK-7 finding 2 — `-- chair-step:` waives nothing on a header that names production", () => {
+  const CHAIR = "-- chair-step: the abort checklist's step; it is not additive and the chair is awake\n";
+
+  it("refuses a file carrying BOTH a production-naming header and a chair step", () => {
+    const sql = "-- target: branch,production\n" + CHAIR + DROP;
+    for (const target of ["branch", "production"] as const) {
+      let code = "";
+      try {
+        judge(sql, target);
+      } catch (e) {
+        code = (e as TargetRefusal).code;
+      }
+      expect(code).toBe("chair-step-names-production");
+    }
+  });
+
+  it("lets a header-LESS chair step rehearse on the branch, from the same bytes", () => {
+    const v = assertHeaderAgreesWithFlag({
+      filename: "f.sql",
+      flagTarget: "branch",
+      header: readHeader(CHAIR + DROP),
+      strippedSql: strip(CHAIR + DROP),
+      alreadyLedgered: false,
+    });
+    expect(v.chairStep?.why).toContain("abort checklist");
+  });
+
+  it("still refuses a header-less file with NO chair step on the branch", () => {
+    let code = "";
+    try {
+      assertHeaderAgreesWithFlag({
+        filename: "f.sql",
+        flagTarget: "branch",
+        header: readHeader(DROP),
+        strippedSql: strip(DROP),
+        alreadyLedgered: false,
+      });
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("branch-needs-target-header");
+  });
+});
+
+describe("ATTACK-7 finding 3 — a new trigger on a live table must name its guard", () => {
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const fn = (inner: string) =>
+    `create function custom.zz_hook() returns trigger language plpgsql as $$ begin ${inner} return new; end $$;\n`;
+  const trg = (table: string) =>
+    `create trigger zz_hook_trg before insert on ${table} for each row execute function custom.zz_hook();\n`;
+
+  it("refuses the ATTACK-7 probe: a trigger on platform.associations whose file never names the knob", () => {
+    let code = "";
+    try {
+      judge(HEAD + fn("") + trg("platform.associations"));
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("trigger-guard-unnamed");
+  });
+
+  it("admits the SAME trigger when the function reads the knob", () => {
+    const inner =
+      "if not platform.knob_resolve('custom', 'system_enabled', null)::boolean then return new; end if;";
+    expect(judge(HEAD + fn(inner) + trg("platform.associations"))).toBeTruthy();
+  });
+
+  it("exempts schema `custom`, which nothing reads until the switch", () => {
+    expect(judge(HEAD + fn("") + trg("custom.zz_thing"))).toBeTruthy();
+  });
+
+  it("treats an UNQUALIFIED table as outside custom — search_path decides it at run time", () => {
+    expect(() => judge(HEAD + fn("") + trg("associations"))).toThrow(/creates a trigger on a live table/);
+  });
+});
+
+describe("ATTACK-7 finding 3 — platform.entity_types is a branch fixture, not a production mint", () => {
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const INSERT = "insert into platform.entity_types (token, rls_variant) values ('custom:zz', 'entity');\n";
+
+  it("refuses the INSERT at --target production", () => {
+    expect(() => judge(HEAD + INSERT, "production")).toThrow(/MINTS A LIVE ENTITY TOKEN/);
+  });
+
+  it("admits the same INSERT at --target branch", () => {
+    expect(judge(HEAD + INSERT, "branch")).toBeTruthy();
+  });
+
+  it("still admits an INSERT into the knob register at both targets", () => {
+    const knob =
+      "insert into platform.feature_knob (feature, key, value) values ('custom', 'zz', 'false'::jsonb);\n";
+    expect(judge(HEAD + knob, "production")).toBeTruthy();
+    expect(judge(HEAD + knob, "branch")).toBeTruthy();
+  });
+});
+
+describe("every judgement refusal carries a stable code — the corpus compares codes, not prose", () => {
+  it("names the code on a header-flag disagreement", () => {
+    let code = "";
+    try {
+      judge("-- target: branch\ncreate table custom.t (id int);\n", "production");
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("header-flag-disagree");
+  });
+
+  it("names the code on an allow-list refusal", () => {
+    let code = "";
+    try {
+      judge(
+        "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n" +
+          "grant usage on schema custom to authenticated;\n",
+      );
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("not-additive");
+  });
+});

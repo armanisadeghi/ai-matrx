@@ -152,6 +152,7 @@ import {
   JUDGMENT_CORPUS_DIRNAME,
   TARGETS,
   basedOnFunctionNames,
+  branchRefOverride,
   TargetRefusal,
   type Target,
 } from "./lib/migration-target";
@@ -563,12 +564,15 @@ interface ApplyOpts {
   campaignSource: boolean;
   /** `--lane <id>` — whose `campaign_watch.build_lock` row authorises a production apply. */
   lane: string | null;
+  /** `--branch-ref=<path>` / MATRX_BRANCH_REF — the override a throwaway worktree needs. */
+  branchRefPath?: string;
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
  *  exactly the code an agent runs, not a paraphrase of it. */
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   const { dryRun, reapply, statementTimeout, target, campaignSource, lane } = opts;
+  const branchRefPath = opts.branchRefPath;
   const outsideMigrations = relative(MIGRATIONS_DIR, path).startsWith("..");
   // 🚨 THE ONE CARVE-OUT, and it is a filename pattern, not a flag. --target-self-test
   // writes its scratch file into a per-run temp directory instead of into the SHARED
@@ -750,7 +754,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // BRANCH-REF is read for EVERY apply, not only --target branch: the
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
-    branchRef = loadBranchRef(ROOT);
+    branchRef = loadBranchRef(ROOT, branchRefPath);
     ({ guard, revokeExemption, chairStep } = assertHeaderAgreesWithFlag({
       basedOnNames: basedOnFunctionNames(sql),
       filename,
@@ -1915,7 +1919,7 @@ async function main(): Promise<number> {
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
   // the flag's VALUE, never the migration file. Same for --source and --lane.
   const valueIdxs = new Set<number>();
-  for (const flag of ["--target", "--source", "--lane", "--statement-timeout"]) {
+  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref"]) {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
@@ -1933,7 +1937,15 @@ async function main(): Promise<number> {
     console.error(`${TAG.fail}No such file: ${positional[0]}`);
     return 1;
   }
-  return applyFile(path, { dryRun, reapply, statementTimeout, target, campaignSource, lane });
+  return applyFile(path, {
+    dryRun,
+    reapply,
+    statementTimeout,
+    target,
+    campaignSource,
+    lane,
+    branchRefPath: branchRefOverride(argv),
+  });
 }
 
 main().then(
