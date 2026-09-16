@@ -8,11 +8,22 @@
 
 import "fake-indexeddb/auto";
 import {
+    clearCapturedErrors,
+    getSnapshot,
+} from "@/lib/diagnostics/errorCaptureStore";
+
+import {
     clearAll,
     clearIdentity,
+    IDB_OPERATION_TIMEOUT_MS,
+    openDb,
     readSlice,
     writeSlice,
 } from "../persistence/idb";
+
+function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
 
 describe("persistence/idb", () => {
     // Reuse the module-level Dexie handle across the suite (cheaper than
@@ -20,6 +31,7 @@ describe("persistence/idb", () => {
     // never bleeds. `deleteDatabase` races with fake-indexeddb's async
     // teardown and is not needed here.
     beforeEach(async () => {
+        clearCapturedErrors();
         await clearAll();
     });
 
@@ -49,6 +61,75 @@ describe("persistence/idb", () => {
         await writeSlice("auth:u1", "userPrefs", 1, { theme: "dark" });
         const theirs = await readSlice("auth:u2", "userPrefs", 1);
         expect(theirs).toBeNull();
+    });
+
+    it("keeps a replacement database when an older operation times out later", async () => {
+        const original = await openDb();
+        expect(original).not.toBeNull();
+        const originalDatabase = original!;
+        const get = jest
+            .spyOn(originalDatabase.slices, "get")
+            .mockImplementation(
+                (() => new Promise<undefined>(() => {})) as unknown as typeof originalDatabase.slices.get,
+            );
+        try {
+            const first = readSlice("auth:u1", "first", 1);
+            await Promise.resolve();
+            await wait(IDB_OPERATION_TIMEOUT_MS / 2);
+
+            const second = readSlice("auth:u1", "second", 1);
+            await Promise.resolve();
+            await wait(IDB_OPERATION_TIMEOUT_MS / 2);
+            await expect(first).resolves.toBeNull();
+
+            const replacement = await openDb();
+            expect(replacement).not.toBeNull();
+            expect(replacement).not.toBe(original);
+
+            await wait(IDB_OPERATION_TIMEOUT_MS / 2);
+            await expect(second).resolves.toBeNull();
+            expect(await openDb()).toBe(replacement);
+        } finally {
+            get.mockRestore();
+        }
+    });
+
+    it("keeps a recovered IDB timeout visible locally in production", async () => {
+        const originalNodeEnv = process.env.NODE_ENV;
+        Object.defineProperty(process.env, "NODE_ENV", {
+            configurable: true,
+            value: "production",
+        });
+        const db = await openDb();
+        expect(db).not.toBeNull();
+        const database = db!;
+        const get = jest
+            .spyOn(database.slices, "get")
+            .mockImplementation(
+                (() => new Promise<undefined>(() => {})) as unknown as typeof database.slices.get,
+            );
+        try {
+            const reading = readSlice("auth:u1", "timeout", 1);
+            await wait(IDB_OPERATION_TIMEOUT_MS);
+            await expect(reading).resolves.toBeNull();
+            expect(getSnapshot()).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        source: "runtime-exception",
+                        code: "sync-idb-operation-timeout",
+                        recoverable: true,
+                        level: "low",
+                        durable: false,
+                    }),
+                ]),
+            );
+        } finally {
+            get.mockRestore();
+            Object.defineProperty(process.env, "NODE_ENV", {
+                configurable: true,
+                value: originalNodeEnv,
+            });
+        }
     });
 
     it("writeSlice overwrites the same identity:slice:version record", async () => {

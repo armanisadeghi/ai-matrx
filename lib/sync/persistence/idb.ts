@@ -19,6 +19,7 @@
 
 import Dexie, { type Table } from "dexie";
 import { logger } from "../logger";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
 
 export const IDB_NAME = "matrx-sync";
@@ -66,10 +67,33 @@ interface MatrxSyncDb extends Dexie {
 
 let dbPromise: Promise<MatrxSyncDb | null> | null = null;
 
-function invalidateDb(db: MatrxSyncDb): void {
-  if (dbPromise) dbPromise = null;
+interface IdbConnection {
+  db: MatrxSyncDb;
+  generation: number;
+}
+
+let nextConnectionGeneration = 0;
+let activeConnection: IdbConnection | null = null;
+const connections = new WeakMap<MatrxSyncDb, IdbConnection>();
+
+function connectionFor(db: MatrxSyncDb): IdbConnection {
+  const connection = connections.get(db);
+  if (connection) return connection;
+  // Test-only hand-built handles are not a production path, but must still
+  // receive bounded recovery without being able to invalidate an owned handle.
+  return { db, generation: -1 };
+}
+
+function invalidateDb(connection: IdbConnection): void {
+  // A later retry may already have installed a replacement connection. A
+  // delayed timeout from this abandoned handle may close only itself; it must
+  // never clear or close the new generation's memoized promise.
+  if (activeConnection === connection) {
+    activeConnection = null;
+    dbPromise = null;
+  }
   try {
-    db.close();
+    connection.db.close();
   } catch {
     // Closing a browser-owned, already-broken IDB connection is best effort.
   }
@@ -86,7 +110,6 @@ async function completeIdbOperation<T>(
   request: Promise<T>,
 ): Promise<T | null> {
   let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
-  const started = typeof performance !== "undefined" ? performance.now() : 0;
   const outcome = await Promise.race([
     request.then(
       (value) => ({ type: "value" as const, value }),
@@ -104,24 +127,38 @@ async function completeIdbOperation<T>(
   if (outcome.type === "value") return outcome.value;
   if (outcome.type === "error") throw outcome.error;
 
-  const elapsed = typeof performance !== "undefined" ? performance.now() - started : 0;
-  logger.warn("idb.operation.timeout", {
-    ms: elapsed,
-    meta: { operation, timeoutMs: IDB_OPERATION_TIMEOUT_MS },
+  // This is a recovered, local diagnostic: it stays visible in the Error
+  // Inspector even in production, but deliberately never enters system_error
+  // / Patrol. The context is bounded operational metadata only — no keys,
+  // identities, persisted bodies, or browser storage values.
+  captureError({
+    source: "runtime-exception",
+    code: "sync-idb-operation-timeout",
+    message: "[sync] IndexedDB operation timed out; persistence recovery continued.",
+    details: `operation=${operation}; timeoutMs=${IDB_OPERATION_TIMEOUT_MS}; generation=${connectionFor(db).generation}`,
+    recoverable: true,
+    level: "low",
+    durable: false,
   });
-  invalidateDb(db);
+  invalidateDb(connectionFor(db));
   return null;
 }
 
 export function openDb(): Promise<MatrxSyncDb | null> {
   if (dbPromise) return dbPromise;
+  if (!hasIndexedDb()) {
+    logger.info("idb.unavailable", { meta: { reason: "no-indexedDB" } });
+    return Promise.resolve(null);
+  }
+  const db = new Dexie(IDB_NAME) as MatrxSyncDb;
+  const connection: IdbConnection = {
+    db,
+    generation: ++nextConnectionGeneration,
+  };
+  connections.set(db, connection);
+  activeConnection = connection;
   dbPromise = (async () => {
-    if (!hasIndexedDb()) {
-      logger.info("idb.unavailable", { meta: { reason: "no-indexedDB" } });
-      return null;
-    }
     try {
-      const db = new Dexie(IDB_NAME) as MatrxSyncDb;
       db.version(IDB_SCHEMA_VERSION).stores({
         // Primary key `key` is the compound identity:slice:version.
         // Secondary indexes let us purge by identity or slice.
@@ -134,6 +171,7 @@ export function openDb(): Promise<MatrxSyncDb | null> {
       });
       return db;
     } catch (err) {
+      if (activeConnection === connection) activeConnection = null;
       logger.warn("idb.open.error", {
         meta: { error: extractErrorMessage(err) },
       });
@@ -158,6 +196,7 @@ export function __resetIdbForTests(): void {
     });
   }
   dbPromise = null;
+  activeConnection = null;
 }
 
 function buildKey(
