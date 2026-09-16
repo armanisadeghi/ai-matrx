@@ -158,6 +158,7 @@ describe("the expert-facing hosts declare themselves", () => {
   it.each([
     ["the Rulebook interview and /interview page", "features/masterwork/components/detail/ScoutInterviewPanel.tsx"],
     ["the Conductor", "features/masterwork/conduct/ConductorPanel.tsx"],
+    ["the Vision Interview room", "features/vision-interview/components/RoomChatPane.tsx"],
   ])("%s declares an expert audience", (_name, path) => {
     expect(read(path)).toContain('audience="expert"');
   });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { paths } from "@/types/python-generated/api-types";
 import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
+import { estimateSentence } from "@/lib/progress/estimateSentence";
 
 /**
  * The Build's run — the SAME durable spine every other Masterwork pipeline
@@ -103,6 +104,11 @@ export interface BuildRunHandle {
   reset: () => void;
 }
 
+/** How long a Build usually takes. The honest sentence ages off this. */
+const BUILD_USUAL_MS = 60_000;
+/** How often the waiting sentence re-reads the clock. */
+const BUILD_TICK_MS = 5_000;
+
 export function useBuildRun(
   rulebookId: string,
   masterworkName: string,
@@ -148,6 +154,31 @@ export function useBuildRun(
 
   const launchedRef = useRef(false);
 
+  /**
+   * 🚨 THE ESTIMATE AGES. "Building — this takes about a minute." used to sit
+   * on screen, word for word, while step 2 ran for three minutes (cold walk
+   * 2026-09-16, finding #7). A promise nobody ever revisits reads as "stuck",
+   * so the clock is part of the state and the sentence re-reads it.
+   */
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const startedAtRef = useRef<number | null>(null);
+  const runActive = run.status !== "idle" && run.result === null;
+  useEffect(() => {
+    if (!runActive) {
+      startedAtRef.current = null;
+      setElapsedMs(0);
+      return undefined;
+    }
+    startedAtRef.current ??= Date.now();
+    setElapsedMs(Date.now() - startedAtRef.current);
+    const timer = window.setInterval(() => {
+      if (startedAtRef.current !== null) {
+        setElapsedMs(Date.now() - startedAtRef.current);
+      }
+    }, BUILD_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [runActive]);
+
   const progress = useMemo<LiveRunProgressState | null>(() => {
     if (run.status === "idle") return null;
     const done = run.result !== null;
@@ -178,10 +209,23 @@ export function useBuildRun(
       title: progressTitle,
       description: run.rejoinedTarget
         ? "This Build kept running while you were away — picking it back up."
-        : "Building — this takes about a minute.",
+        : estimateSentence({
+            elapsedMs,
+            usualMs: BUILD_USUAL_MS,
+            doing: "Building",
+            keepsGoingWithoutYou: true,
+          }),
       items,
     };
-  }, [run.status, run.result, run.rejoinedTarget, reached, parts, progressTitle]);
+  }, [
+    run.status,
+    run.result,
+    run.rejoinedTarget,
+    reached,
+    parts,
+    progressTitle,
+    elapsedMs,
+  ]);
 
   const launch = useCallback(
     (input: Record<string, unknown>, label: string) => {

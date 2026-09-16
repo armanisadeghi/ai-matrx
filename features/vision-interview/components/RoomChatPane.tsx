@@ -711,6 +711,12 @@ export function RoomChatPane({
                   key={binding.conversationId}
                   agentId={binding.agentId}
                   conversationId={binding.conversationId}
+                  /* The person in this room is the Expert being interviewed
+                     about her own vision, never a builder — so tool cards,
+                     raw result grids and bound-variable chips stand down.
+                     Creator mode still shows all of it on the same screen.
+                     Law: features/agents/components/shared/transcript-audience.tsx */
+                  audience="expert"
                   variablesPanelStyle="hidden"
                   /* The binding's conversation id is a RESERVATION until
                      someone speaks in this room — the server writes

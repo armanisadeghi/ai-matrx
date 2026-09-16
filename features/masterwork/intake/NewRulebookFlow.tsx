@@ -28,6 +28,7 @@
 // on create.
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { nameFromSentence } from "@/lib/text/nameFromSentence";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -269,15 +270,18 @@ function suggestedApproachKey(knowledge: string): string {
 }
 
 /**
- * Derive a Rulebook name from the goal: at most `max` characters, truncated on
- * a word boundary so the name never ends mid-word.
+ * Derive a Rulebook name from the goal.
+ *
+ * 🚨 This used to cut at 60 characters on a word boundary and say NOTHING
+ * about it. Cold walk, 2026-09-16: a typed goal of "How I decide which
+ * incoming e-waste pallets need a manual sort instead of going straight to the
+ * shredder." became the header "How I decide which incoming e-waste pallets
+ * need a manual" — ending on a dangling adjective, which a first-timer reads
+ * as a typo rather than as a decision. Same bug the Vision Interview's own
+ * titles had. The rule lives once now: `lib/text/nameFromSentence.ts`.
  */
-function nameFromGoal(goal: string, max = 60): string {
-  const clean = goal.trim().replace(/[.!?]+$/, "");
-  if (clean.length <= max) return clean;
-  const cut = clean.slice(0, max);
-  const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.!?,;:]+$/, "");
+function nameFromGoal(goal: string): string {
+  return nameFromSentence(goal, { fallback: "" });
 }
 
 function StepDots({ step }: { step: 1 | 2 }) {
