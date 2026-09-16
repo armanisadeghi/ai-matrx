@@ -24,6 +24,7 @@ The first lines after the title, before remaining work, before Done, before anyt
 **Scope:** Domain | Feature | Sub-feature | Program | Tail
 **Feature:** the owning Feature name (a Domain names itself; a Program and a Tail name their owning Feature)
 **Vision:** link to Arman's words, or `VISION MISSING`
+**Seen from his seat:** where the user goes and what he does to meet this work — the sentence a successor verifies first, before the register
 ```
 
 - **What this is** is the key. A reader who does not already know the feature must understand it from that sentence. A checklist with no identity is a defect (Voice Communication Layer, 2026-08-19).
@@ -157,6 +158,7 @@ Arman juggles 15 projects; a question must be answerable cold:
 `/handoff-cleanup` (its own skill) periodically sweeps both repos' handoff dirs, verifies claims against reality, deletes done docs, and escalates unclear drift. It is the backstop — per-turn grooming is still your job.
 
 ## Changelog
+- 2026-09-16 — Identity block gains **Seen from his seat**: a successor starts from the user's path, not the register ([reality is the referee](/policies/reality-is-the-referee.md)).
 
 - 2026-08-25 — The orphan register now lists complete-node ownership at all registry levels
   (Domain, Feature, Sub-feature), plus Program and Tail work shapes.

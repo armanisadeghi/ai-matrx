@@ -35,6 +35,11 @@ regret later."* A self-review is not an attack: the author is blind to what they
 - **Pin the plan.** Give the reviewer the commit SHA (or snapshot path) it must judge, and say the
   repo may have moved since: drift between the plan and newer live state is not a finding against
   the plan.
+- **The reviewer's first act is contact with reality from the user's seat** — the live product as
+  the vision's user meets it, the live data — before reading the plan. A plan is a model of what
+  its author found; an attack that only reads the plan is a second author with the same blind
+  spots ([reality is the referee](/policies/reality-is-the-referee.md)). The reviewer is told the
+  vision and the outcome, never what the author found or where.
 - Pass **pointers, never your summary**: plan path, EVERY vision doc from the vision sweep (the `take` skill: aidream, matrx-frontend, common-docs),
   not just the node's VISION.md, the settled-rulings path, repos. The reviewer judges the document,
   not your intent.
@@ -48,7 +53,9 @@ between the plan and newer live state is not a finding against the plan.
 Vision: [paths]  Settled rulings: [path]  Repos: [list]
 
 REGRET — what is missing
-- Map every vision requirement to the plan item that delivers it; list the unmapped ones.
+- Before reading the plan: go where the vision's user goes, in the live product and data, and
+  write down what is already there for this job. Then map every vision requirement to the plan
+  item that delivers it AND to what already exists; list the unmapped and the duplicated.
 - Implied-but-unwritten work: integration in both directions; every surface (web, desktop,
   extension, mobile, admin); agent touchpoints.
 - Doctrine gaps: table stakes absent (stream/persist/resume/never lose input); a feature-local

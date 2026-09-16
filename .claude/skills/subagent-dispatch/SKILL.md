@@ -24,6 +24,16 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
 
 ## 1. Compose the dispatch (context is the product)
 
+- **A brief describes the situation, the result wanted, and the mistakes to avoid — never the
+  method, never the inventory.** Anything sent out to find or check must be able to return what
+  you do not already believe ([reality is the referee](/policies/reality-is-the-referee.md)): a
+  brief that names the files, the search words, the path to walk or the answer can only confirm
+  you, and then the agent can get no further than you did. Name at most an example or two, flagged
+  as examples of a class. What you do know, withhold — it is your unfakeable test of the report:
+  if the report misses it, the report is worthless and you know without reading further. A
+  verifier's brief carries the owner's words and the outcome, never the builder's file list or
+  click path.
+
 - **One task, not your history.** The brief carries: one line on where it fits; the governing
   spec/vision sections BY PATH (never "read the whole plan"); interfaces and decisions from earlier
   tasks it cannot know; your resolution of any ambiguity you noticed; exclusive file ownership; the
@@ -129,4 +139,6 @@ batched per the check-in contract (the `take` skill: aidream, matrx-frontend, co
 
 The owner's claim needs the same fresh evidence as a worker's: the claim → evidence table in
 [verify-live-state](/policies/verify-live-state.md) §4. An agent's "success" is verified by its
-commits and a re-run, never by its words.
+commits and a re-run, never by its words. And the outcome is shown the way the user meets it —
+from his seat, doing what he said he does; a table of counts is instrumentation, not done
+([reality is the referee](/policies/reality-is-the-referee.md)).
