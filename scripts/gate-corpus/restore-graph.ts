@@ -1396,7 +1396,7 @@ async function main(): Promise<number> {
             if (!uk.some((c) => synthNames.includes(c))) continue;
             const expr = uk
               .map((c) => (synth[c] ? `(${synth[c]})::text` : `"${c}"::text`))
-              .join(" || ' ' || ");
+              .join(" || '\\0' || ");
             const where = pred ? ` where ${pred}` : "";
             const dup = await prod.query<{ n: string; e: string | null }>(
               `select count(*)::text n, min(k) e from ` +
