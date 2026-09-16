@@ -62904,6 +62904,30 @@ export type Database = {
           },
         ]
       }
+      provision_generate_target: {
+        Row: {
+          orm_target: boolean
+          published_at: string
+          published_by: string
+          schema_name: string
+          types_target: boolean
+        }
+        Insert: {
+          orm_target: boolean
+          published_at?: string
+          published_by: string
+          schema_name: string
+          types_target: boolean
+        }
+        Update: {
+          orm_target?: boolean
+          published_at?: string
+          published_by?: string
+          schema_name?: string
+          types_target?: boolean
+        }
+        Relationships: []
+      }
       provision_grant: {
         Row: {
           granted_at: string
@@ -62975,8 +62999,11 @@ export type Database = {
       }
       provision_spec: {
         Row: {
+          applied_actor: string | null
           applied_at: string
           applied_by: string
+          applied_lane: string
+          applied_role: string | null
           applied_via: string
           artifacts_status: string
           origin: string
@@ -62990,8 +63017,11 @@ export type Database = {
           verb: string
         }
         Insert: {
+          applied_actor?: string | null
           applied_at?: string
           applied_by: string
+          applied_lane: string
+          applied_role?: string | null
           applied_via: string
           artifacts_status?: string
           origin?: string
@@ -63005,8 +63035,11 @@ export type Database = {
           verb: string
         }
         Update: {
+          applied_actor?: string | null
           applied_at?: string
           applied_by?: string
+          applied_lane?: string
+          applied_role?: string | null
           applied_via?: string
           artifacts_status?: string
           origin?: string
@@ -65879,6 +65912,12 @@ export type Database = {
           p_observed?: string
           p_rule_id: string
         }
+        Returns: Json
+      }
+      provision_generate_target_digest: { Args: never; Returns: string }
+      provision_generate_target_list: { Args: never; Returns: Json }
+      provision_generate_target_publish: {
+        Args: { p_published_by: string; p_targets: Json }
         Returns: Json
       }
       provision_identifier_ok: { Args: { p_name: string }; Returns: boolean }
@@ -95763,6 +95802,7 @@ export type Database = {
           account_email: string | null
           account_name: string | null
           created_at: string
+          created_by: string | null
           credential_item_id: string | null
           credential_present: boolean | null
           credential_stable: boolean | null
@@ -95785,6 +95825,7 @@ export type Database = {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
+          created_by?: string | null
           credential_item_id?: string | null
           credential_present?: boolean | null
           credential_stable?: boolean | null
@@ -95807,6 +95848,7 @@ export type Database = {
           account_email?: string | null
           account_name?: string | null
           created_at?: string
+          created_by?: string | null
           credential_item_id?: string | null
           credential_present?: boolean | null
           credential_stable?: boolean | null
