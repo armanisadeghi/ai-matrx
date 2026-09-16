@@ -148,6 +148,7 @@
     "db:apply": "tsx scripts/apply-migration.ts",
     "db:capture-go-signal": "tsx scripts/gate-corpus/capture-go-signal.ts",
     "db:based-on": "tsx scripts/db-based-on.ts",
+    "db:objects-diff": "tsx scripts/db-objects-diff.ts",
     "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
     "check:canonical-ratchets": "tsx scripts/canonical-ratchets/check-all.ts",
     "check:org-null": "tsx scripts/canonical-ratchets/check-org-null.ts",
