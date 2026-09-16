@@ -64,6 +64,13 @@
  *   npx tsx scripts/gate-corpus/restore-graph.ts            copy + prove
  *   npx tsx scripts/gate-corpus/restore-graph.ts --verify   prove only, copy nothing
  *
+ * `--verify` compares the branch to the BOUNDARY THE COPY RECORDED — a row in
+ * `public._restore_graph_run` on the branch holding the production snapshot id,
+ * the per-table counts taken inside it, and the branch-only rows the policy kept
+ * — never to a fresh read of production. Production takes new association rows
+ * all day; a verifier that re-reads it fails because the world moved, which says
+ * nothing about whether the copy is intact.
+ *
  * Exit 0 only when all four proofs pass.
  */
 import { dirname, resolve } from "node:path";
@@ -257,6 +264,28 @@ async function pkOf(client: pg.Client, qualified: string): Promise<string[]> {
     [qualified],
   );
   return r.rows.map((x) => x.attname);
+}
+
+/** The boundary the copy recorded, so `--verify` never re-reads a moving source. */
+// NOT in `public`: the live platform._ddl_guard() event trigger refuses a NEW
+// table there by name ("public keeps functions and RPCs, never tables"), and it
+// is live on the branch. Its own schema, so `W0-CORPUS` owning `corpus` and this
+// lane owning its boundary never collide.
+const RUN_SCHEMA = "restore_graph";
+const RUN_TABLE = `${RUN_SCHEMA}.run`;
+
+async function ensureRunTable(branch: pg.Client): Promise<void> {
+  await branch.query(`create schema if not exists ${RUN_SCHEMA}`);
+  await branch.query(
+    `create table if not exists ${RUN_TABLE} (
+       id bigserial primary key,
+       ran_at timestamptz not null default now(),
+       prod_snapshot text not null,
+       prod_taken_at text not null,
+       counts jsonb not null,
+       extras jsonb not null default '{}'::jsonb
+     )`,
+  );
 }
 
 async function main(): Promise<number> {
@@ -558,42 +587,80 @@ async function main(): Promise<number> {
     if (droppedFks.length && !failures)
       console.log(`${OK}all ${droppedFks.length} dropped constraint(s) are back with the identical definition`);
 
-    // ── PROOF 3: against the SNAPSHOT, never a live re-read ────────────────
-    // An exact set comparison on the primary key, per table: nothing production
-    // held at the snapshot may be missing from the branch. `replace` tables must
-    // ALSO hold nothing else — they are the graph and its cache, and one stray
-    // row makes them disagree. `upsert` tables may carry the branch's own extra
-    // rows, and those are named rather than counted away.
-    for (const { table: t, policy } of COPY_TABLES) {
-      const pk = await pkOf(branch, t);
-      const pkQuoted = pk.map((c) => `"${c}"`).join(", ");
-      const rows = await branch.query(`select ${pkQuoted} from ${t}`);
-      const branchKeys = new Set(
-        rows.rows.map((r) => pk.map((c) => String((r as Record<string, unknown>)[c])).join("\u0000")),
-      );
-      const prodKeys = copiedKeys.get(t);
-      if (!prodKeys) {
-        const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
-        if (n !== snap.counts[t]) fail(`${t}: branch holds ${n}, production's snapshot held ${snap.counts[t]}`);
-        continue;
-      }
-      const missing = [...prodKeys].filter((k) => !branchKeys.has(k));
-      const extra = [...branchKeys].filter((k) => !prodKeys.has(k));
-      if (missing.length)
-        fail(`${t}: ${missing.length} row(s) production held at the snapshot are absent from the branch (e.g. ${missing[0]?.replace(/\u0000/g, "|")})`);
-      else if (policy === "replace" && extra.length)
-        fail(`${t}: ${extra.length} branch row(s) production does not hold — a replace table must be exactly production's (e.g. ${extra[0]?.replace(/\u0000/g, "|")})`);
-      else
-        console.log(
-          `${OK}${t.padEnd(30)} all ${prodKeys.size} snapshot row(s) present` +
-            (extra.length ? ` ${C.dim}(+${extra.length} branch-only row(s) kept: ${extra.slice(0, 3).map((k) => k.replace(/\u0000/g, "|")).join(", ")}${extra.length > 3 ? ", …" : ""})${C.reset}` : ""),
+    // ── PROOF 3: against the RECORDED BOUNDARY, never a live re-read ───────
+    // On a copy run the boundary is this run's own snapshot and the comparison
+    // is an exact primary-key set difference. On `--verify` the boundary is the
+    // row the last copy WROTE: production takes new association rows all day
+    // (33,808 at 02:54, 33,809 at 03:12 — measured), so a verifier that
+    // re-reads production fails because the world moved, which says nothing
+    // about whether the copy is intact.
+    const extrasKept: Record<string, number> = {};
+    if (!verifyOnly) {
+      for (const { table: t, policy } of COPY_TABLES) {
+        const pk = await pkOf(branch, t);
+        const pkQuoted = pk.map((c) => `"${c}"`).join(", ");
+        const rows = await branch.query(`select ${pkQuoted} from ${t}`);
+        const branchKeys = new Set(
+          rows.rows.map((r) => pk.map((c) => String((r as Record<string, unknown>)[c])).join("\u0000")),
         );
-    }
-    for (const t of DERIVED_TABLES) {
-      const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
-      if (n !== snap.counts[t])
-        fail(`${t} (derived, never copied): branch derives ${n}, production's snapshot held ${snap.counts[t]}`);
-      else console.log(`${OK}${t.padEnd(30)} derives ${n} — production's snapshot count, from the restored edges alone`);
+        const prodKeys = copiedKeys.get(t)!;
+        const missing = [...prodKeys].filter((k) => !branchKeys.has(k));
+        const extra = [...branchKeys].filter((k) => !prodKeys.has(k));
+        extrasKept[t] = extra.length;
+        if (missing.length)
+          fail(`${t}: ${missing.length} row(s) production held at the snapshot are absent from the branch (e.g. ${missing[0]?.replace(/\u0000/g, "|")})`);
+        else if (policy === "replace" && extra.length)
+          fail(`${t}: ${extra.length} branch row(s) production does not hold — a replace table must be exactly production's (e.g. ${extra[0]?.replace(/\u0000/g, "|")})`);
+        else
+          console.log(
+            `${OK}${t.padEnd(30)} all ${prodKeys.size} snapshot row(s) present` +
+              (extra.length ? ` ${C.dim}(+${extra.length} branch-only row(s) kept: ${extra.slice(0, 3).map((k) => k.replace(/\u0000/g, "|")).join(", ")}${extra.length > 3 ? ", …" : ""})${C.reset}` : ""),
+          );
+      }
+      for (const t of DERIVED_TABLES) {
+        const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
+        if (n !== snap.counts[t])
+          fail(`${t} (derived, never copied): branch derives ${n}, production's snapshot held ${snap.counts[t]}`);
+        else console.log(`${OK}${t.padEnd(30)} derives ${n} — production's snapshot count, from the restored edges alone`);
+      }
+      if (!failures) {
+        await ensureRunTable(branch);
+        await branch.query(
+          `insert into ${RUN_TABLE} (prod_snapshot, prod_taken_at, counts, extras) values ($1, $2, $3::jsonb, $4::jsonb)`,
+          [snap.snapshot, snap.takenAt, JSON.stringify(snap.counts), JSON.stringify(extrasKept)],
+        );
+        console.log(`${OK}boundary recorded in ${RUN_TABLE} — this is what --verify compares against`);
+      }
+    } else {
+      await ensureRunTable(branch);
+      const last = await branch.query<{
+        ran_at: string; prod_snapshot: string; prod_taken_at: string;
+        counts: Record<string, number>; extras: Record<string, number>;
+      }>(`select ran_at::text, prod_snapshot, prod_taken_at, counts, extras from ${RUN_TABLE} order by id desc limit 1`);
+      const boundary = last.rows[0];
+      if (!boundary) {
+        fail(
+          `--verify has nothing to verify against: ${RUN_TABLE} is empty, so no copy has ever ` +
+            `recorded its boundary on this branch. Run the copy first (without --verify).`,
+        );
+      } else {
+        console.log(
+          `${INFO}boundary: the copy of ${boundary.ran_at} against production snapshot ` +
+            `${boundary.prod_snapshot} taken ${boundary.prod_taken_at}`,
+        );
+        for (const t of TABLES) {
+          const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
+          const want = Number(boundary.counts[t] ?? NaN) + Number(boundary.extras[t] ?? 0);
+          if (!Number.isFinite(want)) fail(`${t}: the recorded boundary holds no count for it`);
+          else if (n !== want)
+            fail(`${t}: branch holds ${n}, the recorded boundary says ${boundary.counts[t]} restored + ${boundary.extras[t] ?? 0} branch-only = ${want}`);
+          else
+            console.log(
+              `${OK}${t.padEnd(30)} ${n} — the boundary's ${boundary.counts[t]}` +
+                (boundary.extras[t] ? ` + ${boundary.extras[t]} branch-only` : ""),
+            );
+        }
+      }
     }
 
     // ── PROOF 4: the graph was RESTORED, not recomputed ─────────────────────
