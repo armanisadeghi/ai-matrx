@@ -1277,6 +1277,7 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
   return (
     <MatrxDataTable<AiModel>
       tableId="ai/models-canonical"
+      viewTabs={false}
       data={models}
       columns={columns}
       getRowId={(model) => model.id}
