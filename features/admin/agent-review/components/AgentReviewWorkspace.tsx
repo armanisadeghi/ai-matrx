@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -140,13 +142,23 @@ export default function AgentReviewWorkspace({
           review_feature: names.feature,
           review_created_at: row.created_at,
           review_updated_at: row.updated_at,
+          review_source: row.source,
           review_instructions: row.instructions,
+          review_domain_id: row.domain_id,
+          review_metadata:
+            typeof row.metadata === "object" &&
+            row.metadata !== null &&
+            !Array.isArray(row.metadata)
+              ? Object.fromEntries(Object.entries(row.metadata))
+              : { value: row.metadata },
           can_act: row.status === "ready_for_human" && Boolean(user?.id),
           ...(feedback ? { feedback_draft: feedback } : {}),
           ...(row.feedback ? { review_feedback: row.feedback } : {}),
           ...(row.conversation_id
             ? { review_conversation_id: row.conversation_id }
             : {}),
+          ...(row.feature_id ? { review_feature_id: row.feature_id } : {}),
+          ...(row.feedback_at ? { review_feedback_at: row.feedback_at } : {}),
           ...(triage.state === "ready" ? { review_triage: triage.triage } : {}),
         });
       }
@@ -232,51 +244,69 @@ export default function AgentReviewWorkspace({
 
   const content = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
-            aria-label="Back to reviews"
-            title="Back to reviews"
-            onClick={() => router.back()}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="min-w-0 flex-1">
-            <h1
-              className="truncate text-base font-semibold sm:text-lg"
-              title={row.title}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME}
+        {...(getReviewScope ? { getApplicationScope: getReviewScope } : {})}
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: `${row.title}\n${REVIEW_STATUS_LABELS[status]}\n${row.instructions}`,
+        }}
+      >
+        <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
+              aria-label="Back to reviews"
+              title="Back to reviews"
+              onClick={() => router.back()}
             >
-              {row.title}
-            </h1>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+
+            <div className="min-w-0 flex-1">
+              <h1
+                className="truncate text-base font-semibold sm:text-lg"
+                title={row.title}
+              >
+                {row.title}
+              </h1>
+            </div>
+
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-11 shrink-0 sm:h-9"
+            >
+              <AppLink href={row.url} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
+              </AppLink>
+            </Button>
+            {surfaceHandle ? (
+              <ContentTransferMenu
+                surface={surfaceHandle}
+                label={row.title}
+                triggerVariant="transparent"
+                triggerSize="compact"
+              />
+            ) : null}
           </div>
 
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="h-11 shrink-0 sm:h-9"
+          <nav
+            aria-label="Review classification"
+            className="mt-2 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
           >
-            <AppLink href={row.url} target="_blank" rel="noreferrer">
-              <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
-            </AppLink>
-          </Button>
-        </div>
-
-        <nav
-          aria-label="Review classification"
-          className="mt-2 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-        >
-          <span className="min-w-0 truncate">{row.repo_slug}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{names.domain}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{names.feature}</span>
-        </nav>
-      </header>
+            <span className="min-w-0 truncate">{row.repo_slug}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate">{names.domain}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate">{names.feature}</span>
+          </nav>
+        </header>
+      </NonEditableContextMenu>
 
       <nav
         aria-label="Review progress"

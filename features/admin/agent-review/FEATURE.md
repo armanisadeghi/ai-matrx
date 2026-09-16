@@ -57,6 +57,10 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The detail header keeps Back and Open page fixed around a single-line fading
   title. Its only metadata line is the compact repository → domain → feature
   hierarchy; status is not repeated above the stage rail.
+- The item header exposes the compact **Alchemy** transfer control. It captures
+  the live declared review scope at open time, so the current routing metadata
+  and unsaved feedback draft travel with the review instead of a stale row
+  snapshot.
 - The stage rail is a compact, horizontally scrollable stepper. Completed,
   current, and future stages read as one sequence instead of six equal cards
   competing with the review itself.
@@ -94,7 +98,7 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the list can only emit true queue-wide counts because it reads every row, and the item page can only emit the open row's state — neither can honestly promise the other's values.
 
 - `matrx-admin/agent-review` (list) emits queue counts per workflow status, repair-routing rollups from `metadata.triage`, the registry classification vocabulary, and a 25-row sample of the open view. Its one write target, `review_triage_classification`, re-routes ONE row (lane, priority, workstreams, required tools) through `updateReviewQueueRow` and re-reads the row to prove the write landed.
-- `matrx-admin/agent-review-item` (workspace) emits the open row, its classification, its triage envelope, and the live feedback editor. Its one write target, `review_feedback_draft`, stages prose into that editor; nothing is saved.
+- `matrx-admin/agent-review-item` (workspace) emits every loaded row field: its human classification plus registry ids, filing source, full metadata, timestamps, validated triage envelope, and the live feedback editor. Its one write target, `review_feedback_draft`, stages prose into that editor; nothing is saved. The header's canonical read-only menu and Alchemy control both resolve through this same trigger-time scope.
 - **No agent may change a row's STATUS on either surface.** This queue is where agents register their own work, so no write target exists for Request changes, Approve, Run agent review again, or Archive — every transition stays a human button press recorded in the review's conversation. Claim state (`metadata.triage.assignment`) and the verification record are equally off-limits from the page: they belong to the skill's atomic SQL claim protocol.
 
 ## Security and integration
@@ -140,6 +144,12 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-16 — Completed the Agent Review Item declaration for every
+  `agent.review_queue` field the workspace loads, added the canonical header
+  context menu, and exposed the package-owned Alchemy transfer control over
+  that live declared scope. Readiness remains partial until a fresh isolated
+  super-admin browser pass can confirm the runtime and staged write.
 
 - 2026-09-11 — Search now covers every string leaf of `metadata`, not a curated
   key list: SQL found 31 "print" rows, the list showed 30 (the miss lived only

@@ -65,6 +65,13 @@ const groups: SurfaceValueGroup[] = [
       "What the reviewing agent was asked to check, the last recorded human feedback, and the routing envelope.",
   },
   {
+    key: "review_routing",
+    label: "Review routing",
+    sortOrder: 250,
+    description:
+      "The registry identifiers and original metadata envelope that route this review through the agent-review workflow.",
+  },
+  {
     key: "review_editor",
     label: "Your review editor",
     sortOrder: 300,
@@ -174,6 +181,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "review_identity",
   },
   {
+    name: "review_source",
+    label: "Filing source",
+    description:
+      "The system source that filed this review row. Always present, including when the source is a legacy importer.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 40,
+    sortOrder: 190,
+    group: "review_identity",
+  },
+  {
     name: "review_instructions",
     label: "Review instructions",
     description:
@@ -217,6 +235,51 @@ const surfaceSpecific: SurfaceValue[] = [
     autoContext: false,
     sortOrder: 230,
     group: "review_content",
+  },
+  {
+    name: "review_domain_id",
+    label: "Domain id",
+    description:
+      "UUID of the registry domain used to classify this review. Always present; review_domain is its resolved human name.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 36,
+    sortOrder: 250,
+    group: "review_routing",
+  },
+  {
+    name: "review_feature_id",
+    label: "Feature id",
+    description:
+      "UUID of the registry feature used to classify this review. Absent when the row was filed without a feature; review_feature is its resolved human name.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 260,
+    group: "review_routing",
+  },
+  {
+    name: "review_metadata",
+    label: "Original routing metadata",
+    description:
+      "The full JSON metadata envelope saved with the review row, including routing data not promoted to a named value. Always present; review_triage is the validated routing projection used by this page.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 1200,
+    autoContext: false,
+    sortOrder: 270,
+    group: "review_routing",
+  },
+  {
+    name: "review_feedback_at",
+    label: "Feedback recorded at",
+    description:
+      "ISO timestamp for the last feedback recorded on this row. Absent when no feedback has been saved yet.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 24,
+    sortOrder: 280,
+    group: "review_routing",
   },
   {
     // NOT `alwaysAvailable`, even though the page holds this state on every
@@ -303,13 +366,18 @@ export function createAdminAgentReviewItemScope(values: {
   review_feature: string;
   review_created_at: string;
   review_updated_at: string;
+  review_source: string;
   review_instructions: string;
+  review_domain_id: string;
+  review_metadata: Record<string, unknown>;
   can_act: boolean;
   // alwaysAvailable: false → optional
   feedback_draft?: string;
   review_feedback?: string;
   review_conversation_id?: string;
   review_triage?: ReviewTriage;
+  review_feature_id?: string;
+  review_feedback_at?: string;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {
