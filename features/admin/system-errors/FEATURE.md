@@ -80,8 +80,9 @@ links to — is already declared in the admin navigation registry.
   shape that was ruled out after the schedule alarm shipped it. Guard:
   `styles/__tests__/no-overlay-layout-reservation.test.ts`; the deleted
   reservation is documented in `styles/shell.css` § NO GLOBAL BANNER CLEARANCE.
-- **Super-admin only, gated BEFORE the read.** Everyone else renders null and
-  issues no request, so an admin endpoint is never polled by a normal user.
+- **Super-admin and explicit-organization only, gated BEFORE the read.** Everyone
+  else renders null and issues no request; shell startup therefore never polls
+  an admin endpoint before its fail-closed transport has a selected scope.
 - **Nothing to report renders NOTHING.** Never an "all providers healthy" strip
   — wallpaper is how the next outage gets missed.
 - **A failed poll is not an outage.** It renders nothing loud; the failure is

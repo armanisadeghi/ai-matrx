@@ -77,6 +77,7 @@ import {
   selectAuthReady,
   selectIsSuperAdmin,
 } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { AttentionItemRow } from "./AttentionItemRow";
 import { buildAttentionNotice } from "./build-notice";
 import { DEFAULT_SNOOZE, readSnoozedUntil, SNOOZE_CHOICES, writeSnooze } from "./dock-snooze";
@@ -119,7 +120,8 @@ export default function AdminAttentionDock() {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const authReady = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const canRead = Boolean(isSuperAdmin && authReady && accessToken);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const canRead = Boolean(isSuperAdmin && authReady && accessToken && organizationId);
 
   const [collapsedChoice, setCollapsedChoice] = useState(readCollapsed);
   const pathname = usePathname();
