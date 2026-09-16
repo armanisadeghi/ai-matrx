@@ -21,42 +21,6 @@
     "replaces it.",
     "A field delta is the same class as a token delta: the live row moved, the package has not been republished yet. Listed per token+field, with the same staleness rule."
   ],
-  "allowed": [
-    {
-      "token": "integration_connection",
-      "reason": "Added to platform.entity_types on production by the integrations work, not by this campaign. @ai-matrx/associations 0.9.16 is installed; the token is not in it. Retire this entry by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
-      "added": "2026-09-16"
-    },
-    {
-      "token": "integration_connection_resource",
-      "reason": "Same registration as integration_connection, same remedy.",
-      "added": "2026-09-16"
-    }
-  ],
-  "allowedFields": [
-    {
-      "token": "seo_map_facet",
-      "field": "category",
-      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
-      "added": "2026-09-16"
-    },
-    {
-      "token": "seo_map_facet_value",
-      "field": "category",
-      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
-      "added": "2026-09-16"
-    },
-    {
-      "token": "seo_map_topic",
-      "field": "category",
-      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
-      "added": "2026-09-16"
-    },
-    {
-      "token": "seo_topical_map",
-      "field": "category",
-      "reason": "platform.entity_types.category was set to 'seo' on production by the SEO map work; @ai-matrx/associations 0.9.16 still ships null. Not this campaign's. Retire by regenerating and publishing the package, then `pnpm up @ai-matrx/associations`.",
-      "added": "2026-09-16"
-    }
-  ]
+  "allowed": [],
+  "allowedFields": []
 }

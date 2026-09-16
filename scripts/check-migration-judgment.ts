@@ -220,7 +220,7 @@ function main(): number {
 
   const index = (rows: Verdict[]) => {
     const m = new Map<string, Verdict>();
-    for (const r of rows) m.set(`${r.file} ${r.target}`, r);
+    for (const r of rows) m.set(`${r.file}\0${r.target}`, r);
     return m;
   };
   const feMap = index(fe);
@@ -238,7 +238,7 @@ function main(): number {
       continue;
     }
     for (const target of TARGETS) {
-      const key = `${name} ${target}`;
+      const key = `${name}\0${target}`;
       const a = feMap.get(key);
       const b = pyMap.get(key);
       if (!a || !b) {
