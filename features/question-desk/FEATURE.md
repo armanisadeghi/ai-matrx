@@ -167,5 +167,5 @@ Built 2026-09-12 as lane L2 of the Question Desk campaign, then re-worked the sa
   clearance as bottom padding: the rail is a scroll container, so padding at the END of
   its content cannot protect a line that is mid-scroll under the chip. The rail's HEIGHT
   now stops above the band (`.qd-rail` in `question-desk.css`:
-  `calc(100dvh - var(--shell-fixed-corner-clearance, 0px))`). Guard:
+  `calc(100dvh - var(--shell-header-h, 0px) - var(--shell-fixed-corner-clearance, 0px))` — the rail is sticky UNDER the shell header, so a plain 100dvh put its bottom 40px below the fold). Measured on the dev surface at 1280×720: rail bottom 672, chip band 48, nothing under the chip. Guard:
   `styles/__tests__/fixed-corner-clearance.test.ts` (RED on the padding, GREEN on the height).
