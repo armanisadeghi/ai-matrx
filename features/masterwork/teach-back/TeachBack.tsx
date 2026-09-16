@@ -360,7 +360,10 @@ export function TeachBack({
             onChange={(e) => setTopic(e.target.value)}
             enableVoice={knobs.voiceDefaultOn}
             placeholder="e.g. How I decide whether a pallet goes to data destruction or straight to sorting."
-            rows={2}
+            /* Three rows, because at 390px this example needs three and at two
+               the last line was sliced through the middle of a word — an
+               example nobody can finish reading (jobs-bar-2026-09-16, item 29). */
+            rows={3}
             className="text-base sm:text-sm"
           />
         )}

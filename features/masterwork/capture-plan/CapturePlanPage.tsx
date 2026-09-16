@@ -594,7 +594,19 @@ export function CapturePlanPage({
           <header className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-semibold">{plan.goal}</h2>
-              <Badge variant="secondary">Plan v{plan.protocolVersion}</Badge>
+              {/* 🚨 NOT A VERSION NUMBER (jobs-bar-2026-09-16, item 28). This
+                  printed "Plan v1" on every plan from the moment it was built.
+                  `protocolVersion` bumps each time the planner REPLANS — so on
+                  a new plan the badge says nothing at all, and on a replanned
+                  one it says it in a developer's notation. Say the fact, and
+                  only when there is a fact to say. */}
+              {plan.protocolVersion > 1 ? (
+                <Badge variant="secondary">
+                  Rescheduled {plan.protocolVersion - 1}{" "}
+                  {plan.protocolVersion - 1 === 1 ? "time" : "times"} as it
+                  learned
+                </Badge>
+              ) : null}
               <Badge variant="outline">
                 {CADENCE_WORDS[plan.settings.cadence]} · {plan.settings.minutesPerDay} min
               </Badge>
