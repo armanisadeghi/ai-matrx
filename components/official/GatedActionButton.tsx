@@ -124,8 +124,14 @@ export function GatedActionButton({
           id={reasonId}
           role="status"
           data-slot="gated-action-reason"
+          // NOT `text-destructive`. This sentence is an instruction for
+          // something the user has not done YET — on a form's first paint it
+          // is the normal state, not a failure. Red said "you did something
+          // wrong" to a first-timer who had not yet typed a character
+          // (jobs-bar-2026-09-16, item 6). The contract above is explicit:
+          // "phrased as an instruction — not a validation complaint."
           className={cn(
-            "min-w-0 text-xs font-medium text-destructive",
+            "min-w-0 text-xs font-medium text-muted-foreground",
             reasonClassName,
           )}
         >

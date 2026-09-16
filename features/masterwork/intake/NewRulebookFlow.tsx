@@ -658,9 +658,18 @@ export function NewRulebookFlow() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               New Masterwork
             </h1>
+            {/* THE SCREEN COUNTED WRONG AND PROMISED WHAT IT DID NOT DELIVER
+                (jobs-bar-2026-09-16, items 8 and 9). It said "Four quick
+                answers" over FIVE questions and a name field, and it said
+                "Everything is pre-filled" directly above the one field that is
+                empty AND required — which is why the very first thing a
+                first-timer saw was the Continue button refusing to move. Say
+                the true shape: one sentence from you, the rest already
+                answered. */}
             <p className="text-muted-foreground">
-              Four quick answers so we can show you the right way to build it.
-              Everything is pre-filled — change only what&apos;s wrong.
+              Tell us in one sentence what you want to build. The rest is
+              already answered the way most people answer it — change anything
+              that isn&apos;t true for you, or leave it and keep going.
             </p>
           </div>
 
@@ -804,10 +813,10 @@ export function NewRulebookFlow() {
               {bestForYou.length > 0 ? (
                 <div className="space-y-3">
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground">
+                    <h2 className="text-lg font-semibold text-foreground">
                       Best for what you described
                     </h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Based on where you said your knowledge lives. Anything
                       below works too — this is a shortcut, not a limit.
                     </p>
@@ -834,7 +843,11 @@ export function NewRulebookFlow() {
               {/* EVERYTHING ELSE — same screen, one section down. Never a gate. */}
               {everythingElse.length > 0 ? (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-foreground">
+                  {/* The section headings were SMALLER than the card titles
+                      they introduced, so the page had no hierarchy and matched
+                      neither the catalog nor step 1
+                      (jobs-bar-2026-09-16, item 10). */}
+                  <h2 className="text-lg font-semibold text-foreground">
                     Every other way
                   </h2>
                   <div className="grid gap-4 sm:grid-cols-2">

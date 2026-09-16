@@ -17,15 +17,13 @@
  *     do. A screen is absent or honest, never instructing a gesture the device
  *     does not have.
  *
- * So: the placeholder invites an answer and never restates the label. The only
- * time it names the field is when the caller has hidden the label, because then
- * nothing else identifies the box.
+ * So: the placeholder invites an answer and never restates the label. It does
+ * not try to be clever about whether a label is visible either: `hideLabel` on
+ * `VariableInputComponent` means "the HOST draws the label", not "nothing
+ * identifies this box", and a first pass at this put the field's Title-Cased
+ * name back into the placeholder under its own visible label on the Encore run
+ * page. One sentence, everywhere.
  */
-export function variableInputPlaceholder(options?: {
-  /** The field's visible label — pass ONLY when that label is hidden. */
-  labelWhenHidden?: string;
-}): string {
-  const label = options?.labelWhenHidden?.trim();
-  if (label) return label;
+export function variableInputPlaceholder(): string {
   return "Type your answer";
 }

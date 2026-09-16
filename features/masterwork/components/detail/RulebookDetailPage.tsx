@@ -2255,7 +2255,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 />
               </div>
             </div>
-            {rulebook.description ? (
+            {/* THE SAME SENTENCE TWICE IS NOT A HEADER, IT IS A BUG.
+                A Rulebook auto-named from its goal gets a NAME that is the
+                first N characters of its DESCRIPTION, so the header printed
+                "Replying to client emails about data destruction scheduling"
+                and then, directly under it, "Replying to client emails about
+                data destruction scheduling and pricing"
+                (jobs-bar-2026-09-16, item 19). When the description only
+                repeats the name it adds nothing and is left out. */}
+            {rulebook.description &&
+            !rulebook.description
+              .trim()
+              .toLowerCase()
+              .startsWith(rulebook.name.trim().toLowerCase().replace(/…$/, "")) ? (
               <div className="mt-2">
                 <p
                   ref={descriptionRef}

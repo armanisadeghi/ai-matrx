@@ -259,13 +259,33 @@ export function UnderstudyCard({
           ? ` · rebuilt ${new Date(standIn.rebuiltAt).toLocaleString()}`
           : ""}
       </p>
-      <TryMasterworkBox
-        masterworkId={understudy.id}
-        masterworkKind="generate"
-        whatItRuns="Your understudy"
-        fieldLabels={["Your request", "Supporting material"]}
-        onRunFinished={() => undefined}
-      />
+      {/* A STAND-IN WITH NOTHING TO STAND IN FOR IS NOT A STAND-IN.
+          On a brand-new Rulebook this card read "Performing from your rules as
+          of version 1 · 0 approved, 0 still in review" and then offered a live
+          run box and an enabled Run button (jobs-bar-2026-09-16, item 11).
+          Pressing it spends money and hands back generic model output wearing
+          the Expert's name — the screen claiming to perform from rules that do
+          not exist. Until one rule is approved the card says what is missing
+          and how to fix it, and offers no run. */}
+      {approvedCount === 0 ? (
+        <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
+          <p className="text-sm text-foreground">
+            There is nothing for your stand-in to perform yet.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Approve your first rule and it can go on — until then anything it
+            produced would be the model&apos;s opinion, not yours.
+          </p>
+        </div>
+      ) : (
+        <TryMasterworkBox
+          masterworkId={understudy.id}
+          masterworkKind="generate"
+          whatItRuns="Your understudy"
+          fieldLabels={["Your request", "Supporting material"]}
+          onRunFinished={() => undefined}
+        />
+      )}
     </div>
   );
 }

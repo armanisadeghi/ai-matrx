@@ -339,8 +339,12 @@ export function RulebookKpiStrip({
             ) : null}
             <span className="truncate">{nextStepLine(kpis, journey)}</span>
           </span>
+          {/* A NUMBER WITH NO NOUN IS NOT INFORMATION. A bare "41%" beside a
+              sentence about suggested rules left the Expert to guess what was
+              41% of what (jobs-bar-2026-09-16, item 17). The screen reader was
+              told ("Rules reviewed") and the eye was not. */}
           <span className="shrink-0 tabular-nums text-muted-foreground">
-            {kpis.progressPct}%
+            {kpis.progressPct}% reviewed
           </span>
         </div>
         <div
@@ -351,11 +355,20 @@ export function RulebookKpiStrip({
           aria-valuemax={100}
           aria-label="Rules reviewed"
         >
+          {/* A BAR NEVER DRAWS PROGRESS THAT DOES NOT EXIST. The 2% floor
+              exists so a real 1% is visible — at a true 0% it painted a blue
+              sliver under "0%", which is the screen contradicting itself
+              (jobs-bar-2026-09-16, item 18). */}
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               done ? "bg-emerald-500" : "bg-primary"
             }`}
-            style={{ width: `${Math.max(kpis.progressPct, 2)}%` }}
+            style={{
+              width:
+                kpis.progressPct <= 0
+                  ? "0%"
+                  : `${Math.max(kpis.progressPct, 2)}%`,
+            }}
           />
         </div>
       </div>
@@ -441,7 +454,9 @@ export function MasterworkKpiStrip({
       <div>
         <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <span className="truncate">{freshnessLine}</span>
-          <span className="shrink-0 tabular-nums">{kpis.currentPct}%</span>
+          <span className="shrink-0 tabular-nums">
+            {kpis.currentPct}% on your current rules
+          </span>
         </div>
         <div
           className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted"
@@ -456,7 +471,10 @@ export function MasterworkKpiStrip({
               "h-full rounded-full transition-all duration-500",
               allCurrent ? "bg-emerald-500" : "bg-primary",
             )}
-            style={{ width: `${Math.max(kpis.currentPct, 2)}%` }}
+            style={{
+              width:
+                kpis.currentPct <= 0 ? "0%" : `${Math.max(kpis.currentPct, 2)}%`,
+            }}
           />
         </div>
       </div>

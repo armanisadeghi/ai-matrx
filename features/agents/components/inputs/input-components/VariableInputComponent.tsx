@@ -114,8 +114,6 @@ export function VariableInputComponent({
       onRequestClose={onRequestClose}
       onEnterAdvance={onEnterAdvance}
       autoFocus={autoFocus}
-      // With the label hidden the placeholder is the field's only identity.
-      labelIsHidden={hideLabel}
       {...sharedProps}
     />
   );

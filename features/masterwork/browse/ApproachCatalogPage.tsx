@@ -72,10 +72,19 @@ export function ApproachCatalogPage() {
       </div>
     );
 
+  // A SPINNER WITHOUT WORDS IS A SCREEN THAT SAYS NOTHING. The catalog opened
+  // on a bare spinner in the middle of an empty page; a first-timer could not
+  // tell whether anything was coming (jobs-bar-2026-09-16, item 3).
   if (loading || !approaches)
     return (
-      <div className="flex h-full items-center justify-center">
+      <div
+        className="flex h-full flex-col items-center justify-center gap-3"
+        aria-busy="true"
+      >
         <LoadingSpinner />
+        <p className="text-sm text-muted-foreground">
+          Finding every way to start…
+        </p>
       </div>
     );
 
@@ -88,24 +97,38 @@ export function ApproachCatalogPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-12 pt-2">
-      <p className="text-sm text-muted-foreground">
-        Pick how you want to start. Every one ends the same way — rules in your
-        own words that you approve.
-      </p>
+      {/* THE PAGE SAYS WHAT IT IS. The body opened on a grey sentence with no
+          title of its own — the only heading was 14px of chrome in the top bar,
+          so the page read as a fragment of something else
+          (jobs-bar-2026-09-16, item 1). */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          {ready.length + partial.length} ways to start
+        </h1>
+        <p className="text-muted-foreground">
+          Pick how you want to start. Every one ends the same way — rules in
+          your own words that you approve. You can use more than one, and you
+          can change your mind later.
+        </p>
+      </div>
 
+      {/* A LEDE EARNS ITS LINE OR IT DOES NOT EXIST. "Ready now / Start now."
+          and "Partly here / Partly built." restated the heading in two words
+          and taught nothing (jobs-bar-2026-09-16, item 2). Each one now says
+          what the section actually means for the person reading it. */}
       <Section
         title="Ready now"
-        lede="Start now."
+        lede="Fully built. Pick one and your first rules can exist today."
         approaches={ready}
       />
       <Section
         title="Partly here"
-        lede="Partly built."
+        lede="These work, but not every part of them is finished yet — each card says what you get today."
         approaches={partial}
       />
       <Section
         title="On the way"
-        lede="Queued to build."
+        lede="Named and approved, not built yet. Nothing here can start a Rulebook today."
         approaches={soon}
       />
 

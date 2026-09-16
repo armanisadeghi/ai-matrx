@@ -178,25 +178,46 @@ export function OpenQuestionsCard({
                     </p>
                   ) : null}
                   {/* THE DOOR LAW — every rule named here is reachable. */}
-                  {onOpenRule && tension.rule_ids.length > 0 ? (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {tension.rule_ids.map((ruleId) => {
-                        const rule = rulebook.rules.find(
-                          (r) => r.id === ruleId,
-                        );
+                  {/* Three things went wrong here on the live page
+                      (jobs-bar-2026-09-16, items 14–16):
+                      1. `rule_ids` arrives with the SAME id twice, so the same
+                         rule name was printed twice in a row (and React got a
+                         duplicate key). The list is a SET of rules to open.
+                      2. Bare links separated by a 4px gap read as ONE run-on
+                         sentence: "Mastery mindset is what remains, not what
+                         you install Build self-efficacy through its four
+                         sources". They are chips now, visibly separate.
+                      3. `rule?.name ?? ruleId` printed a raw UUID at the
+                         Expert whenever the named rule was not in the loaded
+                         set. A rule we cannot name is a rule we cannot offer
+                         to open, so it is left out. */}
+                  {onOpenRule
+                    ? (() => {
+                        const named: Array<{ ruleId: string; name: string }> =
+                          [];
+                        for (const ruleId of new Set(tension.rule_ids)) {
+                          const name = rulebook.rules.find(
+                            (r) => r.id === ruleId,
+                          )?.name;
+                          if (name) named.push({ ruleId, name });
+                        }
+                        if (named.length === 0) return null;
                         return (
-                          <button
-                            key={ruleId}
-                            type="button"
-                            className="text-xs text-primary underline-offset-2 hover:underline"
-                            onClick={() => onOpenRule(ruleId)}
-                          >
-                            {rule?.name ?? ruleId}
-                          </button>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {named.map(({ ruleId, name }) => (
+                              <button
+                                key={ruleId}
+                                type="button"
+                                className="max-w-full truncate rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                                onClick={() => onOpenRule(ruleId)}
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
                         );
-                      })}
-                    </div>
-                  ) : null}
+                      })()
+                    : null}
                 </div>
               </div>
 

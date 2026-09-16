@@ -670,9 +670,13 @@ export function TryMasterworkBox({
         </div>
       ))}
 
-      <div className="flex items-center gap-2">
+      {/* PHONE: the note beside the button does not fit next to it at 390px,
+          and without wrapping it printed straight across "Coach me through it"
+          (jobs-bar-2026-09-16, item 16). */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
+          className="shrink-0"
           onClick={() => void start()}
           disabled={
             starting || running || servedLoading || rejoining || noSealedCases

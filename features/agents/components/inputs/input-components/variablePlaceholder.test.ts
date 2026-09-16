@@ -19,20 +19,13 @@ describe("variableInputPlaceholder", () => {
 
   it("never instructs a gesture a touch device does not have", () => {
     expect(variableInputPlaceholder()).not.toMatch(/hover/i);
-    expect(
-      variableInputPlaceholder({
-        labelWhenHidden: "What do you need done?",
-      }),
-    ).not.toMatch(/hover/i);
   });
 
-  it("carries the field's identity ONLY when the label is hidden", () => {
-    expect(
-      variableInputPlaceholder({ labelWhenHidden: "What do you need done?" }),
-    ).toBe("What do you need done?");
-    expect(variableInputPlaceholder({ labelWhenHidden: "   " })).toBe(
-      "Type your answer",
-    );
+  it("never echoes a field name, whatever the caller does", () => {
+    // `hideLabel` means "the HOST draws the label", not "nothing identifies
+    // this box" — a first pass read it the other way and put the Title-Cased
+    // field name back under its own visible label on the Encore run page.
+    expect(variableInputPlaceholder.length).toBe(0);
   });
 
   it("no variable input anywhere rebuilds the old placeholder", () => {
