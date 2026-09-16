@@ -198,3 +198,148 @@ describe("`-- allows: revoke <schema>` (ATTACK-4 finding 4)", () => {
     expect(message).toContain("is not an `-- allows:` clause");
   });
 });
+
+// ── ATTACK-5 finding 4 — ALTER DEFAULT PRIVILEGES … REVOKE ────────────────────
+// §6.3 states OFF-switch fact two as REVOKE ALL ON SCHEMA custom and ON ALL TABLES
+// IN SCHEMA custom "with ALTER DEFAULT PRIVILEGES so a later table inherits it".
+// The parser read that statement's subject as the bare word `tables`, called it
+// unqualified, refused the whole file — and told the builder to rewrite it in a
+// syntax ALTER DEFAULT PRIVILEGES does not accept. W1-STORE is lane five on the
+// critical path; the route a blocked builder finds next is a header-less file.
+describe("ALTER DEFAULT PRIVILEGES … REVOKE is attributed to its schema (ATTACK-5 finding 4)", () => {
+  const withAllows = (body: string) =>
+    `${REVOKE_HEAD}-- allows: revoke custom\n${body}`;
+
+  it("accepts `alter default privileges in schema custom revoke … on tables`", () => {
+    const v = judge(
+      withAllows(
+        "revoke all on schema custom from anon;\n" +
+          "alter default privileges in schema custom revoke all on tables from anon, authenticated;\n",
+      ),
+    );
+    expect(v.revokeExemption?.schema).toBe("custom");
+    const adp = v.revokeExemption!.statements.find((s) => /default privileges/i.test(s.text))!;
+    expect(adp.schemas).toEqual(["custom"]);
+    expect(adp.unqualified).toEqual([]);
+  });
+
+  it("accepts the `on functions` and `for role` forms too", () => {
+    for (const body of [
+      "alter default privileges in schema custom revoke all on functions from anon;\n",
+      "alter default privileges in schema custom revoke all on sequences from anon;\n",
+      "alter default privileges for role postgres in schema custom revoke all on tables from anon;\n",
+    ]) {
+      expect(judge(withAllows(body)).revokeExemption?.schema).toBe("custom");
+    }
+  });
+
+  it("STILL refuses one that names a different schema", () => {
+    expect(
+      refusal(
+        withAllows("alter default privileges in schema public revoke all on tables from anon;\n"),
+      ),
+    ).toContain("does not stay inside it");
+  });
+
+  it("STILL refuses a database-wide one that names no schema at all", () => {
+    const message = refusal(
+      withAllows("alter default privileges revoke all on tables from anon;\n"),
+    );
+    expect(message).toContain("does not stay inside it");
+    expect(message).toContain("no IN SCHEMA");
+  });
+
+  it("the refusal's remedy is now syntax that exists", () => {
+    const message = refusal(
+      withAllows("revoke select on associations from authenticated;\n"),
+    );
+    expect(message).toContain("ALTER DEFAULT PRIVILEGES IN SCHEMA custom REVOKE");
+  });
+});
+
+// ── ATTACK-5 finding 3 — the header-less file on production ───────────────────
+// `named === null` was exempt from every production check in both runners, by
+// design, so rule 8 and §4.9 described a runner that did not exist. History keeps
+// its amnesty; a file that has never run does not.
+describe("a header-less UNLEDGERED file is judged on production (ATTACK-5 finding 3)", () => {
+  const unledgered = (sql: string) =>
+    assertHeaderAgreesWithFlag({
+      filename: "f.sql",
+      flagTarget: "production",
+      header: readHeader(sql),
+      strippedSql: strip(sql),
+      alreadyLedgered: false,
+    });
+
+  const refuseUnledgered = (sql: string): string => {
+    try {
+      unledgered(sql);
+    } catch (e) {
+      if (e instanceof TargetRefusal) return e.message;
+      throw e;
+    }
+    throw new Error(`expected a TargetRefusal, but the file was ACCEPTED:\n${sql}`);
+  };
+
+  it("refuses ALTER TYPE … ADD VALUE with no header at all — rule 9's `no exception`", () => {
+    const message = refuseUnledgered(
+      "alter type public.permission_level add value 'commenter';\n",
+    );
+    expect(message).toContain("NO `-- target:` header");
+    expect(message).toContain("ALTER TYPE … ADD VALUE");
+  });
+
+  it("refuses a header-less DROP, REVOKE, TRUNCATE and DELETE", () => {
+    for (const [body, reason] of [
+      [DROP, "a DROP"],
+      ["revoke usage on schema custom from authenticated;\n", "a REVOKE"],
+      ["truncate table custom.t;\n", "a TRUNCATE"],
+      ["delete from custom.t where id = 1;\n", "a DELETE"],
+    ] as const) {
+      expect(refuseUnledgered(body)).toContain(reason);
+    }
+  });
+
+  it("still ACCEPTS an ordinary additive header-less migration", () => {
+    expect(
+      unledgered("create table custom.t (id int);\ncreate index on custom.t (id);\n").chairStep,
+    ).toBeNull();
+  });
+
+  it("gives frozen history its amnesty — the SAME bytes, already ledgered, pass", () => {
+    expect(
+      assertHeaderAgreesWithFlag({
+        filename: "f.sql",
+        flagTarget: "production",
+        header: readHeader(DROP),
+        strippedSql: strip(DROP),
+        alreadyLedgered: true,
+      }).chairStep,
+    ).toBeNull();
+  });
+
+  it("lets `-- chair-step:` through, and hands the runner the body to print", () => {
+    const sql =
+      "-- chair-step: §11.0b, the one deliberately irreversible act, owner awake\n" +
+      "alter type public.permission_level add value 'commenter';\n";
+    const v = unledgered(sql);
+    expect(v.chairStep?.why).toContain("§11.0b");
+    expect(v.chairStep?.reasons).toContain("ALTER TYPE … ADD VALUE");
+  });
+
+  it("refuses a `-- chair-step:` that does not say why", () => {
+    let message = "";
+    try {
+      readHeader("-- chair-step: because\n");
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("does not say why");
+  });
+
+  it("names the rehearsal directory when it refuses a branch-only file", () => {
+    expect(refusal("-- target: branch\ncreate table custom.t (id int);\n")).toContain(
+      "migrations/rehearsal/",
+    );
+  });
+});

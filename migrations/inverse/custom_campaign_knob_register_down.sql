@@ -1,5 +1,5 @@
--- migrate: skip: the inverse of custom_campaign_knob_register.sql — run by hand, never auto-applied
 -- target: branch,production
+-- chair-step: deleting the campaign's ten knob rows is a DELETE, not an additive change; it is the teardown step and runs with the chair awake
 --
 -- THE DOWN-MIGRATION for custom_campaign_knob_register.sql.
 --
@@ -7,9 +7,13 @@
 -- is NOT `reset_branch` — that resets the whole branch and destroys every other
 -- lane's landed work — it is each migration's own inverse.
 --
--- It is `-- migrate: skip`, so no runner will ever apply it on its own. To run it
--- deliberately, strip the skip marker in a scratch copy, or execute its body
--- through the same runner with an explicit target.
+-- It lives in `migrations/inverse/`, which no release path sweeps (every migration
+-- glob in both repos is non-recursive), so it can never be applied on its own — and
+-- it no longer carries `-- migrate: skip:`, which used to make it unrunnable by ANY
+-- path, scratch copies included. `-- chair-step:` carries it through the sanctioned
+-- runner, which prints this reason and the file's entire body first:
+--
+--     pnpm db:apply migrations/inverse/custom_campaign_knob_register_down.sql --target production
 --
 -- WHAT IT UNDOES, AND WHAT IT REFUSES TO
 -- --------------------------------------

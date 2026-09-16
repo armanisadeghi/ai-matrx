@@ -439,6 +439,25 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
 
     # Run from the aidream checkout so its .env + uv workspace resolve.
     # MATRX_FRONTEND_DIR pins THIS repo's migrations/ (worktrees / renames).
+    #
+    # 🚨 `--target production` IS NOT DECORATION. On 2026-09-16 at 03:52:12Z the
+    # scheduled fleet release `release-all: v0.4.1940` applied
+    # `migrations/custom_entity_types_detail_variant.sql` — headed `-- target: branch`
+    # at its only commit — to PRODUCTION, widening two CHECK constraints on
+    # `platform.entity_types`, the registry table 1,571 policies read, with nobody
+    # watching. This function is that path. Two properties made it possible:
+    #
+    #   1. it passed NO --target at all, so the applier fell to its default and the
+    #      header-aware refusal never had to agree with anything; and
+    #   2. the applier is resolved out of a SIBLING CHECKOUT — `${AIDREAM_DIR:-../aidream}`
+    #      — at whatever commit that directory happens to hold, which is not
+    #      necessarily origin/main and was not that night.
+    #
+    # Naming the target fixes both: the flag is now an explicit assertion the runner
+    # must agree with, AND an applier too old to know `--target` exits non-zero on an
+    # unrecognised argument instead of silently sweeping this repo's migrations with
+    # whatever judgement it happened to ship with. That is the capability probe — a
+    # release that cannot prove it is running the header-aware runner does not run.
     _run_applier() {
         local mode="$1"  # apply | dry-run
         (
@@ -446,15 +465,15 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
             export MATRX_FRONTEND_DIR="$REPO_ROOT"
             if [[ -x "$(command -v uv)" ]]; then
                 if [[ "$mode" == "dry-run" ]]; then
-                    uv run python db/apply_migrations.py --source matrx-frontend --dry-run
+                    uv run python db/apply_migrations.py --source matrx-frontend --target production --dry-run
                 else
-                    uv run python db/apply_migrations.py --source matrx-frontend --no-generate
+                    uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
                 fi
             else
                 if [[ "$mode" == "dry-run" ]]; then
-                    python3 db/apply_migrations.py --source matrx-frontend --dry-run
+                    python3 db/apply_migrations.py --source matrx-frontend --target production --dry-run
                 else
-                    python3 db/apply_migrations.py --source matrx-frontend --no-generate
+                    python3 db/apply_migrations.py --source matrx-frontend --target production --no-generate
                 fi
             fi
         )
@@ -468,7 +487,12 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
     fi
 
     info "Applying pending matrx-frontend migrations (idempotent; no-op if current)..."
-    _run_applier apply
+    if ! _run_applier apply; then
+        fail "Migration apply FAILED or was REFUSED — release stopped before the version bump,
+tag and push. Read the applier's refusal above; it names the file and the remedy.
+An applier that does not recognise --target is too old to judge a \`-- target:\` header:
+update the aidream checkout at $aidream_dir (or point AIDREAM_DIR at a current one)."
+    fi
     ok "Migration apply finished."
 
     info "Verifying FE migration ledger (pnpm check:migrations:strict)..."

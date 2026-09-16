@@ -1,7 +1,26 @@
--- migrate: skip: the inverse of custom_entity_types_detail_variant.sql — run by hand, never auto-applied
--- target: branch
+-- target: branch,production
+-- chair-step: narrowing platform.entity_types.rls_variant back to six values is not additive by construction; it is the abort checklist's step and runs with the chair awake
 --
 -- THE INVERSE: `platform.entity_types.rls_variant` back to its six values.
+--
+-- 🚨 RE-HEADED 2026-09-16, AND IT NOW NAMES PRODUCTION, BECAUSE PRODUCTION HAS THE
+-- WIDENING. `custom_entity_types_detail_variant.sql` was applied to production at
+-- 2026-09-16 03:52:12Z by the scheduled fleet release `release-all: v0.4.1940`
+-- (ledger row: source=matrx-frontend, duration_ms=554, checksum identical to the
+-- branch's). Both CHECK constraints on production name `detail` today; verified by
+-- SELECT on pg_constraint. An inverse headed `-- target: branch` could not undo the
+-- half that actually exists, which is precisely §8.9's "the abort checklist cannot
+-- undo it".
+--
+-- It also no longer carries `-- migrate: skip:`. That marker made it unrunnable by
+-- ANY path — `pnpm db:apply` refuses a skip-marked file outright and the Supabase MCP
+-- path is forbidden in this repo — so the checklist depended on a file nothing could
+-- execute. It lives in `migrations/inverse/` instead: no release sweeps that
+-- directory (every migration glob in both repos is non-recursive), so the marker's
+-- job is done structurally, and `-- chair-step:` makes the runner print this reason
+-- and the file's ENTIRE body before a byte of it executes.
+--
+--     pnpm db:apply migrations/inverse/custom_entity_types_detail_variant_down.sql --target production
 --
 -- It REFUSES while any row actually reads `detail`. Narrowing a CHECK under live
 -- rows is how a table stops accepting its own contents: Postgres would reject the

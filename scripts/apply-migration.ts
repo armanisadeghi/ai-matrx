@@ -132,8 +132,10 @@ import {
   assertServerMatchesTarget,
   loadBranchDbEnv,
   loadBranchRef,
+  INVERSE_DIRNAME,
   parseTargetFlag,
   readHeader,
+  REHEARSAL_DIRNAME,
   TargetRefusal,
   type Target,
 } from "./lib/migration-target";
@@ -423,7 +425,41 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     return 1;
   }
 
-  const filename = outsideMigrations ? basename(path) : relative(MIGRATIONS_DIR, path);
+  // 🚨 ATTACK-5 finding 1 — `migrations/rehearsal/` is where a branch-only file
+  // lives, and it exists because a refusal in this runner was never going to be
+  // enough. On 2026-09-16 03:52:12Z the scheduled fleet release applied
+  // `custom_entity_types_detail_variant.sql` — headed `-- target: branch` — to
+  // PRODUCTION, because `scripts/release.sh` sweeps `migrations/*.sql` through an
+  // applier it resolves out of a sibling aidream checkout. The rehearsal file was
+  // in the swept directory. Take it out of the directory and no runner version,
+  // stale or current, can reach it: aidream's `_glob_for` is non-recursive.
+  //
+  // Ledgered by BASENAME, not by `rehearsal/<name>`, so the two rows this campaign
+  // already wrote (branch 03:02:53Z, production 03:52:12Z) keep matching the file
+  // that moved. One name, one ledger row, on both databases.
+  const rehearsalDir = resolve(MIGRATIONS_DIR, REHEARSAL_DIRNAME);
+  const inRehearsal = !outsideMigrations && !relative(rehearsalDir, path).startsWith("..");
+  if (inRehearsal && target === "production") {
+    console.error(
+      `${TAG.fail}${relative(ROOT, path)} is in migrations/${REHEARSAL_DIRNAME}/, which is the ` +
+        `rehearsal branch's directory.\n` +
+        `  Refusing --target production by LOCATION, before its header is even read. A file here\n` +
+        `  is deliberately invisible to every release path; promoting it to production means\n` +
+        `  moving it back to migrations/ and changing its \`-- target:\` header on purpose.`,
+    );
+    return 1;
+  }
+  // `migrations/inverse/` — the down-migrations. Never swept (the globs are
+  // non-recursive), so they need no `-- migrate: skip:` marker, which is what used to
+  // make them unrunnable by ANY path: db:apply refuses a skip-marked file outright and
+  // the MCP path is forbidden for this repo, so §8.9's abort checklist had no route to
+  // the inverse it depends on (ATTACK-5 finding 1, "the abort checklist cannot undo
+  // it"). A file here that names production must carry `-- chair-step: <why>`; the
+  // header checks then print the reason and the whole body before it executes.
+  const inverseDir = resolve(MIGRATIONS_DIR, INVERSE_DIRNAME);
+  const inInverse = !outsideMigrations && !relative(inverseDir, path).startsWith("..");
+  const filename =
+    outsideMigrations || inRehearsal || inInverse ? basename(path) : relative(MIGRATIONS_DIR, path);
   const sql = readFileSync(path, "utf8");
   const checksum = sha256(sql);
 
@@ -482,6 +518,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   let branchRef;
   let guard: { feature: string; key: string } | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
+  let chairStep: { why: string; reasons: string[] } | null = null;
   let headerNamesProduction = false;
   try {
     const header = readHeader(sql);
@@ -490,7 +527,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT);
-    ({ guard, revokeExemption } = assertHeaderAgreesWithFlag({
+    ({ guard, revokeExemption, chairStep } = assertHeaderAgreesWithFlag({
       filename,
       flagTarget: target,
       header,
@@ -515,6 +552,18 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     for (const st of revokeExemption.statements) {
       console.log(`       ${C.dim}${st.text}${C.reset}`);
     }
+  }
+
+  // A chair step is the loudest thing this runner does: the reason, then the ENTIRE
+  // file, before anything connects. An escape nobody can see is not an escape.
+  if (chairStep && target === "production") {
+    console.log(
+      `${TAG.warn}${C.bold}-- chair-step${C.reset}: ${chairStep.why}\n` +
+        `       ${C.dim}this file is NOT additive` +
+        (chairStep.reasons.length ? ` — it carries ${chairStep.reasons.join(", ")}` : "") +
+        ` and is about to run against PRODUCTION. Its entire body follows.${C.reset}`,
+    );
+    for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
@@ -682,6 +731,39 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `${TAG.warn}--reapply: re-executing these bytes over ledgered ${existing.checksum.slice(0, 12)} ` +
           `(applied ${existing.applied_at}).`,
       );
+    }
+
+    // ── ATTACK-5 finding 3: the header-less file on production ───────────────
+    // Whether a file is FROZEN HISTORY is a fact only the ledger holds, so this
+    // one judgement waits for the ledger read; every other target check already
+    // refused before the connection opened. A file with no `-- target:` line that
+    // has never run is judged for the seven non-additive statement classes —
+    // which is what rule 8 and §4.9 have always claimed the runner does.
+    if (target === "production" && !existing) {
+      try {
+        const late = assertHeaderAgreesWithFlag({
+          filename,
+          flagTarget: target,
+          header: readHeader(sql),
+          strippedSql: stripped,
+          alreadyLedgered: false,
+        });
+        if (late.chairStep) {
+          // The escape is LOUD or it is not an escape: the reason, then the file.
+          console.log(
+            `${TAG.warn}${C.bold}-- chair-step${C.reset}: ${late.chairStep.why}\n` +
+              `       ${C.dim}this header-less file carries ${late.chairStep.reasons.join(", ")} and is ` +
+              `about to run against PRODUCTION. Its entire body follows.${C.reset}`,
+          );
+          for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
+        }
+      } catch (err) {
+        if (err instanceof TargetRefusal) {
+          console.error(`${TAG.fail}${err.message}`);
+          return 1;
+        }
+        throw err;
+      }
     }
 
     // ── DD-220: a migration replaces only the body it declares it saw ────────

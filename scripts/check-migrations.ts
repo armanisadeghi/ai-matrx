@@ -559,6 +559,9 @@ async function main(): Promise<number> {
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
   const branchOnly: string[] = [];
+  // Set when a `-- target: branch` file is found at the TOP LEVEL of migrations/ —
+  // i.e. inside the directory every release path sweeps. Always an error.
+  let branchOnlyInSweptDir = 0;
   const local = new Map<string, string>(); // filename -> checksum
   const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
@@ -584,18 +587,30 @@ async function main(): Promise<number> {
     local.set(f, sha256(sql));
   }
 
+  // 🚨 ATTACK-5 finding 1. A rehearsal-only file at the TOP LEVEL of migrations/ is
+  // now an error, not a note. `scripts/release.sh` sweeps `migrations/*.sql` through
+  // an applier it resolves out of a sibling aidream checkout — whatever commit that
+  // directory happens to sit at — so a refusal inside the runner protects nothing
+  // against an applier that predates it. On 2026-09-16 03:52:12Z exactly that
+  // applied `custom_entity_types_detail_variant.sql` (headed `-- target: branch`) to
+  // production, widening two CHECK constraints on `platform.entity_types`. The file
+  // must not be in the swept directory at all: `migrations/rehearsal/` is not
+  // globbed by any release path, because every glob over it is non-recursive.
   if (branchOnly.length) {
     console.log();
-    console.log(
-      `${TAG.info}${branchOnly.length} file(s) are headed \`-- target: branch\` — rehearsal-only, ` +
-        `never pending on production.`,
+    console.error(
+      `${TAG.fail}${branchOnly.length} rehearsal-only file(s) sit in migrations/, which EVERY ` +
+        `release sweeps:`,
     );
     for (const f of branchOnly)
-      console.log(`  ${C.white}- ${f}${C.reset} ${C.dim}[BRANCH-ONLY]${C.reset}`);
-    console.log(
-      `  ${C.dim}Apply them with \`pnpm db:apply <file> --target branch\`; ` +
-        `\`--target production\` refuses them by name.${C.reset}`,
+      console.error(`  ${C.white}- ${f}${C.reset} ${C.dim}[BRANCH-ONLY, IN THE SWEPT DIRECTORY]${C.reset}`);
+    console.error(
+      `  ${C.dim}Move each to migrations/rehearsal/ — no release path scans that directory — and\n` +
+        `  apply it with \`pnpm db:apply migrations/rehearsal/<file> --target branch\`.\n` +
+        `  A refusal in the runner is not enough on its own: the release resolves its applier\n` +
+        `  from a sibling checkout at whatever commit that directory holds.${C.reset}`,
     );
+    branchOnlyInSweptDir = branchOnly.length;
   }
 
   if (selfLedgering.length) {
@@ -744,6 +759,10 @@ async function main(): Promise<number> {
   }
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
+  // A rehearsal-only file in the swept directory fails in EVERY mode, strict or
+  // not: it is the exact shape that reached production unattended on 2026-09-16.
+  if (branchOnlyInSweptDir) return 1;
+
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
     return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking) &&
       strict

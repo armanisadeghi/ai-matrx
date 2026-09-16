@@ -195,6 +195,7 @@ const HEADER_SEEDS_GUARDS_RE = /^\s*--\s*seeds-guards\s*:\s*yes\s*$/i;
 const HEADER_GUARD_RE = /^\s*--\s*guard\s*:\s*([a-z0-9_]+)\s*\/\s*([a-z0-9_.]+)\s*$/i;
 const HEADER_ALLOWS_RE = /^\s*--\s*allows\s*:\s*(.+?)\s*$/i;
 const HEADER_ALLOWS_REVOKE_RE = /^revoke\s+([a-z_][a-z0-9_]*)$/;
+const HEADER_CHAIR_STEP_RE = /^\s*--\s*chair-step\s*:\s*(.+?)\s*$/i;
 
 /**
  * Schemas `-- allows: revoke <schema>` may NEVER name. None of them was created by
@@ -249,6 +250,15 @@ export interface MigrationHeader {
    * a `-- guard:` line. null when the file carries no such header.
    */
   readonly allowsRevokeSchema: string | null;
+  /**
+   * `-- chair-step: <why>` — the ONE named escape from the header-less production
+   * judgement below, and it is loud by construction: the runner prints the reason
+   * AND the file's entire body before a single byte executes. It suppresses
+   * nothing else: a file that also NAMES production in a `-- target:` header still
+   * meets the additive + guard requirements. null when the file carries no such
+   * header.
+   */
+  readonly chairStep: string | null;
 }
 
 /** Read the `-- target:` / `-- additive:` / `-- guard:` lines out of a file's head. */
@@ -257,6 +267,7 @@ export function readHeader(sql: string): MigrationHeader {
   let additive = false;
   let seedsGuards = false;
   let allowsRevokeSchema: string | null = null;
+  let chairStep: string | null = null;
   let guard: { feature: string; key: string } | null = null;
   for (const line of sql.split("\n", 40)) {
     const t = line.match(HEADER_TARGET_RE);
@@ -316,8 +327,20 @@ export function readHeader(sql: string): MigrationHeader {
       }
       allowsRevokeSchema = schema;
     }
+    const cs = line.match(HEADER_CHAIR_STEP_RE);
+    if (cs) {
+      const why = cs[1]!.trim();
+      if (why.length < 12) {
+        fail([
+          `\`${line.trim()}\` does not say why.`,
+          `  \`-- chair-step:\` is the escape from the header-less production judgement, so it`,
+          `  carries the reason a human will read at 3 a.m. — at least a sentence, not a word.`,
+        ]);
+      }
+      chairStep = why;
+    }
   }
-  return { targets, additive, guard, seedsGuards, allowsRevokeSchema };
+  return { targets, additive, guard, seedsGuards, allowsRevokeSchema, chairStep };
 }
 
 // ── the revoke exemption's containment check ────────────────────────────────
@@ -336,18 +359,55 @@ export interface RevokeStatement {
  *
  * This is a CONTAINMENT check, so it errs toward finding things and toward saying
  * "I could not tell" (an empty `schemas` with a non-empty `unqualified`) rather
- * than toward silence. Three shapes are understood, which is every shape Postgres
+ * than toward silence. Four shapes are understood, which is every shape Postgres
  * accepts for a schema-scoped revoke:
  *     REVOKE … ON SCHEMA <s>
  *     REVOKE … ON ALL <things> IN SCHEMA <s>
  *     REVOKE … ON <s>.<object>
+ *     ALTER DEFAULT PRIVILEGES [FOR ROLE …] IN SCHEMA <s> REVOKE …
  * Anything else lands in `unqualified` and refuses the file by name.
+ *
+ * 🚨 The fourth shape was missing until 2026-09-16, and its absence made the OFF
+ * switch unwritable. `ALTER DEFAULT PRIVILEGES IN SCHEMA custom REVOKE ALL ON
+ * TABLES FROM anon` fell through to the object-list arm below, which reads the
+ * subject between the first ` on ` and the last ` from ` — here the bare word
+ * `tables` — reported it `unqualified`, and refused the whole file. The refusal
+ * then told the builder to write it `ON SCHEMA custom` / `ON ALL … IN SCHEMA
+ * custom`, neither of which is legal syntax for ALTER DEFAULT PRIVILEGES. So the
+ * campaign's one sanctioned REVOKE route was a dead end whose remedy did not
+ * parse, and the next route a tired builder finds is a header-less file.
+ *
+ * ALTER DEFAULT PRIVILEGES with NO `IN SCHEMA` is database-wide, so it stays
+ * unqualified and still refuses the file — that is the whole point of the check.
  */
+const ALTER_DEFAULT_PRIVILEGES_RE = /^alter\s+default\s+privileges\b/i;
+const ALTER_DEFAULT_PRIVILEGES_IN_SCHEMA_RE =
+  /^alter\s+default\s+privileges\s+(?:for\s+(?:role|user)\s+[a-z0-9_",\s]+?\s+)?in\s+schema\s+([a-z0-9_",\s]+?)\s+revoke\b/i;
+
 export function revokeStatementsOf(strippedSql: string): RevokeStatement[] {
   const out: RevokeStatement[] = [];
   for (const raw of strippedSql.split(";")) {
     if (!/\bREVOKE\b/i.test(raw)) continue;
     const text = raw.replace(/\s+/g, " ").trim();
+    // ALTER DEFAULT PRIVILEGES names its schema BEFORE the REVOKE keyword, so the
+    // `on … from …` subject extraction below cannot see it. Attribute it here.
+    if (ALTER_DEFAULT_PRIVILEGES_RE.test(text)) {
+      const inSchemaM = ALTER_DEFAULT_PRIVILEGES_IN_SCHEMA_RE.exec(text);
+      if (!inSchemaM) {
+        out.push({
+          text,
+          schemas: [],
+          unqualified: ["(ALTER DEFAULT PRIVILEGES with no IN SCHEMA — database-wide)"],
+        });
+        continue;
+      }
+      const names = inSchemaM[1]!
+        .split(",")
+        .map((x) => x.trim().replace(/"/g, "").toLowerCase())
+        .filter(Boolean);
+      out.push({ text, schemas: [...new Set(names)], unqualified: [] });
+      continue;
+    }
     // The subject sits between the FIRST ` on ` and the LAST ` from ` — `from`
     // also introduces the grantee list, which is what makes "last" right.
     const onM = /\bon\b/i.exec(text);
@@ -413,7 +473,11 @@ export function assertRevokeExemptionIsContained(
         foreign.length
           ? `  The exemption covers ONE schema and the runner will not widen it.`
           : `  can prove it stays inside ${schema}. Qualify it as ${schema}.<object>, or write it`,
-        foreign.length ? `` : `  as \`ON SCHEMA ${schema}\` / \`ON ALL … IN SCHEMA ${schema}\`.`,
+        foreign.length
+          ? ``
+          : `  as \`ON SCHEMA ${schema}\` / \`ON ALL … IN SCHEMA ${schema}\` — or, for default\n` +
+            `  privileges, as \`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} REVOKE … FROM …\`,\n` +
+            `  which is the only legal way to bound that statement to a schema.`,
       ].filter(Boolean));
     }
   }
@@ -469,6 +533,14 @@ export interface AgreementInput {
   readonly header: MigrationHeader;
   /** SQL with comments and string literals already stripped, for body detection. */
   readonly strippedSql: string;
+  /**
+   * Is this file already in `public._schema_migrations`?
+   *
+   * Frozen history gets amnesty; a file that has NOT run yet is judged. Defaults
+   * to `true` — amnesty — so a caller that cannot answer never invents a refusal.
+   * Every caller that CAN answer must pass it, and both runners do.
+   */
+  readonly alreadyLedgered?: boolean;
 }
 
 /**
@@ -484,11 +556,18 @@ export interface AgreementVerdict {
    * passing exemption announces itself exactly as loudly as a failing one.
    */
   readonly revokeExemption: { schema: string; statements: RevokeStatement[] } | null;
+  /**
+   * Set when a header-less file reached production on its `-- chair-step:` escape.
+   * The runner PRINTS the reason and the file's whole body before executing it —
+   * the escape is loud or it is not an escape.
+   */
+  readonly chairStep: { why: string; reasons: string[] } | null;
 }
 
 export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerdict {
   const { filename, flagTarget, header, strippedSql } = input;
   const named = header.targets;
+  const alreadyLedgered = input.alreadyLedgered !== false;
 
   if (flagTarget === "branch") {
     if (named === null) {
@@ -515,7 +594,53 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       `  command flag: production`,
       `  Refusing. Rehearse it with --target branch; a branch-only file reaches production`,
       `  only after its header is changed on purpose and it is re-reviewed.`,
+      `  A rehearsal-only file belongs in \`migrations/rehearsal/\`, which no release path`,
+      `  scans — see REHEARSAL_DIRNAME in this module.`,
     ]);
+  }
+
+  // 🚨 ATTACK-5 finding 3. A file with NO `-- target:` line used to reach production
+  // with no additive scan, no ALTER TYPE refusal and no guard requirement, in BOTH
+  // runners, deliberately — so rule 8 ("every production apply is additive and
+  // guarded … through the runner, not through this sentence") and §4.9 ("ALTER TYPE
+  // … ADD VALUE is refused by both, in every lane, with no exception") were false of
+  // the exact path a tired builder reaches by forgetting one comment line.
+  //
+  // The amnesty that remains is HISTORY, not shape: a file already in the ledger is
+  // frozen and never re-judged, which is all ~3,567 landed migrations. A file that
+  // has NOT run yet is judged for the seven non-additive statement classes. This is
+  // ALWAYS ON rather than only while the campaign runs — strictly more coverage in
+  // time, and it needs no campaign flag anyone can forget to clear.
+  //
+  // What it deliberately does NOT do: require `-- additive: yes` or `-- guard:` on a
+  // header-less file. Those two lines are the CAMPAIGN's contract, and demanding
+  // them here would refuse every ordinary additive migration every other lane in
+  // this repo writes. So rule 8's second half holds only for files that name
+  // production; the book must say so rather than claim the runner enforces it.
+  const chairStep = header.chairStep;
+  let headerlessChairStep: AgreementVerdict["chairStep"] = null;
+  if (flagTarget === "production" && named === null && !alreadyLedgered) {
+    const reasons = nonAdditiveReasons(strippedSql, {
+      allowRevokeSchema: header.allowsRevokeSchema,
+    });
+    if (reasons.length && !chairStep) {
+      fail([
+        `${filename} carries NO \`-- target:\` header and its body contains ${reasons.join(", ")}.`,
+        `  It has never been applied, so it is not frozen history — and a non-additive`,
+        `  statement reaches production here with nothing between it and the database but`,
+        `  this check. Refusing by name.`,
+        `  Three ways forward, all deliberate:`,
+        `    1. \`-- target: branch\` + move it to \`migrations/rehearsal/\` — rehearse it first;`,
+        `       no release path scans that directory.`,
+        `    2. \`-- target: branch,production\` + \`-- additive: yes\` + \`-- guard: <feature>/<key>\``,
+        `       — the campaign contract, which proves the old path is untouched while OFF.`,
+        `    3. \`-- chair-step: <why it must be non-additive>\` — an owner-awake step. The`,
+        `       runner then prints that reason AND this file's entire body before executing`,
+        `       a single byte of it.`,
+        `  (An already-ledgered file is never judged here: applied SQL is frozen history.)`,
+      ]);
+    }
+    if (chairStep) headerlessChairStep = { why: chairStep, reasons };
   }
 
   // 🚨 ATTACK-4 finding 3. This used to read `both` — branch AND production — so a
@@ -543,6 +668,25 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         header.allowsRevokeSchema,
         strippedSql,
       ),
+    };
+  }
+
+  if (namesProduction && chairStep) {
+    // A CHAIR STEP that names production. It is by construction not additive and not
+    // knob-guardable — reversing a constraint, adding an enum value, dropping the
+    // campaign's own object. `-- chair-step:` stands in for `-- additive: yes` AND
+    // `-- guard:`, and excuses the non-additive reasons, in exchange for being the
+    // loudest thing the runner does: the reason and the ENTIRE FILE are printed
+    // before a byte executes. It never suppresses the revoke-containment check above,
+    // and it never applies to a file the runner reached by SWEEPING — an inverse lives
+    // in `migrations/inverse/`, which nothing sweeps, and is named with --only.
+    return {
+      guard: header.guard,
+      revokeExemption,
+      chairStep: {
+        why: chairStep,
+        reasons: nonAdditiveReasons(strippedSql, { allowRevokeSchema: header.allowsRevokeSchema }),
+      },
     };
   }
 
@@ -607,8 +751,51 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       ].filter(Boolean));
     }
   }
-  return { guard: header.guard, revokeExemption };
+  return { guard: header.guard, revokeExemption, chairStep: headerlessChairStep };
 }
+
+/**
+ * The ONE directory rehearsal-only migrations live in, and the reason it exists.
+ *
+ * 🚨 2026-09-16, 03:52:12Z. `migrations/custom_entity_types_detail_variant.sql`,
+ * headed `-- target: branch` at its only commit, was applied TO PRODUCTION by the
+ * scheduled fleet release `release-all: v0.4.1940` — it widened two CHECK
+ * constraints on `platform.entity_types`, the registry table 1,571 policies read,
+ * with nobody watching. The release path is `scripts/release.sh` →
+ * `apply_frontend_migrations()`, which runs the applier out of a SIBLING aidream
+ * checkout (`${AIDREAM_DIR:-../aidream}`) over THIS repo's `migrations/*.sql`. Two
+ * properties made it possible and neither was about the header: the release passed
+ * no `--target` at all, and the rehearsal file sat in the very directory the train
+ * scans. A refusal in the runner is therefore not enough on its own — the rehearsal
+ * file must not be in the swept set at all.
+ *
+ * So: a rehearsal-only file lives HERE, `migrations/rehearsal/`, and
+ *   · aidream's `_glob_for` globs `migrations/*.sql` non-recursively, so the train
+ *     cannot see it (guard: `db/tests/test_rehearsal_dir_is_never_swept.py`);
+ *   · `pnpm db:apply` refuses any file under this directory at `--target production`
+ *     by name, and refuses one that is not headed `-- target: branch`;
+ *   · `pnpm check:migrations` does not count it pending against production.
+ */
+export const REHEARSAL_DIRNAME = "rehearsal";
+
+/**
+ * The directory INVERSE migrations live in — the other half of the same lesson.
+ *
+ * §4.13 requires every migration to carry its own down-migration in the same commit,
+ * and §8.9's abort checklist runs them. Until 2026-09-16 they were marked
+ * `-- migrate: skip:` so no sweep would apply them — and `pnpm db:apply` refuses a
+ * skip-marked file "by any path", while the Supabase MCP path is forbidden for this
+ * repo. So the inverses had NO sanctioned route at all, on either database: ATTACK-5
+ * finding 1's "the abort checklist cannot undo it", exactly.
+ *
+ * `migrations/inverse/` is the route, and it is bounded the same way `rehearsal/` is:
+ * no release sweeps it (every glob is non-recursive), so it needs no skip marker; and
+ * a file here reaching `--target production` must carry `-- chair-step: <why>`, which
+ * makes the runner print the reason and the file's entire body before it executes.
+ * An inverse is by construction non-additive — that is what reversing means — so
+ * `-- chair-step:` is what stands in for `-- additive: yes` and `-- guard:` here.
+ */
+export const INVERSE_DIRNAME = "inverse";
 
 export interface ConfiguredConnection {
   readonly user: string;

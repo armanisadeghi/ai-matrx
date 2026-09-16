@@ -129,6 +129,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Restores production's association graph onto the rehearsal branch. Branch-only tooling.",
     },
     {
+        id: "migration-target-refusals-test",
+        file: "scripts/__tests__/migration-target-refusals.test.ts",
+        kind: "tooling",
+        why: "Jest proof of the --target header refusals (ATTACK-4 findings 3/4, ATTACK-5 findings 3/4). Pure header checks, no database, no credential; never part of a served request.",
+    },
+    {
+        id: "gate-corpus-cron-pause-guard",
+        file: "scripts/gate-corpus/cron-pause-guard.ts",
+        kind: "tooling",
+        why: "`pnpm check:cron-pause` — reads production's cron.job (SELECT only) and ledgers what it saw on the rehearsal branch. Imports migration-target for the branch identity. A guard, run by hand and by the chair's loop.",
+    },
+    {
         id: "hr-settings-service",
         file: "features/hr/settings/service.ts",
         kind: "preexisting",
