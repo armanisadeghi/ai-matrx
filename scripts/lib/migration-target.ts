@@ -35,19 +35,52 @@
  *   · `--target branch` REQUIRES the header and requires it to name `branch`. A
  *     file with no header can never be applied to the rehearsal branch.
  *   · `--target production` is the default and is refused only when the file DOES
- *     carry a header that does not name `production`. A file with no header is
- *     production-only — which is every migration in this repo that predates this
- *     module, unchanged.
- *   · `-- target: branch,production` — one file for both — is accepted only when
- *     it also carries `-- additive: yes` and `-- guard: <feature>/<key>` naming a
- *     real `platform.feature_knob` key (the table's primary key is TWO columns,
- *     `(feature, key)`, so a single token cannot address it), and only when the
- *     body parses as additive: no DROP, no REVOKE, no `ALTER TYPE … ADD VALUE`,
- *     no `ALTER TABLE … DROP COLUMN`, no `ALTER COLUMN … TYPE`.
+ *     carry a header that does not name `production`.
+ *
+ * 🚨 THE ADDITIVE/GUARD RULE KEYS ON THE HEADER NAMING `production`, NOT ON IT
+ *    NAMING BOTH (ATTACK-4 finding 3, fixed 2026-09-15)
+ * ---------------------------------------------------------------------------
+ * Until this was fixed, `-- additive: yes`, `-- guard:` and the non-additive body
+ * scan ran only when the header named BOTH targets. So a file headed exactly
+ * `-- target: production` carrying `DROP TABLE platform.associations` and no
+ * guard at all passed every header check and landed on production on the strength
+ * of the server-identity check alone. The requirement now fires whenever the
+ * header NAMES `production` — `-- target: production` and
+ * `-- target: branch,production` alike.
+ *
+ * ⚠️ AND IT KEYS ON *AN EXPLICIT HEADER*, DELIBERATELY. A file with NO
+ *    `-- target:` line at all is production-only BY DEFINITION and its behaviour
+ *    has NOT moved one inch: no additive requirement, no guard requirement, no
+ *    body scan. That is every one of the ~3,567 migrations already in this repo
+ *    and in aidream, and making them retroactively refusable would break the
+ *    world for no safety gain — they already landed. This absence is a decision,
+ *    not an oversight; the refusal messages below say so out loud so nobody
+ *    "fixes" it later by accident.
+ *
+ *     A file that names production must carry `-- additive: yes` and
+ *     `-- guard: <feature>/<key>` naming a real `platform.feature_knob` key (the
+ *     table's primary key is TWO columns, `(feature, key)`, so a single token
+ *     cannot address it), and its body must parse as additive: no DROP, no
+ *     REVOKE, no `ALTER TYPE … ADD VALUE`, no `ALTER TABLE … DROP COLUMN`, no
+ *     `ALTER COLUMN … TYPE`, no SET NOT NULL, no TRUNCATE, no `DELETE FROM`.
+ *
+ * THE ONE NAMED, BOUNDED ESCAPE FROM `a REVOKE` — `-- allows: revoke <schema>`
+ * ---------------------------------------------------------------------------
+ * The campaign's first DDL file must `revoke usage on schema custom from
+ * authenticated` on production, and `REVOKE` is on the non-additive list by name,
+ * so before this existed that file had NO sanctioned path (ATTACK-4 finding 4).
+ * `-- allows: revoke <schema>` suppresses the `a REVOKE` reason and NOTHING else:
+ * every other non-additive reason still refuses, `-- additive: yes` and
+ * `-- guard:` are still required, the schema may not be one of the protected set
+ * this campaign did not create, and the file is refused unless EVERY `REVOKE` in
+ * its body names that one schema. When it is used it is ANNOUNCED — one `[ OK ]`
+ * line naming the schema and the statements it allowed. Nothing fails silently
+ * and nothing passes silently either.
  *
  * Shared with `aidream/db/migration_target.py`, which implements the identical
- * rules for the Python runner. The two are kept in step by `BRANCH-REF` being the
- * single source of both identities.
+ * rules for the Python runner — including `-- seeds-guards:` and
+ * `-- allows: revoke`. The two are kept in step by `BRANCH-REF` being the single
+ * source of both identities.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -160,6 +193,35 @@ const HEADER_TARGET_RE = /^\s*--\s*target\s*:\s*(.+?)\s*$/i;
 const HEADER_ADDITIVE_RE = /^\s*--\s*additive\s*:\s*yes\s*$/i;
 const HEADER_SEEDS_GUARDS_RE = /^\s*--\s*seeds-guards\s*:\s*yes\s*$/i;
 const HEADER_GUARD_RE = /^\s*--\s*guard\s*:\s*([a-z0-9_]+)\s*\/\s*([a-z0-9_.]+)\s*$/i;
+const HEADER_ALLOWS_RE = /^\s*--\s*allows\s*:\s*(.+?)\s*$/i;
+const HEADER_ALLOWS_REVOKE_RE = /^revoke\s+([a-z_][a-z0-9_]*)$/;
+
+/**
+ * Schemas `-- allows: revoke <schema>` may NEVER name. None of them was created by
+ * this campaign, and a REVOKE inside any of them can take the platform off the
+ * air (`public`, `auth`, `storage`) or silently strip the very grants the doctrine
+ * work depends on (`platform`, `iam`).
+ */
+export const REVOKE_PROTECTED_SCHEMAS: readonly string[] = [
+  "public",
+  "auth",
+  "iam",
+  "platform",
+  "storage",
+  "extensions",
+  "graphql",
+  "graphql_public",
+  "realtime",
+  "vault",
+  "cron",
+  "net",
+  "pgbouncer",
+  "supabase_functions",
+  "information_schema",
+  "pg_catalog",
+  "admin",
+  "history",
+] as const;
 
 export interface MigrationHeader {
   /** null when the file carries no `-- target:` line at all. */
@@ -179,6 +241,14 @@ export interface MigrationHeader {
    * past the guard rule.
    */
   readonly seedsGuards: boolean;
+  /**
+   * `-- allows: revoke <schema>` — the ONE named escape from the `a REVOKE`
+   * reason, and it is bounded in four ways at once: it suppresses only that one
+   * reason, the schema may not be protected, EVERY `REVOKE` in the body must name
+   * that schema and nothing else, and the file still needs `-- additive: yes` and
+   * a `-- guard:` line. null when the file carries no such header.
+   */
+  readonly allowsRevokeSchema: string | null;
 }
 
 /** Read the `-- target:` / `-- additive:` / `-- guard:` lines out of a file's head. */
@@ -186,6 +256,7 @@ export function readHeader(sql: string): MigrationHeader {
   let targets: Target[] | null = null;
   let additive = false;
   let seedsGuards = false;
+  let allowsRevokeSchema: string | null = null;
   let guard: { feature: string; key: string } | null = null;
   for (const line of sql.split("\n", 40)) {
     const t = line.match(HEADER_TARGET_RE);
@@ -215,8 +286,138 @@ export function readHeader(sql: string): MigrationHeader {
         `  is written \`-- guard: <feature>/<key>\` — e.g. \`-- guard: custom/associations_guard\`.`,
       ]);
     }
+    const a = line.match(HEADER_ALLOWS_RE);
+    if (a) {
+      const claim = a[1]!.trim().toLowerCase();
+      const r = claim.match(HEADER_ALLOWS_REVOKE_RE);
+      if (!r) {
+        fail([
+          `\`${line.trim()}\` is not an \`-- allows:\` clause this runner knows.`,
+          `  The ONE form is \`-- allows: revoke <schema>\` — one lowercase schema token, e.g.`,
+          `  \`-- allows: revoke custom\`. It is deliberately not a general escape hatch: it`,
+          `  suppresses the "a REVOKE" reason and nothing else.`,
+        ]);
+      }
+      const schema = r[1]!;
+      if (REVOKE_PROTECTED_SCHEMAS.includes(schema)) {
+        fail([
+          `\`${line.trim()}\` names the PROTECTED schema \`${schema}\`.`,
+          `  This campaign did not create it, so it may never be the subject of the revoke`,
+          `  exemption. Protected: ${REVOKE_PROTECTED_SCHEMAS.join(", ")}.`,
+          `  A REVOKE inside one of those is a chair step with its own inverse migration —`,
+          `  never a header line.`,
+        ]);
+      }
+      if (allowsRevokeSchema && allowsRevokeSchema !== schema) {
+        fail([
+          `${line.trim()} — the file already carries \`-- allows: revoke ${allowsRevokeSchema}\`.`,
+          `  The exemption names ONE schema. Two of them is two exemptions; split the file.`,
+        ]);
+      }
+      allowsRevokeSchema = schema;
+    }
   }
-  return { targets, additive, guard, seedsGuards };
+  return { targets, additive, guard, seedsGuards, allowsRevokeSchema };
+}
+
+// ── the revoke exemption's containment check ────────────────────────────────
+
+/** One `REVOKE …` statement lifted out of a comment-stripped body. */
+export interface RevokeStatement {
+  readonly text: string;
+  /** Every schema this statement names. Empty means "it named none we could see". */
+  readonly schemas: string[];
+  /** Object references that carry no schema qualification at all. */
+  readonly unqualified: string[];
+}
+
+/**
+ * Every `REVOKE` statement in a comment-stripped body, with the schemas it names.
+ *
+ * This is a CONTAINMENT check, so it errs toward finding things and toward saying
+ * "I could not tell" (an empty `schemas` with a non-empty `unqualified`) rather
+ * than toward silence. Three shapes are understood, which is every shape Postgres
+ * accepts for a schema-scoped revoke:
+ *     REVOKE … ON SCHEMA <s>
+ *     REVOKE … ON ALL <things> IN SCHEMA <s>
+ *     REVOKE … ON <s>.<object>
+ * Anything else lands in `unqualified` and refuses the file by name.
+ */
+export function revokeStatementsOf(strippedSql: string): RevokeStatement[] {
+  const out: RevokeStatement[] = [];
+  for (const raw of strippedSql.split(";")) {
+    if (!/\bREVOKE\b/i.test(raw)) continue;
+    const text = raw.replace(/\s+/g, " ").trim();
+    // The subject sits between the FIRST ` on ` and the LAST ` from ` — `from`
+    // also introduces the grantee list, which is what makes "last" right.
+    const onM = /\bon\b/i.exec(text);
+    const fromIdx = text.toLowerCase().lastIndexOf(" from ");
+    if (!onM || fromIdx < 0 || fromIdx <= onM.index) {
+      out.push({ text, schemas: [], unqualified: ["(unparseable REVOKE)"] });
+      continue;
+    }
+    const subject = text.slice(onM.index + onM[0].length, fromIdx).trim();
+    const inSchema = subject.match(/^all\s+.*?\bin\s+schema\s+(.+)$/i);
+    const bareSchema = subject.match(/^schema\s+(.+)$/i);
+    if (inSchema || bareSchema) {
+      const names = (inSchema ? inSchema[1]! : bareSchema![1]!)
+        .split(",")
+        .map((x) => x.trim().replace(/^"|"$/g, "").toLowerCase())
+        .filter(Boolean);
+      out.push({ text, schemas: names, unqualified: [] });
+      continue;
+    }
+    // An object list. Drop argument lists so a function signature's commas do not
+    // split one reference into two.
+    const flat = subject.replace(/\([^)]*\)/g, "");
+    const schemas: string[] = [];
+    const unqualified: string[] = [];
+    for (const item of flat.split(",")) {
+      const token = item.trim().split(/\s+/).pop() ?? "";
+      const cleaned = token.replace(/"/g, "").toLowerCase();
+      if (!cleaned) continue;
+      const q = cleaned.match(/^([a-z_][a-z0-9_$]*)\.[a-z_][a-z0-9_$]*$/);
+      if (q) schemas.push(q[1]!);
+      else unqualified.push(cleaned);
+    }
+    out.push({ text, schemas: [...new Set(schemas)], unqualified });
+  }
+  return out;
+}
+
+/**
+ * The revoke exemption, checked. Returns the statements it allowed so the runner
+ * can ANNOUNCE them — a passing exemption is as loud as a failing one.
+ */
+export function assertRevokeExemptionIsContained(
+  filename: string,
+  schema: string,
+  strippedSql: string,
+): RevokeStatement[] {
+  const statements = revokeStatementsOf(strippedSql);
+  if (statements.length === 0) {
+    fail([
+      `${filename} carries \`-- allows: revoke ${schema}\` but its body contains no REVOKE at all.`,
+      `  An exemption nobody uses is an exemption nobody reviewed. Delete the header line.`,
+    ]);
+  }
+  for (const st of statements) {
+    const foreign = st.schemas.filter((s) => s !== schema);
+    if (foreign.length || st.unqualified.length) {
+      fail([
+        `${filename} carries \`-- allows: revoke ${schema}\` but this REVOKE does not stay inside it:`,
+        `      ${st.text}`,
+        foreign.length
+          ? `  It names ${foreign.join(", ")}, not ${schema}.`
+          : `  It names ${st.unqualified.join(", ")}, which is not schema-qualified, so nothing`,
+        foreign.length
+          ? `  The exemption covers ONE schema and the runner will not widen it.`
+          : `  can prove it stays inside ${schema}. Qualify it as ${schema}.<object>, or write it`,
+        foreign.length ? `` : `  as \`ON SCHEMA ${schema}\` / \`ON ALL … IN SCHEMA ${schema}\`.`,
+      ].filter(Boolean));
+    }
+  }
+  return statements;
 }
 
 /** What a `-- seeds-guards: yes` file is allowed to touch, and nothing else. */
@@ -247,8 +448,19 @@ const NON_ADDITIVE_RES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bDELETE\s+FROM\b/i, "a DELETE"],
 ];
 
-export function nonAdditiveReasons(strippedSql: string): string[] {
-  return NON_ADDITIVE_RES.filter(([re]) => re.test(strippedSql)).map(([, what]) => what);
+/**
+ * Why this body is not additive. `allowRevokeSchema` suppresses the `a REVOKE`
+ * reason and NOTHING else — every other reason still lands. The caller has
+ * already proven, separately, that every REVOKE stays inside that schema.
+ */
+export function nonAdditiveReasons(
+  strippedSql: string,
+  opts?: { readonly allowRevokeSchema?: string | null },
+): string[] {
+  const allowRevoke = Boolean(opts?.allowRevokeSchema);
+  return NON_ADDITIVE_RES.filter(
+    ([re, what]) => re.test(strippedSql) && !(allowRevoke && what === "a REVOKE"),
+  ).map(([, what]) => what);
 }
 
 export interface AgreementInput {
@@ -265,9 +477,16 @@ export interface AgreementInput {
  * Returns the guard key a `branch,production` file names, so the caller can prove
  * it resolves OFF on the server before the production half runs.
  */
-export function assertHeaderAgreesWithFlag(
-  input: AgreementInput,
-): { guard: { feature: string; key: string } | null } {
+export interface AgreementVerdict {
+  readonly guard: { feature: string; key: string } | null;
+  /**
+   * Set when `-- allows: revoke <schema>` was USED — the runner prints it. A
+   * passing exemption announces itself exactly as loudly as a failing one.
+   */
+  readonly revokeExemption: { schema: string; statements: RevokeStatement[] } | null;
+}
+
+export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerdict {
   const { filename, flagTarget, header, strippedSql } = input;
   const named = header.targets;
 
@@ -299,23 +518,57 @@ export function assertHeaderAgreesWithFlag(
     ]);
   }
 
-  const both = named !== null && named.includes("branch") && named.includes("production");
-  if (both) {
+  // 🚨 ATTACK-4 finding 3. This used to read `both` — branch AND production — so a
+  // file headed exactly `-- target: production` passed NO additive check, NO
+  // `-- additive: yes` requirement and NO `-- guard:` requirement, and reached
+  // production with nothing but the server-identity check between it and a
+  // `DROP TABLE platform.associations`. The requirement keys on the header NAMING
+  // production, which covers `-- target: production` and `-- target: branch,production`.
+  //
+  // ⚠️ AND ONLY ON AN EXPLICIT HEADER. `named === null` — no `-- target:` line at
+  // all — is production-only by definition and is NOT touched: that is every one
+  // of the ~3,567 migrations already in these two repos, all of them already
+  // landed, and refusing them retroactively buys nothing. The absence is
+  // deliberate; see the module docstring.
+  const namesProduction = named !== null && named.includes("production");
+
+  // The revoke exemption is checked whenever it is CLAIMED, whatever the target,
+  // so a branch-only rehearsal proves the same containment production will demand.
+  let revokeExemption: AgreementVerdict["revokeExemption"] = null;
+  if (header.allowsRevokeSchema) {
+    revokeExemption = {
+      schema: header.allowsRevokeSchema,
+      statements: assertRevokeExemptionIsContained(
+        filename,
+        header.allowsRevokeSchema,
+        strippedSql,
+      ),
+    };
+  }
+
+  if (namesProduction) {
+    const headerText = named!.join(",");
+    const because =
+      `  (This fires because the file NAMES production in its \`-- target:\` header. A file\n` +
+      `   with NO \`-- target:\` line is production-only by definition and is deliberately\n` +
+      `   untouched by this rule — that is every migration written before --target existed.)`;
     if (!header.additive) {
       fail([
-        `${filename} is headed \`-- target: branch,production\` without \`-- additive: yes\`.`,
-        `  One file for both databases is accepted only when it states that it is additive and`,
+        `${filename} is headed \`-- target: ${headerText}\` without \`-- additive: yes\`.`,
+        `  A file that names production is accepted only when it states that it is additive and`,
         `  names the knob that holds it OFF. Add both header lines, or split the file.`,
+        because,
       ]);
     }
     if (!header.guard && !header.seedsGuards) {
       fail([
-        `${filename} is headed \`-- target: branch,production\` without a \`-- guard:\` line.`,
+        `${filename} is headed \`-- target: ${headerText}\` without a \`-- guard:\` line.`,
         `  Every shared object this campaign changes on production lands behind a`,
         `  platform.feature_knob row that is OFF, so the old path is untouched until the switch.`,
         `  Add \`-- guard: <feature>/<key>\` naming a seeded knob — or, if this IS the file that`,
         `  seeds the register, \`-- seeds-guards: yes\`, which restricts it to`,
         `  ${KNOB_REGISTER_TABLES.join(", ")} and nothing else.`,
+        because,
       ]);
     }
     if (header.seedsGuards) {
@@ -337,17 +590,24 @@ export function assertHeaderAgreesWithFlag(
         ]);
       }
     }
-    const reasons = nonAdditiveReasons(strippedSql);
+    const reasons = nonAdditiveReasons(strippedSql, {
+      allowRevokeSchema: header.allowsRevokeSchema,
+    });
     if (reasons.length) {
       fail([
-        `${filename} is headed \`-- target: branch,production\` but its body contains ${reasons.join(", ")}.`,
-        `  A two-target file must be additive and reversible by construction. Split the`,
-        `  non-additive half into its own \`-- target: branch\` file, or make it a chair step`,
+        `${filename} is headed \`-- target: ${headerText}\` but its body contains ${reasons.join(", ")}.`,
+        `  A file that names production must be additive and reversible by construction. Split`,
+        `  the non-additive half into its own \`-- target: branch\` file, or make it a chair step`,
         `  with its own inverse migration.`,
-      ]);
+        reasons.includes("a REVOKE")
+          ? `  A REVOKE confined to ONE schema this campaign created has a sanctioned path:\n` +
+            `  \`-- allows: revoke <schema>\`, which suppresses this one reason and nothing else.`
+          : ``,
+        because,
+      ].filter(Boolean));
     }
   }
-  return { guard: header.guard };
+  return { guard: header.guard, revokeExemption };
 }
 
 export interface ConfiguredConnection {

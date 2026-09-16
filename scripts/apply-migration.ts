@@ -117,9 +117,10 @@
  * Exit codes: 0 applied (or already applied, byte-identical) · 1 refusal or SQL
  * failure · 2 unexpected error / creds absent.
  */
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { createHash, randomBytes } from "node:crypto";
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -405,7 +406,16 @@ interface ApplyOpts {
  *  exactly the code an agent runs, not a paraphrase of it. */
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   const { dryRun, reapply, statementTimeout, target } = opts;
-  if (relative(MIGRATIONS_DIR, path).startsWith("..")) {
+  const outsideMigrations = relative(MIGRATIONS_DIR, path).startsWith("..");
+  // 🚨 THE ONE CARVE-OUT, and it is a filename pattern, not a flag. --target-self-test
+  // writes its scratch file into a per-run temp directory instead of into the SHARED
+  // migrations/ of this checkout, where two seats running the self-test at the same
+  // moment clobbered each other's file and each other's ledger row (ATTACK-4 finding
+  // 22). Nothing about the LEDGER rules moves: the file is still read from disk, still
+  // ledgered by its basename, still checksummed on the bytes that executed, still in
+  // one transaction with its ledger row. The only thing relaxed is WHERE the bytes may
+  // sit, and only for a basename no real migration can ever have.
+  if (outsideMigrations && !TARGET_SELFTEST_SCRATCH_RE.test(basename(path))) {
     console.error(
       `${TAG.fail}${relative(ROOT, path)} is not in migrations/. Every applied file lives in ` +
         `migrations/ so check:migrations can see it; move it there first.`,
@@ -413,7 +423,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     return 1;
   }
 
-  const filename = relative(MIGRATIONS_DIR, path);
+  const filename = outsideMigrations ? basename(path) : relative(MIGRATIONS_DIR, path);
   const sql = readFileSync(path, "utf8");
   const checksum = sha256(sql);
 
@@ -471,13 +481,16 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // production. See scripts/lib/migration-target.ts.
   let branchRef;
   let guard: { feature: string; key: string } | null = null;
+  let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
+  let headerNamesProduction = false;
   try {
     const header = readHeader(sql);
+    headerNamesProduction = header.targets !== null && header.targets.includes("production");
     // BRANCH-REF is read for EVERY apply, not only --target branch: the
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT);
-    ({ guard } = assertHeaderAgreesWithFlag({
+    ({ guard, revokeExemption } = assertHeaderAgreesWithFlag({
       filename,
       flagTarget: target,
       header,
@@ -489,6 +502,19 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       return 1;
     }
     throw err;
+  }
+
+  // Nothing fails silently — and nothing PASSES silently either. A used exemption
+  // is printed with the statements it allowed, by name.
+  if (revokeExemption) {
+    console.log(
+      `${TAG.ok}revoke exemption ${C.bold}-- allows: revoke ${revokeExemption.schema}${C.reset} ` +
+        `${C.dim}— every REVOKE below stays inside schema ${revokeExemption.schema}; no other ` +
+        `non-additive statement is excused${C.reset}`,
+    );
+    for (const st of revokeExemption.statements) {
+      console.log(`       ${C.dim}${st.text}${C.reset}`);
+    }
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
@@ -581,6 +607,17 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       return 2;
     }
 
+    // ATTACK-4 finding 3: the guard is now MANDATORY for any file whose header names
+    // production, so on that path `guard` is null only for a `-- seeds-guards: yes`
+    // register file — which is bounded to the knob register itself. A header that
+    // names production with neither is refused before this line by
+    // assertHeaderAgreesWithFlag, so this can never quietly skip a guard check.
+    if (target === "production" && headerNamesProduction && !guard) {
+      console.log(
+        `${TAG.ok}guard ${C.bold}-- seeds-guards: yes${C.reset} ${C.dim}— this file seeds the ` +
+          `knob register itself and touches nothing else${C.reset}`,
+      );
+    }
     if (guard && target === "production") {
       try {
         await assertGuardResolvesOff(
@@ -1054,8 +1091,18 @@ async function selfTest(statementTimeout: string): Promise<number> {
 //                               leaves a real object, and ledgers on the branch
 //
 // Production is never connected to and no file ever lands on it here.
-const TARGET_SELFTEST_FILE = "zz_db_apply_target_selftest.sql";
-const TARGET_SELFTEST_SCHEMA = "zz_w0_target_selftest";
+//
+// 🚨 PER-RUN, NOT SHARED (ATTACK-4 finding 22, fixed 2026-09-15). Until this was
+// fixed the scratch `.sql` was written into the SHARED matrx-frontend checkout's
+// migrations/ under a FIXED name, and it created a FIXED schema on the branch. Two
+// seats running --target-self-test at the same moment overwrote each other's file
+// mid-proof, dropped each other's schema, and deleted each other's ledger row —
+// and the cleanup ran only inside the green branch and asserted nothing, so the
+// wreckage was silent. Now: the file lives in a per-run mkdtemp directory OUTSIDE
+// the checkout, the filename and the schema both carry a per-run suffix, cleanup
+// runs on EVERY path, and cleanup is ASSERTED against the branch the way aidream's
+// half already asserted its own.
+const TARGET_SELFTEST_SCRATCH_RE = /^zz_db_apply_target_selftest_[0-9a-f]{12}\.sql$/;
 
 async function targetSelfTest(statementTimeout: string): Promise<number> {
   const { spawnSync } = await import("node:child_process");
@@ -1085,7 +1132,13 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     return 2;
   }
 
-  const path = resolve(MIGRATIONS_DIR, TARGET_SELFTEST_FILE);
+  // Per-run identity: the scratch file, the schema and the ledger filename all carry
+  // it, so two seats can run this at the same moment and never touch each other.
+  const runId = randomBytes(6).toString("hex");
+  const selftestFile = `zz_db_apply_target_selftest_${runId}.sql`;
+  const selftestSchema = `zz_w0_target_selftest_${runId}`;
+  const scratchDir = mkdtempSync(join(tmpdir(), "db-apply-target-selftest-"));
+  const path = join(scratchDir, selftestFile);
   const self = resolve(ROOT, "scripts", "apply-migration.ts");
   const run = (args: string[], env: Record<string, string>) =>
     spawnSync("npx", ["tsx", self, ...args], {
@@ -1107,18 +1160,21 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
 
   const branchBody =
     `-- target: branch\n` +
-    `create schema if not exists ${TARGET_SELFTEST_SCHEMA};\n` +
-    `create table if not exists ${TARGET_SELFTEST_SCHEMA}.landed (id int primary key);\n` +
-    `insert into ${TARGET_SELFTEST_SCHEMA}.landed (id) values (1) on conflict do nothing;\n`;
+    `create schema if not exists ${selftestSchema};\n` +
+    `create table if not exists ${selftestSchema}.landed (id int primary key);\n` +
+    `insert into ${selftestSchema}.landed (id) values (1) on conflict do nothing;\n`;
 
   try {
     // ── 1. header vs flag, no connection ───────────────────────────────────
+    // ORDER MATTERS: the header-vs-flag DISAGREEMENT must be refused before the
+    // additive/guard requirement this file would also fail, so the message an
+    // agent reads is the one that names the contradiction.
     writeFileSync(
       path,
-      `-- target: production\ncreate schema if not exists ${TARGET_SELFTEST_SCHEMA};\n`,
+      `-- target: production\ncreate schema if not exists ${selftestSchema};\n`,
       "utf8",
     );
-    const r1 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch"], {
+    const r1 = run([path, "--target", "branch"], {
       ...branchAsMatrix,
     });
     const out1 = `${r1.stdout ?? ""}${r1.stderr ?? ""}`;
@@ -1127,9 +1183,42 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
       fail(`the header/flag refusal did not print both identities:\n${out1.slice(0, 600)}`);
     else pass("a `-- target: production` file is refused by --target branch, before any connection");
 
+    // ── 1b. ATTACK-4 finding 3 — a production-headed file gets the SAME additive
+    //        and guard requirement a branch,production file gets ──────────────
+    const r1b = run([path, "--target", "production"], { ...branchAsMatrix });
+    const out1b = `${r1b.stdout ?? ""}${r1b.stderr ?? ""}`;
+    if (r1b.status !== 1)
+      fail(`a bare \`-- target: production\` file without --additive/--guard exited ${r1b.status}, expected 1`);
+    else if (!/without `-- additive: yes`/.test(out1b))
+      fail(`the production-header requirement did not fire:\n${out1b.slice(0, 900)}`);
+    else if (!/with NO `-- target:` line is production-only/.test(out1b))
+      fail(`the refusal did not say that header-less files are deliberately untouched:\n${out1b.slice(0, 900)}`);
+    else
+      pass(
+        "a `-- target: production` file without `-- additive: yes` / `-- guard:` is refused, and " +
+          "the message says header-less files are deliberately untouched",
+      );
+
+    // ── 1c. the non-regression half of the same finding: NO header, non-additive
+    //        body, --target production — accepted by the header checks exactly as
+    //        it was before. It fails LATER, on the branch's own identity, which is
+    //        proof the header checks did not refuse it. ────────────────────────
+    writeFileSync(path, `drop table if exists ${selftestSchema}.no_such_table;\n`, "utf8");
+    const r1c = run([path, "--target", "production"], { ...branchAsMatrix });
+    const out1c = `${r1c.stdout ?? ""}${r1c.stderr ?? ""}`;
+    if (/without `-- additive: yes`/.test(out1c) || /without a `-- guard:` line/.test(out1c))
+      fail(`a header-LESS file was judged by the production-header rule — the world just broke:\n${out1c.slice(0, 900)}`);
+    else if (!/the configured connection IS the rehearsal branch/.test(out1c))
+      fail(`the header-less file did not reach the connection-identity check:\n${out1c.slice(0, 900)}`);
+    else
+      pass(
+        "a file with NO `-- target:` header and a DROP in it is still accepted by the header " +
+          "checks and refused only by the connection's identity — ~3,567 migrations unmoved",
+      );
+
     // ── 2. configured host vs flag, no production credential ───────────────
     writeFileSync(path, branchBody, "utf8");
-    const r2 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch"], {
+    const r2 = run([path, "--target", "branch"], {
       [ref.passwordEnvVar]: `postgresql://postgres.${ref.parentRef}:not-a-real-password@${ref.poolerHost}:${ref.poolerPort}/${ref.database}`,
     });
     const out2 = `${r2.stdout ?? ""}${r2.stderr ?? ""}`;
@@ -1144,10 +1233,10 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     writeFileSync(
       path,
       `-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n` +
-        `create schema if not exists ${TARGET_SELFTEST_SCHEMA};\n`,
+        `create schema if not exists ${selftestSchema};\n`,
       "utf8",
     );
-    const r3 = run([`migrations/${TARGET_SELFTEST_FILE}`, "--target", "production"], {
+    const r3 = run([path, "--target", "production"], {
       ...branchAsMatrix,
     });
     const out3 = `${r3.stdout ?? ""}${r3.stderr ?? ""}`;
@@ -1160,10 +1249,60 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
           "system_identifier",
       );
 
+    // ── 3b. ATTACK-4 finding 4 — the revoke exemption, RED then GREEN, with no
+    //        connection needed for either verdict ─────────────────────────────
+    const revokeBody =
+      `-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n` +
+      `revoke usage on schema ${selftestSchema} from authenticated;\n`;
+    writeFileSync(path, revokeBody, "utf8");
+    const r3b = run([path, "--target", "production"], { ...branchAsMatrix });
+    const out3b = `${r3b.stdout ?? ""}${r3b.stderr ?? ""}`;
+    if (r3b.status !== 1 || !/body contains a REVOKE/.test(out3b))
+      fail(`a REVOKE with no \`-- allows:\` line was not refused by name:\n${out3b.slice(0, 900)}`);
+    else pass("a REVOKE with no `-- allows:` line is refused by name");
+
+    writeFileSync(
+      path,
+      revokeBody.replace(
+        "-- guard: custom/system_enabled\n",
+        `-- guard: custom/system_enabled\n-- allows: revoke ${selftestSchema}\n`,
+      ),
+      "utf8",
+    );
+    const r3c = run([path, "--target", "production"], { ...branchAsMatrix });
+    const out3c = `${r3c.stdout ?? ""}${r3c.stderr ?? ""}`;
+    if (/body contains a REVOKE/.test(out3c))
+      fail(`\`-- allows: revoke\` did not suppress the REVOKE reason:\n${out3c.slice(0, 900)}`);
+    else if (!new RegExp(`revoke exemption .*-- allows: revoke ${selftestSchema}`).test(out3c))
+      fail(`the used exemption was not ANNOUNCED — it passed silently:\n${out3c.slice(0, 900)}`);
+    else if (!/the configured connection IS the rehearsal branch/.test(out3c))
+      fail(`the exempted file did not get past the header checks:\n${out3c.slice(0, 900)}`);
+    else
+      pass(
+        "`-- allows: revoke <schema>` suppresses the REVOKE reason, announces itself by name, " +
+          "and excuses nothing else",
+      );
+
+    writeFileSync(
+      path,
+      revokeBody
+        .replace(
+          "-- guard: custom/system_enabled\n",
+          `-- guard: custom/system_enabled\n-- allows: revoke ${selftestSchema}\n`,
+        )
+        .replace(`on schema ${selftestSchema}`, "on schema public"),
+      "utf8",
+    );
+    const r3d = run([path, "--target", "production"], { ...branchAsMatrix });
+    const out3d = `${r3d.stdout ?? ""}${r3d.stderr ?? ""}`;
+    if (r3d.status !== 1 || !/does not stay inside it/.test(out3d))
+      fail(`a REVOKE naming another schema slipped past the exemption:\n${out3d.slice(0, 900)}`);
+    else pass("a REVOKE naming a schema the exemption does not cover refuses the whole file");
+
     // ── 4. GREEN — a real migration lands on the branch and reads back ──────
     writeFileSync(path, branchBody, "utf8");
     const r4 = run(
-      [`migrations/${TARGET_SELFTEST_FILE}`, "--target", "branch", `--statement-timeout=${statementTimeout}`],
+      [path, "--target", "branch", `--statement-timeout=${statementTimeout}`],
       {},
     );
     const out4 = `${r4.stdout ?? ""}${r4.stderr ?? ""}`;
@@ -1183,24 +1322,63 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
       );
       try {
         const back = await c.query<{ n: string; ledger: string }>(
-          `select (select count(*)::text from ${TARGET_SELFTEST_SCHEMA}.landed) as n,
+          `select (select count(*)::text from ${selftestSchema}.landed) as n,
                   (select count(*)::text from public._schema_migrations
-                     where source = ${lit(SOURCE)} and filename = ${lit(TARGET_SELFTEST_FILE)}) as ledger`,
+                     where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}) as ledger`,
         );
         if (back.rows[0]?.n !== "1") fail(`the branch object did not read back (rows: ${back.rows[0]?.n})`);
         else if (back.rows[0]?.ledger !== "1")
           fail(`the branch ledger row is missing (rows: ${back.rows[0]?.ledger})`);
         else pass("a `-- target: branch` file applied to the branch, read back, and ledgered there");
-        await c.query(`drop schema if exists ${TARGET_SELFTEST_SCHEMA} cascade`);
-        await c.query(
-          `delete from public._schema_migrations where source = ${lit(SOURCE)} and filename = ${lit(TARGET_SELFTEST_FILE)}`,
-        );
       } finally {
         await c.end();
       }
     }
   } finally {
+    // CLEANUP ON EVERY PATH, AND ASSERTED — aidream's half has always asserted its
+    // own; this one used to run only inside the green branch and assert nothing, so
+    // a red run left a schema and a ledger row on the branch in silence.
     if (existsSync(path)) unlinkSync(path);
+    rmSync(scratchDir, { recursive: true, force: true });
+    try {
+      const c = await connectDirect(
+        {
+          user: branchEnv.user,
+          password: branchEnv.password,
+          host: branchEnv.host,
+          port: branchEnv.port,
+          database: branchEnv.database,
+          from: branchEnv.from,
+        },
+        "matrx-frontend db:apply --target-self-test cleanup",
+      );
+      try {
+        await c.query(`drop schema if exists ${selftestSchema} cascade`);
+        await c.query(
+          `delete from public._schema_migrations where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}`,
+        );
+        const left = await c.query<{ schemas: string; ledger: string }>(
+          `select (select count(*)::text from information_schema.schemata
+                     where schema_name = ${lit(selftestSchema)}) as schemas,
+                  (select count(*)::text from public._schema_migrations
+                     where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}) as ledger`,
+        );
+        if (left.rows[0]?.schemas !== "0" || left.rows[0]?.ledger !== "0")
+          fail(
+            `cleanup left something behind on the branch (schema rows ${left.rows[0]?.schemas}, ` +
+              `ledger rows ${left.rows[0]?.ledger})`,
+          );
+        else
+          pass(`cleanup verified on the branch — ${selftestSchema} gone, ledger row gone`);
+      } finally {
+        await c.end();
+      }
+    } catch (err) {
+      fail(
+        `cleanup could not be VERIFIED on the branch — remove schema ${selftestSchema} and the ` +
+          `${selftestFile} ledger row by hand: ${formatPgError(err)}`,
+      );
+    }
   }
 
   if (failures) {
