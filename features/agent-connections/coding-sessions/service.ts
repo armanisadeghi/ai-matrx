@@ -10,6 +10,7 @@ const CODING_SESSION_SELECT = `
   id,
   conversation_id,
   provider,
+  provider_session_id,
   fidelity,
   origin,
   status,
@@ -65,7 +66,11 @@ function codingSessionsQuery(
     // RLS remains the ceiling, not the definition of this list.
     .eq("created_by", ownerId)
     .is("deleted_at", null)
-    .order("last_seen_at", { ascending: false })
+    // `nullsFirst: false` is load-bearing: an unclaimed handoff offer carries
+    // `last_seen_at = null`, and Postgres puts NULLs FIRST on a descending
+    // sort — so without it the newest-first list is headed by the one row that
+    // has never delivered anything.
+    .order("last_seen_at", { ascending: false, nullsFirst: false })
     .limit(opts?.limit ?? CODING_SESSION_PAGE_SIZE);
   if (opts?.beforeLastSeenAt) {
     query = query.lt("last_seen_at", opts.beforeLastSeenAt);
@@ -92,7 +97,9 @@ function codingSessionBindingsQuery(ownerId: string, conversationId: string) {
       .eq("created_by", ownerId)
       .eq("conversation_id", conversationId)
       .is("deleted_at", null)
-      .order("last_seen_at", { ascending: false })
+      // See `codingSessionsQuery`: an unclaimed offer has no delivery, and
+      // NULLs FIRST would put it at the head of every binding list.
+      .order("last_seen_at", { ascending: false, nullsFirst: false })
   );
 }
 
@@ -133,8 +140,11 @@ export async function fetchCodingSessions(opts?: {
   if (error) throw operationFailed("load your coding sessions", error);
   const hasMore = data.length > limit;
   const rows = hasMore ? data.slice(0, limit) : data;
+  // The cursor must be a real timestamp: the tail of the page can now be an
+  // unclaimed offer with no delivery at all, and `lt(null)` would page nowhere.
   const oldestLastSeenAt =
-    rows.length > 0 ? rows[rows.length - 1].last_seen_at : null;
+    [...rows].reverse().find((row) => row.last_seen_at !== null)
+      ?.last_seen_at ?? null;
   if (rows.length === 0) {
     return { sessions: [], hasMore: false, oldestLastSeenAt: null };
   }

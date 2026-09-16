@@ -36,6 +36,10 @@ import {
   providerAccountIdentity,
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
+import {
+  deliveryHistory,
+  newestDeliveryAt,
+} from "@/features/ai-work/conversations/bindingPlurality";
 import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
@@ -139,8 +143,10 @@ export function AiWorkConnections() {
   // Derived from the bindings this page already loaded — no second read, and
   // no chance of disagreeing with the delivery facts rendered below.
   const captureGap = captureGapVerdict({
-    lastSeenAt: sessions[0]?.last_seen_at ?? null,
-    history: sessions.map((session) => session.last_seen_at),
+    // The newest DELIVERY, never the first row: an unclaimed handoff offer has
+    // delivered nothing and sorts first once its `last_seen_at` is null.
+    lastSeenAt: newestDeliveryAt(sessions),
+    history: deliveryHistory(sessions),
     readSucceeded: checkedAtMs === 0 ? null : error === null,
     nowMs: checkedAtMs,
   });
@@ -205,7 +211,7 @@ export function AiWorkConnections() {
         */}
         <CaptureGapAlert
           verdict={captureGap}
-          lastSeenAt={sessions[0]?.last_seen_at ?? null}
+          lastSeenAt={newestDeliveryAt(sessions)}
           onRefresh={refresh}
           refreshing={loading}
         />

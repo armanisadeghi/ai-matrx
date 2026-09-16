@@ -77,10 +77,14 @@ function codexBinding({
   lastSeenAt = "2026-09-15T19:30:00Z",
 }: {
   claimed: boolean;
-  lastSeenAt?: string;
+  /** `null` is the shape the bridge writes for an unclaimed offer: a row that
+   *  has delivered nothing has no delivery timestamp to report. */
+  lastSeenAt?: string | null;
 }): CodingSessionBinding {
   return {
-    id: "binding-codex",
+    // Distinct row ids: a claimed binding and an offer are different rows, and
+    // a conversation can carry both for the same provider.
+    id: claimed ? "binding-codex" : "binding-codex-offer",
     conversation_id: CONVERSATION_ID,
     provider: "codex",
     provider_session_id: claimed ? CODEX_SESSION : OFFER_SESSION,
@@ -241,4 +245,99 @@ test("a conversation with no binding says nothing was synced", async () => {
   const text = await render([]);
   expect(text).toContain("No coding-session binding is attached");
   expect(text).not.toContain("coding tools on this conversation");
+});
+
+/**
+ * XT-FIX-5 / FE1 — AN UNCLAIMED OFFER HAS DELIVERED NOTHING, EVER.
+ *
+ * The break: the panel picked "the one that delivered most recently" as the
+ * greatest `last_seen_at` over EVERY binding. The bridge stamped a brand-new
+ * offer with `last_seen_at = created_at`, so the newest row on the screen was
+ * the one row that had never delivered anything — and it wore the "Delivered
+ * most recently" badge while the grouped sections below described its fields as
+ * the most recent delivery's. A screen is absent or honest; that one asserted a
+ * delivery that never happened (verifier V-XT-5, § A5).
+ *
+ * Two different expected winners are asserted (Claude Code when the offer is
+ * newest, and the claimed Codex row when it is not) so a constant cannot pass,
+ * and both the `created_at`-stamped and the `null` shapes of an offer's
+ * `last_seen_at` are covered — the server half of this lane makes the column
+ * nullable, and a reader that only handles one shape lies on the other.
+ */
+function badgeCards(): string[] {
+  return Array.from(container.querySelectorAll("span"))
+    .filter((node) => node.textContent === "Delivered most recently")
+    .map((node) => node.closest("li")?.textContent ?? "");
+}
+
+function offerCard(): HTMLLIElement {
+  const card = Array.from(container.querySelectorAll("li")).find((li) =>
+    li.textContent?.includes("Seeded handoff offered"),
+  );
+  if (!card) throw new Error("no unclaimed-offer card rendered");
+  return card as HTMLLIElement;
+}
+
+test("an unclaimed offer never wears the most-recent-delivery badge", async () => {
+  // The exact live shape: the offer row is the NEWEST row on the conversation
+  // because the bridge stamped it at creation time.
+  await render([
+    codexBinding({ claimed: false, lastSeenAt: "2026-09-15T23:52:06Z" }),
+    claudeBinding(),
+  ]);
+  const cards = badgeCards();
+  expect(cards.length).toBe(1);
+  expect(cards[0]).toContain("Claude Code");
+  expect(cards[0]).not.toContain("Codex");
+});
+
+test("a null last_seen_at on an offer is tolerated, not ordered or formatted", async () => {
+  await render([
+    codexBinding({ claimed: false, lastSeenAt: null }),
+    claudeBinding(),
+  ]);
+  const cards = badgeCards();
+  expect(cards.length).toBe(1);
+  expect(cards[0]).toContain("Claude Code");
+  expect(container.textContent).not.toContain("Invalid timestamp");
+});
+
+test("an offer's last delivery is an explicit sentence, never a timestamp", async () => {
+  await render([
+    codexBinding({ claimed: false, lastSeenAt: "2026-09-15T23:52:06Z" }),
+    claudeBinding(),
+  ]);
+  const card = offerCard();
+  expect(card.textContent).toContain("Nothing delivered yet");
+  // The creation stamp is never rendered as a delivery on the offer card.
+  expect(card.textContent).not.toContain(
+    new Date("2026-09-15T23:52:06Z").toLocaleString(),
+  );
+  // The claimed row's real delivery IS still rendered — the fix is not "hide
+  // every timestamp".
+  expect(container.textContent).toContain(
+    new Date("2026-09-15T18:00:00Z").toLocaleString(),
+  );
+});
+
+test("a claimed binding still wins the badge when the offer is older", async () => {
+  await render([
+    codexBinding({ claimed: true, lastSeenAt: "2026-09-15T19:30:00Z" }),
+    codexBinding({ claimed: false, lastSeenAt: "2026-09-15T17:00:00Z" }),
+    claudeBinding(),
+  ]);
+  const cards = badgeCards();
+  expect(cards.length).toBe(1);
+  expect(cards[0]).toContain("Codex");
+});
+
+test("when every binding is an unclaimed offer, nothing is picked as the deliverer", async () => {
+  const text = await render([codexBinding({ claimed: false, lastSeenAt: null })]);
+  expect(badgeCards().length).toBe(0);
+  // The grouped per-binding sections must say plainly that nothing delivered
+  // rather than silently describing the offer's fields as a delivery's.
+  expect(text).toContain("No tool has delivered");
+  // And they must NOT claim the conversation has no binding at all: it has one.
+  expect(text).not.toContain("No coding-session binding is attached");
+  expect(text).not.toContain("this conversation was created inside AI Matrx");
 });

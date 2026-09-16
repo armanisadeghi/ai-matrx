@@ -40,6 +40,10 @@ import { captureGapVerdict } from "../../coding-sessions/captureGap";
 import { CaptureGapAlert } from "../../coding-sessions/CaptureGapAlert";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
 import { type CodingSessionView } from "../../coding-sessions/service";
+import {
+  deliveryHistory,
+  newestDeliveryAt,
+} from "@/features/ai-work/conversations/bindingPlurality";
 import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
 
 function workConversationHref(conversationId: string): string {
@@ -105,8 +109,13 @@ export function PluginsSection({
     return matchesProvider && matchesQuery;
   });
 
+  // The newest DELIVERY, never the first row: an unclaimed handoff offer has
+  // delivered nothing and carries `last_seen_at = null`, which Postgres sorts
+  // FIRST on a descending order — so `sessions[0]` would tell an owner with
+  // live capture that nothing has ever arrived.
+  const newestDelivery = newestDeliveryAt(sessions);
   const health = bridgeReadHealth(
-    sessions[0]?.last_seen_at ?? null,
+    newestDelivery,
     checkedAtMs === 0 ? null : error === null,
     checkedAtMs,
   );
@@ -114,8 +123,8 @@ export function PluginsSection({
   // verdict states whether capture is still HAPPENING. The second is the one
   // that failed silently for 23.5 hours, so it renders above the status card.
   const captureGap = captureGapVerdict({
-    lastSeenAt: sessions[0]?.last_seen_at ?? null,
-    history: sessions.map((session) => session.last_seen_at),
+    lastSeenAt: newestDelivery,
+    history: deliveryHistory(sessions),
     readSucceeded: checkedAtMs === 0 ? null : error === null,
     nowMs: checkedAtMs,
   });
@@ -133,7 +142,7 @@ export function PluginsSection({
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 pb-4">
         <CaptureGapAlert
           verdict={captureGap}
-          lastSeenAt={sessions[0]?.last_seen_at ?? null}
+          lastSeenAt={newestDelivery}
           onRefresh={refresh}
           refreshing={loading}
           className="mb-3"

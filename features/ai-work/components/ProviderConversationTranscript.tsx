@@ -49,6 +49,10 @@ import {
   ConversationArtifactsPanel,
 } from "../conversations/components/ConversationArtifactsPanel";
 import { useCodingSessionArtifacts } from "../conversations/artifacts/useCodingSessionArtifacts";
+import {
+  artifactSessions,
+  type ArtifactSessionRef,
+} from "../conversations/bindingPlurality";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 import { AiMatrxReplyComposer } from "../conversations/components/AiMatrxReplyComposer";
 import { transcriptAuthorship } from "../lib/providerTranscriptAuthorship";
@@ -97,13 +101,15 @@ export function ProviderConversationTranscript({
   });
   const [workspace, setWorkspace] = useState<string | null>(null);
   /**
-   * The provider's own session id from the newest binding — the key every
-   * artifact row carries in `metadata.cli_session_id`. `null` until the
-   * binding read lands, or forever when no binding exists.
+   * EVERY claimed provider session on this conversation — each one the key a
+   * batch of artifact rows carries in `metadata.cli_session_id`. A handed-off
+   * conversation has more than one, and keeping a single id made the
+   * originating tool's artifacts structurally unreachable on this screen
+   * (verifier V-XT-5 § A7). Empty until the binding read lands, and for a
+   * conversation whose only bindings are unclaimed handoff offers — an offer
+   * has no provider session and produces no artifacts.
    */
-  const [providerSessionId, setProviderSessionId] = useState<string | null>(
-    null,
-  );
+  const [sessions, setSessions] = useState<readonly ArtifactSessionRef[]>([]);
   const [bindingRead, setBindingRead] = useState(false);
   /**
    * Rows that arrived AFTER the server render, counted separately so the
@@ -127,8 +133,7 @@ export function ProviderConversationTranscript({
       .then((bindings) => {
         if (cancelled) return;
         setBindingRead(true);
-        const newest = bindings.find((binding) => binding.provider_session_id);
-        setProviderSessionId(newest?.provider_session_id ?? null);
+        setSessions(artifactSessions(bindings));
         for (const binding of bindings) {
           const name = workspaceName(binding.metadata);
           if (name) {
@@ -318,13 +323,15 @@ export function ProviderConversationTranscript({
     activity.totalCount === null ? null : activity.totalCount + liveToolCallsAdded;
   const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
 
-  const artifacts = useCodingSessionArtifacts(providerSessionId);
+  const artifacts = useCodingSessionArtifacts(sessions);
   const artifactSummary =
     artifacts.state === "ready"
-      ? artifactCountLabel(artifacts.rows.length)
+      ? artifacts.groups.length > 1
+        ? `${artifactCountLabel(artifacts.rows.length)} across ${artifacts.groups.length} tools`
+        : artifactCountLabel(artifacts.rows.length)
       : artifacts.state === "error"
         ? "artifacts unavailable"
-        : bindingRead && !providerSessionId
+        : bindingRead && sessions.length === 0
           ? null
           : "counting artifacts…";
 
@@ -422,13 +429,14 @@ export function ProviderConversationTranscript({
         <ConversationProvenancePanel conversation={conversation} />
       </section>
 
-      {/* Every file the session wrote, mirrored into AI Matrx files by the
-          desktop publisher. Keyed on the provider session id, never on the
-          conversation, because that is what the publisher stamps. */}
+      {/* Every file EVERY tool on this conversation wrote, mirrored into AI
+          Matrx files by the desktop publisher. Keyed on the provider session
+          ids, never on the conversation, because that is what the publisher
+          stamps — and a handed-off conversation has more than one. */}
       <section className="rounded-xl border border-border bg-card p-4">
         <ConversationArtifactsPanel
           artifacts={artifacts}
-          hasSession={!bindingRead || providerSessionId !== null}
+          hasSession={!bindingRead || sessions.length > 0}
         />
       </section>
 

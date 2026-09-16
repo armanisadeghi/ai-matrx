@@ -73,6 +73,11 @@ import {
   isUnclaimedOffer,
   type HandoffRecord,
 } from "../handoffBinding";
+import {
+  lastDeliveryLabel,
+  mostRecentlyDelivered,
+  NO_DELIVERY_FROM_ANY_TOOL,
+} from "../bindingPlurality";
 
 /** A field the source did not report. Never rendered as an empty cell. */
 const NOT_REPORTED = "Not reported";
@@ -163,6 +168,21 @@ function Fact({
 
 function Absent({ children = NOT_REPORTED }: { children?: React.ReactNode }) {
   return <span className="text-muted-foreground">{children}</span>;
+}
+
+/**
+ * One binding's "last delivery", honestly. A row that has delivered nothing —
+ * an unclaimed handoff offer, or a binding with no recorded delivery — gets an
+ * explicit sentence, never a blank cell and never a creation stamp presented as
+ * a delivery.
+ */
+function DeliveryValue({ binding }: { binding: CodingSessionBinding }) {
+  const delivery = lastDeliveryLabel(binding);
+  return delivery.delivered ? (
+    <>{delivery.text}</>
+  ) : (
+    <Absent>{delivery.text}</Absent>
+  );
 }
 
 const FIDELITY_TONE: Record<string, string> = {
@@ -297,7 +317,7 @@ function BindingCard({
         <Fact label="Arrived by">{formatText(binding.origin)}</Fact>
         <Fact label="Binding state">{formatText(binding.status)}</Fact>
         <Fact label="Last delivery">
-          {formatSessionTimestamp(binding.last_seen_at)}
+          <DeliveryValue binding={binding} />
         </Fact>
       </dl>
     </li>
@@ -335,18 +355,16 @@ export function ConversationProvenancePanel({
     };
   }, [conversation.id, reloadToken]);
 
-  // The binding that delivered most recently. It is `current`, not `current`:
-  // with a handoff the other rows are other TOOLS, not stale copies of this
-  // one, and each is named in full in the tools list below. The grouped fields
-  // further down describe this binding, and say so in their heading.
-  const current = bindings.reduce<CodingSessionBinding | null>(
-    (newest, binding) =>
-      newest === null ||
-      Date.parse(binding.last_seen_at) > Date.parse(newest.last_seen_at)
-        ? binding
-        : newest,
-    null,
-  );
+  // The binding that DELIVERED most recently — considering only bindings that
+  // have delivered at all. An unclaimed handoff offer has delivered nothing,
+  // ever, so it can never win this, however new its row is: the bridge used to
+  // stamp an offer with `last_seen_at = created_at`, and a plain max over every
+  // row therefore badged the one row that had never delivered anything
+  // (verifier V-XT-5 § A5). `null` here is a real answer — every binding may be
+  // an unclaimed offer — and the sections below say so rather than picking one.
+  const current = mostRecentlyDelivered(bindings);
+  /** Bindings exist, but not one of them has ever delivered. */
+  const awaitingFirstDelivery = current === null && bindings.length > 0;
   const claudeBinding =
     bindings.find(
       (binding) =>
@@ -424,7 +442,7 @@ export function ConversationProvenancePanel({
               <BindingCard
                 key={binding.id}
                 binding={binding}
-                isCurrent={binding.id === current?.id}
+                isCurrent={binding === current}
                 index={index}
                 total={bindings.length}
               />
@@ -454,12 +472,18 @@ export function ConversationProvenancePanel({
         note={
           current && bindings.length > 1
             ? `These are the ${providerLabel(current.provider)} binding's fields — the one that delivered most recently.`
-            : undefined
+            : awaitingFirstDelivery
+              ? NO_DELIVERY_FROM_ANY_TOOL
+              : undefined
         }
       >
         <Fact label="Provider">
           {current ? (
             providerLabel(current.provider)
+          ) : awaitingFirstDelivery ? (
+            <Absent>
+              No tool has delivered yet — the offered tools are named above
+            </Absent>
           ) : (
             <Absent>No provider — this is an AI Matrx conversation</Absent>
           )}
@@ -565,7 +589,7 @@ export function ConversationProvenancePanel({
             <Fact label="Binding state">{formatText(current.status)}</Fact>
             <Fact label="Arrived by">{formatText(current.origin)}</Fact>
             <Fact label="Last delivery">
-              {formatSessionTimestamp(current.last_seen_at)}
+              <DeliveryValue binding={current} />
             </Fact>
             <Fact label="Session ended">
               {current.ended_at ? (
@@ -600,10 +624,10 @@ export function ConversationProvenancePanel({
               {providerLabel(current.provider)} binding that delivered most
               recently. The other {bindings.length - 1} binding
               {bindings.length === 2 ? "" : "s"} on this conversation{" "}
-              {bindings.length === 2 ? "is a" : "are"} separate provider
-              session{bindings.length === 2 ? "" : "s"} with{" "}
-              {bindings.length === 2 ? "its" : "their"} own history — named in
-              full at the top of this panel.
+              {bindings.length === 2 ? "is" : "are"} named in full at the top of
+              this panel — each is either another tool&apos;s own provider
+              session with its own history, or a handoff offer that has
+              delivered nothing yet.
             </p>
           )}
         </>
@@ -611,8 +635,9 @@ export function ConversationProvenancePanel({
         <Group source="sync">
           <Fact label="Delivery">
             <Absent>
-              No coding-session binding is attached. Nothing was synced from a
-              provider — this conversation was created inside AI Matrx.
+              {awaitingFirstDelivery
+                ? NO_DELIVERY_FROM_ANY_TOOL
+                : "No coding-session binding is attached. Nothing was synced from a provider — this conversation was created inside AI Matrx."}
             </Absent>
           </Fact>
         </Group>

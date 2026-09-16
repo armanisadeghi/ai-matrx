@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  deliveryHistory,
+  newestDeliveryAt,
+} from "@/features/ai-work/conversations/bindingPlurality";
 import { useCodingSessions } from "./useCodingSessions";
 import { captureGapVerdict, type CaptureGapVerdict } from "./captureGap";
 
@@ -24,10 +28,15 @@ export interface CaptureGapState {
 export function useCaptureGap(): CaptureGapState {
   const { sessions, loading, error, checkedAtMs, refresh } = useCodingSessions();
 
-  const lastSeenAt = sessions[0]?.last_seen_at ?? null;
+  // The newest DELIVERY, not the first row. An unclaimed handoff offer has
+  // delivered nothing and now carries `last_seen_at = null`, which Postgres
+  // sorts FIRST on a descending order — reading `sessions[0]` would hand this
+  // verdict "nothing has ever arrived", its loudest alarm, to an owner whose
+  // capture is running fine.
+  const lastSeenAt = newestDeliveryAt(sessions);
   const verdict = captureGapVerdict({
     lastSeenAt,
-    history: sessions.map((session) => session.last_seen_at),
+    history: deliveryHistory(sessions),
     readSucceeded: checkedAtMs === 0 ? null : error === null,
     // The read's own timestamp, not render time: a verdict must describe the
     // moment the data was true, never drift as the component re-renders.
