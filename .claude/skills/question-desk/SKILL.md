@@ -192,11 +192,19 @@ into the same interview and a Work Loop item `qd:overturn:<id>` waits in the cam
 item `qd:record:<id>` carrying the verbatim ruling and the node, and flips to "recorded" when that
 item succeeds; a hand-back reads "handed back — the desk decides" with `qd:decide:<id>`.
 
-🚨 **THE CAMPAIGN IS THIS STEP'S WORK, AND NOBODY ELSE DRAINS IT.** No schedule exists for it and
-none may be created ([no unapproved schedules](/policies/no-unapproved-schedules.md)); if this run
-does not empty it, nothing does — measured 2026-09-14: ten `qd:*` items `pending`, `attempts = 0`,
-the oldest seven hours old, while every one of those rows told its person "recording…". Drain it
-BEFORE round 1 and again before you close, with the `work_loop` MCP tool, item by item:
+🚨 **THE CAMPAIGN IS THIS STEP'S WORK — the platform drains only the `qd:record` half.** Since
+2026-09-16 the server's `question_desk_drain` system task (knob-gated: `question_desk.drainer_enabled`,
+approved by Arman in the admin UI, not by any agent) claims every `qd:record:*` item itself — it
+writes the ruling verbatim into the owning node's DECISIONS.md, flips the row to "recorded", and
+answers the verifier — so a row saying "recording…" while that knob is off means the drainer is
+waiting for its approval, not that nobody exists. **`qd:overturn:*` and `qd:decide:*` are never
+claimed by the platform**: research and a decision need an agent with the repositories in front
+of it, and that agent is THIS run (or a Work Loop worker). Never create a schedule for this duty
+yourself ([no unapproved schedules](/policies/no-unapproved-schedules.md)) — measured 2026-09-14:
+ten `qd:*` items `pending`, `attempts = 0`, the oldest seven hours old, while every one of those
+rows told its person "recording…". Drain the agent half BEFORE round 1 and again before you
+close, with the `work_loop` MCP tool, item by item (claim by exact `canonical_key` — a generic
+claim may hand you a `qd:record` item the drainer would have closed for free):
 
 1. `work_loop(action='status')` → find the campaign under `campaigns`, slug `question-desk`; note
    its `campaign_id` and how many items are claimable.
@@ -239,6 +247,10 @@ the counts.
 - Create a schedule for this duty.
 
 ## Changelog
+
+- **2026-09-16 (the platform records rulings)** — `qd:record` items are closed by the server's
+  `question_desk_drain` task (QD-029); step 5's campaign drain is now the `qd:overturn` /
+  `qd:decide` half only.
 
 - **2026-09-14 (answers become work)** — Step 5 opens with the server's follow-through: every
   answer is acted on within one sweep and lands as a Work Loop item in the `question-desk`
