@@ -1,6 +1,7 @@
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { fetchAuthenticators } from "../authenticator-service";
 import { checkVaultDestination, createVaultItem } from "../vault-service";
+import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
 
 const ACCESS_TOKEN = "test-access-token";
@@ -102,7 +103,10 @@ describe("Vault and Authenticator organization transport", () => {
           expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
         },
       ),
-    ).rejects.toThrow("account or request organization changed");
+    ).rejects.toMatchObject({
+      code: "context_changed",
+      constructor: VaultImportTransportError,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

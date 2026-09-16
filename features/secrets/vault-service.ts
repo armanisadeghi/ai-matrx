@@ -137,7 +137,11 @@ export class VaultImportTransportError extends Error {
   }
 }
 
-async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
+async function authHeaders(
+  expectedActor?: VaultExpectedActor,
+  contextError: () => Error = () =>
+    new VaultImportTransportError("context_changed"),
+): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
@@ -167,9 +171,7 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
     (expectedActor.userId !== user.id ||
       expectedActor.organizationId !== organizationId)
   ) {
-    throw expectedActor
-      ? new VaultLoginExportTransportError("context_changed")
-      : new VaultImportTransportError("context_changed");
+    throw contextError();
   }
   return {
     organizationId,
@@ -265,7 +267,10 @@ async function vaultExportResponse(
   expectedActor: VaultExpectedActor,
   signal?: AbortSignal,
 ): Promise<Response> {
-  const { organizationId, headers: auth } = await authHeaders(expectedActor);
+  const { organizationId, headers: auth } = await authHeaders(
+    expectedActor,
+    () => new VaultLoginExportTransportError("context_changed"),
+  );
   const headers = applyOrganizationContextHeader(auth, organizationId);
   let resp: Response;
   try {

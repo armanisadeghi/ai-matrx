@@ -342,7 +342,7 @@ export function VaultLoginExportDialog({
                   disabled={running}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Use your current Matrx password to continue.</p>
+              <p className="text-xs text-muted-foreground">This export currently requires a Matrx password. Your connected-provider sign-in needs a separate confirmation method.</p>
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close} disabled={running}>Cancel</Button>

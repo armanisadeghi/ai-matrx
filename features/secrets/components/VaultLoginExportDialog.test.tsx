@@ -147,7 +147,10 @@ describe("VaultLoginExportDialog", () => {
     await act(async () => checkbox.click());
     await act(async () => button("Review selected logins").click());
     const acknowledgements = document.querySelectorAll('[role="checkbox"]');
-    await act(async () => acknowledgements[acknowledgements.length - 1]?.click());
+    await act(async () => {
+      const acknowledgement = acknowledgements[acknowledgements.length - 1];
+      if (acknowledgement instanceof HTMLElement) acknowledgement.click();
+    });
     await act(async () => button("Download CSV").click());
 
     expect(downloadMock).toHaveBeenCalledWith(
