@@ -7762,6 +7762,85 @@
     "title": "MasterworkTriadsReadyData",
     "type": "object"
   },
+  "MasterworkSortCasesReadyData": {
+    "$defs": {
+      "MasterworkSortCase": {
+        "description": "ONE case on THE SORTING TABLE — a thing an Expert sorts with a thumb.\n\nDeliberately tiny: a claim, a lead, a submission, a ticket. ``note`` is\nwhere it came from in the Expert's own terms (\"from your CRM\"), NEVER a\nhint at which pile it belongs in — a sort with a labelled answer measures\nnothing.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "MasterworkSortCase",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/sort/cases — one round of cases\nwritten for an Expert who brought none.\n\nNothing is written to the Rulebook by this call: an unsorted case is not\nexpertise, and only the Expert's answer to a BOUNDARY question is ever\ndistilled.",
+    "properties": {
+      "type": {
+        "const": "masterwork_sort_cases_ready",
+        "default": "masterwork_sort_cases_ready",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "cases": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSortCase"
+        },
+        "title": "Cases",
+        "type": "array"
+      },
+      "requested": {
+        "default": 0,
+        "title": "Requested",
+        "type": "integer"
+      },
+      "repeats_dropped": {
+        "default": 0,
+        "title": "Repeats Dropped",
+        "type": "integer"
+      },
+      "pile_count": {
+        "default": 3,
+        "title": "Pile Count",
+        "type": "integer"
+      },
+      "boundary_questions": {
+        "default": 5,
+        "title": "Boundary Questions",
+        "type": "integer"
+      },
+      "voice_default_on": {
+        "default": true,
+        "title": "Voice Default On",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "rulebook_id"
+    ],
+    "title": "MasterworkSortCasesReadyData",
+    "type": "object"
+  },
   "MasterworkProbeRoundData": {
     "$defs": {
       "MasterworkSourceAlreadyDistilled": {
@@ -7920,6 +7999,200 @@
       "rulebook_id"
     ],
     "title": "MasterworkProbeRoundData",
+    "type": "object"
+  },
+  "MasterworkTeachBackRoundData": {
+    "$defs": {
+      "MasterworkSourceAlreadyDistilled": {
+        "description": "This source has ALREADY produced rules in this Rulebook.\n\nThe named field that makes a repeat press honest (2026-09-12: a link was\ndistilled twice into one Rulebook — 115 rules then 123 more — and the\nduplicate check reported 0, because rule-level dedupe cannot answer a\nsource-level question). ``message`` is the sentence to show; ``can_replace``\nsays whether offering \"Distil again and replace\" is meaningful (it is not\nwhen every earlier rule has already been approved by the Expert, since a\nmachine never removes those).",
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
+          },
+          "rules": {
+            "default": 0,
+            "title": "Rules",
+            "type": "integer"
+          },
+          "draft_rules": {
+            "default": 0,
+            "title": "Draft Rules",
+            "type": "integer"
+          },
+          "approved_rules": {
+            "default": 0,
+            "title": "Approved Rules",
+            "type": "integer"
+          },
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Run Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "can_replace": {
+            "default": true,
+            "title": "Can Replace",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "message"
+        ],
+        "title": "MasterworkSourceAlreadyDistilled",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/teach-back — ONE round of a\nTeach-Back.\n\nTwo things in one payload, because one call does two things: whatever the\nExpert's CORRECTION of the previous round produced (``rules_added`` and the\nids, so the screen can say what their interruption was worth), and the NEXT\nexplanation for them to hear and interrupt.\n\n🚨 ``basis`` is not cosmetic and is never derived on the client. A\nteach-back on an EMPTY Rulebook explains what a competent generalist would\ndo, and the screen must say so in the Expert's own terms — a generalist\nexplanation presented as \"here is what we learned from you\" is the\nplatform lying about whose judgment it is reading back.\n\n🚨 ``done`` is not derived on the client either. A teach-back ends because\nthe Expert said \"yes, that's it\" or because the organization's round knob\nran out, and ``done_reason`` says which in their own terms.",
+    "properties": {
+      "type": {
+        "const": "masterwork_teach_back_round",
+        "default": "masterwork_teach_back_round",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "default": 0,
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "run_id": {
+        "default": "",
+        "title": "Run Id",
+        "type": "string"
+      },
+      "round_index": {
+        "default": 0,
+        "title": "Round Index",
+        "type": "integer"
+      },
+      "round_count": {
+        "default": 0,
+        "title": "Round Count",
+        "type": "integer"
+      },
+      "done": {
+        "default": false,
+        "title": "Done",
+        "type": "boolean"
+      },
+      "done_reason": {
+        "default": "",
+        "title": "Done Reason",
+        "type": "string"
+      },
+      "subject": {
+        "default": "",
+        "title": "Subject",
+        "type": "string"
+      },
+      "explanation": {
+        "default": "",
+        "title": "Explanation",
+        "type": "string"
+      },
+      "basis": {
+        "default": "",
+        "title": "Basis",
+        "type": "string"
+      },
+      "rule_ids_cited": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Rule Ids Cited",
+        "type": "array"
+      },
+      "uncertain_part": {
+        "default": "",
+        "title": "Uncertain Part",
+        "type": "string"
+      },
+      "distilled_round": {
+        "default": 0,
+        "title": "Distilled Round",
+        "type": "integer"
+      },
+      "rules_added": {
+        "default": 0,
+        "title": "Rules Added",
+        "type": "integer"
+      },
+      "rule_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Rule Ids",
+        "type": "array"
+      },
+      "duplicates_skipped": {
+        "default": 0,
+        "title": "Duplicates Skipped",
+        "type": "integer"
+      },
+      "quotes_verified": {
+        "default": 0,
+        "title": "Quotes Verified",
+        "type": "integer"
+      },
+      "quotes_unverified": {
+        "default": 0,
+        "title": "Quotes Unverified",
+        "type": "integer"
+      },
+      "signed_rule_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Signed Rule Ids",
+        "type": "array"
+      },
+      "signature_note": {
+        "default": "",
+        "title": "Signature Note",
+        "type": "string"
+      },
+      "already_distilled": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSourceAlreadyDistilled"
+        },
+        "title": "Already Distilled",
+        "type": "array"
+      },
+      "answered_rounds": {
+        "default": 0,
+        "title": "Answered Rounds",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "rulebook_id"
+    ],
+    "title": "MasterworkTeachBackRoundData",
     "type": "object"
   },
   "MasterworkTriageProgressData": {
@@ -12239,7 +12512,8 @@
           "context_trimmed",
           "injection_consumed",
           "provider_retry",
-          "citation"
+          "citation",
+          "control_token"
         ],
         "title": "EventType",
         "type": "string"
@@ -12288,7 +12562,8 @@
       "context_trimmed",
       "injection_consumed",
       "provider_retry",
-      "citation"
+      "citation",
+      "control_token"
     ]
   }
 }

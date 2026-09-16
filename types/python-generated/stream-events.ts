@@ -29,6 +29,7 @@ export const EventType = {
   INJECTION_CONSUMED: "injection_consumed",
   PROVIDER_RETRY: "provider_retry",
   CITATION: "citation",
+  CONTROL_TOKEN: "control_token",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -80,6 +81,12 @@ export interface ChunkPayload {
 export interface CitationPayload {
   block_index?: number | null;
   citation: Record<string, unknown>;
+}
+
+export interface ControlTokenPayload {
+  name: string;
+  value: string;
+  declared_by?: string | null;
 }
 
 export interface ReasoningChunkPayload {
@@ -1233,6 +1240,49 @@ export interface MasterworkShortlistData {
   considered?: number;
 }
 
+export interface MasterworkSortCase {
+  id: string;
+  text: string;
+  note?: string;
+}
+
+export interface MasterworkSortCasesReadyData {
+  type?: "masterwork_sort_cases_ready";
+  rulebook_id: string;
+  cases?: MasterworkSortCase[];
+  requested?: number;
+  repeats_dropped?: number;
+  pile_count?: number;
+  boundary_questions?: number;
+  voice_default_on?: boolean;
+}
+
+export interface MasterworkTeachBackRoundData {
+  type?: "masterwork_teach_back_round";
+  rulebook_id: string;
+  rulebook_version?: number;
+  run_id?: string;
+  round_index?: number;
+  round_count?: number;
+  done?: boolean;
+  done_reason?: string;
+  subject?: string;
+  explanation?: string;
+  basis?: string;
+  rule_ids_cited?: string[];
+  uncertain_part?: string;
+  distilled_round?: number;
+  rules_added?: number;
+  rule_ids?: string[];
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+  signed_rule_ids?: string[];
+  signature_note?: string;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  answered_rounds?: number;
+}
+
 export interface MasterworkTriad {
   id: string;
   prompt: string;
@@ -2071,6 +2121,8 @@ export type TypedDataPayload =
   | MasterworkRunSnapshotData
   | MasterworkSealedCaseDisclosureData
   | MasterworkShortlistData
+  | MasterworkSortCasesReadyData
+  | MasterworkTeachBackRoundData
   | MasterworkTriadsReadyData
   | MasterworkTriageCompleteData
   | MasterworkTriageProgressData
@@ -7637,6 +7689,11 @@ export interface CitationEvent {
   data: CitationPayload;
 }
 
+export interface ControlTokenEvent {
+  event: "control_token";
+  data: ControlTokenPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -7662,7 +7719,8 @@ export type TypedStreamEvent =
   | ContextTrimmedEvent
   | InjectionConsumedEvent
   | ProviderRetryEvent
-  | CitationEvent;
+  | CitationEvent
+  | ControlTokenEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -7792,6 +7850,10 @@ export function isProviderRetryEvent(e: TypedStreamEvent): e is { event: "provid
 
 export function isCitationEvent(e: TypedStreamEvent): e is { event: "citation"; data: CitationPayload } {
   return e.event === "citation";
+}
+
+export function isControlTokenEvent(e: TypedStreamEvent): e is { event: "control_token"; data: ControlTokenPayload } {
+  return e.event === "control_token";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {
