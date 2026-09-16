@@ -210,7 +210,7 @@ export function mergeAttachments(
 export function attachmentKey(
   item: Pick<PendingAttachment, "provider" | "resource_ref">,
 ): string {
-  return `${item.provider} ${item.resource_ref}`;
+  return `${item.provider}\0${item.resource_ref}`;
 }
 
 /** How many things are attached for each provider — the chip's count. */
