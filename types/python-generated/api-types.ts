@@ -4236,6 +4236,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/exports/login-csv/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Login Csv */
+        post: operations["preview_login_csv_vault_exports_login_csv_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/exports/login-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Download Login Csv */
+        post: operations["download_login_csv_vault_exports_login_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/items": {
         parameters: {
             query?: never;
@@ -115028,6 +115062,55 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** VaultLoginCsvDownloadRequest */
+        VaultLoginCsvDownloadRequest: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Item Ids */
+            item_ids: string[];
+            /** Revision */
+            revision: string;
+        };
+        /** VaultLoginCsvPreviewItem */
+        VaultLoginCsvPreviewItem: {
+            /** Item Id */
+            item_id: string;
+            /** Title */
+            title: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Omissions */
+            omissions?: {
+                [key: string]: number;
+            };
+        };
+        /** VaultLoginCsvPreviewRequest */
+        VaultLoginCsvPreviewRequest: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Item Ids */
+            item_ids: string[];
+        };
+        /** VaultLoginCsvPreviewResponse */
+        VaultLoginCsvPreviewResponse: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Revision */
+            revision: string;
+            /** Items */
+            items: components["schemas"]["VaultLoginCsvPreviewItem"][];
+        };
         /** VaultResolveRef */
         VaultResolveRef: {
             /** Item Id */
@@ -128655,6 +128738,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrganizationSecretSummary"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_login_csv_vault_exports_login_csv_preview_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultLoginCsvPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultLoginCsvPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_login_csv_vault_exports_login_csv_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultLoginCsvDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

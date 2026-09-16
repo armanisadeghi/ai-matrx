@@ -10281,6 +10281,103 @@
         }
       }
     },
+    "/vault/exports/login-csv/preview": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Preview Login Csv",
+        "operationId": "preview_login_csv_vault_exports_login_csv_preview_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultLoginCsvPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultLoginCsvPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/exports/login-csv": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Download Login Csv",
+        "operationId": "download_login_csv_vault_exports_login_csv_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultLoginCsvDownloadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/items": {
       "get": {
         "tags": [
@@ -256714,6 +256811,133 @@
         "additionalProperties": true,
         "type": "object",
         "title": "VaultItemUpdateRequest"
+      },
+      "VaultLoginCsvDownloadRequest": {
+        "properties": {
+          "profile": {
+            "type": "string",
+            "const": "matrx_login_csv_v1",
+            "title": "Profile"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Item Ids"
+          },
+          "revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile",
+          "item_ids",
+          "revision"
+        ],
+        "title": "VaultLoginCsvDownloadRequest"
+      },
+      "VaultLoginCsvPreviewItem": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "omissions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Omissions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "title",
+          "eligible"
+        ],
+        "title": "VaultLoginCsvPreviewItem"
+      },
+      "VaultLoginCsvPreviewRequest": {
+        "properties": {
+          "profile": {
+            "type": "string",
+            "const": "matrx_login_csv_v1",
+            "title": "Profile"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Item Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile",
+          "item_ids"
+        ],
+        "title": "VaultLoginCsvPreviewRequest"
+      },
+      "VaultLoginCsvPreviewResponse": {
+        "properties": {
+          "profile": {
+            "type": "string",
+            "const": "matrx_login_csv_v1",
+            "title": "Profile"
+          },
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VaultLoginCsvPreviewItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile",
+          "revision",
+          "items"
+        ],
+        "title": "VaultLoginCsvPreviewResponse"
       },
       "VaultResolveRef": {
         "properties": {
