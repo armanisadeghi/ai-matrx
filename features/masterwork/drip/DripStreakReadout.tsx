@@ -21,7 +21,7 @@
 // failing"; a zero with the sentence reads as "nothing has happened yet",
 // which is the truth.
 
-import { Flame, MessageSquareQuote, PauseCircle, Sparkles } from "lucide-react";
+import { BrainCircuit, Flame, MessageSquareQuote, PauseCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   answeredDays,
@@ -90,7 +90,7 @@ export function DripStreakReadout({
           tone="plain"
         />
         <Stat
-          icon={<Sparkles className="h-3.5 w-3.5" />}
+          icon={<BrainCircuit className="h-3.5 w-3.5" />}
           value={`${report.rules}`}
           label={report.rules === 1 ? "rule from this" : "rules from this"}
           tone={report.rules > 0 ? "good" : "plain"}

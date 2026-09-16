@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FancyInput } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
@@ -270,7 +270,18 @@ export function CapturePlanPage({
 
   // ── setup ─────────────────────────────────────────────────────────────────
 
-  const [goal, setGoal] = useState("");
+  /**
+   * 🚨 THE GOAL STARTS AS THE EXPERT'S OWN WORDS, not as an example of somebody
+   * else's job (jobs-bar-2026-09-16, item 1). The field used to open empty
+   * behind a placeholder that read like a finished answer — "How I decide what a
+   * commercial teardown is worth…" — on a Masterwork about e-waste pallets. A
+   * first-timer reads a grey sentence in a box as something already filled in,
+   * presses the only button on the screen, and nothing happens, because the
+   * button is dead until the box has real text and the placeholder is not text.
+   * The Masterwork's own description is the sentence the Expert already wrote
+   * for exactly this question, so the plan starts from it and stays editable.
+   */
+  const [goal, setGoal] = useState(() => rulebook.description?.trim() ?? "");
   const [minutesPerDay, setMinutesPerDay] = useState(30);
   const [cadence, setCadence] = useState<Cadence | null>(null);
   const [channel, setChannel] = useState<ReminderChannel | null>(null);
@@ -482,15 +493,25 @@ export function CapturePlanPage({
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setGoal(e.target.value)
                   }
-                  placeholder="How I decide what a commercial teardown is worth, and when I walk away from one."
+                  placeholder="In one sentence: the call you want this to cover."
                   rows={3}
                   enableVoice={settings.voiceDefaultOn}
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {rulebook.description
+                    ? "Filled in from what you wrote when you started this Masterwork. Change it to anything you like."
+                    : "One sentence is enough — the call you make most often, or the one people get wrong."}
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="cp-minutes">Minutes you can give a day</Label>
-                  <FancyInput
+                  {/* A PLAIN NUMBER FIELD, not `FancyInput` — that primitive
+                      always paints a "Copy to clipboard" button inside itself,
+                      which on a field holding "30" is a control with no purpose
+                      that also sits in the keyboard tab order between every
+                      other field on this form (jobs-bar-2026-09-16, item 3). */}
+                  <Input
                     id="cp-minutes"
                     type="number"
                     min={3}
@@ -502,18 +523,21 @@ export function CapturePlanPage({
                   />
                 </div>
                 <Picker
+                  id="cp-cadence"
                   label="How often"
                   value={cadence ?? settings.defaults.cadence}
                   onChange={(v) => setCadence(v as Cadence)}
                   options={Object.entries(CADENCE_WORDS)}
                 />
                 <Picker
+                  id="cp-channel"
                   label="Remind me"
                   value={channel ?? settings.defaults.reminderChannel}
                   onChange={(v) => setChannel(v as ReminderChannel)}
                   options={Object.entries(CHANNEL_WORDS)}
                 />
                 <Picker
+                  id="cp-stop"
                   label="Stop the plan"
                   value={stopRule ?? settings.defaults.stopRule}
                   onChange={(v) => setStopRule(v as StopRule)}
@@ -521,7 +545,7 @@ export function CapturePlanPage({
                 />
                 <div>
                   <Label htmlFor="cp-horizon">For how many days at most</Label>
-                  <FancyInput
+                  <Input
                     id="cp-horizon"
                     type="number"
                     min={1}
@@ -536,12 +560,23 @@ export function CapturePlanPage({
               {buildRefusal ? (
                 <Refusal title="The plan refused to start" body={buildRefusal} />
               ) : null}
-              <div className="flex items-center gap-3">
+              {/* STACKS ON A PHONE. Side by side at 390px the helper sentence
+                  squeezed the button until its own label was clipped —
+                  "Build my plan" with the "n" cut off (jobs-bar item 2). */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={startPlan}
                   disabled={!canEdit || busy || goal.trim().length < 5}
                 >
-                  {busy ? "Building your plan…" : "Build my plan"}
+                  {busy ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building your plan…
+                    </>
+                  ) : (
+                    "Build my plan"
+                  )}
                 </Button>
                 {goal.trim().length < 5 ? (
                   <span className="text-xs text-muted-foreground">
@@ -723,12 +758,26 @@ function countNew(mark: OpenSessionMark, rulebook: Rulebook): number {
   return rulebook.rules.filter((r) => !before.has(r.id)).length;
 }
 
+/**
+ * 🚨 A LABEL THAT IS ONLY PAINTED IS NOT A LABEL (jobs-bar-2026-09-16, item 4).
+ * These three pickers carried a `<Label>` with nothing tying it to the control,
+ * so a screen reader announced "How often" as loose text and then an unnamed
+ * combobox — three of them in a row, indistinguishable. `id` + `htmlFor` is the
+ * whole fix, and it also makes the words a click target for the control.
+ *
+ * And the TRIGGER WRAPS. Every one of these answers is a sentence in the
+ * Expert's own language ("When it stops paying, or when I've got what I came
+ * for"), and a one-line trigger cut it to "…or when I've got w" — a setting the
+ * Expert cannot read is a setting the Expert did not choose.
+ */
 function Picker({
+  id,
   label,
   value,
   onChange,
   options,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -736,9 +785,12 @@ function Picker({
 }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
+        <SelectTrigger
+          id={id}
+          className="h-auto min-h-10 items-start whitespace-normal py-2 text-left [&>span]:line-clamp-none [&>span]:whitespace-normal"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -815,8 +867,21 @@ function Schedule({ plan, rulebook }: { plan: NonNullable<CapturePlanState["plan
                     ) : s.status === "skipped" ? (
                       <Badge variant="outline">moved</Badge>
                     ) : (
+                      /* 🚨 WHAT THIS SESSION WILL ASK ME, not why the planner
+                         picked it (jobs-bar-2026-09-16, item 6). Every one of
+                         the thirty-two rows printed the SAME sentence — "You
+                         have not tried this one yet, so the plan is finding out
+                         what it gives you" — because on a fresh plan that is
+                         true of all of them. Thirty-two identical lines is
+                         wallpaper: it tells the Expert nothing, and it buries
+                         the only thing she wants from a schedule, which is what
+                         each day actually asks of her. The reason the planner
+                         chose one lives on the "Ready now" card, once, where it
+                         is about a decision she is being asked to make today.
+                         `ask` is already authored for every plannable method in
+                         `methods.ts` — it was simply never shown here. */
                       <span className="text-xs text-muted-foreground">
-                        {s.chosenBecause}
+                        {plannableMethod(s.method)?.ask ?? s.chosenBecause}
                       </span>
                     )}
                   </li>
@@ -855,7 +920,8 @@ function MethodLedger({
       <section className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">
         Nothing measured yet. After your first session this table shows what each
         method actually produces for you, and the plan starts spending your time
-        accordingly.
+        accordingly. Build a plan above and the first session is waiting at the
+        top of this page.
       </section>
     );
   }

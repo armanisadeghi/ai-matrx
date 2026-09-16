@@ -28,6 +28,11 @@ import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import {
+  setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
+  setDisplayNameOverride,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -389,6 +394,56 @@ function InterviewColumn({
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // 🚨 WHO IS IN THE ROOM, AND WHAT DO I DO NOW (jobs-bar-2026-09-16, item 24).
+  //
+  // An Expert chose an interviewer, chose how it should dig, pressed "Start the
+  // interview" — and landed on the generic agent hero: a wireframe glyph over
+  // "Ready to run", and underneath it, as the one instruction on the screen,
+  // "Fill in any variables below and type a message to start."
+  //
+  // There are no variables below. This panel wires every one of them
+  // (`rulebook_id`, the mode, the probes, the document) precisely so the Expert
+  // never sees one, and `variablesPanelStyle: "hidden"` removes the collection
+  // UI — so the sentence pointed at something that does not exist on the page,
+  // and nothing anywhere said what this conversation was, who was asking, or
+  // that she should just start talking. The whole promise of the screen before
+  // it — an interviewer who asks YOU questions — evaporated into a blank box.
+  //
+  // Same mechanism the Conductor lane adopted for the identical defect: the
+  // hero is display state, so the surface that knows what the conversation is
+  // for says so.
+  //
+  // 🚨 AND IT WAITS FOR THE INSTANCE TO EXIST. `setDisplayNameOverride` and its
+  // two siblings are `if (entry) …` reducers: dispatched against a conversation
+  // whose instance UI-state row has not been created yet they do NOTHING, and
+  // say nothing, so the override is dropped and the hero keeps its generic text.
+  // A launcher mints the conversation id before that row lands, which is exactly
+  // when a mount-once effect fires — verified live on 2026-09-16, where the
+  // override was dispatched and the screen still read "Ready to run". Gating on
+  // the row's existence is what makes the write land.
+  const instanceReady = useAppSelector((state) =>
+    Boolean(state.instanceUIState.byConversationId[conversationId]),
+  );
+  useEffect(() => {
+    if (!instanceReady) return;
+    dispatch(
+      setDisplayNameOverride({ conversationId, value: "Your interviewer" }),
+    );
+    dispatch(
+      setDisplayDescriptionOverride({
+        conversationId,
+        value:
+          "Start anywhere — the thing you decided today, the call you keep having " +
+          "to explain, the one people get wrong. I ask from there, one question " +
+          "at a time, and you can talk instead of typing. Or press one of the " +
+          "openers below and I'll take it from there.",
+      }),
+    );
+    dispatch(
+      setDisplayIconNameOverride({ conversationId, value: "BrainCircuit" }),
+    );
+  }, [conversationId, dispatch, instanceReady]);
 
   // "What did it get wrong?" entry: stage the run context in the composer so
   // the Expert only finishes the sentence. Keyed by the seed text so opening

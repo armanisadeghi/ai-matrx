@@ -434,6 +434,34 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-16` — **The Jobs bar, lanes A: the five capture lanes walked as a first-timer, at
+  desktop and phone width.** Twenty-two findings, fixed at the place each one belongs. The Capture
+  Plan opens with the Expert's own description in the goal box instead of an empty field behind a
+  placeholder about somebody else's job; its three settings pickers finally have labels a screen
+  reader can hear and triggers that wrap instead of cutting a sentence mid-word; its two number
+  fields dropped `FancyInput`'s always-on "Copy to clipboard" button, which copied "30" and sat in
+  the tab order between every field; and its schedule prints each session's own one-line ask —
+  already authored in `methods.ts` and never shown — in place of the same "you have not tried this
+  one yet" sentence repeated on all thirty-two rows. The Teach-Back stops promising it reads out
+  loud before the button exists, states its locked topic as a sentence instead of leaving a
+  white textarea nobody can type in, drops the decorative microphone glyph that was not a control,
+  and says why "Send this and try again" is grey. The Sorting Table wraps its pile-count control
+  (at 390px the "4" was off the right edge of a screen that does not scroll sideways), puts the
+  case on a card, makes its progress bar a real `progressbar`, takes `1`–`4`/`S`/`U` from the
+  keyboard, and stops printing the word "pasted" under every pasted case. The Daily Drip's
+  never-started state is a card like its three siblings with the terms stated before the opt-in
+  rather than after it, the lane is titled for what it is rather than for a question three of its
+  four states do not have, the scoreboard no longer prints "Nothing has been asked yet" above the
+  heading that invites you to start, and the hour list no longer skips 1pm and 3pm. The interview
+  start screen pins its Start button instead of burying it under nine probe cards, says how long a
+  session runs and that stopping is safe, and stops jolting card titles sideways on select; the
+  interview session itself no longer opens on the generic agent hero ("Ready to run — fill in any
+  variables below", on a screen with no variables for the Expert) — and the override only lands
+  because it waits for the instance row, since the three `instanceUIState` display setters discard
+  a write aimed at a conversation whose row has not been created yet (`FOUND_DEFECTS.md` D326,
+  which also disables the Conductor lane's identical fix). Evidence, before and after:
+  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/lanes-a/`.
+
 - `2026-09-15` — **THE PREDICTION LEDGER — calling it before you know.** A new Approach and a new
   door (`features/masterwork/prediction/`): the Expert records predictions on real open cases in
   her own work with a confidence, a one-line why and a due date, by voice or typing, and enters

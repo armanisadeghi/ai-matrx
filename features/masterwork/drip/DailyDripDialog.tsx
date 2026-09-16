@@ -154,8 +154,16 @@ const CHANNEL_ICON: Record<DripChannel, typeof Mail> = {
   sms: Smartphone,
 };
 
-/** The hours worth offering. A drip at 3am is a drip nobody answers. */
-const HOURS = [5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17, 18, 19, 20, 21];
+/**
+ * The hours worth offering. A drip at 3am is a drip nobody answers.
+ *
+ * 5am to 9pm, every hour, with no gaps. 1pm and 3pm used to be simply missing
+ * from this list (jobs-bar-2026-09-16, item 22) — nothing said why, because
+ * there is no why: an Expert who takes her lunch at one and wanted the question
+ * to land right after it could not have it, and read the hole as a rule about
+ * her day that nobody had explained to her.
+ */
+const HOURS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
 export function DailyDripDialog({
   open,
@@ -466,12 +474,19 @@ export function DailyDripDialog({
           </MasterworkDictationOrigin>
         ) : null}
 
-        {/* ─────────── The scoreboard ─────────── */}
-        <DripStreakReadout
-          drip={drip}
-          rules={rulebook.rules ?? []}
-          minAnswersToDistill={knobs.minAnswersToDistill}
-        />
+        {/* ─────────── The scoreboard ───────────
+            Only once there IS a drip to keep score of. On a first visit it put
+            a lone "Nothing has been asked yet." between the explanation and the
+            "Start a daily question" heading — a status line about something the
+            Expert has not agreed to yet, in the one spot where she is deciding
+            whether to (jobs-bar-2026-09-16, item 20). */}
+        {drip.subscription || drip.days.length > 0 ? (
+          <DripStreakReadout
+            drip={drip}
+            rules={rulebook.rules ?? []}
+            minAnswersToDistill={knobs.minAnswersToDistill}
+          />
+        ) : null}
 
         {/* ─────────── Settings ─────────── */}
         {canEdit ? (

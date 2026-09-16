@@ -135,7 +135,31 @@ export function InterviewStartScreen({
       : null;
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto px-4 py-4">
+    /* 🚨 THE WAY OUT IS ALWAYS ON SCREEN (jobs-bar-2026-09-16, item 26).
+       "Start the interview" used to be the last thing in a scrolling column,
+       under two context cards, NINE probe cards and two switches — below the
+       fold on a 1440×900 desktop and several screens down on a phone. Every
+       control here already arrives answered, and pressing Start without
+       touching one of them is the intended path, so the intended path was the
+       one thing you could not see. It is pinned now, and the column is centred
+       like every other Masterwork lane instead of stretching nine cards across
+       a wide monitor (item 29). */
+    <div className="flex h-full flex-col">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
+        <section className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">
+            Before we start
+          </h2>
+          {/* WHAT IT COSTS ME, BEFORE I AGREE TO IT (item 27). Nothing on this
+              screen said how long an interview runs or that stopping is
+              allowed, so the only honest reading of "Start the interview" was
+              "begin something of unknown length". */}
+          <p className="text-xs text-muted-foreground">
+            A session usually runs ten to twenty minutes, one question at a
+            time. Stop whenever you like — everything you have said is already
+            saved, and you can pick this interview up again later.
+          </p>
+        </section>
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-foreground">
           What should the interviewer know about you before it starts?
@@ -160,10 +184,19 @@ export function InterviewStartScreen({
                     : "border-border bg-card hover:border-primary/40",
                 )}
               >
+                {/* 🚨 THE TITLE DOES NOT MOVE (jobs-bar-2026-09-16, item 28).
+                    The tick used to be inserted into the flow on select, so
+                    every card's title jumped sideways the moment it was chosen
+                    — nine cards twitching as the Expert makes up her mind. The
+                    space is reserved either way. */}
                 <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  {selected ? (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-                  ) : null}
+                  <Check
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 text-primary",
+                      selected ? "opacity-100" : "opacity-0",
+                    )}
+                    aria-hidden
+                  />
                   {option.title}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{option.sentence}</p>
@@ -201,10 +234,19 @@ export function InterviewStartScreen({
                     : "border-border bg-card hover:border-primary/40",
                 )}
               >
+                {/* 🚨 THE TITLE DOES NOT MOVE (jobs-bar-2026-09-16, item 28).
+                    The tick used to be inserted into the flow on select, so
+                    every card's title jumped sideways the moment it was chosen
+                    — nine cards twitching as the Expert makes up her mind. The
+                    space is reserved either way. */}
                 <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  {selected ? (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-                  ) : null}
+                  <Check
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 text-primary",
+                      selected ? "opacity-100" : "opacity-0",
+                    )}
+                    aria-hidden
+                  />
                   {option.title}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{option.sentence}</p>
@@ -243,20 +285,30 @@ export function InterviewStartScreen({
         </label>
       </section>
 
-      <div className="flex items-center gap-2 pb-2">
-        <Button
-          size="sm"
-          className="h-9"
-          onClick={() => onStart({ mode, probes, closingSurprises, voiceOn })}
-        >
-          Start the interview
-          <ArrowRight className="ml-1 h-3.5 w-3.5" />
-        </Button>
-        {onBack ? (
-          <Button size="sm" variant="ghost" className="h-9" onClick={onBack}>
-            Back
+      </div>
+
+      <div className="shrink-0 border-t border-border bg-background/95 pb-safe backdrop-blur">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-3">
+          <Button
+            className="h-11 flex-1 text-base sm:h-9 sm:flex-none sm:text-sm"
+            onClick={() => onStart({ mode, probes, closingSurprises, voiceOn })}
+          >
+            Start the interview
+            <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
-        ) : null}
+          {onBack ? (
+            <Button
+              variant="ghost"
+              className="h-11 sm:h-9"
+              onClick={onBack}
+            >
+              Back
+            </Button>
+          ) : null}
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Nothing here has to be changed — these are already set for you.
+          </span>
+        </div>
       </div>
     </div>
   );

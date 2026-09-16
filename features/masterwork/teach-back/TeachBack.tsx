@@ -38,7 +38,6 @@ import {
   AlertTriangle,
   Check,
   Loader2,
-  Mic,
   Pause,
   Play,
   Square,
@@ -339,20 +338,36 @@ export function TeachBack({
           understand. Name one if you&apos;d rather aim us at something — the
           call you make most often, or the one people get wrong.
         </p>
-        <ProTextarea
-          id="teach-back-topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          enableVoice={knobs.voiceDefaultOn}
-          disabled={started}
-          placeholder="e.g. How I decide whether a pallet goes to data destruction or straight to sorting."
-          rows={2}
-          className="text-base sm:text-sm"
-        />
+        {/* 🚨 A LOCKED FIELD IS NOT A FIELD (jobs-bar-2026-09-16, item 10).
+            Once a teach-back is running this box can never be typed in again,
+            but it went on rendering as a white textarea with a placeholder, a
+            caret target and a resize grip — the only sign it was dead was a
+            `disabled:opacity-50` you have to compare two screenshots to see, and
+            one grey sentence underneath. So the screen offered an input it would
+            not accept. Running, it states the topic as a fact instead. */}
+        {started ? (
+          <p className="mt-1 text-sm text-foreground">
+            {topic.trim() || (
+              <span className="text-muted-foreground">
+                We picked the biggest decision we think we understand.
+              </span>
+            )}
+          </p>
+        ) : (
+          <ProTextarea
+            id="teach-back-topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            enableVoice={knobs.voiceDefaultOn}
+            placeholder="e.g. How I decide whether a pallet goes to data destruction or straight to sorting."
+            rows={2}
+            className="text-base sm:text-sm"
+          />
+        )}
         {started ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            Locked for this teach-back, so every round is about the same thing.
-            Finish, then start a new one to change it.
+            This is what every round is about. Finish this teach-back, then start
+            a new one to change it.
           </p>
         ) : null}
       </section>
@@ -372,8 +387,13 @@ export function TeachBack({
           <p className="text-xs text-muted-foreground">
             Up to {roundCount} rounds, about {knobs.explanationSeconds} seconds of
             talking each.{" "}
+            {/* 🚨 SAY WHAT ACTUALLY HAPPENS (jobs-bar-2026-09-16, item 9). This
+                promised "It reads out loud" and then nothing ever spoke: each
+                round arrives as text with a "Read it to me" button beside it.
+                A sentence that describes a behaviour the product does not have
+                is the same defect as a control that does nothing. */}
             {knobs.voiceDefaultOn
-              ? "It reads out loud and the words are on screen."
+              ? "Each round is on screen, with a button to have it read to you."
               : "The words are on screen; the voice is turned off here."}
           </p>
         </div>
@@ -521,11 +541,17 @@ export function TeachBack({
               Say it the way you&apos;d say it to a new hire who just got it
               wrong. &ldquo;No, not like that.&rdquo; &ldquo;You missed the part
               where…&rdquo; &ldquo;That&apos;s right, but only when…&rdquo;
+              {/* 🚨 NO DECORATIVE MICROPHONE (jobs-bar-2026-09-16, item 11).
+                  A mic glyph dropped into a sentence is not a control, and on a
+                  lane that really does take dictation it reads as one: the
+                  Expert taps it, nothing happens, and the microphone that DOES
+                  work is the one inside the box below. Name that one instead of
+                  drawing a second, dead one. */}
               {knobs.voiceDefaultOn ? (
                 <>
                   {" "}
-                  <Mic className="inline size-3" aria-hidden /> Talking is usually
-                  faster than typing.
+                  Talking is usually faster than typing — the microphone is in
+                  the box below.
                 </>
               ) : null}
             </p>
@@ -544,6 +570,7 @@ export function TeachBack({
                 onClick={() => void send({ agreed: false, withCorrection: true })}
                 disabled={running || signing || !correction.trim()}
               >
+                {running ? <Loader2 className="size-3.5 animate-spin" /> : null}
                 Send this and try again
               </Button>
               <Button
@@ -559,6 +586,18 @@ export function TeachBack({
                 Yes, that&apos;s it
               </Button>
             </div>
+            {/* 🚨 A DISABLED BUTTON SAYS WHY (jobs-bar-2026-09-16, item 12).
+                "Send this and try again" greys out until there is a correction
+                in the box, and said nothing about it — so the Expert who reads
+                an explanation, disagrees with it, and reaches for the button
+                finds a dead control and no reason for it. */}
+            {!correction.trim() && !running && !signing ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Write what we got wrong and &ldquo;Send this and try
+                again&rdquo; turns on — or press &ldquo;Yes, that&apos;s
+                it&rdquo; if we have it right.
+              </p>
+            ) : null}
             <p className="mt-2 text-xs text-muted-foreground">
               &ldquo;Yes, that&apos;s it&rdquo; signs off on the rules this was
               built from. Nothing is approved by a machine — every new rule waits

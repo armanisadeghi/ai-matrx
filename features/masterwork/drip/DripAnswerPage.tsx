@@ -200,9 +200,25 @@ export function DripAnswerPage({
           </Button>
         </section>
       ) : (
-        <section className="space-y-3" data-surface-value="drip_answer_none">
-          <h1 className="text-xl font-semibold text-foreground">
-            Nothing to answer right now
+        /* 🚨 THE DOOR STATE IS A SCREEN, NOT A LEFTOVER (jobs-bar-2026-09-16,
+           items 18–19). Its three siblings above — answered, paused, today's
+           question — are each a framed card. This one, the FIRST thing anyone
+           who has not started the drip ever sees, was three loose lines of text
+           pushed against the left edge under a page header reading "Today's
+           question" when there is no question. And it promised "It takes one
+           tap" for a control that leaves this page, loads the Masterwork, and
+           opens a dialog with three more choices in it. So: a card like its
+           siblings, a sentence that describes what actually happens, and the
+           terms stated before the opt-in rather than after it. */
+        <section
+          className="space-y-3 rounded-lg border border-border bg-card p-5"
+          data-surface-value="drip_answer_none"
+        >
+          <h1 className="flex items-center gap-2 text-base font-medium text-foreground">
+            <CalendarClock className="h-5 w-5 text-muted-foreground" />
+            {latestAnswered || drip.subscription
+              ? "Nothing to answer right now"
+              : "You haven't started the daily question"}
           </h1>
           <p className="text-sm text-muted-foreground">
             {latestAnswered ? (
@@ -217,24 +233,40 @@ export function DripAnswerPage({
               </>
             ) : (
               <>
-                The daily question isn&apos;t switched on for this Rulebook yet. It takes
-                one tap.
+                One short question a day about the work you actually did, at a time you
+                pick. Answering takes about a minute, and your answers become rules in{" "}
+                {rulebook.name}. Miss a day and nothing breaks — miss a week and we stop
+                asking rather than fill up your phone.
               </>
             )}
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size={drip.subscription ? "sm" : "default"} variant={drip.subscription ? "outline" : "default"}>
             <Link href={`/masterwork/${rulebook.id}?drip=1`}>
-              {drip.subscription ? "Open your daily question" : "Turn it on"}
+              {drip.subscription
+                ? "Open your daily question"
+                : "Choose a time and start"}
             </Link>
           </Button>
+          {drip.subscription ? null : (
+            <p className="text-xs text-muted-foreground">
+              Next you pick where it arrives and what time — you can stop it whenever
+              you like.
+            </p>
+          )}
         </section>
       )}
 
-      <DripStreakReadout
-        drip={drip}
-        rules={rulebook.rules ?? []}
-        minAnswersToDistill={minAnswers}
-      />
+      {/* The scoreboard is for a drip that HAS a history. On a Masterwork that
+          never started one it printed a lone "Nothing has been asked yet." under
+          the card that had just said the same thing in better words
+          (jobs-bar-2026-09-16, item 20). */}
+      {drip.subscription || answered.length > 0 ? (
+        <DripStreakReadout
+          drip={drip}
+          rules={rulebook.rules ?? []}
+          minAnswersToDistill={minAnswers}
+        />
+      ) : null}
     </div>
   );
 }

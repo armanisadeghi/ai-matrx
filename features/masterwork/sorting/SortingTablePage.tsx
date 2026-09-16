@@ -40,7 +40,7 @@ import {
   ListPlus,
   Loader2,
   RefreshCw,
-  Sparkles,
+  BrainCircuit,
   SkipForward,
   TriangleAlert,
   Undo2,
@@ -114,7 +114,7 @@ const DOORS: { key: CaseDoor; label: string; hint: string; icon: typeof ListPlus
   { key: "paste", label: "Paste a list", hint: "One case per line", icon: ListPlus },
   { key: "sheet", label: "A spreadsheet", hint: "CSV or Excel", icon: FileUp },
   { key: "records", label: "Records you keep", hint: "Files, rows, past work", icon: Layers },
-  { key: "write", label: "Write them for me", hint: "From your own craft", icon: Sparkles },
+  { key: "write", label: "Write them for me", hint: "From your own craft", icon: BrainCircuit },
 ];
 
 export function SortingTablePage({
@@ -221,7 +221,13 @@ export function SortingTablePage({
 
   // ── the cases she brought, whichever door they came through ──────────────
   const broughtCases = useMemo<SortCase[]>(() => {
-    if (door === "paste") return parsePastedCases(pastedText, "pasted");
+    // NO NOTE ON A PASTED CASE (jobs-bar-2026-09-16, item 30). The note exists
+    // so the Expert can find a case again in her own material — "row 12", "case
+    // file" — and a spreadsheet or a record gets a useful one. A list she pasted
+    // thirty seconds ago got the word "pasted" printed under every single card:
+    // a label with no information in it, on the one screen built to hold exactly
+    // one thing and nothing else.
+    if (door === "paste") return parsePastedCases(pastedText, "");
     if (door === "sheet" && sheet)
       return casesFromSheet(sheet, sheetColumn, { skipFirstRow: sheetSkipHeader });
     if (door === "records") return casesFromRecords(picked);
@@ -313,6 +319,51 @@ export function SortingTablePage({
     });
     setIndex((n) => Math.max(0, n - 1));
   };
+
+  /**
+   * 🚨 A SORT IS A KEYBOARD JOB TOO (jobs-bar-2026-09-16, item 17).
+   *
+   * The lane is built phone-first and that was read as phone-only: twenty cases
+   * at a desk meant twenty round trips from the keyboard to the mouse and back,
+   * with the pile buttons at the bottom of a tall screen. Every sorting tool
+   * worth copying — Gmail, Linear, Superhuman, Anki — puts the piles on the
+   * number keys. `1`…`4` place, `s` skips, `u` undoes; the hint is printed
+   * beside the piles so nobody has to discover it. Typing in a field is
+   * excluded, because a pile name with an "s" in it is not a skip.
+   */
+  useEffect(() => {
+    if (phase !== "sorting") return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const el = event.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        el?.isContentEditable
+      ) {
+        return;
+      }
+      const digit = Number(event.key);
+      if (Number.isInteger(digit) && digit >= 1 && digit <= piles.length) {
+        event.preventDefault();
+        place(piles[digit - 1].key);
+        return;
+      }
+      if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        skipCase();
+        return;
+      }
+      if (event.key === "u" || event.key === "U") {
+        event.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const findTheBoundary = useCallback(async () => {
     setBusy(true);
@@ -416,11 +467,17 @@ export function SortingTablePage({
 
         {/* ── the piles ─────────────────────────────────────────────────── */}
         <section className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
+          {/* 🚨 IT WRAPS ON A PHONE (jobs-bar-2026-09-16, item 15). At 390px the
+              label and the 2/3/4 control sat on one row, the label took the
+              space it wanted, and the "4" was pushed clean off the right edge of
+              a screen that does not scroll sideways — so on the phone this lane
+              was designed for, a four-pile sort was unreachable and nothing said
+              so. `flex-wrap` plus a non-shrinking control is the whole fix. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <p className="text-sm font-medium text-foreground">
               Your piles — call them whatever you call them
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {[2, 3, 4].map((count) => (
                 <button
                   key={count}
@@ -757,25 +814,44 @@ export function SortingTablePage({
             Undo
           </Button>
         </div>
+        {/* 🚨 THE PROGRESS BAR IS A PROGRESS BAR (jobs-bar-2026-09-16, item 16).
+            `role="presentation"` hid it from every assistive technology, and on
+            the first case it renders zero width — so what a sighted person saw
+            was a flat grey rule they read as a divider, and what a screen-reader
+            user got was nothing at all. */}
         <div
-          className="mt-2 h-1 w-full shrink-0 overflow-hidden rounded-full bg-muted"
-          role="presentation"
+          className="mt-2 h-1.5 w-full shrink-0 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={cases.length}
+          aria-valuenow={index}
+          aria-valuetext={`${index} of ${cases.length} cases sorted`}
         >
           <div
             className="h-full rounded-full bg-sky-500 transition-all duration-300"
-            style={{ width: `${(index / cases.length) * 100}%` }}
+            style={{ width: `${Math.max(index === 0 ? 0 : 2, (index / cases.length) * 100)}%` }}
           />
         </div>
 
         {/* THE CARD scrolls; the piles do not. A pile button below the fold is
-            a sort you cannot finish on a phone. */}
+            a sort you cannot finish on a phone.
+
+            🚨 AND IT IS A CARD (jobs-bar-2026-09-16, item 16). The case used to
+            be a bare paragraph floating in the middle of an otherwise empty
+            screen — on a desktop, one sentence adrift in roughly six hundred
+            pixels of nothing, with no edge anywhere to say "this is the thing
+            you are deciding about". Every other surface in this product puts the
+            subject of a decision on a card; this one is the surface where the
+            decision IS the product. */}
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto overscroll-contain py-4">
-          <p className="text-lg font-medium leading-relaxed text-foreground">
-            {current.text}
-          </p>
-          {current.note ? (
-            <p className="mt-2 text-xs text-muted-foreground">{current.note}</p>
-          ) : null}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <p className="text-lg font-medium leading-relaxed text-foreground">
+              {current.text}
+            </p>
+            {current.note ? (
+              <p className="mt-2 text-xs text-muted-foreground">{current.note}</p>
+            ) : null}
+          </div>
           {roundNote ? (
             <p className="mt-4 text-xs text-muted-foreground">{roundNote}</p>
           ) : null}
@@ -783,18 +859,25 @@ export function SortingTablePage({
 
         <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-background/95 pb-safe pt-3 backdrop-blur">
           <div className="flex flex-wrap gap-2">
-            {piles.map((pile) => (
+            {piles.map((pile, i) => (
               <button
                 key={pile.key}
                 type="button"
                 data-sort-pile={pile.key}
                 onClick={() => place(pile.key)}
-                className="min-h-14 flex-1 basis-[8rem] rounded-xl border-2 border-border bg-card px-3 text-base font-medium text-foreground transition-colors hover:border-sky-500/60 active:bg-sky-500/10"
+                className="min-h-14 flex-1 basis-[8rem] rounded-xl border-2 border-border bg-card px-3 text-base font-medium text-foreground transition-colors hover:border-sky-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 active:bg-sky-500/10"
               >
                 {pile.name}
+                <span className="ml-1.5 hidden text-xs font-normal text-muted-foreground sm:inline">
+                  {i + 1}
+                </span>
               </button>
             ))}
           </div>
+          <p className="hidden text-center text-xs text-muted-foreground sm:block">
+            Or use your keyboard: {piles.map((_, i) => i + 1).join(", ")} for the
+            piles, S to skip, U to undo.
+          </p>
           <Button
             size="lg"
             variant="ghost"

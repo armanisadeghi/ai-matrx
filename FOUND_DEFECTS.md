@@ -4126,3 +4126,24 @@ association gate, shared by every association read; the fix must pass the actor
 and be proven on this view). Class: a gated read that receives no actor must
 FAIL loudly, never return an empty list that reads as "nothing exists".
 
+
+### D326 — Every display-override setter on `instanceUIState` silently drops the write (2026-09-16)
+
+Found while fixing the Masterwork interview's generic hero (jobs-bar-2026-09-16, lanes-a item 24).
+`setDisplayNameOverride`, `setDisplayDescriptionOverride` and `setDisplayIconNameOverride` in
+[`features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](./features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts)
+are all `const entry = state.byConversationId[id]; if (entry) { … }`. A launcher hands a surface
+its `conversationId` BEFORE `createInstanceFull` writes that row, which is exactly when a
+mount-once effect fires — so the override is discarded, nothing is logged, and the surface keeps
+the generic "Ready to run" hero while its code reads as though it set one. Verified live on
+2026-09-16: the dispatch ran and the screen did not change; gating the same dispatch on the row's
+existence made it land.
+
+**This is not one surface.** `features/masterwork/conduct/ConductorPanel.tsx` sets the identical
+three overrides on mount for the same reason and has the same race — so the Conductor lane's own
+"who is in the room" fix is, as written, a no-op whenever the row lands late. Fixed in
+`ScoutInterviewPanel.tsx` by gating on the row (`instanceReady`); NOT fixed at the slice, because
+every setter in that file shares the pattern and creating a partial entry from one of them would
+invent an instance with none of its required fields. Class: **a reducer that cannot apply a write
+must not swallow it** — either queue it for the instance that is coming, or raise. Decides:
+whoever owns the agent execution-system slices.

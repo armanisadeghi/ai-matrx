@@ -28,7 +28,13 @@ export default function RulebookDripRoute({
     <RulebookLaneRoute
       rulebookId={id}
       lane="drip"
-      title="Today's question"
+      // 🚨 THE HEADER CANNOT PROMISE A QUESTION THAT IS NOT THERE
+      // (jobs-bar-2026-09-16, item 18). Three of this lane's four states have no
+      // question on screen — not started, already answered, paused — and under a
+      // bar reading "Today's question" each of them read as a page that had
+      // failed to load. The lane is named for what it IS, and the card below
+      // says which of the four states you are in.
+      title="Your daily question"
       requireOwner
       ownerMessage="Only the Rulebook's owner can answer its daily question — the answers, and the rules they become, have to be the Expert's own."
     >
