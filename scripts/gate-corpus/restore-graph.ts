@@ -64,7 +64,17 @@
  *   5. `platform.reachability_drift()` returns ZERO rows on the branch with
  *      production's 6,773 reachability rows present — i.e. the graph was
  *      RESTORED and still agrees with itself, which is what recomputation
- *      would have destroyed.
+ *      would have destroyed;
+ *   6. THE IDENTITY SHELL — `auth.users` on the branch carries NO production
+ *      email address, NO user or app metadata and NO password hash outside the
+ *      two test identities, and every other row is banned in GoTrue's own eyes.
+ *      This is the proof V0's `W0-DATA` FAIL was missing: the lane's stated
+ *      falsifiable exit (`select email from auth.users where email is not null`
+ *      returning only corpus and test identities) was FALSE on the live branch —
+ *      336 real customer and staff addresses — while the build log recorded the
+ *      lane DONE, because nothing in `--verify`, in `run.ts` or in the log had
+ *      ever run the query the row named. It runs here now, on EVERY run,
+ *      including `--verify`.
  *
  * WHERE IT MAY RUN. The branch, never production. The branch connection comes
  * from the one variable `common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF`
@@ -94,8 +104,9 @@
  * NON-ZERO by name when it is over, with the remedy: re-run the copy (`W0-DATA`'s
  * restore) and re-verify. See `./boundary-age.ts` for why the default is 12 hours.
  *
- * Exit 0 only when all five proofs pass and the boundary is inside the ceiling.
+ * Exit 0 only when all six proofs pass and the boundary is inside the ceiling.
  */
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -217,6 +228,15 @@ interface CopyTable {
   readonly afterCopy?: { readonly sql: string; readonly note: string };
   /** A SHELL: only these columns are read from production. See `auth.users`. */
   readonly columns?: readonly string[];
+  /**
+   * SYNTHESISED, NOT COPIED. Column name → a SQL expression evaluated ON
+   * PRODUCTION in place of that column, so production's real value never
+   * crosses the wire at all. A column named here is still WRITTEN (the branch
+   * gets a value), it is simply not production's value. Every synthesised
+   * column is printed by name on every run, next to the expression that made
+   * it — see `synthesizedNote`.
+   */
+  readonly synthesize?: Readonly<Record<string, string>>;
   readonly columnsNote?: string;
   /** Not owned by the connecting role. Proven at run time to need no owner right. */
   readonly notOurs?: boolean;
@@ -228,19 +248,36 @@ const COPY_TABLES: readonly CopyTable[] = [
     table: "auth.users",
     policy: "upsert",
     /**
-     * A SHELL, and the word is load-bearing. Every column that IS an
-     * authentication secret — `encrypted_password`, every `*_token*`, every
-     * `email_change*`, `phone*`, `*_sent_at` — is NOT copied and is left at the
-     * branch's own default, and this script SAYS SO on every run with what it
-     * costs. What is copied is identity: the `id` the whole access graph's
-     * foreign keys point at, and enough of the row for a lane to recognise the
-     * person.
+     * AN ID-ONLY SHELL, and every word of that is load-bearing.
+     *
+     * 🚨 THE DEFECT THIS SHAPE CLOSES (V0's W0-DATA FAIL, 2026-09-16). Until
+     * this run, `email`, `raw_user_meta_data` and `raw_app_meta_data` were
+     * COPIED, under a comment that redefined "shell" to mean "no authentication
+     * secret" rather than "id only". The measured result on the branch was
+     * **336 real production email addresses** — staff, and several hundred
+     * customers' personal gmail/yahoo/comcast/icloud addresses — and 336
+     * user-metadata blobs, sitting in a second database with production's
+     * grants transplanted onto it and a PostgREST API on the public internet.
+     * The build book's own falsifiable exit (`select email from auth.users
+     * where email is not null` returning only corpus and test identities) was
+     * FALSE on the live branch while the log recorded the lane DONE.
+     *
+     * WHAT CROSSES THE WIRE NOW. The `id` the whole access graph's foreign keys
+     * point at, plus the non-identifying bookkeeping GoTrue needs to read the
+     * row at all (`aud`, `role`, `instance_id`, the timestamps, the flags).
+     * NOTHING THAT NAMES A PERSON. `email`, `raw_user_meta_data` and
+     * `raw_app_meta_data` are in `synthesize` below, which means production's
+     * own SQL replaces them in the SELECT: the real values are never read, never
+     * transmitted, and never held in this process's memory.
      *
      * CONSEQUENCE, stated rather than discovered at 3 a.m.: NOBODY CAN SIGN IN
-     * ON THE BRANCH AS A COPIED USER. A lane that needs a signed-in session on
-     * the branch mints its own user through the branch's Supabase Auth API (the
-     * branch's own keys come from GET /v1/projects/<branch_ref>/api-keys, see
-     * BRANCH-REF) — it does not get one from here.
+     * ON THE BRANCH AS A COPIED USER — no password hash is copied AND every
+     * copied row is written `banned_until` far-future, which GoTrue itself
+     * honours, so the refusal does not rest on the absence of a hash alone.
+     * Exactly two identities can sign in on the branch, `test@test.com` and
+     * `admin@admin.com`, and they are CREATED by `mintSignInIdentities()` after
+     * the copy — given their branch-only passwords from the environment — not
+     * copied from production.
      */
     columns: [
       "id",
@@ -269,6 +306,33 @@ const COPY_TABLES: readonly CopyTable[] = [
       "is_anonymous",
     ],
     /**
+     * THE THREE COLUMNS THAT NAME A PERSON, AND THE ONE THAT DISARMS THE ROW.
+     * Each expression is evaluated INSIDE production's own read-only snapshot,
+     * in place of the column, so the real value never leaves production.
+     *
+     * · `email` — `u-<first 8 of the id>@corpus.invalid`. A shell still needs an
+     *   email because GoTrue and several branch lanes read the column, and
+     *   `.invalid` is the reserved TLD that can never resolve or receive mail
+     *   (RFC 2606). The first 8 hex characters of a v4 UUID are unique across
+     *   production's few hundred identities, and that uniqueness is ASSERTED on
+     *   production before a single row is written (`users_email_partial_key` is
+     *   unique) rather than hoped for — see `assertSyntheticUniqueness`.
+     * · `raw_user_meta_data` / `raw_app_meta_data` — `{}`. These hold names,
+     *   avatar URLs, phone numbers and provider identifiers. Empty is the only
+     *   honest stand-in; no lane reads them on the branch.
+     * · `banned_until` — the year 9999. GoTrue's own `IsBanned()` refuses a
+     *   password grant, a magic link and a refresh for such a row, so "a copied
+     *   identity cannot sign in" is enforced by the auth server and not merely
+     *   implied by a NULL password hash. `mintSignInIdentities()` clears it for
+     *   exactly the two test identities.
+     */
+    synthesize: {
+      email: `'u-' || left("id"::text, 8) || '@corpus.invalid'`,
+      raw_user_meta_data: `'{}'::jsonb`,
+      raw_app_meta_data: `'{}'::jsonb`,
+      banned_until: `timestamptz '9999-12-31 00:00:00+00'`,
+    },
+    /**
      * 🚨 AN OMITTED COLUMN IS NOT ALWAYS AN EMPTY ONE (measured 2026-09-16).
      *
      * `confirmation_token`, `recovery_token`, `email_change_token_new` and
@@ -296,10 +360,15 @@ const COPY_TABLES: readonly CopyTable[] = [
         "still an empty credential",
     },
     columnsNote:
-      "shell — every password, token and email/phone-change column is left unset; no copied " +
-      "user can sign in on the branch until a lane gives that identity a BRANCH-ONLY password " +
-      "through the branch's own auth admin API (W0-CORPUS does exactly that for test@test.com " +
-      "and admin@admin.com, and for nobody else)",
+      "ID-ONLY SHELL. COPIED from production: the id, and the non-identifying bookkeeping GoTrue " +
+      "needs to read the row (instance_id, aud, role, the timestamps, the flags). SYNTHESISED, " +
+      "never read from production: email (u-<first 8 of id>@corpus.invalid), raw_user_meta_data " +
+      "({}), raw_app_meta_data ({}), banned_until (year 9999). LEFT UNSET: every password, token " +
+      "and email/phone-change column. So NO real email address, NO user or app metadata and NO " +
+      "credential of any production person reaches this branch, and every copied row is banned in " +
+      "GoTrue's own eyes. The two identities that CAN sign in here — test@test.com and " +
+      "admin@admin.com — are created after the copy with BRANCH-ONLY passwords from the " +
+      "environment, not copied",
     /**
      * `auth.users` and `auth.oauth_clients` are owned by `supabase_auth_admin`,
      * not by `postgres`, so `ALTER TABLE … DISABLE TRIGGER` is refused there
@@ -601,6 +670,151 @@ async function secondaryUniquesOf(
   );
   const pkKey = [...pk].sort().join(",");
   return r.rows.map((x) => x.cols).filter((cols) => [...cols].sort().join(",") !== pkKey);
+}
+
+/**
+ * THE TWO IDENTITIES THAT CAN SIGN IN ON THE BRANCH, and nobody else.
+ *
+ * Both are the workspace's documented TEST accounts, and neither is copied: the
+ * copy leaves every `auth.users` row an id-only shell with a synthetic
+ * `@corpus.invalid` address, empty metadata, no password hash and a far-future
+ * `banned_until`. These two rows are then CREATED — their real test address
+ * written on, the ban lifted, and a BRANCH-ONLY password set from the
+ * environment. So the set of people who can sign in on the rehearsal branch is
+ * exactly the set of people who could sign in on a database we had built from
+ * nothing, which is the whole point of a shell.
+ *
+ * Their production ids are LOOKED UP (`where email = $1`, two known test
+ * addresses) rather than copied, because the access graph's foreign keys point
+ * at those ids and a corpus that recognised a different id would prove nothing.
+ *
+ * 🚨 THE ADDRESSES ARE LITERALS, AND THAT IS DELIBERATE (measured 2026-09-16).
+ * The first revision of this step read the address from `TEST_USER_EMAIL`,
+ * which in `../aidream/.env` holds `arman@armansadeghi.com` — his REAL
+ * production account. One run therefore wrote his real address back onto a
+ * shell and gave it the shared test password. An env var is a value, never the
+ * decision about WHOSE identity gets a password: the two test accounts are
+ * named here, in code, and only their PASSWORDS come from the environment.
+ */
+const SIGN_IN_IDENTITIES = [
+  { email: "test@test.com", passwordVar: "TEST_USER_PASSWORD", passwordDefault: "Password1234#" },
+  { email: "admin@admin.com", passwordVar: "AI_ADMIN_PASSWORD", passwordDefault: undefined },
+] as const;
+
+/**
+ * The environment, then this repo's env files, then the aidream checkout's
+ * `.env` — the same order `scripts/lib/direct-db-env.ts` resolves the five
+ * connection variables in. Values are used, NEVER printed.
+ */
+function secretsBag(): Record<string, string | undefined> {
+  const files = [
+    resolve(ROOT, ".env.local"),
+    resolve(ROOT, ".env"),
+    resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"), ".env"),
+  ];
+  const bag: Record<string, string | undefined> = {};
+  for (const path of [...files].reverse()) {
+    let text: string;
+    try {
+      text = readFileSync(path, "utf8");
+    } catch {
+      continue; // an absent env file is not an error; the caller says what it needed
+    }
+    for (const line of text.split("\n")) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (m) bag[m[1]!] = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
+    }
+  }
+  return { ...bag, ...process.env };
+}
+
+/** The two addresses whose branch rows are real sign-in identities, in order. */
+function signInEmails(): string[] {
+  return SIGN_IN_IDENTITIES.map((i) => i.email);
+}
+
+/**
+ * Turn exactly two of the shells back into usable sign-in identities. Returns
+ * the number of failures so the caller's exit code carries them.
+ */
+async function mintSignInIdentities(prod: pg.Client, branch: pg.Client): Promise<number> {
+  const bag = secretsBag();
+  let failures = 0;
+  const bad = (what: string) => {
+    failures += 1;
+    console.error(`${FAIL}${what}`);
+  };
+
+  const crypt = await branch.query<{ n: string }>(
+    `select count(*)::text n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where p.proname in ('crypt','gen_salt') and n.nspname = 'extensions'`,
+  );
+  if (Number(crypt.rows[0]!.n) < 2) {
+    bad(
+      `the branch has no extensions.crypt/gen_salt (pgcrypto), so no branch-only password can be ` +
+        `written. Remedy: create extension pgcrypto with schema extensions; on the branch. The ` +
+        `copy is intact — every identity is a shell and NOBODY can sign in until this is fixed.`,
+    );
+    return failures;
+  }
+
+  for (const spec of SIGN_IN_IDENTITIES) {
+    const email = spec.email;
+    const password = (bag[spec.passwordVar] ?? spec.passwordDefault ?? "").trim();
+    if (!password) {
+      bad(
+        `${email}: no password — ${spec.passwordVar} is not in the environment, this repo's env ` +
+          `files or ../aidream/.env. Remedy: set it there. The identity stays a BANNED SHELL and ` +
+          `every lane that signs in as ${email} on the branch will fail loudly rather than ` +
+          `silently walking as the anon key.`,
+      );
+      continue;
+    }
+    const found = await prod.query<{ id: string }>(
+      `select id::text id from auth.users where email = $1`,
+      [email],
+    );
+    if (found.rowCount !== 1) {
+      bad(
+        `${email}: production holds ${found.rowCount} row(s) with that address, not 1, so there ` +
+          `is no id for the access graph's foreign keys to agree with. Nothing was written for ` +
+          `this identity.`,
+      );
+      continue;
+    }
+    const id = found.rows[0]!.id;
+    const res = await branch.query(
+      `update auth.users
+          set email = $2,
+              email_confirmed_at = coalesce(email_confirmed_at, now()),
+              banned_until = null,
+              -- CREATED, not copied: production's own metadata for these two rows
+              -- (avatar URLs, capability flags such as mcp.full_access) is NOT
+              -- carried over. A branch identity holds what a freshly created one
+              -- would hold, and a lane that needs more says so out loud.
+              raw_app_meta_data = '{"provider":"email","providers":["email"]}'::jsonb,
+              raw_user_meta_data = '{"email_verified": true}'::jsonb,
+              encrypted_password = extensions.crypt($3, extensions.gen_salt('bf')),
+              confirmation_token = '', recovery_token = '',
+              email_change_token_new = '', email_change = '',
+              updated_at = now()
+        where id = $1::uuid`,
+      [id, email, password],
+    );
+    if (res.rowCount !== 1) {
+      bad(
+        `${email}: the branch has no auth.users row for ${id}, so the copy did not carry the ` +
+          `identity the access graph points at. Nothing was written.`,
+      );
+      continue;
+    }
+    console.log(
+      `${OK}${email.padEnd(16)} CREATED on the branch as a real sign-in identity (id ${id}) — ` +
+        `branch-only password from ${spec.passwordVar}, never printed; production's password ` +
+        `hash and metadata were not read`,
+    );
+  }
+  return failures;
 }
 
 /** The boundary the copy recorded, so `--verify` never re-reads a moving source. */
@@ -1032,9 +1246,49 @@ async function main(): Promise<number> {
           fail(`${t} has no primary key — this script cannot tell one row from another there.`);
           return 1;
         }
+        // SYNTHESISED COLUMNS — the values production's own SQL makes up in
+        // place of the real ones. A name that is not a column of the table is a
+        // stale list, and a stale list here means a PERSON'S REAL VALUE would be
+        // copied silently, so it is a refusal rather than a warning.
+        const synth = entry.synthesize ?? {};
+        const synthNames = Object.keys(synth);
+        {
+          const known = new Set(allCols.map((c) => c.name));
+          const unknown = synthNames.filter((c) => !known.has(c));
+          if (unknown.length) {
+            fail(
+              `${t}: synthesize names ${unknown.join(", ")}, which production's ${t} does not ` +
+                `have. Fix the list — a stale name here copies the real value instead.`,
+            );
+            return 1;
+          }
+          const notCopied = synthNames.filter((c) => !cols.some((x) => x.name === c));
+          if (notCopied.length) {
+            fail(
+              `${t}: synthesize names ${notCopied.join(", ")}, which this copy does not write at ` +
+                `all. Either copy the column (synthesised) or drop it from synthesize — a name ` +
+                `that reaches neither is a disclosure that lies.`,
+            );
+            return 1;
+          }
+        }
         const quoted = cols.map((c) => `"${c.name}"`).join(", ");
         // Read EVERY column as Postgres's own text form; see Column.typ.
-        const selectList = cols.map((c) => `"${c.name}"::text as "${c.name}"`).join(", ");
+        const selectList = cols
+          .map((c) =>
+            synth[c.name]
+              ? `(${synth[c.name]})::text as "${c.name}"`
+              : `"${c.name}"::text as "${c.name}"`,
+          )
+          .join(", ");
+        if (synthNames.length) {
+          console.log(
+            `${C.yellow}[WARN]${C.reset} ${t}: SYNTHESISED, NOT COPIED — ` +
+              synthNames.map((n) => `${n} := ${synth[n]}`).join("; ") +
+              `. Production's real value for these column(s) is never read, never transmitted and ` +
+              `never held by this process. A lane that needs the real value must read production.`,
+          );
+        }
         const pkQuoted = pk.map((c) => `"${c}"`).join(", ");
         const setList = cols
           .filter((c) => !pk.includes(c.name))
@@ -1042,6 +1296,55 @@ async function main(): Promise<number> {
           .join(", ");
         const secondaryUniques =
           policy === "upsert" ? await secondaryUniquesOf(prod, t, pk) : [];
+        // A SYNTHESISED value that lands in a UNIQUE index must still be unique,
+        // and "it is derived from a UUID so of course it is" is exactly the
+        // assumption that aborts a copy halfway through on 23505. Asked of
+        // PRODUCTION, over the real rows, before a single row is written.
+        //
+        // Read from `pg_index`, not `pg_constraint`, because the one that
+        // matters here is not a constraint: `auth.users`'s email uniqueness is
+        // the PARTIAL unique index `users_email_partial_key … where is_sso_user
+        // = false`, which `secondaryUniquesOf` cannot see at all. The index's
+        // own predicate is carried into the check, so a partial index is
+        // checked over exactly the rows it governs.
+        if (synthNames.length) {
+          const uniq = await prod.query<{ cols: string[]; pred: string | null; name: string }>(
+            `select ci.relname as name,
+                    array(select a.attname::text
+                            from unnest(i.indkey) with ordinality k(attnum, ord)
+                            join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+                           order by k.ord) as cols,
+                    pg_get_expr(i.indpred, i.indrelid) as pred
+               from pg_index i
+               join pg_class ci on ci.oid = i.indexrelid
+              where i.indrelid = $1::regclass and i.indisunique and i.indislive`,
+            [t],
+          );
+          for (const { cols: uk, pred, name } of uniq.rows) {
+            if (!uk.some((c) => synthNames.includes(c))) continue;
+            const expr = uk
+              .map((c) => (synth[c] ? `(${synth[c]})::text` : `"${c}"::text`))
+              .join(" || ' ' || ");
+            const where = pred ? ` where ${pred}` : "";
+            const dup = await prod.query<{ n: string; e: string | null }>(
+              `select count(*)::text n, min(k) e from ` +
+                `(select ${expr} k from ${t}${where} group by 1 having count(*) > 1) x`,
+            );
+            const n = Number(dup.rows[0]!.n);
+            if (n > 0) {
+              fail(
+                `${t}: the synthesised value for unique index ${name} (${uk.join(", ")}) ` +
+                  `collides on ${n} production row group(s) — e.g. "${dup.rows[0]!.e}". Widen ` +
+                  `the expression; nothing was written.`,
+              );
+              return 1;
+            }
+            console.log(
+              `${OK}${t}: the synthesised (${uk.join(", ")}) is unique across every production ` +
+                `row ${name} governs`,
+            );
+          }
+        }
         let displaced = 0;
         const rowsPerBatch = Math.max(1, Math.floor(MAX_PARAMS / cols.length));
         const prodKeys = new Set<string>();
@@ -1167,6 +1470,97 @@ async function main(): Promise<number> {
         `${OK}the copy committed as ONE transaction — until it did, the branch held its ` +
           `previous graph, and a failure would have left it exactly as it was found`,
       );
+
+      // ── The two sign-in identities, CREATED after the shells landed ───────
+      // Deliberately AFTER the commit and outside it: this step writes two rows
+      // and touches nothing the graph proofs read, so a failure here must not
+      // roll back a 40,000-row copy — it must be reported, loudly, with the
+      // remedy, while the branch keeps the graph it just took.
+      failures += await mintSignInIdentities(prod, branch);
+    }
+
+    // ── PROOF 6: THE IDENTITY SHELL ─────────────────────────────────────────
+    // The query `W0-DATA`'s own row nominates as the thing that makes the lane
+    // "unable to pass while broken", run by the script on EVERY run — copy and
+    // `--verify` alike. It reports COUNTS and never a single address: printing
+    // the offenders to prove a privacy failure would be the privacy failure.
+    {
+      const emails = signInEmails();
+      // THREE KINDS OF ROW, and the difference decides every clause below.
+      // A row's own address says which it is, because the shell's address is
+      // MADE from its id (`u-<first 8>@corpus.invalid`) and nothing else here
+      // wears that shape.
+      const TWO = `email = any($1::text[])`; //            the two sign-in identities
+      const SHELL = `email like 'u-%@corpus.invalid'`; //  a copied production id
+      const CORPUS = `email like '%@corpus.invalid' and ${SHELL} is not true`; // the gate corpus's own principals
+      // node-pg refuses a bind carrying a parameter the statement never names,
+      // so a clause that does not mention the two identities is sent without it.
+      const q = async (what: string) =>
+        Number(
+          (
+            await branch.query<{ n: string }>(
+              `select count(*)::text n from auth.users where ${what}`,
+              what.includes("$1") ? [emails] : [],
+            )
+          ).rows[0]!.n,
+        );
+      // The clause the lane's exit names, word for word.
+      const named = await q(
+        `email is not null and not (${TWO}) and not (${CORPUS}) and not (${SHELL})`,
+      );
+      const meta = await q(
+        `(raw_user_meta_data::text <> '{}' or raw_app_meta_data::text <> '{}') ` +
+          `and (email is null or (not (${TWO}) and not (${CORPUS})))`,
+      );
+      // The corpus's own principals are exempt from the address and metadata
+      // clauses (they ARE the corpus), but NOT from this one: a password hash
+      // anywhere but the two named identities means something can sign in on
+      // this branch that nobody declared.
+      const hashed = await q(`encrypted_password is not null and (email is null or not (${TWO}))`);
+      const unbanned = await q(`(${SHELL}) and (banned_until is null or banned_until <= now())`);
+      const total = Number(
+        (await branch.query<{ n: string }>(`select count(*)::text n from auth.users`)).rows[0]!.n,
+      );
+      const signInReady = (
+        await branch.query<{ n: string }>(
+          `select count(*)::text n from auth.users
+            where email = any($1::text[]) and encrypted_password is not null
+              and (banned_until is null or banned_until <= now())`,
+          [emails],
+        )
+      ).rows[0]!.n;
+      if (named)
+        fail(
+          `auth.users carries ${named} email address(es) that are neither a synthetic ` +
+            `@corpus.invalid shell nor ${emails.join(" / ")}. The copy took a real person's ` +
+            `address. Remedy: the address columns belong in COPY_TABLES' auth.users ` +
+            `\`synthesize\`, and this branch must be overwritten before anything else runs.`,
+        );
+      if (meta)
+        fail(
+          `auth.users carries ${meta} non-empty raw_user_meta_data/raw_app_meta_data blob(s) ` +
+            `outside the two sign-in identities — names, avatars and provider ids that were ` +
+            `meant to be synthesised to {}.`,
+        );
+      if (hashed)
+        fail(`auth.users carries ${hashed} password hash(es) outside the two sign-in identities.`);
+      if (unbanned)
+        fail(
+          `${unbanned} shell identity(ies) are not banned, so GoTrue would treat them as ` +
+            `sign-in candidates rather than refusing them outright.`,
+        );
+      if (!named && !meta && !hashed && !unbanned)
+        console.log(
+          `${OK}THE IDENTITY SHELL — of ${total} auth.users row(s): 0 real email addresses, ` +
+            `0 metadata blobs and 0 password hashes outside ${emails.join(" / ")}, and every ` +
+            `shell is banned. ${signInReady} of ${emails.length} sign-in identity(ies) are usable`,
+        );
+      if (Number(signInReady) !== emails.length)
+        fail(
+          `only ${signInReady} of ${emails.length} sign-in identity(ies) (${emails.join(" / ")}) ` +
+            `can actually sign in on the branch. Every client lane that walks the grid as one of ` +
+            `them would fall back to the anon key and measure the wrong posture.`,
+        );
     }
 
     // ── PROOF 1: every user trigger is enabled again ────────────────────────
