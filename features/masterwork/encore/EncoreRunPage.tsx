@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock3, Wrench } from "lucide-react";
+import { Clock3, Rocket, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -29,6 +29,8 @@ import { getBenchProof, UNAVAILABLE, type BenchProofState } from "./benchProof";
 import { ExpertSignOff } from "../review/ExpertSignOff";
 import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
 import { RunTheBench } from "./RunTheBench";
+import { setMasterworkReleased } from "../service";
+import { toast } from "@/lib/toast";
 import {
   getEncoreMasterwork,
   listMyEncoreRuns,
@@ -45,6 +47,8 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // THE PROOF is a separate question from the quick check, and it is asked out
   // loud: the panel shows the bench verdict, or says plainly there is none.
   const [bench, setBench] = useState<BenchProofState>({ status: "loading" });
+
+  const [releasing, setReleasing] = useState(false);
 
   const refreshRuns = useCallback(() => {
     listMyEncoreRuns(masterworkId)
@@ -105,6 +109,28 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     };
   }, [rulebookId]);
 
+  const releaseThis = async () => {
+    if (!masterwork) return;
+    setReleasing(true);
+    try {
+      const updated = await setMasterworkReleased({
+        masterworkId: masterwork.id,
+        expectedVersion: masterwork.version,
+        released: true,
+      });
+      setMasterwork((prev) =>
+        prev ? { ...prev, ...updated, rulebook: prev.rulebook } : prev,
+      );
+      toast.success("Released — anyone you share it with can run it now.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not release this one.",
+      );
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -135,26 +161,22 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     userId !== null &&
     masterwork.rulebook.created_by === userId;
 
-  if (masterwork.released_at === null) {
-    // A draft never runs from Encore — the Expert finishes it in the Studio.
+  const isDraft = masterwork.released_at === null;
+
+  if (isDraft && !ownsRulebook) {
+    // Someone ELSE's draft never runs from here — release is what makes a
+    // Masterwork other people's to run. The Expert's own draft does run (see
+    // the draft notice below): sending her away from her own work is exactly
+    // the dead end the cold walk hit.
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">
           This one isn&apos;t ready to run yet — the expert behind it
           hasn&apos;t released it.
         </p>
-        {ownsRulebook && masterwork.rulebook ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/masterwork/${masterwork.rulebook.id}/masterworks`}>
-              <Wrench className="mr-1 h-4 w-4" />
-              Open in Studio
-            </Link>
-          </Button>
-        ) : (
-          <Button asChild variant="outline" size="sm">
-            <Link href="/masterwork/encore">Back to Encore</Link>
-          </Button>
-        )}
+        <Button asChild variant="outline" size="sm">
+          <Link href="/masterwork/encore">Back to Encore</Link>
+        </Button>
       </div>
     );
   }
@@ -215,6 +237,26 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             <span className="text-foreground">Creates: </span>
             {masterwork.deliverable}
           </p>
+        ) : null}
+        {/* 🚨 YOUR OWN DRAFT RUNS, AND SAYS IT IS A DRAFT. Run it, check it,
+            sign off on what it said — then release it when you are ready.
+            The screen never pretends it is already shared. */}
+        {isDraft ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              Draft — only you can see this one. Run it as much as you like.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={releasing}
+              onClick={() => void releaseThis()}
+            >
+              <Rocket className="mr-1 h-3.5 w-3.5" />
+              {releasing ? "Releasing…" : "Release it"}
+            </Button>
+          </div>
         ) : null}
         <AuditionProof
           variant="panel"

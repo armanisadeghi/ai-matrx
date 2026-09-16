@@ -486,6 +486,11 @@ function InterviewColumn({
       <AgentConversationColumn
         conversationId={conversationId}
         surfaceKey={surfaceKey}
+        /* The reader here is the Expert being interviewed about her own
+           judgment — never a builder. Tool cards, raw result grids and
+           bound-variable chips do not belong in front of her; an admin with
+           creator mode on still sees all of it. */
+        audience="expert"
         constrainWidth
         edgeToEdgeScroll
         smartInputProps={{

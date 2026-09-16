@@ -46,6 +46,19 @@ export function EncoreBrowseCards({
                   {row.name}
                 </Link>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  {/* 🚨 A DRAFT SAYS SO. Your own shelf carries what you built
+                      whether or not you released it, so every card states which
+                      it is — a shelf that silently mixes the two is the same
+                      lie as a shelf that silently hides half of it. */}
+                  {row.released_at === null ? (
+                    <Badge
+                      variant="outline"
+                      className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                      title="Only you can see this one. Release it to let others run it."
+                    >
+                      Draft
+                    </Badge>
+                  ) : null}
                   {row.rulebook ? <span>By {row.rulebook.expert}</span> : null}
                   {row.rule_count !== null ? (
                     <Badge

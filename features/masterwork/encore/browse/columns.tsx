@@ -26,6 +26,28 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
     },
   },
   {
+    id: "status",
+    label: "Status",
+    column: {
+      id: "status",
+      accessorFn: (row) => (row.released_at === null ? "Draft" : "Released"),
+      header: "Status",
+      filter: false,
+      // A DRAFT SAYS SO — see EncoreBrowseCards for the rule.
+      cell: (row) =>
+        row.released_at === null ? (
+          <Badge
+            variant="outline"
+            className="px-1.5 py-0 text-[10px] text-muted-foreground"
+          >
+            Draft
+          </Badge>
+        ) : (
+          <Badge className="px-1.5 py-0 text-[10px]">Released</Badge>
+        ),
+    },
+  },
+  {
     id: "expert",
     label: "Expert",
     column: {

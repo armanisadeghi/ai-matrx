@@ -26,6 +26,10 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+import {
+  TranscriptAudienceProvider,
+  type TranscriptAudience,
+} from "./transcript-audience";
 
 import { cn } from "@/lib/utils";
 import {
@@ -149,6 +153,17 @@ interface AgentConversationColumnProps {
    * Live requestId-backed streaming bypasses this.
    */
   deferColdMarkdown?: boolean;
+  /**
+   * 🚨 WHO IS READING THIS TRANSCRIPT. "builder" (the default, and every
+   * surface that says nothing) is today's behaviour exactly: every machine
+   * frame renders. "expert" is a conversation with a non-technical Subject
+   * Matter Expert — tool cards, raw result grids, machine status labels and
+   * ad-hoc context chips are suppressed, replaced by one quiet "Working…"
+   * line while work is in flight, and still shown in full to anyone with
+   * creator mode on. Law + the cold-walk defect it closes:
+   * ./transcript-audience.tsx.
+   */
+  audience?: TranscriptAudience;
 }
 
 export function AgentConversationColumn({
@@ -164,6 +179,7 @@ export function AgentConversationColumn({
   afterMessages,
   aboveInput,
   deferColdMarkdown = false,
+  audience = "builder",
 }: AgentConversationColumnProps) {
   const dispatch = useAppDispatch();
   const displayId = displayConversationId ?? conversationId;
@@ -366,6 +382,7 @@ export function AgentConversationColumn({
   const centerWrap = edgeScroll ? "w-full max-w-3xl mx-auto px-2" : "contents";
 
   return (
+    <TranscriptAudienceProvider audience={audience}>
     <div
       className={cn(
         "h-full flex flex-col overflow-hidden",
@@ -521,5 +538,6 @@ export function AgentConversationColumn({
         </motion.div>
       )}
     </div>
+    </TranscriptAudienceProvider>
   );
 }

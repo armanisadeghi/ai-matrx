@@ -16,9 +16,23 @@ import type { Masterwork, RulebookSource } from "../types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
- * Encore — the Operator-facing invocation surface. An Operator sees only
- * RELEASED Masterworks (metadata.released_at stamped by the Expert in the
- * Studio); drafts never appear here. Direct supabase-js per platform doctrine.
+ * Encore — the Operator-facing invocation surface. Direct supabase-js per
+ * platform doctrine.
+ *
+ * 🚨 RELEASE GOVERNS OTHER PEOPLE'S SHELVES, NEVER YOUR OWN.
+ * Until 2026-09-16 every shelf here was hard-gated on `metadata.released_at`,
+ * and NOTHING in the build path ever stamps it — so every Masterwork an Expert
+ * built was invisible on the one screen whose entire job is to list what she
+ * built, forever, with no reveal and no explanation (cold-walk finding #6: two
+ * Masterworks, one already run to a real paid decision, absent from a shelf
+ * reading "Mine 2"). The class fix is the same rule Linear, Stripe and Vercel
+ * use for drafts: your OWN work is always on your own shelf, marked "Draft",
+ * one click from publishing; release is what lets OTHER people see it. So the
+ * `mine` shelf carries drafts (labelled), and `orgs` / `public` stay gated.
+ *
+ * Understudies are excluded everywhere here: an Understudy is the practice
+ * stand-in the Rulebook bakes for itself, not something the Expert built, and
+ * the Rulebook's own "Built" count already skips it (`listBuiltMasterworksByRulebook`).
  *
  * THE VIEW LAW: every list below declares its own scope predicate — mine /
  * my orgs (blended) / public — never a bare RLS-filtered read. A generic
@@ -57,14 +71,13 @@ export interface EncoreShelf {
   masterworks: EncoreMasterwork[];
 }
 
-function releasedBase() {
+function builtBase() {
   // archived-items-law-exempt: Encore is the Operator RUN shelf, not the
-  // Expert's browsable list of systems. Release is already a hard gate here —
-  // an unreleased Masterwork is absent with no reveal — and archiving is the
-  // Expert retiring a released system from that shelf, so archived rows are
-  // excluded rather than revealed, the same ruling F9 made for run/enrollment
-  // candidates. The browsable lists that DO carry the control are the
-  // Masterworks lane, the Rulebook page, the browse cards and the home grid.
+  // Expert's browsable list of systems. Archiving is the Expert retiring a
+  // system from that shelf, so archived rows are excluded rather than
+  // revealed, the same ruling F9 made for run/enrollment candidates. The
+  // browsable lists that DO carry the control are the Masterworks lane, the
+  // Rulebook page, the browse cards and the home grid.
   return supabase
     .schema("workflow")
     .from("definition")
@@ -72,8 +85,12 @@ function releasedBase() {
     .is("deleted_at", null)
     .eq("is_archived", false)
     .not("metadata->>built_from_rulebook", "is", null)
-    .not("metadata->>released_at", "is", null)
     .order("updated_at", { ascending: false });
+}
+
+/** Other people's shelves: released only. See the release rule at the top. */
+function releasedBase() {
+  return builtBase().not("metadata->>released_at", "is", null);
 }
 
 /**
@@ -144,7 +161,8 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   const orgIds = orgs.filter((o) => !o.isPersonal).map((o) => o.id);
 
   const [mineRes, orgsRes, publicRes] = await Promise.all([
-    releasedBase().eq("created_by", userId),
+    // YOUR shelf shows everything you built, draft or released.
+    builtBase().eq("created_by", userId),
     orgIds.length > 0
       ? releasedBase().in("organization_id", orgIds)
       : Promise.resolve({ data: [], error: null }),
@@ -159,6 +177,9 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
     const out: Masterwork[] = [];
     for (const raw of rows) {
       const m = parseMasterworkRow(raw as Parameters<typeof parseMasterworkRow>[0]);
+      // An Understudy is the Rulebook's own practice stand-in, not a thing the
+      // Expert built — the Rulebook's "Built" count skips it, and so does Encore.
+      if (m.understudy) continue;
       if (seen.has(m.id)) continue;
       seen.add(m.id);
       out.push(m);

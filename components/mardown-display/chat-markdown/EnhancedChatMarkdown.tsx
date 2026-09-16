@@ -45,6 +45,10 @@ import {
   type AgentWorkFold,
 } from "@/features/tool-call-visualization/grouping/foldAgentWork";
 import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
+import {
+  EXPERT_WORKING_LABEL,
+  useMachineFramesVisible,
+} from "@/features/agents/components/shared/transcript-audience";
 import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
 import { isCloudBrowserToolName } from "@/features/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
 import { collectCloudBrowserRun } from "@/features/tool-call-visualization/grouping/groupCloudBrowserRuns";
@@ -510,6 +514,16 @@ export const EnhancedChatMarkdownInternal: React.FC<
   );
   const toolLifecycleMap = useAppSelector(toolLifecycleMapSelector);
 
+  /**
+   * 🚨 MACHINE FRAMES ARE FOR BUILDERS, NEVER FOR EXPERTS. The host declares
+   * who is reading (features/agents/components/shared/transcript-audience.tsx);
+   * a host that declares nothing is a builder surface and nothing below
+   * changes for it. When this is false, a tool call renders as one quiet
+   * "Working…" line while it is in flight and as NOTHING once it has landed —
+   * the fact survives, the payload does not.
+   */
+  const machineFramesVisible = useMachineFramesVisible();
+
   // Fold runs of consecutive tool calls into one expandable batch line so a
   // back-to-back burst (e.g. ten record updates) isn't a wall of rows.
   // Deliverable-card tools ("stay-open" display mode — knowledge_search,
@@ -573,6 +587,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
     GroupedSlot | AgentWorkFold<GroupedSlot>
   > => {
     if (!isSettled) return groupedSlots;
+    // An Expert's transcript has no machine frames left to fold, so the
+    // "Worked for Ns" group would be a box that opens onto nothing — a dead
+    // end, which is worse than the leak it replaced.
+    if (!machineFramesVisible) return groupedSlots;
     return foldAgentWork(groupedSlots, {
       classify: (slot) => {
         if (
@@ -603,12 +621,15 @@ export const EnhancedChatMarkdownInternal: React.FC<
         return null;
       },
     });
-  }, [isSettled, groupedSlots, toolLifecycleMap, renderBlocksMap]);
+  }, [isSettled, groupedSlots, toolLifecycleMap, renderBlocksMap, machineFramesVisible]);
 
   const workGroupedSegments = useMemo((): Array<
     GroupedSegment | AgentWorkFold<GroupedSegment>
   > => {
     if (!isSettled) return groupedSegments;
+    // Same rule as the live half: with no machine frames left there is
+    // nothing to fold, and an empty "Worked for Ns" group is a dead end.
+    if (!machineFramesVisible) return groupedSegments;
     const dbToolSpan = (seg: ContentSegmentDbTool) =>
       toolSpan(seg.record?.startedAt, seg.record?.completedAt);
     return foldAgentWork(groupedSegments, {
@@ -634,7 +655,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         return null;
       },
     });
-  }, [isSettled, groupedSegments]);
+  }, [isSettled, groupedSegments, machineFramesVisible]);
 
   // NB: materialized artifacts are plain text now (vision R1) — both the
   // interleaved-segment path and the plain processedBlocks path split text via
@@ -1026,6 +1047,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const renderGroupedSlot = (slot: GroupedSlot, i: number) => {
     if (!requestId) return null;
     if (slot.kind === "tool_batch") {
+      // A batch is several machine frames folded into one — still machine.
+      if (!machineFramesVisible) return null;
       return (
         <InlineToolBatch
           key={`tool-batch-${slot.seq}`}
@@ -1109,6 +1132,19 @@ export const EnhancedChatMarkdownInternal: React.FC<
       return renderBlock(block, i);
     }
     if (slot.kind === "tool") {
+      if (!machineFramesVisible) {
+        const entry = toolLifecycleMap?.[slot.callId];
+        const settled =
+          entry?.status === "completed" || entry?.status === "error";
+        // Still working → say so. Finished → the assistant's own words are
+        // the result; the frame that produced them is not the Expert's business.
+        return settled ? null : (
+          <InlineStatusIndicator
+            key={`tool-${slot.seq}-${slot.callId}`}
+            label={EXPERT_WORKING_LABEL}
+          />
+        );
+      }
       return (
         <InlineToolCard
           key={`tool-${slot.seq}-${slot.callId}`}
@@ -1119,8 +1155,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
       );
     }
     if (slot.kind === "status") {
+      // A status label is written for whoever is watching the machine — the
+      // providers emit "Using tool <name>" verbatim. An Expert gets the fact
+      // without the machinery's vocabulary.
       return (
-        <InlineStatusIndicator key={`status-${slot.seq}`} label={slot.label} />
+        <InlineStatusIndicator
+          key={`status-${slot.seq}`}
+          label={machineFramesVisible ? slot.label : EXPERT_WORKING_LABEL}
+        />
       );
     }
     if (slot.kind === "thinking") {
@@ -1159,6 +1201,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // and the expanded body of an AgentWorkGroup (same rationale as above).
   const renderGroupedSegment = (segment: GroupedSegment, segIdx: number) => {
     if (segment.type === "db_tool_batch") {
+      if (!machineFramesVisible) return null;
       return (
         <DbToolBatch
           key={segment.key}
@@ -1171,6 +1214,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
       );
     }
     if (segment.type === "db_tool") {
+      // A reloaded turn shows what was SAID, never the call that produced it.
+      if (!machineFramesVisible) return null;
       return (
         <DbToolCard
           key={`db-tool-${segIdx}-${segment.callId}`}

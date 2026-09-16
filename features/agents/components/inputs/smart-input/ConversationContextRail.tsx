@@ -90,6 +90,7 @@ import {
   isCanvasItemContextKey,
   isCanvasItemContextValue,
 } from "@/features/agents/utils/canvasItemContext";
+import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
@@ -174,6 +175,9 @@ export function ConversationContextRail({
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
+  // Who is reading this composer — see transcript-audience.tsx. A host that
+  // declares nothing is a builder surface and nothing here changes for it.
+  const machineFramesVisible = useMachineFramesVisible();
 
   // ── Live context entries (working doc, scratchpad, slot / ad-hoc context) ──
   const selectEntries = useMemo(
@@ -504,6 +508,15 @@ export function ConversationContextRail({
         continue;
       }
 
+      // 🚨 THE COMPOSER IS NOT A VARIABLE INSPECTOR. This is the ad-hoc
+      // branch: an entry nobody gave a human label, so the chip falls back to
+      // the raw key — which is how an Expert being interviewed about her own
+      // judgment was shown `content` `surface` `rulebook_id` `lane` and a
+      // "···16" overflow badge on every single turn. Those entries are set by
+      // code, for the agent; the person never attached them and cannot act on
+      // them. Her named attachments (documents, lists, canvas items) are built
+      // by the branches ABOVE and are untouched.
+      if (!machineFramesVisible) continue;
       const Icon = CONTEXT_TYPE_ICON[e.type] ?? FALLBACK_CONTEXT_ICON;
       const label = e.label?.trim() || e.key;
       out.push({
@@ -521,6 +534,7 @@ export function ConversationContextRail({
 
     return out;
   }, [
+    machineFramesVisible,
     entries,
     hasLists,
     taskCounts.total,

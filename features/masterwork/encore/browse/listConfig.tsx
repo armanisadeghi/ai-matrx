@@ -59,8 +59,8 @@ export const encoreListConfig: EntityListConfig<EncoreListRow> = {
   supportsArchived: false,
   facetSections: [],
   emptyState: {
-    title: "No released Masterworks here",
+    title: "Nothing on this shelf yet",
     description:
-      "Released Masterworks appear here when they are ready for you to run.",
+      "Everything you build lands here — drafts included, marked as drafts. Release one and the people you share it with can run it too.",
   },
 };

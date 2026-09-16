@@ -34,6 +34,7 @@ import {
   clearPendingNavigation,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import type { TranscriptAudience } from "@/features/agents/components/shared/transcript-audience";
 import { CanvasDock } from "@/features/canvas/core/CanvasDock";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
@@ -84,6 +85,13 @@ import type { VariablesPanelStyle } from "@/features/agents/components/inputs/va
 
 interface ChatRoomClientProps {
   agentId: string;
+  /**
+   * Who is reading this room's transcript. Default "builder" = /chat and every
+   * other room, unchanged. A room hosting a non-technical Subject Matter
+   * Expert passes "expert" and the machine frames stand down. Law:
+   * `features/agents/components/shared/transcript-audience.tsx`.
+   */
+  audience?: TranscriptAudience;
   /** When provided, loads this existing conversation. Mounted by
    *  `/chat/[conversationId]`. When absent (mounted by `/chat/a/[agentId]`),
    *  the launcher creates a fresh instance. */
@@ -180,6 +188,7 @@ const CHAT_INITIAL_MESSAGE_LIMIT = 12;
  */
 export function ChatRoomClient({
   agentId,
+  audience = "builder",
   conversationId: conversationIdProp,
   landingContent,
   aboveInput,
@@ -741,6 +750,7 @@ export function ChatRoomClient({
           <AgentConversationColumn
             conversationId={conversationId}
             surfaceKey={surfaceKey}
+            audience={audience}
             constrainWidth
             edgeToEdgeScroll
             deferColdMarkdown={!!conversationIdProp}
