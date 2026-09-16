@@ -344,6 +344,26 @@ const COPY_TABLES: readonly CopyTable[] = [
   { table: "platform.associations", policy: "replace" },
   { table: "platform.reachability", policy: "replace" },
   // ── the two arms that read entity tables of their own ────────────────────
+  /**
+   * 🚨 WITHOUT THIS TABLE THE BRANCH CANNOT BE GIVEN PRODUCTION'S FUNCTION
+   *    PRIVILEGES AT ALL (measured 2026-09-16).
+   *
+   * A DB-wide event trigger REVOKES client EXECUTE on a SECURITY DEFINER
+   * function that has no `platform.client_callable_door` row — inside the GRANT
+   * itself, with a WARNING and a `platform.ddl_guard_log` row. Production holds
+   * **1,000** door rows; the branch held **ZERO**, so
+   *
+   *   grant execute on function public.is_platform_admin() to authenticated;  -- GRANT
+   *   select has_function_privilege('authenticated','public.is_platform_admin()','EXECUTE');
+   *   -- false
+   *
+   * every time, for every function, however many times it was granted. The
+   * consequence is not subtle: `platform`'s RLS policies call those functions, so
+   * an authenticated read of any RLS-protected table on the branch answers
+   * `403 permission denied for function is_platform_admin` with the schema
+   * exposed and every table grant in place — which is `W6-GRID`'s first act.
+   */
+  { table: "platform.client_callable_door", policy: "upsert" },
   { table: "platform.entity_grants", policy: "upsert" },
   { table: "platform.rulebook", policy: "upsert" },
   { table: "seo.starter_pack", policy: "upsert" },
