@@ -230,7 +230,10 @@ export default function TableToolbar({
       {/* Toolbar UI — dense, single-row on desktop. Below md, the Column/Row/
           Paste + reorder/clean/reference/export/settings clusters collapse
           into one drawer trigger so the row never overflows the viewport. */}
-      <div className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:items-center md:gap-2">
+      <div
+        data-surface-value="is_read_only"
+        className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:items-center md:gap-2"
+      >
         <div className="hidden md:flex items-center w-full md:w-auto gap-1">
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
@@ -280,6 +283,7 @@ export default function TableToolbar({
                 placeholder="Search table..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                data-surface-value="search_term"
                 className="h-11 w-full pl-8 pr-10 text-base md:h-7 md:pl-7 md:pr-7 md:text-sm"
                 style={{ fontSize: "16px" }}
               />

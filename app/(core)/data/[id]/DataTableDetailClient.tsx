@@ -51,20 +51,24 @@ export default function DataTableDetailClient({
         left={
           <>
             <ChevronLeftTapButton href="/data" ariaLabel="Back to tables" />
-            <TableIdentityMenu
-              tableId={tableId}
-              tableName={displayName}
-              tables={tables}
-              onRenamed={(next) => {
-                setRenamedTo(next);
-                setTables((prev) =>
-                  prev.map((t) =>
-                    t.id === tableId ? { ...t, table_name: next } : t,
-                  ),
-                );
-              }}
-              onCreateTable={() => setCreateOpen(true)}
-            />
+            <div data-surface-value="table_id">
+              <div data-surface-value="table_name">
+                <TableIdentityMenu
+                  tableId={tableId}
+                  tableName={displayName}
+                  tables={tables}
+                  onRenamed={(next) => {
+                    setRenamedTo(next);
+                    setTables((prev) =>
+                      prev.map((t) =>
+                        t.id === tableId ? { ...t, table_name: next } : t,
+                      ),
+                    );
+                  }}
+                  onCreateTable={() => setCreateOpen(true)}
+                />
+              </div>
+            </div>
           </>
         }
       />
