@@ -8802,6 +8802,7 @@ export type Database = {
           exclude_from_kg: boolean
           forked_at_position: number | null
           forked_from_id: string | null
+          host_value_names: string[]
           id: string
           initial_agent_id: string | null
           initial_agent_version_id: string | null
@@ -8843,6 +8844,7 @@ export type Database = {
           exclude_from_kg?: boolean
           forked_at_position?: number | null
           forked_from_id?: string | null
+          host_value_names?: string[]
           id?: string
           initial_agent_id?: string | null
           initial_agent_version_id?: string | null
@@ -8884,6 +8886,7 @@ export type Database = {
           exclude_from_kg?: boolean
           forked_at_position?: number | null
           forked_from_id?: string | null
+          host_value_names?: string[]
           id?: string
           initial_agent_id?: string | null
           initial_agent_version_id?: string | null

@@ -17,7 +17,7 @@
 // reachable from this bar — the chat stays MOUNTED underneath while a
 // document is on screen, so reading the document never interrupts a stream.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BookOpenText,
@@ -71,11 +71,7 @@ import {
   type InterviewStage,
   type RoleKey,
 } from "../types";
-import {
-  LEAD_ROLE,
-  OpeningVisionSend,
-  RoleHeroIdentity,
-} from "./RoomOpening";
+import { LEAD_ROLE, OpeningVisionSend, RoleHeroIdentity } from "./RoomOpening";
 import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
 import { StageTabs } from "./StageTabs";
@@ -589,6 +585,40 @@ export function RoomChatPane({
   const { tabs: docTabs, finalizedAt } = useDocTabs();
   const activeDoc = docTabs.find((t) => t.key === docView) ?? null;
 
+  // 🚨 FINISHING LANDS ON WHAT WAS WRITTEN (cold-walk-2, jobs-bar-2026-09-16,
+  // finding 3). "Finish the interview" promises three documents by name, and
+  // the room used to answer by leaving the person exactly where they were —
+  // in a dialog, in front of a chat tab — with three `Open` buttons she had to
+  // notice and press. A promise kept only if you go looking for it is not kept.
+  // The moment `finalized_at` lands (it arrives over the session row's
+  // realtime subscription, whether the run finished in this tab or another),
+  // the room OPENS the Vision document it just wrote. Once per finalize, so a
+  // person who then chooses a different record is not dragged back.
+  const landedOnFinalizeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!finalizedAt) return;
+    if (landedOnFinalizeRef.current === finalizedAt) return;
+    // Nothing to land on: a finalize that wrote no Vision document is a
+    // server-side failure, and the finish dialog says so. Never open a blank.
+    if (!docTabs.some((t) => t.key === "vision")) return;
+    landedOnFinalizeRef.current = finalizedAt;
+    dispatch(docViewChanged("vision"));
+  }, [finalizedAt, docTabs, dispatch]);
+
+  // 🚨 THE ROOM OWNS ITS OWN URL (cold-walk-2 finding 3, the other half).
+  // `ChatRoomClient`'s two navigation effects — the pending-navigation promote
+  // and the first-turn id promotion — both call
+  // `router.replace(buildConversationHref(id))`, and the DEFAULT is
+  // `/chat/<id>`. That default is right for the chat route and catastrophic
+  // for an embedded room: it silently replaces a guided interview with a bare
+  // chat thread, which is how an Expert ended up reading the machine's own
+  // briefing instead of her documents. The room's answer is its OWN route, so
+  // any such promotion is a no-op and the person stays where she is.
+  const roomHref = useCallback(
+    () => `/masterwork/vision-interview/${session?.id ?? ""}`,
+    [session?.id],
+  );
+
   const meta = ROLES[role];
   const stage = stageForRole(role);
   const currentStage = session ? normalizeStage(session.stage) : null;
@@ -727,6 +757,8 @@ export function RoomChatPane({
                   conversationMaterialization={
                     binding.conversationStarted ? "existing" : "reserved"
                   }
+                  /* The room, never `/chat` — see THE ROOM OWNS ITS OWN URL. */
+                  buildConversationHref={roomHref}
                 />
               </div>
               <PendingAnswersRider conversationId={binding.conversationId} />

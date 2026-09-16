@@ -40,8 +40,9 @@ import { hydrateRequestsFromObservability } from "../active-requests/active-requ
 import { hydrateInbox } from "../inbox/inbox.thunks";
 import {
   initInstanceVariables,
-  setUserVariableValues,
+  restoreVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
+import { parsePersistedHostValueNames } from "../instance-variable-values/instance-variable-values.persistence";
 import {
   initInstanceOverrides,
   setOverrides,
@@ -168,14 +169,13 @@ export const loadConversation = createAsyncThunk<
     try {
       const { data: authData } = await supabase.auth.getUser();
       authedUserId = authData?.user?.id ?? null;
-       
+
       console.log(
         "[loadConversation] auth at fetch time: userId=%s conversationId=%s",
         authedUserId ?? "(none)",
         conversationId,
       );
     } catch (authErr) {
-       
       console.warn(
         "[loadConversation] auth.getUser() threw:",
         describeSupabaseError(authErr),
@@ -199,7 +199,8 @@ export const loadConversation = createAsyncThunk<
       // creates it on the first turn) — nothing to hydrate, not a failure.
       // The local instance already holds the correct (empty) state.
       if (
-        (err as { code?: string } | null)?.code === CONVERSATION_NOT_MATERIALIZED
+        (err as { code?: string } | null)?.code ===
+        CONVERSATION_NOT_MATERIALIZED
       ) {
         void historyPromise.catch?.(() => undefined);
         // Benign only for a conversation this client minted. For a REOPEN the
@@ -216,7 +217,7 @@ export const loadConversation = createAsyncThunk<
         }
         return { conversationId };
       }
-       
+
       console.error(
         "[loadConversation] fetchConversationBundle failed:",
         describeSupabaseError(err),
@@ -239,7 +240,7 @@ export const loadConversation = createAsyncThunk<
     // separately from the bundle — never block hydration on it.
     void historyPromise.catch?.(() => undefined);
     const conv = bundle.conversation;
-     
+
     // console.log(
     //   "[loadConversation] bundle received: conv=%s messages=%d toolCalls=%d",
     //   conv?.id ?? "(none)",
@@ -359,11 +360,18 @@ export const loadConversation = createAsyncThunk<
       });
     }
 
-    // ── 3. Variables — stamp the DB `variables` JSON into userValues so the
-    // user picks up right where they left off. A future pass can introduce a
-    // dedicated `persistedValues` field on the entry to distinguish "server
-    // said this was last-set" from "user just typed it"; today they're the
-    // same on the reload path by construction.
+    // ── 3. Variables — stamp the DB `variables` JSON back into userValues so
+    // the user picks up right where they left off, WITH THE AUTHORSHIP THE ROW
+    // CARRIES.
+    //
+    // 🚨 `variables` is the MERGED payload and says nothing about who supplied
+    // what, so until `host_value_names` existed this path replayed the whole
+    // dict through the user action — which both claimed the host's launch
+    // values as the person's words ("Expert Goal: …", "Rulebook: …" inside her
+    // own bubble on every reopen) and RELEASED the authorship the launcher had
+    // recorded. `restoreVariableValues` takes both halves together; a row with
+    // no authorship recorded behaves exactly as before, as a value with no
+    // claim attached.
     dispatch(
       initInstanceVariables({
         conversationId,
@@ -377,9 +385,10 @@ export const loadConversation = createAsyncThunk<
         : {};
     if (Object.keys(persistedVariables).length > 0) {
       dispatch(
-        setUserVariableValues({
+        restoreVariableValues({
           conversationId,
           values: persistedVariables,
+          hostValueNames: parsePersistedHostValueNames(conv),
         }),
       );
     }
@@ -465,9 +474,7 @@ export const loadConversation = createAsyncThunk<
     // window both reflect the server-confirmed state the moment a past
     // conversation is reopened.
     const memoryMeta = metaObj.observational_memory as
-      | ObservationalMemoryMetadata
-      | undefined
-      | null;
+      ObservationalMemoryMetadata | undefined | null;
     if (memoryMeta && typeof memoryMeta === "object") {
       dispatch(
         setMemoryMetadata({
@@ -500,7 +507,7 @@ export const loadConversation = createAsyncThunk<
       // server-side fetch problem (RPC missing the join, RLS hiding
       // rows, or field-name drift). Surface it loudly so we don't
       // silently render empty tool cards.
-       
+
       console.warn(
         "[loadConversation] cid=%s has tool messages but bundle.tool_calls is empty — check RPC return shape",
         conversationId,
@@ -574,7 +581,6 @@ export const loadConversation = createAsyncThunk<
       dispatch(setFocus({ surfaceKey, conversationId }));
     }
 
-     
     // console.log(
     //   "[loadConversation] DONE cid=%s — all 7 dimensions hydrated",
     //   conversationId,

@@ -55,6 +55,7 @@ import {
   replaceSurfaceVariableValues,
   setScopeVariableValues,
   setUserVariableValues,
+  restoreVariableValues,
   resetUserVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import { initInstanceResources } from "../instance-resources/instance-resources.slice";
@@ -1085,11 +1086,15 @@ export const startNewConversationAndExecute = createAsyncThunk<
       }),
     );
 
+    // Values carried into the new conversation carry their AUTHORSHIP with
+    // them: a value the old conversation's surface wired is still the host's
+    // here, and `setUserVariableValues` would have silently made it hers.
     if (Object.keys(userValues).length > 0) {
       dispatch(
-        setUserVariableValues({
+        restoreVariableValues({
           conversationId: newConversationId,
           values: userValues,
+          hostValueNames: currentVariables?.hostValueNames ?? [],
         }),
       );
     }
@@ -1291,11 +1296,16 @@ export const splitInputIntoNewConversation = createAsyncThunk<
       }),
     );
 
+    // Same rule as the carry above — the submitted snapshot is a replay, not
+    // a new authorship claim.
     if (Object.keys(carryUserValues).length > 0) {
       dispatch(
-        setUserVariableValues({
+        restoreVariableValues({
           conversationId: newConversationId,
           values: carryUserValues,
+          hostValueNames:
+            state.instanceVariableValues.byConversationId[currentConversationId]
+              ?.hostValueNames ?? [],
         }),
       );
     }
@@ -1408,6 +1418,11 @@ export const setAutoClearMode = createAsyncThunk<
     if (originalText === undefined) return; // nothing submitted yet — plain flip
 
     const originalValues = entry?.originalSubmittedUserValues ?? {};
+    // Restoring the first submit restores WHO WROTE IT too — the surface that
+    // launched this conversation still owns the values it wired.
+    const originalHostValueNames =
+      state.instanceVariableValues.byConversationId[conversationId]
+        ?.hostValueNames ?? [];
     const hasHistory =
       (state.messages?.byConversationId[conversationId]?.orderedIds?.length ??
         0) > 0;
@@ -1423,9 +1438,10 @@ export const setAutoClearMode = createAsyncThunk<
       ).unwrap();
       if (Object.keys(originalValues).length > 0) {
         dispatch(
-          setUserVariableValues({
+          restoreVariableValues({
             conversationId: newConversationId,
             values: originalValues,
+            hostValueNames: originalHostValueNames,
           }),
         );
       }
@@ -1444,7 +1460,11 @@ export const setAutoClearMode = createAsyncThunk<
     dispatch(resetUserVariableValues(conversationId));
     if (Object.keys(originalValues).length > 0) {
       dispatch(
-        setUserVariableValues({ conversationId, values: originalValues }),
+        restoreVariableValues({
+          conversationId,
+          values: originalValues,
+          hostValueNames: originalHostValueNames,
+        }),
       );
     }
     dispatch(

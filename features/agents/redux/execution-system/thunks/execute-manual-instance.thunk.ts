@@ -1,4 +1,7 @@
-import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
+import {
+  executionRejectionMeta,
+  type ExecutionRejectionMeta,
+} from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Manual Instance Thunk
  *
@@ -96,10 +99,11 @@ import {
   setInstanceStatus,
 } from "../conversations/conversations.slice";
 import {
+  selectHostVariableNames,
   selectRuntimeVariableResourcePolicies,
   selectVariablesForRequest,
 } from "../instance-variable-values/instance-variable-values.selectors";
-import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { restoreVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   selectContextPayload,
@@ -584,7 +588,10 @@ export const executeManualInstance = createAsyncThunk<
   ) => {
     const requestId = generateRequestId();
     const rejectWithValue = (value: unknown, originalErrorName?: string) =>
-      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
+      reject(
+        value,
+        executionRejectionMeta(requestId, conversationId, originalErrorName),
+      );
     let recoveryId: string | null = null;
 
     try {
@@ -614,11 +621,15 @@ export const executeManualInstance = createAsyncThunk<
       const hasFirstTurnVariables = Boolean(
         firstTurnVariables && Object.keys(firstTurnVariables).length > 0,
       );
+      // Replays what is being sent; never claims it. See the same stamp in
+      // `execute-instance.thunk.ts` — `setUserVariableValues` released the
+      // launcher's authorship and put the host's values back in her bubble.
       if (hasFirstTurnVariables && firstTurnVariables) {
         dispatch(
-          setUserVariableValues({
+          restoreVariableValues({
             conversationId,
             values: firstTurnVariables,
+            hostValueNames: selectHostVariableNames(conversationId)(state),
           }),
         );
       }

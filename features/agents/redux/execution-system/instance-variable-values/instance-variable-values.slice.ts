@@ -208,6 +208,48 @@ const instanceVariableValuesSlice = createSlice({
     },
 
     /**
+     * Put back a set of ALREADY-RESOLVED values TOGETHER WITH THEIR AUTHORSHIP.
+     *
+     * 🚨 WHY THIS EXISTS (the rehydration half, 2026-09-16). `setUserVariableValues`
+     * means "the person just set these", and it releases host ownership of every
+     * name it writes — correct for a typed edit, a lie for a REPLAY. Three paths
+     * replay values nobody just typed: the first-turn stamp of the exact payload
+     * being sent, `loadConversation` stamping `chat.conversation.variables` back
+     * in, and the carry into a new/forked conversation. Each used the user action,
+     * so each ERASED the authorship the launcher had recorded — which is why
+     * reopening an interview or a Conductor conversation printed
+     * "Expert Goal: …" and "Rulebook: …" inside the person's own bubble again,
+     * and why even the LIVE first turn lost it the moment it was sent.
+     *
+     * The caller says who wrote what; this reducer never guesses. A name in
+     * `values` and in `hostValueNames` is the host's; a name in `values` and not
+     * in `hostValueNames` is hers, including one that used to be the host's and
+     * is now being replayed as her edit. Names outside `values` are untouched.
+     */
+    restoreVariableValues(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        values: Record<string, unknown>;
+        /** The subset of `values` the host wired. Omitted = all of it is hers. */
+        hostValueNames?: readonly string[];
+      }>,
+    ) {
+      const { conversationId, values, hostValueNames = [] } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      Object.assign(entry.userValues, values);
+      const restoredNames = Object.keys(values);
+      const host = (entry.hostValueNames ?? []).filter(
+        (name) => !restoredNames.includes(name),
+      );
+      for (const name of hostValueNames) {
+        if (name in values && !host.includes(name)) host.push(name);
+      }
+      entry.hostValueNames = host;
+    },
+
+    /**
      * Clear a user-provided value, falling back to scope or default.
      */
     clearUserVariableValue(
@@ -374,6 +416,7 @@ export const {
   setUserVariableValue,
   setUserVariableValues,
   setHostVariableValues,
+  restoreVariableValues,
   clearUserVariableValue,
   setScopeVariableValues,
   setRuntimeVariableResourcePolicy,
