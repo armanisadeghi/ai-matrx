@@ -27,6 +27,7 @@ import {
 import { UserActionBar } from "./UserActionBar";
 import { FirstTurnVariables, UserMessageVariables } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
+import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
@@ -137,6 +138,7 @@ export function AgentUserMessage({
   compact = false,
 }: AgentUserMessageProps) {
   const record = useAppSelector(selectMessageById(conversationId, messageId));
+  const machineFramesVisible = useMachineFramesVisible();
   // The agent driving this conversation — used by ContextPolicyChipStrip to
   // resolve slot definitions for type/label/description on each chip.
   const agentId = useAppSelector(
@@ -334,7 +336,13 @@ export function AgentUserMessage({
                 the live conversation context here: doing so made every historical
                 bubble lie, showing the current context as if the model had seen
                 it. Neither source → show nothing (honest). */}
-            {contextSnapshot && contextSnapshot.length > 0 && (
+            {/* 🚨 A CONTEXT SNAPSHOT IS A BUILDER'S RECORD OF WHAT THE MODEL
+                SAW — it is not something an Expert asked for, attached, or can
+                act on. On an expert-audience transcript the "CONTEXT · Context
+                Items (13)" strip is the same leak as a tool card, one bubble
+                higher (cold walk 2026-09-16, finding #2's family). Creator mode
+                still shows it. See ../../shared/transcript-audience.tsx. */}
+            {machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (
               <ContextPolicyChipStrip
                 conversationId={conversationId}
                 agentId={agentId}

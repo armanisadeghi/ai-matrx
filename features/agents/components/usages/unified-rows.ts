@@ -32,7 +32,6 @@ import {
   newestLabelOf,
   pinnedLabelOf,
   settingsSignalOf,
-  BLOCKER_META,
   type ImpactGrade,
   type ImpactVerdict,
 } from "@/features/mandates/admin/impact";
@@ -218,6 +217,14 @@ export function rowFromAggregate(aggregate: AgentUsageAggregate): UnifiedUsageRo
   };
 }
 
+/** One short phrase per blocker for the table cell; the detail pane carries `BLOCKER_META`'s full sentence. */
+const BLOCKER_PHRASE: Record<NonNullable<ImpactVerdict["blocker"]>, string> = {
+  tracks_latest: "Follows the newest version — your change already applies",
+  unreachable: "No saved version to pin to — save a version first",
+  set_aside: "Set aside by resolution — fix that before moving it",
+  unsupported_holder: "Held by something that is not an agent",
+};
+
 export function rowFromVerdict(
   verdict: ImpactVerdict,
   focusAgentId: string,
@@ -225,12 +232,21 @@ export function rowFromVerdict(
   const risk = GRADE_TO_RISK[verdict.grade];
   const findings = changeFindingsOf(verdict);
   const settings = settingsSignalOf(verdict);
+  // The server's tracks-latest / set-aside findings are full sentences; the
+  // cell carries the short phrase and the detail pane the sentences.
+  const changeFindings = verdict.blocker
+    ? findings.filter((finding) => !finding.rule_id.startsWith("blocker."))
+    : findings;
   let whatChanged: string;
-  if (findings.length > 0) {
-    whatChanged = capitalize(findings[0].message);
-    if (findings.length > 1) whatChanged += ` (+${findings.length - 1} more)`;
-  } else if (verdict.blocker) {
-    whatChanged = BLOCKER_META[verdict.blocker].meaning;
+  if (verdict.blocker) {
+    whatChanged = BLOCKER_PHRASE[verdict.blocker];
+    if (changeFindings.length > 0) {
+      whatChanged += ` · ${changeFindings[0].message}`;
+      if (changeFindings.length > 1) whatChanged += ` (+${changeFindings.length - 1} more)`;
+    }
+  } else if (changeFindings.length > 0) {
+    whatChanged = capitalize(changeFindings[0].message);
+    if (changeFindings.length > 1) whatChanged += ` (+${changeFindings.length - 1} more)`;
   } else {
     whatChanged = "Nothing that affects a run changed";
   }

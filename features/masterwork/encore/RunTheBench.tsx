@@ -30,6 +30,10 @@
 // cannot run, the reason.
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +47,6 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
@@ -281,17 +284,28 @@ export function RunTheBench({
     (Number.isFinite(budgetNumber) && budgetNumber > 0);
   const liveCost = arms.reduce((sum, a) => sum + a.cost_usd, 0);
 
+  /**
+   * 🚨 AN UNMET PRECONDITION IS A PROMPT, NEVER AN ALARM. These two used to be
+   * red toasts fired after the click — a person who simply had not typed the
+   * task yet was shown an error, which teaches her to fear a button that is
+   * about to spend real money across six arms. Same fix as the Bad Example
+   * probe and the Triad game: the reason rides ON the control, live, before
+   * the click. The early returns below stay as unreachable backstops.
+   */
+  const blockedReason = firstBlockingReason([
+    {
+      when: taskPrompt.trim().length < 10,
+      reason:
+        "Write the task first — every arm gets this same wording, so it has to stand on its own",
+    },
+    {
+      when: !budgetValid,
+      reason: "The budget multiple has to be a number greater than zero",
+    },
+  ]);
+
   const start = async () => {
-    if (taskPrompt.trim().length < 10) {
-      toast.error(
-        "Write the task first — every arm gets this same wording, so it has to stand on its own.",
-      );
-      return;
-    }
-    if (!budgetValid) {
-      toast.error("The budget multiple has to be a number greater than zero.");
-      return;
-    }
+    if (blockedReason) return;
     const ok = await confirm({
       title: "Run a bench trial?",
       description: CONSEQUENCE,
@@ -466,9 +480,13 @@ export function RunTheBench({
               ) : null}
 
               <p className="text-xs text-muted-foreground">{CONSEQUENCE}</p>
-              <Button onClick={() => void start()} disabled={run.running || starting}>
+              <GatedActionButton
+                reason={blockedReason}
+                disabled={run.running || starting}
+                onClick={() => void start()}
+              >
                 {run.running ? "Trial running…" : "Run the trial"}
-              </Button>
+              </GatedActionButton>
 
               {run.running ? (
                 <div className="space-y-1">

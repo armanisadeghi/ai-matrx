@@ -152,6 +152,20 @@ describe("the composer's raw context chips are gated too", () => {
   });
 });
 
+describe("a context snapshot is a builder's record, not the Expert's", () => {
+  it("the CONTEXT chip strip on a user bubble is gated too", () => {
+    // Found live on 2026-09-16 while verifying the fix: with every tool card
+    // gone, the interview still showed "CONTEXT · Context Items (13)" above
+    // each of the Expert's own messages. Same class, one bubble higher.
+    const source = read(
+      "features/agents/components/messages-display/user/AgentUserMessage.tsx",
+    );
+    expect(source).toContain(
+      "{machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+    );
+  });
+});
+
 describe("the expert-facing hosts declare themselves", () => {
   // A gate nobody turns on is not a fix. These are the surfaces the cold walk
   // reproduced the leak on, all three of which mount the shared column.

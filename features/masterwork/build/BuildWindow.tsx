@@ -199,10 +199,12 @@ function BuildWindowInner({
   }, [error]);
 
   const build = useCallback(() => {
-    if (!name.trim()) {
-      toast.error("Name this Masterwork first.");
-      return;
-    }
+    // Unreachable backstop, deliberately silent: the Build control is already
+    // a GatedActionButton carrying "Name your Masterwork to build it", so the
+    // person has been told before the click. Firing a red toast here would be
+    // an alarm for a precondition that is already a prompt — the class the
+    // 2026-09-16 sweep closed.
+    if (!name.trim()) return;
     run.launch(
       {
         rulebook_id: rulebookId,

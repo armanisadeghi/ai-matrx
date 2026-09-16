@@ -63,17 +63,6 @@ interface Allowed {
 
 const ALLOW_LIST: ReadonlyArray<Allowed> = [
   {
-    file: "features/masterwork/build/BuildWindow.tsx",
-    sentence: "Name this Masterwork first.",
-    why:
-      "UNREACHABLE BACKSTOP, in a file another lane owns today (2026-09-16): " +
-      "`features/masterwork/build/**`. The Build button is already a " +
-      "GatedActionButton carrying \"Name your Masterwork to build it\", so " +
-      "this toast cannot fire — but the next owner of that file should turn " +
-      "it into a plain early return the way the rest of this sweep did, and " +
-      "delete this entry.",
-  },
-  {
     file: "features/vision-interview/hooks/useInterviewRun.ts",
     sentence: "There is no active run to answer — start the interview first.",
     why:
@@ -91,18 +80,6 @@ const ALLOW_LIST: ReadonlyArray<Allowed> = [
       "action that did not take effect, which is exactly what red is for. " +
       "The not-yet-picked cases on this same panel are gated on the button " +
       "instead (`missingPicks`).",
-  },
-  {
-    file: "features/masterwork/encore/RunTheBench.tsx",
-    sentence:
-      "Write the task first — every arm gets this same wording, so it has to stand on its own.",
-    why:
-      "KNOWN OPEN MEMBER, not an exoneration. This is the same defect as the " +
-      "probe's banner and it needs the same GatedActionButton fix. " +
-      "`features/masterwork/encore/**` is owned by another lane as this " +
-      "census is written (2026-09-16), so it is named here rather than " +
-      "edited underneath them. Whoever next owns encore: delete this entry " +
-      "and gate the 'Run the trial' button on `taskPrompt`.",
   },
 ];
 
