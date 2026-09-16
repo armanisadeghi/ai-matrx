@@ -626,16 +626,20 @@ export const aiModelService = {
     // Resolve `maker` from the provider_id FK (ai.provider.name). The old
     // free-text `provider` column is dropping — never read it. Fetch providers
     // alongside models and map by id so every row carries a display brand.
-    const [modelsRes, providers, adminCatalogRes] = await Promise.all([
-      supabase
-        .schema("ai")
-        .from("model_definition")
-        .select("*")
-        .order("common_name", { ascending: true, nullsFirst: false }),
+    const [models, providers, adminCatalogRes] = await Promise.all([
+      readAllRows<AiModelRow>(
+        ({ from, to }) => supabase
+          .schema("ai")
+          .from("model_definition")
+          .select("*", { count: "exact" })
+          .order("common_name", { ascending: true, nullsFirst: false })
+          .order("id", { ascending: true })
+          .range(from, to),
+        { label: "ai.model_definition" },
+      ),
       this.fetchProviders(),
       supabase.rpc("admin_model_catalog"),
     ]);
-    if (modelsRes.error) throw modelsRes.error;
     if (adminCatalogRes.error) throw adminCatalogRes.error;
     const makerById = new Map(providers.map((p) => [p.id, p.name ?? null]));
     const comparisonById = new Map<string, ModelPriceSummary | null>();
@@ -643,7 +647,7 @@ export const aiModelService = {
       if (typeof row.id !== "string") continue;
       comparisonById.set(row.id, preferredPrice(row.pricing, row.usage_basis));
     }
-    return (modelsRes.data ?? []).map((row): AiModel => ({
+    return models.map((row): AiModel => ({
       ...withValidatedCapabilities(row),
       maker: row.provider_id ? (makerById.get(row.provider_id) ?? null) : null,
       preferred_pricing: comparisonById.get(row.id) ?? null,
