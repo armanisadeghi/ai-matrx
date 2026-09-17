@@ -35,6 +35,8 @@
 
 import type { ReactNode } from "react";
 
+import type { AssistAction } from "@/features/assists/types";
+
 /**
  * The assist action shapes an approval kind can read. Declared here (not beside
  * the predicate) because it is part of the kind CONTRACT; `./rendered.ts` maps
@@ -313,6 +315,18 @@ export interface ApprovalFocusDetail {
 }
 
 /**
+ * WHERE A ROW IS when this queue cannot show it — one sentence and one door.
+ * Every "not here" answer carries it; "not here" without it is the dead end
+ * this queue exists to end (THE DOOR LAW).
+ */
+export interface ApprovalRowPlace {
+  /** One sentence naming why this row is not in this list, in the row's terms. */
+  explain: string;
+  /** Where it IS. */
+  where: { label: string; href: string };
+}
+
+/**
  * A dimension a kind cannot work without, plus where its proposals CAN be seen.
  * The engine renders the sentence and the door on any mount that lacks the
  * field — never an empty section and never a silent omission.
@@ -340,6 +354,36 @@ export interface ApprovalKind {
    * place instead of three.
    */
   reads?: ApprovalRowFamily;
+  /**
+   * DOES THIS KIND RENDER **THIS** ROW ON **THIS** MOUNT? Kind + scope + action
+   * shape, answered by the kind that owns the reader — the only code that knows
+   * what its own reader filters on.
+   *
+   * 🚨 IT EXISTS BECAUSE "SOME KIND READS THIS SHAPE" IS NOT AN ANSWER. Until
+   * 2026-09-17 the predicate stopped at the action FAMILY, so every
+   * `apply_keyword_meaning` row on the platform counted as on-screen the moment
+   * any keyword kind was mounted: on site A's queue, a deep link to site B's
+   * row answered "still waiting on you, past the first page of this list"
+   * about a list that can never show it (Bugbot round 10, finding 1). Two of
+   * the three keyword kinds read RPCs rather than the ledger and render no
+   * ledger row at all, which made the same claim over rows nothing shows.
+   *
+   * REQUIRED whenever `reads` is not `approval_proposal`: the default
+   * recogniser is "the kind's `id` IS the row's `proposalKind`", which only
+   * exists in that family. A kind that reads another family and declares no
+   * recogniser renders nothing and is loud about it (`./rendered.ts`), because
+   * guessing would put the queue right back where this finding found it.
+   */
+  rendersRow?: (action: AssistAction, scope: ApprovalScope) => boolean;
+  /**
+   * WHERE THIS ROW IS, for a row this kind reads somewhere but not on this
+   * mount — the door a deep link answers with (THE DOOR LAW). Per ROW, because
+   * the honest answer names the row's own site, not a generic console:
+   * `scopeRequirement` is the fallback when a kind has nothing finer to say.
+   *
+   * Return `null` when this kind does not read the row anywhere.
+   */
+  rowElsewhere?: (action: AssistAction) => ApprovalRowPlace | null;
   /** Group label on each row's badge, e.g. "Email to send". */
   label: string;
   accept: ApprovalDecisionCopy;

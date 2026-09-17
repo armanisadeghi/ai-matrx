@@ -80,6 +80,24 @@ const registered = [
     id: "keyword_meaning",
     label: "Keyword meaning",
     reads: "keyword_meaning",
+    // A kind reading a non-default family declares BOTH halves of the contract:
+    // whether it renders this row on this mount, and where the row is when it
+    // does not (`../types.ts`). The real kind compares the row's site to the
+    // mount's; this stand-in does the same.
+    rendersRow: (
+      action: { kind: string; siteId?: string },
+      queueScope: { siteId?: string },
+    ) =>
+      action.kind === "apply_keyword_meaning" &&
+      Boolean(queueScope.siteId) &&
+      action.siteId === queueScope.siteId,
+    rowElsewhere: (action: { kind: string; siteId?: string }) =>
+      action.kind === "apply_keyword_meaning"
+        ? {
+            explain: `this proposal belongs to the website ${action.siteId}.`,
+            where: { label: "Open the site's keyword review", href: "/marketing" },
+          }
+        : null,
     scopeRequirement: {
       field: "siteId",
       explain: "these wait with the website they belong to.",
@@ -138,7 +156,10 @@ describe("the predicate is the same one everywhere", () => {
 
   it("refuses a row whose kind nothing registered renders, naming the kind", () => {
     const mounted = mountedApprovalKinds(registered, personScope);
-    const verdict = willRenderRow(proposal("future_kind"), mounted);
+    const verdict = willRenderRow(proposal("future_kind"), {
+      kinds: mounted,
+      scope: personScope,
+    });
     expect(verdict.renders).toBe(false);
     if (verdict.renders) throw new Error("unreachable");
     expect(verdict.why).toContain("future_kind");
@@ -152,7 +173,7 @@ describe("badge, header and list agree on an unregistered kind (A-i, A-ii)", () 
     mockReadAllRows.mockResolvedValue([unregistered]);
     const mounted = mountedApprovalKinds(registered, personScope);
 
-    await expect(countPendingProposals("u1", mounted)).resolves.toBe(0);
+    await expect(countPendingProposals("u1", mounted, personScope)).resolves.toBe(0);
     expect(warned.join(" ")).toContain("future_kind");
   });
 
@@ -175,7 +196,7 @@ describe("badge, header and list agree on an unregistered kind (A-i, A-ii)", () 
       unreadable: 1,
     });
 
-    const page = await listPendingProposals("u1", "sheet_write");
+    const page = await listPendingProposals("u1", "sheet_write", personScope);
     expect(page.proposals).toHaveLength(0);
     // 2 server rows − 1 unreadable − 1 unrenderable kind = 0 on screen.
     expect(page.total).toBe(0);
@@ -193,7 +214,13 @@ describe("a deep link to a row this list never mounts says where it lives", () =
     });
     const mounted = mountedApprovalKinds(registered, personScope);
 
-    const read = await readProposalStatus("u1", "k1", mounted, registered);
+    const read = await readProposalStatus({
+      userId: "u1",
+      proposalId: "k1",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    });
     expect(read.status).toBe("not_in_this_list");
     // THE DOOR LAW: the answer carries the door to where the row IS.
     expect(read.where?.href).toBe("/marketing");
@@ -209,7 +236,13 @@ describe("a deep link to a row this list never mounts says where it lives", () =
     });
     const mounted = mountedApprovalKinds(registered, personScope);
     await expect(
-      readProposalStatus("u1", "s1", mounted, registered),
+      readProposalStatus({
+      userId: "u1",
+      proposalId: "s1",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    }),
     ).resolves.toMatchObject({ status: "pending" });
   });
 
@@ -222,7 +255,13 @@ describe("a deep link to a row this list never mounts says where it lives", () =
     });
     const mounted = mountedApprovalKinds(registered, personScope);
     await expect(
-      readProposalStatus("u1", "x", mounted, registered),
+      readProposalStatus({
+      userId: "u1",
+      proposalId: "x",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    }),
     ).resolves.toMatchObject({ status: "not_a_proposal" });
   });
 });
@@ -242,7 +281,13 @@ describe("a failed or in-flight apply is never reported as decided (A-iii)", () 
       },
     });
     const mounted = mountedApprovalKinds(registered, personScope);
-    const read = await readProposalStatus("u1", "f1", mounted, registered);
+    const read = await readProposalStatus({
+      userId: "u1",
+      proposalId: "f1",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    });
     expect(read.status).toBe("apply_failed");
     expect(read.error).toContain("A1:C10");
   });
@@ -260,7 +305,13 @@ describe("a failed or in-flight apply is never reported as decided (A-iii)", () 
     });
     const mounted = mountedApprovalKinds(registered, personScope);
     await expect(
-      readProposalStatus("u1", "a1", mounted, registered),
+      readProposalStatus({
+      userId: "u1",
+      proposalId: "a1",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    }),
     ).resolves.toMatchObject({ status: "applying" });
   });
 
@@ -277,7 +328,13 @@ describe("a failed or in-flight apply is never reported as decided (A-iii)", () 
     });
     const mounted = mountedApprovalKinds(registered, personScope);
     await expect(
-      readProposalStatus("u1", "d1", mounted, registered),
+      readProposalStatus({
+      userId: "u1",
+      proposalId: "d1",
+      mounted,
+      allKinds: registered,
+      scope: personScope,
+    }),
     ).resolves.toMatchObject({ status: "decided" });
   });
 });

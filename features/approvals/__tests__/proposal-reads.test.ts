@@ -68,8 +68,34 @@ import type { ApprovalKind } from "../types";
 const mounted = [
   { id: "sheet_write", label: "Spreadsheet change" },
   { id: "gmail_send", label: "Email to send" },
-  { id: "keyword_meaning", label: "Keyword meaning", reads: "keyword_meaning" },
+  {
+    id: "keyword_meaning",
+    label: "Keyword meaning",
+    reads: "keyword_meaning",
+    // A kind reading a non-default family must say, per row and per mount,
+    // whether it renders THAT row — the real one compares the row's site to the
+    // mount's (`../kinds/seo/keyword-rows.ts`). A stand-in that skipped this
+    // renders nothing, by contract, because "some keyword kind is mounted" was
+    // exactly the wrong answer (Bugbot round 10 #1).
+    rendersRow: (action: { kind: string; siteId?: string }, scope: { siteId?: string }) =>
+      action.kind === "apply_keyword_meaning" && action.siteId === scope.siteId,
+    rowElsewhere: (action: { kind: string; siteId?: string }) =>
+      action.kind === "apply_keyword_meaning"
+        ? {
+            explain: `this proposal belongs to ${action.siteId}.`,
+            where: { label: "Open that site's queue", href: "/marketing" },
+          }
+        : null,
+  },
 ] as unknown as ApprovalKind[];
+
+/** Where these reads stand: the person's own queue, over site `s1`'s rows. */
+const scope = {
+  key: "u1",
+  organizationId: "o1",
+  userId: "u1",
+  siteId: "s1",
+};
 
 const proposalAction = {
   kind: "approval_proposal" as const,
@@ -99,7 +125,7 @@ describe("readProposalStatus", () => {
       action: { kind: "run_mandate", mandateKey: "k", variables: {} },
     });
     await expect(
-      readProposalStatus("u1", "x", mounted),
+      readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
     ).resolves.toMatchObject({ status: "not_a_proposal" });
   });
 
@@ -110,7 +136,7 @@ describe("readProposalStatus", () => {
       action: proposalAction,
     });
     await expect(
-      readProposalStatus("u1", "x", mounted),
+      readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
     ).resolves.toMatchObject({ status: "pending" });
   });
 
@@ -121,11 +147,11 @@ describe("readProposalStatus", () => {
       action: proposalAction,
     });
     await expect(
-      readProposalStatus("u1", "x", mounted),
+      readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
     ).resolves.toMatchObject({ status: "decided" });
     mockGetAssistById.mockResolvedValue(null);
     await expect(
-      readProposalStatus("u1", "y", mounted),
+      readProposalStatus({ userId: "u1", proposalId: "y", mounted, scope }),
     ).resolves.toMatchObject({ status: "unknown" });
   });
 
@@ -148,7 +174,7 @@ describe("readProposalStatus", () => {
     // row; on the person-scoped queue it is `not_in_this_list`, with the door —
     // see `./one-predicate.test.ts`.
     await expect(
-      readProposalStatus("u1", "x", mounted),
+      readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
     ).resolves.toMatchObject({ status: "pending" });
   });
 });
@@ -165,12 +191,12 @@ describe("countPendingProposals", () => {
       { id: "d", action: { kind: "navigate", href: "/somewhere" } },
     ]);
 
-    await expect(countPendingProposals("u1", mounted)).resolves.toBe(2);
+    await expect(countPendingProposals("u1", mounted, scope)).resolves.toBe(2);
   });
 
   it("reads through readAllRows — a count treated as complete is never a bare select", async () => {
     mockReadAllRows.mockResolvedValue([]);
-    await countPendingProposals("u1", mounted);
+    await countPendingProposals("u1", mounted, scope);
     expect(mockReadAllRows).toHaveBeenCalledTimes(1);
   });
 });

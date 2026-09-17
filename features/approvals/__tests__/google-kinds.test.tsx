@@ -674,7 +674,38 @@ describe("the door's answer is read, not assumed", () => {
     expect(outcome!.alreadyDecided ?? []).toHaveLength(0);
   });
 
-  it("never reports a reject over a row that was already approved and made", async () => {
+  it("never reports a reject over a row that was already approved and MADE", async () => {
+    const items = await readyItems();
+    mockReject.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      // The producer's receipt for a change that DID land — the only evidence
+      // that justifies sending a person to undo something.
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "applied",
+        action: "append_document",
+        output: {},
+      },
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.reject(items, null)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.alreadyDecided?.[0]?.message).toContain(
+      "had already been APPROVED",
+    );
+    expect(outcome!.alreadyDecided?.[0]?.message).toContain(
+      "Undo it where it landed",
+    );
+  });
+
+  it("a reject over an approved row with NO readable receipt does not claim it landed", async () => {
+    // The finding: this exact reply printed "the change was made… Undo it where
+    // it landed" while the accept path, over the same reply, said the record
+    // does not say (Bugbot round 10 #2). Both paths now read the receipt.
     const items = await readyItems();
     mockReject.mockResolvedValueOnce({
       approval_id: "assist-1",
@@ -687,9 +718,9 @@ describe("the door's answer is read, not assumed", () => {
       outcome = (await harness!.reject(items, null)) as ApprovalOutcome;
     });
     expect(outcome!.applied).toBe(0);
-    expect(outcome!.alreadyDecided?.[0]?.message).toContain(
-      "had already been APPROVED",
-    );
+    const said = outcome!.alreadyDecided?.[0]?.message ?? "";
+    expect(said).toContain("does not say");
+    expect(said).not.toContain("Undo it where it landed");
   });
 
   it("treats a status it cannot read as a failure, naming it", async () => {

@@ -36,6 +36,10 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { KeywordDoor } from "./doors";
+import {
+  keywordMeaningRendersRow,
+  keywordMeaningRowElsewhere,
+} from "./keyword-rows";
 import { siteOf } from "./siteScope";
 import type {
   ApprovalDecisions,
@@ -220,11 +224,10 @@ function useSource(scope: ApprovalScope): ApprovalSource {
   });
 
   const items = (query.data?.rows ?? [])
-    .filter(
-      (assist) =>
-        assist.action.kind === "apply_keyword_meaning" &&
-        assist.action.siteId === siteOf(scope),
-    )
+    // THE SAME RULE the predicate is given (`./keyword-rows.ts`), so what this
+    // reader shows and what the badge, the header and a deep link claim about a
+    // row can never disagree about which site it belongs to.
+    .filter((assist) => keywordMeaningRendersRow(assist.action, scope))
     .flatMap((assist) => {
       const item = toItem(scope, assist);
       return item ? [item] : [];
@@ -286,6 +289,16 @@ export const keywordMeaningKind: ApprovalKind = {
    * tell a badge, a header and a deep link the same truth about them.
    */
   reads: "keyword_meaning",
+  /**
+   * A keyword proposal belongs to ONE SITE, and this is where the predicate
+   * learns it: the same rule `useSource` filters on
+   * (`action.siteId === siteOf(scope)`), declared once in `./keyword-rows.ts`.
+   * Without it, site A's queue called site B's row "waiting here" (Bugbot round
+   * 10, finding 1).
+   */
+  rendersRow: keywordMeaningRendersRow,
+  /** …and a row from another site is answered with the door to that site. */
+  rowElsewhere: keywordMeaningRowElsewhere,
   label: "Keyword meaning",
   accept: {
     label: "Approve",

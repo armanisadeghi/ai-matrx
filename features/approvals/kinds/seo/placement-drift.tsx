@@ -32,6 +32,10 @@ import {
 import { SITE_OFFERINGS_KEY } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { extractErrorMessage } from "@/utils/errors";
 import { KeywordDoor } from "./doors";
+import {
+  PLACES_NO_LEDGER_ROW,
+  RENDERS_NO_LEDGER_ROW,
+} from "./keyword-rows";
 import { siteOf } from "./siteScope";
 import type {
   ApprovalDecisions,
@@ -179,6 +183,15 @@ export const placementDriftKind: ApprovalKind = {
    * tell a badge, a header and a deep link the same truth about them.
    */
   reads: "keyword_meaning",
+  /**
+   * 🚨 AND IT TURNS NO LEDGER ROW INTO AN ITEM. This kind's reader is
+   * `seo.gsc_offering_placement_drift`, not the assists ledger, so no
+   * `apply_keyword_meaning` row is ever rendered by it. Saying otherwise made
+   * every keyword row on the platform "on screen here" the moment this kind was
+   * mounted (Bugbot round 10, finding 1).
+   */
+  rendersRow: RENDERS_NO_LEDGER_ROW,
+  rowElsewhere: PLACES_NO_LEDGER_ROW,
   label: "The AI moved an offering",
   accept: {
     label: "Take it",

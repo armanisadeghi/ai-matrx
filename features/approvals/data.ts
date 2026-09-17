@@ -37,7 +37,7 @@ import {
   willRenderAction,
   willRenderRow,
 } from "./rendered";
-import type { ApprovalKind, AutonomyMode } from "./types";
+import type { ApprovalKind, ApprovalScope, AutonomyMode } from "./types";
 
 /**
  * The surface every platform approval proposal is addressed to. It is the
@@ -136,9 +136,17 @@ export interface ApprovalProposalPage {
 export async function listPendingProposals(
   userId: string,
   proposalKind: string,
+  /**
+   * WHERE the asking queue stands — handed to the same predicate the badge and
+   * the deep link ask, so a page cannot include a row the mount would refuse.
+   */
+  scope: ApprovalScope,
 ): Promise<ApprovalProposalPage> {
   // The kind doing the asking is, by construction, registered and mounted — so
-  // the predicate below judges this page against exactly it.
+  // the predicate below judges this page against exactly it. A bare `{ id }` is
+  // enough BECAUSE every caller reads the `approval_proposal` family, whose one
+  // recogniser is "the kind's id IS the row's proposalKind"; a kind reading
+  // another family declares `rendersRow` and reads its own store, not this page.
   const kindsHere: ApprovalKind[] = [{ id: proposalKind } as ApprovalKind];
   const page = await queryAssists(userId, {
     statuses: ["pending"],
@@ -171,7 +179,10 @@ export async function listPendingProposals(
   const proposals: ApprovalProposal[] = [];
   let dropped = page.unreadable;
   for (const assist of page.rows) {
-    const verdict = willRenderAction(assist.action, kindsHere, kindsHere);
+    const verdict = willRenderAction(assist.action, {
+      kinds: kindsHere,
+      scope,
+    });
     const narrowed = verdict.renders ? narrow(assist) : null;
     if (narrowed && narrowed.proposalKind === proposalKind) {
       proposals.push(narrowed);
@@ -237,18 +248,33 @@ export interface ApprovalProposalRead {
   error?: string | null;
 }
 
-export async function readProposalStatus(
-  userId: string | null | undefined,
-  proposalId: string,
+/**
+ * Everything the read needs to judge one row for ONE MOUNT. An options object,
+ * not four positional arguments, because the mount's SCOPE joined the question
+ * on 2026-09-17 and a caller that silently dropped it answered for the wrong
+ * site (Bugbot round 10, finding 1).
+ */
+export interface ProposalStatusQuestion {
+  userId: string | null | undefined;
+  proposalId: string;
   /**
-   * The kinds the asking queue actually mounted (`mountedApprovalKinds`), and
-   * THE registry. The same predicate the badge and the list use decides whether
-   * this row would be on screen — a third rule here is how the three numbers
-   * came to disagree in the first place.
+   * The kinds the asking queue actually mounted (`mountedApprovalKinds`), THE
+   * registry, and WHERE the queue stands. The same predicate the badge and the
+   * list use decides whether this row would be on screen — a third rule here is
+   * how the three numbers came to disagree in the first place.
    */
-  mounted: readonly ApprovalKind[],
-  allKinds: readonly ApprovalKind[] = mounted,
-): Promise<ApprovalProposalRead> {
+  mounted: readonly ApprovalKind[];
+  allKinds?: readonly ApprovalKind[];
+  scope: ApprovalScope;
+}
+
+export async function readProposalStatus({
+  userId,
+  proposalId,
+  mounted,
+  allKinds = mounted,
+  scope,
+}: ProposalStatusQuestion): Promise<ApprovalProposalRead> {
   if (!userId || !proposalId) return { status: "unknown" };
   try {
     const assist = await getAssistById(userId, proposalId);
@@ -269,14 +295,17 @@ export async function readProposalStatus(
     if (receipt.state === "applying") return { status: "applying" };
     if (assist.status !== "pending") return { status: "decided" };
 
-    const verdict = willRenderAction(assist.action, mounted, allKinds);
+    const verdict = willRenderAction(assist.action, {
+      kinds: mounted,
+      scope,
+      allKinds,
+    });
     if (verdict.renders) return { status: "pending" };
-    const elsewhere = verdict.elsewhere?.scopeRequirement;
-    if (elsewhere) {
+    if (verdict.elsewhere) {
       return {
         status: "not_in_this_list",
-        explain: elsewhere.explain,
-        where: elsewhere.where,
+        explain: verdict.elsewhere.explain,
+        where: verdict.elsewhere.where,
       };
     }
     warnNotRendered(assist.id, verdict, "the deep-link read");
@@ -316,6 +345,11 @@ export async function countPendingProposals(
    * makes the badge and the screen the same number.
    */
   mounted: readonly ApprovalKind[],
+  /**
+   * WHERE that queue stands. The badge counts what THAT mount would show, and a
+   * row belonging to another site is not one of them (Bugbot round 10 #1).
+   */
+  scope: ApprovalScope,
 ): Promise<number> {
   const supabase = createClient();
   const rows = await readAllRows<{ id: string; action: Json }>(
@@ -334,7 +368,7 @@ export async function countPendingProposals(
   );
   let count = 0;
   for (const row of rows) {
-    const verdict = willRenderRow(row.action, mounted, mounted);
+    const verdict = willRenderRow(row.action, { kinds: mounted, scope });
     if (verdict.renders) {
       count += 1;
       continue;

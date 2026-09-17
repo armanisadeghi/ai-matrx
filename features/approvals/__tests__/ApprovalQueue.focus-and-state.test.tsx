@@ -232,14 +232,16 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
     });
     await flush();
 
-    // It is handed the kinds this mount carries AND the whole registry — the
-    // same predicate the badge and the list ask (round-2 verification § A-i).
-    expect(mockReadProposalStatus).toHaveBeenCalledWith(
-      "u1",
-      "beyond-page-one",
-      expect.any(Array),
-      expect.any(Array),
-    );
+    // It is handed the kinds this mount carries, the whole registry AND the
+    // mount's scope — the same predicate the badge and the list ask (round-2
+    // verification § A-i), scope included since Bugbot round 10 #1.
+    expect(mockReadProposalStatus).toHaveBeenCalledWith({
+      userId: "u1",
+      proposalId: "beyond-page-one",
+      mounted: expect.any(Array),
+      allKinds: expect.any(Array),
+      scope: expect.objectContaining({ key: "u1", userId: "u1" }),
+    });
     expect(container.textContent).toContain("still waiting on you");
     expect(container.textContent).not.toContain("already approved or rejected");
   });

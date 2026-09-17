@@ -17,9 +17,20 @@
  *   of this list", including the keyword kinds, which a person-scoped queue
  *   never mounts at all (Bugbot round 9, finding 9).
  *
- * So there is ONE function. A row renders when the mount carries a kind that
- * READS ITS ACTION SHAPE and that kind's own `id` matches the row — action
- * narrowing AND kind registration, in one place. Everything that reports a
+ * - and, in the first version of this file, the predicate itself stopped at the
+ *   action FAMILY for every shape but `approval_proposal`: mounting ANY keyword
+ *   kind made every `apply_keyword_meaning` row on the platform "on screen
+ *   here", so site A's queue reported site B's row as `pending` and two of the
+ *   three keyword kinds — which read RPCs and render no ledger row at all —
+ *   made that claim over rows nothing shows (Bugbot round 10, finding 1).
+ *
+ * So there is ONE function, and it takes THE MOUNT'S SCOPE. A row renders when
+ * the mount carries a kind that reads its action shape AND that kind says it
+ * renders THIS row HERE (`ApprovalKind.rendersRow`; the default recogniser is
+ * "the kind's id IS the row's `proposalKind`", which exists only in the
+ * `approval_proposal` family) — action narrowing, kind registration AND scope,
+ * in one place. A row that belongs to another mount is refused WITH the door to
+ * where it lives (`ApprovalKind.rowElsewhere`). Everything that reports a
  * number or a verdict about a row asks it, and a row it refuses is LOUD ONCE
  * in the console (`warnNotRendered`) rather than silently missing.
  *
@@ -32,6 +43,7 @@ import { narrowAction, type AssistAction } from "@/features/assists/types";
 import type {
   ApprovalKind,
   ApprovalRowFamily,
+  ApprovalRowPlace,
   ApprovalScope,
 } from "./types";
 
@@ -61,27 +73,74 @@ export type RenderVerdict =
       /** One sentence for a developer, naming the kind when the row carries one. */
       why: string;
       /**
-       * Set when SOME registered kind reads this row but this mount does not
-       * carry it — the row is real and waiting, just not in this list.
+       * Set when SOME registered kind reads this row somewhere else — the row is
+       * real and waiting, just not in this list — carrying the sentence and the
+       * door a deep link answers with (THE DOOR LAW).
        */
-      elsewhere: ApprovalKind | null;
+      elsewhere: (ApprovalRowPlace & { kind: ApprovalKind }) | null;
     };
 
 /**
- * WILL THIS ROW RENDER in a queue mounting exactly `kinds`?
+ * THE QUESTION, in full: which kinds this mount carries, WHERE the mount is, and
+ * (optionally) the whole registry so a refusal can say where the row lives.
+ *
+ * 🚨 `scope` IS NOT OPTIONAL. A predicate that judged a row without the mount's
+ * scope answered for the wrong site: see `ApprovalKind.rendersRow`.
+ */
+export interface RenderQuestion {
+  /** The kinds this mount actually mounted (`mountedApprovalKinds`). */
+  kinds: readonly ApprovalKind[];
+  /** WHERE this mount is — the same scope its kinds' readers are given. */
+  scope: ApprovalScope;
+  /** THE registry, to answer "some kind reads this, just not here". */
+  allKinds?: readonly ApprovalKind[];
+}
+
+/** Does this ONE kind, on THIS mount, turn THIS row into an item? */
+function kindRendersRow(
+  kind: ApprovalKind,
+  action: AssistAction,
+  scope: ApprovalScope,
+): boolean {
+  if (ROW_FAMILY_ACTION_KIND[familyOf(kind)] !== action.kind) return false;
+  if (kind.rendersRow) return kind.rendersRow(action, scope);
+  // The ONE default recogniser, and it exists only in this family: the kind's
+  // id IS the producer's `proposalKind`.
+  if (action.kind === "approval_proposal") return kind.id === action.proposalKind;
+  // A kind reading another family MUST declare `rendersRow`. Guessing "yes" is
+  // the finding this file was rewritten for.
+  return false;
+}
+
+/** Where this kind would show this row, if it reads it anywhere. */
+function kindPlacesRow(
+  kind: ApprovalKind,
+  action: AssistAction,
+): (ApprovalRowPlace & { kind: ApprovalKind }) | null {
+  if (ROW_FAMILY_ACTION_KIND[familyOf(kind)] !== action.kind) return null;
+  if (kind.rowElsewhere) {
+    const place = kind.rowElsewhere(action);
+    return place ? { kind, ...place } : null;
+  }
+  if (action.kind !== "approval_proposal") return null;
+  if (kind.id !== action.proposalKind) return null;
+  const requirement = kind.scopeRequirement;
+  return requirement
+    ? { kind, explain: requirement.explain, where: requirement.where }
+    : null;
+}
+
+/**
+ * WILL THIS ROW RENDER in a queue mounting exactly `question.kinds`, standing at
+ * `question.scope`?
  *
  * `row` is an assist's raw `action` (a `Json` from the store or an already
  * narrowed action — both are accepted, because the badge reads two columns and
  * the list reads whole rows).
- *
- * `allKinds` is THE registry, used only to answer "some kind reads this, just
- * not here" — the door a deep link needs. Omit it and a refusal simply carries
- * no elsewhere.
  */
 export function willRenderRow(
   row: unknown,
-  kinds: readonly ApprovalKind[],
-  allKinds: readonly ApprovalKind[] = kinds,
+  question: RenderQuestion,
 ): RenderVerdict {
   const action = narrowAction(row);
   if (!action) {
@@ -91,7 +150,7 @@ export function willRenderRow(
       elsewhere: null,
     };
   }
-  return willRenderAction(action, kinds, allKinds);
+  return willRenderAction(action, question);
 }
 
 /**
@@ -101,53 +160,37 @@ export function willRenderRow(
  */
 export function willRenderAction(
   action: AssistAction,
-  kinds: readonly ApprovalKind[],
-  allKinds: readonly ApprovalKind[] = kinds,
+  question: RenderQuestion,
 ): RenderVerdict {
-  const matches = (candidates: readonly ApprovalKind[]) =>
-    candidates.filter(
-      (kind) => ROW_FAMILY_ACTION_KIND[familyOf(kind)] === action.kind,
-    );
+  const { kinds, scope } = question;
+  const allKinds = question.allKinds ?? kinds;
 
-  if (action.kind === "approval_proposal") {
-    const proposalKind = action.proposalKind;
-    const here = matches(kinds).find((kind) => kind.id === proposalKind);
-    if (here) {
-      return {
-        renders: true,
-        kind: here,
-        family: "approval_proposal",
-        proposalKind,
-      };
-    }
-    const anywhere =
-      matches(allKinds).find((kind) => kind.id === proposalKind) ?? null;
-    return {
-      renders: false,
-      why: anywhere
-        ? `the kind "${proposalKind}" that renders it is not mounted on this queue`
-        : `no registered kind renders the proposal kind "${proposalKind}"`,
-      elsewhere: anywhere,
-    };
-  }
-
-  // Every other action shape a kind may read (today: the keyword kinds').
-  const here = matches(kinds);
-  if (here.length > 0 && here[0]) {
+  const here = kinds.find((kind) => kindRendersRow(kind, action, scope));
+  if (here) {
     return {
       renders: true,
-      kind: here[0],
-      family: familyOf(here[0]),
-      proposalKind: here[0].id,
+      kind: here,
+      family: familyOf(here),
+      proposalKind: here.id,
     };
   }
-  const anywhere = matches(allKinds);
+
+  // Not here. Does anything, anywhere, show this row? The answer is the door.
+  const elsewhere =
+    allKinds.flatMap((kind) => {
+      const place = kindPlacesRow(kind, action);
+      return place ? [place] : [];
+    })[0] ?? null;
+  const named =
+    action.kind === "approval_proposal"
+      ? `the proposal kind "${action.proposalKind}"`
+      : `a "${action.kind}" row`;
   return {
     renders: false,
-    why: anywhere.length > 0
-      ? `the kinds that read "${action.kind}" rows are not mounted on this queue`
-      : `no registered kind renders a "${action.kind}" row`,
-    elsewhere: anywhere[0] ?? null,
+    why: elsewhere
+      ? `${named} renders on another queue, not on this one (${elsewhere.explain})`
+      : `no registered kind renders ${named} on this queue`,
+    elsewhere,
   };
 }
 

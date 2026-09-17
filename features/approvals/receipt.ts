@@ -109,3 +109,129 @@ export function applyingSentence(what?: string): string {
   const subject = what ? `"${what}" is` : "This is";
   return `${subject} being applied now — an approval already in progress is making the change. Nothing new was done by this click; reload in a moment to see what happened.`;
 }
+
+/**
+ * THE ONE READING OF A DECISION REPLY — used by ACCEPT AND REJECT ALIKE.
+ *
+ * 🚨 IT EXISTS BECAUSE THE TWO PATHS DISAGREED ABOUT THE SAME ROW. The accept
+ * path was fixed to require `receipt.state === "applied"` before it would claim
+ * a change was made; the reject path kept branching on the door's `status`
+ * alone, so a reply of `accepted` printed, verbatim, *"had already been APPROVED
+ * and the change was made, so it could not be rejected. Undo it where it
+ * landed."* over a receipt this build could not read — and over one whose state
+ * was never checked at all (Bugbot round 10, finding 2, frontend PR 228). One
+ * person, two clicks, two opposite answers about whether their change happened.
+ *
+ * So the ladder lives HERE, once, and each path only says which decision it was
+ * asking for. The receipt outranks the status on both: `failed` and `applying`
+ * are the same answer whichever button was pressed, because they describe the
+ * row, not the click.
+ */
+export type DecisionBucket =
+  /** The door did what this click asked. */
+  | "performed"
+  /** Nothing was performed: the row was already decided. */
+  | "already"
+  /** The change was NOT made, or the reply cannot be read as success. */
+  | "failed";
+
+export interface DecisionReading {
+  bucket: DecisionBucket;
+  /** The sentence a person reads; `null` only when the click performed it. */
+  message: string | null;
+}
+
+export function readDecisionReply({
+  status,
+  appliedNow,
+  receipt,
+  decision,
+  what,
+}: {
+  /** `ApprovalDecisionResponse.status` — `accepted`, `dismissed`, `pending`, … */
+  status: string;
+  /** `ApprovalDecisionResponse.applied_now`. */
+  appliedNow: boolean;
+  /** The reply's receipt, already through `readApprovalReceipt`. */
+  receipt: ApprovalReceipt;
+  /** Which button the person pressed. */
+  decision: "accept" | "reject";
+  /** The row's headline, for a sentence that names the thing. */
+  what?: string;
+}): DecisionReading {
+  // THE RECEIPT OUTRANKS THE STATUS, and says the same thing on both paths.
+  if (receipt.state === "failed") {
+    return { bucket: "failed", message: failedApplySentence(receipt, what) };
+  }
+  if (receipt.state === "applying") {
+    return { bucket: "already", message: applyingSentence(what) };
+  }
+
+  const subject = what ? `"${what}"` : "That proposal";
+
+  if (decision === "accept") {
+    if (status === "accepted" && appliedNow) {
+      return { bucket: "performed", message: null };
+    }
+    if (status === "accepted") {
+      return receipt.state === "applied"
+        ? {
+            bucket: "already",
+            message: `${subject} had already been approved, so nothing was done again — the change was made by that first approval, not by this click.`,
+          }
+        : {
+            // Approved, no receipt this build can read: the record does not say
+            // whether the change was made, so neither does the screen.
+            bucket: "already",
+            message: `${subject} had already been approved and this click did nothing. The record does not say whether the change was actually made — open the row and check before approving it again.`,
+          };
+    }
+    if (status === "dismissed") {
+      return {
+        bucket: "already",
+        message: `${subject} had already been rejected, so it was NOT approved and the change was not made. Ask for it again if you want it.`,
+      };
+    }
+    if (status === "pending") {
+      // B-8 returns a failed apply to `pending`; a `pending` reply whose receipt
+      // this build cannot read is still "nothing happened".
+      return {
+        bucket: "failed",
+        message: `${subject} is still waiting on you — the change was NOT made and the server did not say why. Try again, or reject it.`,
+      };
+    }
+    return {
+      bucket: "failed",
+      message: `${subject} came back as "${status}", which this screen cannot read as approved. Reload the queue to see where it stands; nothing here retried it.`,
+    };
+  }
+
+  // REJECT. `applied_now` is never true on this path — gating on it reported
+  // every successful reject as a no-op.
+  if (status === "dismissed") return { bucket: "performed", message: null };
+  if (status === "accepted") {
+    return receipt.state === "applied"
+      ? {
+          bucket: "already",
+          message: `${subject} had already been APPROVED and the change was made, so it could not be rejected. Undo it where it landed.`,
+        }
+      : {
+          // The mirror of the accept path's unreadable case, and the finding
+          // this adapter was written for: approved, but the record does not say
+          // the change landed — so the screen does not say it either, and it
+          // never sends a person hunting for something to undo.
+          bucket: "already",
+          message: `${subject} had already been approved, so it could not be rejected — and the record does not say whether the change was actually made. Open the row and check before assuming it landed.`,
+        };
+  }
+  if (status === "pending") {
+    return {
+      bucket: "failed",
+      message: `${subject} is still waiting on you — nothing was rejected and the server did not say why. Try again.`,
+    };
+  }
+  return {
+    bucket: "failed",
+    message: `${subject} came back as "${status}", which this screen cannot read as rejected. Reload the queue to see where it stands.`,
+  };
+}

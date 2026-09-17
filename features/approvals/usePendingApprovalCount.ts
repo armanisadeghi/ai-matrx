@@ -38,14 +38,17 @@ export function usePendingApprovalCount(): {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   // The badge stands for the `/approvals` mount, so it counts that mount's kinds.
-  const mounted = mountedApprovalKinds(APPROVAL_KINDS, {
+  const scope = {
     key: userId ?? "",
     organizationId,
     userId,
-  });
+  };
+  const mounted = mountedApprovalKinds(APPROVAL_KINDS, scope);
   const query = useQuery({
     queryKey: [...PENDING_APPROVALS_QUERY_KEY, userId],
-    queryFn: () => countPendingProposals(userId ?? "", mounted),
+    // The badge's count is judged against the SAME mount the `/approvals` page
+    // is — its kinds AND its scope (Bugbot round 10 #1).
+    queryFn: () => countPendingProposals(userId ?? "", mounted, scope),
     enabled: Boolean(userId),
     staleTime: 60_000,
     // A count that cannot be read is UNKNOWN, and the caller shows no badge —

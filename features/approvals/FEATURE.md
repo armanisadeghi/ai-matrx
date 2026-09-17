@@ -63,7 +63,13 @@ For `gmail_send` the operator must additionally be able to send from that accoun
    - `id`, `label`, `accept`/`reject` copy (`keepsReason: true` ONLY if the write stores the reason);
    - `useSource(scope)` → `{ items, total, loading, error, refetch, moreHref?, moreLabel? }`. Each item: `key = "<kindId>:<row id>"`, `headline`, `acceptEffect`, `rejectEffect` (the exact writes, in the reader's words), `mode`, `autoApplyAt` for mode 3, `doors`, `body` (the would-be change — keeps the row batchable), `individualReview` (must be read alone — excluded from select-all), `blocked`;
    - `useDecisions(scope)` → `acceptItems` / `rejectItems` returning `{ applied, failures }`; never throw for one item's failure;
-   - `scopeRequirement` when the kind needs a dimension a person-scoped mount lacks.
+   - `scopeRequirement` when the kind needs a dimension a person-scoped mount lacks;
+   - `reads` when the rows are not `approval_proposal` assists — and then ALSO
+     `rendersRow(action, scope)` (does this kind show THIS row on THIS mount? the
+     same rule `useSource` filters on) and `rowElsewhere(action)` (where the row
+     is when it does not). A kind reading another family without them renders
+     nothing, loudly, because "some kind of this family is mounted" was the wrong
+     answer that made site A's queue claim site B's rows.
 3. Add it to `APPROVAL_KINDS`. Every mounted queue and both hosts now render it.
 4. Emit rows FROM THE SERVER — `aidream/services/google_workspace/approvals.py` or the same `approval_proposal` action shape from another aidream producer, addressed to the operator, with `__kind` on the payload. There is deliberately no client-side producer: a row written from the browser carries no `metadata.google_workspace`, and both server doors refuse such a row with 403 — including reject — so it could never leave the list (see the invariants).
 5. Add a census row here and a Change Log line.
@@ -71,12 +77,16 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 ## Invariants
 
 - 🚨 **ONE PREDICATE decides whether a row is on screen** — `rendered.ts`
-  (`willRenderRow` / `willRenderAction` + `mountedApprovalKinds`). Action narrowing
-  AND kind registration are ONE question, and the badge, the section header, the
-  list and every deep link ask it over the kinds the mount actually carries. Two
-  rules is how "1 waiting" came to sit over an empty screen and how a header
-  printed 3 over two visible rows. A row the predicate refuses is loud once in
-  the console and counted nowhere.
+  (`willRenderRow` / `willRenderAction` + `mountedApprovalKinds`). Action narrowing,
+  kind registration AND THE MOUNT'S SCOPE are ONE question, and the badge, the
+  section header, the list and every deep link ask it over the kinds the mount
+  actually carries and the scope it stands at. Two rules is how "1 waiting" came
+  to sit over an empty screen and how a header printed 3 over two visible rows;
+  leaving the scope out is how site A's queue called site B's keyword row
+  "waiting here". A kind answers for its own rows — `rendersRow(action, scope)`,
+  required whenever `reads` is not `approval_proposal` — and `rowElsewhere(action)`
+  carries the door to where a row it will not show actually lives. A row the
+  predicate refuses is loud once in the console and counted nowhere.
 - 🚨 **The section header counts what the screen shows.** `listPendingProposals`
   subtracts the rows the narrowing dropped (`AssistsPage.unreadable`, new on the
   assists service) and the ones no mounted kind renders, from the server's raw
@@ -86,7 +96,9 @@ For `gmail_send` the operator must additionally be able to send from that accoun
   Approve becomes "Try again", and a decision reply lands in `failures`.
   `applying` = an apply is in flight → the row shows the sentence and offers NO
   decision controls. `applied` = the change was made. A receipt this build cannot
-  read says "the record does not say", never "the change was made".
+  read says "the record does not say", never "the change was made". ACCEPT AND
+  REJECT READ IT THROUGH THE SAME ADAPTER (`readDecisionReply`): one reply can
+  never produce two different sets of facts about one row.
 - 🚨 **THERE IS NO CLIENT PRODUCER AND NO CLIENT MODE LADDER.** `proposeApproval`
   and `mode.ts` are deleted. The server produces every row and resolves every
   mode; the four direct Google write routes answer HTTP 202
@@ -120,6 +132,16 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 8. **`hitl.google.review_timeout_hours` (live, 24) has no reader in this repo.** Its only reader was `useHitlReviewTimeoutHours` in the deleted `mode.ts`, which had zero callers — so the knob was already governing nothing (round-2 verification § A-vi). The window it sets belongs to the mode-3 applier, which does not exist (gap 2); the Office Assistant mandate's prompt still tells the model "`review_timeout_hours` is read by the queue, not by this job", which is false and is aidream's line to fix.
 
 ## Change Log
+
+- 2026-09-17 — Claude (lane F-16; Bugbot round 10 findings 1-3 on frontend PR 228): **the predicate learned WHERE the queue is standing, reject reads the receipt accept already read, and a deep link is re-resolved when the mount changes.**
+
+  (1) **Finding 1 — THE MOUNT'S SCOPE IS PART OF "WILL THIS ROW RENDER"** (`rendered.ts`, `types.ts`, `kinds/seo/keyword-rows.ts`). The predicate stopped at the action FAMILY for every shape but `approval_proposal`, so mounting ANY keyword kind made every `apply_keyword_meaning` row on the platform "on screen here": on site A's queue a deep link to site B's row answered `pending` → `pending_elsewhere` ("still waiting on you, past the first page of this list") about a list that can never show it, and the badge and header could disagree with the screen the same way. Worse, two of the three keyword kinds (`placement_drift`, `topic_placement`) read RPCs rather than the ledger and render NO ledger row at all, while declaring they read that family. `willRenderRow` / `willRenderAction` now take ONE question object carrying `kinds`, `scope` and the registry, and each kind answers for itself: `ApprovalKind.rendersRow(action, scope)` (required whenever `reads` is not `approval_proposal`; the default recogniser — "the kind's id IS the row's `proposalKind`" — exists only in that family) plus `ApprovalKind.rowElsewhere(action)`, which makes another site's row `not_in_this_list` WITH the door to that site, named from the row's own `siteLabel`. `keywordMeaningKind` and its reader now share ONE rule (`keyword-rows.ts`), so what the list shows and what the badge, header and deep link claim cannot drift. `readProposalStatus` takes an options object, and `countPendingProposals` / `listPendingProposals` take the mount's scope.
+
+  (2) **Finding 2 — ONE ADAPTER, BOTH PATHS** (`receipt.ts` → `readDecisionReply`). The reject path branched on the door's `status` alone: a reply of `accepted` printed *"had already been APPROVED and the change was made, so it could not be rejected. Undo it where it landed."* without ever reading `receipt.state`, while the accept path — already fixed — said, over that same reply, that the record does not say whether the change was made. One person, two clicks, opposite facts. The whole reply ladder now lives once in `receipt.ts`; each path only names which button was pressed. `applied` → the undo sentence; `failed` → the change was NOT made, with the refusal verbatim; `applying` → the in-flight sentence and no decision; unreadable → "the record does not say", on BOTH paths.
+
+  (3) **Finding 3 — the deep-link effect keys on every input it reads** (`ApprovalQueue.tsx`). It re-ran only on `[focusItemId, focusedKey, loading, scope.userId]`, so switching site, subject or kinds under the same `?item=` kept the previous mount's verdict and the previous mount's door on screen — and the marketing console mounts one queue per site. The deps are now a derived signature of the whole scope plus the mounted kinds and the registry, so a field a future kind reads is in it the moment it exists.
+
+  Guards (each proven failing on the pre-fix bytes): `__tests__/scope-decides-render.test.ts` (two sites, one row each, one mount, over THE real registry, plus the contract check that every kind reading a non-default family declares both halves), `__tests__/receipt-sentences-agree.test.tsx` (the same four receipts through accept and reject, asserting the sentences agree on the facts), `__tests__/ApprovalQueue.scope-change.test.tsx` (same focused id, scope switches site A → site B, resolution and door change).
 
 - 2026-09-17 — Claude (google-native lane F-14; round-2 hostile re-verification, common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` Unit A, plus Bugbot round 9 findings 8-9): **three numbers became one predicate, the screen stopped saying a failed change was made, and the knob that governed nothing is gone.**
 

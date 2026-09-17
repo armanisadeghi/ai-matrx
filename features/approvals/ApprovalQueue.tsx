@@ -450,6 +450,18 @@ export function ApprovalQueue({
   }, [focusedKey, expanded]);
 
   /**
+   * EVERY INPUT THE DEEP-LINK RESOLUTION READS, as one comparable string — the
+   * mount's whole scope plus the kinds it carries and the registry it judges
+   * against. Derived, never a hand-listed field set, for the same reason
+   * `renderedSignature` is (a field a future kind reads is in it already).
+   */
+  const resolutionKey = JSON.stringify({
+    scope,
+    mounted: mounted.map((kind) => kind.id),
+    all: all.map((kind) => kind.id),
+  });
+
+  /**
    * WHAT HAPPENED TO THE ROW THE LINK NAMED — answered by evidence, never by
    * absence. Each kind reads ONE page (`APPROVAL_PAGE_SIZE`), so a row that is
    * not on screen may simply be row 51 and still waiting; saying "already
@@ -469,12 +481,13 @@ export function ApprovalQueue({
       // THE SAME PREDICATE the list and the badge ask — so "not here" can be
       // told apart from "not in this list at all" (Bugbot round 9 #9), and a
       // FAILED or in-flight apply is never called "decided" (§ A-iii).
-      const read = await readProposalStatus(
-        scope.userId,
-        focusItemId,
+      const read = await readProposalStatus({
+        userId: scope.userId,
+        proposalId: focusItemId,
         mounted,
-        all,
-      );
+        allKinds: all,
+        scope,
+      });
       if (cancelled) return;
       const resolution: ApprovalFocusResolution =
         read.status === "pending"
@@ -501,7 +514,14 @@ export function ApprovalQueue({
     return () => {
       cancelled = true;
     };
-  }, [focusItemId, focusedKey, loading, scope.userId]);
+    // 🚨 EVERY INPUT THE RESOLUTION READS IS IN THIS KEY. It used to list
+    // `scope.userId` alone, so a mount that switched SITE (or kinds, or subject)
+    // kept the previous mount's verdict and the previous mount's door on screen
+    // for the same `?item=` — the console mounts a queue per site, and a row
+    // resolved against site A stayed resolved against site A (Bugbot round 10,
+    // finding 3). Deriving the key means a scope field a future kind reads is in
+    // it the moment it exists.
+  }, [focusItemId, focusedKey, loading, resolutionKey]);
 
   const hidden =
     hideWhenEmpty &&
