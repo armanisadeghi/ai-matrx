@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * KindStatusBoard — the LIVE twin of the generated SHAPES_STATUS.md matrix
  * (SHAPE_SYSTEM.md R10), rendered as the "Board" tab of
@@ -33,9 +35,8 @@ import type {
 } from "@/features/content-ir/admin/kind-detail-types";
 import ShapeFindingsSummary from "@/features/content-ir/admin/ShapeFindingsSummary";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 export const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
@@ -51,9 +52,13 @@ export const COLUMN_HEADING: Record<AssetColumn, string> = {
 export function StatusIcon({ status }: { status: AssetStatus }) {
   switch (status) {
     case "ok":
-      return <Check className="mx-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />;
+      return (
+        <Check className="mx-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+      );
     case "warn":
-      return <TriangleAlert className="mx-auto h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />;
+      return (
+        <TriangleAlert className="mx-auto h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+      );
     case "missing":
       return <X className="mx-auto h-3.5 w-3.5 text-red-500/80" />;
     case "n/a":
@@ -66,7 +71,11 @@ function rowTone(row: KindBoardRow): string {
   if (row.redCodes.length > 0) {
     return "bg-red-500/5 hover:bg-red-500/10";
   }
-  if (row.presence !== "both" || row.driftedCells.length > 0 || row.activeDrift) {
+  if (
+    row.presence !== "both" ||
+    row.driftedCells.length > 0 ||
+    row.activeDrift
+  ) {
     return "bg-amber-500/5 hover:bg-amber-500/10";
   }
   return "hover:bg-accent/30";
@@ -82,7 +91,10 @@ function KindNameCell({ row }: { row: KindBoardRow }) {
   const href = kindDetailHref(row);
   if (!href) {
     return (
-      <span className="font-mono text-xs text-muted-foreground" title={row.label}>
+      <span
+        className="font-mono text-xs text-muted-foreground"
+        title={row.label}
+      >
         {row.kind}
       </span>
     );
@@ -104,6 +116,122 @@ export default function KindStatusBoard({
   board: KindStatusBoardModel;
 }) {
   const drifted = board.driftedRowCount > 0;
+  const columns: MatrxColumnDef<KindBoardRow>[] = [
+    {
+      id: "kind",
+      header: "Kind",
+      accessorKey: "kind",
+      width: 240,
+      cell: (row) => <KindNameCell row={row} />,
+    },
+    {
+      id: "active",
+      header: "Active",
+      accessorFn: (row) => (row.isActive ? "on" : "off"),
+      align: "center",
+      width: 76,
+      cell: (row) => (
+        <span
+          className={cn(
+            "text-[11px] font-medium",
+            row.isActive
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-muted-foreground",
+          )}
+          title={
+            row.activeDrift
+              ? "is_active flipped vs the committed snapshot"
+              : undefined
+          }
+        >
+          {row.isActive ? "on" : "off"}
+          {row.activeDrift ? " *" : ""}
+        </span>
+      ),
+    },
+    ...ASSET_COLUMNS.map((column): MatrxColumnDef<KindBoardRow> => ({
+      id: column,
+      header: COLUMN_HEADING[column],
+      label: COLUMN_HEADING[column],
+      accessorFn: (row) => row.cells[column].status,
+      align: "center",
+      width: 84,
+      cell: (row) => {
+        const cell = row.cells[column];
+        const cellDrifted = row.driftedCells.includes(column);
+        return (
+          <span
+            className={cn(
+              "inline-flex items-center justify-center rounded px-1",
+              cellDrifted && "bg-amber-500/15",
+            )}
+            title={[
+              `${COLUMN_HEADING[column]}: ${cell.status}`,
+              cell.detail,
+              cellDrifted ? "DRIFTED vs committed snapshot" : undefined,
+            ]
+              .filter(Boolean)
+              .join(" — ")}
+          >
+            <StatusIcon status={cell.status} />
+          </span>
+        );
+      },
+    })),
+    {
+      id: "flags",
+      header: "Flags",
+      accessorFn: (row) =>
+        [
+          ...row.redCodes,
+          row.presence === "live-only" ? "not in snapshot" : undefined,
+          row.presence === "snapshot-only" ? "gone from live DB" : undefined,
+          row.driftedCells.length > 0
+            ? row.driftedCells
+                .map((column) => COLUMN_HEADING[column])
+                .join(", ")
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      width: 260,
+      cell: (row) => (
+        <div className="flex flex-wrap gap-1">
+          {row.redCodes.map((code) => (
+            <span
+              key={code}
+              className="rounded bg-red-500/10 px-1 py-px font-mono text-[10px] text-red-700 dark:text-red-300"
+            >
+              {code}
+            </span>
+          ))}
+          {row.presence === "live-only" ? (
+            <span className="rounded bg-amber-500/10 px-1 py-px text-[10px] text-amber-700 dark:text-amber-300">
+              not in snapshot
+            </span>
+          ) : null}
+          {row.presence === "snapshot-only" ? (
+            <span className="rounded bg-red-500/10 px-1 py-px text-[10px] text-red-700 dark:text-red-300">
+              gone from live DB
+            </span>
+          ) : null}
+          {row.driftedCells.length > 0 ? (
+            <span
+              className="rounded bg-amber-500/10 px-1 py-px text-[10px] text-amber-700 dark:text-amber-300"
+              title={`Drifted cells: ${row.driftedCells
+                .map((column) => COLUMN_HEADING[column])
+                .join(", ")}`}
+            >
+              drift:{" "}
+              {row.driftedCells
+                .map((column) => COLUMN_HEADING[column])
+                .join(", ")}
+            </span>
+          ) : null}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <section className="border-b border-border bg-card">
@@ -167,11 +295,15 @@ export default function KindStatusBoard({
           {board.excludedFromDrift.length > 0 && (
             <span>
               (columns excluded from diff:{" "}
-              {board.excludedFromDrift.map((c) => COLUMN_HEADING[c]).join(", ")})
+              {board.excludedFromDrift.map((c) => COLUMN_HEADING[c]).join(", ")}
+              )
             </span>
           )}
           <span>
-            — run <code className="rounded bg-muted px-1 font-mono">pnpm check:shapes:refresh</code>{" "}
+            — run{" "}
+            <code className="rounded bg-muted px-1 font-mono">
+              pnpm check:shapes:refresh
+            </code>{" "}
             and commit.
           </span>
         </div>
@@ -195,104 +327,22 @@ export default function KindStatusBoard({
         </div>
       )}
 
-      {/* Matrix */}
-      <div className="overflow-x-auto border-t border-border">
-        <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
-          <thead>
-            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-1.5 font-medium">Kind</th>
-              <th className="px-2 py-1.5 text-center font-medium">Active</th>
-              {ASSET_COLUMNS.map((col) => (
-                <th key={col} className="px-2 py-1.5 text-center font-medium">
-                  {COLUMN_HEADING[col]}
-                </th>
-              ))}
-              <th className="px-2 py-1.5 font-medium">Flags</th>
-            </tr>
-          </thead>
-          <tbody>
-            {board.rows.map((row) => (
-              <tr
-                key={row.kind}
-                className={`border-b border-border/60 last:border-0 ${rowTone(row)}`}
-              >
-                <td className="px-4 py-1">
-                  <KindNameCell row={row} />
-                </td>
-                <td className="px-2 py-1 text-center">
-                  <span
-                    className={`text-[11px] font-medium ${
-                      row.isActive
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-muted-foreground"
-                    }`}
-                    title={
-                      row.activeDrift
-                        ? "is_active flipped vs the committed snapshot"
-                        : undefined
-                    }
-                  >
-                    {row.isActive ? "on" : "off"}
-                    {row.activeDrift ? " *" : ""}
-                  </span>
-                </td>
-                {ASSET_COLUMNS.map((col) => {
-                  const cell = row.cells[col];
-                  const cellDrifted = row.driftedCells.includes(col);
-                  return (
-                    <td
-                      key={col}
-                      className={`px-2 py-1 text-center ${
-                        cellDrifted ? "bg-amber-500/15" : ""
-                      }`}
-                      title={[
-                        `${COLUMN_HEADING[col]}: ${cell.status}`,
-                        cell.detail,
-                        cellDrifted ? "DRIFTED vs committed snapshot" : undefined,
-                      ]
-                        .filter(Boolean)
-                        .join(" — ")}
-                    >
-                      <StatusIcon status={cell.status} />
-                    </td>
-                  );
-                })}
-                <td className="px-2 py-1">
-                  <div className="flex flex-wrap gap-1">
-                    {row.redCodes.map((code) => (
-                      <span
-                        key={code}
-                        className="rounded bg-red-500/10 px-1 py-px font-mono text-[10px] text-red-700 dark:text-red-300"
-                      >
-                        {code}
-                      </span>
-                    ))}
-                    {row.presence === "live-only" && (
-                      <span className="rounded bg-amber-500/10 px-1 py-px text-[10px] text-amber-700 dark:text-amber-300">
-                        not in snapshot
-                      </span>
-                    )}
-                    {row.presence === "snapshot-only" && (
-                      <span className="rounded bg-red-500/10 px-1 py-px text-[10px] text-red-700 dark:text-red-300">
-                        gone from live DB
-                      </span>
-                    )}
-                    {row.driftedCells.length > 0 && (
-                      <span
-                        className="rounded bg-amber-500/10 px-1 py-px text-[10px] text-amber-700 dark:text-amber-300"
-                        title={`Drifted cells: ${row.driftedCells
-                          .map((c) => COLUMN_HEADING[c])
-                          .join(", ")}`}
-                      >
-                        drift: {row.driftedCells.map((c) => COLUMN_HEADING[c]).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="border-t border-border px-4 py-2">
+        <MatrxDataTable<KindBoardRow>
+          tableId="admin-kind-registry-status-board"
+          data={board.rows}
+          columns={columns}
+          getRowId={(row) => row.kind}
+          detail={{ enabled: false }}
+          density="condensed"
+          toolbar={{ searchPlaceholder: "Search kinds and diagnostics…" }}
+          rowClassName={(row) => rowTone(row)}
+          emptyState={{
+            title: "No kinds in this status board",
+            description:
+              "Run the Shape Doctor again to refresh the registry status.",
+          }}
+        />
       </div>
     </section>
   );
