@@ -22,6 +22,16 @@ export interface DataFreshnessLineProps {
   pulledAt: string | null;
   /** The property's own timezone, when the provider reports one (GA4 does). */
   timezone?: string | null;
+  /**
+   * 🚨 THE ONE CLOCK THIS LINE USES, for both the printed age and the stale
+   * verdict (round-4 finding V14-9). Omitted in production — the reader's own
+   * clock — and frozen by this component's test, which is the only way the
+   * PRINTED half of the sentence can be proven at all: before the fix the words
+   * came from `Date.now()` inside `formatRelativeTime` while `stale` was judged
+   * against the injected instant, so the two halves could disagree and no test
+   * could see it.
+   */
+  now?: Date;
   /** `inline` for a header strip, `block` for a panel row. */
   variant?: "inline" | "block";
   className?: string;
@@ -32,6 +42,7 @@ export function DataFreshnessLine({
   dataThrough,
   pulledAt,
   timezone,
+  now,
   variant = "block",
   className,
 }: DataFreshnessLineProps) {
@@ -41,6 +52,7 @@ export function DataFreshnessLine({
     dataThrough,
     pulledAt,
     warningAfterHours: knob.hours,
+    ...(now ? { now } : {}),
   });
   // A clock ahead of the reader's and a data day from the future are BOTH
   // conditions the line must wear, not just mention (round-2 verdict NEW-B7).

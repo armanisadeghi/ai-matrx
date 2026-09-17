@@ -130,3 +130,70 @@ describe("describeFreshness — the unreadable-threshold stand-in", () => {
     expect(result.stale).toBe(false);
   });
 });
+
+/*
+  ONE CLOCK, NOT TWO (round-4 finding V14-9, 2026-09-17).
+
+  `stale` was judged against the injected `now` while the printed age came from
+  `formatRelativeTime`, which read the system clock — so the sentence and the
+  verdict were measured against two different instants. In production they are
+  the same clock and the user impact is nil; the cost was that the module's own
+  tests could not pin the printed age, which is why the PRINTED half of NEW-B7
+  went unproven and the verifier's probe read "pulled 10 hours ago" (the
+  container's real clock) beside `stale=false` for a 40-minute-old pull.
+*/
+describe("describeFreshness — the printed age comes from the injected clock", () => {
+  it("prints the age Arman asked for, measured against `now`", () => {
+    const result = describeFreshness({
+      provider: "search_console",
+      dataThrough: "2026-09-14",
+      // 40 minutes before NOW — the exact shape of §4.8's sentence.
+      pulledAt: "2026-09-17T17:20:00Z",
+      warningAfterHours: 72,
+      now: NOW,
+    });
+    expect(result.sentence).toBe(
+      "data through Sep 14 · pulled 40 minutes ago · Google runs about three days behind",
+    );
+    expect(result.stale).toBe(false);
+  });
+
+  it("prints an age the system clock cannot produce, so the clock is provably the injected one", () => {
+    // A pull 5 days before NOW. Against the container's real clock this stamp is
+    // in the distant past or the future, never "5 days ago" — the assertion can
+    // only pass if `formatRelativeTime` was given `now`.
+    const result = describeFreshness({
+      provider: "analytics",
+      dataThrough: "2026-09-12",
+      pulledAt: "2026-09-12T18:00:00Z",
+      warningAfterHours: 72,
+      now: NOW,
+    });
+    expect(result.sentence).toContain("pulled 5 days ago");
+    expect(result.stale).toBe(true);
+    expect(result.pulledHoursAgo).toBeCloseTo(120, 6);
+  });
+
+  it("agrees with its own `stale` verdict at the threshold, to the hour", () => {
+    // 71 hours: fresh, and the words say 2 days rather than 3.
+    const fresh = describeFreshness({
+      provider: "search_console",
+      dataThrough: "2026-09-14",
+      pulledAt: "2026-09-14T19:00:00Z",
+      warningAfterHours: 72,
+      now: NOW,
+    });
+    expect(fresh.stale).toBe(false);
+    expect(fresh.sentence).toContain("pulled 2 days ago");
+    // 73 hours: stale, and the words moved with it.
+    const stale = describeFreshness({
+      provider: "search_console",
+      dataThrough: "2026-09-14",
+      pulledAt: "2026-09-14T17:00:00Z",
+      warningAfterHours: 72,
+      now: NOW,
+    });
+    expect(stale.stale).toBe(true);
+    expect(stale.sentence).toContain("pulled 3 days ago");
+  });
+});

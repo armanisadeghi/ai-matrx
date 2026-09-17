@@ -11,6 +11,7 @@
 
 import {
   GSC_KPI_WINDOW_DAYS,
+  gscDeltaRefusalLabel,
   judgeGscWindowDelta,
   siteKpiDelta,
 } from "@/features/marketing/analytics/gsc-delta";
@@ -187,5 +188,111 @@ describe("one comparison judge, no second copy", () => {
       .filter(({ text }) => /function trendPercent/.test(text))
       .map(({ file }) => file);
     expect(offenders).toEqual([]);
+  });
+});
+
+/*
+  A ZERO BASELINE IS ITS OWN VERDICT (round-4 finding V14-8, 2026-09-17).
+
+  `percent` was set to null whenever `previous <= 0` while the comparison stayed
+  `comparable` and its caveat stayed null — so both pills took the refusal branch
+  and printed **"no comparison · 28 of 28 days now vs 28 of 28"** with the tooltip
+  *"The two windows were not collected alike."* They were collected identically.
+  The verifier measured exactly that on five live sites. Growth from zero has no
+  percentage; that is a different fact from a coverage gap, and the reader is owed
+  the right one.
+*/
+describe("a zero previous total", () => {
+  const zeroBaseline = judgeGscWindowDelta({
+    current: 143,
+    previous: 0,
+    currentDaysWithData: 28,
+    previousDaysWithData: 28,
+  });
+
+  it("is `no_baseline`, never a coverage refusal", () => {
+    expect(zeroBaseline.verdict).toBe("no_baseline");
+    expect(zeroBaseline.percent).toBeNull();
+    // The coverage judge is untouched and still says the windows agree.
+    expect(zeroBaseline.comparison.state).toBe("comparable");
+  });
+
+  it("says there is no previous period to compare, and never the coverage line", () => {
+    expect(zeroBaseline.caveat).toContain("no previous period to compare");
+    expect(zeroBaseline.caveat).not.toContain("were not collected alike");
+    expect(zeroBaseline.caveat).not.toContain("of 28 days collected");
+    // It still tells the reader what happened: 0 before, 143 now.
+    expect(zeroBaseline.caveat).toContain("143");
+  });
+
+  it("labels the pill for what it is — the sentence the five live sites got wrong", () => {
+    expect(gscDeltaRefusalLabel(zeroBaseline)).not.toContain("no comparison");
+    expect(gscDeltaRefusalLabel(zeroBaseline)).toContain("no previous period");
+  });
+
+  it("is still a coverage refusal when the coverage IS the problem", () => {
+    const thin = judgeGscWindowDelta({
+      current: 143,
+      previous: 0,
+      currentDaysWithData: 28,
+      previousDaysWithData: 4,
+    });
+    // Coverage outranks the zero: with 4 of 28 previous days the zero itself is
+    // not a measurement, so claiming "nothing happened before" would be a guess.
+    expect(thin.verdict).toBe("coverage_refused");
+    expect(thin.caveat).toContain("4 of 28");
+  });
+
+  it("a total that was never returned says THAT, not that the base was zero", () => {
+    const missing = judgeGscWindowDelta({
+      current: null,
+      previous: 100,
+      currentDaysWithData: 28,
+      previousDaysWithData: 28,
+    });
+    expect(missing.verdict).toBe("unknown_totals");
+    expect(missing.caveat).toContain("not returned");
+    expect(gscDeltaRefusalLabel(missing)).toContain("no number");
+  });
+
+  it("every refused delta carries its own sentence — no pill needs a fallback", () => {
+    // The two pills print `delta.caveat ?? "The two windows were not collected
+    // alike."`; that fallback is the V14-8 sentence, and it must be unreachable.
+    for (const delta of [
+      zeroBaseline,
+      judgeGscWindowDelta({
+        current: 1,
+        previous: null,
+        currentDaysWithData: 28,
+        previousDaysWithData: 28,
+      }),
+      judgeGscWindowDelta({
+        current: 110,
+        previous: 370,
+        currentDaysWithData: 8,
+        previousDaysWithData: 23,
+      }),
+      judgeGscWindowDelta({
+        current: 0,
+        previous: 0,
+        currentDaysWithData: 28,
+        previousDaysWithData: 28,
+      }),
+    ]) {
+      expect(delta.percent).toBeNull();
+      expect(delta.caveat).toBeTruthy();
+    }
+  });
+
+  it("two zero windows say nothing has been recorded either side", () => {
+    const both = judgeGscWindowDelta({
+      current: 0,
+      previous: 0,
+      currentDaysWithData: 28,
+      previousDaysWithData: 28,
+    });
+    expect(both.verdict).toBe("no_baseline");
+    expect(both.caveat).toContain("no previous period to compare");
+    expect(both.caveat).toContain("nothing in this one either");
   });
 });

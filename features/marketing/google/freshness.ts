@@ -114,7 +114,12 @@ export function describeFreshness(
     pulled
       ? clockAhead
         ? `pull time is ${roundedHours(-(pulledHoursAgo as number))} ahead of your clock, so its age is unknown — one of the two clocks is wrong`
-        : `pulled ${formatRelativeTime(input.pulledAt, { style: "long" })}`
+        : // 🚨 ONE CLOCK FOR BOTH HALVES (round-4 finding V14-9). `stale` is judged
+          // against `now`; the printed age used to come from `formatRelativeTime`'s
+          // own `Date.now()`, so a 40-minute-old pull printed "pulled 4 hours ago"
+          // beside `stale=false` under a frozen test clock, and the printed half of
+          // NEW-B7 could not be proven at all. The same instant now says both.
+          `pulled ${formatRelativeTime(input.pulledAt, { style: "long", now: now.getTime() })}`
       : "never pulled",
     PROVIDER_LAG_SENTENCE[input.provider],
   ];

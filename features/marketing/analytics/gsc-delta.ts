@@ -39,7 +39,31 @@ import type { SiteListRow } from "@/features/marketing/types";
  */
 export const GSC_KPI_WINDOW_DAYS = 28;
 
+/**
+ * 🚨 WHY A PERCENTAGE IS OR IS NOT PRINTED — and every reason has its own words
+ * (round-4 finding V14-8, 2026-09-17).
+ *
+ * `percent` used to be nulled for FOUR different reasons and the pills could
+ * only tell one story about it: the coverage one. A site with 28 of 28 days
+ * collected in both windows and zero clicks before therefore read
+ * *"no comparison · 28 of 28 days now vs 28 of 28"* with the tooltip *"The two
+ * windows were not collected alike"* — false, on five live sites. Growth from
+ * zero has no percentage; that is not a collection gap, and saying so tells a
+ * person the wrong thing about their own data.
+ */
+export type GscDeltaVerdict =
+  /** Both windows collected alike and the base is a real number. */
+  | "comparable"
+  /** The two windows were not collected alike — `comparison.caveat` says how. */
+  | "coverage_refused"
+  /** The previous window is a real measurement and it is ZERO. */
+  | "no_baseline"
+  /** One of the two totals was never returned, so there is nothing to divide. */
+  | "unknown_totals";
+
 export interface GscWindowDelta {
+  /** Why this delta is, or is not, a percentage. */
+  verdict: GscDeltaVerdict;
   /** The percentage — ONLY when the judge accepts both windows' coverage. */
   percent: number | null;
   /** The verdict, with both day counts, for whoever prints the caveat. */
@@ -66,25 +90,84 @@ export function judgeGscWindowDelta(input: {
     previousDaysWithData: input.previousDaysWithData,
     windowDays,
   });
-  const comparable =
-    comparison.state === "comparable" &&
-    input.current !== null &&
-    input.previous !== null &&
-    input.previous > 0;
+  // THE LADDER IS ORDERED, and the order is the honesty. Coverage first: with a
+  // thin previous window a zero total is not a measurement, so "nothing happened
+  // before" would be a guess. Then a missing total, which is not a zero. Only
+  // then a real, fully-collected zero — the V14-8 case.
+  const verdict: GscDeltaVerdict =
+    comparison.state === "refused"
+      ? "coverage_refused"
+      : input.current === null || input.previous === null
+        ? "unknown_totals"
+        : input.previous <= 0
+          ? "no_baseline"
+          : "comparable";
   return {
-    percent: comparable
-      ? ((input.current as number) - (input.previous as number)) /
-          (input.previous as number) *
-        100
-      : null,
+    verdict,
+    percent:
+      verdict === "comparable"
+        ? (((input.current as number) - (input.previous as number)) /
+            (input.previous as number)) *
+          100
+        : null,
     comparison,
-    caveat: comparison.caveat,
+    // 🚨 A REFUSED DELTA ALWAYS CARRIES ITS OWN SENTENCE. The two pills print
+    // `delta.caveat ?? "The two windows were not collected alike."`, so a null
+    // here IS the V14-8 lie — never return one while `percent` is null.
+    caveat: deltaCaveat(verdict, comparison, input),
     currentPerDay: perCollectedDay(input.current ?? 0, input.currentDaysWithData),
     previousPerDay: perCollectedDay(
       input.previous ?? 0,
       input.previousDaysWithData,
     ),
   };
+}
+
+/** Whole numbers, the way a pill's tooltip should read them. */
+function count(value: number): string {
+  return Intl.NumberFormat().format(Math.round(value));
+}
+
+/** The sentence for each verdict — the coverage judge's own words when the
+ *  coverage is the reason, and never the coverage words when it is not. */
+function deltaCaveat(
+  verdict: GscDeltaVerdict,
+  comparison: AnalyticsComparison,
+  input: { current: number | null; previous: number | null },
+): string | null {
+  switch (verdict) {
+    case "coverage_refused":
+      return comparison.caveat;
+    case "unknown_totals":
+      return (
+        "No comparison: one of the two windows was not returned for this " +
+        "number, so there is nothing to compare it against. Nothing is wrong " +
+        "with the site — the figure is missing here, not zero there."
+      );
+    case "no_baseline":
+      return (
+        "There is no previous period to compare: the previous " +
+        `${comparison.windowDays} days recorded 0, so a percentage has nothing ` +
+        "to divide by. " +
+        (input.current && input.current > 0
+          ? `This window recorded ${count(input.current)} — growth from zero, ` +
+            "which no percentage can express."
+          : "and nothing in this one either.") +
+        ` Both windows were collected the same way (${comparison.currentDaysWithData} ` +
+        `and ${comparison.previousDaysWithData} days), so this is the site, not our collection.`
+      );
+    case "comparable":
+      // Short-but-comparable still carries the coverage note; a complete pair
+      // carries nothing.
+      return comparison.caveat;
+    default: {
+      const unanswered: never = verdict;
+      throw new Error(
+        `[gsc-delta] no caveat for verdict ${String(unanswered)} — add one ` +
+          "before a pill can print it.",
+      );
+    }
+  }
 }
 
 export type GscDeltaMetric = "clicks" | "impressions";
@@ -123,5 +206,19 @@ export function siteKpiDelta(
 export function gscDeltaRefusalLabel(delta: GscWindowDelta): string {
   const { currentDaysWithData, previousDaysWithData, windowDays } =
     delta.comparison;
-  return `no comparison · ${currentDaysWithData} of ${windowDays} days now vs ${previousDaysWithData} of ${windowDays}`;
+  switch (delta.verdict) {
+    case "no_baseline":
+      // 🚨 § V14-8: this used to print the coverage label — "no comparison · 28
+      // of 28 days now vs 28 of 28" — over two windows collected identically.
+      return "no previous period · nothing recorded before";
+    case "unknown_totals":
+      return "no number for one of the two windows";
+    case "coverage_refused":
+    case "comparable":
+      return `no comparison · ${currentDaysWithData} of ${windowDays} days now vs ${previousDaysWithData} of ${windowDays}`;
+    default: {
+      const unanswered: never = delta.verdict;
+      throw new Error(`[gsc-delta] no pill label for ${String(unanswered)}`);
+    }
+  }
 }
