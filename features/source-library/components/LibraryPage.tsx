@@ -78,6 +78,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const organizationId = useAppSelector(selectOrganizationId);
 
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [metricsError, setMetricsError] = useState<string | null>(null);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
     const [jobIds, setJobIds] = useState<string[]>([]);
     const [listGeneration, setListGeneration] = useState(0);
@@ -88,13 +89,25 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // Both mount reads name `organizationId` as a dependency for the reason in
     // hooks/useActionRegistry.ts: it resolves after the first render and every
     // server call is refused until it does.
+    // 🚨 A FAILED READ IS NEVER A SKELETON. Swallowing this error left the
+    // header promising numbers that were never coming: on a Library whose
+    // catalogue had failed, every tile and the cadence chart sat in a loading
+    // skeleton forever, with no message, no timeout and no retry. So the
+    // sentence is kept. Numbers we ALREADY hold are still never blanked — the
+    // header only switches to the failure copy while it holds nothing.
     const refreshMetrics = useCallback(async () => {
         try {
             const metrics = await getLibraryMetrics(dispatch, libraryId);
             dispatch(metricsLoaded({ libraryId, metrics }));
-        } catch {
-            // The header keeps whatever the stream gave it and says it is stale
-            // rather than blanking numbers that were true a moment ago.
+            setMetricsError(null);
+        } catch (error) {
+            setMetricsError(
+                error instanceof MediaApiError
+                    ? error.status === 404 && !error.hasServerSentence
+                        ? "This server does not answer at the Libraries address yet, so the numbers for this Library cannot be computed. Nothing you did caused this."
+                        : error.message
+                    : "The numbers for this Library could not be read from the server.",
+            );
         }
     }, [dispatch, libraryId, organizationId]);
 
@@ -209,6 +222,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                         <LibraryMetricsHeader
                             library={library}
                             metrics={live?.metrics ?? null}
+                            metricsError={metricsError}
+                            onRetryMetrics={() => void refreshMetrics()}
                             sync={sync.sync}
                             elapsedMs={sync.elapsedMs}
                             onBringUpToDate={() => void sync.start("full")}

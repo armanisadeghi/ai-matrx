@@ -90,7 +90,9 @@ function publishedLabel(published_at: string | null): string {
 }
 
 function captionsSentence(video: VideoRow): string {
-    const languages = video.caption_languages;
+    // null = never probed, [] = probed and empty (contract §4.2). Both mean
+    // "we cannot name a language", and neither may be dereferenced.
+    const languages = video.caption_languages ?? [];
     if (languages.length > 0) {
         return `YouTube serves caption tracks in ${languages.join(", ")}.`;
     }
@@ -104,8 +106,9 @@ function captionsSentence(video: VideoRow): string {
 }
 
 function captionsLabel(video: VideoRow): string {
-    if (video.caption_languages.length > 0) {
-        return `Captions: ${video.caption_languages.join(", ")}`;
+    const languages = video.caption_languages ?? [];
+    if (languages.length > 0) {
+        return `Captions: ${languages.join(", ")}`;
     }
     if (video.has_captions === true) return "Captions: flagged, not probed";
     if (video.has_captions === false) return "Captions: none";
@@ -397,7 +400,7 @@ export function SourceDetailPanel({
                         headline="Skipped by the last job"
                         body={
                             video.has_captions === false ||
-                            video.caption_languages.length === 0
+                            (video.caption_languages ?? []).length === 0
                                 ? "YouTube serves no caption track for this video, so the free lane had nothing to fetch and the job was not allowed to spend on the paid lane."
                                 : "The last transcription job skipped this video. Re-running it with the paid lane allowed is what gets it transcribed."
                         }

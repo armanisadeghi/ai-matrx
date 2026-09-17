@@ -450,6 +450,9 @@ declare
   v_uniq  boolean;
   v_name  text;
   v_data  jsonb;
+  v_kids  text[];
+  v_kid   text;
+  v_i     integer;
   v_t0    timestamptz := clock_timestamp();
 begin
   begin
@@ -496,9 +499,31 @@ begin
   execute format('create %s index if not exists %I on custom.record (organization_id, %s) where table_id = %L::uuid and deleted_at is null',
                  case when v_uniq then 'unique' else '' end, v_name, v_expr, p_table_id);
 
+  -- 🚨 REC-N-12 IS ABOUT THE NAME A PERSON READS, AND ROUTE A DOES NOT GIVE THEM ONE.
+  -- `CREATE INDEX` on a partitioned parent creates one index per partition and NAMES THEM
+  -- ITSELF: `record_p09_organization_id_expr_idx1`. That is the string the database quotes at
+  -- whoever loses a concurrent duplicate write, and it carries no field key, no table and
+  -- nothing anybody can act on — so the whole reason `custom.promoted_index_name` keeps the
+  -- field key in the name is lost on the one path that matters. MEASURED 2026-09-17: the
+  -- duplicate refusal read `duplicate key value violates unique constraint
+  -- "record_p09_organization_id_expr_idx1"`. The children are therefore renamed to the same
+  -- convention ROUTE B builds them under — `<parent>_NN` — so both routes leave one index
+  -- naming scheme and the refusal says which field it is about, whichever route built it.
+  -- The names are collected BEFORE any rename: renaming inside the walk would reorder it.
+  select array_agg(c.relname order by c.relname) into v_kids
+    from pg_inherits i join pg_class c on c.oid = i.inhrelid
+   where i.inhparent = format('custom.%I', v_name)::regclass;
+  for v_i in 1 .. coalesce(array_length(v_kids, 1), 0) loop
+    v_kid := left(v_name, 52) || '_' || lpad(v_i::text, 2, '0');
+    if v_kids[v_i] is distinct from v_kid then
+      execute format('alter index custom.%I rename to %I', v_kids[v_i], v_kid);
+    end if;
+  end loop;
+
   return jsonb_build_object(
     'field_key', v_key, 'index_name', v_name, 'unique', v_uniq, 'expression', v_expr,
     'records', v_rows, 'rows_moved', 0, 'route', 'A (in one transaction, under the inline ceiling)',
+    'partition_indexes', coalesce(array_length(v_kids, 1), 0),
     'ms', round(extract(epoch from (clock_timestamp() - v_t0)) * 1000, 1));
 end $$;
 

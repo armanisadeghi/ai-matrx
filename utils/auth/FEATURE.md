@@ -173,6 +173,7 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-09-17 — three-day follow-up on the sign-out fix + auth-server report triage.** Fix confirmed live (both Vercel projects) and effective: Arman's 2026-09-14 session still alive, zero logouts of his account in 24h, `session_not_found` from ~50/10min to ~0. Chrome guard hook denied one real agent attempt on 2026-09-15. Triage of a browser-agent report on auth-server health: 43k `GET /user`/day vs 350 refreshes is real (≈45% from Arman's own network); the 504/500 bursts track auth-DB load, not call volume, and never end a session (a failed proxy check renders that request as a guest); the ~300/day `bad_jwt` rows are an external Azure-hosted scanner (3 malformed + 1 forged token per IP, nothing else), not our code; no retired-project token anywhere in the live bundles. Settings changed: passkey relying party `www.aimatrx.com` → `aimatrx.com` with all four app origins (0 passkeys enrolled). Left alone on purpose: access-token lifetime (7d), IP forwarding (spoofable header; no 429s observed), AAL1 limit (0 MFA factors). Architectural remedy filed as `common-docs/projects/auth-check-once/HANDOFF.md`.
 - **2026-09-15 — removed the duplicate frontend admin OAuth redirect flow.**
   Dashboard and Workflow Studio use aidream's registered one-time-handoff
   contract; the retired frontend callback could place access and refresh tokens
