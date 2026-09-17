@@ -688,3 +688,18 @@ that is the exit-test surface.
   for it), and aidream's run-start routes accept callApi's body-injected `organization_id`
   (AcceptsInjectedScope + resolve_effective_organization_id — org-less runs made every agent
   step refuse).
+
+- 2026-09-17 — **An unread run is never narrated as a pending one** (cold walk 7, finding 5).
+  `WorkflowRunState.status` is non-nullable and every attached run is born `"pending"`, so every
+  run permalink opened by announcing "GETTING READY · 0 of N steps" about whatever it was
+  pointed at — including a run that had finished twenty minutes earlier — for as long as the
+  attach read took (measured: 1.2s warm, seconds to tens of seconds cold or across a server
+  restart). A walker read that on a finished Masterwork's permalink, concluded a click meant to
+  READ a paid result had started a second paid run, and pressed "Cancel now" — which was
+  ENABLED, because `"pending"` is not terminal. The store now records `statusKnown` (written
+  only by `stampStatus` and `seedRunRow`, read through `selectRunStatusKnown`); until it is
+  true the hero says what the PAGE is doing ("Opening this run"), prints the definition's step
+  count instead of `0 of N`, and the control bar holds `null` — which its own verb table
+  already means by "we have not been told", so every verb is disabled with that reason. W39
+  closed the half where the attach read FAILED; this is the half where it has not answered yet,
+  which is every load.

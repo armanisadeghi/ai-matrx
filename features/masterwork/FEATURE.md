@@ -1110,3 +1110,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   reach is not a control, and replaced code gets deleted (`no-legacy`). The `/masterwork/admin`
   map, which still described the deleted home as the live authed landing, now describes the
   redirect.
+
+- 2026-09-17 — Cold walk 7's fix round, four Masterwork halves, each closed at the layer that
+  owns it. **The Approach card**: `inert` meant "cannot be the lane Start begins with" and was
+  read as "has nowhere to go", so the Vision Interview and the Oracle tap — built lanes whose
+  door is their own `launch_href` page — rendered as `aria-disabled` divs among twenty-one
+  clickable cards, with the only live target a small inline link. Inert + a door of its own is
+  now a whole-card `<Link>`. **The reopen latch**: every durable-run dialog asks
+  `run.surfacing`, never `run.running` — the dismissal lives on the run's RECEIPT
+  (`DurableRunHandle.dismiss`), not in a per-mount ref, so a completed sitting no longer reopens
+  itself over later, unrelated visits; `shouldReopenForRun` is retired and
+  `TriageDraftsDialog`'s dead `if (run.running) return;` close went with it. **The Build**:
+  `getBuildInFlight` reads `platform.masterwork_run` so a live build is visible on mount in any
+  browser, with no receipt — "0 Built" over a running build is not a count — and a run whose
+  heartbeat has gone quiet is reported as stalled, never as progress. **Red-Pen**: a selection
+  boundary is MEASURED with a Range and the selection is clamped to the work, because a
+  triple-click ends outside it; it used to record a correction against the wrong passage, or
+  drop the gesture in silence.
