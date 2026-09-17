@@ -76,6 +76,17 @@ jest.mock("@/features/marketing/google/hooks", () => ({
     isLoading: false,
   }),
 }));
+const toastWarnings: string[] = [];
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    warning: (message: string) => {
+      toastWarnings.push(message);
+    },
+    success: () => undefined,
+    error: () => undefined,
+    info: () => undefined,
+  },
+}));
 jest.mock("@/features/google-workspace/connection", () => ({
   eligibleGoogleConnections: (connections: { id: string }[]) => connections,
   preferredGoogleConnectionId: () => "conn-1",
@@ -175,6 +186,7 @@ beforeAll(() => {
 beforeEach(() => {
   asked = [];
   resolved.length = 0;
+  toastWarnings.length = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -271,13 +283,7 @@ describe("the ask reports what GOOGLE got, not what was typed", () => {
     expect(data.cc).toEqual(["john@x.com"]);
   });
 
-  it("a server that answers no addresses falls back to the typed field, loudly", async () => {
-    const warnings: string[] = [];
-    jest
-      .spyOn(console, "warn")
-      .mockImplementation((...args: unknown[]) =>
-        warnings.push(args.map(String).join(" ")),
-      );
+  it("a server that answers no addresses falls back to the typed field, ANNOUNCED on screen (VERIFY-B1-B2-R4 V6)", async () => {
     // The service narrows a missing or blank `to` to `null` (and the card guards
     // a blank of its own accord), which is what an older server answers.
     mockSend.mockResolvedValue({ messageId: "gmail-1", to: null, cc: null });
@@ -286,8 +292,22 @@ describe("the ask reports what GOOGLE got, not what was typed", () => {
     // Nothing is invented and nothing is blank: the person's own field stands in.
     expect(data.to).toBe("Ada Lovelace <ada@example.com>");
     expect(data.cc).toEqual(["john@x.com"]);
-    // A stand-in ANNOUNCES ITSELF, with what to do about it.
-    expect(warnings.join(" ")).toMatch(/send-reviewed/i);
-    jest.restoreAllMocks();
+    // 🚨 LAW 4: the stand-in announces itself ON THE SCREEN THE PERSON IS
+    // LOOKING AT, with the remedy — never only to devtools. Until 2026-09-17
+    // this fired a bare `console.warn` that nothing on screen ever showed.
+    expect(toastWarnings.length).toBeGreaterThan(0);
+    expect(toastWarnings.join(" ")).toMatch(/did not confirm the delivered address/i);
+    expect(toastWarnings.join(" ")).toMatch(/typed/i);
+    expect(toastWarnings.join(" ")).toMatch(/refresh/i);
+  });
+
+  it("says nothing when the server DID confirm the delivered address", async () => {
+    mockSend.mockResolvedValue({
+      messageId: "gmail-1",
+      to: "ada@example.com",
+      cc: ["john@x.com"],
+    });
+    await press(["john@x.com"]);
+    expect(toastWarnings).toEqual([]);
   });
 });

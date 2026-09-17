@@ -13,13 +13,14 @@
 //
 // The scans below fail on the pre-fix bytes of both panels.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   IMPORT_PROVENANCE_UNRECORDED,
   importDateText,
   importFieldLabel,
   importFieldList,
+  importMatchKeyWords,
   importProvenanceSentence,
 } from "./field-labels";
 
@@ -138,7 +139,6 @@ describe("THE GUARD: both panels speak English and show provenance", () => {
 // rendered a blank label. These fail on the pre-adoption bytes.
 // ---------------------------------------------------------------------------
 
-import { existsSync } from "node:fs";
 import {
   CONTACT_FIELD_ACTIONS,
   CONTACT_MATCH_STATES,
@@ -263,5 +263,82 @@ describe("THE GUARD: the panels adopt the contract honestly", () => {
     // And it says what the link back actually is.
     const tasks = readFileSync(join(REPO_ROOT, PANELS[0]), "utf8");
     expect(tasks).toMatch(/Linked to Google Tasks/);
+  });
+
+  it("the ambiguity list humanises `matched_by`, never prints the raw key (VERIFY-B1-B2-R4 D9/V9)", () => {
+    // GoogleContactsImportPanel.tsx:559 and :699 printed
+    // `({candidate.matched_by})` verbatim — `(external_id:google_contacts)` at
+    // a person choosing between two customer records, on exactly the screen a
+    // non-technical expert must get right. `importMatchKeyWords` is the twin
+    // helper the "Will update" badge already used a few lines up; the fix is
+    // the SAME helper on the ambiguity list, never a second map.
+    const source = readFileSync(join(REPO_ROOT, PANELS[1]), "utf8");
+    const rawPrints = [
+      ...source.matchAll(/\{candidate\.person_name\} \(\{(.*)\}\)/g),
+    ];
+    expect(rawPrints.length).toBeGreaterThan(0);
+    for (const match of rawPrints) {
+      expect(match[1]).toBe("importMatchKeyWords(candidate.matched_by)");
+    }
+  });
+});
+
+describe("THE CONTRACT: every matched_by value the server can emit has a label", () => {
+  /**
+   * `aidream/services/crm/party_resolver.py::_find_match` tags each candidate
+   * with the key that found it — `email` | `phone` | `domain` | `name` |
+   * `created` | `external_id:<platform_slug>` (VERIFY-B1-B2-R4 V9's
+   * remedy: "every `matched_by` value the server can emit has a label").
+   * `importMatchKeyWords` must speak every one of them in words, never a
+   * key nobody translated reaching a person on the ambiguity screen.
+   */
+  it("importMatchKeyWords never returns the raw key back", () => {
+    const keys = [
+      "email",
+      "phone",
+      "domain",
+      "name",
+      "created",
+      "external_id:google_contacts",
+      "external_id:google_tasks",
+      "",
+    ];
+    for (const key of keys) {
+      const words = importMatchKeyWords(key);
+      expect(words.length).toBeGreaterThan(0);
+      if (key) {
+        expect(words).not.toBe(key);
+        expect(words).not.toContain(":");
+        expect(words).not.toContain("_");
+      }
+    }
+  });
+
+  it("mirrors the server's own matched_by census (VERIFY-B1-B2-R4 V9)", () => {
+    const serverFile = join(REPO_ROOT, "..", "aidream", "aidream/services/crm/party_resolver.py");
+    if (!existsSync(serverFile)) {
+      console.warn(
+        `[field-labels] UNMEASURED: ${serverFile} is not in this container, so the ` +
+          "matched_by census was NOT compared against the server's own resolver. Run " +
+          "this test where the sibling aidream checkout exists.",
+      );
+      return;
+    }
+    const python = readFileSync(serverFile, "utf8");
+    // The literal keys `_find_match._collect(...)` and `resolve_party` tag a
+    // candidate with, minus the interpolated `external_id:{slug}` form (its
+    // prefix is covered by the census above).
+    const literalKeys = [...new Set(
+      [...python.matchAll(/"(email|phone|domain|name|created)"/g)].map((m) => m[1]),
+    )];
+    expect(literalKeys.length).toBeGreaterThan(0);
+    for (const key of literalKeys) {
+      expect(importMatchKeyWords(key)).not.toBe(key);
+    }
+    // The interpolated form is still live in the resolver — a change here
+    // without a matching `startsWith("external_id")` branch is the exact
+    // class this test exists to catch.
+    expect(python).toMatch(/f"external_id:\{slug\}"/);
+    expect(importMatchKeyWords("external_id:whatever")).toBe("its Google Contacts id");
   });
 });

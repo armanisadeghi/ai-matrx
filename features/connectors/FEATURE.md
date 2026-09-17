@@ -275,6 +275,30 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — F-30, two of the four VERIFY-B1-B2-R4 findings against the
+  Google import panels (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md`
+  D9/V9, V8). **D9's residual, closed:** `GoogleContactsImportPanel.tsx`'s
+  ambiguity list (the screen where a person chooses between two customer
+  records for one Google contact) printed the raw `matched_by` key verbatim —
+  `(external_id:google_contacts)` — at lines 559 and 699, even though the same
+  file's "Will update" badge a few lines up already ran it through
+  `importMatchKeyWords` (`field-labels.ts`). Both call sites now use the same
+  helper; no second map. A new contract test
+  (`field-labels.test.ts` § "every matched_by value the server can emit has a
+  label") asserts the helper never echoes a raw key back for any value
+  `aidream/services/crm/party_resolver.py::_find_match` can emit (`email` |
+  `phone` | `domain` | `name` | `created` | `external_id:<slug>`), diffing
+  against the server's own literals when the sibling checkout is present
+  (UNMEASURED otherwise, never a quiet pass). **V8, closed:**
+  `GoogleTasksImportPanel` posts a `project_id` no screen named — the only
+  opener on this build (`TasksHeaderControls`, Plane A: import FROM the
+  general Tasks list, not from a selected project) always passes null, which
+  is honest but was never SAID. The panel now names the project it will write
+  onto every task (`<EntityRef token="project"/>`, the same door Gmail
+  compose uses) when the opener gave one, and says explicitly "Importing
+  without a project — these tasks will not be assigned to one" when it did
+  not — never silent either way. Red-then-green:
+  `import/tasks-project-naming.test.tsx`.
 - `2026-09-17` — F-27, fixing Cursor Bugbot round 13 on PR 228 (commit
   `8855439f`, comment id 4041550778): F-23's `share_required` disposition
   reused F-19's "ours to repair" copy in two consumers that had been written

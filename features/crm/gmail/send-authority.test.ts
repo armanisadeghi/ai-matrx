@@ -106,11 +106,34 @@ describe("the send authority judges every PARSED address", () => {
     expect(refusal).toContain("unsubscribed");
   });
 
-  it("checks BOTH addresses in a two-address To field (BREAK C)", async () => {
+  it("refuses a two-address To field by name (VERIFY-B1-B2-R4 V1: agrees with the server)", async () => {
+    // Until 2026-09-17 this was accepted here and refused only by the server,
+    // one round-trip later, about a field this gate had already waved
+    // through. `To` carries exactly one mailbox — the same rule the server's
+    // `parse_recipient` enforces.
     const asked: string[] = [];
     const refusal = await preflightGmailRecipients({
       to: "a@x.com, b@y.com",
       cc: [],
+      options: [],
+      organizationId: "org-1",
+      check: async (mediumId) => {
+        asked.push(mediumId);
+        return verdict(true);
+      },
+      lookup: async (address) => [`medium-${address[0]}`],
+    });
+    expect(asked).toEqual([]);
+    expect(refusal).toContain("a@x.com");
+    expect(refusal).toContain("b@y.com");
+    expect(refusal).toContain("Cc");
+  });
+
+  it("still checks a second address written in Cc, where the remedy sends it", async () => {
+    const asked: string[] = [];
+    const refusal = await preflightGmailRecipients({
+      to: "a@x.com",
+      cc: ["b@y.com"],
       options: [],
       organizationId: "org-1",
       check: async (mediumId) => {

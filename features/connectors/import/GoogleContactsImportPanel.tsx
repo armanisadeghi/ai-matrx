@@ -556,7 +556,7 @@ export function GoogleContactsImportPanel({
                         target="_blank"
                         className="text-foreground underline-offset-2 hover:underline"
                       >
-                        {candidate.person_name} ({candidate.matched_by})
+                        {candidate.person_name} ({importMatchKeyWords(candidate.matched_by)})
                       </Link>
                     ))}
                   </p>
@@ -696,7 +696,7 @@ export function GoogleContactsImportPanel({
                         target="_blank"
                         className="text-foreground underline-offset-2 hover:underline"
                       >
-                        {candidate.person_name} ({candidate.matched_by})
+                        {candidate.person_name} ({importMatchKeyWords(candidate.matched_by)})
                       </Link>
                     ))}
                   </p>

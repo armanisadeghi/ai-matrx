@@ -33,6 +33,7 @@ import { AgentCardShell } from "@/features/agents/ui-first-tools/ui/AgentCardShe
 import { sendReviewedGmail } from "@/features/google-workspace/service";
 import { splitMailboxField } from "@/features/crm/gmail/mailbox";
 import { extractErrorMessage } from "@/utils/errors";
+import { toast } from "@/lib/toast";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import {
@@ -173,10 +174,16 @@ export function GmailReviewCard({ ask, preflight }: GmailReviewCardProps) {
        */
       const delivered = receipt.to?.trim() ? receipt.to : null;
       if (delivered === null) {
-        console.warn(
-          "[gmail] /gmail/send-reviewed answered no delivered addresses, so the " +
-            "sent record is judged against the typed field. Deploy aidream's " +
-            "reviewed-send receipt (to / cc) to close this.",
+        // 🚨 LAW 4: THE STAND-IN ANNOUNCES ITSELF, ON THE SCREEN THE PERSON IS
+        // LOOKING AT — never only to devtools. Until 2026-09-17 this was a
+        // bare `console.warn`, so a person who watched the card send saw
+        // nothing at all about the one fact that decides whose timeline the
+        // message lands on (VERIFY-B1-B2-R4 V6). The remedy names what
+        // happened and what to do about it; the technical detail still goes
+        // to the Error Inspector via `toast.warning`.
+        toast.warning(
+          "The server did not confirm the delivered address; recorded the " +
+            "address as typed — refresh after the next server release.",
         );
       }
       finish({

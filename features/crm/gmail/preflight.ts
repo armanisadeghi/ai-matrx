@@ -38,7 +38,7 @@ import {
   findMediumIdsForAddress,
 } from "@/features/crm/compliance/service";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
-import { parseRecipientFields, type ParsedMailbox } from "./mailbox";
+import { parseRecipientFields, parseToField, type ParsedMailbox } from "./mailbox";
 import type { GmailRecipientOption } from "./recipients";
 
 /** Null means "send"; a string is the refusal, in the gate's own words. */
@@ -68,12 +68,32 @@ export function mediumIdForAddress(
  * as ONE opaque string that no lookup could match and no gate ever judged
  * (VERIFY-B1-B2-R2 N2, breaks A/B/C). Cc counts: an unsubscribe is an
  * unsubscribe whichever header carries it.
+ *
+ * 🚨 `To` CARRIES EXACTLY ONE MAILBOX — the server's own rule 1
+ * (`aidream …/google_workspace/mailbox.py`). Until 2026-09-17 this parsed `To`
+ * the same as any `Cc` field, so `a@x.com, b@y.com` in `To` was accepted here
+ * and refused only by the server, one round-trip later, about a field this
+ * gate had already waved through (VERIFY-B1-B2-R4 V1). `Cc` still carries as
+ * many as a person writes — the remedy IS "put the others in Cc".
  */
 export function recipientsOfSend(
   to: string,
   cc: string[],
 ): { ok: true; mailboxes: ParsedMailbox[] } | { ok: false; raw: string; reason: string } {
-  return parseRecipientFields([to, ...cc]);
+  const toParsed = parseToField(to);
+  if (!toParsed.ok) return toParsed;
+  const ccParsed = parseRecipientFields(cc);
+  if (!ccParsed.ok) return ccParsed;
+  const seen = new Set(toParsed.mailboxes.map((mailbox) => mailbox.address));
+  const mailboxes = [
+    ...toParsed.mailboxes,
+    ...ccParsed.mailboxes.filter((mailbox) => {
+      if (seen.has(mailbox.address)) return false;
+      seen.add(mailbox.address);
+      return true;
+    }),
+  ];
+  return { ok: true, mailboxes };
 }
 
 /** Turn a refusing verdict into the sentence the person sees, fixes included. */

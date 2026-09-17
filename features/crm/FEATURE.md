@@ -1006,6 +1006,37 @@ holds the shapes.
 
 ## Change log
 
+- 2026-09-17 — **F-30: two of the four VERIFY-B1-B2-R4 findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md` V1/V6/V7). **The
+  recipient parser now agrees with the server on the `To` field.** Until this
+  fix `gmail/mailbox.ts` treated `To` as an ordinary address LIST, so
+  `a@x.com, b@y.com` was ACCEPTED here and sent to `sendReviewedGmail`, which
+  the server then refused, one round-trip later, about a field this parser
+  had already waved through (R4 V1). `To` now carries exactly ONE mailbox
+  (`parseToField`, `gmail/mailbox.ts`), refused by name with the server's own
+  remedy ("one recipient in To; add others in Cc"); `Cc` still carries as many
+  as a person writes — `preflight.ts`'s `recipientsOfSend` parses the two
+  fields under their own rules and merges, deduplicated. Also closed the same
+  drift the server just fixed on its side (rule 4, "every domain label is
+  real" — a trailing or doubled dot leaves an empty domain label):
+  `hasRealDomain()` in `mailbox.ts`. **The agreement guard**
+  (`gmail/mailbox-agreement.test.ts`) reads aidream's own
+  `services/google_workspace/mailbox_corpus.json` (lane B-14's file, generated
+  from `mailbox_corpus.py` — never edited here) and drives the client parser
+  over every one of the server's own cases; it fails UNMEASURED, never a
+  quiet pass, when the sibling checkout is absent, and it would have failed on
+  the multi-address-To and trailing-dot cases before this fix (proved by
+  reverting the code under the same test). **The older-server stand-in now
+  announces itself on screen.** `GmailReviewCard.send()`'s fallback to the
+  typed field — when `/gmail/send-reviewed` answers no `to`/`cc` — used to
+  reach only `console.warn` (R4 V6); it now raises `toast.warning(...)` with
+  the remedy ("The server did not confirm the delivered address; recorded the
+  address as typed — refresh after the next server release"), through the
+  app's one toast module, which also feeds the Error Inspector. Both fixes
+  are red-then-green (`send-authority.test.ts`, `the-card-sends-and-reports-
+  real-addresses.test.tsx`). Left open for the round's owner: V2 (the agent's
+  contact import is a second, review-free path) and V4 (the reviewed-send
+  endpoint asks no send authority) — neither is `features/crm/gmail/`'s file.
 - 2026-09-17 — **F-20: round 2's Gmail findings, fixed**
   (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N2/N7/N8/N9/N10, A1,
   A5/D7, breaks A/B/C/D/I). **The disqualifying one:** every recipient field now

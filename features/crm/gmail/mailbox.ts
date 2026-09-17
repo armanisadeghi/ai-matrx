@@ -46,6 +46,20 @@ export type MailboxFieldParse =
 const ADDR_SPEC = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>"]+$/;
 
 /**
+ * Every domain label is real — the server's own rule 4
+ * (`aidream …/google_workspace/mailbox.py`), added 2026-09-17. A trailing dot
+ * (`ada@example.com.`) or a doubled one leaves an EMPTY label; `ADDR_SPEC`
+ * alone accepts it (a "." is just another allowed character), so this must be
+ * checked separately or the two parsers disagree on exactly the input the
+ * agreement guard corpus exercises (`./mailbox-agreement.test.ts`).
+ */
+function hasRealDomain(address: string): boolean {
+  const domain = address.slice(address.indexOf("@") + 1);
+  if (!domain) return false;
+  return domain.split(".").every((label) => label.length > 0);
+}
+
+/**
  * Split an address field into its mailboxes, honouring quotes and angle
  * brackets: a comma inside `"Doe, John"` is part of the name, not a separator.
  */
@@ -92,13 +106,13 @@ export function parseMailbox(raw: string): ParsedMailbox | null {
   const angle = /^(.*)<([^<>]*)>$/s.exec(trimmed);
   if (angle) {
     const address = angle[2].trim().toLocaleLowerCase();
-    if (!ADDR_SPEC.test(address)) return null;
+    if (!ADDR_SPEC.test(address) || !hasRealDomain(address)) return null;
     return { address, displayName: unquote(angle[1]), raw: trimmed };
   }
   // A bare addr-spec, and nothing else: `Ada ada@example.com` (no brackets) is
   // genuinely ambiguous, so it is refused rather than guessed at.
   const bare = trimmed.toLocaleLowerCase();
-  if (!ADDR_SPEC.test(bare)) return null;
+  if (!ADDR_SPEC.test(bare) || !hasRealDomain(bare)) return null;
   return { address: bare, displayName: null, raw: trimmed };
 }
 
@@ -150,4 +164,37 @@ export function parseRecipientFields(fields: string[]): MailboxFieldParse {
 /** The addr-spec of a single written address, or null when it cannot be read. */
 export function addressOfMailbox(raw: string): string | null {
   return parseMailbox(raw)?.address ?? null;
+}
+
+/**
+ * Parse a `To` field: EXACTLY one mailbox, never more.
+ *
+ * 🚨 THE CLIENT MUST AGREE WITH THE SERVER (`aidream …/google_workspace/
+ * mailbox.py` rule 1). Until 2026-09-17 `parseMailboxField` alone judged the
+ * `To` field, so `a@x.com, b@y.com` parsed as TWO mailboxes here, the compose
+ * screen's own `to.includes("@")` check passed, and Send posted a field the
+ * server then refused — a refusal about a field this parser had already
+ * accepted (VERIFY-B1-B2-R4 V1). A `Cc` field may still hold several
+ * addresses: this rule is the `To` field's alone, matching the server's own
+ * "one message, one recipient here" remedy.
+ *
+ * A display name that itself contains a comma — `"Doe, John" <john@x.com>` —
+ * is still ONE mailbox and is still accepted; `splitMailboxField` already
+ * honours the quotes.
+ */
+export function parseToField(raw: string): MailboxFieldParse {
+  const parsed = parseMailboxField(raw);
+  if (!parsed.ok) return parsed;
+  if (parsed.mailboxes.length > 1) {
+    const addresses = parsed.mailboxes.map((mailbox) => mailbox.address).join(", ");
+    return {
+      ok: false,
+      raw,
+      reason:
+        `The To field holds more than one address (${addresses}). ` +
+        "One recipient in To; add others in Cc, where each one is checked on " +
+        "its own.",
+    };
+  }
+  return parsed;
 }

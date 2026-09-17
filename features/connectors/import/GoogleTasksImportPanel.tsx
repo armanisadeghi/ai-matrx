@@ -31,6 +31,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
 import { importGoogleTasks, listGoogleTasks } from "./service";
@@ -280,6 +281,28 @@ export function GoogleTasksImportPanel({
             Refresh
           </Button>
         </div>
+        {/* 🚨 THE REQUEST'S OWN `project_id` IS NAMED HERE, NEVER LEFT UNSAID
+            (VERIFY-B1-B2-R4 V8). The only opener on this build
+            (`TasksHeaderControls`) passes none — Plane A imports FROM the
+            general Tasks list, not from a project the header has selected —
+            so `project_id` is always null today. That is an honest state,
+            but leaving a screen silent about where the checkbox someone is
+            about to tick will land is not: the Gmail compose panel names its
+            project the same way, through the same door
+            (`<EntityRef token="project"/>`), before the click. */}
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          {projectId ? (
+            <>
+              <span>Importing into</span>
+              <EntityRef token="project" id={projectId} />
+            </>
+          ) : (
+            <span>
+              Importing without a project — these tasks will not be assigned
+              to one.
+            </span>
+          )}
+        </p>
         {listing && listing.task_lists.length > 1 ? (
           <div className="flex flex-wrap gap-1">
             {listing.task_lists.map((view) => (
