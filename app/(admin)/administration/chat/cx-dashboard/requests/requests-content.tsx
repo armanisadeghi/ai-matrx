@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, Wrench } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useCxTableFilters } from "@/features/cx-dashboard/components/useCxTableFilters";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import {
   cxUserRequestMenuTarget,
@@ -52,6 +53,7 @@ const requestDuration = (r: CxUserRequest) =>
 
 export function RequestsContent({ result }: Props) {
   const router = useRouter();
+  const sourceFilter = useCxTableFilters("cx-requests");
 
   const rowMenu = useCxRowMenu({
     rows: () => result.data,
@@ -313,6 +315,7 @@ export function RequestsContent({ result }: Props) {
                 {
                   type: "custom",
                   id: "server-filters",
+                  filter: sourceFilter,
                   render: () => (
                     <CxFiltersBar
                       showSearch={false}

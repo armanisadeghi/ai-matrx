@@ -132,6 +132,7 @@ export function CxFiltersBar({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
           <Input
+            key={filters.search ?? ""}
             className="h-8 text-xs pl-7 w-[180px]"
             placeholder="Search..."
             defaultValue={filters.search || ""}
