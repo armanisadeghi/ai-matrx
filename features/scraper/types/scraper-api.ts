@@ -75,6 +75,27 @@ export interface ScrapedResultHashes {
   outline_simhash?: number | string;
 }
 
+/**
+ * Which engine produced a scrape result. The backend sends exactly these three
+ * (2026-09-17); anything else — including the field being absent on an older
+ * response — means "we do not know" and must be rendered as nothing, never as
+ * a guess.
+ */
+export type ScrapeEngine = "http" | "browser" | "cache";
+
+export const SCRAPE_ENGINES: readonly ScrapeEngine[] = [
+  "http",
+  "browser",
+  "cache",
+];
+
+export function asScrapeEngine(value: unknown): ScrapeEngine | null {
+  return typeof value === "string" &&
+    (SCRAPE_ENGINES as readonly string[]).includes(value)
+    ? (value as ScrapeEngine)
+    : null;
+}
+
 export interface ScrapedResult {
   /** true = scraped successfully, false = scrape failed */
   success?: boolean;
@@ -89,6 +110,17 @@ export interface ScrapedResult {
   cms?: string;
   /** Firewall detected (e.g. "cloudflare", "none") */
   firewall?: string;
+
+  // ── Provenance (which engine actually produced this row) ──
+  // Added by the backend 2026-09-17. ABSENT on every response older than that,
+  // so every consumer must render gracefully without them and must never
+  // invent a value when they are missing.
+  /** The engine that produced the content. */
+  engine?: ScrapeEngine;
+  /** True when the plain HTTP fetch failed and the server browser was used. */
+  escalated?: boolean;
+  /** The named reason we escalated — e.g. "cloudflare_block". */
+  escalation_reason?: string | null;
 
   // ── Text variants (richest first) ──
   /** Markdown with links and images */
