@@ -107,7 +107,7 @@ export const documentCreateKind: ApprovalKind = {
   label: "New document",
   accept: { label: "Create it", keepsReason: false },
   reject: GOOGLE_REJECT_COPY,
-  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope),
+  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope, documentCreateKind),
   useDecisions: (scope: ApprovalScope) =>
     useGoogleApprovalDecisions(KIND_ID, scope),
   scopeRequirement: GOOGLE_OPERATOR_SCOPE,

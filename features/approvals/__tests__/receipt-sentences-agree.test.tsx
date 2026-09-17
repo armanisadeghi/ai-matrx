@@ -39,16 +39,17 @@ jest.mock("../google-door", () => ({
 jest.mock("../data", () => ({
   APPROVAL_SURFACE: "matrx-user/approval-queue",
   APPROVAL_PAGE_SIZE: 50,
-  listPendingProposals: async (_userId: string, kindId: string) => ({
+  // The seam takes the asking kind itself (§ A-N5), so the stub reads its id.
+  listPendingProposals: async (_userId: string, kind: { id: string }) => ({
     proposals: [
       {
         assist: {
           id: "assist-1",
-          title: `a ${kindId} proposal`,
+          title: `a ${kind.id} proposal`,
           createdAt: "2026-09-17T00:00:00Z",
           result: null,
         },
-        proposalKind: kindId,
+        proposalKind: kind.id,
         mode: "mode_4",
         autoApplyAt: null,
         proposerLabel: "Research agent",

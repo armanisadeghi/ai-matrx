@@ -32,6 +32,7 @@ import { createClient } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { readApprovalReceipt } from "./receipt";
 import {
+  familyOf,
   ROW_FAMILY_ACTION_KIND,
   warnNotRendered,
   willRenderAction,
@@ -135,19 +136,41 @@ export interface ApprovalProposalPage {
  */
 export async function listPendingProposals(
   userId: string,
-  proposalKind: string,
+  /**
+   * THE ASKING KIND'S REAL REGISTRATION — never a stand-in. Until 2026-09-17
+   * this took the kind's ID and rebuilt a kind from it
+   * (`[{ id: proposalKind } as ApprovalKind]`), which carried no `reads` and no
+   * `rendersRow`: the predicate therefore judged every asker as the
+   * `approval_proposal` family with the default id recogniser, so a kind with a
+   * scope or a store of its own got an answer about a different question, and
+   * the cast is what stopped the compiler from saying so (round-3 verification
+   * § A-N5). The kind itself is passed instead, so the code that owns the reader
+   * owns the recogniser.
+   */
+  kind: ApprovalKind,
   /**
    * WHERE the asking queue stands — handed to the same predicate the badge and
    * the deep link ask, so a page cannot include a row the mount would refuse.
    */
   scope: ApprovalScope,
 ): Promise<ApprovalProposalPage> {
-  // The kind doing the asking is, by construction, registered and mounted — so
-  // the predicate below judges this page against exactly it. A bare `{ id }` is
-  // enough BECAUSE every caller reads the `approval_proposal` family, whose one
-  // recogniser is "the kind's id IS the row's proposalKind"; a kind reading
-  // another family declares `rendersRow` and reads its own store, not this page.
-  const kindsHere: ApprovalKind[] = [{ id: proposalKind } as ApprovalKind];
+  const proposalKind = kind.id;
+  /**
+   * 🚨 THIS READ NARROWS `approval_proposal` ROWS AND NOTHING ELSE. A kind that
+   * reads another family (the keyword kinds read `apply_keyword_meaning`, keyed
+   * on the record rather than on this surface) has a different store, and
+   * handing it an empty page here would be the silent omission this queue exists
+   * to end — so it is refused BY NAME, with the remedy.
+   */
+  if (familyOf(kind) !== "approval_proposal") {
+    throw new Error(
+      `[approvals] the kind "${proposalKind}" reads ${familyOf(kind)} rows, which this ` +
+        "page read cannot narrow — it reads the approval_proposal family on " +
+        `${APPROVAL_SURFACE}. Give ${proposalKind} its own reader (see features/approvals/kinds/seo/) ` +
+        "instead of asking this one.",
+    );
+  }
+  const kindsHere: readonly ApprovalKind[] = [kind];
   const page = await queryAssists(userId, {
     statuses: ["pending"],
     // Filtered SERVER-side by this kind's own source key, so `total` is this

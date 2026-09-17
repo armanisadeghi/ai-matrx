@@ -196,7 +196,11 @@ describe("badge, header and list agree on an unregistered kind (A-i, A-ii)", () 
       unreadable: 1,
     });
 
-    const page = await listPendingProposals("u1", "sheet_write", personScope);
+    // The seam takes the asking kind's REAL registration (§ A-N5), so this is
+    // the registered `sheet_write` from the stand-in registry above.
+    const sheetWrite = registered.find((entry) => entry.id === "sheet_write");
+    if (!sheetWrite) throw new Error("unreachable");
+    const page = await listPendingProposals("u1", sheetWrite, personScope);
     expect(page.proposals).toHaveLength(0);
     // 2 server rows − 1 unreadable − 1 unrenderable kind = 0 on screen.
     expect(page.total).toBe(0);

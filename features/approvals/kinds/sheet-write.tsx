@@ -196,7 +196,7 @@ function useSource(scope: ApprovalScope): ApprovalSource {
 
   const pending = useQuery({
     queryKey: [...QUERY_KEY, userId],
-    queryFn: () => listPendingProposals(userId ?? "", KIND_ID, scope),
+    queryFn: () => listPendingProposals(userId ?? "", sheetWriteKind, scope),
     enabled: Boolean(userId),
     staleTime: 30_000,
   });

@@ -38,6 +38,7 @@ import {
 import type {
   ApprovalDecisions,
   ApprovalItem,
+  ApprovalKind,
   ApprovalScope,
   ApprovalScopeRequirement,
   ApprovalSource,
@@ -179,6 +180,14 @@ export function googleQueryKey(kindId: string): readonly string[] {
 export function useGoogleProposalSource(
   contract: GoogleKindContract,
   scope: ApprovalScope,
+  /**
+   * THE KIND'S OWN REGISTRATION, handed to the store seam so THE ONE PREDICATE
+   * judges this page against the real kind rather than a `{ id }` object cast
+   * past the contract (round-3 verification § A-N5). Each kind module passes
+   * itself; the reference resolves when the hook runs, not when the module is
+   * evaluated.
+   */
+  kind: ApprovalKind,
 ): ApprovalSource {
   const viewerId = useAppSelector(selectUserId);
   const userId = scope.userId ?? viewerId;
@@ -187,7 +196,7 @@ export function useGoogleProposalSource(
 
   const pending = useQuery({
     queryKey: [...key, userId],
-    queryFn: () => listPendingProposals(userId ?? "", contract.kindId, scope),
+    queryFn: () => listPendingProposals(userId ?? "", kind, scope),
     enabled: Boolean(userId),
     staleTime: 30_000,
   });

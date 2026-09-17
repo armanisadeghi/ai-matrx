@@ -166,7 +166,7 @@ export const taskImportKind: ApprovalKind = {
   label: "Task import",
   accept: { label: "Import them", keepsReason: false },
   reject: GOOGLE_REJECT_COPY,
-  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope),
+  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope, taskImportKind),
   useDecisions: (scope: ApprovalScope) =>
     useGoogleApprovalDecisions(KIND_ID, scope),
   scopeRequirement: GOOGLE_OPERATOR_SCOPE,

@@ -124,7 +124,7 @@ export const spreadsheetCreateKind: ApprovalKind = {
   label: "New spreadsheet",
   accept: { label: "Create it", keepsReason: false },
   reject: GOOGLE_REJECT_COPY,
-  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope),
+  useSource: (scope: ApprovalScope) => useGoogleProposalSource(contract, scope, spreadsheetCreateKind),
   useDecisions: (scope: ApprovalScope) =>
     useGoogleApprovalDecisions(KIND_ID, scope),
   scopeRequirement: GOOGLE_OPERATOR_SCOPE,
