@@ -28,7 +28,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/marketing/google/hooks.ts` and `service.ts` — the shared Google inventory query is **auth-gated twice**: Redux prevents pre-hydration scheduling, and the service requires a live Supabase bearer token immediately before PostgREST. Redux identity can briefly outlive a signed-out client; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`. The browser selects generated `credential_present` / `credential_stable` facts; `credential_item_id` and `vault_secret_key` remain private server-side references.
 
 - `features/connectors/attachable-resources.ts` — the ONE decision separating a **plain** connection (a pure MCP server: nothing to choose) from an **attachable** one (GitHub, Google: the useful act is choosing WHICH repositories or files). Pure; driven only by the availability payload's `attachable` list, with NO provider list in the client.
-- `features/connectors/attachments.service.ts` — `/api/connections/resources` + `/api/conversations/{id}/attachments` (list / attach / detach). Errors are raised, never swallowed into an empty list.
+- `features/connectors/attachments.service.ts` — `/api/connections/resources` + `/api/ai/conversations/{id}/attachments` (list / attach / detach). Every route template is `satisfies keyof paths` against the generated contract (the conversation routes live under aidream's `/ai` router — a hand-typed `/api/conversations/…` 404s silently, 2026-09-17). Errors are raised, never swallowed into an empty list; the failure sentence is the server's `detail.message` + `remedy`, or the status plus the route.
 - `features/connectors/redux/attachments.slice.ts` — `conversationAttachments`: landed `rows`, held `pending` picks, read status, write error.
 - `features/connectors/useConversationAttachments.ts` — the ONE container every attachment surface reads through, including the `/chat/new` handoff and the capability gate.
 - `features/connectors/ResourceAttachPicker.tsx` — the chooser. One picker for every provider; inventory providers filter locally, live providers search on a debounce and SAY they are searching.
@@ -170,6 +170,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **Every attachments read was a 404 — the client called a route the server does not mount.** `attachments.service.ts` hand-typed `/api/conversations/{id}/attachments`; aidream mounts the conversation routes under `/ai` and its compatibility middleware strips `/api`, so the request matched nothing and `conversationAttachments/load` rejected with "HTTP 404" on `/chat/30bfaeb4…` (Error Inspector, 2026-09-17). The route templates are now `satisfies keyof paths` against the generated contract (a route the server does not publish fails `pnpm type-check`), and the failure sentence is read once from the body — `detail.message` + `remedy` when aidream sends its structured error, the plain `detail` string otherwise, and the status plus the route when there is no detail (the old `.json()`-then-`.text()` read an already-consumed body, which is why the inspector saw a bare "HTTP 404"). Guard: `__tests__/attachments-client-speaks-the-contract.test.ts`. The `2026-09-15` "Pending" note below is superseded for the routes: they exist on `origin/main` (`aidream/api/routers/conversations.py`).
 - `2026-09-15` — **A connection you can choose things out of is not a
   connection you can only connect to.** Every chip in the composer rail and the
   Tools picker wore the same name-plus-state treatment, which is the whole
@@ -192,7 +193,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   `attachments-survive-the-new-chat-handoff.test.ts`,
   `nothing-is-read-when-nothing-is-attachable.test.tsx`. **Pending:** the
   aidream half of the contract (`/api/connections/resources`,
-  `/api/conversations/{id}/attachments`, and `attachable` on the availability
+  `/api/ai/conversations/{id}/attachments`, and `attachable` on the availability
   payload) was not on `origin/main` when this shipped, so nothing here has been
   exercised against a live server yet; the capability gate keeps the surfaces
   silent until it is.
