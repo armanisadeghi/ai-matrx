@@ -1,5 +1,23 @@
 # DB Change Proposal — Brand-owned offerings
 
+> 🚨 **REDIRECTED 2026-09-17 — `CFL-059`. Do not build the remaining steps of this proposal.**
+> **This document says:** `web.brand_offering` is the ONLY company-offering identity, and the way
+> to fix `seo.topic` is to move company offerings into it.
+> **[The topic-tree census](/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-17/topic-tree-census-and-collapse.md) and Arman's 2026-09-17 ruling say:** the SEO topical map
+> (`seo.map_topic`) is the platform's ONE topic primitive, and `web.brand_offering` is itself one
+> of the duplicate trees that collapses into it — all 161 of its rows have an exact name twin in
+> `seo.topic`, and one scheduled run writes both tables every morning 0.4 s apart.
+> **Why it matters:** this proposal's remaining steps move the same 15,655 keyword links into a
+> table that has to move again. They are the SAME work as the map's collapse steps 3 and 4, aimed
+> at the wrong destination.
+> **Your move:** stop here. Take the next step from
+> `common-docs/projects/table-provisioning/REGISTER.md` rows COLLAPSE-1…COLLAPSE-12, not from §5
+> or §7a below. Sections 1–4 and 7 (decisions D1–D10) remain accurate history and their reasoning
+> — brand ownership, explicit availability, copy-on-adopt, worth in points, no hardcoded org
+> defaults — carries over to the map unchanged. Bug fixes that protect live screens continue.
+> Register: `common-docs/operations/conflicts.md` · `CFL-059` (closed by delegation, 2026-09-17:
+> Arman delegated the sequencing call — *"I don't even know what it is so it's up to you"*).
+
 **One-liner:** Separate the platform suggestion catalog from brand-owned offerings and explicit site availability so no site can display or assign an offering it has not selected.
 **Change types:** canonicalize · split · migrate · modify
 **Status (2026-09-14 14:05 UTC, honest):** Steps 1–5 live since 2026-08-25. **Step 6 in progress.** Live on the new brand-offering model and verified: the value resolver (lossless, D9), every database placement, worth and availability writer, the aidream Topic Assigner and site valuer (which now PROPOSE an offering a site does not offer instead of adding it, D2, step 6g), the client doors, confirm-with-reason, the drift read, the keyword workbench and table Offering column, the Search Console queries table, the value workbench, the ruling session, the keyword dossier, both approval-queue placement kinds, the value receipts, and the Offerings screen itself (6h–6h3). **Not done:** the remaining readers (§7a), stopping the legacy dual-writes, the reverted live write test through the UI, and step 8 (retire).
@@ -62,6 +80,10 @@ Live-DB facts these shapes answer (verified 2026-08-25): `seo.topic` has 408 liv
 **What remains `seo.topic`:** only the genuine classification tree (`brand`, `problem`, `authority`, `reputation` — 33 live rows) and `seo.keyword_topic` rows pointing at it. The hardcoded org default, `is_builtin` semantics, and `service`/`product` node types are removed from it at retirement.
 
 ## 5. Plan — additive → cutover → retire
+
+> 🚨 **`CFL-059` — steps 6, 7 and 8 below are CANCELLED as written (2026-09-17).** The repoint and
+> the retirement happen once, into `seo.map_topic`, as collapse steps 5–11. See the stamp at the
+> top of this file.
 
 1. `[DB][reversible]` Create and certify `web.brand_offering` and `web.offering_template` exactly as shaped in §4 — no org default, org-scoped visibility default, trigger-enforced brand/org/parent consistency.
 2. `[DB][reversible]` Create and certify `web.site_offering` with exact `(site_id, brand_offering_id)` uniqueness. The row is the availability decision; no implicit brand-wide read substitutes for it.
