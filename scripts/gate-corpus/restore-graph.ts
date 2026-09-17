@@ -113,12 +113,25 @@ import pg from "pg";
 import { loadDbEnv } from "../lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef } from "../lib/migration-target";
 import { boundaryVerdict } from "./boundary-verdict";
+import { DOOR_MISSING_TOLERANCE, doorSurfaceVerdict } from "./door-surface";
 import {
   DEFAULT_MAX_BOUNDARY_AGE_HOURS,
   boundaryAgeVerdict,
   formatAgeHours,
   parseMaxBoundaryAgeHours,
 } from "./boundary-age";
+import {
+  type Marker,
+  type TableMergeCounts,
+  campaignOwnedPredicate,
+  countCampaignOwned,
+  countSpared,
+  emptyCounts,
+  mergeDeleteSql,
+  mergeInsertSql,
+  resolveMarker,
+  withSnapshotKeys,
+} from "./merge-plan";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -692,6 +705,17 @@ async function outsideFks(
   return out;
 }
 
+/** Every primary key the BRANCH currently holds for a table, in the copy's key shape. */
+async function branchKeysOf(branch: pg.Client, qualified: string): Promise<Set<string>> {
+  const pk = await pkOf(branch, qualified);
+  const rows = await branch.query(
+    `select ${pk.map((c) => `"${c}"::text as "${c}"`).join(", ")} from ${qualified}`,
+  );
+  return new Set(
+    rows.rows.map((r) => pk.map((c) => String((r as Record<string, unknown>)[c])).join(" ")),
+  );
+}
+
 async function pkOf(client: pg.Client, qualified: string): Promise<string[]> {
   const r = await client.query<{ attname: string }>(
     `select a.attname
@@ -897,6 +921,79 @@ async function mintSignInIdentities(prod: pg.Client, branch: pg.Client): Promise
 const RUN_SCHEMA = "restore_graph";
 const RUN_TABLE = `${RUN_SCHEMA}.run`;
 
+/**
+ * §13's RECEIPT. Created by `migrations/rehearsal/campaign_watch_refresh_run.sql`
+ * through the migration runner (`pnpm db:apply … --target branch`) and NOT by
+ * this script: `ensureRunTable` above is the older boundary table and predates
+ * the rule, but a table `W7-GATE` reads as its entry is campaign machinery, and
+ * campaign machinery is created by a file in `migrations/`, never by a script
+ * that happens to be running. A merge whose receipt table is missing REFUSES and
+ * names the file — it does not create it.
+ */
+const REFRESH_RUN_TABLE = "campaign_watch.refresh_run";
+const REFRESH_RUN_MIGRATION = "migrations/rehearsal/campaign_watch_refresh_run.sql";
+
+/**
+ * THE DOOR SURFACE, and why `--verify` fails on it (W0-DATA's row, 2026-09-17).
+ *
+ * A DB-wide event trigger REVOKES client EXECUTE on any SECURITY DEFINER
+ * function with no `platform.client_callable_door` row, INSIDE the GRANT itself.
+ * So a function production has added since the copy has no door row on the
+ * branch, its client EXECUTE grant silently does not stick, and an authenticated
+ * read against that surface answers `403 permission denied for function …` —
+ * with the schema exposed and every table grant in place. Nine wave-2 and wave-6
+ * lanes issue real HTTP reads against that surface hours before THE REFRESH
+ * would fix it, so the copy's door surface is compared on EVERY `--verify`.
+ *
+ * THE COMPARISON IS BY NAME AND BY DEFINITION HASH, never by count. A count
+ * cannot tell "production added five doors" from "five doors changed their
+ * policy and five were removed". The door's own name is its catalogue identity —
+ * `client_callable_door_catalog_identity_key` is UNIQUE on
+ * (schema_name, function_name, identity_argtypes) — and its DEFINITION is the
+ * policy the row states: who may call it, under what gate, with what reason.
+ *
+ * THE TWO VERDICTS, and they are deliberately not the same:
+ *   · a door production holds that the branch LACKS is the ageing the copy
+ *     cannot help — new functions land all day. W0-DATA's row allows FIVE and
+ *     fails by name past that, with "re-run the copy" as the printed remedy.
+ *   · a door both hold whose DEFINITION differs is not ageing, it is the branch
+ *     carrying a different policy from the one production enforces, and ONE is
+ *     too many. No tolerance.
+ */
+const DOOR_TABLE = "platform.client_callable_door";
+const DOOR_SURFACE_SQL =
+  `select schema_name || '.' || function_name || '(' || identity_args || ')' as door,
+          md5(coalesce(gate_predicate,'') || '|' || anonymous_callers::text || '|' ||
+              coalesce(anonymous_purpose,'') || '|' || signed_in_callers::text || '|' ||
+              coalesce(non_client_lane,'') || '|' || coalesce(reason,'')) as def_hash
+     from ${DOOR_TABLE}`;
+
+/**
+ * 🚨 THE NAME IS `identity_args`, NOT `identity_argtypes`, AND THAT IS THE WHOLE
+ * TRICK (measured 2026-09-17).
+ *
+ * `identity_argtypes` is `oid[]`, and a type OID MEANS NOTHING ACROSS TWO
+ * DATABASES. The copy writes production's OIDs onto the branch verbatim, so
+ * rendering them through `::regtype::text` resolves to production's types on
+ * production and to whatever happens to hold those OIDs on the branch — for a
+ * built-in type the numbers agree, for every custom one they do not, and
+ * `public.update_context_item` rendered as
+ *   (uuid,text,text,text,context_value_type,…)   on production
+ *   (uuid,text,text,text,1698626,…)              on the branch
+ * so twenty doors that are present on BOTH databases were reported missing from
+ * the branch, and the clause failed for a reason that had nothing to do with the
+ * door surface. `identity_args` is the declared argument list as TEXT — portable,
+ * unique per overload, and the string an operator would recognise.
+ */
+
+/**
+ * §13 point 4 names two tables, and it names them because they are the two the
+ * campaign's own lanes write into: `W1-REL` stores relations as associations,
+ * and every wave-3 to wave-6 lane writes the same two tables. They are also
+ * exactly the copy set's `replace` tables — the ones a bare re-run empties.
+ */
+const MARKER_TABLES = COPY_TABLES.filter((t) => t.policy === "replace").map((t) => t.table);
+
 async function ensureRunTable(branch: pg.Client): Promise<void> {
   await branch.query(`create schema if not exists ${RUN_SCHEMA}`);
   await branch.query(
@@ -1003,6 +1100,37 @@ async function assertCopyOrder(branch: pg.Client): Promise<string[]> {
 
 async function main(): Promise<number> {
   const verifyOnly = process.argv.includes("--verify");
+  // ── §13: THE REFRESH IS A MERGE, AND IT IS A DIFFERENT OPERATION ─────────
+  // Not a re-run of the first restore under another name. `--merge` upserts
+  // production's rows on each copied table's own primary key and deletes only
+  // rows the new snapshot lacks WHOSE MARKER SAYS THE CAMPAIGN DID NOT WRITE
+  // THEM; the first restore's `delete from` is what §13 exists to stop happening
+  // ninety minutes before the terminal gate.
+  const mergeMode = process.argv.includes("--merge");
+  // `W2-EPOCH`'s wave-2 rehearsal (§13.5) sets the flag `W7-GATE` requires.
+  const rehearsalFlag = process.argv.includes("--rehearsal");
+  const laneArg = process.argv.find((a) => a.startsWith("--lane="))?.slice("--lane=".length);
+  if (mergeMode && verifyOnly) {
+    console.error(
+      `${FAIL}--merge and --verify are different operations: one writes the branch, the other ` +
+        `only reads it. Run them one after the other, in §13's order: --merge, then run.ts, then ` +
+        `--verify.`,
+    );
+    return 2;
+  }
+  if (rehearsalFlag && !mergeMode) {
+    console.error(
+      `${FAIL}--rehearsal marks a MERGE as §13.5's wave-2 rehearsal in the receipt. There is no ` +
+        `receipt without --merge.`,
+    );
+    return 2;
+  }
+  if (mergeMode)
+    console.log(
+      `${C.bold}${INFO}--merge — THE REFRESH (BUILD-BOOK §13). Production's rows are UPSERTED on ` +
+        `each table's own primary key; nothing the campaign wrote is deleted or overwritten; one ` +
+        `receipt row lands in ${REFRESH_RUN_TABLE}.${C.reset}`,
+    );
   // Parsed BEFORE a connection is opened: a typo'd ceiling must refuse here, not
   // become the default halfway through a run that then reports itself green.
   let maxBoundaryAge: { hours: number; explicit: boolean };
@@ -1062,6 +1190,15 @@ async function main(): Promise<number> {
   /** production's primary keys per table, collected during the copy, so PROOF 3
    *  is an exact set comparison and not a count that two errors could cancel. */
   const copiedKeys = new Map<string, Set<string>>();
+  /** §13's marker, per MARKER table, resolved against the live branch table. */
+  const markers = new Map<string, Marker>();
+  /** What the merge did, per table — the receipt's `per_table`. */
+  const mergeCounts = new Map<string, TableMergeCounts>();
+  /** §13 point 4's two numbers, which `W7-GATE` requires to be EQUAL. */
+  const campaignBefore: Record<string, number> = {};
+  const campaignAfter: Record<string, number> = {};
+  /** Production's snapshot primary keys for the marker tables. */
+  const snapshotKeys = new Map<string, Set<string>>();
   let restoreGuardsRef: (() => Promise<void>) | undefined;
   const fail = (what: string) => {
     failures += 1;
@@ -1254,12 +1391,60 @@ async function main(): Promise<number> {
           `foreign key(s) whose RI triggers are internal ${C.dim}(both restored below)${C.reset}`,
       );
 
-      // ── Empty, then restore — the conflict policy, stated ─────────────────
-      for (const { table: t, policy } of [...COPY_TABLES].reverse()) {
-        if (policy !== "replace") continue;
-        const before = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
-        await branch.query(`delete from ${t}`);
-        console.log(`${INFO}${t}: replace — removed ${before} pre-existing branch row(s)`);
+      // ── THE TWO PATHS, and the whole of §13 is the difference between them ─
+      //
+      // THE FIRST RESTORE empties a `replace` table and refills it. That is
+      // correct exactly once — before any lane has written a row — and
+      // `W0-CORPUS`'s entry says so in those words.
+      //
+      // THE REFRESH (`--merge`) does not empty anything. It upserts production's
+      // rows on the table's own primary key and deletes only what the new
+      // snapshot lacks and the marker says the campaign did not write.
+      if (!mergeMode) {
+        for (const { table: t, policy } of [...COPY_TABLES].reverse()) {
+          if (policy !== "replace") continue;
+          const before = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${t}`)).rows[0]!.n);
+          await branch.query(`delete from ${t}`);
+          console.log(`${INFO}${t}: replace — removed ${before} pre-existing branch row(s)`);
+        }
+      } else {
+        for (const t of MARKER_TABLES) {
+          const pk = await pkOf(prod, t);
+          // Read inside the SAME repeatable-read snapshot every count came from,
+          // so "production does not hold this key" means it at one instant and
+          // not across a moving read.
+          const keyRows = await prod.query(
+            `select ${pk.map((c) => `"${c}"::text as "${c}"`).join(", ")} from ${t}`,
+          );
+          snapshotKeys.set(
+            t,
+            new Set(
+              keyRows.rows.map((r) =>
+                pk.map((c) => String((r as Record<string, unknown>)[c])).join(" "),
+              ),
+            ),
+          );
+          const marker = await resolveMarker(branch, t);
+          markers.set(t, marker);
+          campaignBefore[t] = await countCampaignOwned(
+            branch,
+            t,
+            marker,
+            () => branchKeysOf(branch, t),
+            snapshotKeys.get(t)!,
+          );
+          if (marker.kind === "origin-column")
+            console.log(
+              `${OK}${t.padEnd(30)} marker ${C.bold}${marker.column} = '${marker.value}'${C.reset} ` +
+                `(§13's own) — ${campaignBefore[t]} campaign-owned row(s) before the merge, and ` +
+                `neither the upsert nor the delete may touch one`,
+            );
+          else
+            console.log(
+              `${C.yellow}[WARN]${C.reset} ${t}: ${marker.because} ${campaignBefore[t]} row(s) ` +
+                `are campaign-owned under that rule before the merge.`,
+            );
+        }
       }
 
       for (const entry of COPY_TABLES) {
@@ -1366,8 +1551,13 @@ async function main(): Promise<number> {
           .filter((c) => !pk.includes(c.name))
           .map((c) => `"${c.name}" = excluded."${c.name}"`)
           .join(", ");
+        // In MERGE mode every table is upserted, `replace` included, so every
+        // table needs the natural-key reconciliation an upsert needs — a
+        // production row that is NEW by id and collides by natural key with a
+        // branch row raises 23505 and takes the run down (measured 2026-09-16 on
+        // `iam.permissions`).
         const secondaryUniques =
-          policy === "upsert" ? await secondaryUniquesOf(prod, t, pk) : [];
+          policy === "upsert" || mergeMode ? await secondaryUniquesOf(prod, t, pk) : [];
         // A SYNTHESISED value that lands in a UNIQUE index must still be unique,
         // and "it is derived from a UUID so of course it is" is exactly the
         // assumption that aborts a copy halfway through on 23505. Asked of
@@ -1466,23 +1656,72 @@ async function main(): Promise<number> {
             });
             const on = ukCols.map((c) => `b."${c}" = p."${c}"`).join(" and ");
             const differs = pk.map((c) => `b."${c}" is distinct from p."${c}"`).join(" or ");
+            // 🚨 THIS DELETE IS A DELETE, and §13 forbids deleting a row the
+            // campaign wrote — including this way. `platform.associations`
+            // carries `associations_unique`, so a campaign-written association
+            // CAN collide by natural key with an incoming production row under a
+            // different id, and today's code would have removed it silently.
+            //
+            // With §13's marker the delete simply excludes campaign rows. WITHOUT
+            // it — the fallback marker cannot be written as a predicate over the
+            // row — the displacement is SKIPPED ENTIRELY on a marker table and
+            // the incoming row is left to fail loudly on 23505. A merge that
+            // aborts is recoverable; a campaign graph deleted quietly is not.
+            const marker = markers.get(t);
+            const keep = mergeMode && marker ? campaignOwnedPredicate(marker, "b") : null;
+            if (mergeMode && marker && !keep) {
+              if (offset === 0)
+                console.log(
+                `${C.yellow}[WARN]${C.reset} ${t}: the natural-key displacement for ` +
+                  `(${uk.join(", ")}) is SKIPPED this run — with no \`${"origin"}\` column there is ` +
+                  `no way to tell a campaign row from a stale production one, and this merge will ` +
+                  `not guess. A genuine collision fails 23505 and rolls the whole merge back.`,
+                );
+              continue;
+            }
             const res = await branch.query(
               `delete from ${t} b using (values ${dTuples.join(",")}) ` +
-                `as p(${carried.map((c) => `"${c}"`).join(", ")}) where ${on} and (${differs})`,
+                `as p(${carried.map((c) => `"${c}"`).join(", ")}) where ${on} and (${differs})` +
+                (keep ? ` and not (${keep})` : ""),
               dv,
             );
             displaced += res.rowCount ?? 0;
           }
-          const conflict =
-            policy === "upsert" && setList
-              ? ` on conflict (${pkQuoted}) do update set ${setList}`
-              : policy === "upsert"
-                ? ` on conflict (${pkQuoted}) do nothing`
-                : "";
-          await branch.query(
-            `insert into ${t} (${quoted}) values ${tuples.join(",")}${conflict}`,
-            values,
-          );
+          if (mergeMode) {
+            // §13 point 2. EVERY table is upserted on its OWN primary key —
+            // `replace` included, because a merge does not empty anything — and
+            // the `do update` carries the marker, so a row the campaign wrote is
+            // returned by nothing and changed by nothing.
+            const res = await branch.query<{ inserted: boolean }>(
+              mergeInsertSql({
+                table: t,
+                quotedColumns: quoted,
+                quotedPk: pkQuoted,
+                setList,
+                tuples: tuples.join(","),
+                marker: markers.get(t) ?? { kind: "absent-from-production-snapshot", because: "" },
+              }),
+              values,
+            );
+            const counts = mergeCounts.get(t) ?? emptyCounts();
+            for (const row of res.rows) row.inserted ? (counts.inserted += 1) : (counts.updated += 1);
+            // A row of this batch that came back from nothing is a row the
+            // marker's WHERE refused to overwrite. That is the number §13 point 2
+            // is about, and it is measured rather than inferred.
+            counts.skipped_conflict += page.rows.length - res.rows.length;
+            mergeCounts.set(t, counts);
+          } else {
+            const conflict =
+              policy === "upsert" && setList
+                ? ` on conflict (${pkQuoted}) do update set ${setList}`
+                : policy === "upsert"
+                  ? ` on conflict (${pkQuoted}) do nothing`
+                  : "";
+            await branch.query(
+              `insert into ${t} (${quoted}) values ${tuples.join(",")}${conflict}`,
+              values,
+            );
+          }
           copied += page.rows.length;
         }
         copiedKeys.set(t, prodKeys);
@@ -1533,6 +1772,120 @@ async function main(): Promise<number> {
             );
           }
         }
+      }
+
+      // ── §13 point 2, second half: what the new snapshot no longer holds ────
+      //
+      // The ONLY deletion a merge performs. It removes a row production has
+      // dropped since the copy — and it removes it only when the marker says the
+      // campaign did not write it. Under the fallback marker there is no such
+      // predicate and therefore NO DELETE AT ALL: the branch keeps a row
+      // production has dropped, which is a stale row, and a stale row is
+      // recoverable where a deleted campaign graph is not.
+      if (mergeMode) {
+        for (const t of MARKER_TABLES) {
+          const marker = markers.get(t)!;
+          const counts = mergeCounts.get(t) ?? emptyCounts();
+          const pk = await pkOf(branch, t);
+          const cols = await columnsOf(branch, t);
+          const pkTypes = pk.map((c) => cols.find((x) => x.name === c)!.typ);
+          const keysTable = await withSnapshotKeys(branch, t, pk, pkTypes, snapshotKeys.get(t)!);
+          const sql = mergeDeleteSql({ table: t, pk, keysTable, marker });
+          if (!sql) {
+            console.log(
+              `${C.yellow}[WARN]${C.reset} ${t}: the merge deleted NOTHING. ` +
+                `${marker.kind === "origin-column" ? "" : marker.because} ` +
+                `Remedy: once W1-REL has landed \`origin\`, this same command deletes exactly the ` +
+                `rows production no longer holds and nothing else.`,
+            );
+          } else {
+            const res = await branch.query(sql);
+            counts.deleted = res.rowCount ?? 0;
+            console.log(
+              `${OK}${t.padEnd(30)} merge — deleted ${counts.deleted} row(s) production's new ` +
+                `snapshot no longer holds, every one of them with ` +
+                `${marker.kind === "origin-column" ? `${marker.column} distinct from '${marker.value}'` : "no marker"}`,
+            );
+          }
+          // §13 point 2's number: campaign-owned rows the delete phase SPARED.
+          // Under the fallback marker that is every row absent from production's
+          // new snapshot, which is also `campaignAfter` — computed once, below,
+          // and handed in rather than derived twice.
+          const branchNow = await branchKeysOf(branch, t);
+          let absentFromSnapshot = 0;
+          for (const k of branchNow) if (!snapshotKeys.get(t)!.has(k)) absentFromSnapshot += 1;
+          counts.skipped_campaign_owned = await countSpared(
+            branch,
+            t,
+            marker,
+            keysTable,
+            absentFromSnapshot,
+          );
+          mergeCounts.set(t, counts);
+          campaignAfter[t] = await countCampaignOwned(
+            branch,
+            t,
+            marker,
+            () => branchKeysOf(branch, t),
+            snapshotKeys.get(t)!,
+          );
+          const before = campaignBefore[t] ?? 0;
+          const after = campaignAfter[t] ?? 0;
+          if (after !== before)
+            fail(
+              `§13: ${t} held ${before} campaign-owned row(s) before the merge and ${after} after. ` +
+                `A merge that changes that number has deleted or overwritten something the ` +
+                `campaign wrote, which is the one thing THE REFRESH exists to make impossible. ` +
+                `The whole merge is rolled back below.`,
+            );
+          else
+            console.log(
+              `${OK}${t.padEnd(30)} campaign-owned rows ${before} → ${after} — unchanged by the ` +
+                `merge (${counts.inserted} production row(s) inserted, ${counts.updated} updated, ` +
+                `${counts.skipped_campaign_owned} left untouched as campaign-owned)`,
+            );
+        }
+        if (failures)
+          throw new Error(
+            `the merge did not preserve the campaign's own rows — rolling back so the branch is ` +
+              `exactly as it was found`,
+          );
+        // ── §13 point 4: THE RECEIPT, and it is what the gate reads ──────────
+        // Inside the merge's own transaction, so a receipt exists if and only if
+        // the merge it describes committed.
+        const haveReceipt = await branch.query<{ n: string }>(
+          `select count(*)::text n from information_schema.tables
+            where table_schema = 'campaign_watch' and table_name = 'refresh_run'`,
+        );
+        if (haveReceipt.rows[0]!.n === "0")
+          throw new Error(
+            `${REFRESH_RUN_TABLE} does not exist on this branch, and this script does not create ` +
+              `it: W7-GATE's entry is campaign machinery and campaign machinery is created by a ` +
+              `migration. Remedy: pnpm db:apply ${REFRESH_RUN_MIGRATION} --target branch`,
+          );
+        const perTable: Record<string, TableMergeCounts> = {};
+        for (const [t, c] of mergeCounts) perTable[t] = c;
+        const markerLabels = [...new Set([...markers.values()].map((m) => m.kind))];
+        await branch.query(
+          `insert into ${REFRESH_RUN_TABLE}
+             (lane, prod_snapshot, prod_taken_at, marker, per_table,
+              campaign_rows_before, campaign_rows_after, rehearsed_in_wave_2)
+           values ($1, $2, $3::timestamptz, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8)`,
+          [
+            laneArg ?? null,
+            snap.snapshot,
+            snap.takenAt,
+            markerLabels.join("+"),
+            JSON.stringify(perTable),
+            JSON.stringify(campaignBefore),
+            JSON.stringify(campaignAfter),
+            rehearsalFlag,
+          ],
+        );
+        console.log(
+          `${OK}receipt written to ${REFRESH_RUN_TABLE} — snapshot ${snap.snapshot}, marker ` +
+            `${markerLabels.join("+")}, rehearsed_in_wave_2 ${rehearsalFlag}. W7-GATE reads this row.`,
+        );
       }
 
       // ── Put everything back, then PROVE it is back ────────────────────────
@@ -1690,8 +2043,47 @@ async function main(): Promise<number> {
         extrasKept[t] = extra.length;
         if (missing.length)
           fail(`${t}: ${missing.length} row(s) production held at the snapshot are absent from the branch (e.g. ${missing[0]?.replace(/\u0000/g, "|")})`);
-        else if (policy === "replace" && extra.length)
+        else if (policy === "replace" && !mergeMode && extra.length)
           fail(`${t}: ${extra.length} branch row(s) production does not hold — a replace table must be exactly production's (e.g. ${extra[0]?.replace(/\u0000/g, "|")})`);
+        else if (policy === "replace" && mergeMode && extra.length) {
+          // A MERGE is ALLOWED to leave rows production does not hold — that is
+          // the whole point of §13 — but only rows the CAMPAIGN owns. Under
+          // §13's own marker an extra carrying no marker is a row nobody can
+          // account for, and it fails by name. Under the FALLBACK marker every
+          // extra is campaign-owned by that marker's own definition, so the line
+          // proves less than it will once `origin` exists — and it SAYS SO
+          // rather than reading like a pass it has not earned.
+          const marker = markers.get(t)!;
+          const owned = campaignOwnedPredicate(marker, t.split(".").pop()!);
+          if (marker.kind === "origin-column" && owned) {
+            const alias = t.split(".").pop();
+            const unmarked = Number(
+              (
+                await branch.query<{ n: string }>(
+                  `select count(*)::text n from ${t} as ${alias} where not (${owned})`,
+                )
+              ).rows[0]!.n,
+            );
+            // Every row that is NOT campaign-marked must be one of production's
+            // snapshot rows; anything left over is a row nobody can account for.
+            const unaccounted = unmarked - (prodKeys.size - missing.length);
+            if (unaccounted > 0)
+              fail(
+                `${t}: ${unaccounted} branch row(s) are neither in production's snapshot nor ` +
+                  `marked ${marker.column} = '${marker.value}' — the merge cannot account for them.`,
+              );
+            else
+              console.log(
+                `${OK}${t.padEnd(30)} all ${prodKeys.size} snapshot row(s) present, +${extra.length} ` +
+                  `campaign-owned row(s) kept by the merge`,
+              );
+          } else
+            console.log(
+              `${OK}${t.padEnd(30)} all ${prodKeys.size} snapshot row(s) present, +${extra.length} ` +
+                `row(s) production does not hold — campaign-owned BY THE FALLBACK MARKER'S OWN ` +
+                `DEFINITION, which is weaker than §13's and tightens when W1-REL lands the origin column`,
+            );
+        }
         else
           console.log(
             `${OK}${t.padEnd(30)} all ${prodKeys.size} snapshot row(s) present` +
@@ -1702,7 +2094,14 @@ async function main(): Promise<number> {
         const n = Number((await branch.query<{ n: string }>(`select count(*)::text n from ${view}`)).rows[0]!.n);
         const want = snap.counts[view]!;
         const policy = COPY_TABLES.find((c) => c.table === base)?.policy;
-        const slack = policy === "upsert" ? (extrasKept[base] ?? 0) : 0;
+        // A `replace` base is exact ONLY on the first restore. After §13's MERGE
+        // it keeps the campaign's own rows, so its views derive production's
+        // count PLUS however many of those extras satisfy them — the same range
+        // an `upsert` base has always had, for the same reason (measured
+        // 2026-09-17: the first merge run derived 6,199 containment edges
+        // against production's 6,191 and failed a rule written for a table that
+        // is emptied first).
+        const slack = policy === "upsert" || mergeMode ? (extrasKept[base] ?? 0) : 0;
         extrasKept[view] = n - want;
         if (n < want || n > want + slack)
           fail(
@@ -1710,7 +2109,7 @@ async function main(): Promise<number> {
               `held ${want}` +
               (slack
                 ? ` and ${base} kept ${slack} branch-only row(s), so anything from ${want} to ${want + slack} is honest — ${n} is not`
-                : ` and ${base} is a \`replace\` table, so the count must be exact`),
+                : ` and ${base} was emptied and refilled, so the count must be exact`),
           );
         else
           console.log(
@@ -1775,6 +2174,22 @@ async function main(): Promise<number> {
           else fail(verdict.message);
         }
       }
+    }
+
+    // ── THE DOOR SURFACE — `--verify` only, and by NAME, never by count ─────
+    // See DOOR_TABLE above for why a missing door row is not a cosmetic drift.
+    // Production is read here, deliberately: this is the ONE clause that must
+    // compare the copy to the world as it is NOW rather than to the recorded
+    // boundary, because the harm — a client EXECUTE grant that does not stick —
+    // is caused by the gap between them and by nothing else. It is a SELECT.
+    if (verifyOnly) {
+      const read = async (c: pg.Client) => {
+        const r = await c.query<{ door: string; def_hash: string }>(DOOR_SURFACE_SQL);
+        return new Map(r.rows.map((x) => [x.door, x.def_hash] as const));
+      };
+      const verdict = doorSurfaceVerdict(await read(prod), await read(branch), DOOR_MISSING_TOLERANCE);
+      if (verdict.ok) console.log(`${OK}${verdict.message}`);
+      else fail(verdict.message);
     }
 
     // ── PROOF 4: THE ANTI-VACUITY FLOOR — the access half is not empty ──────
