@@ -893,7 +893,10 @@ holds the shapes.
   "this record does not hold it" when it does not. `service.ts` writes that as
   `metadata.cc_attribution` and `GmailSentRecordDetails` prints it, so a second
   customer's address on a Person's timeline says what it is instead of sitting
-  there unexplained (R2 N9). Still open, and named: a Cc'd Person gets no row on
+  there unexplained (R2 N9) — on BOTH paths since 2026-09-17: the approval queue's
+  `gmail_send` kind passed no `sentCc` at all, so an agent-proposed send recorded a
+  stranger's address with nothing saying whose it was, while the compose panel
+  attributed it. Still open, and named: a Cc'd Person gets no row on
   her OWN timeline — resolving an address to a second Person is the Contacts
   import's job and is not done here.
 - **`channel = gmail` is `channel_code = 'email'` + `provider = 'gmail'`.**
@@ -917,6 +920,19 @@ holds the shapes.
   `narrowGmailSendReceipt(response.data)` — including the body, which the card
   now returns for exactly this reason. A record built from the pre-review draft
   attests to a message nobody received.
+- 🚨 **AND THE RECEIPT'S ADDRESSES ARE THE ONES GOOGLE GOT, not the ones typed.**
+  `POST /gmail/send-reviewed` answers `to` and `cc` as the server's own recipient
+  parser read them — bare addresses, display names stripped (aidream lane B-10,
+  VERIFY-B1-B2-R2 N2) — `sendReviewedGmail` returns them as a
+  `ReviewedGmailReceipt`, and the card reports THOSE in its ask. Everything
+  downstream is judged against them: whose timeline the row may land on, which
+  contact point, the Cc attribution, `metadata.to` / `metadata.cc`. The card used
+  to report its typed field, so `Ada Lovelace <ada@example.com>` — delivered to
+  `ada@example.com` — was judged as a string no Person holds and the message to the
+  open record's own address was recorded against nobody. A server that answers no
+  addresses is older than that change: the typed field stands in and the stand-in
+  announces itself in the console with the remedy. Guard:
+  `features/google-workspace/agent/the-card-sends-and-reports-real-addresses.test.tsx`.
 - **The gate runs at Send time, on the card's own recipients.** The compose
   step's check is about the address in ITS To field; the card's `preflight` prop
   is the last gate and covers To *and* Cc, failing CLOSED when the checks cannot

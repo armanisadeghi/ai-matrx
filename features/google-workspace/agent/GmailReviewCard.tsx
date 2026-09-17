@@ -31,6 +31,7 @@ import {
 import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schemas";
 import { AgentCardShell } from "@/features/agents/ui-first-tools/ui/AgentCardShell";
 import { sendReviewedGmail } from "@/features/google-workspace/service";
+import { splitMailboxField } from "@/features/crm/gmail/mailbox";
 import { extractErrorMessage } from "@/utils/errors";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
@@ -66,13 +67,6 @@ interface GmailReviewCardProps {
     body: string;
     connectionId: string;
   }) => Promise<string | null>;
-}
-
-function parseAddressList(raw: string): string[] {
-  return raw
-    .split(/[,;]/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
 }
 
 export function GmailReviewCard({ ask, preflight }: GmailReviewCardProps) {
@@ -132,7 +126,16 @@ export function GmailReviewCard({ ask, preflight }: GmailReviewCardProps) {
     if (!draft || !selectedMailbox || sending || !canSend) return;
     setSending(true);
     setError(null);
-    const ccList = parseAddressList(cc);
+    /**
+     * 🚨 ONE PARSER FOR A RECIPIENT FIELD (`features/crm/gmail/mailbox.ts`).
+     * This card used to split on every comma, so `"Doe, John" <john@x.com>` —
+     * the form every mail client prints — became two pieces that the send
+     * authority could not read, and it fails CLOSED: the message was refused in
+     * words that blamed the person's own address. `splitMailboxField` honours
+     * quotes and angle brackets, and each piece keeps the form it was written in
+     * (the gate and the server both parse it).
+     */
+    const ccList = splitMailboxField(cc);
     try {
       // THE GATE, on what is on screen right now, before anything is posted.
       if (preflight) {
@@ -150,20 +153,39 @@ export function GmailReviewCard({ ask, preflight }: GmailReviewCardProps) {
         }
       }
       // The exact bytes on screen — not the agent's arguments.
-      const messageId = await sendReviewedGmail({
+      const receipt = await sendReviewedGmail({
         connectionId: selectedMailbox.id,
         to: to.trim(),
         cc: ccList,
         subject,
         body,
       });
+      /**
+       * 🚨 WHO GOOGLE ACTUALLY GOT, as the server's own parser read it (aidream
+       * lane B-10, VERIFY-B1-B2-R2 N2). The CRM records the sent message against
+       * the Person holding the DELIVERED address, and this card used to report
+       * the typed field: `Ada Lovelace <ada@example.com>` was delivered to
+       * `ada@example.com` while the record was judged against the whole string,
+       * so a message to the open record's own address was recorded against
+       * nobody. A server that answers no addresses is a server older than that
+       * change — the typed field stands in, and the stand-in says so, because a
+       * silent one is the defect coming back.
+       */
+      const delivered = receipt.to?.trim() ? receipt.to : null;
+      if (delivered === null) {
+        console.warn(
+          "[gmail] /gmail/send-reviewed answered no delivered addresses, so the " +
+            "sent record is judged against the typed field. Deploy aidream's " +
+            "reviewed-send receipt (to / cc) to close this.",
+        );
+      }
       finish({
         ...EMPTY_ASK_RESPONSE,
         confirmed: true,
         data: {
-          message_id: messageId,
-          to: to.trim(),
-          cc: ccList,
+          message_id: receipt.messageId,
+          to: delivered ?? to.trim(),
+          cc: receipt.cc ?? ccList,
           subject,
           // 🚨 THE BODY IS PART OF THE RECEIPT. Every field here is editable,
           // so the caller's original draft is NOT what left — and a caller

@@ -275,6 +275,11 @@ async function recordProposalOnTimeline(
    */
   const integrity = assessGmailRecipientIntegrity({
     sentTo: receipt.to,
+    // 🚨 A Cc IS A RECIPIENT HERE TOO. The compose panel attributed every
+    // copied-to address onto the row (VERIFY-B1-B2-R2 N9 / break D) and this path
+    // passed none, so an agent-proposed send could put a second customer's
+    // address on a Person's timeline with nothing saying whose it was.
+    sentCc: receipt.cc,
     source: {
       kind: "proposal",
       proposedAddress: payload.to,
@@ -295,6 +300,7 @@ async function recordProposalOnTimeline(
       dealId: payload.dealId ?? null,
       contactPointId: integrity.contactPointId,
       mediumId: integrity.mediumId,
+      ccAttribution: integrity.cc,
     },
     approvedByUserId: approverId,
     draftedBy: {

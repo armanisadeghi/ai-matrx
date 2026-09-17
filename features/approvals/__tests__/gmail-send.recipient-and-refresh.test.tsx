@@ -28,7 +28,16 @@ const resolvers = new Map<string, Resolver>();
  * these tests read it. Typed so `mock.calls` is typed too — a cast there is how
  * a test starts asserting about a shape the code does not pass. */
 type RecordInteractionArgs = {
-  association: { partyId: string; contactPointId: string | null };
+  association: {
+    partyId: string;
+    contactPointId: string | null;
+    ccAttribution?: {
+      address: string;
+      contactPointId: string | null;
+      mediumId: string | null;
+      heldByThisRecord: boolean;
+    }[];
+  };
 };
 const mockRecordInteraction = jest.fn(
   async (_args: RecordInteractionArgs) => ({ failure: null }),
@@ -75,7 +84,11 @@ jest.mock("@/features/crm/gmail/service", () => ({
       messageId: String(row.message_id),
       connectionId,
       to: String(row.to),
-      cc: [],
+      // The card reports every address the SERVER says it delivered to, Cc
+      // included, so the stand-in carries them instead of dropping them.
+      cc: Array.isArray(row.cc)
+        ? row.cc.filter((entry): entry is string => typeof entry === "string")
+        : [],
       subject: "s",
       body: "b",
       fromEmail: null,
@@ -233,6 +246,41 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
     const call = mockRecordInteraction.mock.calls[0]?.[0];
     expect(call?.association.partyId).toBe("party-1");
     expect(call?.association.contactPointId).toBe("cp-1");
+  });
+
+  /**
+   * 🚨 A Cc IS A RECIPIENT ON THIS PATH TOO. The compose panel attributed every
+   * copied-to address onto the row (VERIFY-B1-B2-R2 N9 / break D) and this one
+   * did not pass `sentCc` at all, so an agent-proposed send put a second
+   * customer's address on a Person's timeline with nothing saying whose it was.
+   * One primitive, both paths, same answer.
+   */
+  it("attributes every Cc the card reported, held or not", async () => {
+    await render();
+    const resolve = resolvers.get(currentCallId());
+
+    await act(async () => {
+      resolve?.({
+        confirmed: true,
+        data: {
+          message_id: "m3",
+          to: "sam@example.com",
+          cc: ["stranger@elsewhere.com"],
+        },
+      });
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    const call = mockRecordInteraction.mock.calls[0]?.[0];
+    expect(call?.association.ccAttribution).toEqual([
+      {
+        address: "stranger@elsewhere.com",
+        contactPointId: null,
+        mediumId: null,
+        heldByThisRecord: false,
+      },
+    ]);
   });
 
   it("records a changed recipient on NO record, and says so with the address", async () => {

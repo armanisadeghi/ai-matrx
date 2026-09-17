@@ -359,7 +359,7 @@ export function GoogleWorkspaceReviewWorkspace({
     if (!activeConnection || !emailConfirmed) return;
     void run("send-email", async () => {
       rememberGoogleConnection("gmail-send", activeConnection.id);
-      const messageId = await sendReviewedGmail({
+      const receipt = await sendReviewedGmail({
         connectionId: activeConnection.id,
         to: emailTo,
         cc: emailCc
@@ -370,7 +370,10 @@ export function GoogleWorkspaceReviewWorkspace({
         body: emailBody,
       });
       setEmailConfirmed(false);
-      toast.success(`Gmail sent (message ${messageId}).`);
+      // The server says who it reached; this bench shows it, because "sent" with
+      // no recipient is exactly the claim lane B-10 made checkable.
+      const reached = receipt.to ?? emailTo;
+      toast.success(`Gmail sent to ${reached} (message ${receipt.messageId}).`);
     });
   };
 

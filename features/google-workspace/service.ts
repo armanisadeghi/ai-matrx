@@ -4,6 +4,7 @@ import type {
   GoogleDocumentContent,
   GoogleSheetValues,
   ReviewedGmailDraft,
+  ReviewedGmailReceipt,
   SelectedGoogleFile,
 } from "@/features/google-workspace/types";
 
@@ -276,9 +277,24 @@ export async function writeGoogleSheet(
   return writeOutcome(response, sheetValues);
 }
 
+/**
+ * Send exactly the reviewed bytes, and report WHO THE SERVER SAYS IT REACHED.
+ *
+ * 🚨 THE DELIVERED ADDRESSES ARE PART OF THE ANSWER (aidream lane B-10,
+ * `/projects/google-native/VERIFY-B1-B2-R2.md` N2). `POST /gmail/send-reviewed`
+ * answers `to` and `cc` as its ONE recipient parser read them — bare addresses,
+ * display names stripped — because the CRM records the sent message against the
+ * Person holding the DELIVERED address. `Ada <ada@example.com>` was delivered to
+ * `ada@example.com` while the record was judged against the typed string, so a
+ * message to the open record's own address was recorded against nobody.
+ *
+ * A server that answers no addresses (one older than that change) returns them
+ * `null`, and the caller stands in the field the person typed — announcing the
+ * stand-in, never silently reintroducing the defect.
+ */
 export async function sendReviewedGmail(
   draft: ReviewedGmailDraft,
-): Promise<string> {
+): Promise<ReviewedGmailReceipt> {
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/send-reviewed",
     {
@@ -291,5 +307,16 @@ export async function sendReviewedGmail(
     },
     "Unable to send the reviewed Gmail message.",
   );
-  return requiredString(await responseRecord(response), "message_id");
+  const record = await responseRecord(response);
+  const cc = Array.isArray(record.cc)
+    ? record.cc.filter((entry): entry is string => typeof entry === "string")
+    : null;
+  return {
+    messageId: requiredString(record, "message_id"),
+    to:
+      typeof record.to === "string" && record.to.trim().length > 0
+        ? record.to
+        : null,
+    cc,
+  };
 }

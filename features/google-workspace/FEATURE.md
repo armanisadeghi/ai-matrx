@@ -72,6 +72,21 @@ path that sends without a click; approval covers ONE message. On the server side
 the tool has no executor binding at all, so an agent cannot assert consent even
 in principle. Preview every state at `/demos/agent-cards`.
 
+🚨 **THE CARD PARSES RECIPIENT FIELDS WITH THE ONE PARSER, AND REPORTS WHO GOOGLE
+GOT.** Its Cc goes through `splitMailboxField` from `features/crm/gmail/mailbox.ts`
+— quotes and angle brackets honoured — because it used to keep a private splitter
+that cut on every comma, so `"Doe, John" <john@x.com>` reached the Send-time gate
+as two unreadable pieces and the gate, which fails closed, refused the message in
+words that blamed the person's own address. And `sendReviewedGmail` returns a
+`ReviewedGmailReceipt`: the server answers the addresses its own parser DELIVERED
+to (aidream lane B-10, `/projects/google-native/VERIFY-B1-B2-R2.md` N2), the card
+resolves its ask with those, and the CRM therefore records the sent message
+against the Person who actually holds the address — `Ada Lovelace
+<ada@example.com>` used to be judged as a string no Person holds. A server that
+answers no addresses is older than that change: the typed field stands in and says
+so in the console. Guard:
+`agent/the-card-sends-and-reports-real-addresses.test.tsx`.
+
 ## The in-app half — `export/sendToGoogle.ts`
 
 The ONE path any surface uses to push what the user is looking at into their own
@@ -182,6 +197,23 @@ attachment it cannot open. Server half:
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-17` — **one recipient parser, and the reviewed send says who it
+  reached** (lane F-25, closing the seam F-20 flagged plus aidream lane B-10's
+  N2). `GmailReviewCard`'s private `parseAddressList` is DELETED: it split Cc on
+  every comma, so `"Doe, John" <john@x.com>` arrived at the Send-time gate as
+  `"Doe` and `John" <john@x.com>`, the gate could read neither, and — failing
+  closed, correctly — it refused the send with "\"Doe\" is not an email address
+  this can read". The card now uses `splitMailboxField` from
+  `features/crm/gmail/mailbox.ts`, the ONE parser, and a genuinely unreadable
+  field still refuses: the parse got better, not laxer. And `sendReviewedGmail`
+  returns a `ReviewedGmailReceipt` (`messageId` + the `to`/`cc` the server's own
+  parser delivered to, `null` from an older server) which the card reports in its
+  ask, so the CRM's sent record, its contact point, its Cc attribution and its
+  metadata are all judged against what Google got rather than what was typed;
+  `GoogleWorkspaceReviewWorkspace`'s toast names the delivered address too. Guard:
+  `agent/the-card-sends-and-reports-real-addresses.test.tsx` (5 cases, red first —
+  the RED was the refusal sentence above).
 
 - `2026-09-17` — **the autonomy knob now reaches a person's own Google writes**
   (lane F-14, round-2 verification § A-vii). `service.ts`'s four write calls
