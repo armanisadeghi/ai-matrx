@@ -53,7 +53,6 @@ import {
   emptyProviderIntegration,
   parseSiteIntegrations,
   providerReferenceStatus,
-  validateSiteIntegrations,
   type BuiltInProviderKey,
   type CredentialAuthority,
   type CustomProviderIntegrationDraft,
@@ -93,8 +92,10 @@ import {
   preflightGscProperty,
   shouldStartGscFirstImport,
 } from "@/features/marketing/google/gsc-property";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
 import {
-  gscConfigurationIssues,
+  integrationsWriteIssues,
+  integrationsWriteRefusal,
   providerActionDisabled,
   providerIssueMessages,
 } from "@/features/marketing/components/integrations/integration-issues";
@@ -315,8 +316,9 @@ function SiteIntegrationsEditor({
   // the rule itself lives in `integration-issues.ts`, under test.
   const issues = useMemo(
     () => [
-      ...validateSiteIntegrations(draft),
-      ...gscConfigurationIssues(draft, {
+      // ONE list, from the ONE judge every write path asks
+      // (`integrationsWriteIssues`) — including the page-level Save below.
+      ...integrationsWriteIssues(draft, {
         root_url: site.root_url,
         domain: site.domain,
       }),
@@ -331,9 +333,12 @@ function SiteIntegrationsEditor({
     ],
     [draft, ga4BindingDiagnosis, site.root_url, site.domain],
   );
-  const visibleIssues = reviewMode
-    ? issues.filter((issue) => issue.field.startsWith("googleAnalytics4"))
-    : issues;
+  // NOTHING THAT BLOCKS THE SAVE IS EVER HIDDEN (round-2 verdict NEW-B6). This
+  // used to filter the list to `googleAnalytics4` in review mode while `save()`
+  // gated on the FILTERED list, so a pre-existing Search Console mismatch was
+  // invisible AND re-saved unjudged from that surface. Every issue that stops a
+  // write is on screen, on every surface, with its Fix door below.
+  const visibleIssues = issues;
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const update = useMutation({
     mutationFn: updateSiteIntegrations,
@@ -528,11 +533,10 @@ function SiteIntegrationsEditor({
       // site, so it wins over any URL-prefix match whenever Google returns
       // it. `.find` over an unordered inventory used to pick whichever
       // matching version happened to come back first.
-      const matchingSearch = preferredGscProperty(
-        resources,
-        connectionId,
-        site.domain,
-      );
+      const matchingSearch = preferredGscProperty(resources, connectionId, {
+        root_url: site.root_url,
+        domain: site.domain,
+      });
       const nextGoogleSearchConsole: ProviderIntegrationDraft = {
         ...draft.googleSearchConsole,
         enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
@@ -732,7 +736,18 @@ function SiteIntegrationsEditor({
   };
 
   const save = (draftToSave: SiteIntegrationsDraft = draft) => {
-    if (visibleIssues.length) return;
+    // THE JUDGE, ON THE WHOLE-DRAFT WRITE. `visibleIssues` is judged on the
+    // draft in state; this is judged on the draft actually being written (the
+    // domain-property swap above returns a different one), and it is the last
+    // line before `updateSiteIntegrations` — the path that had no judge at all.
+    const refusal = integrationsWriteRefusal(draftToSave, {
+      root_url: site.root_url,
+      domain: site.domain,
+    });
+    if (refusal) {
+      toast.error("These integrations were not saved", { description: refusal });
+      return;
+    }
     try {
       update.mutate(
         {
@@ -1264,6 +1279,21 @@ function SiteIntegrationsEditor({
                 </ul>
               </AlertDescription>
             </Alert>
+          ) : null}
+
+          {/* THE FIX DOOR for a stored mismatch on the surface that has no
+              Search Console card to fix it on (review mode hides every provider
+              but GA4). The canonical line and door, never a second rendering. */}
+          {reviewMode ? (
+            <GscBindingRefusalLine
+              site={{
+                id: site.id,
+                brand_id: site.brand_id,
+                domain: site.domain,
+                root_url: site.root_url,
+                integrations: site.integrations,
+              }}
+            />
           ) : null}
 
           {update.isError ? (

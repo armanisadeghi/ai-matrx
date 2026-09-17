@@ -21,8 +21,18 @@ const bounds = {
   previousStart: "2026-09-06",
   previousEnd: "2026-09-07",
   days: 2,
-  metadata: { timeZone: "America/Los_Angeles", currencyCode: "USD" },
 };
+
+/** `extras` exactly as the GA4 provider stores it, per row. */
+function extras(metadata: Record<string, unknown>): unknown {
+  return {
+    ga4_collection_metadata: {
+      timeZone: "America/Los_Angeles",
+      currencyCode: "USD",
+      ...metadata,
+    },
+  };
+}
 
 function row(over: Partial<RawRow>): RawRow {
   return {
@@ -38,6 +48,7 @@ function row(over: Partial<RawRow>): RawRow {
     conversions: 1,
     key_events: 1,
     views: 12,
+    extras: extras({}),
     ...over,
   };
 }
@@ -125,16 +136,114 @@ describe("aggregateAnalyticsRows — landing pages and caveats", () => {
   });
 
   it("prints thresholding and sampling when Google DID report them", () => {
-    const ids = aggregateAnalyticsRows([row({})], {
-      ...bounds,
-      metadata: {
-        ...bounds.metadata,
-        subjectToThresholding: true,
-        samplingMetadatas: [{ samplesReadCount: "1", samplingSpaceSize: "10" }],
-      },
-    }).caveats.map((c) => c.id);
+    const ids = aggregateAnalyticsRows(
+      [
+        row({
+          extras: extras({
+            subjectToThresholding: true,
+            samplingMetadatas: [{ samplesReadCount: "1", samplingSpaceSize: "10" }],
+          }),
+        }),
+      ],
+      bounds,
+    ).caveats.map((c) => c.id);
     expect(ids).toContain("thresholding");
     expect(ids).toContain("sampling");
+  });
+});
+
+/*
+  THE CAVEATS ARE JUDGED OVER THE WINDOW — round-2 verdict NEW-B5.
+
+  Thresholding, sampling and schema restriction used to be read from the ONE
+  freshest row of the window (`readFreshest` → `limit 1`), so a 28-day total
+  whose newest day was clean printed no caveat at all while an earlier day in
+  the same total had been withheld or sampled by Google. The panel's whole
+  premise is that the caveat rides the number, and the number is the window.
+*/
+describe("caveats over the window, not over one row", () => {
+  const threeDayBounds = {
+    start: "2026-09-08",
+    end: "2026-09-10",
+    previousStart: "2026-09-05",
+    previousEnd: "2026-09-07",
+    days: 3,
+  };
+
+  /** Freshest day clean, MIDDLE day thresholded and sampled. */
+  function mixedWindow(): RawRow[] {
+    return [
+      row({ date: "2026-09-08", run_id: "d1", created_at: "2026-09-11T01:00:00Z" }),
+      row({
+        date: "2026-09-09",
+        run_id: "d2",
+        created_at: "2026-09-11T02:00:00Z",
+        extras: extras({
+          subjectToThresholding: true,
+          samplingMetadatas: [{ samplesReadCount: "5", samplingSpaceSize: "100" }],
+        }),
+      }),
+      // The freshest row by `created_at` — clean, which is what hid the others.
+      row({ date: "2026-09-10", run_id: "d3", created_at: "2026-09-11T09:00:00Z" }),
+    ];
+  }
+
+  it("prints thresholding and sampling from a MIDDLE day of the window", () => {
+    const ids = aggregateAnalyticsRows(mixedWindow(), threeDayBounds).caveats.map(
+      (caveat) => caveat.id,
+    );
+    expect(ids).toContain("thresholding");
+    expect(ids).toContain("sampling");
+  });
+
+  it("names how many days carry each caveat", () => {
+    const caveats = aggregateAnalyticsRows(mixedWindow(), threeDayBounds);
+    const thresholding = caveats.caveats.find((c) => c.id === "thresholding");
+    expect(thresholding?.headline).toContain("1 of 3 collected days");
+  });
+
+  it("says ALL the days when every day carries it", () => {
+    const rows = mixedWindow().map((raw) =>
+      row({
+        ...raw,
+        extras: extras({ subjectToThresholding: true }),
+      }),
+    );
+    const caveat = aggregateAnalyticsRows(rows, threeDayBounds).caveats.find(
+      (entry) => entry.id === "thresholding",
+    );
+    expect(caveat?.headline).toContain("all 3 collected days");
+  });
+
+  it("counts the (other) days, and only the days that really had one", () => {
+    const rows = [
+      row({ date: "2026-09-08", run_id: "d1", landing_page: "(other)" }),
+      row({ date: "2026-09-09", run_id: "d2", landing_page: "/" }),
+      row({ date: "2026-09-10", run_id: "d3", landing_page: "/" }),
+    ];
+    const caveat = aggregateAnalyticsRows(rows, threeDayBounds).caveats.find(
+      (entry) => entry.id === "other-row",
+    );
+    expect(caveat?.headline).toContain("1 of 3 collected days");
+  });
+
+  it("reads a superseded run's metadata from nowhere — the winning run only", () => {
+    const rows = [
+      row({
+        date: "2026-09-08",
+        run_id: "old",
+        created_at: "2026-09-08T01:00:00Z",
+        extras: extras({ subjectToThresholding: true }),
+      }),
+      row({
+        date: "2026-09-08",
+        run_id: "new",
+        created_at: "2026-09-08T09:00:00Z",
+        extras: extras({}),
+      }),
+    ];
+    const ids = aggregateAnalyticsRows(rows, threeDayBounds).caveats.map((c) => c.id);
+    expect(ids).not.toContain("thresholding");
   });
 });
 
@@ -197,7 +306,6 @@ describe("rule 3 — an uncollected previous window refuses the comparison", () 
     previousStart,
     previousEnd,
     days: WINDOW_DAYS,
-    metadata: { timeZone: "America/Los_Angeles", currencyCode: "USD" },
   };
 
   it("reproduces the live totals the +232% was computed from", () => {

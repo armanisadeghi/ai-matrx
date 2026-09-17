@@ -19,6 +19,7 @@
  */
 
 import { judgeGscBindingWrite } from "@/features/marketing/google/gsc-property";
+import { validateSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import type {
   BuiltInProviderKey,
   SiteIntegrationsDraft,
@@ -77,4 +78,36 @@ export function providerActionDisabled(input: {
   if (input.saving) return true;
   if (input.issueCount > 0) return true;
   return input.enabled && !input.dirty;
+}
+
+/**
+ * THE WHOLE-DRAFT WRITE ASKS THE SAME JUDGE (round-2 verdict NEW-B6).
+ *
+ * `persistBuiltInProvider` — the single-provider path — called
+ * `judgeGscBindingWrite` before writing. The PAGE-LEVEL Save did not: it wrote
+ * the entire integrations blob through `updateSiteIntegrations` and gated only
+ * on the issue list the screen happened to be SHOWING. On the OAuth-review
+ * surface that list was filtered to Google Analytics, so a pre-existing Search
+ * Console mismatch was re-saved, unjudged, with the Save button enabled and the
+ * refusal hidden. Five write paths, one judge — this is the fifth.
+ *
+ * It is also the list a screen must SHOW: an issue that blocks the Save and is
+ * not on screen is the lying button B-3 removed, wearing a different hat. Every
+ * surface prints what this returns; none of them filters it.
+ */
+export function integrationsWriteIssues(
+  draft: SiteIntegrationsDraft,
+  site: IntegrationSiteFacts,
+): IntegrationIssue[] {
+  return [...validateSiteIntegrations(draft), ...gscConfigurationIssues(draft, site)];
+}
+
+/** The refusal sentence for a whole-draft write, or null when it may proceed. */
+export function integrationsWriteRefusal(
+  draft: SiteIntegrationsDraft,
+  site: IntegrationSiteFacts,
+): string | null {
+  const issues = integrationsWriteIssues(draft, site);
+  if (!issues.length) return null;
+  return issues.map((issue) => issue.message).join(" ");
 }

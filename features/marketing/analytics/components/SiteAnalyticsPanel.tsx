@@ -79,6 +79,10 @@ import {
   type AnalyticsSeriesKey,
 } from "@/features/marketing/analytics/components/AnalyticsTrendChart";
 import {
+  analyticsCopyLines,
+  analyticsDisclosures,
+} from "@/features/marketing/analytics/disclosures";
+import {
   describeBackendFailure,
   type BackendFailureExplanation,
 } from "@/lib/api/errors";
@@ -270,18 +274,12 @@ export function SiteAnalyticsPanel({
     description: `GA4 evidence for ${site.domain} over the last ${range} days versus the previous ${range}, deduped to the newest collection run per day, with the caveats Google reported.`,
     surface: "Site Analytics panel",
     data: data ?? {},
-    lines: [
-      ["Window", data?.current.start ? `${data.current.start} → ${data.current.end}` : "no data"],
-      ["Sessions", data ? `${integer(data.totals.sessions)} (was ${integer(data.previousTotals.sessions)})` : "—"],
-      ["Users (summed)", data ? integer(data.totals.users) : "—"],
-      ["Engaged sessions", data ? integer(data.totals.engagedSessions) : "—"],
-      ["Conversions", data ? integer(data.totals.conversions) : "—"],
-      ["Property timezone", data?.propertyTimezone ?? "not reported"],
-      ...(data?.caveats ?? []).map((caveat): [string, string] => [
-        "Caveat",
-        caveat.headline,
-      ]),
-    ],
+    // THE CAVEAT TRAVELS WITH THE NUMBER (disclosures.ts). This payload used to
+    // print `Sessions 14,909 (was 4,485)` — the pair the tile refuses — and
+    // every caveat EXCEPT the comparison one.
+    lines: data
+      ? analyticsCopyLines({ window: data, format: integer })
+      : [["Window", "no data"]],
     attributes: {
       site_id: site.id,
       range_days: range,
@@ -472,8 +470,10 @@ export function SiteAnalyticsPanel({
                   </p>
                   {refused ? (
                     <>
+                      {/* ONE sentence, from the ONE list — the chart legend and
+                          the copy payload print this same string. */}
                       <p className="text-[11px] font-medium text-warning">
-                        {`No comparison — the previous ${range} days have only ${data.comparison.previousDaysWithData} of ${range} days collected`}
+                        {data.comparison.caveat}
                       </p>
                       {nowRate !== null && thenRate !== null ? (
                         <p className="text-[11px] text-muted-foreground">
@@ -505,6 +505,10 @@ export function SiteAnalyticsPanel({
           <AnalyticsTrendChart
             series={data.series}
             previousSeries={data.previousSeries}
+            currentStart={data.current.start}
+            previousStart={data.previous.start}
+            windowDays={range}
+            comparison={data.comparison}
             visible={visible}
             onToggle={(key) =>
               setVisible((current) =>
@@ -519,14 +523,19 @@ export function SiteAnalyticsPanel({
             }
           />
 
-          {data.caveats.length ? (
+          {/* ONE disclosure list (disclosures.ts): the comparison caveat and
+              every GA4 caveat, in one block, in the same words the tiles, the
+              chart legend and the Copy payload use. Three separate lists is
+              exactly how the copied numbers lost the comparison caveat. */}
+          {analyticsDisclosures(data).length ? (
             <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/5 p-2">
-              {data.caveats.map((caveat) => (
-                <li key={caveat.id} className="text-[11px] leading-4">
+              {analyticsDisclosures(data).map((disclosure) => (
+                <li key={disclosure.id} className="text-[11px] leading-4">
                   <span className="font-medium text-foreground">
-                    {caveat.headline}.
+                    {disclosure.headline}
+                    {disclosure.detail ? "." : ""}
                   </span>{" "}
-                  <span className="text-muted-foreground">{caveat.detail}</span>
+                  <span className="text-muted-foreground">{disclosure.detail}</span>
                 </li>
               ))}
             </ul>
@@ -536,12 +545,6 @@ export function SiteAnalyticsPanel({
             <p className="text-[11px] text-muted-foreground">
               {`${data.daysWithData} of the last ${range} days have stored rows — the rest were never collected, so they count as zero in the totals above.`}
             </p>
-          ) : null}
-
-          {/* Coverage of BOTH windows, in one sentence. Measuring only the
-              current window is what let the +232% through. */}
-          {data.comparison.caveat ? (
-            <p className="text-[11px] text-warning">{data.comparison.caveat}</p>
           ) : null}
 
           <MatrxDataTable

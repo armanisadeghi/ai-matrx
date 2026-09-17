@@ -38,6 +38,7 @@ import {
   ga4PropertyTimezone,
   readGa4Metadata,
   type AnalyticsCaveat,
+  type Ga4DayMetadata,
 } from "@/features/marketing/analytics/caveats";
 
 /** The selectable comparison windows. 28 vs previous 28 is the default. */
@@ -206,6 +207,8 @@ export interface RawRow {
   date: string;
   run_id: string;
   created_at: string;
+  /** `extras.ga4_collection_metadata` rides every row — see caveats.ts. */
+  extras?: unknown;
   landing_page: string | null;
   page_id: string | null;
   sessions: number;
@@ -246,7 +249,11 @@ function accumulate(into: AnalyticsTotals, row: RawRow): void {
   into.views += row.views;
 }
 
-/** The freshest stored day + the metadata Google returned with it. */
+/**
+ * The freshest stored day and pull time. Deliberately NOT the source of the
+ * honesty caveats: those are judged over every day in the window
+ * (`aggregateAnalyticsRows`), because this row is one day of twenty-eight.
+ */
 async function readFreshest(
   siteId: string,
   signal?: AbortSignal,
@@ -254,7 +261,6 @@ async function readFreshest(
   dataThrough: string | null;
   pulledAt: string | null;
   propertyTimezone: string | null;
-  metadataExtras: unknown;
 }> {
   const response = await supabase
     .schema("seo")
@@ -282,7 +288,6 @@ async function readFreshest(
     pulledAt: row?.created_at ?? null,
     propertyTimezone:
       row?.property_timezone ?? ga4PropertyTimezone(readGa4Metadata(row?.extras)),
-    metadataExtras: row?.extras ?? null,
   };
 }
 
@@ -299,7 +304,6 @@ export async function readSiteAnalyticsWindow(
 ): Promise<SiteAnalyticsWindowData> {
   await requireAuthenticatedSupabaseSession(supabase);
   const freshest = await readFreshest(siteId, signal);
-  const metadata = readGa4Metadata(freshest.metadataExtras);
   if (!freshest.dataThrough) {
     const bounds: AnalyticsWindowBounds = { start: "", end: "", days };
     return {
@@ -336,7 +340,9 @@ export async function readSiteAnalyticsWindow(
         .schema("seo")
         .from("web_analytics_daily")
         .select(
-          "id, date, run_id, created_at, landing_page, page_id, sessions, users, engaged_sessions, conversions, key_events, views",
+          // `extras` rides along because the honesty caveats are judged over
+          // EVERY day in the window, not over one freshest row (NEW-B5).
+          "id, date, run_id, created_at, landing_page, page_id, sessions, users, engaged_sessions, conversions, key_events, views, extras",
           { count: "exact" },
         )
         .eq("site_id", siteId)
@@ -358,7 +364,6 @@ export async function readSiteAnalyticsWindow(
     previousStart,
     previousEnd,
     days,
-    metadata,
   });
 
   return {
@@ -377,7 +382,6 @@ export interface AggregateBounds {
   previousStart: string;
   previousEnd: string;
   days: number;
-  metadata: ReturnType<typeof readGa4Metadata>;
 }
 
 /**
@@ -407,7 +411,10 @@ export function aggregateAnalyticsRows(
   const previousByDay = new Map<string, AnalyticsDayPoint>();
   const byLandingPage = new Map<string, AnalyticsLandingPage>();
   let rowsSuperseded = 0;
-  let hasOtherRow = false;
+  // THE CAVEATS ARE JUDGED OVER THE WINDOW (NEW-B5): one entry per collected
+  // day of the CURRENT window, carrying that day's own `ResponseMetaData` and
+  // whether an `(other)` landing page was stored for it.
+  const dayMetadata = new Map<string, Ga4DayMetadata>();
 
   for (const row of rows) {
     if (winningRun.get(row.date)?.runId !== row.run_id) {
@@ -430,8 +437,15 @@ export function aggregateAnalyticsRows(
     dayMap.set(row.date, point);
     accumulate(inCurrent ? totals : previousTotals, row);
     if (!inCurrent) continue;
+    const day = dayMetadata.get(row.date) ?? {
+      date: row.date,
+      metadata: null,
+      hasOtherRow: false,
+    };
+    day.metadata = day.metadata ?? readGa4Metadata(row.extras);
     const key = row.landing_page ?? "(not set)";
-    if (key === "(other)") hasOtherRow = true;
+    if (key === "(other)") day.hasOtherRow = true;
+    dayMetadata.set(row.date, day);
     const page = byLandingPage.get(key) ?? {
       landingPage: key,
       pageId: null,
@@ -473,8 +487,7 @@ export function aggregateAnalyticsRows(
     rowsRead: rows.length,
     rowsSuperseded,
     caveats: ga4Caveats({
-      metadata: bounds.metadata,
-      hasOtherRow,
+      days: [...dayMetadata.values()].sort((a, b) => (a.date < b.date ? -1 : 1)),
       usersAreSummed: totals.users > 0,
     }),
   };

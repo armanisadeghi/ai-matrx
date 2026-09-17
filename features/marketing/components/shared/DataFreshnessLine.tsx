@@ -42,7 +42,13 @@ export function DataFreshnessLine({
     pulledAt,
     warningAfterHours: knob.hours,
   });
-  const warn = freshness.stale || freshness.neverPulled;
+  // A clock ahead of the reader's and a data day from the future are BOTH
+  // conditions the line must wear, not just mention (round-2 verdict NEW-B7).
+  const warn =
+    freshness.stale ||
+    freshness.neverPulled ||
+    freshness.clockAhead ||
+    freshness.dataThroughInFuture;
   const Icon = warn ? AlertTriangle : Clock;
   return (
     <div
@@ -59,7 +65,7 @@ export function DataFreshnessLine({
         )}
       >
         <Icon className="h-3 w-3 shrink-0" aria-hidden />
-        <span className="truncate">
+        <span className="min-w-0">
           {freshness.sentence}
           {timezone ? ` · times in ${timezone}` : ""}
         </span>

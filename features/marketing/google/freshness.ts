@@ -56,6 +56,14 @@ export interface FreshnessDescription {
   stale: boolean;
   /** True when nothing has ever been pulled for this record. */
   neverPulled: boolean;
+  /**
+   * True when the stored pull time is AHEAD of this reader's clock. The age is
+   * then unknowable, so the line says so instead of printing "pulled in 1 day"
+   * (round-2 verdict NEW-B7) and nothing is called stale or fresh on it.
+   */
+  clockAhead: boolean;
+  /** True when `dataThrough` is a day that has not happened yet. */
+  dataThroughInFuture: boolean;
   /** Present when the threshold could not be read — printed, never hidden. */
   thresholdUnavailable: string | null;
 }
@@ -69,6 +77,12 @@ function formatDay(isoDate: string): string {
   );
 }
 
+/** Whole hours, rounded, for a plain-English clock-skew sentence. */
+function roundedHours(value: number): string {
+  const hours = Math.max(1, Math.round(value));
+  return hours === 1 ? "an hour" : `${hours} hours`;
+}
+
 export function describeFreshness(
   input: FreshnessInput,
 ): FreshnessDescription {
@@ -77,16 +91,30 @@ export function describeFreshness(
   const pulledHoursAgo = pulled
     ? (now.getTime() - pulled.getTime()) / 3_600_000
     : null;
+  // A FUTURE TIMESTAMP IS A CLOCK PROBLEM, NOT AN AGE (round-2 verdict NEW-B7).
+  // `formatRelativeTime` cheerfully printed "pulled in 1 day", which reads as a
+  // scheduled pull. A skew under a minute is ordinary clock jitter between two
+  // machines and says nothing.
+  const clockAhead = pulledHoursAgo !== null && pulledHoursAgo < -1 / 60;
+  const today = now.toISOString().slice(0, 10);
+  const dataThroughInFuture = Boolean(
+    input.dataThrough && input.dataThrough > today,
+  );
   const stale =
+    !clockAhead &&
     input.warningAfterHours !== null &&
     pulledHoursAgo !== null &&
     pulledHoursAgo > input.warningAfterHours;
   const parts: string[] = [
     input.dataThrough
-      ? `data through ${formatDay(input.dataThrough)}`
+      ? dataThroughInFuture
+        ? `dated through ${formatDay(input.dataThrough)}, a day that has not happened yet — the stored day is wrong, so read nothing into how fresh this looks`
+        : `data through ${formatDay(input.dataThrough)}`
       : "no data stored yet",
     pulled
-      ? `pulled ${formatRelativeTime(input.pulledAt, { style: "long" })}`
+      ? clockAhead
+        ? `pull time is ${roundedHours(-(pulledHoursAgo as number))} ahead of your clock, so its age is unknown — one of the two clocks is wrong`
+        : `pulled ${formatRelativeTime(input.pulledAt, { style: "long" })}`
       : "never pulled",
     PROVIDER_LAG_SENTENCE[input.provider],
   ];
@@ -95,9 +123,15 @@ export function describeFreshness(
     pulledHoursAgo,
     stale,
     neverPulled: !pulled,
+    clockAhead,
+    dataThroughInFuture,
+    // THE STAND-IN NAMES ITSELF AND DATES ITSELF (NEW-B7). It used to assert
+    // "The row is live (72 hours since 2026-09-17)" — a value and a date frozen
+    // into the sentence, which becomes a lie the first time an organization
+    // turns the knob and reads as stale prose for ever after.
     thresholdUnavailable:
       input.warningAfterHours === null && pulled
-        ? `This line cannot warn you about staleness right now: the ${GOOGLE_MARKETING_KNOB_FEATURE}.${FRESHNESS_WARNING_HOURS_KNOB} setting could not be read. The row is live (72 hours since 2026-09-17), so this is a failed read, not a missing setting — reload, and if it persists tell an administrator that the knob read is failing.`
+        ? `This line cannot warn you about staleness right now: the ${GOOGLE_MARKETING_KNOB_FEATURE}.${FRESHNESS_WARNING_HOURS_KNOB} setting could not be read (checked ${today}), so its value is unknown here and nothing is being called stale. Reload, and if it persists tell an administrator that the knob read is failing.`
         : null,
   };
 }

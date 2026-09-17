@@ -21,7 +21,17 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import type { AnalyticsDayPoint } from "@/features/marketing/analytics/window";
+import type {
+  AnalyticsComparison,
+  AnalyticsDayPoint,
+} from "@/features/marketing/analytics/window";
+import {
+  alignWindowDays,
+  contiguousRuns,
+  dayAtOffset,
+  type AlignedDay,
+} from "@/features/marketing/analytics/chart-alignment";
+import { previousSeriesDisclosure } from "@/features/marketing/analytics/disclosures";
 
 export const ANALYTICS_SERIES = [
   { key: "sessions", label: "Sessions", color: "#3b82f6" },
@@ -63,6 +73,14 @@ function compact(value: number): string {
 export interface AnalyticsTrendChartProps {
   series: AnalyticsDayPoint[];
   previousSeries: AnalyticsDayPoint[];
+  /** The current window's first day — the x-axis origin. */
+  currentStart: string;
+  /** The previous window's first day — day N of it sits under day N here. */
+  previousStart: string;
+  /** The window length, so an uncollected day keeps its slot on the axis. */
+  windowDays: number;
+  /** The tile's verdict. Refused → the previous series is not drawn at all. */
+  comparison: AnalyticsComparison;
   visible: readonly AnalyticsSeriesKey[];
   onToggle: (key: AnalyticsSeriesKey) => void;
 }
@@ -70,6 +88,10 @@ export interface AnalyticsTrendChartProps {
 export function AnalyticsTrendChart({
   series,
   previousSeries,
+  currentStart,
+  previousStart,
+  windowDays,
+  comparison,
   visible,
   onToggle,
 }: AnalyticsTrendChartProps) {
@@ -77,24 +99,44 @@ export function AnalyticsTrendChart({
   const shown = ANALYTICS_SERIES.filter((s) => visible.includes(s.key));
   const plotW = WIDTH - PAD.left - PAD.right;
   const plotH = HEIGHT - PAD.top - PAD.bottom;
+  // ALIGNMENT BY OFFSET, NEVER BY ARRAY POSITION (chart-alignment.ts). The axis
+  // is the WINDOW, so a day nobody collected keeps its slot and leaves a gap.
+  const slots = Math.max(1, windowDays);
+  const currentDays = alignWindowDays(series, currentStart, slots);
+  const previousDays = alignWindowDays(previousSeries, previousStart, slots);
+  // THE CHART OBEYS THE TILE (disclosures.ts): a refused comparison is not
+  // drawn, and the legend carries the tile's own sentence saying why.
+  const previousDisclosure = previousSeriesDisclosure(
+    comparison,
+    previousDays.length > 0,
+  );
+  const drawnPrevious = previousDisclosure.shown ? previousDays : [];
   const max = niceCeiling(
     Math.max(
       1,
-      ...series.flatMap((point) => shown.map((s) => point[s.key])),
-      ...previousSeries.flatMap((point) => shown.map((s) => point[s.key])),
+      ...currentDays.flatMap((day) => shown.map((s) => day.point[s.key])),
+      ...drawnPrevious.flatMap((day) => shown.map((s) => day.point[s.key])),
     ),
   );
-  const x = (index: number): number =>
-    series.length <= 1
+  const x = (offset: number): number =>
+    slots <= 1
       ? PAD.left + plotW / 2
-      : PAD.left + (index / (series.length - 1)) * plotW;
+      : PAD.left + (offset / (slots - 1)) * plotW;
   const y = (value: number): number => PAD.top + plotH - (value / max) * plotH;
-  const path = (points: AnalyticsDayPoint[], key: AnalyticsSeriesKey): string =>
-    points
-      .map((point, index) => `${index === 0 ? "M" : "L"}${x(index)},${y(point[key])}`)
+  const path = (days: readonly AlignedDay[], key: AnalyticsSeriesKey): string =>
+    contiguousRuns(days)
+      .map((run) =>
+        run
+          .map(
+            (day, index) =>
+              `${index === 0 ? "M" : "L"}${x(day.offset)},${y(day.point[key])}`,
+          )
+          .join(" "),
+      )
       .join(" ");
-  const hovered = hover !== null ? series[hover] : null;
-  const hoveredPrevious = hover !== null ? previousSeries[hover] : null;
+  const hovered = hover !== null ? dayAtOffset(currentDays, hover) : null;
+  const hoveredPrevious =
+    hover !== null ? dayAtOffset(drawnPrevious, hover) : null;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -123,13 +165,26 @@ export function AnalyticsTrendChart({
             </button>
           );
         })}
-        {previousSeries.length ? (
+        {previousDays.length ? (
           <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="h-0 w-4 border-t-2 border-dashed border-muted-foreground" aria-hidden />
-            Previous period
+            <span
+              className="h-0 w-4 border-t-2 border-dashed border-muted-foreground"
+              aria-hidden
+            />
+            {previousDisclosure.label}
           </span>
         ) : null}
       </div>
+      {previousDisclosure.note ? (
+        <p
+          className={cn(
+            "text-[11px] leading-4",
+            previousDisclosure.shown ? "text-muted-foreground" : "text-warning",
+          )}
+        >
+          {previousDisclosure.note}
+        </p>
+      ) : null}
       <div className="relative">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -141,11 +196,9 @@ export function AnalyticsTrendChart({
             const box = event.currentTarget.getBoundingClientRect();
             const ratio = (event.clientX - box.left) / box.width;
             const svgX = ratio * WIDTH;
-            if (series.length === 0) return;
-            const index = Math.round(
-              ((svgX - PAD.left) / plotW) * (series.length - 1),
-            );
-            setHover(Math.min(series.length - 1, Math.max(0, index)));
+            if (currentDays.length === 0) return;
+            const offset = Math.round(((svgX - PAD.left) / plotW) * (slots - 1));
+            setHover(Math.min(slots - 1, Math.max(0, offset)));
           }}
         >
           {[0, 0.5, 1].map((fraction) => (
@@ -168,14 +221,14 @@ export function AnalyticsTrendChart({
               </text>
             </g>
           ))}
-          {series.length ? (
+          {currentStart ? (
             <>
               <text
                 x={PAD.left}
                 y={HEIGHT - 5}
                 className="fill-muted-foreground text-[9px]"
               >
-                {shortDay(series[0].date)}
+                {shortDay(currentStart)}
               </text>
               <text
                 x={WIDTH - PAD.right}
@@ -183,15 +236,17 @@ export function AnalyticsTrendChart({
                 textAnchor="end"
                 className="fill-muted-foreground text-[9px]"
               >
-                {shortDay(series[series.length - 1].date)}
+                {shortDay(
+                  currentDays[currentDays.length - 1]?.point.date ?? currentStart,
+                )}
               </text>
             </>
           ) : null}
           {shown.map((s) =>
-            previousSeries.length ? (
+            drawnPrevious.length ? (
               <path
                 key={`prev-${s.key}`}
-                d={path(previousSeries, s.key)}
+                d={path(drawnPrevious, s.key)}
                 fill="none"
                 stroke={s.color}
                 strokeWidth={2}
@@ -203,7 +258,7 @@ export function AnalyticsTrendChart({
           {shown.map((s) => (
             <path
               key={s.key}
-              d={path(series, s.key)}
+              d={path(currentDays, s.key)}
               fill="none"
               stroke={s.color}
               strokeWidth={2}

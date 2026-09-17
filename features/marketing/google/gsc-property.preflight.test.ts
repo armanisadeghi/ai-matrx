@@ -11,6 +11,7 @@
 */
 
 import {
+  gscDomainPropertyRef,
   judgeGscBindingWrite,
   preflightGscProperty,
   shouldStartGscFirstImport,
@@ -216,5 +217,65 @@ describe("preflightGscProperty — shapes that used to be accepted silently", ()
   it("refuses a foreign host carrying a port, by host not by port", () => {
     const result = preflightGscProperty("https://other.com:8443/", bareSite);
     expect(result.verdict).toBe("mismatch");
+  });
+});
+
+/*
+  ROUND-2 VERDICT (google-native VERIFY-U-P4-U-M1-R2, NEW-B1 / NEW-B2). The
+  ancestry asymmetry the uppercase sweep left behind: `bareDomain()` stripped
+  `www.` from BOTH sides, so `sc-domain:www.example.com` compared equal to
+  `example.com` and a sixteen-month backfill was allowed to start against a
+  property that will never hold one row for that site. A Search Console domain
+  property covers its domain and its SUBdomains — never its parent. And the
+  domain-ref branch was never given the URL branch's FQDN-dot normalization, so
+  `sc-domain:example.com.` passed AND was echoed back as the ref to bind.
+*/
+describe("preflightGscProperty — a domain property covers subdomains, never its parent", () => {
+  it("refuses sc-domain:www.example.com on a non-www site, by name, with the right property", () => {
+    const result = preflightGscProperty("sc-domain:www.example.com", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("sc-domain:www.example.com");
+    expect(result.headline).toContain("https://example.com/");
+    expect(result.suggestedRef).toBe("sc-domain:example.com");
+  });
+
+  it("never lets that binding start the sixteen-month backfill", () => {
+    const binding = {
+      enabled: true,
+      credentialRef: "conn-1",
+      resourceRef: "sc-domain:www.example.com",
+    };
+    expect(judgeGscBindingWrite(binding, bareSite).allowed).toBe(false);
+    expect(
+      shouldStartGscFirstImport(binding, bareSite, { alreadySynced: false }),
+    ).toBe(false);
+  });
+
+  it("still accepts the registrable domain property for a www site", () => {
+    expect(preflightGscProperty("sc-domain:example.com", wwwSite).verdict).toBe("ok");
+  });
+
+  it("accepts the www domain property for a site that really lives at www", () => {
+    expect(preflightGscProperty("sc-domain:www.example.com", wwwSite).verdict).toBe("ok");
+  });
+
+  it("refuses a sibling subdomain's domain property", () => {
+    const result = preflightGscProperty("sc-domain:shop.example.com", subSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.suggestedRef).toBe("sc-domain:blog.example.com");
+  });
+
+  it("normalizes a trailing-dot domain ref and never recommends the dotted one", () => {
+    const result = preflightGscProperty("sc-domain:example.com.", bareSite);
+    expect(result.suggestedRef).toBe("sc-domain:example.com");
+    expect(result.detail).toContain("trailing dot");
+    expect(result.headline).not.toContain("example.com.");
+  });
+
+  it("uses ONE normalizer for both branches: the canonical ref never carries a dot", () => {
+    expect(gscDomainPropertyRef("Example.com.")).toBe("sc-domain:example.com");
+    expect(preflightGscProperty("sc-domain:OTHER.COM.", bareSite).suggestedRef).toBe(
+      "sc-domain:example.com",
+    );
   });
 });

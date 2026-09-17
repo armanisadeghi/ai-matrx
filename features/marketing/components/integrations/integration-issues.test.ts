@@ -10,13 +10,22 @@
   every guard asked `enabled` first.
 */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import {
   gscConfigurationIssues,
+  integrationsWriteIssues,
+  integrationsWriteRefusal,
   providerActionDisabled,
   providerIssueMessages,
   type IntegrationIssue,
 } from "@/features/marketing/components/integrations/integration-issues";
-import { emptyProviderIntegration } from "@/features/marketing/data/integrations-schema";
+import {
+  emptyProviderIntegration,
+  parseSiteIntegrations,
+  type SiteIntegrationsDraft,
+} from "@/features/marketing/data/integrations-schema";
 
 const LIVE_SITE = {
   root_url: "https://ga4-oauth-qa-00fb6a62a3.invalid",
@@ -150,5 +159,70 @@ describe("the per-provider button answers for itself", () => {
         issueCount: 0,
       }),
     ).toBe(true);
+  });
+});
+
+/*
+  ROUND-2 VERDICT NEW-B6 — the page-level Save wrote the whole integrations blob
+  through `updateSiteIntegrations` with no judge at all, gated only on the issue
+  list the screen happened to be SHOWING; on the OAuth-review surface that list
+  was filtered to Google Analytics, so the live `http://bhrcenter.com/` mismatch
+  above was re-saved, unjudged, from a screen that never mentioned it.
+
+  One judge, asked by every write path — and a source guard on the workspace,
+  because the filter and the gate were two lines of a component.
+*/
+describe("integrationsWriteIssues / integrationsWriteRefusal — the whole-draft write", () => {
+  const draft = (resourceRef: string): SiteIntegrationsDraft =>
+    parseSiteIntegrations({
+      marketing: {
+        providers: {
+          google_search_console: {
+            enabled: true,
+            credential_authority: "external_connection",
+            credential_ref: "31b75c97-3710-4c2f-9834-dd6da29ca8b6",
+            resource_ref: resourceRef,
+          },
+        },
+      },
+    });
+
+  it("refuses the live mismatch, naming both sides", () => {
+    const refusal = integrationsWriteRefusal(draft("http://bhrcenter.com/"), LIVE_SITE);
+    expect(refusal).not.toBeNull();
+    expect(refusal).toContain("bhrcenter.com");
+    expect(refusal).toContain("ga4-oauth-qa-00fb6a62a3.invalid");
+  });
+
+  it("allows a draft whose property matches the site", () => {
+    expect(
+      integrationsWriteRefusal(
+        draft("sc-domain:ga4-oauth-qa-00fb6a62a3.invalid"),
+        LIVE_SITE,
+      ),
+    ).toBeNull();
+  });
+
+  it("carries the same issue the editor's list shows", () => {
+    const issues = integrationsWriteIssues(draft("http://bhrcenter.com/"), LIVE_SITE);
+    expect(issues.some((issue) => issue.field === "googleSearchConsole.resourceRef")).toBe(
+      true,
+    );
+  });
+});
+
+describe("SiteIntegrationsWorkspace asks that judge and hides nothing", () => {
+  const source = readFileSync(join(__dirname, "SiteIntegrationsWorkspace.tsx"), "utf8");
+
+  it("judges the whole-draft write before updateSiteIntegrations", () => {
+    expect(source).toContain("integrationsWriteRefusal(draftToSave");
+  });
+
+  it("no longer filters the issue list by surface", () => {
+    expect(source).not.toMatch(/issues\.filter\(\(issue\) => issue\.field\.startsWith/);
+  });
+
+  it("gives the review surface the canonical Fix door", () => {
+    expect(source).toContain("<GscBindingRefusalLine");
   });
 });

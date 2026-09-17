@@ -24,9 +24,19 @@
 
 import type { GoogleConnectionResource } from "@/features/marketing/google/types";
 
-/** The canonical domain-property ref for a site's domain. */
+/**
+ * The canonical domain-property ref for a site's domain — ONE normalizer,
+ * shared with every host comparison in this file (`normalizeHost`).
+ *
+ * WHY IT NORMALIZES (round-2 verdict NEW-B2): Google stores `example.com`,
+ * never `example.com.`, and lowercase only. The URL-prefix branch already
+ * stripped the FQDN dot to build the ref it recommends; the domain-ref branch
+ * lowercased and trimmed but kept the dot, so `sc-domain:example.com.` compared
+ * equal to the site AND was echoed back as the ref to bind — a ref Google does
+ * not hold and will never answer for.
+ */
 export function gscDomainPropertyRef(domain: string): string {
-  return `sc-domain:${domain.trim().toLowerCase()}`;
+  return `sc-domain:${normalizeHost(domain)}`;
 }
 
 export function isGscDomainProperty(resourceRef: string): boolean {
@@ -39,32 +49,32 @@ export function isSiteDomainProperty(
   domain: string | null | undefined,
 ): boolean {
   if (!domain) return false;
-  return resourceRef.trim().toLowerCase() === gscDomainPropertyRef(domain);
-}
-
-/** True when a URL-prefix property's hostname matches the site's domain. */
-export function gscUrlPropertyMatchesDomain(
-  resourceRef: string,
-  domain: string,
-): boolean {
-  try {
-    const host = new URL(resourceRef.trim().toLowerCase()).hostname;
-    const target = domain.trim().toLowerCase();
-    return host === target || host === `www.${target}`;
-  } catch {
-    return false;
-  }
+  const ref = resourceRef.trim().toLowerCase();
+  if (!ref.startsWith("sc-domain:")) return false;
+  // Both sides through the one normalizer: a trailing dot or stray case on
+  // either side is the same property, and nothing else is.
+  return (
+    gscDomainPropertyRef(ref.slice("sc-domain:".length)) ===
+    gscDomainPropertyRef(domain)
+  );
 }
 
 /**
  * The property this site should bind by default, in preference order:
- * the domain property → a URL version whose hostname matches → a single
- * discovered property (nothing to choose between).
+ * the domain property → a property THE JUDGE ACCEPTS → a single discovered
+ * property (nothing to choose between, and the judge still refuses it
+ * downstream if it is wrong).
+ *
+ * THE ASYMMETRY THIS REMOVED (round-2 verdict NEW-B1, same class): the second
+ * rank used to be its own host comparison that accepted `www.<domain>` for a
+ * non-www site — a third place where `www` was equated by hand. There is now
+ * one rule for "does this property cover this site", `preflightGscProperty`,
+ * and the auto-pick asks it instead of re-deciding.
  */
 export function preferredGscProperty(
   resources: GoogleConnectionResource[],
   connectionId: string,
-  domain: string,
+  site: { root_url?: string | null; domain: string },
 ): GoogleConnectionResource | null {
   const candidates = resources.filter(
     (resource) =>
@@ -73,10 +83,11 @@ export function preferredGscProperty(
   );
   return (
     candidates.find((resource) =>
-      isSiteDomainProperty(resource.resource_ref, domain),
+      isSiteDomainProperty(resource.resource_ref, site.domain),
     ) ??
-    candidates.find((resource) =>
-      gscUrlPropertyMatchesDomain(resource.resource_ref, domain),
+    candidates.find(
+      (resource) =>
+        preflightGscProperty(resource.resource_ref, site).verdict !== "mismatch",
     ) ??
     (candidates.length === 1 ? candidates[0] : null)
   );
@@ -229,7 +240,8 @@ export function preflightGscProperty(
 ): GscPropertyPreflight {
   const ref = resourceRef.trim();
   const canonical = siteCanonicalUrl(site);
-  const siteBare = bareDomain(canonical.host);
+  const siteHost = normalizeHost(canonical.host);
+  const siteBare = bareDomain(siteHost);
   const domainRef = gscDomainPropertyRef(siteBare);
 
   if (!ref) {
@@ -242,17 +254,37 @@ export function preflightGscProperty(
   }
 
   if (isGscDomainProperty(ref)) {
-    const picked = bareDomain(ref.slice("sc-domain:".length));
-    // NORMALIZATION, NAMED (2026-09-17): Google's own property refs are
-    // lowercase, so `SC-DOMAIN:EXAMPLE.COM` is not a ref the API accepts —
-    // recommending it verbatim would recommend a binding Google refuses. The
-    // ref is normalized here and the change is said out loud.
-    const normalizedRef = gscDomainPropertyRef(ref.slice("sc-domain:".length));
+    const tail = ref.slice("sc-domain:".length);
+    // A DOMAIN PROPERTY COVERS ITS SUBDOMAINS, NEVER ITS PARENT (round-2
+    // verdict NEW-B1). The picked host is compared UNSTRIPPED: `bareDomain()`
+    // used to strip `www.` from both sides, so `sc-domain:www.example.com`
+    // compared equal to a site at `https://example.com/` and was accepted as
+    // "ok" — Google will never return a row for `example.com` pages from a
+    // `www.example.com` property, and the ~16-month backfill was allowed to
+    // start against it.
+    const picked = normalizeHost(tail);
+    // NORMALIZATION, NAMED: Google's own property refs are lowercase and carry
+    // no FQDN dot, so `SC-DOMAIN:EXAMPLE.COM` and `sc-domain:example.com.` are
+    // not refs the API accepts — recommending either verbatim would recommend a
+    // binding Google refuses. The ref goes through the ONE normalizer
+    // (`gscDomainPropertyRef`) and every change is said out loud.
+    const normalizedRef = gscDomainPropertyRef(tail);
+    const trimmedTail = tail.trim();
+    const changes: string[] = [];
+    if (trimmedTail !== trimmedTail.toLowerCase()) {
+      changes.push("Search Console's property refs are lowercase");
+    }
+    if (trimmedTail.endsWith(".")) {
+      changes.push("Google stores this host without the trailing dot");
+    }
     const caseNote =
-      normalizedRef === ref
+      normalizedRef === ref || !changes.length
         ? ""
-        : ` Search Console's property refs are lowercase, so this binds as ${normalizedRef} — “${ref}” exactly as typed is not a ref Google accepts.`;
-    if (picked === siteBare) {
+        : ` ${changes.join(", and ")}, so this binds as ${normalizedRef} — “${ref}” exactly as typed is not a ref Google accepts.`;
+    // Equal to the site's own host, or to its registrable host (the www twin of
+    // a site that lives at www is the same site, and THE DOMAIN-PROPERTY RULE
+    // says that property is the right binding).
+    if (picked === siteHost || picked === siteBare) {
       return {
         verdict: "ok",
         headline: `${normalizedRef} covers ${canonical.display}.`,
@@ -262,7 +294,9 @@ export function preflightGscProperty(
         suggestedRef: normalizedRef,
       };
     }
-    if (siteBare.endsWith(`.${picked}`)) {
+    // An ANCESTOR of this site's host: broader than the site, and it does hold
+    // the site's rows, so it is an advisory, never a refusal.
+    if (siteBare.endsWith(`.${picked}`) || siteHost.endsWith(`.${picked}`)) {
       return {
         verdict: "advisory",
         headline: `${normalizedRef} is the whole domain, and this site is only ${canonical.host}.`,
@@ -270,6 +304,17 @@ export function preflightGscProperty(
           `Every subdomain of ${picked} reports into ${normalizedRef}, so this site's numbers will include traffic that belongs to other subdomains. Bind it only if that is what you want; otherwise pick the URL-prefix property ${canonical.display}.` +
           caseNote,
         suggestedRef: normalizedRef,
+      };
+    }
+    // Everything else is a property that will never hold one row for this site.
+    // The www twin gets its own sentence, because "a different domain" reads as
+    // a typo when the two names differ by three letters.
+    if (bareDomain(picked) === siteBare) {
+      return {
+        verdict: "mismatch",
+        headline: `This site is ${canonical.display}; you picked the domain property ${normalizedRef}, and Search Console treats www and non-www as two separate properties.`,
+        detail: `A domain property covers that domain and everything UNDER it, never the domain above it, so ${normalizedRef} will never contain a single row for ${canonical.host} pages. Pick ${domainRef}, which covers ${siteBare} and every subdomain of it.`,
+        suggestedRef: domainRef,
       };
     }
     return {
@@ -382,7 +427,16 @@ export function preflightGscProperty(
  *   - the per-provider Enable/Connect button,
  *   - `persistBuiltInProvider` (the single choke point for a one-provider
  *     write, including the auto-bind that follows a Google connection),
- *   - `kickGscFirstImport` (a refused binding never starts a backfill).
+ *   - `kickGscFirstImport` (a refused binding never starts a backfill),
+ *   - the PAGE-LEVEL Save, which writes the whole integrations blob through
+ *     `updateSiteIntegrations` (round-2 verdict NEW-B6: this fifth path had no
+ *     judge at all and gated only on the issue list the screen was showing, so
+ *     the OAuth-review surface re-saved a hidden mismatch unjudged). It asks
+ *     `integrationsWriteRefusal` in `components/integrations/integration-issues.ts`,
+ *     which composes this same judge.
+ *
+ * And `preferredGscProperty` above asks the pre-flight rather than re-deciding
+ * host equality, so the auto-pick cannot select a property this judge refuses.
  *
  * `enabled` is deliberately NOT part of the test: saving a binding that is
  * known to point at a different site is refused even when it is switched off,
