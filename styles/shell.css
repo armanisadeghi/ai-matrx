@@ -1411,7 +1411,24 @@ button.shell-nav-flyout-item {
    z-index:-1 keeps it inside .shell-header's stacking context (created by
    position:sticky + z-index:40) but BELOW the header's own in-flow children —
    without it, an absolutely-positioned pseudo paints ABOVE non-positioned
-   siblings and would wash out the very buttons it exists to protect. */
+   siblings and would wash out the very buttons it exists to protect.
+
+   🚨 THE HEADER'S OWN BAND IS OPAQUE; ONLY THE TAIL FADES (2026-09-17).
+   The first stop used to be `/ 0.92`, and 8% of a near-black sentence on a
+   near-white page is not a wash — it is readable text. Measured live at 390px
+   on `/masterwork/<id>`, light AND dark: the route's own line "Working systems
+   built from your approved rules." ran straight through the header, across the
+   back chevron and THROUGH the word "Rulebook" — two strings of text on the
+   same pixels. `(core)` pulls content up under a 40–44px header with no
+   clearance, so there is no width at which 92% is enough; the phone is just
+   where the header is shortest and the collision is guaranteed.
+
+   The stops are LENGTHS, not percentages, so the opaque band is exactly the
+   header's own padded box (safe area + `--shell-header-h`) at every breakpoint
+   — a percentage silently re-cut the band when `--shell-header-h` drops to
+   2.5rem under the mobile breakpoint. Everything the original comment wanted is
+   intact: the dissolve still happens, it still paints in the PAGE'S OWN
+   background colour (invisible on a flat route), and it still ends at zero. */
 .shell-header::before {
   content: "";
   position: absolute;
@@ -1422,15 +1439,23 @@ button.shell-nav-flyout-item {
   bottom: calc(-1 * var(--shell-header-fade-h));
   z-index: -1;
   pointer-events: none;
+  --shell-header-scrim-solid: calc(
+    var(--shell-safe-area-top) + var(--shell-header-h)
+  );
   background: linear-gradient(
     to bottom,
-    hsl(var(--background) / 0.92) 0%,
-    hsl(var(--background) / 0.86) 22%,
-    hsl(var(--background) / 0.7) 40%,
-    hsl(var(--background) / 0.48) 56%,
-    hsl(var(--background) / 0.27) 71%,
-    hsl(var(--background) / 0.12) 85%,
-    hsl(var(--background) / 0) 100%
+    hsl(var(--background)) 0,
+    hsl(var(--background)) var(--shell-header-scrim-solid),
+    hsl(var(--background) / 0.62)
+      calc(
+        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.3
+      ),
+    hsl(var(--background) / 0.28)
+      calc(
+        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.62
+      ),
+    hsl(var(--background) / 0)
+      calc(var(--shell-header-scrim-solid) + var(--shell-header-fade-h))
   );
 }
 
