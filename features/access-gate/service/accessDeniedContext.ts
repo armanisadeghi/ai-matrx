@@ -28,6 +28,7 @@ import type {
   AccessRequestSummary,
   RequestedLevel,
 } from "@/features/access-gate/types";
+import { parsePermissionLevel } from "@/utils/permissions/levels";
 
 function rec(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -95,12 +96,11 @@ function parseRequest(raw: unknown): AccessRequestSummary | null {
     status: REQUEST_STATUSES.includes(status as AccessRequestStatus)
       ? (status as AccessRequestStatus)
       : "pending",
+    // Same ladder, same reason as `parseRequestedLevel`: a hand-written chain
+    // collapsed every unnamed level into `viewer` without a word.
     level:
-      row?.level === "admin"
-        ? "admin"
-        : row?.level === "editor"
-          ? "editor"
-          : "viewer",
+      parsePermissionLevel(row?.level, "accessDeniedContext.request.level") ??
+      "viewer",
     createdAt: str(row?.created_at),
     decisionNote: str(row?.decision_note),
   };

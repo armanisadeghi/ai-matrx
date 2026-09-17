@@ -46,6 +46,7 @@ import {
   PermissionCheckResult,
   ShareActionResult,
   satisfiesPermissionLevel,
+  toDbPermissionLevel,
 } from "./types";
 import { getShareableResource, getResourceTypeLabel } from "./registry";
 import { getShareCapabilities } from "./shareLinks";
@@ -311,7 +312,10 @@ export async function shareWithUser(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
       p_target_user_id: userId,
-      p_permission_level: permissionLevel,
+      // Narrowed at the write boundary: the code ladder is wider than the
+      // database enum, so a level Postgres cannot store is refused here by
+      // name with the remedy, not swallowed into an opaque enum error.
+      p_permission_level: toDbPermissionLevel(permissionLevel),
     });
 
     if (error) throw error;
@@ -396,7 +400,9 @@ export async function shareWithOrg(
       p_resource_id: resourceId,
       p_target_org_id: organizationId,
       // omit → server applies the org module's default_permission.
-      p_permission_level: permissionLevel,
+      p_permission_level: permissionLevel
+        ? toDbPermissionLevel(permissionLevel)
+        : permissionLevel,
     });
 
     if (error) throw error;

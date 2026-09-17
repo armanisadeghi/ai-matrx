@@ -16,10 +16,11 @@
 import { supabase } from "@/utils/supabase/client";
 import type { ResourceType } from "./registry";
 import { resolveResourceToken } from "./registry";
+import { parsePermissionLevel, type PermissionLevel } from "./levels";
 
 export interface OrgSharedResourceRef {
   resourceId: string;
-  permissionLevel: "viewer" | "editor" | "admin";
+  permissionLevel: PermissionLevel;
   permissionId: string;
   createdAt: string | null;
 }
@@ -76,7 +77,11 @@ export async function listOrgSharedResources(
   }
   return (data ?? []).map((row) => ({
     resourceId: row.resource_id,
-    permissionLevel: row.permission_level as "viewer" | "editor" | "admin",
+    permissionLevel:
+      parsePermissionLevel(
+        row.permission_level,
+        "listOrgSharedResources.permission_level",
+      ) ?? "viewer",
     permissionId: row.id,
     createdAt: row.created_at ?? null,
   }));
