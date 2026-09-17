@@ -351,6 +351,9 @@ async function createRequest(
     .schema("iam")
     .from("access_requests")
     .insert({
+      // org-fallback-deliberate: the same request as the marked resolve above —
+      //   the requester is not yet in the organization they are asking to join, so
+      //   the row lives in their own workspace
       organization_id: personalOrgId,
       created_by: userId,
       resource_type: "organization",

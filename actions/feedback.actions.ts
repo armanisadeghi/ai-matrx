@@ -3,7 +3,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
@@ -77,6 +76,15 @@ export async function submitFeedback(
       return { success: false, error: "User not authenticated" };
     }
 
+    const organizationId = input.organization_id?.trim() ?? "";
+    if (organizationId.length === 0) {
+      return {
+        success: false,
+        error:
+          "Select an organization before sending feedback \u2014 every report is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
+
     // Get user metadata for username
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
@@ -90,7 +98,9 @@ export async function submitFeedback(
       .schema("users")
       .from("user_feedback")
       .insert({
-        organization_id: await ensureOrgIdServer(supabase, undefined),
+        // The organization the submitter is acting in, carried from the
+        // surface — never the personal one this used to resolve.
+        organization_id: organizationId,
         user_id: user.id,
         // RLS owner branch keys on created_by — without it the submitter
         // can't see their own report (this insert uses the admin client, so
@@ -1115,6 +1125,10 @@ export async function createAnnouncement(
       .from("system_announcements")
       .insert({
         ...input,
+        // org-fallback-deliberate: a system announcement is platform-wide content
+        //   with no tenant — it is shown to every organization, so the global system
+        //   org IS its home; the create surface is the admin-gated
+        //   CreateAnnouncementDialog
         organization_id: await resolveSystemOrgId(supabase),
         visibility: "internal",
         created_by: user.id,

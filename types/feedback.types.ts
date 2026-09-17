@@ -136,6 +136,15 @@ export interface CreateFeedbackInput {
   feedback_type: FeedbackType;
   route: string;
   description: string;
+  /**
+   * The organization the person is acting in, read from Redux by the surface
+   * and CARRIED into the Server Action. A Server Action carries no
+   * `X-Organization-Id` header, so the selection has to travel as an argument
+   * — the action used to resolve the submitter's PERSONAL organization
+   * instead, filing their report in a workspace nobody chose.
+   * common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+   */
+  organization_id: string;
   image_file_ids?: string[];
   /**
    * Admin-only. Server action ignores these fields if the caller is not an

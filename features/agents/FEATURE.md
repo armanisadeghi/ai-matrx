@@ -842,6 +842,16 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-09-17` — **"Save as template" files the template in the organization the
+  person is acting in.** All 11 live `agent.template` rows sat in their
+  creator's personal organization —
+  `POST /api/agents/[id]/convert-to-template` resolved it server-side with
+  `ensureOrgIdServer(supabase, undefined)`. The route now reads
+  `X-Organization-Id` and refuses with `organization_context_required` and a
+  remedy; `AgentOptionsMenu` (both menus) and `AgentCard` send the selected
+  organization and say so at the click rather than firing a request that 400s.
+  Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md` rule 4.
+
 - `2026-09-14` — claude: **the smart-input `+` compute picker binds THIS CONVERSATION only.** `use-compute-target-actions.ts#applyBinding` used to write the `activeAgentSandboxBySurface` seed on every selection (moving every future chat on the surface onto the box) as well as the conversation. It now dispatches `setConversationSandbox` alone, through the shared pure decision in `lib/sandbox/binding-scope.ts`; the surface-wide default is an explicit opt-in offered only in the chat Sandbox panel. See `features/agents/components/chat/FEATURE.md` 2026-09-14.
 
 - `2026-09-13` — **MCP availability belongs to one explicit organization.** `fetchAvailability` takes `organizationId`, the service sends that exact header, and every consumer waits for an active organization before dispatching. The slice clears availability on an organization change and rejects late completions for the prior organization; selectors expose no prior-workspace truth while the replacement request is pending. Guard: `redux/mcp/__tests__/mcp-availability-organization.test.ts`.

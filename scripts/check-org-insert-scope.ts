@@ -32,7 +32,23 @@
  *      (app/ components/ features/ hooks/ lib/ utils/ providers/; tests,
  *      stories, fixtures and `(dev)` demos excluded), resolves the table from
  *      the `.from("…")` / `.schema("…").from("…")` in the same call chain or
- *      from a same-file helper, and classifies the payload:
+ *      from a same-file helper, and classifies the payload.
+ *
+ *      A BARE table name says nothing about the schema — the schema was chosen
+ *      where the CLIENT was built. So the chain's root is followed to its
+ *      definition, across the import when it lives in another module:
+ *      `interviewDb(supabase).from("session")` is `interview.session`,
+ *      `savedViewDb().from("saved_view")` is `platform.saved_view`. A root the
+ *      pass cannot follow is reported UNRESOLVED **by its name** and NEVER
+ *      re-homed into `public.` — until 2026-09-17 it was, and `public.session`
+ *      (a table this database does not have) read as "not in the generated
+ *      types", so the ratchet absorbed the site while all 53 live
+ *      `interview.session` rows sat in their creator's personal organization.
+ *
+ *      `app/api/cms/**` and `app/api/html-pages/**` are OUT OF SCOPE by
+ *      declaration (see CMS_PRODUCT_DB_SCOPES) and counted on every run.
+ *
+ *      The verdicts:
  *
  *      CARRIES     an object literal (or a same-file variable, helper return,
  *                  `.map()` body or spread) that names `organization_id` with a
@@ -114,6 +130,68 @@ const SKIP_DIRS = new Set([
 
 /** Stands in for a `.from(x)` argument that is not a literal this pass can settle. */
 const UNRESOLVED_ARG = "<unresolved-arg>";
+
+/** Stands in for a client wrapper whose schema this pass cannot settle. */
+const UNRESOLVED_WRAPPER = "<unresolved-wrapper:";
+
+/**
+ * THE CMS IS A SEPARATE PRODUCT DATABASE — declared here by name, never left to
+ * fall into UNRESOLVED.
+ *
+ * `app/api/cms/**` and `app/api/html-pages/**` build their own supabase client
+ * against Supabase project `viyklljfdhtidwecakwx` (env
+ * `NEXT_PUBLIC_SUPABASE_HTML_URL` + `SUPABASE_HTML_SECRET_KEY`) — the one
+ * declared separate PRODUCT database (aidream CLAUDE.md § ONE database). Its
+ * tables (`client_sites`, `client_pages`, `client_assets`, `client_components`,
+ * `site_collections`, `site_collection_items`, `client_activity_log`,
+ * `html_pages`) are NOT in `types/database.types.ts`, are not organization-
+ * scoped, and `public._stamp_org_default` does not exist there. Reporting them
+ * as UNRESOLVED would park eight permanent entries in a ratchet that is
+ * supposed to shrink to zero, and would teach the next agent that an
+ * unmeasured site is normal. So they are OUT OF SCOPE by declaration, counted
+ * and PRINTED on every run — never silently dropped.
+ */
+const CMS_PRODUCT_DB_SCOPES: ReadonlyArray<{
+  prefix: string;
+  client: string;
+}> = [
+  {
+    prefix: "app/api/cms/",
+    client: "getCmsClient() — app/api/cms/_lib/cmsDb.ts",
+  },
+  {
+    prefix: "app/api/html-pages/",
+    client: "getHtmlAdminClient() — built in the route from NEXT_PUBLIC_SUPABASE_HTML_URL",
+  },
+];
+
+const cmsScopeFor = (relPath: string) =>
+  CMS_PRODUCT_DB_SCOPES.find((scope) => relPath.startsWith(scope.prefix));
+
+/**
+ * Client factories that carry NO schema, so `.from("x")` on their result really
+ * is `public.x`. Everything else that a chain starts from is treated as a
+ * schema wrapper: it is resolved by following it to its definition, and when it
+ * cannot be resolved the site is UNRESOLVED **by the wrapper's name** — never
+ * re-homed into `public.`, which is how `interviewDb(supabase).from("session")`
+ * read as `public.session`, a table the generated types do not have, and got
+ * absorbed as "not in types" while 53 of 53 live `interview.session` rows sat
+ * in their creator's personal organization.
+ */
+const PLAIN_CLIENT_FACTORIES = new Set([
+  "createClient",
+  "createBrowserClient",
+  "createServerClient",
+  "createAdminClient",
+  "createSupabaseClient",
+  "getSupabase",
+  "getScriptClient",
+  "getClient",
+  "getServiceClient",
+  "getSupabaseClient",
+  "getCmsClient",
+  "getHtmlAdminClient",
+]);
 
 export type Status = "CARRIES" | "MISSING" | "NULLABLE" | "UNRESOLVED";
 
@@ -282,9 +360,13 @@ function disambiguate(index: TableIndex, table: string): string {
 
 interface FileCtx {
   sf: ts.SourceFile;
+  /** Repo-relative path of the file being scanned — the anchor every relative import resolves against. */
+  file: string;
   vars: Map<string, ts.VariableDeclaration>;
   fns: Map<string, ts.Node>;
   imported: Set<string>;
+  /** local name -> { module specifier, name inside that module } */
+  importSources: Map<string, { module: string; exported: string }>;
 }
 
 function unwrap(node: ts.Expression): ts.Expression {
@@ -300,10 +382,11 @@ function unwrap(node: ts.Expression): ts.Expression {
   }
 }
 
-function buildFileCtx(sf: ts.SourceFile): FileCtx {
+function buildFileCtx(sf: ts.SourceFile, file: string): FileCtx {
   const vars = new Map<string, ts.VariableDeclaration>();
   const fns = new Map<string, ts.Node>();
   const imported = new Set<string>();
+  const importSources = new Map<string, { module: string; exported: string }>();
 
   const visit = (node: ts.Node): void => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
@@ -321,11 +404,21 @@ function buildFileCtx(sf: ts.SourceFile): FileCtx {
     }
     if (ts.isImportDeclaration(node) && node.importClause) {
       const clause = node.importClause;
-      if (clause.name) imported.add(clause.name.text);
+      const module = ts.isStringLiteral(node.moduleSpecifier)
+        ? node.moduleSpecifier.text
+        : "";
+      if (clause.name) {
+        imported.add(clause.name.text);
+        importSources.set(clause.name.text, { module, exported: "default" });
+      }
       if (clause.namedBindings) {
         if (ts.isNamedImports(clause.namedBindings)) {
           for (const element of clause.namedBindings.elements) {
             imported.add(element.name.text);
+            importSources.set(element.name.text, {
+              module,
+              exported: (element.propertyName ?? element.name).text,
+            });
           }
         } else {
           imported.add(clause.namedBindings.name.text);
@@ -335,7 +428,193 @@ function buildFileCtx(sf: ts.SourceFile): FileCtx {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return { sf, vars, fns, imported };
+  return { sf, file, vars, fns, imported, importSources };
+}
+
+/* ------------------------------------------------------------------ *
+ * 2b. Which SCHEMA the chain's root client carries
+ *
+ * A bare `.from("session")` says nothing about the schema: the schema was
+ * chosen where the client was BUILT — `interviewDb(supabase)` (imported from
+ * utils/supabase/interviewDb.ts), `savedViewDb()` (a same-file helper returning
+ * `supabase.schema("platform")`), `const db = supabase.schema("crm")`. So the
+ * root is FOLLOWED TO ITS DEFINITION, across the import when it lives in
+ * another module, and the schema it applies is the table's schema.
+ * ------------------------------------------------------------------ */
+
+/** Parsed source files, keyed by absolute path — a wrapper module is read once. */
+const moduleCache = new Map<string, ts.SourceFile | null>();
+
+function loadModule(absPath: string): ts.SourceFile | null {
+  const cached = moduleCache.get(absPath);
+  if (cached !== undefined) return cached;
+  let sf: ts.SourceFile | null = null;
+  try {
+    const source = readFileSync(absPath, "utf8");
+    sf = ts.createSourceFile(
+      absPath,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      absPath.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+  } catch {
+    sf = null;
+  }
+  moduleCache.set(absPath, sf);
+  return sf;
+}
+
+/** `@/utils/supabase/interviewDb` / `./filesDb` -> the file on disk, or undefined. */
+function resolveModuleFile(spec: string, fromFile: string): string | undefined {
+  let base: string;
+  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  else if (spec.startsWith("./") || spec.startsWith("../")) {
+    base = resolve(join(ROOT, fromFile, ".."), spec);
+  } else return undefined; // a package import — not our wrapper
+  for (const candidate of [
+    `${base}.ts`,
+    `${base}.tsx`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ]) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+/** The declaration of `name` at the top level of `sf`, if it has one. */
+function topLevelDeclaration(sf: ts.SourceFile, name: string): ts.Node | undefined {
+  for (const statement of sf.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name) {
+      return statement;
+    }
+    if (ts.isVariableStatement(statement)) {
+      for (const decl of statement.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.name.text === name) return decl;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** The import of `name` in `sf`, if it has one. */
+function importOf(
+  sf: ts.SourceFile,
+  name: string,
+): { module: string; exported: string } | undefined {
+  for (const statement of sf.statements) {
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) continue;
+    const module = ts.isStringLiteral(statement.moduleSpecifier)
+      ? statement.moduleSpecifier.text
+      : "";
+    const clause = statement.importClause;
+    if (clause.name?.text === name) return { module, exported: "default" };
+    const bindings = clause.namedBindings;
+    if (bindings && ts.isNamedImports(bindings)) {
+      for (const element of bindings.elements) {
+        if (element.name.text === name) {
+          return { module, exported: (element.propertyName ?? element.name).text };
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Every distinct `.schema("literal")` applied inside a declaration's value. */
+function schemasInNode(node: ts.Node): Set<string> {
+  const found = new Set<string>();
+  const visit = (n: ts.Node): void => {
+    if (
+      ts.isCallExpression(n) &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      n.expression.name.text === "schema" &&
+      n.arguments.length === 1
+    ) {
+      const arg = unwrap(n.arguments[0]);
+      if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) {
+        found.add(arg.text);
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(node);
+  return found;
+}
+
+/** Calls this declaration hands its result back from — `return webDb(client)`. */
+function delegatedCallNames(node: ts.Node): string[] {
+  const names: string[] = [];
+  const fromExpression = (expr: ts.Expression): void => {
+    let current: ts.Node = unwrap(expr);
+    while (ts.isCallExpression(current) || ts.isPropertyAccessExpression(current)) {
+      if (ts.isCallExpression(current)) {
+        const callee = unwrap(current.expression);
+        if (ts.isIdentifier(callee)) {
+          names.push(callee.text);
+          return;
+        }
+        current = callee;
+      } else current = current.expression;
+    }
+  };
+  if (ts.isVariableDeclaration(node) && node.initializer) {
+    const init = unwrap(node.initializer);
+    if (ts.isArrowFunction(init) && !ts.isBlock(init.body)) fromExpression(init.body);
+    else if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
+      for (const r of returnExpressions(init)) fromExpression(r);
+    } else fromExpression(init);
+    return names;
+  }
+  for (const r of returnExpressions(node)) fromExpression(r);
+  return names;
+}
+
+/**
+ * The schema a named client source applies, following same-file declarations
+ * and imports. Returns "" when the name resolves to something that applies NO
+ * schema (a plain client), and undefined when it cannot be settled at all.
+ */
+function schemaOfName(
+  name: string,
+  sf: ts.SourceFile,
+  file: string,
+  depth = 0,
+): string | "" | undefined {
+  if (depth > 3) return undefined;
+  if (PLAIN_CLIENT_FACTORIES.has(name)) return "";
+
+  const decl = topLevelDeclaration(sf, name);
+  if (decl) {
+    const schemas = schemasInNode(decl);
+    if (schemas.size === 1) return [...schemas][0];
+    if (schemas.size > 1) return undefined; // several schemas in one wrapper: not settleable
+    for (const delegate of delegatedCallNames(decl)) {
+      const inherited = schemaOfName(delegate, sf, file, depth + 1);
+      if (inherited) return inherited;
+      if (inherited === "") return "";
+    }
+    return "";
+  }
+
+  const imported = importOf(sf, name);
+  if (!imported) return undefined;
+  const target = resolveModuleFile(imported.module, file);
+  if (!target) return undefined; // a package import — never a schema wrapper of ours
+  const targetSf = loadModule(target);
+  if (!targetSf) return undefined;
+  return schemaOfName(
+    imported.exported === "default" ? name : imported.exported,
+    targetSf,
+    relative(ROOT, target),
+    depth + 1,
+  );
+}
+
+/** The schema the chain's root applies, as seen from the file being scanned. */
+function schemaOfRoot(name: string, ctx: FileCtx): string | "" | undefined {
+  return schemaOfName(name, ctx.sf, ctx.file);
 }
 
 /** The `<schema>.<table>` a call chain writes to, or "" when unresolvable. */
@@ -383,11 +662,24 @@ function resolveTable(
 
   parts.reverse();
   const resolved = parts.join(".");
-  if (resolved && !resolved.includes(UNRESOLVED_ARG)) {
-    // `.from("schema.table")` already carries both halves.
-    return resolved.includes(".") ? resolved : `public.${resolved}`;
-  }
   if (resolved.includes(UNRESOLVED_ARG)) return "";
+  if (resolved) {
+    // `.schema("x").from("y")` / `.from("schema.table")` already carry both halves.
+    if (resolved.includes(".")) return resolved;
+    // A BARE table name: its schema is whatever the chain's ROOT applied.
+    if (rootIdentifier) {
+      const schema = schemaOfRoot(rootIdentifier, ctx);
+      if (schema) return `${schema}.${resolved}`;
+      if (schema === undefined && rootCall) {
+        // A wrapper that could not be followed. Re-homing it into `public.`
+        // invents a table the database does not have and lets the ratchet
+        // absorb it; an unmeasured site is never a pass, so it is reported
+        // BY NAME instead.
+        return `${UNRESOLVED_WRAPPER}${rootIdentifier}()>`;
+      }
+    }
+    return `public.${resolved}`;
+  }
 
   // No `.from()` in this chain: the client came from a same-file helper or
   // variable that already carries it.
@@ -683,7 +975,7 @@ export function scanSource(
     true,
     relPath.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
-  const ctx = buildFileCtx(sf);
+  const ctx = buildFileCtx(sf, relPath);
   const sites: Site[] = [];
 
   const visit = (node: ts.Node): void => {
@@ -709,7 +1001,12 @@ export function scanSource(
               status: "UNRESOLVED",
               reason: "the table cannot be resolved statically from this call chain",
             }
-          : !known
+          : table.startsWith(UNRESOLVED_WRAPPER)
+            ? {
+                status: "UNRESOLVED",
+                reason: `the schema is applied by \`${table.slice(UNRESOLVED_WRAPPER.length, -1)}\`, which this pass cannot follow — the table is NOT assumed to be in \`public\``,
+              }
+            : !known
             ? {
                 status: "UNRESOLVED",
                 reason: `\`${table}\` is not in types/database.types.ts — its scope cannot be proved`,
@@ -818,22 +1115,81 @@ const LAW =
 
 function selfTest(): number {
   const index: TableIndex = {
+    // `assignment.session` and `crm.saved_view` are here on purpose: they are
+    // the real second candidates for those bare names, and without them the
+    // one-candidate fallback would rescue a misresolved `public.session` and
+    // the fixtures below could not fail.
     orgScoped: new Set([
       "agent.definition",
+      "assignment.session",
       "chat.artifact",
+      "crm.saved_view",
+      "interview.session",
+      "platform.saved_view",
       "public.tasks",
       "public.notes",
     ]),
     known: new Set([
       "agent.definition",
+      "assignment.session",
       "chat.artifact",
+      "crm.saved_view",
+      "interview.session",
+      "platform.saved_view",
       "public.tasks",
       "public.notes",
       "public.app_telemetry",
     ]),
   };
 
-  const offenders: Array<{ label: string; expect: Status; code: string }> = [
+  const offenders: Array<{
+    label: string;
+    expect: Status;
+    code: string;
+    /** When set, the resolved table must be exactly this — the schema half of the verdict. */
+    expectTable?: string;
+  }> = [
+    {
+      // THE MISRESOLUTION THIS GUARD SHIPPED WITH (fixed 2026-09-17): the schema
+      // is applied by the IMPORTED wrapper, so `.from("session")` is
+      // `interview.session` — and `public.session`, which the database does not
+      // have, used to read as "not in types" and get absorbed by the ratchet
+      // while every live row sat in its creator's personal organization.
+      label: "an imported schema wrapper (`interviewDb(supabase).from(\"session\")`)",
+      expect: "MISSING",
+      expectTable: "interview.session",
+      code: [
+        'import { interviewDb } from "@/utils/supabase/interviewDb";',
+        "export async function create(supabase: any, title: string) {",
+        '  await interviewDb(supabase).from("session").insert({ title });',
+        "}",
+      ].join("\n"),
+    },
+    {
+      label: "a same-file wrapper that applies the schema (`savedViewDb().from(\"saved_view\")`)",
+      expect: "MISSING",
+      expectTable: "platform.saved_view",
+      code: [
+        'import { supabase } from "@/utils/supabase/client";',
+        "function savedViewDb() {",
+        '  return supabase.schema("platform");',
+        "}",
+        "export async function create(name: string) {",
+        '  await savedViewDb().from("saved_view").insert({ name });',
+        "}",
+      ].join("\n"),
+    },
+    {
+      label: "a wrapper this pass cannot follow — reported BY NAME, never re-homed into `public.`",
+      expect: "UNRESOLVED",
+      expectTable: "<unresolved-wrapper:mysteryDb()>",
+      code: [
+        'import { mysteryDb } from "@some/external-package";',
+        "export async function create(supabase: any, title: string) {",
+        '  await mysteryDb(supabase).from("session").insert({ title });',
+        "}",
+      ].join("\n"),
+    },
     {
       label: "an org-scoped insert with the key absent (the trigger stamps the personal org)",
       expect: "MISSING",
@@ -916,11 +1272,19 @@ function selfTest(): number {
   for (const [i, testCase] of offenders.entries()) {
     const rel = `offender-${i}.ts`;
     const sites = scanSource(rel, testCase.code, index);
-    const hit = sites.find((s) => s.status === testCase.expect);
+    const hit = sites.find(
+      (s) =>
+        s.status === testCase.expect &&
+        (!testCase.expectTable || s.table === testCase.expectTable),
+    );
     if (!hit) {
       console.error(
-        `[check:org-insert-scope] SELF-TEST FAILED — expected ${testCase.expect} for ${testCase.label}; got ${
-          sites.length === 0 ? "nothing at all" : sites.map((s) => s.status).join(", ")
+        `[check:org-insert-scope] SELF-TEST FAILED — expected ${testCase.expect}${
+          testCase.expectTable ? ` on \`${testCase.expectTable}\`` : ""
+        } for ${testCase.label}; got ${
+          sites.length === 0
+            ? "nothing at all"
+            : sites.map((s) => `${s.status} on \`${s.table}\``).join(", ")
         }. The guard can no longer fail on that shape, so a green run proves nothing.`,
       );
       return 1;
@@ -1002,6 +1366,7 @@ function main(): number {
 
   const sites: Site[] = [];
   let scanned = 0;
+  let cmsFiles = 0;
   const self = relative(ROOT, join(ROOT, "scripts/check-org-insert-scope.ts"));
 
   for (const dir of SCAN_DIRS) {
@@ -1018,6 +1383,12 @@ function main(): number {
       }
       scanned += 1;
       if (!source.includes(".insert(") && !source.includes(".upsert(")) continue;
+      const cms = cmsScopeFor(rel);
+      if (cms) {
+        // Declared out of scope, not silently dropped — counted and printed.
+        cmsFiles += 1;
+        continue;
+      }
       sites.push(...scanSource(rel, source, index));
     }
   }
@@ -1060,6 +1431,9 @@ function main(): number {
 
   console.log(
     `[check:org-insert-scope] ${scanned} files scanned · ${index.orgScoped.size} organization-scoped tables · ${sites.length} unscoped write site(s): ${missing.length} MISSING, ${nullable.length} NULLABLE, ${unresolved.length} UNRESOLVED (baseline holds ${baseline?.sites.length ?? 0}).`,
+  );
+  console.log(
+    `[check:org-insert-scope] ${cmsFiles} writing file(s) under ${CMS_PRODUCT_DB_SCOPES.map((scope) => scope.prefix).join(" / ")} are OUT OF SCOPE by declaration — they write the separate CMS product database (Supabase project viyklljfdhtidwecakwx), which has no organization_id and no _stamp_org_default trigger.`,
   );
 
   if (fix) {

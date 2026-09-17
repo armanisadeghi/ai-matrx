@@ -24,6 +24,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -435,7 +436,13 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
 
         return appId;
       } catch (error: any) {
-        const rawMessage = error.message || "An unexpected error occurred";
+        // An honest refusal with its remedy: when no organization is selected
+        // the draft write refuses (`createGenerationDraft` carries the selected
+        // organization, never the personal one), and the transport's own
+        // sentence names no way to fix it.
+        const rawMessage = isOrganizationRequiredError(error)
+          ? "Select an organization before creating an app \u2014 every app is filed under one organization. Pick yours from the avatar menu and try again."
+          : error.message || "An unexpected error occurred";
 
         // Enhance error message if tab was backgrounded
         let errorMessage = rawMessage;

@@ -1,73 +1,13 @@
 {
   "_comment": "RATCHET — organization-scoped writes that do not yet carry the organization. `public._stamp_org_default` stamps the writer's PERSONAL organization on any NULL, so every entry here is a row that can silently land in a workspace nobody selected (common-docs/policies/context-is-carried-never-rebuilt.md rule 4). This list may only SHRINK: a NEW site fails immediately, a fixed one fails as STALE until `tsx scripts/check-org-insert-scope.ts --fix` rewrites it downward, and NULLABLE is never carried here at all. Line numbers are deliberately absent — an entry is identified by file + table + payload text, so unrelated edits above it do not churn the file.",
-  "seeded_at": "2026-09-17T20:36:00.586Z",
-  "count": 56,
+  "seeded_at": "2026-09-17T22:17:32.603Z",
+  "count": 40,
   "sites": [
     {
       "file": "app/api/agent-shortcuts/route.ts",
       "table": "<unresolved>",
       "status": "UNRESOLVED",
       "signature": "scoped as never"
-    },
-    {
-      "file": "app/api/cms/_lib/activityLog.ts",
-      "table": "public.client_activity_log",
-      "status": "UNRESOLVED",
-      "signature": "{ client_id: siteId, activity_type: activityType, entity_type: entityType, entity_id: entityId, description, user_id: userId, user_email: us"
-    },
-    {
-      "file": "app/api/cms/assets/route.ts",
-      "table": "public.client_assets",
-      "status": "UNRESOLVED",
-      "signature": "insert"
-    },
-    {
-      "file": "app/api/cms/collections/route.ts",
-      "table": "public.site_collection_items",
-      "status": "UNRESOLVED",
-      "signature": "{ collection_id: collectionId, client_id: target.client_id, data: prepared.data, status: quarantined ? \"archived\" : \"active\", // Admin-autho"
-    },
-    {
-      "file": "app/api/cms/collections/route.ts",
-      "table": "public.site_collections",
-      "status": "UNRESOLVED",
-      "signature": "row"
-    },
-    {
-      "file": "app/api/cms/components/route.ts",
-      "table": "public.client_components",
-      "status": "UNRESOLVED",
-      "signature": "{ client_id: siteId, component_type: componentType, name, html_content: htmlContent || \"\", css_content: cssContent || null, }"
-    },
-    {
-      "file": "app/api/cms/pages/route.ts",
-      "table": "public.client_pages",
-      "status": "UNRESOLVED",
-      "signature": "insertRow"
-    },
-    {
-      "file": "app/api/cms/pages/route.ts",
-      "table": "public.client_pages",
-      "status": "UNRESOLVED",
-      "signature": "row"
-    },
-    {
-      "file": "app/api/cms/sites/route.ts",
-      "table": "public.client_sites",
-      "status": "UNRESOLVED",
-      "signature": "{ name, slug, domain: domain || null, owner_user_id: user.id, // Always set to authenticated user created_by: user.id, // Audit stamp; owner"
-    },
-    {
-      "file": "app/api/html-pages/route.ts",
-      "table": "public.html_pages",
-      "status": "UNRESOLVED",
-      "signature": "fallbackData"
-    },
-    {
-      "file": "app/api/html-pages/route.ts",
-      "table": "public.html_pages",
-      "status": "UNRESOLVED",
-      "signature": "insertData"
     },
     {
       "file": "features/agents/components/schema-proposal/create-shape.ts",
@@ -172,12 +112,6 @@
       "signature": "rows"
     },
     {
-      "file": "features/crm/saved-views/service.ts",
-      "table": "public.saved_view",
-      "status": "UNRESOLVED",
-      "signature": "{ name, description: input.description?.trim() || null, // Serialized as-is: every codec's TDef is a plain JSON object. definition: input.de"
-    },
-    {
       "file": "features/crm/service.ts",
       "table": "crm.address",
       "status": "UNRESOLVED",
@@ -194,12 +128,6 @@
       "table": "<unresolved>",
       "status": "UNRESOLVED",
       "signature": "name"
-    },
-    {
-      "file": "features/data-tables/saved-views/service.ts",
-      "table": "public.saved_view",
-      "status": "UNRESOLVED",
-      "signature": "{ name: args.name.trim() || \"Untitled view\", surface_key: DATA_TABLE_SURFACE_KEY, subject_id: args.tableId, organization_id: args.organizati"
     },
     {
       "file": "features/education/study/service/planService.ts",
@@ -256,24 +184,6 @@
       "signature": "input"
     },
     {
-      "file": "features/math/service.ts",
-      "table": "education.math_problems",
-      "status": "UNRESOLVED",
-      "signature": "problem"
-    },
-    {
-      "file": "features/math/service.ts",
-      "table": "education.math_problems",
-      "status": "UNRESOLVED",
-      "signature": "problems"
-    },
-    {
-      "file": "features/page-extraction/api/jobs.ts",
-      "table": "docproc.page_extraction_jobs",
-      "status": "UNRESOLVED",
-      "signature": "input"
-    },
-    {
       "file": "features/page-extraction/data-review/data.ts",
       "table": "docproc.page_extraction_jobs",
       "status": "UNRESOLVED",
@@ -320,12 +230,6 @@
       "table": "ui.ui_surface_write_target",
       "status": "UNRESOLVED",
       "signature": "writeTargetRows"
-    },
-    {
-      "file": "features/vision-interview/service.ts",
-      "table": "public.session",
-      "status": "UNRESOLVED",
-      "signature": "{ title: input.title.trim() || \"Untitled interview\", vision_statement: input.visionStatement.trim() || null, // Explicit v2 opening stage — "
     },
     {
       "file": "lib/agents/actions.ts",

@@ -659,6 +659,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       // Admin-authored blocks are GLOBAL platform-library content → system org
       // (the create form has no per-scope option; global content lives here).
+      // org-fallback-deliberate: an admin-authored content block is global
+      //   platform-library content offered to every organization; the surface lives
+      //   in the admin-gated (admin) route group
       const organizationId = await resolveSystemOrgId();
       const { error } = await supabase
         .schema("skill")
@@ -839,6 +842,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             position: maxSortOrder + 1,
             metadata: { is_active: true, legacy_table: "shortcut_categories" },
             // Global platform-library category → system org.
+            // org-fallback-deliberate: the block category is the same global platform
+            //   library as the block above it; the surface lives in the admin-gated
+            //   (admin) route group
             organization_id: await resolveSystemOrgId(),
           },
         ])

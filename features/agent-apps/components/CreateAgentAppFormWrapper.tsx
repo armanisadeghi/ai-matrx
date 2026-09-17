@@ -38,6 +38,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
 import { LiveBuilder } from "./LiveBuilder";
@@ -87,6 +89,9 @@ export function CreateAgentAppFormWrapper({
 
   // Thin list for the picker — only fetched when no agent is preselected.
   const liveAgents = useAppSelector(selectLiveAgents);
+  // The organization the person selected — carried to the route as
+  // `X-Organization-Id`, never resolved server-side into their personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const agentInRedux = useAppSelector((state) =>
     selectedAgentId ? selectAgentById(state, selectedAgentId) : undefined,
   );
@@ -174,11 +179,22 @@ export function CreateAgentAppFormWrapper({
 
   // ── Manual submit (Build Manually card) ─────────────────────────────────
   const handleManualSubmit = async (input: CreateAgentAppInput) => {
+    if (!selectedOrganizationId) {
+      // The route files the app in the admitted organization and refuses
+      // without one — say so here rather than send a request that 400s.
+      toast.error(
+        "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/agent-apps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: applyOrganizationContextHeader(
+          { "Content-Type": "application/json" },
+          selectedOrganizationId ?? undefined,
+        ),
         body: JSON.stringify(input),
       });
       if (!res.ok) {
@@ -198,6 +214,14 @@ export function CreateAgentAppFormWrapper({
   // ── Standard Chat Layout (one-click create with hardcoded defaults) ────
   const handleStandardChatCreate = async () => {
     if (!selectedAgentId) return;
+    if (!selectedOrganizationId) {
+      // The route files the app in the admitted organization and refuses
+      // without one — say so here rather than send a request that 400s.
+      toast.error(
+        "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const agentName = agentInRedux?.name ?? agentRow?.name ?? "App";
@@ -215,7 +239,10 @@ export function CreateAgentAppFormWrapper({
 
       const res = await fetch("/api/agent-apps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: applyOrganizationContextHeader(
+          { "Content-Type": "application/json" },
+          selectedOrganizationId ?? undefined,
+        ),
         body: JSON.stringify({
           agent_id: selectedAgentId,
           slug: chosenSlug,

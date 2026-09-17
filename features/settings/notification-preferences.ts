@@ -109,6 +109,9 @@ export async function loadNotificationScopes(): Promise<NotificationScope[]> {
   ]);
 
   const scopes: NotificationScope[] = [
+    // org-fallback-deliberate: this is the 'Everywhere (my default)' scope in
+    //   the picker — the person's own cross-organization default, named as such in
+    //   the UI
     { organizationId: personalOrgId, label: "Everywhere (my default)", isGlobal: true },
   ];
 

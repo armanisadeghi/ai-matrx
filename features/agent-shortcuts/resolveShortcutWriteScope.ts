@@ -27,6 +27,9 @@ export async function resolveShortcutWriteScope(args: {
   if (scope === "global") {
     return {
       userId: null,
+      // org-fallback-deliberate: scope 'global' MEANS the platform-wide shortcut
+      //   every organization sees — the system org is the scope the caller asked
+      //   for, not a substitute for one it failed to carry
       organizationId: await resolveSystemOrgId(),
       projectId: null,
       taskId: null,

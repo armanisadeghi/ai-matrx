@@ -13,6 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { readAllRows } from "@ai-matrx/data/db";
 import {
   defineChannelNamespace,
@@ -47,9 +48,21 @@ export interface CreateSessionInput {
 export async function createSession(
   input: CreateSessionInput,
 ): Promise<InterviewSessionRow> {
+  // THE ORGANIZATION IS CARRIED, NEVER STAMPED. `interview.session` is
+  // organization-scoped and `public._stamp_org_default` fires BEFORE INSERT on
+  // it: a payload without `organization_id` is not "leaving it to the default",
+  // it is filing the interview in the creator's PERSONAL workspace — which is
+  // where all 53 live sessions landed before 2026-09-17, invisible to everyone
+  // the person works with. `ensureOrgId` reads the SELECTED organization (it
+  // joins store hydration first) and REFUSES with
+  // `OrganizationContextError("organization_context_required")` when there is
+  // no selection; both entry points render that refusal with its remedy.
+  // Law: common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  const organizationId = await ensureOrgId(undefined);
   const { data, error } = await interviewDb(supabase)
     .from("session")
     .insert({
+      organization_id: organizationId,
       title: input.title.trim() || "Untitled interview",
       vision_statement: input.visionStatement.trim() || null,
       // Explicit v2 opening stage — never lean on the column default. The

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { sendEmail } from "@/lib/email/client";
 import { emailTemplates } from "@/lib/email/client";
@@ -53,9 +52,12 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
     // Signed-in submitters get their own org; anonymous submissions home to
     // the global system org (no individual owner).
-    const organizationId = user
-      ? await ensureOrgIdServer(supabase, undefined)
-      : await resolveSystemOrgId(adminSupabase);
+    // org-fallback-deliberate: a contact submission is a PLATFORM lead, not
+    //   one organization's work — an anonymous sender has no organization at
+    //   all, and a signed-in sender is writing to us, not to their tenant. It
+    //   used to file a signed-in person's message in their private workspace,
+    //   where the team that answers contact mail could not see it.
+    const organizationId = await resolveSystemOrgId(adminSupabase);
     const { data: submission, error: dbError } = await adminSupabase
       .schema("communication")
       .from("contact_submissions")

@@ -4480,6 +4480,8 @@ export async function addDiscoveredPublisher(
       categories: input.categories,
       citation_weight: input.citationWeight,
       sort_rank: input.sortRank,
+      // org-fallback-deliberate: a directory/aggregator definition is public
+      //   reference data the whole platform shares, not one organization's record
       organization_id: SYSTEM_ORGANIZATION_ID,
       visibility: "public",
       metadata: input.metadata,

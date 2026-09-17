@@ -32,10 +32,17 @@
  *      whose name ends in `organizationId` / `orgId`.
  *   3. `.eq("organization_id", x ?? <one of those>)` — the read half of the
  *      same mistake.
- *   4. STATEMENT-FORM substitution: `organizationId = await resolvePersonalOrgId()`,
- *      `payload.organization_id = await resolveSystemOrgId(client)` — including
- *      the `if (!orgId) orgId = …` shape, which carries no `??` at all and was
- *      therefore invisible to rules 2a-2c.
+ *   4. STATEMENT-FORM substitution, in all three shapes: the ASSIGNMENT
+ *      (`if (!orgId) orgId = await resolvePersonalOrgId()`), the DECLARATION
+ *      (`const organization_id = await resolveSystemOrgId()`) and the PAYLOAD
+ *      PROPERTY (`{ organization_id: await resolveSystemOrgId(client) }`).
+ *      None of them carries a `??`, so rules 2a-2c never saw any of it; until
+ *      2026-09-17 rule 4 matched only the assignment, which is the rarest of
+ *      the three. The SERVER resolvers count here too — `resolveOrgIdForUserServer()`
+ *      always, and `ensureOrgIdServer(client, x)` when `x` is absent, null,
+ *      undefined, `y ?? null`, or an optional chain that can be undefined
+ *      (`parent?.organization_id`, i.e. "the parent could not be read"). Given
+ *      a real organization it is a CARRY and passes.
  *   5. FIRST-MEMBERSHIP PICK: a `??` / `||` / ternary whose right side reads the
  *      first element of a list of organizations or memberships — `orgs[0]`,
  *      `organizations.at(0)`, `memberships.find(...)?.organization_id` — feeding
@@ -50,13 +57,17 @@
  * purpose). Everywhere else they are the defect.
  *
  * THE ONE EXEMPTION, and it is never silent: a line that deliberately reads the
- * person's OWN workspace by name (a creator's payout account; the personal
- * organization as the STORAGE of a cross-organization default) carries
+ * person's OWN workspace by name (a per-person singleton such as a profile or
+ * a notification preference), or the PLATFORM's own (a shipped catalog row, an
+ * error ledger), carries
  *
  *     // org-fallback-deliberate: <reason, at least 10 characters>
  *
- * on the offending line or the line above it. Grep that marker to census every
- * deliberate personal-organization read in the repo.
+ * on the offending line or anywhere in the comment block directly above it.
+ * (A fixed two-line window punished the honest case: the longer the reason,
+ * the further the marker was pushed from the code it explains, so a
+ * seven-line justification read as a violation.) Grep that marker to census
+ * every deliberate personal- or system-organization read in the repo.
  *
  * WHAT IT CANNOT SEE (never let a green run imply more than it proves)
  *   • A substitution assembled elsewhere and passed in as a plain argument.
@@ -68,6 +79,11 @@
  *     and it is a shape this guard structurally cannot see. That is the sibling
  *     guard `scripts/check-org-insert-scope.ts`, which runs right after this one.
  *   • Whether a deliberate marker's reason is TRUE — only that it exists.
+ *   • `ensureOrgIdServer(client, orgFromBody)` where the argument is a plain
+ *     identifier that HAPPENS to be nullable at run time: the call reads as a
+ *     carry, exactly as the sibling insert-scope guard narrows an optional
+ *     read. Only the shapes that are null/undefined on their face — absent,
+ *     `null`, `undefined`, `x ?? null`, an optional chain — are judged.
  *
  * Usage:
  *   tsx scripts/check-org-fallback-shapes.ts              # exit 1 on a violation
@@ -92,7 +108,20 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 
-const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "utils"];
+// `actions/` and `providers/` joined the list on 2026-09-17: Server Actions
+// live in `actions/` (`actions/feedback.actions.ts`, `actions/quiz.actions.ts`
+// both substituted the personal organization on a create) and nothing scanned
+// that directory at all, so the guard read green over them forever.
+const SCAN_DIRS = [
+  "actions",
+  "app",
+  "components",
+  "features",
+  "hooks",
+  "lib",
+  "providers",
+  "utils",
+];
 
 /** The deleted selector. Any reference at all is a violation. */
 const DELETED_SELECTOR = "selectEffectiveOrganizationId";
@@ -106,11 +135,32 @@ const SUBSTITUTE_NAMES = new Set([
   "SYSTEM_ORGANIZATION_ID",
 ]);
 
-/** Calls that RESOLVE one of those organizations. */
+/**
+ * Calls that RESOLVE one of those organizations — the BROWSER family and, since
+ * 2026-09-17, the SERVER family, which was invisible to this guard while it
+ * held only the three browser names. `lib/organizations/personalOrg.ts` hosts
+ * both: `resolveOrgIdForUserServer` (:183) answers "personal, else the SYSTEM
+ * organization" for a user id, and it was answering it for route handlers that
+ * had a perfectly good admitted organization on the request.
+ */
 const SUBSTITUTE_CALLS = new Set([
   "peekPersonalOrgId",
   "resolvePersonalOrgId",
   "resolveSystemOrgId",
+  "resolveOrgIdForUserServer",
+]);
+
+/**
+ * Calls that substitute ONLY when they are not given an organization to carry.
+ * `ensureOrgIdServer(client, orgId)` (personalOrg.ts:156) returns `orgId` when
+ * there is one and otherwise RESOLVES THE PERSONAL ORGANIZATION through
+ * `current_personal_org_id()`. So `ensureOrgIdServer(client, admittedOrgId)` is
+ * a carry and `ensureOrgIdServer(client)` / `(client, undefined)` /
+ * `(client, null)` is the personal-workspace substitution wearing the same
+ * name. The map value is the index of the organization argument.
+ */
+const CONDITIONAL_SUBSTITUTE_CALLS = new Map<string, number>([
+  ["ensureOrgIdServer", 1],
 ]);
 
 const DELIBERATE_MARKER = "org-fallback-deliberate:";
@@ -180,9 +230,65 @@ function isSubstituteOrganization(expr: ts.Expression): boolean {
       : ts.isPropertyAccessExpression(callee)
         ? callee.name.text
         : "";
-    return SUBSTITUTE_CALLS.has(name);
+    if (SUBSTITUTE_CALLS.has(name)) return true;
+    const orgArgIndex = CONDITIONAL_SUBSTITUTE_CALLS.get(name);
+    if (orgArgIndex !== undefined) {
+      const arg = node.arguments[orgArgIndex];
+      if (!arg) return true; // no organization passed at all
+      return canBeNullish(arg);
+    }
+  }
+  // `isGlobal ? await resolveSystemOrgId(c) : await ensureOrgIdServer(c, null)`
+  // — a branch that substitutes is a substitution, whatever the other side does.
+  if (ts.isConditionalExpression(node)) {
+    return (
+      isSubstituteOrganization(node.whenTrue) ||
+      isSubstituteOrganization(node.whenFalse)
+    );
   }
   return false;
+}
+
+/**
+ * Can this argument arrive as null/undefined — i.e. can the call it is passed
+ * to fall through to the personal organization? `x ?? null`, `parent?.org_id`
+ * and a bare `null`/`undefined` all can, and all of them mean the row lands in
+ * the writer's personal workspace whenever the real value is missing. A plain
+ * identifier or property read is taken as a carry (the same narrowing rule the
+ * sibling insert-scope guard applies).
+ */
+function canBeNullish(expr: ts.Expression): boolean {
+  const node = unwrap(expr);
+  if (node.kind === ts.SyntaxKind.NullKeyword) return true;
+  if (ts.isIdentifier(node) && node.text === "undefined") return true;
+  if (ts.isBinaryExpression(node)) {
+    const op = node.operatorToken.kind;
+    if (
+      op === ts.SyntaxKind.QuestionQuestionToken ||
+      op === ts.SyntaxKind.BarBarToken
+    ) {
+      return canBeNullish(node.right);
+    }
+  }
+  if (ts.isConditionalExpression(node)) {
+    return canBeNullish(node.whenTrue) || canBeNullish(node.whenFalse);
+  }
+  // An optional chain: `parentConversation?.organization_id` is undefined the
+  // moment the parent could not be read, and undefined is the substitution.
+  let found = false;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    if (
+      (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isCallExpression(n)) &&
+      n.questionDotToken
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(node);
+  return found;
 }
 
 /** A `??` / `||` whose right operand substitutes the organization. */
@@ -338,13 +444,27 @@ function containsFirstMembershipPick(expr: ts.Expression): boolean {
  * nothing, exactly like the sibling guards' allowlist reasons.
  */
 function isDeliberate(lines: string[], lineIndex: number): boolean {
-  for (const i of [lineIndex, lineIndex - 1, lineIndex - 2]) {
-    const text = lines[i];
-    if (!text) continue;
+  const carriesMarker = (text: string | undefined): boolean => {
+    if (!text) return false;
     const at = text.indexOf(DELIBERATE_MARKER);
-    if (at === -1) continue;
-    const reason = text.slice(at + DELIBERATE_MARKER.length).trim();
-    if (reason.length >= 10) return true;
+    if (at === -1) return false;
+    return text.slice(at + DELIBERATE_MARKER.length).trim().length >= 10;
+  };
+  if (carriesMarker(lines[lineIndex])) return true;
+  // The marker may sit anywhere in the CONTIGUOUS comment block directly above
+  // the line. A fixed two-line window punished the honest case: the longer the
+  // justification, the further the marker is pushed from the code it explains,
+  // so a well-argued deliberate read (kgSuggestionAckService's seven-line
+  // reason) was reported as a violation while a one-word one passed.
+  for (let i = lineIndex - 1; i >= 0; i -= 1) {
+    const text = lines[i]?.trim() ?? "";
+    const isComment =
+      text.startsWith("//") ||
+      text.startsWith("*") ||
+      text.startsWith("/*") ||
+      text.endsWith("*/");
+    if (!isComment) break;
+    if (carriesMarker(lines[i])) return true;
   }
   return false;
 }
@@ -415,6 +535,33 @@ export function scanSource(relPath: string, source: string): Finding[] {
           ? target.name.text
           : "";
       if (name && isOrganizationTargetName(name)) record(node, "fallback");
+    }
+
+    // 4b. DECLARATION-FORM substitution: `const organization_id = await
+    //     resolveSystemOrgId()`, `let orgId = await ensureOrgIdServer(client)`,
+    //     `{ organization_id: await resolveOrgIdForUserServer(...) }`. Rule 4
+    //     matched ASSIGNMENTS only, so the commonest shape of all — declaring
+    //     the variable straight from the resolver — walked through it.
+    if (!inPrimitive) {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        isOrganizationTargetName(node.name.text) &&
+        !namesTheSubstituteItself(node.name.text) &&
+        node.initializer &&
+        isSubstituteResolution(node.initializer)
+      ) {
+        record(node, "statement-substitution");
+      }
+      if (
+        ts.isPropertyAssignment(node) &&
+        (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) &&
+        isOrganizationTargetName(node.name.text) &&
+        !namesTheSubstituteItself(node.name.text) &&
+        isSubstituteResolution(node.initializer)
+      ) {
+        record(node, "statement-substitution");
+      }
     }
 
     // 4. STATEMENT-FORM substitution: `organizationId = await resolvePersonalOrgId()`
@@ -549,6 +696,11 @@ function couldMatch(source: string): boolean {
   if (source.includes(PERSONAL_ORG_RPC)) return true;
   for (const name of SUBSTITUTE_NAMES) if (source.includes(name)) return true;
   for (const name of SUBSTITUTE_CALLS) if (source.includes(name)) return true;
+  // The conditional family too — a prefilter that does not know a rule's token
+  // silently unscans every file whose only offence is that rule.
+  for (const name of CONDITIONAL_SUBSTITUTE_CALLS.keys()) {
+    if (source.includes(name)) return true;
+  }
   // Rule 5 has no distinctive token — it needs an index/first-element read AND
   // a list that names organizations or memberships.
   if (
@@ -621,6 +773,73 @@ function selfTest(): number {
         ].join("\n"),
       },
       {
+        // THE SERVER FAMILY, invisible until 2026-09-17: the guard knew only
+        // the three browser resolvers, so every route handler that resolved
+        // the personal organization server-side read as compliant.
+        label: "`ensureOrgIdServer(client, undefined)` — the SERVER personal-org resolver",
+        code: [
+          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          "export async function create(supabase: any, title: string) {",
+          "  const organizationId = await ensureOrgIdServer(supabase, undefined);",
+          '  await supabase.from("tasks").insert({ title, organization_id: organizationId });',
+          "}",
+        ].join("\n"),
+      },
+      {
+        label: "`ensureOrgIdServer(client, null)` inside a payload property",
+        code: [
+          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          "export async function create(supabase: any, title: string) {",
+          '  await supabase.from("tasks").insert({ title, organization_id: await ensureOrgIdServer(supabase, null) });',
+          "}",
+        ].join("\n"),
+      },
+      {
+        label: "`ensureOrgIdServer(client, parent?.organization_id)` — the parent may not be readable",
+        code: [
+          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          "export async function reply(supabase: any, parent: { organization_id: string } | null) {",
+          "  const organizationId = await ensureOrgIdServer(supabase, parent?.organization_id);",
+          "  return organizationId;",
+          "}",
+        ].join("\n"),
+      },
+      {
+        label: "`resolveOrgIdForUserServer()` — personal, else the SYSTEM organization",
+        code: [
+          'import { resolveOrgIdForUserServer } from "@/lib/organizations/personalOrg";',
+          "export async function stamp(supabase: any, userId: string) {",
+          "  const organizationId = await resolveOrgIdForUserServer(supabase, userId);",
+          "  return organizationId;",
+          "}",
+        ].join("\n"),
+      },
+      {
+        // The DECLARATION form of rule 4: rule 4 matched assignments only, so
+        // the commonest shape of all walked straight through it.
+        label: "a DECLARATION fed by `resolveSystemOrgId()` (`const organization_id = await …`)",
+        code: [
+          'import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";',
+          "export async function stamp() {",
+          "  const organization_id = await resolveSystemOrgId();",
+          "  return { organization_id };",
+          "}",
+        ].join("\n"),
+      },
+      {
+        label: "a branch that substitutes (`isGlobal ? system : ensureOrgIdServer(c, null)`)",
+        code: [
+          'import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";',
+          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          "export async function stamp(supabase: any, isGlobal: boolean) {",
+          "  const organizationId = isGlobal",
+          "    ? await resolveSystemOrgId(supabase)",
+          "    : await ensureOrgIdServer(supabase, null);",
+          "  return organizationId;",
+          "}",
+        ].join("\n"),
+      },
+      {
         label: "a FIRST-MEMBERSHIP pick (`orgs[0]?.id`)",
         code: [
           "export function pick(selectedOrgId: string | null, orgs: { id: string }[]) {",
@@ -684,8 +903,26 @@ function selfTest(): number {
       "  // org-fallback-deliberate: absent employer means the person's own cross-organization default row",
       "  return { organization_id: employerOrganizationId ?? personalOrgId };",
       "}",
+      // A long, well-argued deliberate read: the marker is five lines above the
+      // code it explains, and it must still exempt it.
+      "export async function ownDismissal() {",
+      "  // org-fallback-deliberate: a dismissal is the signed-in person's own",
+      "  // cross-organization preference, scoped to auth.uid() by RLS, so it",
+      "  // belongs in their own workspace whatever organization is selected —",
+      "  // re-filing it under the active org would split one person's",
+      "  // \"never show me this again\" across tenants.",
+      "  const organizationId = await resolvePersonalOrgId();",
+      "  return organizationId;",
+      "}",
       "export function pickFromRequest(explicitOrgId: string | null, requestOrgId: string | null) {",
       "  const organizationId = explicitOrgId ?? requestOrgId;",
+      "  return organizationId;",
+      "}",
+      // A server write that CARRIES the admitted organization into the same
+      // resolver is the compliant shape — the guard must not chase the name.
+      'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+      "export async function carried(supabase: any, admittedOrgId: string) {",
+      "  const organizationId = await ensureOrgIdServer(supabase, admittedOrgId);",
       "  return organizationId;",
       "}",
     ].join("\n");

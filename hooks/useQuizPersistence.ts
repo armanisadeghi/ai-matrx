@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type { Json } from "@/types/database.types";
 import {
@@ -43,6 +45,11 @@ export function useQuizPersistence(
   const [loadedSession, setLoadedSession] = useState<QuizSession | null>(null);
   const [hasCheckedDuplicate, setHasCheckedDuplicate] = useState(false);
 
+  // The organization a saved quiz session is filed in — a Server Action
+  // carries no `X-Organization-Id` header, so the selection travels as an
+  // argument; the action refuses when it is empty.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+
   const lastSaveAttempt = useRef<number>(0);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousStateRef = useRef<string | null>(null); // Track actual state changes
@@ -75,6 +82,7 @@ export function useQuizPersistence(
           // Create new session (duplicate check already done at initialization)
           const result = await createQuizSession(
             state,
+            selectedOrganizationId ?? "",
             title,
             category,
             contentHash,
@@ -97,7 +105,7 @@ export function useQuizPersistence(
         setIsSaving(false);
       }
     },
-    [sessionId, title, category, contentHash, metadata],
+    [sessionId, title, category, contentHash, metadata, selectedOrganizationId],
   );
 
   /**

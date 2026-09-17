@@ -604,6 +604,9 @@ export async function findOrCreateConversation(
 
   // Resolve the org from the routed user (or the system org for an unrouted
   // inbound number).
+  // org-fallback-deliberate: an inbound SMS arrives on a Twilio webhook with
+  //   no session and no selected organization: the thread belongs to the routed
+  //   person, or to the platform when nothing routes
   const organizationId = await resolveOrgIdForUserServer(supabase, userId);
 
   // Create new conversation

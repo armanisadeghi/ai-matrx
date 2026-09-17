@@ -351,6 +351,9 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     );
   }
 
+  // org-fallback-deliberate: system context is the platform's own curated
+  //   truth, identical for every organization; requireSuperAdmin gates every
+  //   method of this route
   const organizationId = await resolveSystemOrgId(admin);
   const feedType: FeedType = body.feed_type ?? "manual";
 
