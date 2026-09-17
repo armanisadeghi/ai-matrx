@@ -200,6 +200,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         kind: "tooling",
         why: "Jest proof of restore-graph.ts's auth.users id-only-shell and auth-wide secret deny-list checks (the chair's 2026-09-16 ruling). No database, no credential; never part of a served request.",
     },
+    {
+        id: "gate-corpus-refuses-production-identity-test",
+        file: "scripts/__tests__/gate-corpus-refuses-production-identity.test.ts",
+        kind: "tooling",
+        why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
+    },
 ];
 
 /**
