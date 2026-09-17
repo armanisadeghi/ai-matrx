@@ -73,7 +73,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 
 ## Data model
 
-No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. That read now also selects **`capability_health`** — the jsonb column the hub's recording seam writes one object per capability key into (`{last_success:{at,action}, last_refusal:{at,action,code,sentence,http_status}}`, under the `__kind` marker `google_connection_capability_health`). `types/database.types.ts` predates the column, so the query is typed with `.returns<ConnectionRow[]>()` over the hand-declared `CapabilityHealthPending` stand-in (`features/marketing/google/types.ts`) and TWO compile-time guards in `service.ts`: one asserts every other selected column still exists on the generated row, the other FAILS the type-check the moment `pnpm db-types` adds the column — which is the remedy and the end of the stand-in. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
+No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. That read now also selects **`capability_health`** — the jsonb column the hub's recording seam writes one object per capability key into (`{last_success:{at,action}, last_refusal:{at,action,code,sentence,http_status}}`, under the `__kind` marker `google_connection_capability_health`, and, once lane B-17 lands, the provider-neutral `connection_capability_health` — the reader accepts both and carries whichever it finds). `types/database.types.ts` predates the column, so the query is typed with `.returns<ConnectionRow[]>()` over the hand-declared `CapabilityHealthPending` stand-in (`features/marketing/google/types.ts`) and TWO compile-time guards in `service.ts`: one asserts every other selected column still exists on the generated row, the other FAILS the type-check the moment `pnpm db-types` adds the column — which is the remedy and the end of the stand-in. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
 
 **Key types** (`types.ts`)
 
@@ -274,6 +274,81 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — **VERIFY-U-P2-R4 answered: V13-1, V13-2, V13-3, V13-4, V13-5 and
+  the client half of V13-6.** The verifier's verdict was REOPEN, and every one of
+  those is now fixed at the class with a census or a branch enumeration behind it
+  (V13-7 is U-P3's health strip and V13-8/V13-9 are aidream's; none of them is
+  touched here).
+  - **V13-1 — the account's own sentences.** `diagnoseGoogleConnection` wrote
+    operator prose on three branches the `last_error` column is not involved in,
+    so round 3's fix and round 3's test went straight past them: a credential
+    that is simply GONE rendered "has no vault credential on file (no credential
+    item and no legacy vault key), so the server cannot mint a Google access
+    token" on the account line and on all nine product rows — "vault" 20×,
+    "mint" 20×, "legacy vault key" 10×, "credential item" 10× on one card. All
+    three branches (revoked, credential missing, older storage path) now speak
+    from `GOOGLE_ACCOUNT_FAULT_CODES`, which gains `access_revoked` and
+    `credential_storage_outdated`, and the healthy sentence is "… is connected
+    and working." `googleConnectionDiagnostics` keeps the operator words: its
+    reader IS an operator, on the super-admin workspace.
+    Guard: `__tests__/every-account-sentence-is-declared-vocabulary.test.tsx`,
+    which enumerates the BRANCHES of the diagnosis (never the values of one
+    column), renders the card for each, and censuses every prose literal under
+    `features/connectors/**` for operator words. Red on all three branches at
+    `01566c21`, green after.
+  - **V13-2 — the knob that could never resolve.** `platform.knob_resolve` takes
+    `(feature, key)` and the client sent one dotted string split at the last dot.
+    Live, 635 of 812 rows carry a dot inside `feature` and 58 inside `key`, so no
+    split rule recovers the pair: this card's read became
+    `('connectors.prompt','resurface_days')`, the database answered `P0001 … is
+    not seeded` on every mount, and the raise died in an empty catch. The address
+    is now the register's own pair (`lib/scoped-config/effectiveKnobs.ts::
+    knobAddress` is the one place a ref becomes it), the catch names the address
+    and the remedy, and a new census
+    (`lib/scoped-config/__tests__/every-knob-read-addresses-a-real-row.test.ts`)
+    resolves EVERY client knob read through the same function and matches it
+    against the rows both repos' migrations declare. The shared settings-guard
+    matcher was also blind to a trailing comma before the closing paren, which is
+    why the live `check:settings-unregistered` had never graded this call at all.
+  - **V13-3 — `slides` had no home.** The catalog declares thirteen capability
+    keys (the report said fourteen; the count is one off, the finding is exact)
+    and the provider config covered twelve. `slides` ships as `available`, live
+    connection `4a4f4ad5` had recorded a `slides.read` success at 20:48:03Z and
+    one `google_presentation` resource is registered — and it appeared in no
+    consent row, health row, scope disclosure or revoke consequence. Per PLAN §8
+    and §9 it is not a product of its own: it rides the one `drive.file` grant, so
+    it is a fourth capability of the "Docs, Sheets & Drive files" row and
+    `google_presentation` is one of that row's attachable resource types. The
+    dialog copy is unchanged. Guard:
+    `__tests__/capability-keys-are-the-servers-keys.test.ts` — the third
+    server-set census, built like the refusal-code and admission-code ones, which
+    also derives the row from the verbatim live column.
+  - **V13-4 — an unrecognised refusal code.** `parseRefusal` dropped the whole
+    refusal when the code was one this build has not shipped, so a server release
+    that classifies ahead of the client produced a green "Connected" over a
+    refused call and discarded the server's sentence; and `refusalDisposition`
+    returned `undefined` where `health.ts` tested `=== null`, so the branch for
+    "we cannot classify this" was unreachable. The sentence and timestamp are
+    kept, the disposition is `null`, and that null owns the row: `refused`, the
+    server's words verbatim, a generic remedy that promises nothing about a
+    reconnect, and no press.
+  - **V13-5 — marketing copy on every row.** A revoked account said "Nothing can
+    read Search Console or Analytics with it", ten times per card, including on
+    Gmail, Calendar, Contacts, Tasks and YouTube. What stops per product is the
+    provider config's `stopsOnRevoke`, which `revokeConsequence` already reads;
+    the account sentence names no product, and the census fails on any product
+    name in a prose literal outside `provider-config.ts` and the Google adapter.
+  - **V13-6 — the shared column's kind.** The reader now accepts BOTH
+    `google_connection_capability_health` and the provider-neutral
+    `connection_capability_health` lane B-17 is moving the server to, and carries
+    the marker AS FOUND (accept-and-ignore, never strip). Consumer action for
+    B-17: none — land the rename and restamp the rows.
+  - Boy-scout in the same pass: `attachable-resources.ts`'s
+    `AttachableAvailability` extended the generated `McpAvailability` while
+    narrowing `attachable`, which has been failing `tsc` with TS2430 (plus two
+    TS2322s in `features/agents/hooks/useMcpTools.ts`) since the property landed
+    in the generated contract. It is now that row with the one field narrowed.
 
 - `2026-09-17` — **the client `FieldAction` mirror adopts `conflict`**,
   mirroring aidream commit `dfba3f5d0` (`aidream/services/google_import/

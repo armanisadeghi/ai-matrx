@@ -60,14 +60,20 @@ export interface AttachableResource {
  * server that has not shipped it yet degrades to today's plain chips rather
  * than to a broken screen.
  *
- * Swap this for `components["schemas"]["McpAvailability"]` the moment the
- * generated types carry `attachable` — generated types are the source of
- * truth and this interface exists only to bridge the two halves of the
- * feature while they ship.
+ * The generated contract NOW carries `attachable` (`AttachableKindInfo`), and it
+ * types `source` as a bare `string` because the server's enum does not survive
+ * OpenAPI. This type is therefore the generated row with that ONE field narrowed
+ * to the two sources the client actually branches on — an `interface … extends`
+ * could not narrow it and failed `tsc` with TS2430 the day the property landed.
+ * Everything else comes from the generated type, which stays the source of truth.
  */
-export interface AttachableAvailability extends McpAvailability {
-  attachable?: AttachableResource[] | null;
-}
+export type AttachableAvailability = Omit<McpAvailability, "attachable"> & {
+  // Absent means empty, and it is never `null` here: an availability row that
+  // was allowed to be null could not be handed back to anything expecting the
+  // generated shape (TS2322 in `useMcpTools`), and every reader below already
+  // takes `null | undefined` for the value itself.
+  attachable?: AttachableResource[];
+};
 
 /**
  * What a chip IS. `plain` means the connection is the whole story; every
