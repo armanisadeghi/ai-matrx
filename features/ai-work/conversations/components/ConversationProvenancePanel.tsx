@@ -60,6 +60,7 @@ import {
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import type { ProviderConversation } from "@/features/ai-work/service/providerConversation";
+import { CloudSyncTruthPanel } from "./CloudSyncTruthPanel";
 import { ContinueOnMyMacPanel } from "./ContinueOnMyMacPanel";
 import {
   conversationTypeLabel,
@@ -543,6 +544,18 @@ export function ConversationProvenancePanel({
            `bindings[0]` silently removed the one native continuation the
            platform has. An unclaimed handoff offer is never offered for native
            continuation — it has no provider session to resume. */}
+      {/* ── Is this conversation in sync? ────────────────────────────────
+           The cloud half of the answer, plus the door to the Mac that owns the
+           other half. Found by PROVIDER for the same reason as the panel
+           below, and skipped for an unclaimed handoff offer, which has no
+           provider session to diagnose. */}
+      {claudeBinding?.provider_session_id && (
+        <CloudSyncTruthPanel
+          providerSessionId={claudeBinding.provider_session_id}
+          provider={claudeBinding.provider}
+        />
+      )}
+
       {claudeBinding?.provider_session_id && (
         <ContinueOnMyMacPanel
           providerSessionId={claudeBinding.provider_session_id}
