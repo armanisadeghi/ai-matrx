@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectScopePickerOptions, EMPTY_SCOPE_PICKER_OPTIONS } from "@/features/agent-context/redux/scope/selectors";
 import { useProjectTasks } from "@/features/agent-context/hooks/useHierarchy";
 import { fetchEntitiesByScopes } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
@@ -73,7 +74,16 @@ interface UseHierarchySelectionOptions {
     value: HierarchySelection;
     onChange: (selection: HierarchySelection) => void;
   };
-  autoSelectFirst?: boolean;
+  /**
+   * Seed the organization level from the organization the PERSON selected
+   * (`appContext.organization_id`) when the caller mounts with nothing chosen.
+   * It never picks "the first organization in the list": a membership in
+   * someone else's personal workspace can sort first, and this selection is
+   * what downstream writes are filed under. With no selection the level stays
+   * empty and the cascade's own organization picker is the remedy.
+   * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+   */
+  autoSelectActiveOrg?: boolean;
 }
 
 export function useHierarchySelection(
@@ -82,11 +92,13 @@ export function useHierarchySelection(
   const {
     levels: requestedLevels = FULL_HIERARCHY_LEVELS,
     controlled,
-    autoSelectFirst = false,
+    autoSelectActiveOrg = false,
   } = options;
 
   const levels = enforceHierarchyLevels(requestedLevels);
   const dispatch = useAppDispatch();
+  // The organization the person selected — the ONE seed for the org level.
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
 
   // All data comes from a single Redux store populated by get_user_full_context.
   // No secondary per-org fetches needed.
@@ -195,15 +207,16 @@ export function useHierarchySelection(
   }));
 
   useEffect(() => {
-    if (!autoSelectFirst || !isSuccess) return;
-    if (!selection.organizationId && orgs.length > 0) {
-      setSelection({
-        ...EMPTY_SELECTION,
-        organizationId: orgs[0].id,
-        organizationName: orgs[0].name,
-      });
-    }
-  }, [autoSelectFirst, isSuccess, orgs.length]);
+    if (!autoSelectActiveOrg || !isSuccess) return;
+    if (selection.organizationId || !activeOrganizationId) return;
+    const active = orgs.find((o) => o.id === activeOrganizationId);
+    if (!active) return;
+    setSelection({
+      ...EMPTY_SELECTION,
+      organizationId: active.id,
+      organizationName: active.name,
+    });
+  }, [autoSelectActiveOrg, isSuccess, orgs.length, activeOrganizationId]);
 
   const setOrg = (id: string | null) => {
     const org = id ? orgs.find((o) => o.id === id) : null;

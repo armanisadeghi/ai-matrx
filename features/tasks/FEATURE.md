@@ -152,6 +152,18 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-17` — **The organization a task or project is filed under is the one the person SELECTED.**
+  `QuickTasksWorkspaceProvider` seeded the window's org with `appOrgId ?? orgs[0]` — the first
+  organization in the membership list, which can be a membership in someone ELSE's personal
+  workspace. It now seeds from the selected organization only; with none selected `QuickTasksMain`
+  renders `OrganizationRequiredNotice` (picker attached) instead of a quick-add box whose write
+  would be refused, and the sidebar cascade still lets the person choose. `projectService.createProject`
+  stopped writing `resolvePersonalOrgId()` unconditionally — a project is a workspace-scoped,
+  shareable record, so it is created in the selected organization and `requireSelectedOrgId()`
+  refuses with the one recognised `OrganizationContextError` when there is none; `ImportTasksModal`
+  names that refusal instead of its generic "try again" toast.
+  Law: `../../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - `2026-09-13` — **The initial `/tasks` hierarchy read has a terminal path.**
   `get_user_full_context` now aborts after 20 seconds and dispatches the
   existing retryable error state instead of leaving task workspaces in an
