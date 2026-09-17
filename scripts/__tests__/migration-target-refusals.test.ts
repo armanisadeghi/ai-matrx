@@ -477,6 +477,44 @@ describe("a guarded body must READ its guard (ATTACK-6 finding 2, second half)",
   });
 });
 
+describe("the schema-`custom` exemption does not cover a RETURNS TRIGGER function", () => {
+  // Postgres resolves a trigger's function by OID at fire time, not by schema
+  // privilege — a `custom.*` function already bound with `CREATE TRIGGER … ON
+  // platform.associations … EXECUTE FUNCTION custom.zz_hook()` (a7-02) is a live path
+  // the moment that trigger exists, so revoking schema `custom` stops nothing. A LATER
+  // file that replaces that function's body must still read its guard, exactly as if
+  // it were outside `custom`.
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const TRIGGER_BASED_ON =
+    "-- based-on: custom.zz_hook() " +
+    "0000000000000000000000000000000000000000000000000000000000000000\n";
+  const triggerFn = (inner: string) =>
+    `create or replace function custom.zz_hook() returns trigger ` +
+    `language plpgsql as $$ begin ${inner} return new; end $$;\n`;
+  const PROJECTION_BASED_ON =
+    "-- based-on: custom.zz_projection(uuid) " +
+    "0000000000000000000000000000000000000000000000000000000000000000\n";
+  const projectionFn =
+    "create or replace function custom.zz_projection(p_organization_id uuid) returns jsonb " +
+    "language sql stable as $$ select '{}'::jsonb $$;\n";
+
+  it("refuses a custom.* RETURNS TRIGGER replacement whose body never names its guard", () => {
+    expect(() => judge(HEAD + TRIGGER_BASED_ON + triggerFn(""))).toThrow(
+      /never names custom\/system_enabled/,
+    );
+  });
+
+  it("admits the SAME trigger-returning replacement when the body reads the knob", () => {
+    const inner =
+      "if not platform.knob_resolve('custom', 'system_enabled', null)::boolean then return new; end if;";
+    expect(judge(HEAD + TRIGGER_BASED_ON + triggerFn(inner))).toBeTruthy();
+  });
+
+  it("still exempts an ordinary (non-trigger-returning) custom.* function replacement", () => {
+    expect(judge(HEAD + PROJECTION_BASED_ON + projectionFn)).toBeTruthy();
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ATTACK-7 — the two runners had two judgements. These are the rules that changed,
 // as unit cases; `pnpm check:migration-judgment` proves the OTHER runner agrees

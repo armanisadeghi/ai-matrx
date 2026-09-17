@@ -976,20 +976,36 @@ export function nonAdditiveReasons(
  * live definition or creates a policy. It cannot prove the read is on the right branch;
  * it can prove the body never mentions the thing that is supposed to hold it OFF.
  *
- * 🚨 A `CREATE OR REPLACE FUNCTION | PROCEDURE | VIEW` IN SCHEMA `custom` IS EXEMPT, exactly
- * as `triggerOnLiveTableUnguardedBy` already exempts a trigger there, and for the same
- * stated reason: the whole schema is this campaign's own new namespace —
+ * 🚨 A `CREATE OR REPLACE FUNCTION | PROCEDURE` IN SCHEMA `custom` IS EXEMPT — EXCEPT A
+ * FUNCTION `RETURNS TRIGGER` OR `RETURNS EVENT_TRIGGER`, WHICH IS NOT.
+ *
+ * The exemption for the rest of the schema stands for the reason `triggerOnLiveTableUnguardedBy`
+ * already gives for a trigger there: the whole schema is this campaign's own new namespace —
  * revoked from PUBLIC, `anon`, `authenticated` and `service_role`, absent from
  * `pgrst.db_schemas`, absent from the ORM's `generate:` blocks — so nothing reads it until
- * the switch and replacing a body there cannot change a live path. Without this, a wave-1
- * lane extending an EARLIER WAVE-1 LANE's function (`W1-VAL` extending `W1-FIELD`'s
+ * the switch and replacing an ordinary body there cannot change a live path. Without this, a
+ * wave-1 lane extending an EARLIER WAVE-1 LANE's function (`W1-VAL` extending `W1-FIELD`'s
  * `custom.record_values` so it does not return the new reserved keys as if they were the
  * record's own values) is refused unless it writes a knob read into a pure projection
  * function that has no business reading one — which buys nothing and teaches the next
- * author that the guard line is a formality to be satisfied with a mention. The defect
- * this check closes is a replacement of a body a live path executes; in `custom` there is
- * no live path to execute one. An UNQUALIFIED name is treated as OUTSIDE `custom`, because
- * `search_path` decides it at execution time and nothing static can prove where it lands.
+ * author that the guard line is a formality to be satisfied with a mention.
+ *
+ * A `RETURNS TRIGGER` (or `RETURNS EVENT_TRIGGER`) function is different: Postgres resolves a
+ * trigger's function by OID at fire time, not by schema privilege, so `custom.zz_hook()` bound
+ * with `CREATE TRIGGER … ON platform.associations … EXECUTE FUNCTION custom.zz_hook()` (see
+ * `triggerOnLiveTableUnguardedBy`'s own example) is a live path the moment that trigger exists
+ * — schema `custom` being unreadable by every client role stops nothing, because nothing
+ * reads the schema to fire the trigger. A LATER file that does
+ * `CREATE OR REPLACE FUNCTION custom.zz_hook() RETURNS TRIGGER …` replaces the body every write
+ * to that live table now executes, with no guard read required, which is exactly the class of
+ * defect this whole check exists to close (`public._provision_new_user_personal_org()`).  So a
+ * trigger-returning function in `custom` is judged exactly as it would be outside `custom`: its
+ * body must name the guard. `functionReturnsTrigger` decides this from the statement's own
+ * `RETURNS` clause; when it cannot determine the return type at all, the statement is treated
+ * as if it does return a trigger — an unproven negative is never grounds for exemption.
+ *
+ * An UNQUALIFIED name is treated as OUTSIDE `custom`, because `search_path` decides it at
+ * execution time and nothing static can prove where it lands.
  */
 export function guardUnreadBy(
   guard: { feature: string; key: string } | null,
@@ -1001,7 +1017,7 @@ export function guardUnreadBy(
     .filter((s) =>
       /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
     )
-    .filter((s) => replacedObjectSchema(s) !== "custom");
+    .filter((s) => replacedObjectSchema(s) !== "custom" || !customReplaceIsExempt(s));
   if (gates.length === 0) return null;
   if (body.includes(guard.feature.toLowerCase()) && body.includes(guard.key.toLowerCase())) return null;
   return (
@@ -1013,14 +1029,21 @@ export function guardUnreadBy(
 
 
 /**
- * The schema a `CREATE OR REPLACE FUNCTION | PROCEDURE | VIEW` REPLACES A BODY IN, or null
- * for every other shape and for an unqualified name (which `search_path` settles at
- * execution time, so nothing static can prove where it lands).
+ * The schema a `CREATE OR REPLACE FUNCTION | PROCEDURE` REPLACES A BODY IN, or null for
+ * every other shape and for an unqualified name (which `search_path` settles at execution
+ * time, so nothing static can prove where it lands).
+ *
+ * 🚨 DELIBERATELY NOT `VIEW` — `CREATE OR REPLACE VIEW` is refused by `additiveVerdictOf`
+ * (`"CREATE OR REPLACE VIEW rewrites a live view body with no concurrency check"`) before a
+ * file's statements ever reach `guardUnreadBy`, at BOTH targets, unconditionally. A view arm
+ * here would judge a shape the runner has already refused for every other reason — dead code
+ * that looks like coverage. Confirmed unreachable: no corpus fixture exercises it, and none
+ * should — `not-additive` fires first every time.
  *
  * 🚨 DELIBERATELY NOT triggers and NOT policies, although both are in `guardUnreadBy`'s
  * gate set. This function exists to answer one question — "could this statement replace a
- * body a live path already executes?" — and only a function, procedure or view body can.
- * A `CREATE POLICY` decides row access the moment the switch flips, and
+ * body a live path already executes?" — and only a function or procedure body can. A
+ * `CREATE POLICY` decides row access the moment the switch flips, and
  * `migrations/judgment-corpus/a6-13-guard-unread-by-policy.sql` already fixes the verdict
  * for one on a `custom` table at `refuse:guard-unread`; a `CREATE OR REPLACE TRIGGER` binds
  * behaviour rather than replacing a body. Neither is narrowed here, so no existing verdict
@@ -1028,10 +1051,46 @@ export function guardUnreadBy(
  */
 export function replacedObjectSchema(stmt: string): string | null {
   const one = stmt.replace(/\s+/g, " ").trim();
-  const own = /^create\s+or\s+replace\s+(?:function|procedure|view)\s+([a-z0-9_."]+)/i.exec(one);
+  const own = /^create\s+or\s+replace\s+(?:function|procedure)\s+([a-z0-9_."]+)/i.exec(one);
   if (!own) return null;
   const bare = own[1]!.replace(/"/g, "").toLowerCase();
   return bare.includes(".") ? bare.split(".")[0]! : null;
+}
+
+/**
+ * `CREATE OR REPLACE FUNCTION`'s RETURNS clause, read case-insensitively across
+ * whitespace/newlines, with or without a `pg_catalog.` prefix or double quotes, and whether
+ * or not it is immediately followed by `AS`/`LANGUAGE`/a volatility keyword — so `RETURNS
+ * TRIGGER AS $$`, `returns\n  pg_catalog.trigger`, and `RETURNS "trigger" LANGUAGE plpgsql`
+ * all match.
+ *
+ * Returns `true` when the clause names `trigger` or `event_trigger`, `false` when a RETURNS
+ * clause is found and provably names something else, and `null` when the statement is not a
+ * `CREATE OR REPLACE FUNCTION` at all, OR when it is one but no RETURNS clause could be
+ * found — which cannot legitimately happen (a function statement is invalid SQL without
+ * one), so an undetectable clause means the parse missed something, not that the function is
+ * safe. The caller treats `null` the same as `true`: never exempt on an unproven negative.
+ */
+export function functionReturnsTrigger(stmt: string): boolean | null {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  if (!/^create\s+or\s+replace\s+function\b/i.test(one)) return null;
+  if (/\breturns\s+(?:pg_catalog\s*\.\s*)?"?(?:trigger|event_trigger)"?\b/i.test(one)) return true;
+  if (/\breturns\s+/i.test(one)) return false;
+  return null;
+}
+
+/**
+ * Called only once `replacedObjectSchema(stmt) === "custom"`. A `CREATE OR REPLACE
+ * PROCEDURE` has no `RETURNS` clause at all, so it can never be a trigger function and the
+ * schema-wide exemption holds unconditionally. A `CREATE OR REPLACE FUNCTION` is exempt only
+ * when `functionReturnsTrigger` can PROVE its `RETURNS` clause names something other than
+ * `trigger`/`event_trigger` — `true` (returns trigger) and `null` (undetermined) both refuse
+ * the exemption, per `functionReturnsTrigger`'s own contract.
+ */
+function customReplaceIsExempt(stmt: string): boolean {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  if (/^create\s+or\s+replace\s+procedure\b/i.test(one)) return true;
+  return functionReturnsTrigger(stmt) === false;
 }
 
 /**

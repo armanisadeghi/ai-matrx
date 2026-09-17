@@ -122,18 +122,30 @@ builds DDL at run time, so the allow-list cannot read what it will execute).
   definition, or a `CREATE POLICY`, whose body never names the `-- guard:` feature **and** key
   is refused. Static: it cannot prove the read is on the right branch; it proves the body
   mentions the thing that is supposed to hold it OFF. **One exemption, the same one the
-  trigger rule below already carries: a `CREATE OR REPLACE FUNCTION | PROCEDURE | VIEW` whose
-  name is qualified into schema `custom`.** Nothing reads that schema until the switch — it is
-  revoked from every client role, absent from `pgrst.db_schemas` and absent from the ORM — so
-  there is no live path whose body such a statement could replace, which is the whole defect
-  this rule closes (`public._provision_new_user_personal_org()`, which every signup executes).
-  An **unqualified** name is outside `custom`, because `search_path` settles it at execution
-  time. The exemption is deliberately NOT extended to `CREATE POLICY` (a policy decides row
+  trigger rule below already carries: a `CREATE OR REPLACE FUNCTION | PROCEDURE` whose name is
+  qualified into schema `custom`.** Nothing reads that schema until the switch — it is revoked
+  from every client role, absent from `pgrst.db_schemas` and absent from the ORM — so there is
+  no live path whose body such a statement could replace, which is the whole defect this rule
+  closes (`public._provision_new_user_personal_org()`, which every signup executes). An
+  **unqualified** name is outside `custom`, because `search_path` settles it at execution time.
+  **The exemption does NOT cover a FUNCTION whose RETURNS clause names `trigger` or
+  `event_trigger`.** Postgres resolves a trigger's function by OID at fire time, not by schema
+  privilege: once a `custom.*` function is bound with `CREATE TRIGGER … EXECUTE FUNCTION
+  custom.fn()` on a live table (the trigger rule below's own exemption lets that binding
+  exist), it is a live path regardless of what is revoked from schema `custom`, and a later
+  `CREATE OR REPLACE FUNCTION custom.fn() RETURNS TRIGGER …` replaces the body that path
+  executes — the exact shape this rule exists to catch. A return type that cannot be
+  determined statically is treated as `trigger`: the exemption is never granted on an unproven
+  negative. The exemption is deliberately NOT extended to `CREATE POLICY` (a policy decides row
   access the moment the switch flips) or to `CREATE OR REPLACE TRIGGER` (which binds behaviour
-  rather than replacing a body), so no verdict already fixed by a fixture moves. Fixtures:
-  `a6-15-guard-unread-replace-in-custom.sql` accepts, `a6-16-…-outside-custom.sql` and
-  `a6-17-…-unqualified.sql` refuse, and `a6-13-guard-unread-by-policy.sql` still refuses a
-  policy on a `custom` table.
+  rather than replacing a body), so no verdict already fixed by a fixture moves. `CREATE OR
+  REPLACE VIEW` carries no arm here at all — it is refused by name in the allow-list below at
+  every target, unconditionally, before a file's statements ever reach this rule. Fixtures:
+  `a6-15-guard-unread-replace-in-custom.sql` (an ordinary custom function) and
+  `a6-19-…-returns-trigger.sql` (a guarded trigger-returning one) accept;
+  `a6-16-…-outside-custom.sql`, `a6-17-…-unqualified.sql`, and
+  `a6-18-…-custom-returns-trigger.sql` (the same trigger-returning function, unguarded) refuse;
+  `a6-13-guard-unread-by-policy.sql` still refuses a policy on a `custom` table.
 - **A new trigger on a live table must name its guard** (`trigger-guard-unnamed`). A
   `CREATE TRIGGER` on a table **outside schema `custom`** — an unqualified table counts as
   outside, since `search_path` decides it at execution time — requires the guard's feature and
