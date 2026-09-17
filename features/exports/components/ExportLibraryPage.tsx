@@ -293,6 +293,9 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
                 ? indexState.cumulative
                 : null
             }
+            indexing={
+              indexState.phase === "starting" || indexState.phase === "running"
+            }
             ownerOverride={ownerOverride}
             onPickOwner={pickOwner}
             onNarrow={narrow}

@@ -56,6 +56,10 @@ export interface LibrarySummaryProps {
   summary: ExportSummary | null;
   /** What the index stream has said so far, before a summary exists. */
   indexedSoFar: number | null;
+  /** True while the index is actually running. Without it, a page whose reads
+   *  all failed would sit on "counting…" forever — a progress word for work
+   *  that is not happening. */
+  indexing: boolean;
   /** The identity the person picked when the server could not tell. */
   ownerOverride: string | null;
   onPickOwner: (key: string | null) => void;
@@ -136,6 +140,7 @@ export function LibrarySummary({
   library,
   summary,
   indexedSoFar,
+  indexing,
   ownerOverride,
   onPickOwner,
   onNarrow,
@@ -297,7 +302,13 @@ export function LibrarySummary({
         <Stat
           icon={FileText}
           label="Items"
-          value={total === null ? "counting…" : formatCount(total)}
+          value={
+            total !== null
+              ? formatCount(total)
+              : indexing
+                ? "counting…"
+                : "—"
+          }
         />
         <Stat
           icon={Send}
