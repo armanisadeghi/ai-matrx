@@ -636,6 +636,37 @@ export interface RoleBinding {
    * banner, while calling a reservation a record IS the bug.
    */
   conversationStarted: boolean;
+  /**
+   * 🚨 AND WHETHER THAT ANSWER IS AN ANSWER AT ALL (cold walk 5, finding 7,
+   * 2026-09-16). The field above is computed live per `/roles` call and
+   * DELIBERATELY never persisted, so the copy on the session row can never
+   * carry it — which means a room reading the persisted row alone always got
+   * `false`, called a real, already-used conversation a reservation, and sent
+   * its next turn as turn 1 with `is_new: true`. The server refused that with a
+   * 409 whose raw text — a UUID and the words "Pass is_new=false" — rendered
+   * inside a live interview thread.
+   *
+   * `false` and "nobody has told us" are different facts. This is the second
+   * one, and a room must not claim a materialization while it is true.
+   */
+  conversationStartedKnown: boolean;
+}
+
+/**
+ * May the room claim which kind of conversation a role's binding points at?
+ *
+ * Only when the answer has actually been given. Pure, so the one decision that
+ * caused a raw 409 to land inside a live interview can be pinned by a test
+ * instead of living inline in a 900-line pane. A FAILED `/roles` ends the wait:
+ * the room's own "Opening … room didn't work" half is what should speak then.
+ */
+export function roomMayClaimMaterialization(
+  binding: Pick<RoleBinding, "conversationStartedKnown"> | null,
+  rolesPhase: "idle" | "resolving" | "ready" | "failed" | string,
+): boolean {
+  if (!binding) return false;
+  if (binding.conversationStartedKnown) return true;
+  return rolesPhase === "failed";
 }
 
 function asString(value: unknown): string | null {
@@ -664,6 +695,7 @@ export function roleBinding(
     definitionAgentId: asString(entry["definition_agent_id"]) ?? agentId,
     conversationId,
     conversationStarted: entry["conversation_started"] === true,
+    conversationStartedKnown: "conversation_started" in entry,
   };
 }
 

@@ -27,6 +27,7 @@
 // features/legal/wc/pd-ratings/api/hooks.ts. `/runs/{run_id}/resume` IS
 // generated and stays fully typed.
 
+import { reloadResumeVerdict } from "./reloadResume";
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
@@ -307,16 +308,37 @@ export function useInterviewRun(sessionId: string) {
   // complete / errored). Auto-resume is the floor, never a question.
   const reconciledRunRef = useRef<string | null>(null);
   const sessionRunId = session?.run_id ?? null;
+  const sessionFinalizedAt = session?.finalized_at ?? null;
   useEffect(() => {
     if (!hydrated || !sessionRunId) return;
     if (runPhase !== "idle") return;
     if (reconciledRunRef.current === sessionRunId) return;
     reconciledRunRef.current = sessionRunId;
+    /**
+     * 🚨 A FINISHED INTERVIEW HAS NOTHING TO FOLLOW (cold walk 5, finding 8,
+     * 2026-09-16). The rule above — "the session row is truth, follow its run"
+     * — was applied to EVERY row carrying a `run_id`, including one whose
+     * interview had already been finished and whose documents were already
+     * written. Coming back to such a session armed a follower over a long-dead
+     * run and put the room straight into `starting`, so the header wore
+     * "Working…" permanently and the room never left its stale read of the
+     * run: the walker could not reach the Vision, Requirements or Transcript
+     * documents that Finish had just written — the room's entire terminal
+     * payoff — through this page at all.
+     *
+     * The row already says the run is over: `finalized_at`. That IS the
+     * reconcile for a terminal session, and it costs no network call. The
+     * follower stays for the live case it was written for.
+     */
+    if (reloadResumeVerdict(sessionFinalizedAt) === "already_finished") {
+      dispatch(runCompleted());
+      return;
+    }
     dispatch(runStarted({ runId: sessionRunId }));
     ensureAdopted();
     startFollowing(sessionRunId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- startFollowing/ensureAdopted are render-scoped helpers over stable refs; the guard ref makes re-runs no-ops
-  }, [hydrated, sessionRunId, runPhase, dispatch]);
+  }, [hydrated, sessionRunId, sessionFinalizedAt, runPhase, dispatch]);
 
   /**
    * Events on the inline NDJSON start/resume stream. It detaches almost
