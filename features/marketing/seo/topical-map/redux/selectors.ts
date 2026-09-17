@@ -21,6 +21,8 @@ import type {
   NormalizedMapTopic,
   PageIntentTone,
   PageIntentView,
+  PageTopicState,
+  PageTopicView,
   TopicalMapWorkspaceState,
   VisibleMapTopic,
 } from "./types";
@@ -46,6 +48,7 @@ const ABSENT_WORKSPACE: TopicalMapWorkspaceState = Object.freeze(
 
 const EMPTY_VISIBLE: readonly VisibleMapTopic[] = Object.freeze([]);
 const EMPTY_SLUGS: readonly string[] = Object.freeze([]);
+const EMPTY_PAGE_IDS: readonly string[] = Object.freeze([]);
 const EMPTY_FACETS: Readonly<Record<string, string>> = Object.freeze({});
 
 export const selectTopicalMapState = (state: RootState) => state.topicalMap;
@@ -412,4 +415,111 @@ export function pageIntentTone(
   if (covers && !intended) return "leaving";
   if (covers && intended) return "in_place";
   return null;
+}
+
+// ── Round 22 — a page never vanishes ───────────────────────────────────────
+//
+// `seo_topical_map_22_a_page_never_vanishes` (live 2026-09-17) changed two
+// MEANINGS without changing a signature:
+//
+//   1. A `covers` edge into a topic that is not live is not coverage. A page
+//      whose only topic was rejected or retired now comes back from
+//      `seo.list_page_intents` with `current_topics: []` and is counted by
+//      `seo.map_diagnostics.pages_on_no_topic`. Before the migration the page
+//      fell out of BOTH readers and simply stopped existing.
+//   2. An intent SURVIVES its topic being hidden but omits its `topic` key
+//      while that topic is not live — the decision is still true, the
+//      destination is gone.
+//
+// Everything below exists so a screen renders those two states honestly
+// instead of printing a blank cell, which is law 4 from the other side.
+
+/** The live topic slugs one listed page covers today, or `[]`. */
+export function selectPageCoverage(mapId: string, pageId: string) {
+  return cached(`coverage:${mapId}:${pageId}`, () =>
+    createSelector(
+      [selectMapWorkspace(mapId)],
+      (ws): readonly string[] => ws.coverageByPageId[pageId] ?? EMPTY_PAGE_IDS,
+    ),
+  );
+}
+
+/**
+ * Every LISTED page that covers no live topic of this map — the client-side
+ * twin of `map_diagnostics.pages_on_no_topic`, over the pages actually loaded.
+ *
+ * It answers only for pages `seo.list_page_intents` has returned into this
+ * workspace: a page nobody listed is absent from `coverageByPageId` entirely
+ * and can never be mistaken for one that covers nothing.
+ */
+export function selectPagesOnNoTopic(mapId: string) {
+  return cached(`pagesOnNoTopic:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): readonly string[] => {
+      const out: string[] = [];
+      for (const [pageId, slugs] of Object.entries(ws.coverageByPageId)) {
+        if (slugs.length === 0) out.push(pageId);
+      }
+      return out.length > 0 ? out : EMPTY_PAGE_IDS;
+    }),
+  );
+}
+
+/**
+ * Where ONE page stands in the map's topic structure — the state the plain
+ * page list and the bulk screen colour by. See {@link PageTopicState} for what
+ * each value means and why the last two have no `intent_colors` entry.
+ *
+ * PRECEDENCE, and the reason for it:
+ *   1. `intent_topic_hidden` first. A destination that left the map is the
+ *      most actionable thing true about the page, and it is the one state a
+ *      reader cannot infer from anything else on the row.
+ *   2. then the intent's own direction (`in_place` / `leaving` / `arriving`),
+ *      because a page heading somewhere is better described by where it is
+ *      going than by the hole it is currently in.
+ *   3. then coverage alone: covering something live is `in_place`; covering
+ *      nothing is `on_no_topic`.
+ *
+ * Pure, so a view, a test or a bulk action can call it without a store.
+ */
+export function pageTopicState(view: PageTopicView): PageTopicState {
+  if (view.hasIntent && view.intendedTopicSlug === null) return "intent_topic_hidden";
+  if (view.intendedTopicSlug !== null) {
+    if (view.currentTopicSlugs.includes(view.intendedTopicSlug)) return "in_place";
+    return view.currentTopicSlugs.length > 0 ? "leaving" : "arriving";
+  }
+  return view.currentTopicSlugs.length > 0 ? "in_place" : "on_no_topic";
+}
+
+/** {@link pageTopicState} for a page this workspace has listed. */
+export function selectPageTopicState(mapId: string, pageId: string) {
+  return cached(`topicState:${mapId}:${pageId}`, () =>
+    createSelector(
+      [selectPageCoverage(mapId, pageId), selectPageIntent(mapId, pageId)],
+      (coverage, intent): PageTopicState =>
+        pageTopicState({
+          pageId,
+          currentTopicSlugs: coverage as string[],
+          hasIntent: intent !== null,
+          intendedTopicSlug: intent?.topic?.slug ?? null,
+        }),
+    ),
+  );
+}
+
+/**
+ * One listed row as {@link pageTopicState} reads it, built straight from what
+ * `seo.list_page_intents` returned. The list screen uses this rather than the
+ * store so a page is described by the bytes on the row it is drawing.
+ */
+export function pageTopicViewOf(item: {
+  page: { id: string };
+  current_topics: { slug: string }[];
+  intent: PageIntentRecord | null;
+}): PageTopicView {
+  return {
+    pageId: item.page.id,
+    currentTopicSlugs: item.current_topics.map((topic) => topic.slug),
+    hasIntent: item.intent !== null,
+    intendedTopicSlug: item.intent?.topic?.slug ?? null,
+  };
 }

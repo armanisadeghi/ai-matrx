@@ -15,26 +15,51 @@
 
 import { useEffect, useState } from "react";
 
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  asKnobEnumValue,
+  KNOB_ENUM_VOCABULARIES,
+  type KnobEnumAddress,
+  type KnobEnumValue,
+} from "@/features/settings/universal/knobEnumVocabularies.generated";
 import { knobBool, knobInt, knobString } from "@/lib/knobs/featureKnobs";
 import { createClient } from "@/utils/supabase/client";
 
 export const TOPICAL_MAP_KNOB_FEATURE = "seo.topical_map";
 
 // ── The vocabularies, typed ────────────────────────────────────────────────
+//
+// 🚨 NOT RETYPED — DERIVED. Every union below comes from
+// `knobEnumVocabularies.generated.ts`, which IS the live `allowed_values` of
+// each `platform.feature_knob` row (regenerate: `pnpm
+// generate:knob-enum-vocabularies`; staleness guard: `pnpm
+// check:knob-enum-vocabularies`).
+//
+// They used to be hand-written here, and on 2026-09-17 three of the nine had
+// drifted from their rows — `proposal_mode` said `auto_apply_initial | propose
+// | apply` where the row says `auto_apply | approval | auto_apply_initial`,
+// `description_regeneration_mode` said `queued | immediate | off` where the
+// row says `automatic | queued | manual`, and `bulk_action_confirm` was
+// missing `never` entirely. Only the defaults overlapped, so nothing looked
+// broken — until an admin picked one of the values the settings picker
+// legitimately offers, at which point the reader below RAISED and every map
+// screen went blank. The picker offers the ROW; so does this file now, by
+// construction.
 
-export type MapDefaultView = "outline" | "table" | "graph" | "text";
-export type MapOutlineDetail = "labels" | "counts" | "counts_snippet";
-export type MapDetailPanel = "window" | "drawer";
-export type MapAgentChangeMode = "apply" | "propose" | "ask";
-export type MapProposalMode = "auto_apply_initial" | "propose" | "apply";
-export type MapProposalReviewMode =
-  | "one_by_one"
-  | "accept_all"
-  | "reject_all"
-  | "batch";
-export type MapIntentReviewMode = "one_by_one" | "accept_all" | "batch";
-export type MapBulkActionConfirm = "always" | "above_n";
-export type MapDescriptionRegenerationMode = "queued" | "immediate" | "off";
+type MapKnobEnum<K extends string> = `${typeof TOPICAL_MAP_KNOB_FEATURE}.${K}` extends
+  KnobEnumAddress
+  ? KnobEnumValue<`${typeof TOPICAL_MAP_KNOB_FEATURE}.${K}`>
+  : never;
+
+export type MapDefaultView = MapKnobEnum<"default_view">;
+export type MapOutlineDetail = MapKnobEnum<"outline_detail">;
+export type MapDetailPanel = MapKnobEnum<"detail_panel">;
+export type MapAgentChangeMode = MapKnobEnum<"map_agent_change_mode">;
+export type MapProposalMode = MapKnobEnum<"proposal_mode">;
+export type MapProposalReviewMode = MapKnobEnum<"proposal_review_mode">;
+export type MapIntentReviewMode = MapKnobEnum<"intent_review_mode">;
+export type MapBulkActionConfirm = MapKnobEnum<"bulk_action_confirm">;
+export type MapDescriptionRegenerationMode = MapKnobEnum<"description_regeneration_mode">;
 
 /** `graph_encoding` — what shape and color mean in the graph view (§2.2). */
 export interface MapGraphEncoding {
@@ -197,20 +222,60 @@ async function readJsonObjectKnobs(): Promise<{
 }
 
 /**
- * An enum knob whose live value is outside the vocabulary this build knows is
- * a REAL problem, not something to shrug at with a default: it means an admin
- * (or a migration) set a value no screen implements. Raise and name both.
+ * One enum knob, narrowed onto ITS OWN ROW's `allowed_values`.
+ *
+ * 🚨 AN UNKNOWN VALUE NEVER BLANKS A SCREEN. This used to throw, and a throw
+ * here takes the whole `readTopicalMapKnobs()` promise down, which leaves
+ * `useTopicalMapKnobs` with `knobs: null` and every map screen rendering its
+ * failure state. That is the wrong trade twice over: the value came from a
+ * picker that OFFERED it, so the admin did nothing wrong; and the knob it
+ * belongs to usually decides one detail, not whether the map can be seen at
+ * all.
+ *
+ * So it degrades and SCREAMS (law 4 — nothing fails silently, and every
+ * stand-in announces itself): the offending value and its knob address go to
+ * the Error Inspector and, at red tier, to the server's `system_error` sink,
+ * and the reader falls back to the row's own `default_value` — the value the
+ * database itself calls correct, never a constant frozen in this file.
  */
-function enumKnob<T extends string>(
-  key: string,
+function enumKnob<K extends string>(
+  key: K,
   value: string,
-  allowed: readonly T[],
-): T {
-  if ((allowed as readonly string[]).includes(value)) return value as T;
-  throw new Error(
-    `feature knob "${TOPICAL_MAP_KNOB_FEATURE}.${key}" is "${value}", which this ` +
-      `build does not implement. Expected one of: ${allowed.join(", ")}.`,
-  );
+): MapKnobEnum<K> {
+  const address = `${TOPICAL_MAP_KNOB_FEATURE}.${key}` as KnobEnumAddress;
+  const narrowed = asKnobEnumValue(address, value);
+  if (narrowed !== null) return narrowed as MapKnobEnum<K>;
+
+  const vocabulary = KNOB_ENUM_VOCABULARIES[address];
+  try {
+    captureError({
+      source: "feature-knob-vocabulary",
+      relation: address,
+      message:
+        `feature knob "${address}" is "${value}", which this build does not implement. ` +
+        `Its row allows: ${vocabulary.allowed.join(", ")}.`,
+      userMessage:
+        "One of this map's settings is set to a value this version does not " +
+        "support yet, so the default is being used for it. Everything else on " +
+        "this screen is unaffected.",
+      code: "knob_value_not_implemented",
+      details:
+        `Fell back to this row's own default_value, "${vocabulary.default}". ` +
+        "Either implement the value here, or change the knob. If this file and " +
+        "the row disagree, run `pnpm generate:knob-enum-vocabularies`.",
+      recoverable: true,
+      raw: {
+        knob: address,
+        offending_value: value,
+        allowed_values: [...vocabulary.allowed],
+        fell_back_to: vocabulary.default,
+      },
+      callSite: "features/marketing/seo/topical-map/knobs.ts enumKnob",
+    });
+  } catch {
+    // Capture never breaks the caller.
+  }
+  return vocabulary.default as MapKnobEnum<K>;
 }
 
 /** Reads all 27. One cached fetch backs every call (see `featureKnobs`). */
@@ -273,17 +338,8 @@ export async function readTopicalMapKnobs(): Promise<TopicalMapKnobs> {
   ]);
 
   return {
-    default_view: enumKnob("default_view", defaultView, [
-      "outline",
-      "table",
-      "graph",
-      "text",
-    ] as const),
-    outline_detail: enumKnob("outline_detail", outlineDetail, [
-      "labels",
-      "counts",
-      "counts_snippet",
-    ] as const),
+    default_view: enumKnob("default_view", defaultView),
+    outline_detail: enumKnob("outline_detail", outlineDetail),
     outline_hover_popover: outlineHoverPopover,
     outline_description_max_chars: outlineDescriptionMaxChars,
     outline_max_chars: outlineMaxChars,
@@ -291,43 +347,18 @@ export async function readTopicalMapKnobs(): Promise<TopicalMapKnobs> {
     graph_band_compact_max: graphBandCompactMax,
     graph_band_line_max: graphBandLineMax,
     graph_encoding: json.graph_encoding,
-    detail_panel: enumKnob("detail_panel", detailPanel, ["window", "drawer"] as const),
-    topic_agent_change_mode: enumKnob("topic_agent_change_mode", topicAgentChangeMode, [
-      "apply",
-      "propose",
-      "ask",
-    ] as const),
-    map_agent_change_mode: enumKnob("map_agent_change_mode", mapAgentChangeMode, [
-      "apply",
-      "propose",
-      "ask",
-    ] as const),
+    detail_panel: enumKnob("detail_panel", detailPanel),
+    topic_agent_change_mode: enumKnob("topic_agent_change_mode", topicAgentChangeMode),
+    map_agent_change_mode: enumKnob("map_agent_change_mode", mapAgentChangeMode),
     description_regeneration_mode: enumKnob(
       "description_regeneration_mode",
       descriptionRegenerationMode,
-      ["queued", "immediate", "off"] as const,
     ),
     mapping_batch_size: mappingBatchSize,
-    proposal_mode: enumKnob("proposal_mode", proposalMode, [
-      "auto_apply_initial",
-      "propose",
-      "apply",
-    ] as const),
-    proposal_review_mode: enumKnob("proposal_review_mode", proposalReviewMode, [
-      "one_by_one",
-      "accept_all",
-      "reject_all",
-      "batch",
-    ] as const),
-    intent_review_mode: enumKnob("intent_review_mode", intentReviewMode, [
-      "one_by_one",
-      "accept_all",
-      "batch",
-    ] as const),
-    bulk_action_confirm: enumKnob("bulk_action_confirm", bulkActionConfirm, [
-      "always",
-      "above_n",
-    ] as const),
+    proposal_mode: enumKnob("proposal_mode", proposalMode),
+    proposal_review_mode: enumKnob("proposal_review_mode", proposalReviewMode),
+    intent_review_mode: enumKnob("intent_review_mode", intentReviewMode),
+    bulk_action_confirm: enumKnob("bulk_action_confirm", bulkActionConfirm),
     bulk_action_confirm_threshold: bulkActionConfirmThreshold,
     intent_colors: json.intent_colors,
     performance_window_days: performanceWindowDays,
@@ -394,5 +425,11 @@ export function bulkActionNeedsConfirmation(
   count: number,
 ): boolean {
   if (knobs.bulk_action_confirm === "always") return true;
+  // `never` is a value of this knob's row that this file did not know about
+  // until 2026-09-17. It turns off the SETTING's confirmation, and nothing
+  // else: a destructive or expensive click still states its consequence, which
+  // is a law (`destructive-and-expensive-actions`), not a preference an
+  // organization can switch off.
+  if (knobs.bulk_action_confirm === "never") return false;
   return count > knobs.bulk_action_confirm_threshold;
 }
