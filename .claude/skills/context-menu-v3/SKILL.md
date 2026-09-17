@@ -30,6 +30,7 @@ A menu item is a **short verb phrase**: `Edit rule…`, `See its keywords`, `Rev
    ```
 2. **Wrap the region** in `<EditableContextMenu …>` (or `NonEditableContextMenu`).
 3. **Pass the identity + value props:** `sourceFeature` (required), `surfaceName` (registry surface → AI actions + bound agents + value mappings), `getApplicationScope` (live, preferred) / `contextData` (static), `extraSections`, and for editables `getTextarea` + `onTextReplace` / `onTextInsertBefore|After`; history props and `scope` / `scopeId` as the surface needs. Use `placementMode` for per-placement visibility. Types: `@/features/context-menu-v3/types` (`EditableContextMenuProps` / `NonEditableContextMenuProps`).
+   `sourceFeature` names the actual product, not the nearest allowed label. If it is missing, register the product in `aidream/aidream/services/conversation_context/source_attribution.py`, regenerate the contract with its generator, and deploy the registry before the caller. Never cast or misattribute the caller to satisfy the allow-list.
 4. Build scope through **`buildApplicationScopeFromMenuContext`** (`@/features/context-menu-v3/utils/build-application-scope`) — it guarantees the 5 baselines from the live DOM.
 
 ## ONE MENU PER PANE — delegate per row, never nest
@@ -49,6 +50,7 @@ A list, table, or grid gets **one** wrapper around the whole pane, not one per r
 
 - `pnpm type-check` clean.
 - **Open the menu on the surface and watch the console.** v3 SCREAMS in dev if the menu opens inert ("INERT MENU on …") or a surface dropped a declared value ("VALUE MAPPING GAP on …"). A clean open = the values are wired. A scream = fix the wiring (provide `getApplicationScope`/`contextData.content`, or make the wrapped content selectable for the DOM fallback).
+- For controlled editable fields, use the menu to replace text and confirm the owning state and derived output change together. A menu that changes only the DOM is not wired. Each field needs the callbacks for its own state.
 - The acceptance test for any content surface: right-click **without selecting** → **Export → Download as Markdown** saves the whole content as `.md`; highlight first → saves the selection.
 
 ## Layout & density knobs (2026-08-22)

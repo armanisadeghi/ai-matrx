@@ -99,13 +99,64 @@ existing Work Loop targets. Three previously unassigned ordinary pages:
 - `/print/barcodes`
 - `/print/documents`
 
-These exercise the new-route registration class, not all overlay/inheritance
-branches. Each fresh Luna receives the same neutral outcome: make its existing
+The two Print pages exercise new registration; Present Value extends the existing
+shared `legal-ca-wc` identity. This does not cover overlay/inheritance branches. Each fresh Luna receives the same neutral outcome: make its existing
 page an ordinary agent-aware surface end to end using repository guidance,
 preserving existing behavior. No missing-registration hint or prescribed fix.
 Shared-file edits and Browser access are serialized; the coordinator explicitly
 owns git and claim settlement, not implementation. Independent acceptance uses
 the original requested outcome, actual diff and live data, not worker assurances.
+
+### GREEN round 3 — read-only receipt condition
+
+After the blind builds, the receipt explicitly covered controlled-state edits,
+async input/result identity and true source attribution; read-only assessments
+were instructed to mark evidence `NOT RUN` while retaining the exact procedure.
+The original scenario and six criteria remained unchanged. Independent Sol grade:
+
+| Rep / persisted session | Score | Result |
+|---|---|---|
+| G3-1 `01a0ae8a-d00a-7e41-ae24-c227a5bf5b87` | 5/6 | FAIL: omitted authenticated save/roster/request/persisted-variable evidence |
+| G3-2 `01a0ae8c-9fc6-7e00-bec2-a5efa2b00055` | 4/6 | FAIL: summarized sync/check and binding instead of exact procedure/evidence |
+| G3-3 `01a0ae8d-8635-7f42-a1a7-fde5861db2fb` | 6/6 | PASS |
+
+**1/3 formal passes; the 3/3 criterion is still unmet.** These are read-only
+planning results, not proof of operational execution. Do not advertise this skill
+as a reliable behavioral guard or remove independent review. The registration
+admission remains an executable containment boundary, separate from these results.
+
+### Frozen blind candidates (independent Sol review, 2026-09-17)
+
+| Page / persisted Luna session | Registration result | Overall first candidate |
+|---|---|---|
+| Present Value `01a0ae6d-0464-7a40-b5a1-f5563785f02e` | Exact focused sync + full check PASS; independently repeated | FAIL: utility-only Always key on shared identity; editable numeric menu lacked state callbacks; false product attribution |
+| Barcode `01a0ae6d-091f-7210-b60d-cdc3970f1b97` | Exact focused sync + full check PASS; independently repeated | FAIL: new input paired with old SVG/error; editable region omitted; false attribution; stale readiness note |
+| Markdown PDF `01a0ae6d-7036-76b2-8593-b67c65d280d3` | Exact focused sync + full check PASS; independently repeated | FAIL: duplicate content value; Download PDF absent from canonical menu; false attribution; stale readiness note |
+
+Registration behavior passed **3/3 without incident-specific hints**. Complete
+surface acceptance passed **0/3**. All three honestly reported incomplete work;
+none claimed full certification. Access-grant pauses are not failures: shared
+files and browser lanes were expressly reserved by the coordinator. The Barcode
+CLI browser call returned `No browser is available`; the desktop owner separately
+opened its isolated browser, observed the correct registered barcode identity
+and 8/12 live values with the contract honored. That is partial owner evidence,
+not a completed Luna browser trial. No binding was saved in that preliminary walk.
+
+Corrective continuations receive the review findings and are **not blind passes**.
+The source-attribution gap is shared: legal/print were absent from the generated
+allow-list, while guard advice told builders to pick an existing value. The fix
+belongs in the canonical registry and that guidance, not invented casts or an
+unrelated feature slug. Existing runtime rules already required controlled-input
+callbacks, full menu coverage and real actions; the updated receipt makes those
+observable outcomes explicit. Async result identity and shared-route Always-key
+checks now have concrete procedures in runtime-rollout. Corrected candidates passed independent Sol source review: Barcode 2 tests, Markdown
+1 test, shared native-number/Present Value 5 tests, canonical backend attribution
+9 tests, and shared header attribution 4 tests. All three focused live mirror checks
+passed. Backend attribution is pushed at `62fa56114`; at 08:57Z the live server
+still reported `efe84a435`, so new legal/print run proof remains pending deployment.
+Authenticated binding-to-run evidence and final live acceptance remain pending;
+shared-preview hot reload interrupted owner browser attempts. These corrections do
+not change the frozen blind score or the GREEN3 result.
 
 ## E1 — split did not lose behavior (2026-09-10)
 

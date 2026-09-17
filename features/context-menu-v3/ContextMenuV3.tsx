@@ -38,6 +38,7 @@ import {
 } from "./components/FloatingSelectionIcon";
 import {
   captureTextareaSelection,
+  getEditableSelectionOffsets,
   captureDomSelection,
   getSelectionRect,
   mouseFallbackRect,
@@ -432,8 +433,7 @@ export function ContextMenuV3({
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLInputElement
     ) {
-      const start = target.selectionStart || 0;
-      const end = target.selectionEnd || 0;
+      const { start, end } = getEditableSelectionOffsets(target);
       setSelectedText(captured?.text || "");
       setSelectionRange({
         type: "editable",

@@ -17,7 +17,7 @@ There are three distinct states:
 2. **Independent full certification** is the separate S1–S18 candidate and fresh verifier process owned by `surface-check`. It alone permits `certified` / final ledger claims.
 3. **Release admission** is the release script's read-only committed-candidate `--check --registration-only` check for required registration keys. It neither performs authoring sync nor requires full certification. A partial source change may ship only if admission passes, and must remain honestly partial.
 
-Fill this receipt, rather than replacing it with a narrative:
+Fill this receipt, rather than replacing it with a narrative. For a read-only assessment, fill unexecuted steps as `NOT RUN`, retain the exact commands with the surface placeholder, and name the evidence that execution must collect; do not omit the receipt because execution is unavailable:
 
 ```md
 ## Surface integration receipt — <client>/<local>
@@ -26,7 +26,8 @@ Fill this receipt, rather than replacing it with a narrative:
   - Result: <PASS/FAIL/NOT RUN>; time: <UTC timestamp>; reason if not run: <reason>
 - Full live check: `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>`
   - Result: <PASS/FAIL/NOT RUN>; time: <UTC timestamp>; parent + values/roles/write-targets/client-tools + metadata + system/public: <result or reason>
-- Runtime/menu proof: <route or overlay, live values, editable/presentational menu result, terminal UI result>
+- Runtime/menu proof: <each editable/presentational region, actual controlled-state mutation, current live values, terminal UI result>
+- Contract truth: <all routes sharing identity checked for Always keys; async values belong to current inputs; source attribution names the actual product>
 - Eligible ordinary binding proof: <authenticated save receipt, visible roster, launch request, persisted mapped variables>
   - Agent-native: N/A — <exclusion reason>
 - Readiness: <partial|verified>; note: <exact remaining condition or why earned>
@@ -222,6 +223,7 @@ This is the most-abused field. Only set `true` when the surface code **literally
 | `open_tab_ids` in an editor (could be empty array but always an array) | `true` |
 | `current_file_id` in an editor that requires a file open | `true` |
 | `current_file_id` in an editor where the user might be on an empty workspace | `false` |
+| A utility-only value on a manifest shared by several routes | `false` unless every route emits it; inspect every mount, not only the edited page |
 | `selection` anywhere | `false` |
 | `content` (full file body) | `false` (only `true` if you guarantee non-null) |
 

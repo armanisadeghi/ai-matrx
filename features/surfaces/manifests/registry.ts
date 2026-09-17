@@ -139,6 +139,8 @@ import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
+import { barcodePreviewManifest } from "./barcode-preview.manifest";
+import { markdownPdfManifest } from "./markdown-pdf.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
@@ -242,6 +244,8 @@ import { quickDataManifest } from "./quick-data.manifest";
  */
 export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentShortcutsManifest,
+  barcodePreviewManifest,
+  markdownPdfManifest,
   aiWorkManifest,
   aiWorkComposerManifest,
   aiWorkConversationsManifest,

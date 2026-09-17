@@ -5,7 +5,7 @@
  * Entry: `@ai-matrx/print/barcode`.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     DEFAULT_BARCODE_HEIGHT,
     DEFAULT_BARCODE_SCALE,
@@ -14,6 +14,35 @@ import {
     type BarcodeSymbology,
 } from "@ai-matrx/print/barcode";
 import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "@/features/print/components/shared";
+import { ProInput } from "@/components/official/ProInput";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
+import {
+    BARCODE_PREVIEW_SURFACE_NAME,
+    barcodePreviewManifest,
+    createBarcodePreviewScope,
+} from "@/features/surfaces/manifests/barcode-preview.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+
+// The generated source-attribution contract is being extended with `print`.
+// Keep the runtime attribution canonical now without editing generated types.
+const PRINT_SOURCE_FEATURE: SourceFeature = "print";
+const LABELS = surfaceValueLabels(barcodePreviewManifest);
+
+type BarcodeResultIdentity = {
+    value: string;
+    symbology: BarcodeSymbology;
+};
+
+type BarcodeRenderResult = BarcodeResultIdentity & {
+    svg: string;
+};
+
+type BarcodeRenderError = BarcodeResultIdentity & {
+    message: string;
+};
 
 const SYMBOLOGIES: { id: BarcodeSymbology; label: string; hint: string; sample: string }[] = [
     {
@@ -39,8 +68,9 @@ const SYMBOLOGIES: { id: BarcodeSymbology; label: string; hint: string; sample: 
 export function BarcodeSection() {
     const [symbology, setSymbology] = useState<BarcodeSymbology>("code128");
     const [value, setValue] = useState("MATRX-SN-88213");
-    const [svg, setSvg] = useState("");
-    const [renderError, setRenderError] = useState<string | null>(null);
+    const [renderedResult, setRenderedResult] = useState<BarcodeRenderResult | null>(null);
+    const [renderError, setRenderError] = useState<BarcodeRenderError | null>(null);
+    const renderRequestId = useRef(0);
 
     const active = SYMBOLOGIES.find((s) => s.id === symbology) ?? SYMBOLOGIES[0];
 
@@ -56,17 +86,23 @@ export function BarcodeSection() {
 
     useEffect(() => {
         let cancelled = false;
+        const requestId = ++renderRequestId.current;
+        const identity: BarcodeResultIdentity = { value, symbology };
+
         if (!valid) return;
         generateBarcodeSvg(value, symbology)
             .then((markup) => {
-                if (cancelled) return;
-                setSvg(markup);
+                if (cancelled || requestId !== renderRequestId.current) return;
+                setRenderedResult({ ...identity, svg: markup });
                 setRenderError(null);
             })
             .catch((err: unknown) => {
-                if (cancelled) return;
-                setSvg("");
-                setRenderError(err instanceof Error ? err.message : "Barcode generation failed.");
+                if (cancelled || requestId !== renderRequestId.current) return;
+                setRenderedResult(null);
+                setRenderError({
+                    ...identity,
+                    message: err instanceof Error ? err.message : "Barcode generation failed.",
+                });
             });
         return () => {
             cancelled = true;
@@ -74,67 +110,130 @@ export function BarcodeSection() {
     }, [value, symbology, valid]);
 
     const appended = normalized !== null && normalized !== value;
-    const error = normalizeError ?? renderError;
-    const shownSvg = valid ? svg : "";
+    const hasMatchingResult =
+        renderedResult?.value === value && renderedResult.symbology === symbology;
+    const hasMatchingError = renderError?.value === value && renderError.symbology === symbology;
+    const shownSvg = valid && hasMatchingResult ? renderedResult.svg : "";
+    const matchingRenderError = hasMatchingError ? renderError.message : null;
+    const error = normalizeError ?? matchingRenderError;
+    const previewStatus = !valid ? "invalid" : matchingRenderError ? "failed" : shownSvg ? "ready" : "rendering";
+    const getApplicationScope = () =>
+        createBarcodePreviewScope({
+            symbology,
+            barcode_value: value,
+            normalized_value: normalized ?? "",
+            is_valid: valid,
+            preview_status: previewStatus,
+            render_error: matchingRenderError ?? "",
+            preview_svg: shownSvg,
+            content: normalized ?? value,
+            context: {
+                symbology,
+                normalized_value: normalized ?? null,
+                preview_status: previewStatus,
+            },
+        });
 
     return (
-        <SectionShell
-            title="Barcodes"
-            entry="@ai-matrx/print/barcode"
-            blurb="Generation only, in the three symbologies the commerce lane actually prints. SVG works in Node and the browser."
-        >
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-                <div className="flex flex-col gap-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label="Symbology" hint={active.hint}>
-                            <select
-                                className={controlClass}
-                                value={symbology}
-                                onChange={(e) => {
-                                    const next = e.target.value as BarcodeSymbology;
-                                    setSymbology(next);
-                                    setValue(SYMBOLOGIES.find((s) => s.id === next)?.sample ?? "");
-                                }}
-                            >
-                                {SYMBOLOGIES.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field label="Value">
-                            <input className={controlClass} value={value} onChange={(e) => setValue(e.target.value)} />
-                        </Field>
+        <SurfaceRuntimeProvider surfaceName={BARCODE_PREVIEW_SURFACE_NAME} getScope={getApplicationScope}>
+            <SectionShell
+                title="Barcodes"
+                entry="@ai-matrx/print/barcode"
+                blurb="Generation only, in the three symbologies the commerce lane actually prints. SVG works in Node and the browser."
+            >
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                    <div className="flex flex-col gap-3">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div data-surface-value="symbology">
+                            <Field label={LABELS.symbology} hint={active.hint}>
+                                <select
+                                    className={controlClass}
+                                    value={symbology}
+                                    onChange={(e) => {
+                                        const next = e.target.value as BarcodeSymbology;
+                                        setSymbology(next);
+                                        setValue(SYMBOLOGIES.find((s) => s.id === next)?.sample ?? "");
+                                    }}
+                                >
+                                    {SYMBOLOGIES.map((s) => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                        </div>
+                        <EditableContextMenu
+                            sourceFeature={PRINT_SOURCE_FEATURE}
+                            surfaceName={BARCODE_PREVIEW_SURFACE_NAME}
+                            menuVersion={2}
+                            getApplicationScope={getApplicationScope}
+                            onTextReplace={setValue}
+                            onTextInsertBefore={(text) => setValue((current) => `${text}${current}`)}
+                            onTextInsertAfter={(text) => setValue((current) => `${current}${text}`)}
+                            contextData={{ content: value }}
+                        >
+                            <div data-surface-value="barcode_value">
+                                <Field label={LABELS.barcode_value}>
+                                    <ProInput
+                                        type="text"
+                                        value={value}
+                                        onChange={(e) => setValue(e.target.value)}
+                                        enableCleanup={false}
+                                        enableVoice={false}
+                                        className={controlClass}
+                                    />
+                                </Field>
+                            </div>
+                        </EditableContextMenu>
+                        </div>
+
+                        {error ? (
+                            <div data-surface-value={matchingRenderError ? "render_error" : undefined}>
+                                <StatusChip tone="warn">{error}</StatusChip>
+                            </div>
+                        ) : null}
+                        {!error && normalized !== null ? (
+                            <div data-surface-value="normalized_value">
+                                <StatusChip tone="ok">
+                                    {appended
+                                        ? `Check digit appended — encoding ${normalized}`
+                                        : `Value verified — encoding ${normalized}`}
+                                </StatusChip>
+                            </div>
+                        ) : null}
+
+                        <div data-surface-value="is_valid">
+                            <StatusChip tone="info">
+                                Every generate call routes through <code className="font-mono">normalizeBarcodeValue</code>{" "}
+                                first — there is no path that prints an unvalidated retail symbol. Bar height defaults to{" "}
+                                {DEFAULT_BARCODE_HEIGHT[symbology]} mm at scale {DEFAULT_BARCODE_SCALE}, and the human-readable
+                                line stays on because it is the fallback when a scan fails.
+                            </StatusChip>
+                        </div>
                     </div>
 
-                    {error ? <StatusChip tone="warn">{error}</StatusChip> : null}
-                    {!error && normalized !== null ? (
-                        <StatusChip tone="ok">
-                            {appended
-                                ? `Check digit appended — encoding ${normalized}`
-                                : `Value verified — encoding ${normalized}`}
-                        </StatusChip>
-                    ) : null}
-
-                    <StatusChip tone="info">
-                        Every generate call routes through <code className="font-mono">normalizeBarcodeValue</code>{" "}
-                        first — there is no path that prints an unvalidated retail symbol. Bar height defaults to{" "}
-                        {DEFAULT_BARCODE_HEIGHT[symbology]} mm at scale {DEFAULT_BARCODE_SCALE}, and the human-readable
-                        line stays on because it is the fallback when a scan fails.
-                    </StatusChip>
-                </div>
-
-                <div className="flex items-center justify-center rounded-md border border-border bg-white p-3">
-                    {shownSvg ? (
-                        <img src={svgToImgSrc(shownSvg)} alt="Barcode preview" className="max-h-32 w-full object-contain" />
-                    ) : (
-                        <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-                            No symbol
+                    <NonEditableContextMenu
+                        sourceFeature={PRINT_SOURCE_FEATURE}
+                        surfaceName={BARCODE_PREVIEW_SURFACE_NAME}
+                        menuVersion={2}
+                        getApplicationScope={getApplicationScope}
+                        contextData={{ content: normalized ?? value }}
+                    >
+                        <div data-surface-value="preview_status" data-preview-status={previewStatus}>
+                            <div data-surface-value="preview_svg" className="flex items-center justify-center rounded-md border border-border bg-white p-3">
+                                {shownSvg ? (
+                                    <img src={svgToImgSrc(shownSvg)} alt={LABELS.preview_svg} className="max-h-32 w-full object-contain" />
+                                ) : (
+                                    <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
+                                        No symbol
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    </NonEditableContextMenu>
                 </div>
-            </div>
-        </SectionShell>
+            </SectionShell>
+        </SurfaceRuntimeProvider>
     );
 }
