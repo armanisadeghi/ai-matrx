@@ -51,6 +51,8 @@ const surfaceSpecific: SurfaceValue[] = [
 export const <localSlug>Manifest: SurfaceManifest = {
   surfaceName: "<client>/<local>",
   label: "<Canonical Display Name>",          // REQUIRED — THE NAMING LAW
+  readiness: "partial",
+  readinessNote: "<what prevents verified/certified status>",
   urlPattern: "/things/[thingId]",
   inheritsFrom: "<client>/<parent>",          // omit when standalone
   intro: `<surface_intro>

@@ -81,4 +81,4 @@ Invoke `context-menu-v3` and follow its full contract:
 
 ## Delegated implementation report
 
-When an authorized coordinator delegates part of this rollout, the implementer returns: files changed; every new/changed SurfaceValue with its full contract; editable and presentational regions wired; inputs migrated to Pro; and anything not completed with the exact reason. The coordinator owns DB sync, certification, commit, and handoff unless the delegation explicitly says otherwise.
+When an authorized coordinator delegates part of this rollout, the implementer returns: files changed; every new/changed SurfaceValue with its full contract; editable and presentational regions wired; inputs migrated to Pro; the focused sync/check receipt when authorized for that mirror; and anything not completed with the exact reason. The coordinator owns candidate submission, commit, and verifier handoff; the independent verifier owns certification. A coordinator may explicitly retain one narrow external sync boundary, never silently inherit it.

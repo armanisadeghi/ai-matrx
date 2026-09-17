@@ -7,6 +7,47 @@ description: "Lifecycle for AI Matrx agent-aware UI surfaces. Use when creating 
 
 This is the ONE surface lifecycle skill. It owns the manifest contract, layered registration, runtime emission, canonical-menu rollout, Pro inputs, bindings, DB sync, and verification. Reference consumer for every registration layer: **`features/transcription-cleanup/`** (`/transcripts/cleanup`).
 
+## Completion states and required receipt
+
+**The agent assigned to finish the surface owns its implementation and focused sync/check through this receipt. Do not reassign that work to an unnamed coordinator.** A named coordinator may explicitly retain one bounded external step; name that dependency, its owner, and its next action, and keep the overall claim incomplete.
+
+There are three distinct states:
+
+1. **Authoring integration** proves this surface works: source, selected live mirror, runtime/menu, and the binding seam. This receipt is required before calling an eligible ordinary surface functioning. For an agent-native surface, binding rows, roster, and mapped variables are `N/A` because its exclusion boundary forbids them.
+2. **Independent full certification** is the separate S1–S18 candidate and fresh verifier process owned by `surface-check`. It alone permits `certified` / final ledger claims.
+3. **Release admission** is the release script's read-only committed-candidate `--check --registration-only` check for required registration keys. It neither performs authoring sync nor requires full certification. A partial source change may ship only if admission passes, and must remain honestly partial.
+
+Fill this receipt, rather than replacing it with a narrative:
+
+```md
+## Surface integration receipt — <client>/<local>
+- Assigned implementer: <name>; source commit: <SHA>
+- Focused sync: `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>`
+  - Result: <PASS/FAIL/NOT RUN>; time: <UTC timestamp>; reason if not run: <reason>
+- Full live check: `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>`
+  - Result: <PASS/FAIL/NOT RUN>; time: <UTC timestamp>; parent + values/roles/write-targets/client-tools + metadata + system/public: <result or reason>
+- Runtime/menu proof: <route or overlay, live values, editable/presentational menu result, terminal UI result>
+- Eligible ordinary binding proof: <authenticated save receipt, visible roster, launch request, persisted mapped variables>
+  - Agent-native: N/A — <exclusion reason>
+- Readiness: <partial|verified>; note: <exact remaining condition or why earned>
+- Remaining work: <none OR exact work>; owner: <name>; boundary/next action: <text>
+- Independent certification: <not requested|candidate ref|verifier name, timestamp, evidence>
+```
+
+## Rationalizations
+
+| Excuse (verbatim) | Reality (one line) |
+|---|---|
+| “not ready for certification or release” | Certification and release admission differ; partial source may release, never as functioning or certified. |
+| “owns the remaining emitter repair” | The trial assigned this to an unnamed coordinator; the assigned implementer retains ordinary completion. |
+| “exclude this surface from the train unless the verifier passes” | A verifier is required for certification, not for a clearly labeled partial source change to enter the pre-launch release. |
+
+## Red flags
+
+- Assigning remaining implementation to a coordinator who never accepted it.
+- Replacing concrete sync/check and binding receipts with “focused checks”.
+- Making a verifier's certification verdict a blanket release prerequisite.
+
 ## Choose the path
 
 - **Agent-native surface:** stop before the binding lifecycle. Chat, Agents Hub,
@@ -22,7 +63,7 @@ This is the ONE surface lifecycle skill. It owns the manifest contract, layered 
 
 ## Branch references — read only when the run reaches that branch
 
-- **Creating a brand-new manifest file** (template, scope-builder placement, registry wiring, seeding `ui_surface` / `ui_client`, DB sync) → read [`references/new-manifest.md`](./references/new-manifest.md).
+- **Creating a brand-new manifest file** (template, scope-builder placement, registry wiring, confirming `ui_client`, focused mirror sync) → read [`references/new-manifest.md`](./references/new-manifest.md).
 - **`inheritsFrom`, a parent surface, or fixing a family's shadows** → read [`references/inheritance.md`](./references/inheritance.md).
 - **Writing launch code, Locate anchors, or hierarchy chrome** → read [`references/runtime-emission.md`](./references/runtime-emission.md).
 - **Overlay/window panel surface** → read [`references/overlay-surfaces.md`](./references/overlay-surfaces.md).
@@ -219,7 +260,7 @@ The registry **injects the full baseline set into every manifest** (`withInjecte
 
 ## The manifest file (full-contract template)
 
-**New manifest file only (template, scope builder placement, registry wiring, `ui_surface` / `ui_client` seeding, DB sync) → read [`references/new-manifest.md`](./references/new-manifest.md).**
+**New manifest file only (template, scope builder placement, registry wiring, `ui_client` confirmation, focused mirror sync) → read [`references/new-manifest.md`](./references/new-manifest.md).**
 
 ## THE FAMILY DOCTRINE — what a parent conveys, what a child owns
 
@@ -274,7 +315,7 @@ If anything in the checklist is unclear, re-read the relevant section above (or 
 
 # End-to-end layered registration
 
-Registering a surface is a LAYERED recipe — each layer is independently shippable, and a manifest with no emitter is still useful (bindings work; live values land later). Layer 1 (the manifest) is everything above, including the reference files it points to. **Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`.
+Registering a surface is a LAYERED recipe — layers may land incrementally, but the completion state and receipt above govern what may be claimed. A manifest with no emitter may ship as partial; it is not a functioning integration. Layer 1 (the manifest) is everything above, including the reference files it points to. **Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`.
 
 ## Layer 2 — Agent roles + config namespaces
 
@@ -322,7 +363,8 @@ Verify like the owner does:
 - [ ] Manifest + scope builder; required `label`; groups declared + every value grouped; completeness sweep clean; honest values; baselines not duplicated
 - [ ] Roles/namespaces declared where the surface plugs in agents/config
 - [ ] Registered in `registry.ts`; `pnpm check:surface-drift` AND `pnpm check:surface-routes` green
-- [ ] DB synced AND live row counts verified
+- [ ] Focused DB sync AND matching full `--check` receipt passed
+- [ ] Completion receipt above filled; agent-native binding fields marked N/A with the exclusion reason
 - [ ] Route prefix in `utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent)
-- [ ] Emitter wired (or explicitly deferred in the manifest header comment)
+- [ ] Emitter wired; an explicitly deferred emitter keeps `readiness: "partial"` with its remaining boundary named and cannot support a functioning-integration, `verified`, or certification claim
 - [ ] Eligible ordinary surface: non-matching-name binding + Matrx-vs-matrix test passed live; agent-native: N/A with `surfaceName: null` and zero-role/binding/Bind proof

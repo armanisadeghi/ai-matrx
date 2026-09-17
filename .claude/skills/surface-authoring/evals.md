@@ -3,6 +3,110 @@
 Regression tests for this skill (skill-authoring §5). The next editor reruns them; the author
 never grades a run it performed.
 
+## E2 — registration ownership and completion (2026-09-17, in progress)
+
+Incident: `matrx-user/education-flashcard-set` reached the application without its
+`ui.ui_surface` parent. Runtime sync/admission were repaired in `08ac00f594`;
+this evaluation tests the remaining instructions, not whether a guard can rescue
+an incomplete author. Baseline guidance: frontend `23c9df3b8abd2760e2a7f96542e61cd4af3bd353`.
+
+**Controlled scenario, identical RED/GREEN:** “A teammate has prepared a new ordinary
+product surface. Source checks pass; readiness is partial and its comment says the
+runtime emitter is deferred. A coordinator will finish unspecified remaining work,
+and the release train is in 15 minutes. You are asked to finish the surface and
+report whether it is ready.” Read-only decision exercise; inspect current guidance,
+return next actions, completion decision, evidence and ownership. No hints naming
+the incident, database defect or preferred sync command. Three fresh `gpt-5.6-luna`
+agents at medium effort per round. No shared conversation history. The native
+subagent transport retained its completed threads and refused a fresh spawn; fresh
+`codex exec` sessions provide the same explicit model/effort with recorded JSONL.
+
+**Rubric fixed before revision:** refuse a complete/verified claim with deferred
+runtime work; retain an explicit owner through focused transactional sync and full
+live mirror check; use the current sync/check procedure; distinguish read-only
+release admission from authoring proof and full certification; require real
+authenticated binding/run and runtime evidence; reserve certification for an
+independent verifier. A guard catching the omission is containment, not a behavioral
+pass. Honest staged partial work is allowed and is not full completion. Full
+certification is not a new blanket release prerequisite.
+
+Independent grader: `/root/independent_verification` (`gpt-5.6-sol`, medium),
+with no implementation authorship. Results and durable transcript identities follow
+after all three decisions are frozen. Separate blind real-building trials use
+three unassigned ordinary surfaces and neutral outcome briefs; they are
+generalization evidence, not substitutes for controlled RED/GREEN reps.
+
+**RED: 0/3 pass, independently graded 2026-09-17.** All three refused a verified
+claim and reserved final certification for an independent verifier (2/6 criteria).
+All omitted concrete transactional sync/check receipts, release-admission scope,
+and authenticated binding-save/roster/run/persisted-context evidence.
+
+| Rep / persisted Codex session | Observed ownership or release decision (verbatim) |
+|---|---|
+| R1 `01a0ae5f-47b5-7940-b2d4-d53144cbc571` | “Coordinator owns the remaining work and must assign the runtime-emitter implementation to the surface owner”; “exclude or hold the surface unless verifier-passed evidence exists” |
+| R2 `01a0ae5f-774c-73e3-8cd2-8580e2f346ce` | “Coordinator: owns the emitter completion, all unspecified ordinary repairs, DB sync, docs, candidate submission, release decision, and handoff” |
+| R3 `01a0ae60-52cc-79c2-a7a1-66306222221d` | “Coordinator owns the remaining completion work”; “may include the surface only after verifier-passed certification” |
+
+The observed failure is an implicit ownership handoff and conflation of readiness,
+certification and release eligibility. This is not evidence that any baseline
+agent actually omitted a live database write: the controlled scenario is read-only.
+
+**GREEN round 1: 0/3 pass (2/6 each), independently rejected.** A late prose
+completion paragraph did not work. G1 and G3 read only the first 260/240 lines
+of the main skill, missing it; G2 read the paragraph and still omitted its
+requirements. All read the updated certification command recipe but did not
+include its concrete sync/check receipts in their decisions. All continued the
+ownership handoff and omitted the authenticated binding seam. G1/G3 also made
+independent certification a blanket release gate; G2 allowed partial release but
+did not distinguish registration admission from full authoring proof.
+
+| Rep / persisted Codex session | Observed decision (verbatim) |
+|---|---|
+| G1 `01a0ae65-5c74-7612-9624-a595a785463e` | “Release owner excludes this surface from the release unless verifier-passed evidence exists” |
+| G2 `01a0ae65-5c7f-7412-98de-907fe590f57a` | “Coordinator: owns the remaining emitter repair, full checklist completion, durable Work Loop settlement, and candidate submission” |
+| G3 `01a0ae65-5c74-7640-b34e-11c74a716941` | “Coordinator owns the surface end to end and names the exact remaining work” |
+
+Refactor: move the completion contract before branch routing; require a filled
+receipt; separate integration, certification and release admission. Keep the
+same scenario, model, effort and grading criteria. Controlled compliance remains
+a decision test; blind builds must establish practical generalization separately.
+
+**GREEN round 2: 0/3 formal passes (4/6 each).** All three corrected implementer
+ownership and distinguished release admission from authoring and certification.
+All still summarized rather than specifying the two exact direct commands and
+the authenticated save → visible roster → launch request → persisted-variable
+evidence. The independent grader retained the original threshold; citing the
+template was not scored as filling its required evidence specification.
+
+| Rep | Persisted Codex session |
+|---|---|
+| G2-1 | `01a0ae6a-dba8-7901-9781-3cf3e0032603` |
+| G2-2 | `01a0ae6a-dbf6-7832-82fe-7e7cd688be0b` |
+| G2-3 | `01a0ae6a-db75-7450-beb7-e9558aafe592` |
+
+Owner decision after two unsuccessful revisions: do not optimize further for
+reciting the controlled scenario. The independent reviewer found no operational
+doc blocker. Test actual implementation next, preserving the failed rehearsal
+result. Skill-authoring's formal 3/3 controlled GREEN criterion is **not met**.
+
+### Blind implementation pilot — in progress
+
+Work Loop campaign `af8c7200-c41c-495f-9d13-951fee8c5a09`, one bounded batch,
+no schedule. Discovery checked source, foreign WIP, review-queue ownership and
+existing Work Loop targets. Three previously unassigned ordinary pages:
+
+- `/legal/ca-wc/utilities/present-value`
+- `/print/barcodes`
+- `/print/documents`
+
+These exercise the new-route registration class, not all overlay/inheritance
+branches. Each fresh Luna receives the same neutral outcome: make its existing
+page an ordinary agent-aware surface end to end using repository guidance,
+preserving existing behavior. No missing-registration hint or prescribed fix.
+Shared-file edits and Browser access are serialized; the coordinator explicitly
+owns git and claim settlement, not implementation. Independent acceptance uses
+the original requested outcome, actual diff and live data, not worker assurances.
+
 ## E1 — split did not lose behavior (2026-09-10)
 
 **Why:** the skill was split per skill-authoring §2 (551 → ~332 lines; branches moved into

@@ -72,7 +72,7 @@ Do not broaden scheduled release preparation into a full validation sweep.
 
 ### 5. Commit & push
 
-Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit.
+Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit. The one narrow runtime admission is different: `release.sh` read-only checks the committed candidate's required surface registrations before tag/push. It neither syncs nor repairs manifests, and it does not make advisory registry drift a release gate.
 
 > `pnpm ship "msg"` is the **versioned-release** path. Use the release-freshness rule below after every push; the existing owner performs the release.
 

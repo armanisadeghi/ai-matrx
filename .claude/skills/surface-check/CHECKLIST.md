@@ -40,11 +40,12 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 - MUST: `readiness` is honest (`verified` only after S2–S6 pass); `readinessNote` present when not verified.
 - MUST: route surfaces have `urlPattern` + a mapping in `features/surfaces/utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent); overlay surfaces have `overlayId` from `features/overlays/catalogue.ts`.
 - DECIDE — **documentary `urlPattern`**: a surface may carry a `urlPattern` that resolves to its PARENT's route (it lives inside that page, e.g. a pane or a mode of it). That is legal and the resolver correctly returns the parent; the pattern documents where the surface appears. Verify it matches the real segment names (`[id]` vs `[documentId]` — a wrong segment is still a defect), say "documentary — resolves to `<parent>`" in the evidence, and do NOT add a route mapping that would steal the parent's route.
-- MUST: the DB mirror is synced (`ui.ui_surface` + value/role/write-target/client-tool rows). **Sync YOUR surface only** — a bare run emits ~6,700 lines covering every surface in the repo and would apply other agents' in-flight manifest edits:
+- MUST: the DB mirror is synced (`ui.ui_surface` + value/role/write-target/client-tool rows). **Sync YOUR surface only** — the focused transaction changes no other manifest mirror, and its matching read-only receipt verifies the parent, every required child key, metadata, system ownership, and public visibility:
   ```bash
-  npx tsx scripts/emit-surface-sync-sql.ts --surface <client>/<local>
+  pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>
+  pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>
   ```
-  Save the emitted SQL as `migrations/<name>.sql` and apply it with `pnpm db:apply migrations/<name>.sql` (the ONE path), then confirm the row live. (The admin button on `/administration/ui/surfaces` is the canonical path when you have a browser; it syncs the fleet, so prefer the flag when agents run in parallel.)
+  A count alone is not registration proof. The release later performs the narrower committed-candidate `--check --registration-only` admission; it does not replace this full authoring receipt.
 - MUST: `intro` describes the surface and the user, never the model's role (hardcoded-prompt law).
 - Check: `pnpm check:surface-drift` · `pnpm check:surface-routes` · `pnpm check:surface-overlays`.
 - Evidence: manifest path, `ui_surface.name`, readiness.

@@ -45,7 +45,7 @@ run `check:surface-impact` on the parent and each child · move the concept to
 the parent · delete the children's shadows · update each child's scope builder
 (inherited `alwaysAvailable` → required param, `...base` spread FIRST) ·
 re-run the screamer until the `SHADOWED_VALUE` rows for that family are gone ·
-sync the DB · `pnpm check:surface-drift`.
+run the focused sync and matching `--check` for every changed surface · `pnpm check:surface-drift`.
 
 ## INHERITANCE WORKED EXAMPLE — marketing-page → marketing-site
 
