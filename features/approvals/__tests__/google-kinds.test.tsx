@@ -26,7 +26,11 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Json } from "@/types/database.types";
-import type { ApprovalItem, ApprovalKind } from "@/features/approvals/types";
+import type {
+  ApprovalItem,
+  ApprovalKind,
+  ApprovalOutcome,
+} from "@/features/approvals/types";
 
 const mockApply = jest.fn(async () => ({
   approval_id: "a1",
@@ -562,5 +566,136 @@ describe("the registry and the producer agree", () => {
     )) {
       expect(kind.scopeRequirement?.field).toBe("userId");
     }
+  });
+});
+
+/**
+ * FORCING TESTS for the Bugbot MEDIUM on frontend PR 228: the door's answer is
+ * READ, not assumed.
+ *
+ * `useGoogleApprovalDecisions` counted every non-throwing reply as applied and
+ * threw `status` and `applied_now` away. The door is idempotent on purpose — a
+ * second approve writes nothing to Google and returns the first call's receipt,
+ * and a row somebody already REJECTED answers an approve just as quietly — so
+ * the screen said "Approved 1 proposal" over a change that was never made, and
+ * "Rejected 1" over a message that had already gone out.
+ *
+ * The replies below are the producer's own, field for field
+ * (`apply_google_approval` / `reject_google_approval` in
+ * `aidream/services/google_workspace/approvals.py`), including the asymmetry
+ * that a FRESH reject also answers `applied_now: false` — which is why the
+ * verdict is taken from `status` on both paths.
+ */
+describe("the door's answer is read, not assumed", () => {
+  const readyItems = async () => {
+    mockPayload = READABLE_PAYLOAD.document_append;
+    await mount(documentAppendKind);
+    return harness!.items;
+  };
+
+  it("counts an approve the door actually performed", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: true,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(1);
+    expect(outcome!.alreadyDecided ?? []).toHaveLength(0);
+    expect(outcome!.failures).toHaveLength(0);
+  });
+
+  it("does not claim an approve that only replayed an earlier one", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.alreadyDecided?.[0]?.message).toContain(
+      "had already been approved",
+    );
+    expect(outcome!.failures).toHaveLength(0);
+  });
+
+  it("never reports an approve over a row that was already REJECTED", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "dismissed",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    const said = outcome!.alreadyDecided?.[0]?.message ?? "";
+    expect(said).toContain("had already been rejected");
+    expect(said).toContain("NOT approved");
+  });
+
+  it("counts a fresh reject, whose reply carries applied_now: false", async () => {
+    const items = await readyItems();
+    mockReject.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "dismissed",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.reject(items, null)) as ApprovalOutcome;
+    });
+    // Gating reject on `applied_now` would report every successful reject as a
+    // no-op: the producer never sets it true on that path.
+    expect(outcome!.applied).toBe(1);
+    expect(outcome!.alreadyDecided ?? []).toHaveLength(0);
+  });
+
+  it("never reports a reject over a row that was already approved and made", async () => {
+    const items = await readyItems();
+    mockReject.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.reject(items, null)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.alreadyDecided?.[0]?.message).toContain(
+      "had already been APPROVED",
+    );
+  });
+
+  it("treats a status it cannot read as a failure, naming it", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "superseded",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.failures[0]?.message).toContain("superseded");
   });
 });

@@ -35,6 +35,7 @@ import type {
   ApprovalScope,
   ApprovalScopeRequirement,
   ApprovalSource,
+  GoogleApprovalDecisionPending,
 } from "../types";
 
 /** The `{ preview, arguments }` payload the producer writes for these kinds. */
@@ -52,9 +53,16 @@ export function isJsonRecord(value: Json | undefined): value is {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** A string field, or null when the row does not carry it. Never invented. */
+/**
+ * A string field, or null when the row does not carry it. Never invented.
+ *
+ * Every reader here takes `null` as well as `undefined`, because they RETURN
+ * null and are meant to chain: `readString(readRecord(preview, "would_append"),
+ * "text")` is the ordinary shape of a dry-run read, and a signature that
+ * refused its own return type made every chained read a type error.
+ */
 export function readString(
-  record: Record<string, Json> | undefined,
+  record: Record<string, Json> | null | undefined,
   key: string,
 ): string | null {
   const value = record?.[key];
@@ -63,7 +71,7 @@ export function readString(
 
 /** A number field, or null. A missing count is shown as unknown, never as 0. */
 export function readNumber(
-  record: Record<string, Json> | undefined,
+  record: Record<string, Json> | null | undefined,
   key: string,
 ): number | null {
   const value = record?.[key];
@@ -71,7 +79,7 @@ export function readNumber(
 }
 
 export function readRecord(
-  record: Record<string, Json> | undefined,
+  record: Record<string, Json> | null | undefined,
   key: string,
 ): Record<string, Json> | null {
   const value = record?.[key];
@@ -79,7 +87,7 @@ export function readRecord(
 }
 
 export function readArray(
-  record: Record<string, Json> | undefined,
+  record: Record<string, Json> | null | undefined,
   key: string,
 ): Json[] {
   const value = record?.[key];
@@ -261,17 +269,80 @@ export function useGoogleApprovalDecisions(
       queryKey: [...googleQueryKey(kindId), userId],
     });
 
+  /**
+   * 🚨 THE DOOR'S ANSWER IS READ, NOT ASSUMED (Bugbot MEDIUM, frontend PR 228).
+   *
+   * The door never throws for a row that was already decided: the approval id
+   * IS the idempotency key, so a second approve writes nothing to Google and
+   * returns the FIRST call's receipt with `applied_now: false`, and a row
+   * somebody already rejected answers an approve just as quietly with
+   * `status: "dismissed"`. Counting any non-throwing reply as applied therefore
+   * toasted "Approved 1 proposal" over a change that was never made — and, on
+   * the reject path, "Rejected 1" over a message that had already gone out.
+   *
+   * So the reply's `status` decides, and `applied_now` only distinguishes "this
+   * click did it" from "it was already done":
+   *
+   * | decision | reply                              | what it means               |
+   * |---|---|---|
+   * | approve | `accepted`, `applied_now: true`      | this click made the change  |
+   * | approve | `accepted`, `applied_now: false`     | already approved; no-op now |
+   * | approve | `dismissed`                          | already REJECTED; not made  |
+   * | reject  | `dismissed`                          | it is rejected              |
+   * | reject  | `accepted`                           | already approved AND MADE   |
+   *
+   * ⚠️ `applied_now` is NOT a success flag on the reject path: the producer
+   * returns `applied_now: false` for a fresh reject too
+   * (`reject_google_approval` in `aidream/services/google_workspace/approvals.py`),
+   * because nothing was applied. Gating reject on it would report every
+   * successful reject as a no-op. `status` is the only signal that carries both
+   * cases, which is why both paths are judged on it.
+   */
   const decide = async (
     items: ApprovalItem[],
-    run: (proposalId: string) => Promise<unknown>,
+    run: (proposalId: string) => Promise<GoogleApprovalDecisionPending>,
+    decision: "accept" | "reject",
   ) => {
     const failures: { key: string; message: string }[] = [];
+    const alreadyDecided: { key: string; message: string }[] = [];
     let applied = 0;
     for (const item of items) {
       const row = item as GoogleProposalItem;
+      const what = row.headline;
       try {
-        await run(row.proposal.assist.id);
-        applied += 1;
+        const reply = await run(row.proposal.assist.id);
+        if (decision === "accept") {
+          if (reply.status === "accepted" && reply.applied_now) {
+            applied += 1;
+          } else if (reply.status === "accepted") {
+            alreadyDecided.push({
+              key: item.key,
+              message: `"${what}" had already been approved, so nothing was done again — the change was made by that first approval, not by this click.`,
+            });
+          } else if (reply.status === "dismissed") {
+            alreadyDecided.push({
+              key: item.key,
+              message: `"${what}" had already been rejected, so it was NOT approved and the change was not made. Ask for it again if you want it.`,
+            });
+          } else {
+            failures.push({
+              key: item.key,
+              message: `"${what}" came back as "${reply.status}", which this screen cannot read as approved. Reload the queue to see where it stands; nothing here retried it.`,
+            });
+          }
+        } else if (reply.status === "dismissed") {
+          applied += 1;
+        } else if (reply.status === "accepted") {
+          alreadyDecided.push({
+            key: item.key,
+            message: `"${what}" had already been APPROVED and the change was made, so it could not be rejected. Undo it where it landed.`,
+          });
+        } else {
+          failures.push({
+            key: item.key,
+            message: `"${what}" came back as "${reply.status}", which this screen cannot read as rejected. Reload the queue to see where it stands.`,
+          });
+        }
       } catch (error) {
         failures.push({
           key: item.key,
@@ -280,14 +351,18 @@ export function useGoogleApprovalDecisions(
       }
     }
     invalidate();
-    return { applied, failures };
+    return { applied, failures, alreadyDecided };
   };
 
   return {
     acceptItems: async (items) =>
-      decide(items, (proposalId) => applyGoogleApproval(proposalId)),
+      decide(items, (proposalId) => applyGoogleApproval(proposalId), "accept"),
     rejectItems: async (items, reason) =>
-      decide(items, (proposalId) => rejectGoogleApproval(proposalId, reason)),
+      decide(
+        items,
+        (proposalId) => rejectGoogleApproval(proposalId, reason),
+        "reject",
+      ),
   };
 }
 

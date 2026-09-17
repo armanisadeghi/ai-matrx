@@ -184,6 +184,20 @@ export interface ApprovalOutcome {
   applied: number;
   /** Per-item failures, each in the words the write refused with. */
   failures: { key: string; message: string }[];
+  /**
+   * Items the write found ALREADY DECIDED, each with the sentence saying what
+   * it actually found. Neither applied nor failed: nothing was performed and
+   * nothing refused.
+   *
+   * 🚨 IT EXISTS BECAUSE "DID NOT THROW" IS NOT "DID WHAT YOU ASKED". The
+   * Google door is idempotent — a second approve writes nothing to Google and
+   * returns the first call's receipt, and a row somebody already REJECTED
+   * answers an approve the same quiet way. Counting those replies as applied
+   * toasted "Approved 1 proposal" over a change that was never made, and
+   * "Rejected 1 proposal" over one that had already been sent (Bugbot MEDIUM,
+   * frontend PR 228). The queue reports these separately, in their own words.
+   */
+  alreadyDecided?: { key: string; message: string }[];
 }
 
 /**

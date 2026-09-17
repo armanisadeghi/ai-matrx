@@ -335,6 +335,12 @@ export function ApprovalQueue({
     const note = reason.trim() || null;
     let applied = 0;
     const failures: string[] = [];
+    /**
+     * Items the writer found ALREADY DECIDED — neither applied nor refused.
+     * They get their own sentence: a door that answers idempotently must not be
+     * reported as having done the thing (Bugbot MEDIUM, frontend PR 228).
+     */
+    const alreadyDecided: string[] = [];
     // Kind by kind, in queue order; each kind's writer runs its items itself.
     for (const section of sections) {
       const items = decision.items.filter(
@@ -356,6 +362,9 @@ export function ApprovalQueue({
         const outcome = await writer;
         applied += outcome.applied;
         failures.push(...outcome.failures.map((failure) => failure.message));
+        alreadyDecided.push(
+          ...(outcome.alreadyDecided ?? []).map((entry) => entry.message),
+        );
       } catch (error) {
         failures.push(error instanceof Error ? error.message : String(error));
       }
@@ -367,6 +376,16 @@ export function ApprovalQueue({
     if (applied > 0) {
       toast.success(
         `${decision.decision === "accept" ? "Approved" : "Rejected"} ${applied} proposal${applied === 1 ? "" : "s"}.`,
+      );
+    }
+    // Said BEFORE the failures and after the successes, because it is the answer
+    // to "what happened to the rest" — never folded into either count.
+    if (alreadyDecided.length > 0) {
+      toast.info(
+        alreadyDecided.length === 1
+          ? "One of those was already decided, so this did not change it."
+          : `${alreadyDecided.length} of those were already decided, so this did not change them.`,
+        { description: alreadyDecided[0] },
       );
     }
     if (failures.length > 0) {

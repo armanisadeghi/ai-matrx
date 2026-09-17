@@ -24,7 +24,15 @@ type Resolver = (response: {
 }) => void;
 
 const resolvers = new Map<string, Resolver>();
-const mockRecordInteraction = jest.fn(async () => ({ failure: null }));
+/** The one argument the kind passes `recordGmailSendInteraction`, as far as
+ * these tests read it. Typed so `mock.calls` is typed too — a cast there is how
+ * a test starts asserting about a shape the code does not pass. */
+type RecordInteractionArgs = {
+  association: { partyId: string; contactPointId: string | null };
+};
+const mockRecordInteraction = jest.fn(
+  async (_args: RecordInteractionArgs) => ({ failure: null }),
+);
 const warnings: string[] = [];
 let proposalPayload: Record<string, unknown>;
 
@@ -75,7 +83,7 @@ jest.mock("@/features/crm/gmail/service", () => ({
     };
   },
   recordGmailSendInteraction: (...args: unknown[]) =>
-    mockRecordInteraction(...(args as [])),
+    mockRecordInteraction(...(args as [RecordInteractionArgs])),
 }));
 jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: (callId: string, resolver: Resolver) => {
@@ -201,11 +209,9 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
     await flush();
 
     expect(mockRecordInteraction).toHaveBeenCalledTimes(1);
-    const call = mockRecordInteraction.mock.calls[0]?.[0] as {
-      association: { partyId: string; contactPointId: string | null };
-    };
-    expect(call.association.partyId).toBe("party-1");
-    expect(call.association.contactPointId).toBe("cp-1");
+    const call = mockRecordInteraction.mock.calls[0]?.[0];
+    expect(call?.association.partyId).toBe("party-1");
+    expect(call?.association.contactPointId).toBe("cp-1");
   });
 
   it("records a changed recipient on NO record, and says so with the address", async () => {
