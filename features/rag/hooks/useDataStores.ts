@@ -19,6 +19,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { Database } from "@/types/database.types";
 import type {
   DataStore,
@@ -174,6 +176,14 @@ export function useDataStores(): {
     }) => {
       if (!userId) return null;
       try {
+        // `rag.data_stores.organization_id` is NULLABLE and carries NO
+        // `_stamp_org_default` trigger, so `?? null` did not misfile the
+        // knowledge base — it created one with NO TENANT AT ALL, invisible to
+        // every org-scoped read. The organization is required: the caller's
+        // explicit one, else the SELECTED one, else an honest refusal that
+        // writes nothing.
+        // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+        const organizationId = await ensureOrgId(input.organizationId ?? null);
         const supabase = createClient();
         const { data, error: insertError } = await ragDb(supabase)
           .from("data_stores")
@@ -182,7 +192,7 @@ export function useDataStores(): {
             description: input.description ?? null,
             kind: input.kind ?? "general",
             short_code: input.shortCode ?? null,
-            organization_id: input.organizationId ?? null,
+            organization_id: organizationId,
             created_by: userId,
           })
           .select(
@@ -197,7 +207,11 @@ export function useDataStores(): {
         });
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "Could not create data store",
+          isOrganizationRequiredError(e)
+            ? "Select an organization before creating a knowledge base \u2014 every record is filed under one organization. Pick yours from the avatar menu."
+            : e instanceof Error
+              ? e.message
+              : "Could not create data store",
         );
         return null;
       }

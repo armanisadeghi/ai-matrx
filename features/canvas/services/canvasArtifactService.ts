@@ -12,6 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   isRecordUnavailableError,
   recordUnavailable,
@@ -745,6 +746,11 @@ export const canvasArtifactService = {
 
       return { id: keyed.id };
     } catch (err) {
+      // Both callers (`materializeBlocks`, `ensureArtifactPersisted`) collect
+      // thrown errors into the `errors` list they return, so propagating the
+      // org refusal makes it visible instead of returning a null nobody can
+      // explain. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+      if (isOrganizationRequiredError(err)) throw err;
       console.error("[canvasArtifactService.upsertDiscoveryIndex] error:", err);
       return null;
     }

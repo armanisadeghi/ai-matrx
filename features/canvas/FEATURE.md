@@ -126,6 +126,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-17` — **A canvas save that refuses for want of an organization SAYS SO; it is never a silent `false`.** Four services caught the new `OrganizationContextError` and returned a falsy value with only a `console.error` — a dead click: the quiz never persisted, the viewer state never saved, the artifact never reached the discovery index, and nothing on screen said why. `quiz-adapter.ts` and `canvasItemStateService.ts` now re-throw that ONE error class, and `useArtifactState.flush` — the boundary that owns the save — toasts the remedy; `canvasArtifactService.upsertDiscoveryIndex` re-throws it too, which both materialization callers already collect into the `errors` they return. `useCanvasItems.save` and `maps/service.createMap` replaced their generic "Failed to save" with the same remedy sentence, so `NewMapDialog` shows it verbatim. Every other error path is byte-for-byte unchanged. `canvas.canvas_item_state` and `education.quiz_sessions` were already carrying the selected organization; the defect here was purely the swallowed refusal. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - `2026-09-15` — **A LIVE PANE IS ALWAYS REACHABLE.** An independent reviewer
   reloaded a bound chat that also held an agent-created document, clicked
   Canvas, and got ONLY the document: `[data-canvas-switcher]` absent at one

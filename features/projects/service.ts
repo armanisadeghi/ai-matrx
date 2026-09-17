@@ -16,6 +16,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
   invitationsService,
@@ -47,8 +48,13 @@ import {
 import { emailErrorMessage } from "@/lib/email/error-message";
 
 /**
- * Resolve null to the user's real personal org id (never leave NULL).
- * Delegates to the canonical session-cached `ensureOrgId` — no per-call RPC.
+ * Resolve the organization this write acts in: the caller's explicit id, else
+ * the one the person has SELECTED. There is no personal-organization fallback
+ * — `ensureOrgId` refuses instead, and that refusal is re-thrown UNCHANGED so
+ * `isOrganizationRequiredError` can still recognise it upstream (wrapping it in
+ * `pgErrorToError` used to erase the class and leave the surface with a
+ * programmer's sentence it could not classify).
+ * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  */
 async function resolveOrganizationId(
   organizationId: string | null | undefined,
@@ -56,7 +62,8 @@ async function resolveOrganizationId(
   try {
     return await ensureOrgId(organizationId);
   } catch (error) {
-    console.error("Error resolving personal organization:", error);
+    if (isOrganizationRequiredError(error)) throw error;
+    console.error("Error resolving the organization for this write:", error);
     throw pgErrorToError(error);
   }
 }
@@ -125,6 +132,13 @@ export async function createProject(
       project: transformProjectFromDb(project),
     };
   } catch (error: unknown) {
+    if (isOrganizationRequiredError(error)) {
+      return {
+        success: false,
+        error:
+          "Select an organization before creating a project \u2014 every project is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
     const msg =
       error instanceof Error ? error.message : "Failed to create project";
     console.error("Error creating project:", error);

@@ -29,6 +29,7 @@ import {
   listRegisteredNamespaces,
 } from "@/features/surfaces/config/namespace-registry";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const sb = () => createClient();
@@ -463,8 +464,12 @@ export interface PrefScopeInput {
  * a refusal with the remedy, never a substitution (the org an action acts in is
  * the one the user selected: `common-docs/policies/context-is-carried-never-rebuilt.md`).
  */
-function tierOrganizationId(scope: PrefScopeInput): string {
-  if (scope.global) return SYSTEM_ORGANIZATION_ID;
+async function tierOrganizationId(scope: PrefScopeInput): Promise<string> {
+  // The platform tier's id comes from `iam.system_orgs` through the ONE
+  // resolver, never from a UUID literal in the bundle (lib/organizations/
+  // systemOrg.ts: "Do NOT hardcode the UUID"). It is read at most once per
+  // process and memoized there.
+  if (scope.global) return resolveSystemOrgId();
   if (scope.organizationId) return scope.organizationId;
   throw new Error(
     "[surfaces] no organization is selected, so this surface setting cannot be read or saved — choose one from the organization picker in the header and try again. Nothing was changed. (Platform-wide settings must ask for the global tier by name.)",
@@ -488,7 +493,7 @@ async function scopeInsertColumns(scope: PrefScopeInput) {
   const organizationId =
     scope.userId || scope.scopeId
       ? await ensureOrgId(scope.organizationId)
-      : tierOrganizationId(scope);
+      : await tierOrganizationId(scope);
   if (scope.userId) {
     return { user_id: scope.userId, scope_id: null, organization_id: organizationId };
   }
@@ -514,16 +519,16 @@ async function scopeInsertColumns(scope: PrefScopeInput) {
  * the row's owning org, not part of its identity, and their own unique indexes
  * are keyed on the tier column alone.
  */
-function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
+async function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
   q: T,
   scope: PrefScopeInput,
-): T {
+): Promise<T> {
   if (scope.userId) return q.eq("user_id", scope.userId).is("scope_id", null);
   if (scope.scopeId) return q.is("user_id", null).eq("scope_id", scope.scopeId);
   return q
     .is("user_id", null)
     .is("scope_id", null)
-    .eq("organization_id", tierOrganizationId(scope));
+    .eq("organization_id", await tierOrganizationId(scope));
 }
 
 /** Set the agent filling (surface, role, position) at a scope tier. */
@@ -551,7 +556,7 @@ export async function setRoleSelection(args: {
     .eq("role_name", roleName)
     .eq("kind", "selection")
     .eq("position", position);
-  q = matchScope(q, scope);
+  q = await matchScope(q, scope);
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -632,7 +637,7 @@ export async function setNamespaceConfig(args: {
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("namespace", namespace);
-  q = matchScope(q, scope);
+  q = await matchScope(q, scope);
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
