@@ -35,7 +35,11 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
-import { listPendingProposals, type ApprovalProposal } from "../data";
+import {
+  listPendingProposals,
+  type ApprovalProposal,
+} from "../data";
+import { unrenderableApprovalItems } from "../unshowable";
 import {
   GOOGLE_REJECT_COPY,
   useGoogleApprovalDecisions,
@@ -260,7 +264,12 @@ function useSource(scope: ApprovalScope): ApprovalSource {
   });
 
   return {
-    items,
+    // The rows this build could not show come with them, as honest rows — they
+    // used to be subtracted from the total (round-3 verification § A-N6).
+    items: [
+      ...items,
+      ...unrenderableApprovalItems(KIND_ID, pending.data?.unrenderable ?? []),
+    ],
     total: pending.data?.total ?? items.length,
     loading: pending.isLoading,
     error: pending.error,

@@ -31,6 +31,7 @@ import { type Assist, type AssistAction } from "@/features/assists/types";
 import { createClient } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { readApprovalReceipt } from "./receipt";
+import type { UnrenderableProposal } from "./unshowable";
 import {
   familyOf,
   ROW_FAMILY_ACTION_KIND,
@@ -38,7 +39,11 @@ import {
   willRenderAction,
   willRenderRow,
 } from "./rendered";
-import type { ApprovalKind, ApprovalScope, AutonomyMode } from "./types";
+import type {
+  ApprovalKind,
+  ApprovalScope,
+  AutonomyMode,
+} from "./types";
 
 /**
  * The surface every platform approval proposal is addressed to. It is the
@@ -125,6 +130,12 @@ export interface ApprovalProposalPage {
   proposals: ApprovalProposal[];
   /** The true pending total for this reader and kind, beyond this page. */
   total: number;
+  /**
+   * The rows on THIS page that could not be narrowed or rendered. They are
+   * counted in `total` and shown as honest rows (`unrenderableApprovalItems`) —
+   * a pending row is never silently absent.
+   */
+  unrenderable: UnrenderableProposal[];
 }
 
 /**
@@ -200,7 +211,16 @@ export async function listPendingProposals(
    * refuses is loud once rather than folded into a number.
    */
   const proposals: ApprovalProposal[] = [];
-  let dropped = page.unreadable;
+  const unrenderable: UnrenderableProposal[] = [];
+  // Rows the assists service's own narrowing refused: counted here with no id,
+  // because it does not hand them back (their ids are in its warning).
+  for (let i = 0; i < page.unreadable; i += 1) {
+    unrenderable.push({
+      id: null,
+      kindId: null,
+      why: "its action is written in a shape this build cannot read",
+    });
+  }
   for (const assist of page.rows) {
     const verdict = willRenderAction(assist.action, {
       kinds: kindsHere,
@@ -211,14 +231,31 @@ export async function listPendingProposals(
       proposals.push(narrowed);
       continue;
     }
-    dropped += 1;
+    /**
+     * 🚨 REFUSED, NOT SUBTRACTED (§ A-N6). It is still loud in the console for
+     * the developer whose kind is missing, AND it comes back as a row so the
+     * person is never shown "nothing is waiting on you" over it.
+     */
+    unrenderable.push({
+      id: assist.id,
+      kindId:
+        assist.action.kind === "approval_proposal"
+          ? assist.action.proposalKind
+          : null,
+      why: verdict.renders
+        ? `its action does not narrow into a ${proposalKind} proposal`
+        : verdict.why,
+    });
     if (!verdict.renders) {
       warnNotRendered(assist.id, verdict, `the ${proposalKind} section`);
     }
   }
   return {
     proposals,
-    total: Math.max(page.total - dropped, proposals.length),
+    // Everything on this page is on screen now — the shown proposals and the
+    // honest rows — so the total counts both and never drops below them.
+    total: Math.max(page.total, proposals.length + unrenderable.length),
+    unrenderable,
   };
 }
 

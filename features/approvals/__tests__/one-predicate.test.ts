@@ -177,7 +177,7 @@ describe("badge, header and list agree on an unregistered kind (A-i, A-ii)", () 
     expect(warned.join(" ")).toContain("future_kind");
   });
 
-  it("HEADER + LIST: the total counts what the screen shows, not the server count", async () => {
+  it("HEADER + LIST: the total counts what the screen SHOWS — including the honest refusals", async () => {
     // The server counted three pending rows for this kind's source key. One
     // carries a `mode` outside the five (the narrowing drops it before this
     // module sees it) and one names a kind nothing renders.
@@ -202,8 +202,18 @@ describe("badge, header and list agree on an unregistered kind (A-i, A-ii)", () 
     if (!sheetWrite) throw new Error("unreachable");
     const page = await listPendingProposals("u1", sheetWrite, personScope);
     expect(page.proposals).toHaveLength(0);
-    // 2 server rows − 1 unreadable − 1 unrenderable kind = 0 on screen.
-    expect(page.total).toBe(0);
+    /**
+     * 🚨 NOT ZERO, SINCE 2026-09-17 (round-3 verification § A-N6). Both rows ARE
+     * on screen — as honest rows saying this build cannot show them — so the
+     * total counts them. Subtracting them is what made one such row print
+     * "Nothing is waiting on you" over a durable pending proposal.
+     */
+    expect(page.total).toBe(2);
+    expect(page.unrenderable).toHaveLength(2);
+    expect(page.unrenderable.map((row) => row.kindId).sort()).toEqual([
+      "future_kind",
+      null,
+    ]);
     expect(warned.join(" ")).toContain("future_kind");
   });
 });

@@ -27,7 +27,11 @@ import type { ReactNode } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
-import { listPendingProposals, type ApprovalProposal } from "../data";
+import {
+  listPendingProposals,
+  type ApprovalProposal,
+} from "../data";
+import { unrenderableApprovalItems } from "../unshowable";
 import { applyGoogleApproval, rejectGoogleApproval } from "../google-door";
 import {
   applyingSentence,
@@ -275,7 +279,18 @@ export function useGoogleProposalSource(
   );
 
   return {
-    items,
+    /**
+     * 🚨 THE ROWS THIS BUILD COULD NOT SHOW COME TOO (round-3 verification
+     * § A-N6). They used to be subtracted from the total, which made one of them
+     * alone print "Nothing is waiting on you" over a pending proposal.
+     */
+    items: [
+      ...items,
+      ...unrenderableApprovalItems(
+        contract.kindId,
+        pending.data?.unrenderable ?? [],
+      ),
+    ],
     total: pending.data?.total ?? items.length,
     loading: pending.isLoading,
     error: pending.error,

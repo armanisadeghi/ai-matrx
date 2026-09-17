@@ -51,6 +51,7 @@ import {
   recordApprovalDecision,
   type ApprovalProposal,
 } from "../data";
+import { unrenderableApprovalItems } from "../unshowable";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -731,7 +732,12 @@ function useSource(scope: ApprovalScope): ApprovalSource {
   });
 
   return {
-    items,
+    // The rows this build could not show come with them, as honest rows — they
+    // used to be subtracted from the total (round-3 verification § A-N6).
+    items: [
+      ...items,
+      ...unrenderableApprovalItems(KIND_ID, pending.data?.unrenderable ?? []),
+    ],
     total: pending.data?.total ?? items.length,
     loading: pending.isLoading,
     error: pending.error,

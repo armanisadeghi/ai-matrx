@@ -172,6 +172,15 @@ interface PendingDecision {
  * than reading as a calm "waiting".
  */
 function ModeLine({ item }: { item: ApprovalItem }) {
+  // A row this build cannot read has no mode to print, and inventing one would
+  // be the guess policy rule 1 forbids (`ApprovalItem.mode`).
+  if (item.mode === "unresolved") {
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground">
+        Nothing on the record says how this proposal is meant to be decided.
+      </span>
+    );
+  }
   const auto = item.mode === "mode_3";
   const when = item.autoApplyAt ? new Date(item.autoApplyAt) : null;
   const broken = auto && (!when || Number.isNaN(when.getTime()));
@@ -307,7 +316,13 @@ export function ApprovalQueue({
   // a batch: one is a decision that needs its body read, the other is not the
   // reader's to make.
   const selectable = allItems.filter(
-    (item) => !item.individualReview && !item.blocked && !item.inFlight,
+    (item) =>
+      !item.individualReview &&
+      !item.blocked &&
+      !item.inFlight &&
+      // A row this build cannot read cannot be decided in a batch either — its
+      // effect cannot be listed in the confirm (§ A-N6).
+      !item.unreadable,
   );
   const selectedItems = selectable.filter((item) => selected.has(item.key));
   const allSelected =
@@ -682,7 +697,8 @@ export function ApprovalQueue({
                                   busy ||
                                   Boolean(item.individualReview) ||
                                   Boolean(item.blocked) ||
-                                  Boolean(item.inFlight)
+                                  Boolean(item.inFlight) ||
+                                  Boolean(item.unreadable)
                                 }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">
@@ -741,12 +757,22 @@ export function ApprovalQueue({
                                     {item.lastAttempt.sentence}
                                   </p>
                                 ) : null}
+                                {/* 🚨 SOMETHING IS WAITING AND THIS BUILD CANNOT
+                                    SHOW IT. The page read used to subtract this
+                                    row from its own total, so the screen said
+                                    "Nothing is waiting on you" over it and only
+                                    the console disagreed (§ A-N6). */}
+                                {item.unreadable ? (
+                                  <p className="break-words text-[11px] font-medium text-warning">
+                                    {item.unreadable.sentence}
+                                  </p>
+                                ) : null}
                               </div>
                               {/* Phones: the decisions drop to their own full-width
                                   row of 40px targets under the text, instead of a
                                   squeezed 24px column beside it. */}
                               <div className="flex shrink-0 items-center gap-1 max-md:w-full max-md:justify-end max-md:pl-6">
-                                {item.inFlight ? null : (
+                                {item.inFlight || item.unreadable ? null : (
                                   <>
                                     {item.individualReview ||
                                     item.blocked ? null : (

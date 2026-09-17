@@ -144,8 +144,14 @@ export interface ApprovalItem {
    * The autonomy mode this proposal is running in. Policy rule 1: a capability
    * that cannot say which mode it is in is a defect — so this is REQUIRED, and
    * a reader that cannot resolve it must refuse rather than guess a mode.
+   *
+   * `unresolved` IS that refusal, said out loud, and it is not a sixth mode: it
+   * exists for the honest row a build shows over a pending proposal it cannot
+   * read at all (`unreadable` below). Such a row offers no decision, so no
+   * screen and no writer ever acts on this value — it only stops the mode line
+   * from printing a mode nobody established (round-3 verification § A-N6).
    */
-  mode: AutonomyMode;
+  mode: AutonomyMode | "unresolved";
   /**
    * Mode 3 only: the ISO instant it applies itself if nobody rules. Policy
    * rule 4 — the timeout must be visible before it fires, so the queue prints
@@ -184,6 +190,19 @@ export interface ApprovalItem {
    * two real options are to try again or to give up on it.
    */
   lastAttempt?: { state: "failed"; sentence: string } | null;
+  /**
+   * 🚨 THERE IS A ROW HERE AND THIS BUILD CANNOT SHOW IT. A pending proposal
+   * whose kind nothing registered renders, or whose action does not narrow: the
+   * queue prints this sentence, counts the row, and offers NO decision controls
+   * (it cannot state what Approve would change). Built in one place —
+   * `./data.ts` → `unrenderableApprovalItems`.
+   *
+   * Before it existed the page read SUBTRACTED such a row from its total, so
+   * one of them alone made `/approvals` say "Nothing is waiting on you" over a
+   * durable pending proposal, with only a console warning to the contrary
+   * (round-3 verification § A-N6).
+   */
+  unreadable?: { sentence: string } | null;
   /**
    * Set when this item must be reviewed on its own — a Gmail message whose
    * review card IS the authorization, a full guidelines document the person
