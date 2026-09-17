@@ -29,7 +29,6 @@ import {
   AlertCircle,
   ArchiveRestore,
   FileUp,
-  Contact,
   Inbox,
   ListChecks,
   Megaphone,

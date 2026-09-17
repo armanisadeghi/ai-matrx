@@ -23,8 +23,10 @@ describe("the overlay catalogue is the one id list", () => {
   });
 
   it("carries every overlay id the window registry declares", () => {
-    const missing = ALL_WINDOW_STATIC_METADATA.map((entry) => entry.overlayId)
-      .filter((id): id is string => typeof id === "string")
+    const missing = ALL_WINDOW_STATIC_METADATA.map((entry) =>
+      typeof entry.overlayId === "string" ? entry.overlayId : "",
+    )
+      .filter((id) => id !== "")
       .filter((id) => !(id in OVERLAY_CATALOGUE));
 
     expect(missing).toEqual([]);
