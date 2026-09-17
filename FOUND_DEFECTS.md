@@ -15,6 +15,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D328 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+`features/connectors/attachable-resources.ts:68` fails the type-check:
+`Interface 'AttachableAvailability' incorrectly extends` the generated
+availability shape it widens (`McpAvailability` in
+`features/connectors/connection-state.ts`, aliased from
+`types/python-generated/api-types.ts`). Found while type-checking lane F-7's own
+files — this one is UNRELATED to that work and the file is untouched by it. It
+did not report on a run earlier in the same session, so the most likely cause is
+the generated-contract sync in `00d99946` moving the server shape underneath the
+hand-widened interface.
+
+**Fix:** re-read the generated `attachable` member and make
+`AttachableAvailability` conform to it (the generated type is the truth — never
+widen it back). Repro: `npx tsc -p` a config including
+`features/connectors/**/*` , or `pnpm type-check` when it can be run without
+OOM.
+
 ### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
 
 **Status:** open · **Priority:** P2
