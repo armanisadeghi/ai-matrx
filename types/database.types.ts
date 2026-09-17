@@ -92531,6 +92531,10 @@ export type Database = {
         }
         Returns: Json
       }
+      list_pages_without_topic: {
+        Args: { p_limit: number; p_offset: number; p_site_id: string }
+        Returns: Json
+      }
       list_topic_gaps: {
         Args: { p_map_id: string; p_site_id?: string }
         Returns: Json
