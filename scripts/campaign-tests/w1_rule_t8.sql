@@ -416,9 +416,17 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════
   -- F. THE EVALUATOR REFUSES RATHER THAN GUESSES
   -- ══════════════════════════════════════════════════════════════════════════
-  -- REC-16 is W1-RULE-APPLY's. The node is STORABLE tonight — an applicability Rule can be
-  -- written before its evaluator lands — and refused BY NAME when it is run, with the lane
-  -- that owns it in the hint. Nothing about it answers wrongly in the meantime.
+  -- REC-16 is W1-RULE-APPLY's. The node is STORABLE — an applicability Rule can be written
+  -- before its evaluator lands — and nothing about it ever answers wrongly.
+  --
+  -- 🚨 AMENDED BY `W1-RULE-APPLY` 2026-09-17 19:08 UTC, and this is the handover rather than
+  -- a weakened clause. Until `w1_rule_apply_membership_and_applicability.sql` landed, running
+  -- this node raised `0A000 "this rule reads the parent's answer, and that is not switched on
+  -- yet"` naming that lane as the remedy, and this clause asserted exactly that. The lane has
+  -- landed, so the same node now ANSWERS — and the thing worth asserting is still that it
+  -- never answers wrongly: with no parent in the context it is UNDECIDED (null), never false,
+  -- and with a parent in the context it reads the PARENT's value and not the record's own.
+  -- Both halves are checked below, so this clause remains falsifiable in both directions.
   insert into custom.record (organization_id, table_id, data_class, data)
   values (v_org, custom.rule_kernel_id(), 'rule', jsonb_build_object(
     'name','reads the parent','kind','predicate','scope_table_id',v_tbl::text,
@@ -428,15 +436,21 @@ begin
               jsonb_build_object('parent_field', v_f_kind::text)))))
   returning id into v_r2;
   if v_r2 is null then raise exception 'REC-16: an applicability Rule reading the parent could not be stored at all'; end if;
-  begin
-    perform custom.rule_run(v_org, v_r2, '{"kind":"square"}'::jsonb);
-    raise exception 'REC-16: the parent_field node answered, and W1-RULE evaluates no parent';
-  exception when feature_not_supported then
-    get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'this rule reads the parent''s answer, and that is not switched on yet' then
-      raise exception 'REC-16: the refusal said "%"', v_msg;
-    end if;
-  end;
+  -- No parent in the context: UNDECIDED, never false and never a guess.
+  if custom.rule_truth(custom.rule_run(v_org, v_r2, '{"kind":"square"}'::jsonb) -> 'answer') is not null then
+    raise exception 'REC-16: with no parent in the context the rule answered % instead of leaving it undecided',
+      custom.rule_run(v_org, v_r2, '{"kind":"square"}'::jsonb) -> 'answer';
+  end if;
+  -- A parent in the context: it reads the PARENT's value. The record says "square" and the
+  -- parent says "circle", so a body that read the record's own value would answer true.
+  if custom.rule_truth(custom.rule_run(v_org, v_r2, '{"kind":"square"}'::jsonb,
+                                       '{"parent_values":{"kind":"circle"}}'::jsonb) -> 'answer') is not false then
+    raise exception 'REC-16: the parent_field node did not read the PARENT''s value';
+  end if;
+  if custom.rule_truth(custom.rule_run(v_org, v_r2, '{"kind":"square"}'::jsonb,
+                                       '{"parent_values":{"kind":"square"}}'::jsonb) -> 'answer') is not true then
+    raise exception 'REC-16: the parent_field node did not answer true when the parent matched';
+  end if;
 
   -- A comparison of a word with a number is refused by name rather than coerced: a coerced
   -- comparison answers about a different value, which is a rule that lies.
