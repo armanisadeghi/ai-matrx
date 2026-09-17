@@ -233,12 +233,55 @@ export async function PATCH(request: NextRequest) {
     // Always refresh updated_at so the UI's "last modified" feels right.
     patch.updated_at = new Date().toISOString();
 
+    // 🚨 THE WRITE CARRIES ITS ORGANIZATION EXPLICITLY.
+    //
+    // `organization_id` is NOT NULL on this table, and a database default
+    // choosing one (the personal workspace) is exactly what the platform is
+    // retiring — so this route names the tenant itself. An existing profile
+    // keeps the organization it is already filed in: a save must never MOVE
+    // the row to whichever organization the caller happens to be looking at.
+    // A first save has no row to inherit from, so the caller states the
+    // organization it is acting in on `X-Organization-Id` (the same header the
+    // rest of the platform carries), and the request is refused with the
+    // remedy when neither source can name one — never defaulted.
+    const { data: existing, error: existingError } = await supabase
+      .schema("users").from("user_form_profile")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("[/api/user/form-profile PATCH] select:", existingError);
+      return NextResponse.json(
+        { success: false, msg: "Failed to load form profile" },
+        { status: 500 },
+      );
+    }
+
+    const organizationId =
+      existing?.organization_id ??
+      request.headers.get("X-Organization-Id")?.trim() ??
+      null;
+    if (!organizationId) {
+      return NextResponse.json(
+        {
+          success: false,
+          msg: "No organization to file this profile in. Choose an organization and try again.",
+        },
+        { status: 400 },
+      );
+    }
     // Upsert by user_id (the table's PRIMARY KEY) so a missing row is
     // created on first save. RLS still enforces auth.uid() == user_id on
     // both INSERT (with_check) and UPDATE (qual).
+    const insert: FormProfileInsert = {
+      ...patch,
+      user_id: user.id,
+      organization_id: organizationId,
+    };
     const { data: row, error: upsertError } = await supabase
       .schema("users").from("user_form_profile")
-      .upsert(patch as FormProfileInsert, { onConflict: "user_id" })
+      .upsert(insert, { onConflict: "user_id" })
       .select("*")
       .single();
 
