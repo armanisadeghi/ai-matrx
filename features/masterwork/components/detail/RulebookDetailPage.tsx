@@ -182,6 +182,7 @@ import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/mast
 // modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
 import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
 import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildWindow";
+import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 
 /**
@@ -2546,6 +2547,21 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                   />
                 </div>
+
+                {/* 🚨 "0 Built" OVER A LIVE BUILD IS NOT A COUNT, IT IS A LIE
+                    (cold walk 7, finding 1, 2026-09-17). The Build keeps going
+                    without the person who started it — the window says so —
+                    but every signal that one was in flight lived in the tab
+                    that launched it (a `localStorage` receipt, and the window
+                    that renders the progress). The walk started a Quick Build,
+                    closed the browser context entirely, came back inside the
+                    build's own stated minute, and got a page identical to one
+                    where nothing had ever been started. This asks the SERVER
+                    row instead, on mount, in any browser. */}
+                <BuildInFlightNotice
+                  rulebookId={rulebook.id}
+                  onSettled={reloadMasterworks}
+                />
 
                 {/* THE ARCHIVED-ITEMS LAW: the KPI strip above counts only the
                     LIVE systems, so the archived ones get their own honest
