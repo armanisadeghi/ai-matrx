@@ -206,6 +206,17 @@ export function useQuizPersistence(
       ) {
         return;
       }
+      // Never over the person's own work: if they have already started
+      // answering before the organization became known (a late hydration or
+      // a picker choice), the earlier session is not resumed — resuming would
+      // replace the answers on screen. A session of their own gets created on
+      // the next save instead.
+      const hasStartedAnswering =
+        Object.keys(quizState.progress.answers).length > 0 || quizState.results !== null;
+      if (hasStartedAnswering) {
+        setHasCheckedDuplicate(true);
+        return;
+      }
 
       setHasCheckedDuplicate(true);
       // Don't set isLoading - this is a background operation
@@ -227,7 +238,14 @@ export function useQuizPersistence(
     };
 
     checkForDuplicate();
-  }, [contentHash, initialSessionId, hasCheckedDuplicate, selectedOrganizationId]);
+  }, [
+    contentHash,
+    initialSessionId,
+    hasCheckedDuplicate,
+    selectedOrganizationId,
+    quizState.progress.answers,
+    quizState.results,
+  ]);
 
   /**
    * Load initial session if provided (only for explicit sessionId, not duplicates)
