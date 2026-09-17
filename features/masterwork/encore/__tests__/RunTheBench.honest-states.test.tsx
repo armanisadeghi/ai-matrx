@@ -83,6 +83,10 @@ jest.mock("@/lib/toast", () => ({
 type RunStub = {
   running: boolean;
   stage: string | null;
+  // The real durable-run handle (`lib/durable-run/useDurableRun.ts`) always
+  // carries `stages: string[]` — a mock missing it is incomplete, not the
+  // component's fault, for any consumer that reads it (`RunStages`).
+  stages: string[];
   waitMessage: string | null;
   result: BenchVerdictWire | null;
   error: string | null;
@@ -97,6 +101,7 @@ type RunStub = {
 const runStub: RunStub = {
   running: false,
   stage: null,
+  stages: [],
   waitMessage: null,
   result: null,
   error: null,

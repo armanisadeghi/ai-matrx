@@ -21,6 +21,9 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { getRulebook } from "../service";
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
 import type { Rulebook } from "../types";
 import { emitBuildEvent } from "./callbacks";
 import {
@@ -63,6 +66,21 @@ import { useBuildRun, type MasterworkKind } from "./useBuildRun";
  */
 
 const OVERLAY_ID = "masterworkBuildWindow";
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): what
+// the Masterwork is to be called and the instructions it is built from
+// survive a reload of this window.
+interface BuildSitting extends SittingBase {
+  name: string;
+  deliverable: string;
+}
+
+const buildSittings = createSittingStore<BuildSitting>({
+  keyPrefix: "matrx.masterwork.build.v1:",
+  isUsable: (sitting) =>
+    (sitting.name ?? "").trim().length > 0 ||
+    (sitting.deliverable ?? "").trim().length > 0,
+});
 
 /** How many rules this Masterwork will actually be built from. */
 function liveRuleCount(rulebook: Rulebook): number {
@@ -133,6 +151,27 @@ function BuildWindowInner({
   const [name, setName] = useState("");
   const [deliverable, setDeliverable] = useState("");
 
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload,
+  // silently). `active: true` — this is a whole-window surface, mounted only
+  // while it is open (see the `!isOpen` guard in `BuildWindow` above).
+  const sitting = useDialogSitting<BuildSitting>({
+    store: buildSittings,
+    scopeId: rulebookId,
+    active: true,
+    snapshot: { name, deliverable },
+    isWorthKeeping: (s) =>
+      (s.name ?? "").trim().length > 0 || (s.deliverable ?? "").trim().length > 0,
+    apply: (kept) => {
+      setName(kept.name ?? "");
+      setDeliverable(kept.deliverable ?? "");
+    },
+    clearScreen: () => {
+      setName("");
+      setDeliverable("");
+    },
+  });
+
   useEffect(() => {
     let cancelled = false;
     getRulebook(rulebookId)
@@ -174,12 +213,17 @@ function BuildWindowInner({
   useEffect(() => {
     if (!result || announcedRef.current === result.workflowId) return;
     announcedRef.current = result.workflowId;
+    // Only once the Build has actually landed is it safe to drop the sitting.
+    sitting.forget();
     emitBuildEvent(callbackGroupId, {
       type: "built",
       workflowId: result.workflowId,
       name: result.name,
       masterworkKind: result.masterworkKind,
     });
+    // `sitting.forget` is stable for a given scopeId/store; omitted here the
+    // same way `onIngested` callbacks are on the sibling ingest dialogs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, callbackGroupId]);
 
   // Emit window-close exactly once, on unmount — covers X, Esc, programmatic.
@@ -376,6 +420,13 @@ function BuildWindowInner({
     return (
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto w-full max-w-3xl space-y-4">
+          {sitting.resumed ? (
+            <SittingResumed
+              what="the name and instructions you had typed for this Masterwork"
+              onDiscard={sitting.discard}
+              onAcknowledge={sitting.acknowledge}
+            />
+          ) : null}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />

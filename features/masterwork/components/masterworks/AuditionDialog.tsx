@@ -62,8 +62,30 @@ import {
   saveExpertCall,
   type AuditionRunSummary,
 } from "../../audition/auditionRuns";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): the
+// pasted candidate, the reference it is judged against, what the case was
+// called, and the input given to the vanilla arm all survive a reload.
+interface AuditionSitting extends SittingBase {
+  candidate: string;
+  reference: string;
+  contextNote: string;
+  vanillaInput: string;
+}
+
+const auditionSittings = createSittingStore<AuditionSitting>({
+  keyPrefix: "matrx.masterwork.audition.v1:",
+  isUsable: (sitting) =>
+    (sitting.candidate ?? "").trim().length > 0 ||
+    (sitting.reference ?? "").trim().length > 0 ||
+    (sitting.contextNote ?? "").trim().length > 0 ||
+    (sitting.vanillaInput ?? "").trim().length > 0,
+});
 
 const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   candidate_better: {
@@ -204,6 +226,32 @@ export function AuditionDialog({
     () => new Map(rules.map((rule) => [rule.id, rule])),
     [rules],
   );
+
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<AuditionSitting>({
+    store: auditionSittings,
+    scopeId: rulebookId,
+    active: open,
+    snapshot: { candidate, reference, contextNote, vanillaInput },
+    isWorthKeeping: (s) =>
+      (s.candidate ?? "").trim().length > 0 ||
+      (s.reference ?? "").trim().length > 0 ||
+      (s.contextNote ?? "").trim().length > 0 ||
+      (s.vanillaInput ?? "").trim().length > 0,
+    apply: (kept) => {
+      setCandidate(kept.candidate ?? "");
+      setReference(kept.reference ?? "");
+      setContextNote(kept.contextNote ?? "");
+      setVanillaInput(kept.vanillaInput ?? "");
+    },
+    clearScreen: () => {
+      setCandidate("");
+      setReference("");
+      setContextNote("");
+      setVanillaInput("");
+    },
+  });
 
   const run = useMasterworkRun<AuditionVerdict>({
     surface: "audition",
@@ -375,6 +423,13 @@ export function AuditionDialog({
           <UnfoldingAuditionPanel rulebookId={rulebookId} />
         ) : (
         <div className="space-y-3">
+          {sitting.resumed ? (
+            <SittingResumed
+              what="what you had pasted, the original it was judged against, what you called the case, and the vanilla input"
+              onDiscard={sitting.discard}
+              onAcknowledge={sitting.acknowledge}
+            />
+          ) : null}
           <HistoryStrip
             runs={history}
             openRunId={reopened?.runId ?? null}

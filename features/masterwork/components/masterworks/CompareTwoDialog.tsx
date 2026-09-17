@@ -40,8 +40,28 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
 
 const PAIRWISE_PATH = "/masterworks/audition-pairwise" satisfies keyof paths;
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): both
+// pasted answers and what each was called survive a reload.
+interface CompareTwoSitting extends SittingBase {
+  labelOne: string;
+  labelTwo: string;
+  textOne: string;
+  textTwo: string;
+}
+
+const compareTwoSittings = createSittingStore<CompareTwoSitting>({
+  keyPrefix: "matrx.masterwork.compare-two.v1:",
+  isUsable: (sitting) =>
+    (sitting.textOne ?? "").trim().length > 0 ||
+    (sitting.textTwo ?? "").trim().length > 0,
+});
 
 type Mode = "preference" | "faithfulness";
 
@@ -137,6 +157,29 @@ export function CompareTwoDialog({
   const [rulebookTwo, setRulebookTwo] = useState("");
   const [caseNote, setCaseNote] = useState("");
 
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<CompareTwoSitting>({
+    store: compareTwoSittings,
+    scopeId: rulebookId,
+    active: open,
+    snapshot: { labelOne, labelTwo, textOne, textTwo },
+    isWorthKeeping: (s) =>
+      (s.textOne ?? "").trim().length > 0 || (s.textTwo ?? "").trim().length > 0,
+    apply: (kept) => {
+      setLabelOne(kept.labelOne ?? "Answer 1");
+      setLabelTwo(kept.labelTwo ?? "Answer 2");
+      setTextOne(kept.textOne ?? "");
+      setTextTwo(kept.textTwo ?? "");
+    },
+    clearScreen: () => {
+      setLabelOne("Answer 1");
+      setLabelTwo("Answer 2");
+      setTextOne("");
+      setTextTwo("");
+    },
+  });
+
   const run = useMasterworkRun<PairwiseVerdict>({
     surface: "compare_two",
     rulebookId,
@@ -199,6 +242,13 @@ export function CompareTwoDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            {sitting.resumed ? (
+              <SittingResumed
+                what="both pasted answers and what you called each of them"
+                onDiscard={sitting.discard}
+                onAcknowledge={sitting.acknowledge}
+              />
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
@@ -290,6 +340,7 @@ export function CompareTwoDialog({
                 ? (run.stage ?? "Judging blind…")
                 : "Compare, blind"}
             </GatedActionButton>
+            <RunStages run={run} />
             {run.error ? (
               <p className="text-sm text-destructive">{run.error}</p>
             ) : null}
