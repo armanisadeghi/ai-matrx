@@ -28,14 +28,10 @@ import {
   usePageIntents,
 } from "../hooks";
 import {
-  pageTopicState,
-  pageTopicViewOf,
   selectMapDuplicateIntents,
   selectMapSelectedSlug,
   selectMapTotals,
-  selectPagesOnNoTopic,
 } from "../redux/selectors";
-import type { PageTopicState } from "../redux/types";
 import { mapOpened, revealTopic, setSiteId, setView } from "../redux/slice";
 import { isMapViewKey } from "../redux/types";
 import { useMapWorkspaceParams } from "../useMapWorkspaceParams";
@@ -198,24 +194,10 @@ function MapTextBody({ mapId, siteId }: { mapId: string; siteId: string | null }
   );
 }
 
-/**
- * What each {@link PageTopicState} means, said out loud. U5 draws these with
- * the `intent_colors` knob; this harness list has no colour, so it says the
- * words — a state a screen cannot colour must still be a state a screen names.
- */
-const PAGE_TOPIC_STATE_SENTENCE: Record<PageTopicState, string> = {
-  in_place: "staying where it is",
-  leaving: "leaving the topic it covers",
-  arriving: "arriving at a topic it does not cover yet",
-  on_no_topic: "on no topic and going nowhere",
-  intent_topic_hidden: "its destination left the map — re-route it",
-};
-
 /** `seo.list_page_intents` — the read the bulk convergence workspace (U5) is built on. */
 function MapPagesBody({ mapId, siteId }: { mapId: string; siteId: string | null }) {
   const intents = usePageIntents(mapId, { siteId });
   const duplicates = useAppSelector(selectMapDuplicateIntents(mapId));
-  const onNoTopic = useAppSelector(selectPagesOnNoTopic(mapId));
 
   if (intents.isPending) return <TopicalMapLoading what="this map's pages" />;
   if (intents.isError)
@@ -232,16 +214,6 @@ function MapPagesBody({ mapId, siteId }: { mapId: string; siteId: string | null 
           {intents.data.performance_window_days} days
           {siteId ? "" : " · every site you can view that uses this map"}
         </p>
-        {/* ROUND 22: rejecting or retiring a topic does not delete its pages —
-            they land here, on no topic. Saying nothing would let a map quietly
-            shed its pages, which is the defect the migration was written for. */}
-        {onNoTopic.length > 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {onNoTopic.length} of these page(s) cover no live topic of this map.
-            A page never vanishes with its topic: rejecting or retiring a topic
-            leaves its pages here to be re-homed.
-          </p>
-        ) : null}
         {/* ONE INTENT PER PAGE is the contract. A non-zero count means edges had
             to be collapsed, and the screen says so rather than showing one. */}
         {duplicates > 0 ? (
@@ -260,44 +232,22 @@ function MapPagesBody({ mapId, siteId }: { mapId: string; siteId: string | null 
         />
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {intents.data.items.map((item) => {
-            const state = pageTopicState(pageTopicViewOf(item));
-            return (
-              <li key={item.page.id} className="px-3 py-2 text-sm">
-                <p className="truncate">{item.page.url ?? item.page.label ?? item.page.id}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {/* ROUND 22: `current_topics: []` is a real state — a page
-                      whose only topic was rejected or retired — so it is named,
-                      never rendered as an empty phrase. */}
-                  {item.current_topics.length > 0
-                    ? `covers ${item.current_topics.map((topic) => topic.slug).join(", ")}`
-                    : "on no topic"}
-                  {item.intent ? (
-                    <>
-                      {` · ${item.intent.disposition} → `}
-                      {item.intent.topic ? (
-                        `${item.intent.topic.slug} (${item.intent.state})`
-                      ) : (
-                        /* The intent survives its topic being hidden and the
-                           server stops rendering the topic. A blank cell here
-                           would read as "no destination"; this says what
-                           actually happened and what it means. */
-                        <span className="text-destructive">
-                          a topic that has left the map ({item.intent.state})
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    " · no intent recorded"
-                  )}
-                  {` · ${PAGE_TOPIC_STATE_SENTENCE[state]}`}
-                  {item.page.clicks != null
-                    ? ` · ${item.page.clicks} clicks / ${item.page.impressions ?? 0} impressions`
-                    : ""}
-                </p>
-              </li>
-            );
-          })}
+          {intents.data.items.map((item) => (
+            <li key={item.page.id} className="px-3 py-2 text-sm">
+              <p className="truncate">{item.page.url ?? item.page.label ?? item.page.id}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {item.current_topics.length > 0
+                  ? `covers ${item.current_topics.map((topic) => topic.slug).join(", ")}`
+                  : "covers nothing yet"}
+                {item.intent
+                  ? ` · ${item.intent.disposition} → ${item.intent.topic.slug} (${item.intent.state})`
+                  : " · no intent recorded"}
+                {item.page.clicks != null
+                  ? ` · ${item.page.clicks} clicks / ${item.page.impressions ?? 0} impressions`
+                  : ""}
+              </p>
+            </li>
+          ))}
         </ul>
       )}
     </>

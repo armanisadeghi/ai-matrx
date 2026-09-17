@@ -420,19 +420,7 @@ export interface MapDiagnosticsResult {
   topics_crowded: MapDiagnosticsCrowdedTopic[];
   topics_proposed: string[];
   pages_on_many_topics: MapDiagnosticsOverloadedPage[];
-  /**
-   * Pages with no `covers` edge into a LIVE topic OF THIS MAP. 0 when no site
-   * is in scope — the count only means something per site.
-   *
-   * 🚨 ROUND 22 CHANGED THE MEANING, not the signature. Before
-   * `seo_topical_map_22_a_page_never_vanishes` the `NOT EXISTS` behind this
-   * matched ANY `seo_map_topic` edge, at any status and OF ANY MAP — so a page
-   * whose only coverage had been rejected, or belonged to a different map, read
-   * as "on a topic" and the one number built to find unmapped pages kept saying
-   * zero. It now sees live topics of this map only, so rejected and retired
-   * coverage counts as no coverage and this number can rise when somebody
-   * rejects a proposal. That is the truth arriving, never a regression.
-   */
+  /** 0 when no site is in scope — the count only means something per site. */
   pages_on_no_topic: number;
   pages_on_no_topic_sample: MapDiagnosticsPageRef[];
   /** Retired topics that still carry attachments. */
@@ -489,9 +477,7 @@ export interface MapTopicsPatchResult {
 
 /**
  * What to do with a topic that is being removed while attachments still hang
- * off it. `merge_into:<slug>` moves them onto that topic — and since round 22
- * that target must be a LIVE topic: a retired or rejected slug raises the same
- * `P0002` an invented one does.
+ * off it. `merge_into:<slug>` moves them onto that topic.
  */
 export type MapTopicRemovalPolicy =
   | "error"
@@ -537,19 +523,6 @@ export type SetPagesMapTopicsItem =
   | { page_id: string; url?: string; topics: PageMapTopicsInput[] }
   | { page_id?: undefined; url: string; topics: PageMapTopicsInput[] };
 
-/**
- * One slug a `map_pages` write left alone because a HIGHER source (migration
- * 23's precedence, human > agent > mapper) already held that pair. This is not
- * an error and not silence: the pair is unchanged, byte for byte, and `kept_existing`
- * names who holds it. Kept means that source's decision stands; it is settled —
- * never retry it and never report it as failed.
- */
-export interface KeptTopicCoverage {
-  slug: string;
-  /** human | agent | mapper | null (a legacy, pre-payload row) — who holds this pair. */
-  kept_existing: string | null;
-}
-
 /** One page that was mapped. Carries seo.set_page_map_topics' own report. */
 export interface SetPagesMapTopicsSuccess {
   ok: true;
@@ -560,18 +533,7 @@ export interface SetPagesMapTopicsSuccess {
   covers: number;
   /** How many coverage rows from the same `source` were replaced. */
   replaced: number;
-  /**
-   * Slugs this call could not cover. 🚨 ROUND 22: a RETIRED or REJECTED slug
-   * lands here too, in the same shape and the same bytes as an invented one —
-   * a dead topic is never a coverage destination, and nothing distinguishes
-   * the two cases on the wire.
-   */
   unknown_slugs: string[];
-  /**
-   * 🚨 MIGRATION 23. Pairs a HIGHER source already held — left alone, never
-   * overwritten. Absent (never `[]`) when nothing was kept.
-   */
-  kept_existing?: KeptTopicCoverage[];
 }
 
 /** One page that could not be mapped. The batch keeps going. */
@@ -632,8 +594,7 @@ export interface MapDryRunResult {
  * says `retire`, rejection's says `reject` (keep them and reject anyway), and
  * `seo.reject_map_topics` raises 22023 on anything outside this list.
  * `merge_into:<slug>` moves them onto that topic, which may not itself be in
- * the batch — and since round 22 must be a LIVE topic: a retired or rejected
- * slug raises the same `P0002` an invented one does.
+ * the batch.
  */
 export type MapTopicRejectionPolicy =
   | "error"
@@ -785,24 +746,11 @@ export type SetPageIntentsItem = PageIntentTarget &
     note?: string;
   };
 
-/**
- * Who holds a page's intent edge when `set_page_intents` left it alone —
- * migration 23's precedence (human > agent > mapper), or an edge already
- * `accepted`/`done` that no non-human write may replace. Kept means that
- * decision stands; it is settled — never retry it and never report it as failed.
- */
-export interface KeptIntent {
-  source: string | null;
-  state: string | null;
-}
-
 /** One page whose intent was written. `url` is echoed; absent when the page was named by id. */
 export interface SetPageIntentsSuccess {
   ok: true;
   page_id: string;
   url?: string;
-  /** 🚨 MIGRATION 23: present only when this item was KEPT, not written — see {@link KeptIntent}. */
-  kept_existing?: KeptIntent;
 }
 
 /**
@@ -825,13 +773,6 @@ export interface SetPageIntentsResult {
   /** The map the site uses — the call raises P0002 when it uses none. */
   map_id: string;
   set: number;
-  /**
-   * 🚨 MIGRATION 23: how many items were left alone because a higher source
-   * (human > agent > mapper) already held the edge, or it was already
-   * accepted/done. Kept is settled, never a failure — it does not count toward
-   * `failed` and must never be reported as one.
-   */
-  kept: number;
   failed: number;
   results: SetPageIntentsRow[];
 }
@@ -861,27 +802,8 @@ export interface PageIntentCurrentTopic {
 
 /** The page's one intent, rendered. `jsonb_strip_nulls`ed. */
 export interface PageIntentRecord {
-  /**
-   * Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits
-   * today (delete).
-   *
-   * 🚨 OPTIONAL SINCE ROUND 22 (`seo_topical_map_22_a_page_never_vanishes`),
-   * and a missing key is a REAL, EXPECTED state — not a malformed row. The
-   * intent SURVIVES its topic being hidden, because it is a decision somebody
-   * made and it is still true; but the server renders `topic` only while that
-   * topic is live (`status IN ('proposed','active')`), so a screen can never
-   * offer a destination that is gone. A rejected or retired topic is not a
-   * destination anywhere: `set_page_intents`, `set_page_map_topics` (the slug
-   * comes back in `unknown_slugs`), `move_map_topic`, `merge_map_topics` and
-   * every `merge_into:<slug>` policy answer the same `P0002` an invented slug
-   * gets.
-   *
-   * So a reader must narrow before use. The state it means —
-   * `intent_topic_hidden` — is produced by `pageTopicState` in
-   * `./redux/selectors`, and the screen says the destination left the map
-   * rather than printing a blank cell.
-   */
-  topic?: { slug: string; name: string };
+  /** Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits today (delete). */
+  topic: { slug: string; name: string };
   disposition: PageIntentDisposition;
   state: PageIntentState;
   source: PageIntentSource;
@@ -903,17 +825,6 @@ export interface PageIntentRecord {
  */
 export interface PageIntentItem {
   page: PageIntentPageRef;
-  /**
-   * The page's LIVE coverage. `[]` is a real, expected state — "on no topic" —
-   * and never a sign the read failed.
-   *
-   * 🚨 ROUND 22. A page is ALWAYS LISTABLE. Candidacy for this list reads
-   * topics of this map at ANY status, so a page whose only topic was rejected
-   * or retired is still here; `current_topics` reads LIVE topics only, so it
-   * comes back empty. Before the migration the two came from one CTE that
-   * excluded rejected topics, so rejecting a proposal silently deleted its
-   * pages from the list entirely.
-   */
   current_topics: PageIntentCurrentTopic[];
   intent: PageIntentRecord | null;
 }

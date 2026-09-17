@@ -51,7 +51,6 @@ export function createWorkspaceState(mapId: string): TopicalMapWorkspaceState {
     siteId: null,
     groupBy: null,
     intentsByPageId: {},
-    coverageByPageId: {},
     intentSiteByPageId: {},
     duplicateIntents: 0,
     optimistic: [],
@@ -289,16 +288,11 @@ const topicalMapSlice = createSlice({
       const ws = workspace(state, action.payload.mapId);
       if (action.payload.replace) {
         ws.intentsByPageId = {};
-        ws.coverageByPageId = {};
         ws.intentSiteByPageId = {};
       }
       for (const item of action.payload.result.items as PageIntentItem[]) {
         if (item.intent) ws.intentsByPageId[item.page.id] = item.intent;
         else delete ws.intentsByPageId[item.page.id];
-        // ROUND 22: an EMPTY list is stored, never skipped. "Covers nothing
-        // live" and "we never listed this page" are different answers, and a
-        // missing key is the only way a reader could tell them apart.
-        ws.coverageByPageId[item.page.id] = item.current_topics.map((topic) => topic.slug);
         if (item.page.site_id) ws.intentSiteByPageId[item.page.id] = item.page.site_id;
       }
       ws.duplicateIntents = action.payload.result.duplicate_intents;

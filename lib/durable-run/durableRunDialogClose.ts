@@ -67,19 +67,19 @@ export function durableRunDialogOnOpenChange(
 }
 
 /**
- * The companion to the auto-reopen latch every one of these dialogs carries.
+ * THE COMPANION RULE now lives on the run itself.
  *
- * The latch exists so a live run started elsewhere surfaces instead of hiding
- * behind an armed Start button (work paid for twice). But once the close is
- * honest, an un-scoped latch becomes a trap: the user closes, the latch
- * instantly reopens, and the dialog cannot be dismissed at all. So a run the
- * user has deliberately dismissed is remembered, by run id, and never
- * reopened; the NEXT run still surfaces.
+ * `shouldReopenForRun(runId, dismissedRunId)` used to sit here, and every
+ * dialog paired it with a `useRef` holding "the run I closed". A ref is
+ * per-MOUNT while the RECEIPT it was guarding survives in localStorage for an
+ * hour, so the dismissal was forgotten on every later visit: cold walk 7
+ * (2026-09-17, finding 3) closed a completed Shadow-the-inbox sitting and had
+ * it reopen on top of the Rulebook page three separate times, on plain
+ * navigations with no query param, blocking real controls underneath.
+ *
+ * A dismissal is a fact about the RUN, so it is written onto the run's receipt
+ * by `DurableRunHandle.dismiss()` and read back through
+ * `DurableRunHandle.surfacing` — which is also false for a run that is merely
+ * `"rejoining"`, the other half of the same finding. A dialog's latch asks
+ * `run.surfacing`; nothing asks a ref.
  */
-export function shouldReopenForRun(
-  runId: string | null,
-  dismissedRunId: string | null,
-): boolean {
-  if (!runId) return false;
-  return runId !== dismissedRunId;
-}

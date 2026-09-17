@@ -121,15 +121,6 @@ export interface TopicalMapWorkspaceState {
   groupBy: string | null;
   /** Page id → the one intent on that page, as `list_page_intents` returned it. */
   intentsByPageId: Record<string, PageIntentRecord>;
-  /**
-   * Page id → the slugs of the LIVE topics that page covers today, as
-   * `list_page_intents` returned them. An entry holding `[]` is a page that is
-   * ON NO TOPIC — a real state since round 22, and the reason this is stored
-   * at all: `intentsByPageId` alone cannot tell "covers nothing" from "we
-   * never listed this page", and a screen that guesses between those two is
-   * the blank cell this round exists to kill.
-   */
-  coverageByPageId: Record<string, string[]>;
   /** Page id → the site it belongs to, so an intent can be written without a second read. */
   intentSiteByPageId: Record<string, string>;
   /** Non-zero means `list_page_intents` had to collapse duplicate edges — say so, never hide it. */
@@ -164,17 +155,9 @@ export interface PageIntentView {
   pageId: string;
   disposition: PageIntentDisposition;
   state: PageIntentState;
-  /**
-   * Where the intent says the page belongs (or, for `delete`, where it sits
-   * today) — NULL when that topic is no longer live.
-   *
-   * 🚨 ROUND 22. `seo.list_page_intents` keeps the intent and omits its
-   * `topic` key while the topic is rejected or retired, so a destination that
-   * left the map arrives here as null rather than as a slug no reader can
-   * resolve. `pageTopicState` turns that into `intent_topic_hidden`.
-   */
-  intendedTopicSlug: string | null;
-  /** Where its `covers` edges put it today. `[]` means it is on no topic. */
+  /** Where the intent says the page belongs (or, for `delete`, where it sits today). */
+  intendedTopicSlug: string;
+  /** Where its `covers` edges put it today. */
   currentTopicSlugs: string[];
 }
 
@@ -185,49 +168,3 @@ export type PageIntentTone =
   | "arriving"
   | "delete"
   | "planned";
-
-/**
- * Where ONE page stands in the map's topic structure, independent of any one
- * topic's row — the answer the plain page list and the bulk screen colour by.
- *
- * The first three keys are `intent_colors`' own (requirements §5: in_place
- * green, leaving amber, arriving blue), so a view reads the colour straight
- * off the knob. The last two are round 22's new honest states, and they have
- * NO `intent_colors` entry on purpose: they are not a disposition, they are
- * the absence of a live topic, which §5 draws with the `missing` gray-dashed
- * treatment.
- *
- * - `in_place` — it covers a live topic and nothing is moving it away.
- * - `leaving` — it covers live topics and its intent names a different one.
- * - `arriving` — it covers nothing live and its intent names a live topic.
- * - `on_no_topic` — no live coverage and no intent that resolves. Counted by
- *   `map_diagnostics.pages_on_no_topic`.
- * - `intent_topic_hidden` — an intent EXISTS and the topic it named has been
- *   rejected or retired, so the server no longer renders it. The decision is
- *   still true; the destination is gone, and the screen must say so.
- *
- * Disposition colour (`delete`, and the `planned` treatment of a `plan.node`)
- * stays with {@link PageIntentTone} / `pageIntentTone`: that answers "how
- * should THIS topic's row draw this page", which is a different question.
- */
-export type PageTopicState =
-  | "in_place"
-  | "leaving"
-  | "arriving"
-  | "on_no_topic"
-  | "intent_topic_hidden";
-
-/**
- * The minimum a caller needs to answer {@link PageTopicState} for one page —
- * deliberately not {@link PageIntentView}, because a page with NO intent at
- * all still has a topic state and has no disposition to report.
- */
-export interface PageTopicView {
-  pageId: string;
-  /** Live coverage today. `[]` is "on no topic", never "unknown". */
-  currentTopicSlugs: string[];
-  /** True when the page carries an intent edge at all. */
-  hasIntent: boolean;
-  /** The intent's destination, or null when it exists but its topic is hidden. */
-  intendedTopicSlug: string | null;
-}

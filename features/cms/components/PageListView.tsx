@@ -324,7 +324,7 @@ export default function PageListView({
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-[1400px] mx-auto">
+    <div data-matrx-table-page className="py-4 space-y-4">
       <MatrxDataTable<ClientPageSummary>
         tableId={`cms/site/${site.id}/pages`}
         data={categoryRows}
