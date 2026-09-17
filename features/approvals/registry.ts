@@ -16,17 +16,33 @@
  * the queue its own list has started queue number two.
  */
 
+import { contactImportKind } from "./kinds/contact-import";
+import { documentAppendKind } from "./kinds/document-append";
+import { documentCreateKind } from "./kinds/document-create";
 import { gmailSendKind } from "./kinds/gmail-send";
 import { keywordMeaningKind } from "./kinds/seo/keyword-meaning";
 import { placementDriftKind } from "./kinds/seo/placement-drift";
 import { topicPlacementKind } from "./kinds/seo/topic-placement";
 import { sheetWriteKind } from "./kinds/sheet-write";
+import { spreadsheetCreateKind } from "./kinds/spreadsheet-create";
+import { taskImportKind } from "./kinds/task-import";
 import type { ApprovalKind } from "./types";
 
 export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   // Things that leave the building first — a message nobody can recall.
   gmailSendKind,
+  // Then the six Google Workspace kinds the aidream producer writes —
+  // `aidream/services/google_workspace/approvals.py`, one row per proposed
+  // change. Changes to a file the person already has come before the two that
+  // create a new one, and the imports (which add records here, not in Google)
+  // come last. The producer's RENDERED_PROPOSAL_KINDS must list exactly the
+  // ids below, or it queues rows this screen cannot show.
   sheetWriteKind,
+  documentAppendKind,
+  documentCreateKind,
+  spreadsheetCreateKind,
+  contactImportKind,
+  taskImportKind,
   // Then the keyword system's three (register KI-045).
   keywordMeaningKind,
   placementDriftKind,

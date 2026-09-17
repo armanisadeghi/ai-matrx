@@ -279,3 +279,37 @@ export interface ApprovalKind {
    */
   scopeRequirement?: ApprovalScopeRequirement;
 }
+
+/**
+ * STAND-IN for a generated type. REMEDY: run `pnpm sync-types`, then delete
+ * this interface and read `ApprovalDecisionResponse` from
+ * `types/python-generated/api-types.ts` instead.
+ *
+ * This is the RESPONSE contract of aidream's two approval doors — the exact
+ * fields of `ApprovalDecisionResponse` in
+ * `aidream/api/routers/google_workspace.py`:
+ *
+ *     POST /google-workspace/approvals/{approval_id}/apply
+ *     POST /google-workspace/approvals/{approval_id}/reject
+ *
+ * It is declared by hand ONLY because the generated contract in this checkout
+ * predates those endpoints and could not be regenerated where this was written
+ * (`pnpm sync-types` emits the OpenAPI from the `../aidream` checkout, which
+ * that container could not run). A generated file is NEVER hand-edited, and a
+ * cast past the gap would hide the drift instead of naming it — so the gap is
+ * named here, in one place, with its remedy. Nothing else is stood in for: the
+ * REQUEST side is two path parameters and one optional `reason`.
+ *
+ * 🚨 `applied_now: false` does NOT mean failure — it means this call performed
+ * nothing because the row was already decided, and `receipt` is the first
+ * decision's evidence. A screen that reads it as a failure would tell a person
+ * their approved change did not happen when it did.
+ */
+export interface GoogleApprovalDecisionPending {
+  approval_id: string;
+  /** `accepted` after an apply, `dismissed` after a reject. */
+  status: string;
+  applied_now: boolean;
+  /** `google_workspace_approval_receipt` — what actually happened. */
+  receipt: Record<string, unknown>;
+}

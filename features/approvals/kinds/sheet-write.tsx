@@ -10,10 +10,17 @@
  * second version of it in the browser would let the screen and the write
  * disagree.
  *
- * 🚨 Approve replays the ORDINARY HUMAN WRITE PATH: `writeGoogleSheet` from
- * `features/google-workspace/service.ts` — the same call the person makes by
- * editing the grid. This kind has no writer of its own, so an approved write is
- * indistinguishable from a person making it.
+ * 🚨 Approve goes through THE ONE DOOR, on the server:
+ * `POST /google-workspace/approvals/{id}/apply` (`../google-door.ts`), which
+ * re-runs the stored `write_sheet` action through the tool's own handler — the
+ * same code path an ordinary call takes, so an approved write is
+ * indistinguishable from a person making it. It used to write the Sheet from
+ * the browser with `writeGoogleSheet` and then record the decision as a second,
+ * separate write; that is two executors for one proposal (the write can land
+ * and the record fail, and two tabs can both approve), and the five sibling
+ * Google kinds have no browser write path at all. The door claims the row
+ * `pending → accepted` in one update and stores the receipt, so a second
+ * approve writes nothing and returns the first one's evidence.
  *
  * Mode: `hitl.google.unattended_file_write` for a workflow or schedule (default
  * mode 4) and `hitl.google.attended_file_write` when the person asked in the
@@ -25,15 +32,14 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { writeGoogleSheet } from "@/features/google-workspace/service";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
+import { listPendingProposals, type ApprovalProposal } from "../data";
 import {
-  listPendingProposals,
-  recordApprovalDecision,
-  type ApprovalProposal,
-} from "../data";
+  GOOGLE_REJECT_COPY,
+  useGoogleApprovalDecisions,
+} from "./google-proposal";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -262,92 +268,28 @@ function useSource(scope: ApprovalScope): ApprovalSource {
   };
 }
 
+/**
+ * The writers are THE SHARED ONES — the server door, once per item. All six
+ * Google kinds decide through the same two endpoints, so there is exactly one
+ * place where an approval turns into a change (and exactly one place to fix
+ * when that changes).
+ */
 function useDecisions(scope: ApprovalScope): ApprovalDecisions {
-  const viewerId = useAppSelector(selectUserId);
-  const userId = scope.userId ?? viewerId;
-  const client = useQueryClient();
-  const invalidate = () =>
-    void client.invalidateQueries({ queryKey: [...QUERY_KEY, userId] });
-
-  return {
-    acceptItems: async (items, reason) => {
-      const failures: { key: string; message: string }[] = [];
-      let applied = 0;
-      for (const item of items) {
-        const row = item as SheetItem;
-        if (!row.payload) {
-          failures.push({
-            key: item.key,
-            message:
-              "This proposal cannot be read, so nothing was written. Reject it instead.",
-          });
-          continue;
-        }
-        try {
-          // THE ordinary human write path — the same call the grid makes.
-          const result = await writeGoogleSheet(
-            row.payload.connectionId,
-            row.payload.fileId,
-            row.payload.rangeA1,
-            row.payload.values,
-          );
-          // The decision is recorded only AFTER Google confirmed the write, and
-          // it carries what Google returned: a row never claims a change that
-          // did not land.
-          await recordApprovalDecision(
-            row.proposal.assist.id,
-            "approved",
-            reason,
-            result as unknown as Json,
-          );
-          applied += 1;
-        } catch (error) {
-          failures.push({
-            key: item.key,
-            message: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-      invalidate();
-      return { applied, failures };
-    },
-    rejectItems: async (items, reason) => {
-      const failures: { key: string; message: string }[] = [];
-      let applied = 0;
-      for (const item of items) {
-        try {
-          await recordApprovalDecision(
-            (item as SheetItem).proposal.assist.id,
-            "rejected",
-            reason,
-          );
-          applied += 1;
-        } catch (error) {
-          failures.push({
-            key: item.key,
-            message: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-      invalidate();
-      return { applied, failures };
-    },
-  };
+  return useGoogleApprovalDecisions(KIND_ID, scope);
 }
 
 export const sheetWriteKind: ApprovalKind = {
   id: KIND_ID,
   label: "Spreadsheet change",
   accept: {
+    // The apply door takes the approval id and NOTHING else — there is no
+    // field on it for a note, so asking for one and dropping it would be the
+    // screen lying. Reject does keep the reason (it is stored as the row's
+    // decision note), which is why only this half changed.
     label: "Write it",
-    keepsReason: true,
-    reasonPrompt: "Any note for the record? (kept on the approval)",
+    keepsReason: false,
   },
-  reject: {
-    label: "Leave it alone",
-    keepsReason: true,
-    reasonPrompt: "Why not? (kept on the record)",
-  },
+  reject: GOOGLE_REJECT_COPY,
   useSource,
   useDecisions,
   /**

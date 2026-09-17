@@ -15,6 +15,28 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D329 — the surface-manifest registry imports a module that does not exist (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+`features/surfaces/manifests/registry.ts:141` does
+`import { barcodePreviewManifest } from "./barcode-preview.manifest";` and that
+file exists in no commit on any branch (`git log --all -- …barcode-preview.manifest*`
+is empty; the import is already committed, so it is not another lane's dirty
+tree). Every module that transitively reaches the manifest registry therefore
+fails to resolve — under Jest it is a hard suite failure, and it reaches far:
+`components/agent-copy/CopyButtons` and `features/surfaces/runtime/surface-writeback`
+both pull it, so the Gmail review card and `AssistCard` do, so
+`features/approvals/registry.ts` did, twice over. Found by lane F-6 while testing
+the approval kinds (worked around there with one virtual Jest mock, named in the
+test's header — the break itself is untouched).
+
+Fix: whoever owns the barcode-preview surface either lands the manifest file or
+removes the import and its registry entry. It is NOT safe to delete on sight —
+an unreferenced-looking manifest is unfinished work, not dead work
+(`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
+says someone meant to write it.
+
 ### D328 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
 
 **Status:** open · **Priority:** P3
