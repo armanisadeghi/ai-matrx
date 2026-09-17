@@ -32,14 +32,18 @@ import adminDebug from "@/lib/redux/preferences/adminDebugSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 import { PanelHeader } from "@/features/overlays/surfaces/SidePanelSurface";
-import { DetailActions, DetailTitle } from "@/lib/detail/core/DetailHeader";
-import { useDetailCore } from "@/lib/detail/core/useDetailCore";
-import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
 import {
   DETAIL_HEADER_COMPACT_BELOW,
   DETAIL_HEADER_CONTAINER,
   DETAIL_TITLE_MIN_WIDTH_CLASS,
-} from "@/lib/detail/core/headerGeometry";
+  DetailActions,
+  DetailTitle,
+  useDetailCore,
+} from "@ai-matrx/detail/react";
+import { instance, makePortsWith, mount } from "@ai-matrx/detail/testing";
+
+// The package's stub-port seat, bound to THIS runner's mock factory.
+const makePorts = makePortsWith(jest.fn);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

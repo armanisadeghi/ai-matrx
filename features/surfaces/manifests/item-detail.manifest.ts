@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Item Detail (`matrx-user/item-detail`).
  *
- * The generic record dossier — the Detail primitive (`lib/detail`) showing an
+ * The generic record dossier — the Detail primitive (`@ai-matrx/detail`) showing an
  * item-presentation record in its window (`detailWindow` overlay, the
  * default), docked panel (`detailDocked`) or page (`/detail/[type]/[id]`) —
  * THE DOOR LAW's peek target for every entity that has no bespoke window yet.

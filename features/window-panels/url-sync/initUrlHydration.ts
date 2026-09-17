@@ -5,10 +5,10 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import {
   DETAIL_URL_AS_ARG,
+  detailListFromUrlArgs,
   parseDetailInstanceKey,
   presentationFromUrlArg,
-  detailListFromUrlArgs,
-} from "@/lib/detail/presentation";
+} from "@ai-matrx/detail";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 import { dispatchThunk } from "@/lib/redux/hooks";
 
@@ -82,7 +82,7 @@ export function initUrlHydration() {
     );
   });
 
-  // Record detail (the Detail primitive, lib/detail) —
+  // Record detail (the Detail primitive, @ai-matrx/detail) —
   // `?panels=detail:<type>.<id>:as-window|docked`. The instance is the record
   // (`type.id`); `as` picks the in-place presentation, window by default. The
   // page presentation is its own route and never appears here.

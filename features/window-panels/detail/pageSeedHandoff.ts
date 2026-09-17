@@ -18,7 +18,7 @@
 // SINGLE USE, and bounded: one entry per record, dropped when taken and when it
 // ages out, so a stale name can never be shown for a record opened again later.
 
-import type { DetailRef, DetailSeed } from "@/lib/detail/types";
+import type { DetailRef, DetailSeed } from "@ai-matrx/detail";
 
 /** How long a handed-over name stays usable. One client navigation, generously. */
 const SEED_TTL_MS = 30_000;

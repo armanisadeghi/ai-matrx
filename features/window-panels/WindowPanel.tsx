@@ -1652,7 +1652,7 @@ function WindowHeader({
         // 🚨 NEW-8 — the header is a CONTAINER, so a consumer's title/actions can
         // answer the WINDOW's width instead of the viewport's (`sm:` cannot know
         // a window is 360px on a 1440px screen — that is how D4 stayed invisible).
-        // The name is `window-header`; `lib/detail/core/headerGeometry.ts` holds it.
+        // The name is `window-header`; `@ai-matrx/detail` (`headerGeometry.ts`) holds it.
         "@container/window-header",
         "relative flex items-center justify-between gap-1 px-2 py-1.5 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",

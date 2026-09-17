@@ -10,8 +10,8 @@
 
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
-import type { DetailDockedShellProps } from "@/lib/detail/host";
-import { DETAIL_URL_AS_ARG, DETAIL_URL_TYPE_KEY } from "@/lib/detail/presentation";
+import { DETAIL_URL_AS_ARG, DETAIL_URL_TYPE_KEY } from "@ai-matrx/detail";
+import type { DetailDockedShellProps } from "@ai-matrx/detail/react";
 
 export function DetailDockedShell({
   instanceKey,

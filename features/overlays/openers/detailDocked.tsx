@@ -2,8 +2,8 @@
 
 /**
  * Opener for the `detailDocked` overlay — the Detail primitive's DOCKED
- * presentation (`lib/detail`): a resizable side panel docked to the right edge
- * (a bottom sheet on phones). Prefer `useOpenDetail()` from `lib/detail`,
+ * presentation (`@ai-matrx/detail`): a resizable side panel docked to the right edge
+ * (a bottom sheet on phones). Prefer `useOpenDetail()` from `@ai-matrx/detail/react`,
  * which honours the person's presentation setting; this is the raw door.
  *
  * - `useOpenDetailDocked()` — imperative hook; returns a handle with `close()`.
@@ -15,7 +15,7 @@
 import { useCallback, useEffect } from "react";
 import { dispatchThunk, useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { DetailInstanceData } from "@/lib/detail/types";
+import type { DetailInstanceData } from "@ai-matrx/detail";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 
 const OVERLAY_ID = "detailDocked" as const;

@@ -11,18 +11,15 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import overlays, { selectOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
-  detailInstanceKey,
-  parseDetailInstanceKey,
-  presentationFromUrlArg,
   DETAIL_URL_AS_ARG,
   DETAIL_URL_TYPE_KEY,
-} from "@/lib/detail/presentation";
-import {
+  detailInstanceKey,
   decodeListQuery,
   encodeListQuery,
-  readDetailOverlayData,
-  toDetailInstanceData,
-} from "../detail/detailOverlayData";
+  parseDetailInstanceKey,
+  presentationFromUrlArg,
+} from "@ai-matrx/detail";
+import { readDetailOverlayData, toDetailInstanceData } from "../detail/detailOverlayData";
 import { parseParams, serializeParams } from "../url-sync/UrlPanelManager";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";

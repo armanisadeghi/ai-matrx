@@ -8,10 +8,7 @@
 // of judgement in this port — what happens when the CURRENT value cannot be
 // read — is worth a test of its own that does not boot the whole host.
 
-import {
-  DETAIL_PRESENTATION_BY_TYPE_KNOB,
-  type DetailPresentation,
-} from "@/lib/detail/types";
+import { DETAIL_PRESENTATION_BY_TYPE_KNOB, type DetailPresentation } from "@ai-matrx/detail";
 import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 import {
   knobRefusalSentence,

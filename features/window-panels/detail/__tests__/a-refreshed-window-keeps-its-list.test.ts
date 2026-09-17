@@ -13,14 +13,14 @@
 // hyphens, so the value is escaped into a form that holds none of those four.
 
 import {
-  detailListToUrlArgs,
-  finalPanelUrlLength,
-  detailListFromUrlArgs,
-  encodePanelArgValue,
   decodePanelArgValue,
-} from "@/lib/detail/presentation";
+  DETAIL_URL_BUDGET_BYTES,
+  detailListFromUrlArgs,
+  detailListToUrlArgs,
+  encodePanelArgValue,
+  finalPanelUrlLength,
+} from "@ai-matrx/detail";
 import { parseParams, serializeParams } from "../../url-sync/UrlPanelManager";
-import { DETAIL_URL_BUDGET_BYTES } from "@/lib/detail/types";
 
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

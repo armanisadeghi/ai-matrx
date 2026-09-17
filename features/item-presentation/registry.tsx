@@ -81,7 +81,7 @@ export interface ItemTypeConfig {
    */
   open?: ItemOpenKind;
   /**
-   * Where the Detail primitive (`lib/detail`, via `detail.tsx`) reads the
+   * Where the Detail primitive (`@ai-matrx/detail`, via `detail.tsx`) reads the
    * full record from. Types without a bespoke window use this to open a
    * clean, formatted detail view (every scalar column rendered) in the
    * window, docked and page presentations. Omit for a type with no single
@@ -177,7 +177,7 @@ async function fetchRow(
 // ---------------------------------------------------------------------------
 
 /**
- * `files.files`, for the Detail primitive (`lib/detail`). The click-through
+ * `files.files`, for the Detail primitive (`@ai-matrx/detail`). The click-through
  * for a file stays the bespoke preview window; the detail primitive reads the
  * row here when a file is opened as a record (window / docked / page).
  */

@@ -101,12 +101,13 @@ The rule, and why it is not a style preference:
 ## The Detail primitive — ONE core, three presentations (window · docked · page)
 
 **Arman, 2026-09-17:** *"a core component that then shows up as a Page, a flexible drawer, and a
-window panel. The default is the window."* The primitive is `lib/detail` (package-shaped; read
-[`lib/detail/README.md`](../../lib/detail/README.md) and [`lib/detail/FEATURE.md`](../../lib/detail/FEATURE.md)).
+window panel. The default is the window."* The primitive is the package **`@ai-matrx/detail`**
+(`aidream/apps/shared/detail` — its README is the contract, its FEATURE.md the implementation
+truth); this repo's host wiring is documented in [`lib/detail/FEATURE.md`](../../lib/detail/FEATURE.md).
 A record type registers ONE `DetailRecordType`; the wrapper yields the `detailWindow` overlay
 (a `WindowPanel`, the default), the `detailDocked` overlay (`SidePanelSurface`, a resizable
 side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
-`ui.detail.default_presentation` knob; `useOpenDetail()` from `lib/detail` is the one opener.
+`ui.detail.default_presentation` knob; `useOpenDetail()` from `@ai-matrx/detail/react` is the one opener.
 
 - **Do not build another `*DetailPanel.tsx` / `*DetailWindow.tsx`.** Register the type (today:
   an entry in `features/item-presentation/registry.tsx`, THE type map) and every presentation
@@ -120,6 +121,7 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 ## Change Log
 
+- 2026-09-17 — **The Detail primitive is a PACKAGE (lane B-16): `@ai-matrx/detail`.** `lib/detail/**` (core, presentations, keyboard, deep-link spelling, health resolver, 13 suites) moved verbatim to `aidream/apps/shared/detail` (`46c06f1184`); this repo keeps ONLY the host wiring — `detail/` (ports, shells, singleton opener, overlay payload), `windows/detail/`, the openers, the hydrator, the item-presentation type map — and imports from `@ai-matrx/detail` / `@ai-matrx/detail/react` / `@ai-matrx/detail/testing`. The page-query spelling (`encodeListQuery` / `decodeListQuery`) left `detail/detailOverlayData.ts` for the package. Adoption is written against the workspace build (the package is not on npm until its first publish): `package.json` declares it `"latest"`, `app/globals.css` registers its dist with Tailwind, and the chair runs `pnpm install` + `pnpm check:matrx-packages` once it is published.
 - 2026-09-17 — **The Detail primitive (`lib/detail`) replaces `itemDetailWindow`.** `windows/item-detail/ItemDetailWindow.tsx` and its opener are deleted; the same body (loader, fields, surface scope, right-click menu) now comes from `features/item-presentation/detail.tsx` + `ItemDetailFrame.tsx` through one `DetailRecordType`, and shows as `detailWindow` (default), `detailDocked` (side panel on `SidePanelSurface`) and the `/detail/[type]/[id]` page. Metadata: both overlays carry `urlSync.key: "detail"`; the hydrator reads `detail:<type>.<id>:as-<presentation>`. Host binding in `detail/`; presentation knob `ui.detail.default_presentation` (`migrations/detail_presentation_knob.sql`, applied by the google-native chair). Surface: `/detail` in `(core)` (`features/window-panels/detail/DetailShowcase.tsx`), with `/demos/detail-primitive` rendering the same body for the demos deployment — the demo-only path 307s under the `core` profile, so it was never the proof screen (F-5, 2026-09-17).
 
 - 2026-09-14 — **Dialog-to-WindowPanel interaction census.** Repaired twelve dialogs that launched a child WindowPanel behind a blocking modal or auto-dismissed when the child received its first click. Coexisting hosts now use the design-system's `modal={false}` z-layer contract and prevent outside interaction from dismissing the host; blocking overwrite confirmations close before launching the diff window. `window-launching-dialogs.test.ts` pins every audited host and both confirmation handoffs.
