@@ -31,6 +31,7 @@
 import { useMemo } from "react";
 import type { MediaRefLike } from "@ai-matrx/media";
 import {
+  useMediaBlob,
   useMediaLoadRecovery,
   useMediaResolution,
 } from "@ai-matrx/media/core";
@@ -93,6 +94,12 @@ export function useBlockMediaSource(
   }, [block]);
 
   const { resolution, status: resolutionStatus } = useMediaResolution(mediaRef);
+  // A durable file endpoint is an identity, not a browser-ready source. The
+  // client marks private/unknown images as `blob` so its authenticated fetch
+  // supplies the bytes. Binding `resolution.src` directly bypassed that
+  // decision and made session refresh retry the same failing element request.
+  const needsBlob = resolution?.transport === "blob";
+  const blob = useMediaBlob(needsBlob ? mediaRef : null);
 
   const resolved = useMemo<{
     src: string | null;
@@ -102,6 +109,15 @@ export function useBlockMediaSource(
     if (!block) return { src: null, status: "loading", isPlaceholder: false };
 
     if (resolution) {
+      if (needsBlob) {
+        if (blob.error) {
+          return { src: null, status: "error", isPlaceholder: false };
+        }
+        if (blob.url) {
+          return { src: blob.url, status: "ready", isPlaceholder: false };
+        }
+        return { src: null, status: "loading", isPlaceholder: false };
+      }
       return { src: resolution.src, status: "ready", isPlaceholder: false };
     }
 
@@ -122,13 +138,13 @@ export function useBlockMediaSource(
 
     // Empty ref with nothing inline to show.
     return { src: null, status: "error", isPlaceholder: false };
-  }, [block, resolution, resolutionStatus]);
+  }, [blob.error, blob.url, block, needsBlob, resolution, resolutionStatus]);
 
   // The ONE retry contract (session refresh → same-URL retry → terminal)
   // lives behind `MediaClient.recoverLoadError`. Placeholder data URIs and
   // foreign URLs come through `recoverable: false` and fail straight.
   const recovery = useMediaLoadRecovery(
-    resolution ? resolution.src : null,
+    needsBlob ? null : (resolution?.src ?? null),
     { recoverable: resolution?.recoverable },
   );
 
