@@ -191,6 +191,18 @@ export interface ApprovalItem {
    */
   lastAttempt?: { state: "failed"; sentence: string } | null;
   /**
+   * 🚨 THIS PROPOSAL HAS OUTLIVED THE ORGANIZATION'S REVIEW WINDOW
+   * (`hitl.google.review_timeout_hours`). The apply door refuses it with 403
+   * carrying this very sentence, so the row states it BEFORE the click and
+   * offers no Approve; Reject stays, because rejecting an expired proposal is
+   * exactly what the server still allows and what the sentence asks for.
+   *
+   * The server remains the authority — this mark never grants anything, and a
+   * browser whose clock or knob read is stale cannot let an expired change
+   * through (round-3 verification § A-N7; `./review-window.ts`).
+   */
+  expired?: { sentence: string } | null;
+  /**
    * 🚨 THERE IS A ROW HERE AND THIS BUILD CANNOT SHOW IT. A pending proposal
    * whose kind nothing registered renders, or whose action does not narrow: the
    * queue prints this sentence, counts the row, and offers NO decision controls

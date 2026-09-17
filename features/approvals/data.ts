@@ -31,6 +31,11 @@ import { type Assist, type AssistAction } from "@/features/assists/types";
 import { createClient } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { readApprovalReceipt } from "./receipt";
+import {
+  expirySentence,
+  isExpiredProposal,
+  reviewWindowHours,
+} from "./review-window";
 import type { UnrenderableProposal } from "./unshowable";
 import {
   familyOf,
@@ -99,13 +104,29 @@ export interface ApprovalProposal {
   payload: Json;
   /** Present when the addressee cannot perform the change themselves. */
   blocked: { reason: string; whoCan: string } | null;
+  /**
+   * Present when this proposal has outlived the organization's review window
+   * (`hitl.google.review_timeout_hours` — `./review-window.ts`), carrying the
+   * SERVER'S own expiry sentence. The apply door refuses it with 403; the row
+   * says so before the click instead of after it (§ A-N7).
+   */
+  expired: { sentence: string } | null;
   /** The subject, as the door registries address it. */
   subject: { token: string; id: string } | null;
 }
 
-function narrow(assist: Assist): ApprovalProposal | null {
+function narrow(
+  assist: Assist,
+  /**
+   * The organization's review window in hours, already resolved for this page,
+   * or `null` when nothing expires. Resolved ONCE per page — a knob read per row
+   * would be the same answer asked fifty times.
+   */
+  reviewHours: number | null,
+): ApprovalProposal | null {
   const action: AssistAction = assist.action;
   if (action.kind !== "approval_proposal") return null;
+  const expired = isExpiredProposal(assist.createdAt, reviewHours);
   return {
     assist,
     proposalKind: action.proposalKind,
@@ -119,6 +140,11 @@ function narrow(assist: Assist): ApprovalProposal | null {
     operatorUserId: action.operatorUserId ?? null,
     payload: action.payload,
     blocked: action.blocked ?? null,
+    // 🚨 THE REVIEW WINDOW, ON THE ROW (§ A-N7). The server's doors remain the
+    // authority — this only stops the screen offering an Approve whose 403 is
+    // already known, in the server's own words.
+    expired:
+      expired && reviewHours ? { sentence: expirySentence(reviewHours) } : null,
     subject:
       assist.entityType && assist.entityId
         ? { token: assist.entityType, id: assist.entityId }
@@ -210,6 +236,15 @@ export async function listPendingProposals(
    * (round-2 verification § A-ii). One predicate decides, here, and a row it
    * refuses is loud once rather than folded into a number.
    */
+  /**
+   * THE ORGANIZATION'S REVIEW WINDOW, once for this page. Read lazily and
+   * failure-tolerant, exactly as the server reads it: an unreadable knob leaves
+   * every row decidable and says so (`./review-window.ts`).
+   */
+  const reviewHours = await reviewWindowHours(
+    scope.organizationId,
+    scope.userId ?? userId,
+  );
   const proposals: ApprovalProposal[] = [];
   const unrenderable: UnrenderableProposal[] = [];
   // Rows the assists service's own narrowing refused: counted here with no id,
@@ -226,7 +261,7 @@ export async function listPendingProposals(
       kinds: kindsHere,
       scope,
     });
-    const narrowed = verdict.renders ? narrow(assist) : null;
+    const narrowed = verdict.renders ? narrow(assist, reviewHours) : null;
     if (narrowed && narrowed.proposalKind === proposalKind) {
       proposals.push(narrowed);
       continue;

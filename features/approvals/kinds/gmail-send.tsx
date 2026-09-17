@@ -574,6 +574,9 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       // reviewed-send endpoint and would try. Dropping this field is exactly how
       // a blocked draft got a live Send button (Bugbot HIGH #1, 2026-09-17).
       blocked: proposal.blocked,
+      // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
+      // door refuses such a row with 403; the queue stops offering Approve.
+      expired: proposal.expired,
       rejectEffect:
         "Nothing is sent, and the draft is recorded as rejected by you with your reason.",
       doors: proposal.subject ? (

@@ -379,7 +379,25 @@ describe("there is no client-side producer (A-viii)", () => {
 });
 
 describe("there is no client-side mode ladder either (A-vii)", () => {
-  it("`mode.ts` is gone and no module in this feature reads an hitl knob", () => {
+  /**
+   * 🚨 WHAT THIS GUARD IS FOR, NARROWED 2026-09-17 (round-3 verification § A-N7).
+   * It was written against a client-side MODE ladder: a browser that resolves
+   * `hitl.google.autonomy_mode` is a second opinion about WHO MAY WRITE, and the
+   * server already answers that by filing a proposal and replying 202. That ban
+   * stands.
+   *
+   * The REVIEW WINDOW is a different question with a different authority. The
+   * apply door refuses an expired proposal with 403 carrying the whole expiry
+   * sentence, and the frontend had no reader of `review_timeout_hours` at all —
+   * so an expired row rendered with a live Approve button and could not say so
+   * until AFTER the click (§ A-N7, the round's assigned measurement). Reading it
+   * to REMOVE a control whose refusal is already known grants nothing: the 403 is
+   * still what stops a write. So exactly ONE module may read a knob here, it may
+   * read only that knob, and nothing may read a mode knob.
+   */
+  const WINDOW_READER = "review-window.ts";
+
+  it("`mode.ts` is gone and only the review window reads a knob, and only that one", () => {
     const { existsSync, readFileSync, readdirSync, statSync } =
       jest.requireActual<typeof import("node:fs")>("node:fs");
     const { join } = jest.requireActual<typeof import("node:path")>("node:path");
@@ -397,13 +415,22 @@ describe("there is no client-side mode ladder either (A-vii)", () => {
     };
     walk(root);
     expect(files.length).toBeGreaterThan(5);
+    let readers = 0;
     for (const file of files) {
       const source = readFileSync(file, "utf8");
-      // A knob read in the browser would be a SECOND opinion about who may
-      // write: the server resolves the mode and answers 202 with a filed
-      // proposal when review is required. Mentions in prose are fine; a read is
-      // not — `useEffectiveKnob`/`ensureEffectiveKnob` are how one is made.
-      expect(source).not.toMatch(/(use|ensure)EffectiveKnob/);
+      // Mentions in prose are fine; a read is not — `useEffectiveKnob` /
+      // `ensureEffectiveKnob` are how one is made.
+      if (/(use|ensure)EffectiveKnob/.test(source)) {
+        expect(file.endsWith(WINDOW_READER)).toBe(true);
+        readers += 1;
+        // And it reads the review window, never a mode: a mode resolved in the
+        // browser is the second authority this guard exists to forbid.
+        expect(source).toContain("hitl.google.review_timeout_hours");
+        expect(source).not.toContain("autonomy_mode");
+      }
     }
+    // The reader EXISTS: an expired row with a live Approve button is the defect
+    // this replaced, so its absence is a regression, not a clean slate.
+    expect(readers).toBe(1);
   });
 });

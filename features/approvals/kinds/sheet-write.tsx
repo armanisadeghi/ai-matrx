@@ -222,6 +222,9 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       proposedBy: proposal.proposerLabel,
       proposedAt: proposal.assist.createdAt,
       blocked: proposal.blocked,
+      // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
+      // door refuses such a row with 403; the queue stops offering Approve.
+      expired: proposal.expired,
       doors: proposal.subject ? (
         <EntityRef
           token={proposal.subject.token}

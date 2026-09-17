@@ -22,7 +22,9 @@ The SEO value-system queue (register KI-045) was already the generic mechanism: 
 | Failure strip | `ApprovalLoadError.tsx` | A kind that cannot be read is named and retryable; the missing-store case names the migration |
 | Store seam | `data.ts` | The ONLY module that names `platform.assists`: read and record a decision. It PRODUCES nothing — the server is the one producer |
 | Will-render predicate | `rendered.ts` | THE one question "would this row be on screen here?", asked by the badge, the section header, the list and every deep link |
-| Receipt adapter | `receipt.ts` | THE one reader of `receipt.state` (`applying` / `failed` / `applied` / `rejected`) — a claimed apply that failed is never reported as done |
+| Receipt adapter | `receipt.ts` | THE one reader of `receipt.state` (`applying` / `failed` / `applied` / `rejected`) — a claimed apply that failed is never reported as done, and THE one reading of a decision reply (`readDecisionReply`), which renders the SERVER's sentence whenever the reply carried one |
+| Unshowable rows | `unshowable.ts` | THE one honest row for a pending proposal this build cannot show — named kind, record id, remedy, no decision controls |
+| Review window | `review-window.ts` | THE one reader of `hitl.google.review_timeout_hours` in this repo — same boundary (`age > hours`), same safe direction, the server's own expiry sentence |
 | Decision door | `google-door.ts` | THE ONE apply/reject call for every Google kind — `POST /google-workspace/approvals/{id}/apply` and `/reject` |
 | Google kind engine | `kinds/google-proposal.tsx` | The shared reader, payload narrowing and writers the six Google kinds register with |
 | Surface | `ApprovalsWorkspace.tsx` | The one screen both hosts mount |
@@ -87,10 +89,42 @@ For `gmail_send` the operator must additionally be able to send from that accoun
   required whenever `reads` is not `approval_proposal` — and `rowElsewhere(action)`
   carries the door to where a row it will not show actually lives. A row the
   predicate refuses is loud once in the console and counted nowhere.
-- 🚨 **The section header counts what the screen shows.** `listPendingProposals`
-  subtracts the rows the narrowing dropped (`AssistsPage.unreadable`, new on the
-  assists service) and the ones no mounted kind renders, from the server's raw
-  `count`. A number a person reads is never a bare PostgREST `count`.
+- 🚨 **The section header counts what the screen shows — AND EVERY PENDING ROW IS
+  ON THE SCREEN.** `listPendingProposals` never subtracts: the rows it could not
+  narrow (`AssistsPage.unreadable`) and the ones no mounted kind renders come back
+  as `page.unrenderable` and are rendered as honest rows through
+  `unshowable.ts` — "A proposal this screen cannot show yet", with the kind id,
+  the record id and the remedy, and NO decision controls (this build cannot state
+  what Approve would change). Subtracting them is how one such row alone made
+  `/approvals` print "Nothing is waiting on you" over a durable pending proposal
+  while only the console disagreed. A number a person reads is never a bare
+  PostgREST `count` either.
+- 🚨 **THE STORE SEAM IS ASKED WITH THE REAL KIND.** `listPendingProposals(userId,
+  kind, scope)` takes the asking kind's own registration — never a `{ id }` object
+  cast past the contract, which carried no `reads` and no `rendersRow` and so made
+  the predicate judge every asker as the `approval_proposal` family. A kind that
+  reads another family is refused by name with the remedy, never handed an empty
+  page.
+- 🚨 **THE SERVER WRITES THE SENTENCE; THE SCREEN READS IT.** Every reply from the
+  two doors carries `ApprovalDecisionResponse.sentence`, and `google-door.ts`
+  narrows it (blank or absent → `null`). `readDecisionReply` renders it for every
+  reading but `performed`, and derives its own ONLY when the reply carried none —
+  two producers of one sentence is how the reject path came to say "the change was
+  made" over a row whose own record refused to say. The BUCKET stays this build's
+  reading of `status` + receipt, because the queue counts buckets and a sentence
+  must never be able to turn a failed receipt into a success. `applied_now` is not
+  a success flag at EITHER door: it means "this call changed the row's state", so
+  it is `true` for a fresh reject and `false` for an apply whose write failed.
+- 🚨 **A PROPOSAL PAST THE REVIEW WINDOW SAYS SO BEFORE THE CLICK.**
+  `review-window.ts` reads `hitl.google.review_timeout_hours` through the ONE
+  runtime knob read, once per page, with the server's own boundary (`age > hours`,
+  exclusive) and the server's own sentence; the row loses its Approve and its place
+  in select-all, and keeps Reject, which is exactly what the server still allows.
+  THE 403 REMAINS THE AUTHORITY — this marking removes a control whose refusal is
+  already known and grants nothing, so a stale clock or knob read in a browser
+  cannot let an expired change through. It is also the ONLY knob read allowed in
+  this feature: a MODE resolved in the browser would be a second opinion about who
+  may write (guard: `__tests__/one-predicate.test.ts` § A-vii).
 - 🚨 **`receipt.state` DECIDES WHAT HAPPENED, ahead of `status`** (`receipt.ts`).
   `failed` = the change was NOT made → the row says so in destructive colour, its
   Approve becomes "Try again", and a decision reply lands in `failures`.
@@ -114,7 +148,7 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 - Nothing applies without a person, except mode 3's server-side timeout — which has no runner yet (see the gaps).
 - A batch confirm re-lists every item's exact effect; each item runs through its kind's single writer.
 - 🚨 **Every Google proposal decides through ONE server door** — `POST /google-workspace/approvals/{id}/apply` and `/reject` (`google-door.ts`). The browser never writes to Google from this queue and never records the decision itself: the door claims the row `pending → accepted` in one update, re-runs the stored action through the tool's own handler, and stores the receipt, so the approval id is the idempotency key and a second approve writes nothing. A kind that approves with a second client-side write has re-created the window where the change lands and the row stays pending.
-- 🚨 **THE DOOR'S ANSWER IS READ, NEVER ASSUMED.** "Did not throw" is not "did what you asked": the door is idempotent, so a second approve returns the FIRST call's receipt (`applied_now: false`) and a row already rejected answers an approve with `status: "dismissed"` — quietly, both times. A writer judges the reply's `status` (and uses `applied_now` only to tell "this click did it" from "it was already done"), and reports an already-decided row through `ApprovalOutcome.alreadyDecided`, which the queue toasts in its own words. `applied_now` is NOT a success flag on the reject path — a fresh reject answers `false` too.
+- 🚨 **THE DOOR'S ANSWER IS READ, NEVER ASSUMED.** "Did not throw" is not "did what you asked": the door is idempotent, so a second approve returns the FIRST call's receipt (`applied_now: false`) and a row already rejected answers an approve with `status: "dismissed"` — quietly, both times. A writer judges the reply's `status` (and uses `applied_now` only to tell "this click did it" from "it was already done"), and reports an already-decided row through `ApprovalOutcome.alreadyDecided`, which the queue toasts in its own words. `applied_now` is NOT a success flag at either door — it answers "did THIS CALL change the row's state", so a fresh reject answers `true` (aidream lane B-8) and an apply whose write FAILED answers `false`.
 - **A row whose Approve would do NOTHING is blocked, not offered** — a task import where every task is already here, a contact with no fields, an append with no text. It is shown, says why, and offers only Reject (THE NO-SILENT-FAILURE LAW; a receipt reading "changed 0 things" is the thing this prevents).
 - **Approve asks for a note only where the write keeps one.** The apply door takes the approval id and nothing else, so every Google kind sets `accept.keepsReason: false`; Reject does keep it (`decision_note`).
 - The decision is recorded only after the replayed human write returned, and it carries that receipt.
@@ -129,9 +163,27 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 5. **A recipient we do not hold as a contact point** cannot be checked against unsubscribes or the blocklist. The row says so in words and the person sends on their own judgement; it is not silently skipped.
 6. **The CMS approvals panel and the HR workflow inbox are still separate surfaces.** CMS (`features/cms/components/admin/ApprovalsQueuePanel.tsx`) is a content-exception queue over a table that does not exist yet; HR's inbox (`hr_wf_inbox` / `hr_wf_decide`) is human workflow steps with their own delegation and authority model, not AI proposals. Neither is folded in by this lane; both are candidate kinds.
 7. **Nothing here is verified on a live surface, because the queue has never held a row.** Round 2 of the zero-authorship verification (2026-09-17) confirmed the server producer now EXISTS and is wired, and that `platform.assists` still holds **0** rows on `matrx-user/approval-queue`: the pipe exists at one end and has never carried anything. Every guard in `__tests__/` is therefore the only proof this engine has, and the empty state names exactly the six kinds the producer files (`./empty-state.ts`). `proposeApproval` is gone — the client half of gap 7 is closed by deletion, not by a caller.
-8. **`hitl.google.review_timeout_hours` (live, 24) has no reader in this repo.** Its only reader was `useHitlReviewTimeoutHours` in the deleted `mode.ts`, which had zero callers — so the knob was already governing nothing (round-2 verification § A-vi). The window it sets belongs to the mode-3 applier, which does not exist (gap 2); the Office Assistant mandate's prompt still tells the model "`review_timeout_hours` is read by the queue, not by this job", which is false and is aidream's line to fix.
+8. **CLOSED 2026-09-17 (lane F-21) — `hitl.google.review_timeout_hours` decides something on screen.** aidream reads it lazily at both doors (an expired apply is refused with 403 carrying the whole expiry sentence; a reject still works, by design), and this repo now reads the same knob the same way in `review-window.ts`, so an expired row is marked with the server's sentence and offers no Approve instead of a live button whose 403 arrives after the click (round-3 verification § A-N7). The mode-3 applier is still gap 2, and it is a different clock: this window only stops an OLD proposal being applied, it never applies one.
 
 ## Change Log
+
+- 2026-09-17 — Claude (lane F-21; round-3 hostile verification of U-P4, common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R3.md`, client items A-N2…A-N7): **the server's sentence is the only sentence, the seam asks the real kind, a row this build cannot show is a row, and the review window reaches the screen.**
+
+  **A-N2 was already closed by lane F-16** (`8f8ef11a`): the reject path reads the receipt through the one adapter, so "accepted + unreadable receipt" no longer says the change was made. Re-checked against that head before any work, and its guard (`receipt-sentences-agree.test.tsx`) still holds.
+
+  (1) **A-N3 — ONE PRODUCER OF THE SENTENCE** (`google-door.ts`, `types.ts`, `receipt.ts`, `kinds/google-proposal.tsx`). aidream sets `sentence` on every reply, documented as "always set, so no caller has to infer what happened from a status enum", and this repo narrowed the reply to four fields and never read it — so the client derived a second sentence, and A-N2 was their first drift. The door carries it now (blank or absent → `null`), and `readDecisionReply` renders it for every reading but `performed`, deriving only when none was sent. The bucket stays this build's own reading, proven by a case where a server "Approved" sentence over a `failed` receipt still buckets as `failed`.
+
+  (2) **A-N4 — a recorded fact inside the code is true again.** The ⚠️ contract block told the next agent that `reject_google_approval` answers `applied_now: false` for a FRESH reject; B-8 had changed it to `true`, by name. It now says what `applied_now` actually means at both doors, which is why `status` plus the receipt decide.
+
+  (3) **A-N5 — the page read asks the REAL registration** (`data.ts` + all eight readers). `[{ id: proposalKind } as ApprovalKind]` carried no `reads` and no `rendersRow`, so the seam could only ever judge one action family, and the cast is what stopped the compiler from saying so. Each kind passes itself; its own recogniser decides which rows are on the page; a kind reading another family is refused by name.
+
+  (4) **A-N6 — a pending row this build cannot show is rendered, not subtracted** (`unshowable.ts` — new, `data.ts`, `types.ts`, `ApprovalQueue.tsx`, the three Google readers). With one refused row and nothing else the section total was `max(1 - 1, 0) = 0`, so the screen printed "Nothing is waiting on you" over a durable pending proposal and only the console disagreed. The seam hands the refusals back (plus one entry per row the assists service's own narrowing dropped, which it cannot identify), counts them, and the queue shows an honest row: the kind id, the record id, "nothing was decided", no decision controls, outside select-all, `mode: "unresolved"` — the refusal policy rule 1 asks for, never a sixth mode.
+
+  (5) **A-N7 — the review window reaches the row** (`review-window.ts` — new, `data.ts`, `types.ts`, `ApprovalQueue.tsx`, the three Google readers). There was no reader of `hitl.google.review_timeout_hours` anywhere in this feature, so an expired proposal rendered with a live Approve and could not say so until after the click. The knob is read once per page through the ONE runtime read, with the server's boundary (`age > hours`, exclusive — exactly 24h is still actionable), the server's safe direction (0, negative, unparseable, unregistered or unreadable = never expires, loudly), and the server's own expiry sentence; the row keeps Reject and loses Approve, and the 403 remains the authority. The A-vii guard is narrowed accordingly — a MODE knob read in the browser is still banned, and the window reader is now REQUIRED to exist.
+
+  Guards (each proven failing on the pre-fix bytes): `__tests__/one-sentence-producer.test.ts`, `__tests__/the-page-asks-the-real-kind.test.ts`, `__tests__/an-unshowable-row-is-never-an-empty-screen.test.tsx` (including a real `ApprovalQueue` render: the sentence on screen, summary count 1, neither decision button present), `__tests__/the-review-window-reaches-the-row.test.tsx` (the knob ladder, the boundary to the millisecond, the sentence to the character, the marking through the seam, and the queue dropping Approve while keeping Reject). 104 tests green under `features/approvals`.
+
+  **NOT fixed here, by scope:** A-N1 is the server's (aidream lane B-10) — a post-write failure still asserts "The change was NOT made" for any handler exception, and this repo prints what the server says. Nothing in this lane was verified on a live surface: the queue has still never held a row (gap 7).
 
 - 2026-09-17 — Claude (lane F-16; Bugbot round 10 findings 1-3 on frontend PR 228): **the predicate learned WHERE the queue is standing, reject reads the receipt accept already read, and a deep link is re-resolved when the mount changes.**
 

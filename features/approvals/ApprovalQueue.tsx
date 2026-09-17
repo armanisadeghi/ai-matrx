@@ -322,7 +322,11 @@ export function ApprovalQueue({
       !item.inFlight &&
       // A row this build cannot read cannot be decided in a batch either — its
       // effect cannot be listed in the confirm (§ A-N6).
-      !item.unreadable,
+      !item.unreadable &&
+      // An expired proposal cannot be approved at all (the door answers 403), so
+      // it never joins a batch whose Approve would refuse it row by row. Its
+      // Reject stays on the row itself (§ A-N7).
+      !item.expired,
   );
   const selectedItems = selectable.filter((item) => selected.has(item.key));
   const allSelected =
@@ -698,7 +702,8 @@ export function ApprovalQueue({
                                   Boolean(item.individualReview) ||
                                   Boolean(item.blocked) ||
                                   Boolean(item.inFlight) ||
-                                  Boolean(item.unreadable)
+                                  Boolean(item.unreadable) ||
+                                  Boolean(item.expired)
                                 }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">
@@ -767,6 +772,16 @@ export function ApprovalQueue({
                                     {item.unreadable.sentence}
                                   </p>
                                 ) : null}
+                                {/* 🚨 PAST THE ORGANIZATION'S REVIEW WINDOW. The
+                                    apply door refuses this row with 403 carrying
+                                    this sentence; until 2026-09-17 the screen
+                                    could not say so until after the click
+                                    (§ A-N7). */}
+                                {item.expired ? (
+                                  <p className="break-words text-[11px] font-medium text-warning">
+                                    {item.expired.sentence}
+                                  </p>
+                                ) : null}
                               </div>
                               {/* Phones: the decisions drop to their own full-width
                                   row of 40px targets under the text, instead of a
@@ -775,7 +790,8 @@ export function ApprovalQueue({
                                 {item.inFlight || item.unreadable ? null : (
                                   <>
                                     {item.individualReview ||
-                                    item.blocked ? null : (
+                                    item.blocked ||
+                                    item.expired ? null : (
                                       <Button
                                         size="sm"
                                         variant="ghost"
