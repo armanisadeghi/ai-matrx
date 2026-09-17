@@ -46,6 +46,7 @@ declare
   v_leading text;
   v_line    text;
   v_uniq    boolean;
+  v_texts   jsonb;
 begin
   if (pg_control_system()).system_identifier <> 7678069749886157684 then
     raise exception 'w1_index_c5.sql refuses to run here: system_identifier is %, and this file may only run on the rehearsal branch (7678069749886157684)',
@@ -93,8 +94,30 @@ begin
   end if;
   raise notice 'PART 1 — arms read from the function''s own prosrc: %', array_to_string(v_arms, ', ');
 
+  -- ARM BY ARM, THE TEXT ITSELF. `prosrc` equality is the wrong test — a body that gained a
+  -- `SET search_path` is never byte-identical to one that did not — so what is compared is what
+  -- each arm ANSWERS, against the text this campaign publishes and indexes by. An edit that
+  -- changes one arm's output fails here rather than silently rebuilding somebody's index over a
+  -- different expression.
+  v_texts := jsonb_build_object(
+    'number',       '(((data->>''zz_probe_key'')::numeric))',
+    'boolean',      '(((data->>''zz_probe_key'')::boolean))',
+    'currency',     '(((data->''zz_probe_key''->>''amount'')::numeric))',
+    'multi_select', null,
+    'file',         null,
+    'text',         '((data->>''zz_probe_key''))');
+
   foreach v_arm in array v_arms loop
     v_expr := platform.custom_field_index_expr(v_arm, 'zz_probe_key', 'data');
+    if not v_texts ? v_arm then
+      raise exception 'PART 1 — platform.custom_field_index_expr has grown an arm nobody named: %', v_arm
+        using hint = 'REC-N-3: an arm either builds an index over a path the values live on, or answers NULL by name. A new one is decided, never inherited.';
+    end if;
+    if v_expr is distinct from (v_texts ->> v_arm) then
+      raise exception 'PART 1 — the % arm answers % and this campaign indexes by %',
+                      v_arm, coalesce(v_expr, 'NULL'), coalesce(v_texts ->> v_arm, 'NULL')
+        using hint = 'Every index already built from the old text would go on answering questions nobody asked.';
+    end if;
     if v_expr is null then
       v_nulls := v_nulls || v_arm;
       continue;
@@ -396,6 +419,57 @@ begin
     raise notice 'PART 8 —   guard off: % / %', v_msg, v_hint;
   end;
   raise notice 'PART 8 PASS — one expression for the index and the read, ROUTE B from the generator, and the knob named out loud when it is off.';
+
+  -- ════════════════════════════════════════════════════════════════════════════════════
+  -- PART 9 — THE PLATFORM HALF: `platform.custom_field_index_ddl` READS THE COLUMN AND
+  --          READS THE GUARD (ruling (a), REC-N-1).
+  -- ════════════════════════════════════════════════════════════════════════════════════
+  -- Two registered Entity tables, chosen because they DISAGREE about the column's name:
+  -- `crm.party` keeps custom fields in `custom_fields` (W1-STORE put it there) and
+  -- `hr.employee` keeps them in `custom`. One generator, no literal, both right.
+  update platform.feature_knob set value = 'true'::jsonb
+   where feature = 'custom' and key = 'field_index_guard';
+
+  -- A token only takes custom fields once a platform admin has ADOPTED it —
+  -- `platform.custom_field_target`, which is empty on the branch, and the refusal says so:
+  -- 'Participation is a row in platform.custom_field_target, never a hardcoded list.' Both
+  -- tokens are adopted here, inside the transaction that rolls back.
+  perform platform.adopt_custom_fields('party', 'strict', 'standard', 'never', 8, 100000,
+                                       'w1_index_c5.sql, rolled back');
+  perform platform.adopt_custom_fields('hr_employee', 'strict', 'standard', 'never', 8, 100000,
+                                       'w1_index_c5.sql, rolled back');
+
+  insert into platform.custom_field_definition
+    (id, target_kind, target_token, field_key, display_name, field_type, field_order,
+     is_indexed, is_unique, sensitivity_tier, ai_exposure, organization_id, visibility)
+  values ('11111111-9999-4000-8000-00000000c501', 'entity_table', 'party',
+          'zz_probe_key', 'Probe', 'text', 1, true, false, 'standard', 'never', v_org, 'internal'),
+         ('11111111-9999-4000-8000-00000000c502', 'entity_table', 'hr_employee',
+          'zz_probe_key', 'Probe', 'number', 1, true, false, 'standard', 'never', v_org, 'internal');
+
+  v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c501'::uuid, false);
+  if position('custom_fields' in v_plan) = 0 or position('(custom->>' in v_plan) > 0 then
+    raise exception 'PART 9 — crm.party keeps its custom fields in custom_fields and the generator emitted %', v_plan
+      using hint = 'A hard-coded column name is right for half this database and builds an index over a column that does not exist for the other half.';
+  end if;
+  raise notice 'PART 9 —   crm.party      -> %', v_plan;
+
+  v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c502'::uuid, false);
+  if position('((custom->>' in v_plan) = 0 then
+    raise exception 'PART 9 — hr.employee keeps its custom fields in custom and the generator emitted %', v_plan;
+  end if;
+  raise notice 'PART 9 —   hr.employee    -> %', v_plan;
+
+  update platform.feature_knob set value = 'false'::jsonb
+   where feature = 'custom' and key = 'field_index_guard';
+  begin
+    perform platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c501'::uuid, false);
+    raise exception 'PART 9 — the guard is off and the platform generator produced DDL anyway';
+  exception when feature_not_supported then
+    get stacked diagnostics v_msg = message_text, v_hint = pg_exception_hint;
+    raise notice 'PART 9 —   guard off: % / %', v_msg, v_hint;
+  end;
+  raise notice 'PART 9 PASS — one generator, the column read from the catalogue for each table, and the same knob refusing it out loud when it is off.';
 
   raise notice '=== C-5 PASS — every clause above ran on the rehearsal branch. Rolling back. ===';
 end
