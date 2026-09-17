@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Settings2 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 
@@ -74,15 +74,17 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
     }
   };
 
-  // Cmd/Ctrl+Enter saves whatever is pending here, from anywhere in the detail
-  // — the chord is registered only while this pane is open, so a record type's
-  // own editor always wins the registration when one exists.
+  // Cmd/Ctrl+Enter saves whatever is pending here, from anywhere in the detail.
+  // The registration is a stable function reading the LATEST commit through a
+  // ref (the same shape `useDetailKeyboard` uses for its handlers), so moving
+  // the choice does not re-register, and the chord is registered only while
+  // this pane is open — a record type's own editor always wins when one exists.
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
   useEffect(() => {
     if (!open || !save) return undefined;
-    return registerSave(() => commit());
-    // `commit` closes over the pending choice; re-register when it moves.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, save, registerSave, pending, forThisType]);
+    return registerSave(() => commitRef.current());
+  }, [open, save, registerSave]);
 
   // The host has no writable setting bound (a client that reads the platform
   // setting but cannot write it). Absent, never a disabled-looking control.

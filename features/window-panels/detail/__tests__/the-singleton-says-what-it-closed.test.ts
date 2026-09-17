@@ -8,14 +8,15 @@
 //
 // The rule now: the replacement is announced, by name, with an Undo.
 
+import { recordToast } from "@/lib/toast";
+
 import { announceSingletonReplacement } from "../singletonReplacement";
 
 jest.mock("@/lib/toast", () => ({
   recordToast: { info: jest.fn() },
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { recordToast } = require("@/lib/toast") as { recordToast: { info: jest.Mock } };
+const info = recordToast.info as unknown as jest.Mock;
 
 const B = {
   type: "file",
@@ -29,7 +30,7 @@ const B = {
 const C = { type: "file", id: "cccccccc-0000-0000-0000-000000000000", seed: null, list: null };
 
 beforeEach(() => {
-  recordToast.info.mockClear();
+  info.mockClear();
 });
 
 describe("the detail singleton", () => {
@@ -44,8 +45,8 @@ describe("the detail singleton", () => {
     });
 
     expect(replaced).toBe(true);
-    expect(recordToast.info).toHaveBeenCalledTimes(1);
-    const [ref, message, options] = recordToast.info.mock.calls[0];
+    expect(info).toHaveBeenCalledTimes(1);
+    const [ref, message, options] = info.mock.calls[0];
     expect(ref).toEqual({ type: "file", id: B.id, title: "Signed contract.pdf" });
     expect(message).toContain("Signed contract.pdf");
     expect(message).toContain("window");
@@ -66,7 +67,7 @@ describe("the detail singleton", () => {
       surface: "docked panel",
       reopen: jest.fn(),
     });
-    const [, message] = recordToast.info.mock.calls[0];
+    const [, message] = info.mock.calls[0];
     expect(message).toContain("file bbbbbbbb");
   });
 
@@ -79,7 +80,7 @@ describe("the detail singleton", () => {
       reopen: jest.fn(),
     });
     expect(replaced).toBe(false);
-    expect(recordToast.info).not.toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled();
   });
 
   it("says nothing when nothing was open", () => {
@@ -91,6 +92,6 @@ describe("the detail singleton", () => {
       reopen: jest.fn(),
     });
     expect(replaced).toBe(false);
-    expect(recordToast.info).not.toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled();
   });
 });
