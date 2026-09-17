@@ -24,7 +24,8 @@
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { fileHandler } from "@/features/files/handler/handler";
 import { extractErrorMessage } from "@/utils/errors";
-import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
+import { AUDIO_API_ROUTES } from "../constants";
+import { AUDIO_LIMIT_KNOBS, resolveAudioLimit } from "../limits";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
 import { transcribeCloudFile } from "./speechApi";
 import {
@@ -47,10 +48,41 @@ interface UploadHandle {
   fileId: string;
 }
 
+/**
+ * The retry policy is three knobs (`media.transcription.upload_retry_*`), not
+ * constants: how hard we fight a flaky network is an opinion an organization
+ * may hold differently. When one cannot be read the attempt is made ONCE and
+ * the reason is on the record — never a silently invented retry budget.
+ */
+async function retryPolicy(): Promise<{
+  maxAttempts: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}> {
+  const [attempts, base, ceiling] = await Promise.all([
+    resolveAudioLimit(AUDIO_LIMIT_KNOBS.UPLOAD_RETRY_MAX_ATTEMPTS),
+    resolveAudioLimit(AUDIO_LIMIT_KNOBS.UPLOAD_RETRY_BASE_DELAY_MS),
+    resolveAudioLimit(AUDIO_LIMIT_KNOBS.UPLOAD_RETRY_MAX_DELAY_MS),
+  ]);
+  if (!attempts.resolved || !base.resolved || !ceiling.resolved) {
+    console.warn(
+      "[audioFallbackUpload] The audio upload retry policy could not be read; " +
+        "this upload will be attempted once without retries.",
+    );
+  }
+  return {
+    maxAttempts: attempts.resolved ? attempts.value : 1,
+    baseDelayMs: base.resolved ? base.value : 0,
+    maxDelayMs: ceiling.resolved ? ceiling.value : 0,
+  };
+}
+
 async function uploadWithRetry(
   blob: Blob,
-  maxAttempts: number = RETRY_CONFIG.MAX_ATTEMPTS,
+  maxAttemptsOverride?: number,
 ): Promise<UploadHandle> {
+  const policy = await retryPolicy();
+  const maxAttempts = maxAttemptsOverride ?? policy.maxAttempts;
   let lastError: Error | null = null;
 
   // Pre-resolve the hidden staging folder so the first upload doesn't race
@@ -102,8 +134,8 @@ async function uploadWithRetry(
         err instanceof Error ? err : new Error(extractErrorMessage(err));
       if (attempt < maxAttempts) {
         const delay = Math.min(
-          RETRY_CONFIG.BASE_DELAY_MS * Math.pow(2, attempt - 1),
-          RETRY_CONFIG.MAX_DELAY_MS,
+          policy.baseDelayMs * Math.pow(2, attempt - 1),
+          policy.maxDelayMs,
         );
         await sleep(delay);
       }

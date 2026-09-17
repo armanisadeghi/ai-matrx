@@ -259,11 +259,65 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 - **UI:** the **Devices tab** of the unified `audioControlWindow` (`AudioControlWindow`, titled **"Media"** — Playback / Recording / Camera / Devices tabs; the Camera tab belongs to `features/media-capture`) = `MediaDevicesPanel` (formerly `AudioDevicesPanel`; mic + speaker + camera pickers, independent mic/camera permission rows + Grant buttons, live "Test mic" meter, "Test speaker" tone, opt-in "Test camera" preview via a camera lease with a live resolution/fps readout — never auto-starts). Opened from the avatar-menu **Media** entry (`SETTINGS_ITEMS`); the `useOpenAudioDevices` opener targets the Devices tab via overlay `data`. The reusable `components/audio/MicDeviceMenu.tsx` caret sits next to the mic in `ProInput` / `ProTextarea`.
 - **A user declining mic permission is not a system error.** Classify `NotAllowedError` / legacy `PermissionDeniedError` with `isMicrophonePermissionDenial()` from `utils/microphone-diagnostics.ts`; show the repair path inline and reserve `console.error` for unexpected capture failures.
 
+## AUDIO LIMITS ARE KNOBS, AND THE TWO LANES ARE SEPARATE (2026-09-17)
+
+🚨 **No audio ceiling lives in code.** `features/audio/constants.ts` used to carry
+`MAX_FILE_SIZE_BYTES: 100 MB` and `MAX_DURATION_SECONDS: 3600`, so an expert with a 9-hour
+audiobook was refused at the door — while `aidream/aidream/services/audio/file_transcription.py`
+had for months been splitting arbitrarily long audio into provider-sized windows (`plan_chunks`)
+and reassembling it with shifted timestamps. A client literal was guarding a capability the
+server already had.
+
+- **`features/audio/limits.ts` is THE resolution point.** Every ceiling, threshold, cadence and
+  rate is a `platform.feature_knob` row under the feature **`media.transcription`**, seeded by
+  `migrations/audio_transcription_limits_knobs.sql` and resolved through the settings ladder
+  (`platform.knob_resolve` via `lib/scoped-config/sessionKnob`). Admin: **Users & Access →
+  Limits & Knobs**. Organization: **Organization settings → Configuration**. All thirteen keys
+  are `organization`-overridable and none is user-overridable (a person raising their own
+  ceiling spends the organization's money); `estimate_confirm_min_duration_seconds` is
+  `lower_only` — an org may demand MORE confirmation, never less.
+- **TWO LANES, never one number.** `uploadLimits()` reads `upload_max_duration_seconds` (24 h)
+  and `upload_max_file_size_bytes` (5 GB) — a file we hand the server, which chunks it, so the
+  ceiling only catches an obviously wrong file. `recordingLimits()` reads
+  `recording_max_duration_seconds` (4 h), `recording_max_file_size_bytes` (512 MB) and
+  `recording_warn_duration_seconds` — a LIVE browser capture held in tab memory, a genuinely
+  smaller practical ceiling.
+- **There is NO code fallback ceiling.** A knob that cannot be resolved returns
+  `{ resolved: false, reason }`; the surface SAYS so (RecordingInterface shows an amber notice
+  and reports "no limit applied") rather than quietly applying a number nobody set.
+- **A refusal names the limit and the remedy.** `overSizeMessage` / `overDurationMessage` print
+  the actual size or `h:mm:ss`, the lane it belongs to, and where it is raised. "File too large"
+  is banned.
+- **What is NOT a knob, and why** (documented in `constants.ts` itself): Vercel's 4.5 MB
+  request-body limit and the 4 MB chunk size derived from it (a hard platform limit), the
+  measured ~16 KB/s webm/opus bitrate used to project a recording's size, the 1 KB
+  silence floor, and the retryable HTTP status list.
+- **Guard:** `features/audio/__tests__/audio-limits-are-knobs.test.ts` — fails if `constants.ts`
+  reintroduces a bare duration/size cap, if a retired cap is still exported, if a knob key is
+  missing from the seed migration, or if the resolver grows a numeric default. Proven
+  failing-then-passing; the exact red output is in its docstring.
+
+## THE EXPENSIVE-CLICK GATE ON TRANSCRIPTION (2026-09-17)
+
+Transcription bills by the hour of audio, so a long file that starts transcribing the moment it
+finishes uploading is a silent spend. `features/audio/transcriptionSpendGate.ts` is the ONE gate:
+`probeAudioDurationSeconds(blob)` measures it with the browser's own decoder, and
+`confirmTranscriptionSpend` shows **length (h:mm:ss), estimated cost, estimated time** and waits
+for an answer whenever the audio is at least `estimate_confirm_min_duration_seconds` long
+(default 10 min). There is no server-side transcription cost endpoint — `/audio/transcribe*`
+quotes nothing — so the figure is `duration × estimated_cost_per_audio_hour_usd` (0.12, set
+deliberately above what Groq charges) and is labelled an estimate everywhere. An unmeasurable
+file and an unreadable threshold both CONFIRM; guessing downward is how a long file gets
+transcribed without approval. Consumers: `CreateTranscriptModal` (upload lane and recording
+lane) and `transcript-studio`'s `AudioImportDialog` (file and URL lanes).
+
 ## Test coverage (honest)
 
 Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and transcription finalization decisions; the device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. MediaRecorder lifecycle, playback queue, session registry, TTS hooks, and providers still require manual/in-browser verification — do not claim otherwise.
 
 ## Change log
+
+- `2026-09-17` — **Audio ceilings became knobs; transcription stopped spending silently.** The 100 MB / 60-minute literals in `features/audio/constants.ts` are gone: thirteen `platform.feature_knob` rows under `media.transcription` (`migrations/audio_transcription_limits_knobs.sql`, applied and verified live) now carry the upload lane (24 h / 5 GB), the separate browser-recording lane (4 h / 512 MB / warn at 3 h 40 m), the dictation cadence and chunk timeout, the retry policy, and the two estimate rates — all read through the new `features/audio/limits.ts`, all organization-overridable, none user-overridable. Added `features/audio/transcriptionSpendGate.ts`: length + estimated cost + estimated time, confirmed before transcription runs on anything over ten minutes, wired into both `CreateTranscriptModal` lanes and `transcript-studio`'s `AudioImportDialog`. Refusals now name the actual limit and the remedy. Guard: `features/audio/__tests__/audio-limits-are-knobs.test.ts`, proven failing then passing.
 
 - `2026-09-12` — **Dictation can be started from outside the field.** `useMicField` now exposes `startDictation()` / `stopDictation()` as the one verb set (the mic button's `handleVoiceClick` is written in terms of them), and `ProTextarea` forwards them plus `isDictating()` on its DOM node as `ProTextareaElement` expandos. A programmatic start on a voice-disabled, disabled, mic-less, recorder-less or still-finalizing box returns a named reason with a sentence AND raises it as a toast + `onTranscriptionError` — never a silent no-op. Zero change for every existing consumer (same props, same ref shape, same recorder). First consumer: the Question Desk's **V** key. Guard: `components/official/ProTextarea.dictation-handle.test.tsx` (proven failing before the change).
 
