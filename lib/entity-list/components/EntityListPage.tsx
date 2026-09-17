@@ -39,6 +39,13 @@ import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
+import {
+  EntityBulkActions,
+  EntityBulkSelectAllBanner,
+  EntityCardsSelectAll,
+} from "./EntityBulkBar";
+import { useEntityListSelection } from "../useEntityListSelection";
+import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -375,6 +382,143 @@ export function EntityListPage<TRow>({
         ? "rows"
         : "table";
 
+  // ── BULK SELECTION ────────────────────────────────────────────────────────
+  // Entirely absent unless the surface declared `bulkActions`. See
+  // ../selection.ts for the vocabulary and ../useEntityListSelection.ts for why
+  // the state is local rather than a slice.
+  const bulkActions = config.bulkActions ?? [];
+  const bulkEnabled = bulkActions.length > 0;
+  const bulkNoun = config.bulkSelection?.noun ?? singular;
+  const selection = useEntityListSelection<TRow>({
+    enabled: bulkEnabled,
+    rows: list.rows,
+    total: list.total,
+    query: list.query,
+    sort: {
+      sort: effectiveSort.sort,
+      direction: effectiveSort.direction,
+      favoritesFirst: prefs.favoritesFirst,
+      pageSize: prefs.pageSize,
+    },
+    service: config.service,
+    getRowId: config.getRowId,
+    ...(config.bulkSelection?.isRowSelectable
+      ? { isRowSelectable: config.bulkSelection.isRowSelectable }
+      : {}),
+    selectAllMatching: config.bulkSelection?.selectAllMatching ?? false,
+  });
+
+  const bulkButtons = bulkEnabled ? (
+    <EntityBulkActions
+      actions={bulkActions}
+      selection={selection}
+      noun={bulkNoun}
+      onRemoveRows={(ids) => ids.forEach((id) => list.removeRow(id))}
+      onRefresh={list.refresh}
+    />
+  ) : null;
+
+  // The table owns the bar (count + Clear + copy-of-selection + these buttons);
+  // every other view has none, so there the banner carries them instead.
+  const tableSelection: MatrxDataTableSelectionConfig<TRow> | undefined =
+    bulkEnabled
+      ? {
+          selectedIds: selection.ids,
+          onSelectedIdsChange: selection.setIds,
+          noun: bulkNoun,
+          ...(config.bulkSelection?.isRowSelectable
+            ? { isRowSelectable: config.bulkSelection.isRowSelectable }
+            : {}),
+          actions: () => bulkButtons,
+        }
+      : undefined;
+
+  // 🚨 THE KEYBOARD, AND WHY IT IS SCOPED THE WAY IT IS. `x`, cmd/ctrl-A and
+  // Escape are the three every list worth using has (Gmail, Linear, Airtable),
+  // and all three are also keys the rest of the app owns — a page that grabs
+  // cmd-A globally makes selecting text impossible. So each one fires only
+  // while this list pane holds the focus or the pointer, never while a text
+  // field has focus, and never while a dialog is open on top.
+  const paneRef = useRef<HTMLDivElement | null>(null);
+  const pointerInPaneRef = useRef(false);
+  const hoveredRowIdRef = useRef<string | null>(null);
+  // Every handler on the controller is a fresh function each render (the
+  // primitive's rule — the React Compiler owns memoization), so the listener
+  // reads the latest through a ref instead of re-subscribing on every render.
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
+  useEffect(() => {
+    if (!bulkEnabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const pane = paneRef.current;
+      const live = selectionRef.current;
+      if (!pane) return;
+      if (event.altKey) return;
+      // A MODAL on top owns the keyboard — Escape belongs to it, not to the
+      // list underneath. Judged on `aria-modal` and an open state, never on the
+      // bare role: a non-modal window panel or a popover parked over the page
+      // must not leave the list's shortcuts permanently dead, and a Radix layer
+      // that is animating OUT still carries its role with `data-state="closed"`
+      // (which is how Escape measured dead right after a confirm closed).
+      const modalOnTop = Array.from(
+        document.querySelectorAll("[role='dialog'], [role='alertdialog']"),
+      ).some(
+        (el) =>
+          el.getAttribute("aria-modal") === "true" &&
+          el.getAttribute("data-state") !== "closed",
+      );
+      if (modalOnTop) return;
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        (active.isContentEditable ||
+          active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.tagName === "SELECT")
+      ) {
+        return;
+      }
+      const focusInPane = active instanceof Node && pane.contains(active);
+      if (!focusInPane && !pointerInPaneRef.current) return;
+
+      if (event.key === "Escape") {
+        if (live.count === 0) return;
+        event.preventDefault();
+        live.clear();
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        live.selectLoaded();
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+      if (event.key.toLowerCase() === "x") {
+        // The row under the caret, else the row under the pointer. `x` with
+        // neither has no row to mean, and does nothing rather than guessing.
+        const focusedRow =
+          active instanceof Element
+            ? active.closest("[data-row-id]")?.getAttribute("data-row-id")
+            : null;
+        const rowId = focusedRow ?? hoveredRowIdRef.current;
+        if (!rowId) return;
+        const row = list.rows.find(
+          (candidate) => config.getRowId(candidate) === rowId,
+        );
+        if (!row) return;
+        if (config.bulkSelection?.isRowSelectable?.(row) === false) return;
+        event.preventDefault();
+        live.toggleId(rowId);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // `list.rows` and the config are read through the closure on purpose: the
+    // listener is re-attached whenever the loaded page changes so `x` can never
+    // toggle a row that is no longer on screen.
+  }, [bulkEnabled, list.rows, config]);
+
   const altViewProps = {
     rows: list.rows,
     density: prefs.density,
@@ -398,7 +542,25 @@ export function EntityListPage<TRow>({
   };
 
   const page = (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div
+      ref={paneRef}
+      className="flex h-full flex-col overflow-hidden"
+      onMouseEnter={() => {
+        pointerInPaneRef.current = true;
+      }}
+      onMouseLeave={() => {
+        pointerInPaneRef.current = false;
+        hoveredRowIdRef.current = null;
+      }}
+      onMouseOver={(event) => {
+        const target = event.target;
+        hoveredRowIdRef.current =
+          target instanceof Element
+            ? (target.closest("[data-row-id]")?.getAttribute("data-row-id") ??
+              null)
+            : null;
+      }}
+    >
       {/*
         The scope tabs and toolbar are STATIC interactive content at the top, so
         they must clear the glass header rather than scroll behind it — hence
@@ -489,6 +651,34 @@ export function EntityListPage<TRow>({
             )}
           </div>
         )}
+
+        {/*
+          THE ONE SENTENCE ABOUT WHAT "ALL" MEANS. Under the toolbar, where
+          Gmail puts it, and above the rows it is describing. It renders
+          nothing at all until something is selected — and nothing ever for a
+          surface that declared no bulk actions.
+        */}
+        <EntityBulkSelectAllBanner
+          selection={selection}
+          noun={bulkNoun}
+          plural={plural}
+          selectAllMatchingDeclared={
+            config.bulkSelection?.selectAllMatching ?? false
+          }
+          // The table has its own bar for these; the cards/rows views do not.
+          {...(view === "table" ? {} : { actions: bulkButtons })}
+        />
+
+        {/*
+          THE PHONE'S SELECT-ALL. Below `sm` the table's header row — and the
+          select-all checkbox in it — is replaced by stacked cards, so without
+          this a phone could only select a page one tap at a time and never
+          reached the "all N matching" offer at all. Hidden at every width where
+          the real header exists. Only the table view renders cards.
+        */}
+        {view === "table" ? (
+          <EntityCardsSelectAll selection={selection} noun={bulkNoun} />
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
@@ -511,6 +701,7 @@ export function EntityListPage<TRow>({
             hiddenColumns={prefs.hiddenColumns}
             onSaveEdits={saveEdits}
             emptyState={resolvedEmptyState}
+            {...(tableSelection ? { selection: tableSelection } : {})}
             onQueryChange={(next) => {
               if (
                 next.sort !== effectiveSort.sort ||

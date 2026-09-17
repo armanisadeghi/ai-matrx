@@ -217,19 +217,99 @@ export function segmentWork(
   return segments;
 }
 
-/** A selection inside one rendered run, resolved to work-text offsets. */
-export function offsetOf(node: Node | null, offsetInNode: number): number | null {
-  let element: HTMLElement | null =
-    node?.nodeType === Node.ELEMENT_NODE
-      ? (node as HTMLElement)
-      : (node?.parentElement ?? null);
-  while (element && element.dataset?.workStart === undefined) {
-    element = element.parentElement;
+/**
+ * A selection boundary, resolved to an offset in the WORK TEXT.
+ *
+ * 🚨 MEASURED, NOT GUESSED (cold walk 7, finding 2, 2026-09-17).
+ *
+ * This used to walk up to the nearest `data-work-start` element and return
+ * `base + offsetInNode`. That is only correct when the boundary is inside that
+ * element's own single text node, and a `Selection` hands back three other
+ * shapes routinely:
+ *
+ *   * an ELEMENT node, where `offset` is a CHILD INDEX, not a character count;
+ *   * a text node nested deeper than the marked run, where the characters
+ *     before it inside that run are silently not counted;
+ *   * a `focusNode` OUTSIDE every run — which is what a triple-click produces,
+ *     because Chrome ends a paragraph selection at the start of the NEXT
+ *     block. The walk-up then landed on some ancestor and returned its base
+ *     plus zero, a number with no relationship to where the selection ended.
+ *
+ * Triple-clicking a line is how a person grabs a whole line, and on the live
+ * page it put the wrong text in the "the bit you highlighted" box: a triple
+ * click on "Contingency: 10%" produced "Contingency", and one on "Cabinet
+ * installation: $11,400" swept up a trailing character past the end. An
+ * Expert then types a correction about the contingency and it is recorded,
+ * quoted and sent to the server against a passage they did not mark — which is
+ * exactly what cold walk 7 saw and could not rule out as its own artifact.
+ * (It is not one: a real mouse drag over the same three passages is exact,
+ * before and after this change.)
+ *
+ * A `Range` from the container's start to the boundary answers the question
+ * directly and correctly for every one of those shapes: its text IS the
+ * characters before the boundary. The container renders exactly `workText` and
+ * nothing else, so its length is the offset.
+ */
+export function offsetOf(
+  container: HTMLElement,
+  node: Node | null,
+  offsetInNode: number,
+): number | null {
+  if (!node || !container.contains(node)) return null;
+  try {
+    const range = document.createRange();
+    range.setStart(container, 0);
+    range.setEnd(node, offsetInNode);
+    return range.toString().length;
+  } catch {
+    // A boundary the DOM refuses to measure is not one we may guess at.
+    return null;
   }
-  if (!element) return null;
-  const base = Number(element.dataset.workStart);
-  if (!Number.isFinite(base)) return null;
-  return base + offsetInNode;
+}
+
+/**
+ * The passage a selection covers INSIDE the work, as `[start, end)` offsets.
+ *
+ * 🚨 A GESTURE THAT BEGAN IN THE WORK IS NEVER DROPPED (cold walk 7, finding
+ * 2). A triple-click on the last line of the work ends at the start of the
+ * NEXT block — measured live, `focusNode` was a `<p>` belonging to the panel
+ * BELOW the work, entirely outside the container. Reading the two boundaries
+ * independently then produced `null` for the end and the whole capture was
+ * abandoned in silence: the Expert triple-clicked a line, the line highlighted
+ * in their browser, and nothing appeared. A control is absent or honest.
+ *
+ * So the selection's own range is CLAMPED to the container instead. Anything
+ * of it that lies inside the work is the passage; anything outside is not our
+ * text and is simply cut off. Whitespace a line gesture sweeps up is trimmed,
+ * because it would otherwise be quoted back to the Expert as part of what they
+ * marked.
+ */
+export function selectionSpan(
+  container: HTMLElement,
+  selection: Selection,
+  workLength: number,
+): { start: number; end: number } | null {
+  if (selection.rangeCount === 0) return null;
+  const whole = selection.getRangeAt(0);
+  const inside = document.createRange();
+  inside.selectNodeContents(container);
+  const clamped = whole.cloneRange();
+  try {
+    if (clamped.compareBoundaryPoints(Range.START_TO_START, inside) < 0) {
+      clamped.setStart(inside.startContainer, inside.startOffset);
+    }
+    if (clamped.compareBoundaryPoints(Range.END_TO_END, inside) > 0) {
+      clamped.setEnd(inside.endContainer, inside.endOffset);
+    }
+  } catch {
+    return null;
+  }
+  const head = offsetOf(container, clamped.startContainer, clamped.startOffset);
+  if (head === null) return null;
+  const clamp = (n: number) => Math.max(0, Math.min(n, workLength));
+  let start = clamp(head);
+  let end = clamp(head + clamped.toString().length);
+  return { start, end };
 }
 
 export function RedPenDialog({
@@ -343,11 +423,13 @@ export function RedPenDialog({
     if (!selection || selection.isCollapsed) return;
     const container = workRef.current;
     if (!container || !container.contains(selection.anchorNode)) return;
-    const a = offsetOf(selection.anchorNode, selection.anchorOffset);
-    const b = offsetOf(selection.focusNode, selection.focusOffset);
-    if (a === null || b === null) return;
-    const start = Math.min(a, b);
-    const end = Math.max(a, b);
+    const span = selectionSpan(container, selection, workText.length);
+    if (!span) return;
+    let { start, end } = span;
+    // Whitespace a line-selection gesture sweeps up is not part of the passage
+    // the Expert marked, and it would be quoted back to them as if it were.
+    while (end > start && /\s/.test(workText[end - 1] ?? "")) end -= 1;
+    while (start < end && /\s/.test(workText[start] ?? "")) start += 1;
     if (end - start < 2) return;
     if (
       corrections.some((c) => start < c.end && end > c.start)
