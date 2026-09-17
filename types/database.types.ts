@@ -53280,6 +53280,7 @@ export type Database = {
       }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
+      is_client_lane: { Args: never; Returns: boolean }
       is_discoverable: {
         Args: {
           p_id: string
