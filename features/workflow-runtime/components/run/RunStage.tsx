@@ -86,6 +86,9 @@ import { InterruptCard, RunResultCard } from "../readout-parts";
 import { RunSurfaceView } from "../RunSurfaceView";
 import { RunActivityFeed } from "./RunActivityFeed";
 import { RunControlBar } from "./RunControlBar";
+import { ExpertSignOff } from "@/features/masterwork/review/ExpertSignOff";
+import { MASTERWORK_RUN_SUBJECT_TYPE } from "@/features/masterwork/review/signature";
+
 import { RunDeliverables } from "./RunDeliverables";
 import { RunFailureCard } from "./RunFailureCard";
 import { RunHero } from "./RunHero";
@@ -391,6 +394,26 @@ export function RunStage({
           deliverables.length === 0 &&
           declaredPanel.length === 0 ? (
             <RunResultCard runId={runId} />
+          ) : null}
+
+          {/* 🚨 "THAT'S MINE" LIVES ON THE RUN ITSELF (cold walk 5, finding 5).
+              The ownership sign-off shipped on the Encore shelf's run ROWS and
+              on the Try box, and this — the page a finished Masterwork actually
+              opens onto, the one screen whose whole job is to be the
+              trustworthy record of a decision — had no sign-off control
+              anywhere on it. An Expert who read her result here and wanted to
+              say "yes, that one was mine" had nowhere to say it, and the most
+              important signal the system can be given was thrown away.
+              ONE control, never a second copy: the same component, the same
+              `platform.output_feedback` row as every other surface. Only a
+              FINISHED run — there is nothing to sign on a run that failed. */}
+          {status === "completed" ? (
+            <section className="rounded-xl border border-border bg-card/40 px-3 py-2.5">
+              <ExpertSignOff
+                subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+                subjectId={runId}
+              />
+            </section>
           ) : null}
         </div>
       </div>

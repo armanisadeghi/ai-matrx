@@ -176,6 +176,27 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-17 — **A STEP LABEL IS DECLARED, NEVER SCRAPED — and a finished run
+  can be signed** (Masterwork cold walk 5, findings 5 and 5b). *The labels:* the
+  fan-out lanes in "THE PLAN" preferred a node's raw stream `textTail` over the
+  `progress.message` the engine declares, so a structured-output step printed
+  its own serialization as five step labels in front of a first-time Expert —
+  reproduced live on a brand-new run on 2026-09-17 as
+  `#1 dence": "", "fix_hint": "" } ], "content_id": "v1"…`. `laneDetail()`
+  ([`components/run/laneDetail.ts`](./components/run/laneDetail.ts)) puts the
+  declared line first and REFUSES a payload fragment outright rather than
+  truncating it into something that looks like prose; a lane with nothing honest
+  to say says its duration, or nothing. Guard:
+  `__tests__/a-step-label-is-never-a-payload.test.ts`, red against the old
+  expression on the four tails captured live. *The sign-off:* the ownership
+  control shipped on the Encore shelf's run rows and the Try box but not on
+  `/workflows/runs/<id>` — the page a finished Masterwork actually opens onto —
+  so there was nowhere to say "that one was mine". `RunStage` now renders the
+  ONE `ExpertSignOff` beneath the deliverables of a `completed` run; same
+  component, same `platform.output_feedback` row, never a second copy. Verified
+  live on brand-new run `a1105691`.
+
+
 - 2026-09-11 — **A refused run form shows the server's real reason.** A
   workflow that fails the server's compile gate answers `/run-form` with 400,
   and every surface printed a transport sentence — "Bad request. Please check

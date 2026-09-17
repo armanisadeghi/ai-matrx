@@ -41,9 +41,7 @@ import type {
   NodeInvocationState,
   WorkflowRunWorkSet,
 } from "../../redux/workflow-runs.slice";
-
-/** How much of a lane's tail is worth showing in a rail-width lane. */
-const LANE_TAIL_CHARS = 90;
+import { laneDetail } from "./laneDetail";
 
 /**
  * The sibling lanes of ONE node. Renders nothing at all for a node that ran
@@ -79,11 +77,9 @@ export function RunFanOutLanes({
 
 function Lane({ lane }: { lane: NodeInvocationState }) {
   const running = lane.phase === "running" || lane.phase === "retrying";
-  const tail = lane.textTail.slice(-LANE_TAIL_CHARS).trim();
-  const detail =
-    lane.error?.message ??
-    (tail || lane.progress?.message) ??
-    (lane.durationMs !== null ? `${Math.round(lane.durationMs)} ms` : null);
+  // 🚨 A LABEL IS DECLARED, NEVER SCRAPED — see `laneDetail.ts` for the run
+  // page that printed `"fix_hint": "" } ], "content_id"…` as five step labels.
+  const detail = laneDetail(lane);
 
   return (
     <li
