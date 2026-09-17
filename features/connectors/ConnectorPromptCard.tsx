@@ -32,7 +32,18 @@ import { ConnectorMark } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import type { ConnectorProviderConfig } from "./provider-config";
 
-export const CONNECTOR_PROMPT_RESURFACE_KNOB = "connectors.prompt.resurface_days";
+/**
+ * 🚨 THE REGISTER'S OWN PAIR, not a dotted string (VERIFY-U-P2-R4, V13-2). The
+ * live row is `feature = 'connectors'`, `key = 'prompt.resurface_days'`; read as
+ * one dotted string it was split at the last dot into
+ * `('connectors.prompt','resurface_days')`, which the database answered with
+ * `P0001 … is not seeded` on every mount of this card, so the knob PLAN §7 rules
+ * never resolved and the card silently behaved as "never resurface".
+ */
+export const CONNECTOR_PROMPT_RESURFACE_KNOB = {
+  feature: "connectors",
+  key: "prompt.resurface_days",
+} as const;
 
 function daysSince(iso: string, now: number): number {
   const at = Date.parse(iso);
