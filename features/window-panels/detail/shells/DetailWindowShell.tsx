@@ -13,13 +13,13 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import type { DetailWindowShellProps } from "@/lib/detail/host";
 import {
   DETAIL_URL_AS_ARG,
   DETAIL_URL_TYPE_KEY,
   detailListToUrlArgs,
   panelUrlReserveBytes,
-} from "@ai-matrx/detail";
-import type { DetailWindowShellProps } from "@ai-matrx/detail/react";
+} from "@/lib/detail/presentation";
 import { resolvedListContextMax } from "../listContextCap";
 
 /** What the address this window's token joins already costs (NEW-19). */

@@ -1,6 +1,6 @@
 // app/(core)/detail/[type]/[id]/page.tsx
 //
-// The Detail primitive's PAGE presentation (`@ai-matrx/detail`): the same core a
+// The Detail primitive's PAGE presentation (`lib/detail`): the same core a
 // record shows in its window and its docked panel, as a full route body under
 // the shell header. Opened by `useOpenDetail({ presentation: "page" })` or by
 // a person's `ui.detail.default_presentation` setting; never linked to from a

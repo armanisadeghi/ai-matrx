@@ -27,14 +27,15 @@ import { createRoot } from "react-dom/client";
 
 import {
   DetailDockedPresentation,
-  DetailHostProvider,
   DetailPagePresentation,
   DetailWindowPresentation,
-  type DetailDockedShellProps,
-  type DetailHostPorts,
-  type DetailPageShellProps,
-  type DetailWindowShellProps,
-} from "@ai-matrx/detail/react";
+} from "@/lib/detail/presentations";
+import { DetailHostProvider, type DetailHostPorts } from "@/lib/detail/host";
+import type {
+  DetailDockedShellProps,
+  DetailPageShellProps,
+  DetailWindowShellProps,
+} from "@/lib/detail/host";
 import { resolveItemDetailType } from "../detail";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

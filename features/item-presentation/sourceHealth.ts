@@ -6,12 +6,12 @@
  * (expired grant, revoked in Google, quota) writes the row and shows on every
  * dependent record's health strip with the same Reconnect."*
  *
- * WHY THIS FILE EXISTS. The Detail primitive (`@ai-matrx/detail`) has carried the strip since its first
+ * WHY THIS FILE EXISTS. `lib/detail` has carried the strip since its first
  * commit and NO record could render it, because the one producer of
  * registrations in app code (`resolveItemDetailType`) never set `health`. Four
  * verification rounds could not answer "does a synced record tell the truth from
  * a live `capability_health` row?" (VERIFY-U-P1-R4). This is that producer, and
- * it lives HERE — in the host's registration source — because the package is a
+ * it lives HERE — in the host's registration source — because `lib/detail` is a
  * package waiting for a `mv` and may never import `features/**`.
  *
  * IT IS NOT A SECOND READER OF `capability_health`. The connectors feature owns
@@ -45,7 +45,11 @@ import {
   listGoogleCapabilities,
   listGoogleConnectionInventory,
 } from "@/features/marketing/google/service";
-import type { DetailHealthContext, DetailRow, DetailSourceHealth } from "@ai-matrx/detail";
+import type {
+  DetailHealthContext,
+  DetailRow,
+  DetailSourceHealth,
+} from "@/lib/detail/types";
 
 /** Columns a row names its provider in. */
 const PROVIDER_COLUMNS = ["provider", "source_provider", "sync_provider"] as const;
@@ -61,42 +65,20 @@ const REFRESHED_COLUMNS = ["last_refreshed_at", "synced_at", "external_modified_
 const SOURCE_URL_COLUMNS = ["web_url", "external_url", "source_url"] as const;
 
 /**
- * Item-presentation type tokens whose spelling differs from the connectors'
- * resource-type names. ONLY the aliases live here; every resource type a product
- * declares attachable arrives from the config below, so the next attachable type
- * cannot be forgotten by the strip.
+ * The product a record type belongs to when its own row does not say. Keys are
+ * item-presentation type tokens; values are `ConnectorProduct.key`.
  */
-const PRODUCT_BY_ITEM_TYPE_ALIAS: Readonly<Record<string, string>> = {
+const PRODUCT_BY_ITEM_TYPE: Readonly<Record<string, string>> = {
   linked_document: "workspace_files",
   linked_spreadsheet: "workspace_files",
+  google_document: "workspace_files",
+  google_spreadsheet: "workspace_files",
   calendar_event: "calendar",
   contact: "contacts",
   email: "gmail",
   gsc_property: "search_console",
   ga4_property: "analytics",
 };
-
-/**
- * The product a record type belongs to when its own row does not say. DERIVED
- * from the connectors' own product config — every `attachableResourceTypes`
- * entry of every product maps to that product's key — plus the aliases above.
- *
- * 🚨 It was a hand-typed record until 2026-09-17 (Bugbot round 18, frontend PR
- * 228): F-38 made a picked Slides deck a first-class resource type
- * (`google_presentation`) under `workspace_files`, and the strip resolved it to
- * NO product, silently. The census showed three more declared types in the same
- * state (`search_console_property`, `analytics_property`, `youtube_channel`).
- * `features/item-presentation/__tests__/every-attachable-type-has-a-product.test.ts`
- * walks the config, so a list nobody remembers to extend is no longer possible.
- */
-const PRODUCT_BY_ITEM_TYPE: Readonly<Record<string, string>> = Object.freeze({
-  ...Object.fromEntries(
-    GOOGLE_PROVIDER.products.flatMap((product) =>
-      product.attachableResourceTypes.map((type) => [type, product.key] as const),
-    ),
-  ),
-  ...PRODUCT_BY_ITEM_TYPE_ALIAS,
-});
 
 function stringColumn(row: DetailRow, columns: readonly string[]): string | null {
   for (const column of columns) {

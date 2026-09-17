@@ -240,9 +240,7 @@ const COMPUTED_REFS: Record<string, string> = {
   "features/masterwork/capture-plan/useCapturePlanSettings.ts":
     "one local `read(key)` helper over its own declared KNOB_* constants",
   "features/window-panels/detail/DetailHost.tsx":
-    "forwards the Detail primitive's declared KNOB constants (`DETAIL_PRESENTATION_KNOB`, `DETAIL_PRESENTATION_BY_TYPE_KNOB`, `DETAIL_LIST_CONTEXT_MAX_KNOB` from `@ai-matrx/detail`: `ui.detail.default_presentation`, `ui.detail.presentation_by_type`, `ui.detail.list_context_max_ids`) through a local helper; the rows are seeded by migrations/detail_*_knob.sql",
-  "features/window-panels/detail/listContextCap.ts":
-    "reads the ONE address the Detail primitive declares for the list cap — `DETAIL_LIST_CONTEXT_MAX_KNOB` from `@ai-matrx/detail`, `ui.detail.list_context_max_ids`, seeded by migrations/detail_list_context_max_knob.sql",
+    "forwards its own KNOB constants through a local helper",
 };
 
 describe("the knob address", () => {

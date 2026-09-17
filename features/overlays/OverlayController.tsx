@@ -4603,7 +4603,7 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* detailWindow — the Detail primitive's window presentation (@ai-matrx/detail) */}
+      {/* detailWindow — the Detail primitive's window presentation (lib/detail) */}
       {(() => {
         const isOpen = isOpenById.detailWindow;
         if (!isOpen) return null;
@@ -4664,7 +4664,7 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* detailDocked — the Detail primitive's docked presentation (@ai-matrx/detail) */}
+      {/* detailDocked — the Detail primitive's docked presentation (lib/detail) */}
       {(() => {
         const isOpen = isOpenById.detailDocked;
         if (!isOpen) return null;

@@ -37,14 +37,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { useDetailHost } from "@/lib/detail/host";
+import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { detailInstanceKey } from "@/lib/detail/presentation";
 import {
   DETAIL_PRESENTATION_KNOB,
-  detailInstanceKey,
   type DetailListContext,
   type DetailPresentation,
   type DetailRef,
-} from "@ai-matrx/detail";
-import { useDetailHost, useOpenDetail } from "@ai-matrx/detail/react";
+} from "@/lib/detail/types";
 import { detailPageHref } from "@/features/window-panels/detail/DetailHost";
 
 type FileRow = { id: string; file_name: string; mime_type: string | null };

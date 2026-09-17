@@ -16,12 +16,13 @@
 import * as React from "react";
 import { act } from "react";
 
-import type { DetailPresentation } from "@ai-matrx/detail";
-import { DetailPresentationPane, useDetailCore } from "@ai-matrx/detail/react";
-import { instance, makePortsWith, mount } from "@ai-matrx/detail/testing";
+import { DetailPresentationPane } from "@/lib/detail/core/DetailPresentationPane";
+import { useDetailCore } from "@/lib/detail/core/useDetailCore";
+import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { createClient } from "@/utils/supabase/client";
 
+import type { DetailPresentation } from "@/lib/detail/types";
 
 import { savePresentation } from "../savePresentation";
 
@@ -29,9 +30,6 @@ jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/redux/store-singleton", () => ({ getStoreSingleton: jest.fn() }));
 
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-
-// The package's stub-port seat, bound to THIS runner's mock factory.
-const makePorts = makePortsWith(jest.fn);
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const USER = "22222222-2222-4222-8222-222222222222";

@@ -5,7 +5,7 @@
  *
  * Four bespoke openers stay bespoke (agent run, note info, file preview,
  * structured-list manager); everything else goes to the Detail primitive
- * (`@ai-matrx/detail`, `useOpenDetail`), which yields window / docked / page from
+ * (`lib/detail`, `useOpenDetail`), which yields window / docked / page from
  * the item registry's one entry per type.
  *
  * Openers are React hooks, so this lives in a hook (not the data registry).
@@ -27,7 +27,7 @@ import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindo
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
-import { useOpenDetail } from "@ai-matrx/detail/react";
+import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 
 import { getItemConfig } from "./registry";
 import type { ItemType } from "./types";
@@ -56,7 +56,7 @@ export function useOpenItemPresentation() {
       if (!config.open) return false;
 
       // Generic fallback: any recognized type without a bespoke window opens
-      // the Detail primitive (@ai-matrx/detail) — window by default, docked or page
+      // the Detail primitive (lib/detail) — window by default, docked or page
       // per the person's `ui.detail.default_presentation` setting. It fetches
       // the full row when a detailSource is declared, else shows the seed.
       const openGenericDetail = () => {

@@ -10,8 +10,9 @@
 
 "use client";
 
-import type { DetailRef } from "@ai-matrx/detail";
-import { DetailDockedPresentation, DetailHostProvider } from "@ai-matrx/detail/react";
+import { DetailHostProvider } from "@/lib/detail/host";
+import { DetailDockedPresentation } from "@/lib/detail/presentations";
+import type { DetailRef } from "@/lib/detail/types";
 import { DetailDockedShell } from "@/features/window-panels/detail/shells/DetailDockedShell";
 import { toDetailInstanceData } from "@/features/window-panels/detail/detailOverlayData";
 import { DETAIL_TYPE_BINDING } from "@/features/window-panels/detail/detailTypeBinding";

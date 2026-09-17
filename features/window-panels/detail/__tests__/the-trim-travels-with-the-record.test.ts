@@ -6,9 +6,14 @@
 // docked panel — or take the Undo that reopens a replaced record — and the
 // surface presents 200 records as the whole list, silently. Two fields.
 
-import { readDetailOverlayData, toDetailInstanceData } from "../detailOverlayData";
+import {
+  readDetailOverlayData,
+  toDetailInstanceData,
+  encodeListQuery,
+  decodeListQuery,
+} from "../detailOverlayData";
 import { overlayPayloadForDetail } from "../openDetailSingleton";
-import { decodeListQuery, encodeListQuery, type DetailInstanceData } from "@ai-matrx/detail";
+import type { DetailInstanceData } from "@/lib/detail/types";
 
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

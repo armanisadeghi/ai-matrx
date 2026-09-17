@@ -11,7 +11,10 @@
 // cold cache uses the module default and warms itself for the next href, which
 // is why `warmPresentation` asks for this key too.
 
-import { DETAIL_LIST_CONTEXT_MAX_KNOB, detailListContextMax } from "@ai-matrx/detail";
+import {
+  DETAIL_LIST_CONTEXT_MAX_KNOB,
+  detailListContextMax,
+} from "@/lib/detail/types";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 export function resolvedListContextMax(): number {

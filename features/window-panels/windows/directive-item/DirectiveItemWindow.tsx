@@ -28,7 +28,7 @@
  *   Raw — the item as JSON, for the reader who wants the literal payload.
  *
  * The item does NOT exist in the database yet, which is exactly why this cannot
- * be the Detail primitive's window (`@ai-matrx/detail`, which fetches a row by id). The value in front of you is
+ * be the Detail primitive's window (`lib/detail`, which fetches a row by id). The value in front of you is
  * the proposal. Once applied, the receipt carries real ids and the card links to
  * the created entity through the ordinary item-presentation opener.
  */

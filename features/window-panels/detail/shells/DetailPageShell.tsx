@@ -12,7 +12,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import type { DetailPageShellProps } from "@ai-matrx/detail/react";
+import type { DetailPageShellProps } from "@/lib/detail/host";
 
 export function DetailPageShell({
   titleNode,

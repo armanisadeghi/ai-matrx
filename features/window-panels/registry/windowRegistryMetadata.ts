@@ -437,7 +437,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
-  // ── Record Detail (the Detail primitive, @ai-matrx/detail) ──────────────────────
+  // ── Record Detail (the Detail primitive, lib/detail) ──────────────────────
   // ONE core per record type, three presentations. `detailWindow` is the
   // default (Arman, 2026-09-17); `detailDocked` is the resizable side panel;
   // the page presentation is the `/detail/[type]/[id]` route. Both overlays

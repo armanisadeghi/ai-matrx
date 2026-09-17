@@ -1,9 +1,9 @@
 // features/window-panels/detail/DetailHost.tsx
 //
-// THE host binding for the Detail primitive (`@ai-matrx/detail`) — the light half.
+// THE host binding for the Detail primitive (`lib/detail`) — the light half.
 // Mounted once in app/Providers.tsx so `useOpenDetail()` works on every
-// surface. Every line here injects APP IDENTITY into the package; nothing
-// here re-implements any of its logic:
+// surface. Every line here injects APP IDENTITY into the package-shaped
+// module; nothing here re-implements any of its logic:
 //
 //   presentation knob   → lib/scoped-config (the ONE ladder-resolved read of
 //                         `ui.detail.default_presentation`, and the per-record
@@ -35,24 +35,23 @@ import { ASSOCIATION_TARGET_TYPES } from "@ai-matrx/associations";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 import {
+  DetailHostProvider,
+  type DetailEffectivePresentation,
+  type DetailHostPorts,
+  type DetailPresentationSetting,
+} from "@/lib/detail/host";
+import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import {
   DETAIL_LIST_CONTEXT_MAX_KNOB,
   DETAIL_PRESENTATION_BY_TYPE_KNOB,
   DETAIL_PRESENTATION_KNOB,
-  encodeListQuery,
   isDetailPresentation,
   presentationForTypeFromMap,
   type DetailHistoryEntry,
   type DetailListContext,
   type DetailPresentation,
   type DetailRef,
-} from "@ai-matrx/detail";
-import {
-  DetailHostProvider,
-  type DetailEffectivePresentation,
-  type DetailHostPorts,
-  type DetailPresentationSetting,
-} from "@ai-matrx/detail/react";
-import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+} from "@/lib/detail/types";
 import {
   getSessionKnob,
   resolveSessionKnob,
@@ -71,6 +70,7 @@ import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
+import { encodeListQuery } from "./detailOverlayData";
 import { resolvedListContextMax } from "./listContextCap";
 import { stashPageSeed } from "./pageSeedHandoff";
 
@@ -336,13 +336,6 @@ export function DetailHost({ children }: { children: ReactNode }) {
       success: (message) => toast.success(message),
     },
     copyText: (text) => copyToClipboard(text, { formatJson: false }),
-    // Where a developer goes when a type is unregistered or sourceless — the
-    // package prints this in its once-per-tab console remedy; it cannot know
-    // this repo's file paths itself.
-    remedy: {
-      typeMap:
-        "the item registry (features/item-presentation/registry.tsx — give the type a `detailSource`)",
-    },
     // 🚨 PLAN §5.3 — THE SAME RECONNECT THE CONNECTOR ROWS SHOW, from the
     // record's own health strip. The Google connect window IS that surface (it
     // runs incremental consent for only the missing scopes), so a refusal on a

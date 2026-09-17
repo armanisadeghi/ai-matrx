@@ -21,7 +21,7 @@ import type { ReactNode } from "react";
 import { Braces, Copy } from "lucide-react";
 import { isEntityTypeToken } from "@ai-matrx/associations";
 
-import type { DetailFrameContext } from "@ai-matrx/detail";
+import type { DetailFrameContext } from "@/lib/detail/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {

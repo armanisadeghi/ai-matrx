@@ -5,7 +5,7 @@
  *
  * THE ONE TYPE MAP. `registry.tsx` (icon, accent, label, `detailSource`,
  * `entityToken`) is the registry; this file turns one of its entries into a
- * `DetailRecordType` for `@ai-matrx/detail`, so every registry-known type shows in
+ * `DetailRecordType` for `lib/detail`, so every registry-known type shows in
  * all three presentations (window / docked / page) from ONE registration and
  * never a second registry. It replaced `ItemDetailWindow.tsx` (2026-09-17):
  * the loader, the field formatting, the surface scope and the right-click
@@ -20,13 +20,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isEntityTypeToken } from "@ai-matrx/associations";
 
 import { supabase } from "@/utils/supabase/client";
-import {
-  fieldsFromRow,
-  type DetailLoadResult,
-  type DetailRecordType,
-  type DetailRow,
-  type DetailSeed,
-} from "@ai-matrx/detail";
+import { fieldsFromRow } from "@/lib/detail/format";
+import type {
+  DetailLoadResult,
+  DetailRecordType,
+  DetailRow,
+  DetailSeed,
+} from "@/lib/detail/types";
 import { isUuidValue, tokenFromColumnName } from "@/components/official/entity-ref/doors";
 
 import { entityTokenForItemType, getItemConfig, type ItemTypeConfig } from "./registry";

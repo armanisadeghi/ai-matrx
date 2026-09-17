@@ -15,7 +15,7 @@
 // opened is exactly the thing this rule exists to stop being silent.
 
 import { recordToast } from "@/lib/toast";
-import type { DetailInstanceData } from "@ai-matrx/detail";
+import type { DetailInstanceData } from "@/lib/detail/types";
 import { readDetailOverlayData, toDetailInstanceData } from "./detailOverlayData";
 
 /** How long the offer to put the replaced record back stays on screen. */
