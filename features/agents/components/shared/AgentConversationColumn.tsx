@@ -34,6 +34,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import {
+  ASSISTANT_MESSAGE_COLUMN_CLASS,
+  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+} from "./assistant-message-layout";
+import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
@@ -380,7 +384,9 @@ export function AgentConversationColumn({
   // Centering wrapper for the content INSIDE the full-width scroll area /
   // input region. `contents` keeps the wrapper layout-transparent so the
   // legacy (non-edge) path renders byte-for-byte as before.
-  const centerWrap = edgeScroll ? "w-full max-w-3xl mx-auto px-2" : "contents";
+  const centerWrap = edgeScroll
+    ? cn(ASSISTANT_MESSAGE_COLUMN_CLASS, ASSISTANT_MESSAGE_COLUMN_INSET_CLASS)
+    : "contents";
 
   return (
     <TranscriptAudienceProvider audience={audience}>
@@ -390,7 +396,8 @@ export function AgentConversationColumn({
         // Legacy: pad the whole column. Edge mode: padding lives on the
         // centered inner wrappers instead so the scroll area runs to the edge.
         !edgeScroll && "px-2",
-        constrainWidth && !edgeScroll && "w-full max-w-3xl mx-auto pb-2",
+        constrainWidth && !edgeScroll && ASSISTANT_MESSAGE_COLUMN_CLASS,
+        constrainWidth && !edgeScroll && "pb-2",
         edgeScroll && "w-full pb-2",
       )}
     >
@@ -506,7 +513,14 @@ export function AgentConversationColumn({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-          className={edgeScroll ? "w-full max-w-3xl mx-auto px-2" : undefined}
+          className={
+            edgeScroll
+              ? cn(
+                  ASSISTANT_MESSAGE_COLUMN_CLASS,
+                  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+                )
+              : undefined
+          }
         >
           {!hideCreatorPanel && showCreatorPanel && (
             <CreatorRunPanel

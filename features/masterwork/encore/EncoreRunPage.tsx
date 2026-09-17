@@ -25,7 +25,13 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MasterworkRunRow } from "../components/masterworks/MasterworksPage";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
-import { getBenchProof, UNAVAILABLE, type BenchProofState } from "./benchProof";
+import {
+  getBenchProof,
+  ORGANIZATION_REQUIRED,
+  UNAVAILABLE,
+  type BenchProofState,
+} from "./benchProof";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ExpertSignOff } from "../review/ExpertSignOff";
 import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
 import { RunTheBench } from "./RunTheBench";
@@ -89,25 +95,42 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // The Bench is asked for by RULEBOOK, so it can only be asked once the
   // Masterwork has loaded. A viewer who cannot read the Rulebook gets the
   // "can't tell from here" sentence rather than a false "no proof".
+  //
+  // 🚨 AND IT WAITS FOR THE ORGANIZATION (production walk 4, wall W3). Every
+  // Matrx transport refuses BEFORE networking when no organization is selected
+  // ("Select an organization before sending this request." — the production
+  // error row this wall left behind, 9ce676a8 at 02:58:27Z). This effect used
+  // to fire on `rulebookId` alone, so on a fresh load it raced the boot that
+  // selects the organization, ate that refusal, and rendered it as a PERMISSION
+  // message to the admin reloading mid-trial. `useOrganizationRequired` is the
+  // platform's one reading of that state: hold the skeleton while it resolves,
+  // ask only once a request can actually be sent, and say the honest thing when
+  // boot settles with no organization at all.
   const rulebookId = masterwork?.rulebook?.id ?? null;
+  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
   const refreshBench = useCallback(() => {
-    if (!rulebookId) return;
+    if (!rulebookId || !canLoad) return;
     void getBenchProof(rulebookId).then(setBench);
-  }, [rulebookId]);
+  }, [rulebookId, canLoad]);
   useEffect(() => {
     let cancelled = false;
     if (!rulebookId) {
       setBench(UNAVAILABLE);
       return;
     }
+    if (organizationRequired) {
+      setBench(ORGANIZATION_REQUIRED);
+      return;
+    }
     setBench({ status: "loading" });
+    if (resolving) return; // still booting — the skeleton is the honest screen
     void getBenchProof(rulebookId).then((state) => {
       if (!cancelled) setBench(state);
     });
     return () => {
       cancelled = true;
     };
-  }, [rulebookId]);
+  }, [rulebookId, organizationRequired, resolving]);
 
   const releaseThis = async () => {
     if (!masterwork) return;

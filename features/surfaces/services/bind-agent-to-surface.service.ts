@@ -19,6 +19,7 @@
  * the child's own layers last — child wins per key.
  */
 
+import { SurfaceRegistrationError } from "./surface-registration-error";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { getSurfaceByName } from "@/features/surfaces/services/surfaces.service";
 import { invalidateSurfaceBoundAgents } from "@/features/surfaces/services/surface-bound-agents.service";
@@ -307,7 +308,7 @@ export async function bindAgentToSurface(
 
   const surface = await getSurfaceByName(surfaceName);
   if (!surface?.id) {
-    throw new Error(`Unknown surface: ${surfaceName}`);
+    throw new SurfaceRegistrationError(surfaceName, "bindAgentToSurface");
   }
 
   const bindingTier = tierFromScope(scope);
@@ -504,7 +505,7 @@ export async function unbindAgentFromSurface(args: {
   const { agentId, surfaceName, scope } = args;
   const surface = await getSurfaceByName(surfaceName);
   if (!surface?.id) {
-    throw new Error(`Unknown surface: ${surfaceName}`);
+    throw new SurfaceRegistrationError(surfaceName, "unbindAgentFromSurface");
   }
 
   const scopes: ScopeInput[] = scope
@@ -555,7 +556,7 @@ export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
 
   const surface = await getSurfaceByName(row.surface_name);
   if (!surface?.id) {
-    throw new Error(`Unknown surface: ${row.surface_name}`);
+    throw new SurfaceRegistrationError(row.surface_name, "deleteAgentSurfaceBinding");
   }
   const result = await associationsService.remove({
     sourceType: "agent",

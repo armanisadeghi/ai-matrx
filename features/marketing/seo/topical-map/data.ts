@@ -18,6 +18,8 @@ import type {
   MapFacetValueInsert,
   MapFacetValueUpdate,
   MapGraphResult,
+  MapHistoryListOptions,
+  MapHistoryResult,
   MapMergeResult,
   MapMutationResult,
   MapOutlineOptions,
@@ -28,16 +30,24 @@ import type {
   MapTopicPatch,
   MapTopicRemovalPolicy,
   MapTopicSearchHit,
+  MapTopicGapsResult,
+  MapTopicRejectionPolicy,
   MapTopicStats,
   MapTopicTreeNode,
   MapTopicUpdate,
   MapTopicsPatchResult,
+  MapTopicsRejectResult,
   MapTopicsRetireResult,
   MapTopicsUpsertResult,
   MapTopicFacetsResult,
   MapTreeResult,
+  PageIntentSource,
+  PageIntentsListOptions,
+  PageIntentsResult,
   PageMapTopicsInput,
   PageMapTopicsSource,
+  SetPageIntentsItem,
+  SetPageIntentsResult,
   SetPagesMapTopicsItem,
   SetPagesMapTopicsResult,
   TopicalMap,
@@ -561,4 +571,130 @@ export async function mapDryRun(fn: MapDryRunFunction, args: Json[]): Promise<Ma
     p_args: args as unknown as Json,
   });
   return assertData(response.data as unknown as MapDryRunResult, response.error);
+}
+
+/**
+ * Rejects PROPOSED topics: the row stays, every reader hides it, and
+ * {@link listMapHistory} lists it. Only a `proposed` topic can be rejected —
+ * an active one raises 22023 naming it, and {@link retireMapTopics} is that
+ * topic's door instead. A slug of another map and an invented slug are the
+ * same P0002, and nothing is rejected in that case.
+ *
+ * `onAttachments` decides what happens to whatever still hangs off the
+ * proposals; the default `"error"` raises SQLSTATE 23514 listing every
+ * blocking topic and its attachment counts rather than orphaning the work.
+ * Children of a rejected topic are always lifted onto its parent.
+ */
+export async function rejectMapTopics(
+  mapId: string,
+  slugs: string[],
+  onAttachments: MapTopicRejectionPolicy = "error",
+): Promise<MapTopicsRejectResult> {
+  const response = await (await seoDb()).rpc("reject_map_topics", {
+    p_map_id: mapId,
+    p_slugs: slugs,
+    p_on_attachments: onAttachments,
+  });
+  return assertData(response.data as unknown as MapTopicsRejectResult, response.error);
+}
+
+/**
+ * What left the map, and who sent it there — read from `history.row_versions`,
+ * so `changed_at` / `changed_by` describe the version that set each topic's
+ * CURRENT status. Omitting `status` lists exactly that: `rejected` and
+ * `retired`. `changed_by` is a bare user uuid; the platform has no entity
+ * token for a user, so the client's own user surface renders the name.
+ */
+export async function listMapHistory(
+  mapId: string,
+  options: MapHistoryListOptions = {},
+): Promise<MapHistoryResult> {
+  const response = await (await seoDb()).rpc("list_map_history", {
+    p_map_id: mapId,
+    ...(options.status === undefined ? {} : { p_status: options.status }),
+    ...(options.limit === undefined ? {} : { p_limit: options.limit }),
+    ...(options.offset === undefined ? {} : { p_offset: options.offset }),
+  });
+  return assertData(response.data as unknown as MapHistoryResult, response.error);
+}
+
+/**
+ * Records where pages are GOING, for many pages of one site in a single call.
+ * ONE INTENT PER PAGE: each item REPLACES that page's existing `intent` edge
+ * rather than accumulating another one.
+ *
+ * `siteId` is the scope every item resolves against — editor on it is
+ * re-checked per item, and a foreign, invented or off-site page is one
+ * per-item 42501. Per-item failures do not stop the batch: they come back as
+ * rows with `ok: false` and a message, and the result's own `ok` is true only
+ * when `failed` is 0. A null `siteId`, `items` or `source` is rejected once,
+ * up front, as SQLSTATE 22023, and a site that uses no topical map raises
+ * P0002.
+ *
+ * {@link SetPageIntentsItem} carries the cross-rules: `merge` and `redirect`
+ * need exactly one of `into_page_id` / `into_node_id` and a `topic_slug`;
+ * `keep`, `rewrite` and `delete` take no destination and derive their topic
+ * from the page's own coverage when none is given.
+ *
+ * Rehearse a batch without writing it with {@link mapDryRun}
+ * (`"set_page_intents"`).
+ */
+export async function setPageIntents(
+  siteId: string,
+  items: SetPageIntentsItem[],
+  source: PageIntentSource = "mapper",
+): Promise<SetPageIntentsResult> {
+  const response = await (await seoDb()).rpc("set_page_intents", {
+    p_site_id: siteId,
+    p_items: items as unknown as Json,
+    p_source: source,
+  });
+  return assertData(response.data as unknown as SetPageIntentsResult, response.error);
+}
+
+/**
+ * The bulk convergence screen's read: every page of the map's world that has
+ * an intent, a coverage edge, or both — with its current topics, its one
+ * intent, and its Search Console clicks and impressions over the
+ * `performance_window_days` knob.
+ *
+ * Without a `siteId` the page set is the sites related to this map that the
+ * caller may view — never every site. `topicSlug` matches a page related to
+ * that topic EITHER WAY, by its intent or by its coverage.
+ *
+ * A page with no intent still appears, with `intent: null`. A non-zero
+ * `duplicate_intents` means edges had to be collapsed and the surface must say
+ * so rather than quietly show one of them.
+ */
+export async function listPageIntents(
+  mapId: string,
+  options: PageIntentsListOptions = {},
+): Promise<PageIntentsResult> {
+  const response = await (await seoDb()).rpc("list_page_intents", {
+    p_map_id: mapId,
+    ...(options.siteId === null || options.siteId === undefined ? {} : { p_site_id: options.siteId }),
+    ...(options.topicSlug === null || options.topicSlug === undefined ? {} : { p_topic_slug: options.topicSlug }),
+    ...(options.disposition === null || options.disposition === undefined ? {} : { p_disposition: options.disposition }),
+    ...(options.state === null || options.state === undefined ? {} : { p_state: options.state }),
+    ...(options.limit === undefined ? {} : { p_limit: options.limit }),
+    ...(options.offset === undefined ? {} : { p_offset: options.offset }),
+  });
+  return assertData(response.data as unknown as PageIntentsResult, response.error);
+}
+
+/**
+ * Topics that should have a page and have none: zero live pages AND zero
+ * planned pages, counted only over the sites the caller may view — so a
+ * stranger's page can never close a gap the caller can see.
+ *
+ * A gap is a property of a TOPIC, never a page-shaped row, which is why
+ * {@link listPageIntents} carries no `gap` key. Not paged: `total` is the
+ * whole answer.
+ */
+export async function listTopicGaps(mapId: string, siteId?: string | null): Promise<MapTopicGapsResult> {
+  const response = await (await seoDb()).rpc("list_topic_gaps", {
+    p_map_id: mapId,
+    ...(siteId === null || siteId === undefined ? {} : { p_site_id: siteId }),
+  });
+  return assertData(response.data as unknown as MapTopicGapsResult, response.error);
 }

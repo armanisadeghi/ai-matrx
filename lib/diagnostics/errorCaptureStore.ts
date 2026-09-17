@@ -180,6 +180,8 @@ export type CapturedErrorSource =
    * in either the caller or the surface's write wiring.
    */
   | "surface-writeback"
+  /** Code names a surface absent from the database catalog. */
+  | "surface-registration"
   /**
    * A runaway markdown delimiter reached a renderer: a stray/unpaired `$$`
    * that would have made remark-math swallow prose into a math node (KaTeX

@@ -225,6 +225,55 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- **2026-09-17** — **The room no longer guesses which conversation it is in, no
+  longer prints the machine's own words in the thread, and no longer follows a
+  run that is already over** (Masterwork cold walk 5, findings 7 and 8).
+  *The guess:* `conversation_started` is computed live per `/roles` call and
+  deliberately never persisted, so the copy on the session row can NEVER carry
+  it — every room reading the persisted binding got `false`, called an
+  already-used conversation a reservation, and sent its next turn as turn 1 with
+  `is_new: true`. The server's 409 for exactly that — a raw UUID and "Pass
+  is_new=false to continue it" — rendered inside a live interview thread, between
+  the Sounding Board's reply and the composer. "Nobody has told us yet" is now
+  its own fact (`conversationStartedKnown`), the room shows its own honest
+  "Opening … room…" until the answer lands (`roomMayClaimMaterialization`), and
+  the opening-statement send waits for it too rather than reading a stale `false`
+  as "nobody has spoken here".
+  *The leak:* any server error carrying no `user_message` reached the thread
+  verbatim. `friendlyStreamError` (in `features/agents/components/run/`) shows a
+  declared sentence with its remedy and keeps every original byte under Details;
+  aidream's 409 now also carries a `user_message` of its own.
+  *The dead run:* the reload-resume rule armed a follower for any session row
+  carrying a `run_id`, including one whose interview was finished — the shape
+  finding 8 described (a permanent "Working…" over a finished session with the
+  document tabs unreachable). **That symptom did NOT reproduce on a brand-new
+  session on 2026-09-17** — walked end to end on `origin/main` before any change:
+  three real turns, Finish, leave, return, and all four tabs opened their
+  documents. The reload-resume rule is still wrong for a finalized row and is
+  fixed (`reloadResumeVerdict`), but it lands as a defensive fix, not as a
+  verified repair of that walk's symptom. Guard for all three:
+  `__tests__/the-room-never-shows-the-machine-talking.test.ts`.
+
+
+- 2026-09-16 (later) — **A FINISH IS ONE REQUEST, AND `start` IS GONE** (fourth
+  cold walk, finding 4: the same defect a third time, on a brand-new session,
+  against the commits the entry below certified). `useInterviewRun.finish`
+  branched on the run phase — send `done` to a parked run, otherwise START one
+  and send `done` when it hands back — and a run's first act is a complete
+  interview round. The walk-3 fix was verified against a session already parked
+  on a human turn, the ONE branch that never runs a round; every fresh v3 room
+  has no run at all, because the interview happens in the per-role chat tabs.
+  `finish` now POSTs `/vision-interview/sessions/{id}/finish` (aidream
+  `services/vision_interview/finalize.py`) from every phase, `start` is removed
+  from the hook rather than hidden, and a deliverable that did not land is named
+  in a toast with the remedy instead of showing "not written yet" forever.
+  Verified live on brand-new session `2c4bbf69`: pressed once, finalized five
+  seconds later, all three documents written. Guard:
+  `__tests__/a-finish-needs-no-run.test.tsx` — it asserts what `finish` SENDS
+  in every phase, which is what `a-finish-click-finishes.test.tsx` structurally
+  could not (it mounts the dialog with a mocked `onFinish`, so it can only ever
+  prove the dialog presses the button it was handed).
+
 - **2026-09-16** — **The room is usable on a phone (jobs-bar-2026-09-16, item
   19).** At 390px the centre panel opened with six expert tabs wrapped over
   three rows — a third of the screen before one word of the conversation — the

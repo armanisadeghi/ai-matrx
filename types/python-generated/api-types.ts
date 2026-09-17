@@ -4914,6 +4914,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/native/passwords/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Matches */
+        post: operations["matches_vault_native_passwords_matches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passwords/{item_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materialize */
+        post: operations["materialize_vault_native_passwords__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/authenticator": {
         parameters: {
             query?: never;
@@ -24607,6 +24641,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vision-interview/sessions/{session_id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish Interview Session
+         * @description One press ends the interview and writes the documents. No extra round.
+         *
+         *     Deliberately NOT the start endpoint with a flag: starting a run and
+         *     finishing an interview are different operations, and collapsing them into
+         *     one control is the defect this endpoint exists to close.
+         */
+        post: operations["finish_interview_session_vision_interview_sessions__session_id__finish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/build": {
         parameters: {
             query?: never;
@@ -25019,6 +25077,18 @@ export interface paths {
          *     wrote. One card per call — submitted the moment she swipes, so the rules
          *     appear while she is still playing and a session abandoned after three cards
          *     keeps all three.
+         *
+         *     🚨 DURABLE, AND THAT SENTENCE IS WHY (cold walk 4, finding 2, 2026-09-16).
+         *     This route used to run its pipeline on a bare stream: no
+         *     ``platform.masterwork_run`` row, so a card answered and then left — the
+         *     Expert reloads, closes the tab, or the phone sleeps — died with the
+         *     connection, and `source_identity.run_id_of` returned ``None``, which
+         *     degrades the source CLAIM to the read-only prior check that cannot see a
+         *     pass still in flight. A first-time Expert answered two cards, saw "Save and
+         *     next" succeed twice, reloaded, and found no rules, no resume state and no
+         *     trace the game had been played. The docstring above promised the opposite.
+         *     Every other rule-writing lane already ran under the run ledger; this one and
+         *     the Sorting Table's answer ingest were the two that did not.
          */
         post: operations["ingest_rulebook_triad_masterworks_ingest_triad_post"];
         delete?: never;
@@ -25100,6 +25170,10 @@ export interface paths {
          *     platform wrote. One question per call — submitted the moment she finishes
          *     speaking, so the rules appear while she is still on the round and a session
          *     abandoned after two answers keeps both.
+         *
+         *     🚨 DURABLE for the reason the Triad above is: "a session abandoned after
+         *     two answers keeps both" is only true of a lane that runs under the run
+         *     ledger. These two were the only rule-writing lanes that did not.
          */
         post: operations["ingest_rulebook_sort_answer_masterworks_ingest_sort_post"];
         delete?: never;
@@ -45485,6 +45559,7 @@ export interface components {
              */
             how_to_run?: string;
             form?: components["schemas"]["BenchRunForm"] | null;
+            running?: components["schemas"]["BenchRunning"] | null;
             /** Searched */
             searched?: string[];
         };
@@ -45574,6 +45649,50 @@ export interface components {
             budget_multiple?: number | null;
             /** Masterwork Id */
             masterwork_id?: string | null;
+        };
+        /**
+         * BenchRunning
+         * @description A trial that is IN FLIGHT right now — not a proof, and never shown as one.
+         *
+         *     🚨 THE DEFECT THIS EXISTS TO CLOSE (production walk 4, wall W3, 2026-09-16).
+         *     ``run_durable_masterwork`` writes the ``platform.masterwork_run`` row at the
+         *     START of a trial, with ``status='processing'`` and an empty ``result``.
+         *     ``_latest_row`` filtered on rulebook, operation and ``deleted_at`` and
+         *     NOTHING ELSE, so mid-trial it handed that empty row to ``_proof_from_row``,
+         *     which dutifully built a BenchProof out of nothing: a record id, an empty
+         *     trial id, ``passed=False``, ``void=False``, zero panel votes. A screen was
+         *     being handed a proof of a trial that had not finished. It "self-resolved"
+         *     only because the finished row lands 13 minutes later and outranks it.
+         *
+         *     A running trial is its own answer, with its own sentence. The row is the
+         *     only source — so this survives a refresh, a different device, and the
+         *     load-balancer sending the next read to another task.
+         */
+        BenchRunning: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Started At
+             * @default
+             */
+            started_at?: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Elapsed Minutes
+             * @default 0
+             */
+            elapsed_minutes?: number;
+            /** Remaining Minutes */
+            remaining_minutes?: number | null;
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
         };
         /**
          * BettermodeServiceStatus
@@ -82967,6 +83086,68 @@ export interface components {
             keywords: string[];
             /** Asset Page */
             asset_page: string;
+        };
+        /** NativeErrorDetail */
+        NativeErrorDetail: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "credential_unavailable" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+        };
+        /** NativeErrorOut */
+        NativeErrorOut: {
+            detail: components["schemas"]["NativeErrorDetail"];
+        };
+        /** NativeMatchOut */
+        NativeMatchOut: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Request Identifier Index */
+            request_identifier_index: number;
+        };
+        /** NativeMatchesIn */
+        NativeMatchesIn: {
+            /** Identifiers */
+            identifiers: components["schemas"]["NativeServiceIdentifierIn"][];
+        };
+        /** NativeMatchesOut */
+        NativeMatchesOut: {
+            /** Matches */
+            matches: components["schemas"]["NativeMatchOut"][];
+            /** Truncated */
+            truncated: boolean;
+            /** Reason */
+            reason: "no_service_identifiers" | null;
+        };
+        /** NativeMaterializeIn */
+        NativeMaterializeIn: {
+            /** Identifiers */
+            identifiers: components["schemas"]["NativeServiceIdentifierIn"][];
+            /** Request Identifier Index */
+            request_identifier_index: number;
+        };
+        /** NativeMaterializeOut */
+        NativeMaterializeOut: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
+        /** NativeServiceIdentifierIn */
+        NativeServiceIdentifierIn: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "domain" | "url";
+            /** Identifier */
+            identifier: string;
         };
         /** NavLink */
         NavLink: {
@@ -130192,6 +130373,186 @@ export interface operations {
             };
         };
     };
+    matches_vault_native_passwords_matches_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeMatchesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeMatchesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+        };
+    };
+    materialize_vault_native_passwords__item_id__materialize_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeMaterializeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeMaterializeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+        };
+    };
     list_authenticators_authenticator_get: {
         parameters: {
             query?: never;
@@ -158266,6 +158627,41 @@ export interface operations {
         };
     };
     start_interview_session_vision_interview_sessions__session_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StartRunBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_interview_session_vision_interview_sessions__session_id__finish_post: {
         parameters: {
             query?: never;
             header?: never;

@@ -441,6 +441,90 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (later) — **FOUR SCREENS THAT CONTRADICTED THEMSELVES** (fifth cold
+  walk, findings 3, 4, 6 and 6b), each fixed at the layer that owns the class.
+  *The probe's two states at once:* a reload mid-round painted the SETUP screen
+  ("Write the first one", "Up to 5 rounds…") over a live "Writing round 2…" row
+  for ~9s, because `started` is answered by restored CONTENT while `running` is
+  true from the first paint. The missing third answer — "there is a run here and
+  this mount cannot describe it yet" — is now `restoring` on the shared
+  `useDurableRun` handle, so every durable surface has it; the probe and the
+  Teach-Back (the same shape, one grep away) both use it. Verified live on a
+  brand-new Rulebook: the reload now shows only "Reading what you said about
+  round 1 and turning it into rules…" with its Stop. Guard:
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`.
+  *The paste box's untrue instruction:* see the aidream half — the placeholder
+  now teaches the shape the parser can honour, and
+  `__tests__/the-paste-box-teaches-a-shape-that-parses.test.ts` keeps the copy
+  from drifting back.
+  *"0 Built" about a Masterwork it just watched being built:* the Build's
+  terminal event fires before the `workflow.definition` row is readable;
+  `listMasterworksAfterBuild` waits for the id the Build announced and SAYS so
+  when it never appears. Guard:
+  `__tests__/a-built-masterwork-is-counted-not-guessed.test.ts`.
+  *A chip that filled a box you then could not send from:* a native button takes
+  the caret, so Enter went to the chip. `ComposerChip` (in `features/agents`)
+  refuses the focus and puts it back; verified live — chip click leaves the
+  caret in the composer and Enter sends. Guard:
+  `features/agents/__tests__/a-chip-that-fills-the-box-leaves-you-able-to-send.test.tsx`.
+  *And a scope badge reading `0` over a populated list:* `EntityScopeTabs` could
+  not tell "not counted yet" from "counted, and zero" — an unmeasured count now
+  renders nothing at all. Guard:
+  `lib/entity-list/__tests__/a-scope-badge-never-says-zero-before-it-counted.test.tsx`.
+
+- 2026-09-17 — **THE SORTING TABLE NEVER ERASES A SITTING EITHER, AND THE
+  MECHANISM IS NOW SHARED** (fifth cold walk, finding 2). A day after the Triad
+  game's sitting was made durable, the fifth cold walk found the identical
+  defect on the Sorting Table — the Triad game's own named sibling. Reproduced
+  live on 2026-09-17 against `origin/main`, on a brand-new Rulebook: twenty real
+  e-waste cases dealt into three named piles, five sorted on the keyboard
+  (1/2/1/3/2) to "Case 6 of 20", reload → back to "Sort the pile, then we'll
+  find the line" with the pile picker and "Start sorting", zero trace of the
+  five placements, no resume banner of any kind. The root cause was not the
+  Sorting Table: it was that the Triad fix had been written BY HAND inside
+  `TriadGamePage`, so there was no primitive for the sibling lane to inherit —
+  the instance was fixed and the class was left open. The sitting mechanism now
+  lives once, in [`sitting/sitting.ts`](./sitting/sitting.ts) (`createSittingStore`,
+  `describeResumedSitting`, `settleInFlightSaves`, `countInFlight`); the Triad
+  game was moved onto it with its sentence unchanged, and the Sorting Table now
+  restores the phase, the piles she named, the dealt cases, every placement, the
+  boundary questions and each answer's own status, and says so in one sentence.
+  An answer mid-save when the tab went away is reported as landed-with-nothing-
+  countable plus the true remedy, never as saved-with-a-count and never as lost.
+  Verified live on brand-new Rulebook `0d0befe0`: the same sequence now returns
+  to "You were on case 6 of 20, after sorting 5. Picked up where you left off."
+  over case 6 of the same pile. Guard:
+  `__tests__/a-sorted-case-survives-a-reload.test.tsx`, proven RED against the
+  pre-fix component (second mount rendered the setup screen) and green after.
+
+- 2026-09-16 (later) — **THE TRIAD GAME NEVER ERASES A SITTING, AND THE PROBE'S
+  COUNTER NEVER GOES BACKWARDS** (fourth cold walk, findings 2 and 3).
+  *Triad:* the whole sitting — deck, index, answered cards, what each answer
+  returned — lived in React state and nowhere else. Reproduced live: two cards
+  answered, "Save and next" succeeded both times, a reload landed back on "Deal
+  me in" with no card state and no banner; the rules DID land about a minute
+  later (the server detaches on disconnect), so the only conclusion the screen
+  supported was "nothing saved" and the natural next move was to replay the same
+  cards. The sitting is now written to this browser as it is played and picked
+  up on the next load, saying so — including that an answer still in flight when
+  you left carried on without you. The server half gives each answer a durable
+  run row before the paid call (aidream `/masterworks/ingest-triad` and
+  `/masterworks/ingest-sort`, the only two rule-writing lanes that had none),
+  which is also what restores the source claim that refuses a double submit.
+  Verified live on brand-new Rulebook `5d8f9b4f`: reload → "Card 3 of 10" with
+  the resume sentence, 2 `triad` runs `completed`, 2 triad-sourced rules, both
+  carrying a `run_id`. Guard:
+  `__tests__/an-answered-triad-card-survives-a-reload.test.tsx`.
+  *Probe:* rule 3 ("never invent the count") came back one press later.
+  `run.launch` wipes `run.result` synchronously before the network call, so from
+  the press of Send until the next result lands the counter fell back to
+  `rounds.length` — 1 on any restored mount. Reproduced live: a probe restored
+  at "Round 2 of 5" read "Round 1 of 5" over round 2's own memo the instant Send
+  was pressed. `serverRound` remembers the last index the server reported, so
+  the number can only move forward. Verified live on brand-new Rulebook
+  `c60885c6`: same sequence, the label stays "Round 2 of 5". Guard: the new case
+  in `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx`.
+
 - `2026-09-17` — 🚨 **The probe stopped inventing the round number.** Found on the live
   surface while verifying the restore fix below: the counter read `rounds.length`, which is
   the number of rounds THIS MOUNT has seen, so a person who came back to round 3 of their

@@ -307,6 +307,57 @@ describe("a probe round restored from the durable run", () => {
     await back.unmount();
   });
 
+  it("keeps the server's round on screen while the NEXT round is in flight", async () => {
+    // 🚨 THE SAME RULE, ONE PRESS LATER (cold walk 4, finding 3, 2026-09-16).
+    // The case above proved the counter right while a result exists.
+    // `run.launch` wipes `run.result` to null SYNCHRONOUSLY before the network
+    // call, so from the press of Send until the next result lands there is no
+    // result at all — and the expression fell straight back to `rounds.length`,
+    // the mount-local count rule 3 exists to forbid. On a restored mount that
+    // count is 1 whatever round the server is on.
+    //
+    // Reproduced live on 2026-09-16: a probe restored at "Round 2 of 5" over
+    // round 2's own memo; one press of "Send this and show me the next one"
+    // and the label read "Round 1 of 5" over that same memo, with the
+    // just-submitted answer still in the box.
+    const third = {
+      ...ROUND_ONE,
+      round_index: 3,
+      example_title: "Pallet 9902 — routing decision",
+    };
+    serveTheProbe(third);
+    const first = await mountProbe();
+    await type(first.container, "probe-case", CASE_BRIEF);
+    await click(buttonSaying(first.container, "Write the first one"));
+    await first.unmount();
+
+    const back = await mountProbe();
+    expect(back.container.textContent).toContain("Round 3 of 5");
+
+    // The next round, still being written: the request is accepted and no
+    // terminal event comes back yet. This is the window the walk was in.
+    mockDispatch.mockImplementation(async (request: StreamRequest) => {
+      if (request.path === PROBE_PATH) {
+        sent.push(request.body ?? {});
+        request.onStreamEvent?.({
+          event: "data",
+          data: { type: "masterwork_run", run_id: RUN_ID },
+        });
+        return { data: null, error: null };
+      }
+      return { data: null, error: null };
+    });
+
+    await type(back.container, "probe-critique", CRITIQUE);
+    await click(buttonSaying(back.container, "Send this and show me the next one"));
+
+    expect(back.container.textContent).toContain("Round 3 of 5");
+    expect(back.container.textContent).not.toContain("Round 1 of 5");
+    expect(back.container.textContent).toContain("Pallet 9902");
+
+    await back.unmount();
+  });
+
   it("stopping on a restored round sends the finish too", async () => {
     await runRoundOneThenLeave();
     const back = await mountProbe();

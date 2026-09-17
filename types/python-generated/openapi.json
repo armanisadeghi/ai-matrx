@@ -12673,6 +12673,240 @@
         }
       }
     },
+    "/vault/native/passwords/matches": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passwords"
+        ],
+        "summary": "Matches",
+        "operationId": "matches_vault_native_passwords_matches_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeMatchesIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeMatchesOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/vault/native/passwords/{item_id}/materialize": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passwords"
+        ],
+        "summary": "Materialize",
+        "operationId": "materialize_vault_native_passwords__item_id__materialize_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeMaterializeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeMaterializeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/authenticator": {
       "get": {
         "tags": [
@@ -49746,6 +49980,64 @@
         }
       }
     },
+    "/vision-interview/sessions/{session_id}/finish": {
+      "post": {
+        "tags": [
+          "Vision Interview"
+        ],
+        "summary": "Finish Interview Session",
+        "description": "One press ends the interview and writes the documents. No extra round.\n\nDeliberately NOT the start endpoint with a flag: starting a run and\nfinishing an interview are different operations, and collapsing them into\none control is the defect this endpoint exists to close.",
+        "operationId": "finish_interview_session_vision_interview_sessions__session_id__finish_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StartRunBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/build": {
       "post": {
         "tags": [
@@ -50396,7 +50688,7 @@
           "Masterworks"
         ],
         "summary": "Ingest Rulebook Triad",
-        "description": "ONE played Triad card into DRAFT rules: the three items, which one the\nExpert chose, and the one line she said about why.\n\nThe reason is the rule candidate and the triad is the evidence, so the\nquote is verified against HER words and never against an item the platform\nwrote. One card per call — submitted the moment she swipes, so the rules\nappear while she is still playing and a session abandoned after three cards\nkeeps all three.",
+        "description": "ONE played Triad card into DRAFT rules: the three items, which one the\nExpert chose, and the one line she said about why.\n\nThe reason is the rule candidate and the triad is the evidence, so the\nquote is verified against HER words and never against an item the platform\nwrote. One card per call — submitted the moment she swipes, so the rules\nappear while she is still playing and a session abandoned after three cards\nkeeps all three.\n\n🚨 DURABLE, AND THAT SENTENCE IS WHY (cold walk 4, finding 2, 2026-09-16).\nThis route used to run its pipeline on a bare stream: no\n``platform.masterwork_run`` row, so a card answered and then left — the\nExpert reloads, closes the tab, or the phone sleeps — died with the\nconnection, and `source_identity.run_id_of` returned ``None``, which\ndegrades the source CLAIM to the read-only prior check that cannot see a\npass still in flight. A first-time Expert answered two cards, saw \"Save and\nnext\" succeed twice, reloaded, and found no rules, no resume state and no\ntrace the game had been played. The docstring above promised the opposite.\nEvery other rule-writing lane already ran under the run ledger; this one and\nthe Sorting Table's answer ingest were the two that did not.",
         "operationId": "ingest_rulebook_triad_masterworks_ingest_triad_post",
         "requestBody": {
           "content": {
@@ -50518,7 +50810,7 @@
           "Masterworks"
         ],
         "summary": "Ingest Rulebook Sort Answer",
-        "description": "ONE answered boundary question of the Sorting Table into DRAFT rules.\n\nThe Expert's answer is the rule candidate and THE PAIR IS THE EVIDENCE, so\nthe quote is verified against HER words and never against a case the\nplatform wrote. One question per call — submitted the moment she finishes\nspeaking, so the rules appear while she is still on the round and a session\nabandoned after two answers keeps both.",
+        "description": "ONE answered boundary question of the Sorting Table into DRAFT rules.\n\nThe Expert's answer is the rule candidate and THE PAIR IS THE EVIDENCE, so\nthe quote is verified against HER words and never against a case the\nplatform wrote. One question per call — submitted the moment she finishes\nspeaking, so the rules appear while she is still on the round and a session\nabandoned after two answers keeps both.\n\n🚨 DURABLE for the reason the Triad above is: \"a session abandoned after\ntwo answers keeps both\" is only true of a lane that runs under the run\nledger. These two were the only rule-writing lanes that did not.",
         "operationId": "ingest_rulebook_sort_answer_masterworks_ingest_sort_post",
         "requestBody": {
           "content": {
@@ -101713,6 +102005,16 @@
               }
             ]
           },
+          "running": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchRunning"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "searched": {
             "items": {
               "type": "string"
@@ -101887,6 +102189,51 @@
         ],
         "title": "BenchRunRequest",
         "description": "What the person typed, and nothing else.\n\nDeliberately small. Everything a trial needs that is NOT a judgement call by\nthe person running it — the corpus, the models, the judge, the panel, the\nthresholds — comes from the Rulebook and the declared defaults, so two\npeople running the Bench on the same Masterwork run the same trial.\n\n🚨 INHERITS ``AcceptsInjectedScope`` BECAUSE IT FORBIDS EXTRAS. The\nfrontend's ``callApi`` merges ``organization_id`` / ``project_id`` /\n``task_id`` onto every POST body from the active app context, so a\n``extra=\"forbid\"`` model that omits them 422s the moment the person has an\norganization selected — the 2026-07-15 ``/skills/ingest`` incident class.\nGuard: ``scripts/check_request_accepts_org_scope.py``."
+      },
+      "BenchRunning": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "elapsed_minutes": {
+            "type": "integer",
+            "title": "Elapsed Minutes",
+            "default": 0
+          },
+          "remaining_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Minutes"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "BenchRunning",
+        "description": "A trial that is IN FLIGHT right now — not a proof, and never shown as one.\n\n🚨 THE DEFECT THIS EXISTS TO CLOSE (production walk 4, wall W3, 2026-09-16).\n``run_durable_masterwork`` writes the ``platform.masterwork_run`` row at the\nSTART of a trial, with ``status='processing'`` and an empty ``result``.\n``_latest_row`` filtered on rulebook, operation and ``deleted_at`` and\nNOTHING ELSE, so mid-trial it handed that empty row to ``_proof_from_row``,\nwhich dutifully built a BenchProof out of nothing: a record id, an empty\ntrial id, ``passed=False``, ``void=False``, zero panel votes. A screen was\nbeing handed a proof of a trial that had not finished. It \"self-resolved\"\nonly because the finished row lands 13 minutes later and outranks it.\n\nA running trial is its own answer, with its own sentence. The row is the\nonly source — so this survives a refresh, a different device, and the\nload-balancer sending the next read to another task."
       },
       "BettermodeServiceStatus": {
         "properties": {
@@ -186394,6 +186741,191 @@
         ],
         "title": "NasaImagesPublicAsset",
         "description": "Safe bounded projection of one public NASA media-catalog asset."
+      },
+      "NativeErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "credential_unavailable",
+              "invalid_request",
+              "item_unavailable",
+              "native_session_required",
+              "native_unavailable",
+              "organization_required",
+              "request_too_large"
+            ],
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "NativeErrorDetail"
+      },
+      "NativeErrorOut": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/NativeErrorDetail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "NativeErrorOut"
+      },
+      "NativeMatchOut": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 256,
+            "title": "Display Name"
+          },
+          "request_identifier_index": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Request Identifier Index"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "display_name",
+          "request_identifier_index"
+        ],
+        "title": "NativeMatchOut"
+      },
+      "NativeMatchesIn": {
+        "properties": {
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/NativeServiceIdentifierIn"
+            },
+            "type": "array",
+            "maxItems": 128,
+            "title": "Identifiers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifiers"
+        ],
+        "title": "NativeMatchesIn"
+      },
+      "NativeMatchesOut": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMatchOut"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Matches"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "no_service_identifiers"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "matches",
+          "truncated",
+          "reason"
+        ],
+        "title": "NativeMatchesOut"
+      },
+      "NativeMaterializeIn": {
+        "properties": {
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/NativeServiceIdentifierIn"
+            },
+            "type": "array",
+            "maxItems": 128,
+            "title": "Identifiers"
+          },
+          "request_identifier_index": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Request Identifier Index"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifiers",
+          "request_identifier_index"
+        ],
+        "title": "NativeMaterializeIn"
+      },
+      "NativeMaterializeOut": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "NativeMaterializeOut"
+      },
+      "NativeServiceIdentifierIn": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "domain",
+              "url"
+            ],
+            "title": "Type"
+          },
+          "identifier": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Identifier"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "identifier"
+        ],
+        "title": "NativeServiceIdentifierIn"
       },
       "NavLink": {
         "properties": {

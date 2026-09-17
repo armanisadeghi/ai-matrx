@@ -380,10 +380,16 @@ export function CodexUsageDashboard() {
     if (scope.kind === "project") return row.project === scope.project;
     return row.conversation_id === scope.conversationId;
   });
-  const scopeCredits = scopeRows?.reduce(
-    (total, row) => total + (row.estimated_standard_credits ?? 0),
-    0,
-  );
+  const scopeCredits = scopeRows?.some(
+    (row) =>
+      (row.response_count ?? 0) > 0 &&
+      row.estimated_standard_credits == null,
+  )
+    ? null
+    : scopeRows?.reduce(
+        (total, row) => total + (row.estimated_standard_credits ?? 0),
+        0,
+      );
   const scopeResponses = scopeRows?.reduce(
     (total, row) => total + (row.response_count ?? 0),
     0,

@@ -113,6 +113,7 @@ jest.mock("../../durable-run/useMasterworkRun", () => ({
     reset: () => {},
     fail: () => {},
     cancel: null,
+    restoring: false,
     cancelling: false,
     retry: null,
     error: null,

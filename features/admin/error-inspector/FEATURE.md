@@ -381,6 +381,8 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-09-17 — **Missing surface registration is captured once as a structured recovery error.** `SurfaceRegistrationError` records `source=surface-registration`, `code=SURFACE_NOT_REGISTERED`, `relation=ui_surface`, and the action/call site before a binding mutation starts, with a sync-and-verify recovery hint. Its serialized `captured` receipt survives RTK rejection; the Redux middleware then leaves that already-recorded incident alone, and callers use `toastErrorAlreadyCaptured`, preventing a generic `redux-rejected` row or duplicate toast. This makes a missing runtime mirror actionable without concealing the refusal.
+
 - 2026-09-15 — **Explicit diagnostic organizations are exact.** A non-null
   `p_organization_id` now inserts only for `service_role` or an authenticated
   caller admitted by `iam.has_org_access`; otherwise `public.log_client_error` raises

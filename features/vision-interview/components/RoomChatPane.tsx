@@ -65,6 +65,7 @@ import {
   ROLES,
   ROLE_TABS,
   roleBinding,
+  roomMayClaimMaterialization,
   stageForRole,
   STAGES,
   type DocView,
@@ -577,6 +578,20 @@ export function RoomChatPane({
   const rolesPhase = useAppSelector(selectRolesPhase);
   const rolesError = useAppSelector(selectRolesError);
   const binding = roleBinding({ role_bindings: roleBindings }, role);
+  /**
+   * 🚨 THE ROOM WAITS FOR THE ANSWER INSTEAD OF GUESSING IT (cold walk 5,
+   * finding 7). `conversation_started` is computed live per `/roles` call and
+   * is DELIBERATELY never persisted, so the copy on the session row can never
+   * carry it: before that call lands, every binding read `false` and the room
+   * called an already-used conversation a reservation. The next turn then went
+   * out as turn 1 with `is_new: true`, and the server's 409 — a raw UUID and
+   * "Pass is_new=false to continue it" — rendered inside a live interview.
+   *
+   * Until the answer is here the room shows its own honest "Opening … room…"
+   * state, which is what `ExpertNotJoined` already is. A FAILED `/roles` stops
+   * the wait, because that screen's error half is what should speak then.
+   */
+  const bindingAnswerPending = !!binding && !roomMayClaimMaterialization(binding, rolesPhase);
   // Which record is on screen lives in the SLICE, not here: the finish dialog
   // has to be able to open the Vision document the moment it is written (a
   // document you are told about but cannot reach is a dead end). Switching
@@ -701,7 +716,7 @@ export function RoomChatPane({
         <div
           className={cn("flex h-full min-h-0 flex-col", activeDoc && "hidden")}
         >
-          {binding ? (
+          {binding && !bindingAnswerPending ? (
             /* Origin stamp — every dictation started in this room's composer
                is saved by the shared recorder WITH attribution to this
                session (v2 §13.1: never lose the speaker's audio). */
@@ -754,6 +769,15 @@ export function RoomChatPane({
                      which of the two this is. Saying so is what stops an
                      unwritten room from wearing "Couldn't load this
                      conversation" forever (census W1). */
+                  /* 🚨 AND WE DO NOT CLAIM ONE WE HAVE NOT BEEN TOLD (cold
+                     walk 5, finding 7). `conversation_started` is computed live
+                     per `/roles` call and never persisted, so before that call
+                     answers the persisted binding always reads `false` — which
+                     labelled an already-used conversation a reservation, sent
+                     the next turn as turn 1 with `is_new: true`, and put the
+                     server's 409 ("Pass is_new=false to continue it", with the
+                     raw UUID) inside a live interview thread. The room now
+                     waits for the answer below rather than guessing here. */
                   conversationMaterialization={
                     binding.conversationStarted ? "existing" : "reserved"
                   }

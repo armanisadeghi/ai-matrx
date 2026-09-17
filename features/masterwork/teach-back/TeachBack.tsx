@@ -376,7 +376,13 @@ export function TeachBack({
       </section>
 
       {/* ── THE START ────────────────────────────────────────────────────── */}
-      {!started ? (
+      {/* 🚨 NEVER THE SETUP SCREEN OVER A LIVE ROUND (cold walk 5, finding 3,
+          found on the Bad Example probe and fixed here as the same class). A
+          mount that is picking a durable round back up cannot yet answer
+          "has this started?" from its restored content, but it CAN answer
+          "is there a round here?" — and while there is, nothing offers to
+          start one. */}
+      {!started && !run.restoring ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Button onClick={() => void send({ agreed: false })} disabled={running}>
             {running ? <Loader2 className="animate-spin" /> : null}

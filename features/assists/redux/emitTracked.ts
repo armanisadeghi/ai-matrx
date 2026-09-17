@@ -84,6 +84,9 @@ export async function emitAssistTracked(
     dedupe_key: input.dedupeKey,
     expires_at: input.expiresAt ?? null,
     suppressed_until: null,
+    // Nothing auto-applies a brand-new assist; the column is set later, by
+    // whoever schedules one, and the row we just wrote carries NULL.
+    auto_apply_at: null,
     priority: input.priority ?? 0,
     organization_id: organizationId,
     created_by: userId,

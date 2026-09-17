@@ -65,6 +65,7 @@ import {
 import { MessageCitationsProvider } from "@/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
 import { MessageSourcesRow } from "../citations/MessageSourcesRow";
 import { AssistantError } from "../../run/AssistantError";
+import { friendlyStreamError } from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
@@ -413,14 +414,6 @@ export function AgentAssistantMessage({
   const failedError = failed
     ? (() => {
         const recordError = extractRecordError(record);
-        const friendly =
-          streamError?.user_message ??
-          streamError?.message ??
-          recordError ??
-          "The response failed.";
-        const technical = streamError?.message;
-        const detail =
-          technical && technical !== friendly ? technical : undefined;
         const code =
           streamError?.code ??
           (streamError?.details &&
@@ -429,6 +422,22 @@ export function AgentAssistantMessage({
             ? (streamError.details as { status_code?: string | number })
                 .status_code
             : undefined);
+        // 🚨 NEVER THE RAW EXCEPTION IN THE THREAD (cold walk 5, finding 7).
+        // This used to fall straight through to `streamError.message`, so a
+        // 409 carrying no `user_message` printed "A conversation with
+        // id='40dd2c57-…' already exists … Pass is_new=false to continue it"
+        // inside a live Vision Interview, between the reply and the composer.
+        // The bubble now shows a declared sentence with its remedy and the raw
+        // text keeps its place under Details. See `friendlyStreamError.ts`.
+        const spoken = friendlyStreamError({
+          userMessage: streamError?.user_message ?? null,
+          message: streamError?.message ?? null,
+          errorType: streamError?.error_type ?? null,
+          code: typeof code === "string" ? code : null,
+          recordError,
+        });
+        const friendly = spoken.message;
+        const detail = spoken.detail ?? undefined;
         return (
           <AssistantError
             message={friendly}

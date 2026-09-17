@@ -58,6 +58,13 @@ import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDicta
 import { AgentCredit } from "@/features/masterwork/components/AgentCredit";
 import { DUMP_SOURCE_TOKENS } from "../sourceLinks";
 import {
+  countInFlight,
+  createSittingStore,
+  describeResumedSitting,
+  settleInFlightSaves,
+  type SittingBase,
+} from "../sitting/sitting";
+import {
   DECLARED_KNOB_DEFAULTS,
   SORT_CASE_WRITER_MANDATE,
   SORT_KNOB_FEATURE,
@@ -92,6 +99,80 @@ type SaveState =
   | { kind: "saving" }
   | { kind: "saved"; added: number; unverified: number; alreadyAnswered: boolean }
   | { kind: "failed"; message: string };
+
+// ── THE SITTING, WRITTEN DOWN ───────────────────────────────────────────────
+//
+// 🚨 IT NEVER ERASES A SITTING (cold walk 5, finding 2, 2026-09-16). Every
+// piece of this lane used to live in React state and nowhere else: the cases
+// dealt, the piles she named, which case she was on, where each one landed, the
+// boundary questions and what each answer came back with. A first-time Expert
+// dealt twenty real cases, sorted five of them on the keyboard, reloaded — and
+// landed back on "Sort the pile, then we'll find the line" with ZERO trace: no
+// resume banner, no partial-progress notice, no rules. The only honest reading
+// of that screen is that the whole session vanished, so the natural next move
+// is to sort the same pile again.
+//
+// The Triad game — this lane's own named sibling — had the identical defect
+// fixed a day earlier, and the fix was written by hand inside that one
+// component, so there was nothing here to inherit. The mechanism now lives in
+// `../sitting/sitting.ts` and BOTH lanes call it.
+interface StoredSortSitting extends SittingBase {
+  phase: Phase;
+  piles: SortPile[];
+  cases: SortCase[];
+  index: number;
+  assignments: Record<string, string>;
+  history: string[];
+  questions: BoundaryQuestion[];
+  questionIndex: number;
+  saveStates: Record<string, SaveState>;
+  rulesThisSitting: number;
+  seenCases: string[];
+  voiceOn: boolean;
+}
+
+const sortSitting = createSittingStore<StoredSortSitting>({
+  keyPrefix: "matrx.masterwork.sort.sitting.v1:",
+  // A stored setup screen is not a sitting — there is nothing to pick up.
+  isUsable: (sitting) =>
+    sitting.phase !== "setup" && Boolean(sitting.cases?.length),
+});
+
+/** What a picked-up Sorting Table sitting says for itself. Two phases, two
+ *  honest sentences — the pile she was sorting, or the questions she was
+ *  answering — built from the shared one so every lane sounds the same. */
+export function describeResumedSort(saved: {
+  phase: Phase;
+  cases: unknown[];
+  index: number;
+  assignments: Record<string, string>;
+  questions: unknown[];
+  questionIndex: number;
+  saveStates: Record<string, { kind: string }>;
+}): string {
+  const inFlight = countInFlight(saved.saveStates);
+  if (saved.phase === "sorting") {
+    return describeResumedSitting({
+      index: saved.index,
+      total: saved.cases.length,
+      answered: Object.keys(saved.assignments).length,
+      inFlight,
+      itemNoun: "case",
+      endedPhrase: "the pile you were sorting",
+      redoPhrase: "sorting those cases again",
+      answeredVerb: "sorting",
+    });
+  }
+  return describeResumedSitting({
+    index: saved.questionIndex,
+    total: saved.questions.length,
+    answered: Object.keys(saved.saveStates).length,
+    inFlight,
+    itemNoun: "question",
+    endedPhrase: "the questions we asked",
+    redoPhrase: "answering those questions again",
+  });
+}
 
 interface KnobState {
   casesPerRound: number;
@@ -129,11 +210,20 @@ export function SortingTablePage({
 }) {
   const store = useAppStore();
 
+  // THE SITTING IS READ BACK BEFORE THE FIRST PAINT, so a reload never shows
+  // the "deal me a pile" setup screen over a round that is still on the board.
+  // Lazy initialisers, so storage is touched once and never during SSR.
+  const restored = useRef<StoredSortSitting | null>(null);
+  if (restored.current === null && typeof window !== "undefined") {
+    restored.current = sortSitting.read(rulebookId);
+  }
+  const saved = restored.current;
+
   const [knobs, setKnobs] = useState<KnobState>(PENDING_KNOBS);
-  const [phase, setPhase] = useState<Phase>("setup");
+  const [phase, setPhase] = useState<Phase>(saved?.phase ?? "setup");
   const [door, setDoor] = useState<CaseDoor>("write");
   const [piles, setPiles] = useState<SortPile[]>(() =>
-    defaultPiles(DECLARED_KNOB_DEFAULTS.piles),
+    saved?.piles?.length ? saved.piles : defaultPiles(DECLARED_KNOB_DEFAULTS.piles),
   );
   const [pastedText, setPastedText] = useState("");
   const [sheet, setSheet] = useState<SheetData | null>(null);
@@ -142,21 +232,45 @@ export function SortingTablePage({
   const [picked, setPicked] = useState<
     { token: string; id: string; title: string }[]
   >([]);
-  const [cases, setCases] = useState<SortCase[]>([]);
-  const [index, setIndex] = useState(0);
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
-  const [history, setHistory] = useState<string[]>([]);
+  const [cases, setCases] = useState<SortCase[]>(saved?.cases ?? []);
+  const [index, setIndex] = useState(saved?.index ?? 0);
+  const [assignments, setAssignments] = useState<Record<string, string>>(
+    saved?.assignments ?? {},
+  );
+  const [history, setHistory] = useState<string[]>(saved?.history ?? []);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [roundNote, setRoundNote] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<BoundaryQuestion[]>([]);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState<BoundaryQuestion[]>(
+    saved?.questions ?? [],
+  );
+  const [questionIndex, setQuestionIndex] = useState(saved?.questionIndex ?? 0);
   const [answer, setAnswer] = useState("");
-  const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
-  const [rulesThisSitting, setRulesThisSitting] = useState(0);
-  const [voiceOn, setVoiceOn] = useState(DECLARED_KNOB_DEFAULTS.voice_default_on);
+  const [saveStates, setSaveStates] = useState<Record<string, SaveState>>(() =>
+    // An answer that was mid-save when the page went away cannot be reported as
+    // "saved" with a count — this browser never heard it — and it is not lost
+    // either: the server finishes a detached submit. It is reported as landed
+    // with nothing this browser can count, and the resume note carries the
+    // remedy: look at the Rulebook rather than answering it again.
+    settleInFlightSaves<SaveState>(saved?.saveStates ?? {}, () => ({
+      kind: "saved",
+      added: 0,
+      unverified: 0,
+      alreadyAnswered: false,
+    })),
+  );
+  const [rulesThisSitting, setRulesThisSitting] = useState(
+    saved?.rulesThisSitting ?? 0,
+  );
+  const [voiceOn, setVoiceOn] = useState(
+    saved?.voiceOn ?? DECLARED_KNOB_DEFAULTS.voice_default_on,
+  );
+  /** The sentence a picked-up sitting says for itself. Null on a fresh one. */
+  const [resumedNote, setResumedNote] = useState<string | null>(() =>
+    saved ? describeResumedSort(saved) : null,
+  );
   /** Every case text sorted this sitting — what stops a round repeating itself. */
-  const seenCases = useRef<string[]>([]);
+  const seenCases = useRef<string[]>(saved?.seenCases ?? []);
 
   // ── the knobs this screen lays out before the first call ─────────────────
   useEffect(() => {
@@ -177,8 +291,13 @@ export function SortingTablePage({
           voiceDefaultOn: voice,
           problem: null,
         });
-        setPiles(defaultPiles(pileCount));
-        setVoiceOn(voice);
+        // A RESTORED SITTING OUTRANKS THE DEFAULTS. The knob read lands after
+        // the first paint; without this it would overwrite the piles she named
+        // and the board she is standing in front of with starting values.
+        if (!restored.current) {
+          setPiles(defaultPiles(pileCount));
+          setVoiceOn(voice);
+        }
       } catch (err) {
         if (cancelled) return;
         // NOTHING FAILS SILENTLY. The settings this screen obeys could not be
@@ -201,6 +320,44 @@ export function SortingTablePage({
       cancelled = true;
     };
   }, []);
+
+  // Written on every change that matters — never on keystrokes in the answer
+  // box, because a draft answer is not evidence; the placed case and the
+  // submitted answer are. A setup screen is cleared rather than stored, so a
+  // finished-and-restarted round never offers a stale board back.
+  useEffect(() => {
+    if (phase === "setup") {
+      sortSitting.clear(rulebookId);
+      return;
+    }
+    sortSitting.write(rulebookId, {
+      phase,
+      piles,
+      cases,
+      index,
+      assignments,
+      history,
+      questions,
+      questionIndex,
+      saveStates,
+      rulesThisSitting,
+      seenCases: seenCases.current,
+      voiceOn,
+    });
+  }, [
+    rulebookId,
+    phase,
+    piles,
+    cases,
+    index,
+    assignments,
+    history,
+    questions,
+    questionIndex,
+    saveStates,
+    rulesThisSitting,
+    voiceOn,
+  ]);
 
   const pileName = useCallback(
     (key: string) => piles.find((pile) => pile.key === key)?.name ?? key,
@@ -290,6 +447,7 @@ export function SortingTablePage({
     setIndex(0);
     setAssignments({});
     setHistory([]);
+    setResumedNote(null);
     setPhase("sorting");
   }, [broughtCases, door, knobs.casesPerRound, piles, pilesReady, rulebookId, store]);
 
@@ -799,6 +957,11 @@ export function SortingTablePage({
 
     return (
       <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-4 sm:px-6">
+        {resumedNote ? (
+          <p className="mb-3 shrink-0 rounded-lg border border-sky-500/40 bg-sky-500/5 p-3 text-sm text-sky-700 dark:text-sky-300">
+            {resumedNote}
+          </p>
+        ) : null}
         <div className="flex shrink-0 items-center justify-between gap-3">
           <span className="text-sm font-medium text-muted-foreground">
             Case {index + 1} of {cases.length}
@@ -986,6 +1149,11 @@ export function SortingTablePage({
         rulebookName={rulebookName}
       >
         <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-4 sm:px-6">
+          {resumedNote ? (
+            <p className="mb-3 shrink-0 rounded-lg border border-sky-500/40 bg-sky-500/5 p-3 text-sm text-sky-700 dark:text-sky-300">
+              {resumedNote}
+            </p>
+          ) : null}
           <div className="flex shrink-0 items-center justify-between gap-3">
             <span className="text-sm font-medium text-muted-foreground">
               Question {questionIndex + 1} of {questions.length}

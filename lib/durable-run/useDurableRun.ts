@@ -664,6 +664,14 @@ export interface UseDurableRunOptions<TResult> {
 export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   /** True while the run is working — launched here or rejoined. */
   running: boolean;
+  /**
+   * True from the first paint of a mount that found a durable pointer until
+   * that rejoin resolves: there IS a run here and this mount cannot yet say
+   * what it holds. A surface must not offer to START anything while it is
+   * true — that is how a probe rendered its setup screen and a live round at
+   * the same time (cold walk 5, finding 3).
+   */
+  restoring: boolean;
   /** Start it. Per-launch scope wins and is retained for rejoin. */
   launch: (
     body: Record<string, unknown>,
@@ -782,6 +790,29 @@ export function useDurableRun<TResult>(
   const dispatch = useAppDispatch();
   const [state, setState] = useState<DurableRunState<TResult>>(
     initialState<TResult>,
+  );
+
+  /**
+   * 🚨 THIS MOUNT HAS A POINTER AND DOES NOT YET KNOW WHAT IT HOLDS.
+   *
+   * Cold walk 5, finding 3 (2026-09-16): a Bad Example probe reloaded mid-round
+   * rendered its SETUP screen — a spinning, disabled "Write the first one" over
+   * "Up to 5 rounds…" — at the same time as an in-progress row reading "Writing
+   * round 2 — a version of this work that looks right and is not." with a Stop
+   * button, for about nine seconds. Two contradictory states, in one paint, on
+   * one screen. A surface decides "has this started?" from its own restored
+   * CONTENT, which arrives only when the rejoin resolves, while `running` is
+   * true from the first paint — so the two answers disagree for exactly as long
+   * as the rejoin takes.
+   *
+   * This is the missing third answer, and it belongs to every durable surface,
+   * not to the probe: there IS a run here, and this mount cannot describe it
+   * yet. A surface must not offer to START anything while it is true. Computed
+   * before the first paint from the same pointer the rejoin effect reads, so
+   * there is no frame in which it is wrong.
+   */
+  const [restoring, setRestoring] = useState<boolean>(
+    () => peekDurableRun(options.wire, options.key) !== null,
   );
 
   // Latest-value refs so the stream handler never closes over stale options
@@ -1311,6 +1342,8 @@ export function useDurableRun<TResult>(
       // new run's id.
       stopReconnect();
       clearPointer(wire, key);
+      // A deliberate launch answers the "what is here?" question outright.
+      setRestoring(false);
       runIdRef.current = null;
       statusRef.current = "running";
       setState({
@@ -1390,7 +1423,12 @@ export function useDurableRun<TResult>(
       scopeOverrides: defaultScopeOverrides,
     } = optionsRef.current;
     const pointer = readPointer(wire, key);
-    if (!pointer) return;
+    if (!pointer) {
+      // Nothing to pick up — say so before anyone paints a restoring state.
+      setRestoring(false);
+      return;
+    }
+    setRestoring(true);
     // A settled pointer is a finished ANSWER being restored, not a run being
     // rejoined: the form stays usable while its result comes back, and the
     // user never sees a spinner for work that is already done.
@@ -1437,7 +1475,10 @@ export function useDurableRun<TResult>(
           raw: { runId: pointer.runId, key },
         });
       },
-    });
+      // Whatever the rejoin resolved to — a restored answer, a live stream, or
+      // a pointer that turned out to be dead — this mount now knows what it
+      // holds, so the surface may describe itself again.
+    }).finally(() => setRestoring(false));
   }, [dispatch, handleEvent, streamOptions]);
 
   const reset = useCallback(() => {
@@ -1446,6 +1487,7 @@ export function useDurableRun<TResult>(
     startedAtRef.current = null;
     setElapsedMs(0);
     statusRef.current = "idle";
+    setRestoring(false);
     setState(initialState<TResult>());
   }, [stopReconnect]);
 
@@ -1671,6 +1713,7 @@ export function useDurableRun<TResult>(
   return {
     ...state,
     running,
+    restoring,
     launch,
     reset,
     fail,

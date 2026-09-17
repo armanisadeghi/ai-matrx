@@ -46,53 +46,34 @@ function sqlStringOrNull(s: string | null | undefined): string {
  */
 function currentGitSha(): string | null {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim() || null;
+    return (
+      execFileSync("git", ["rev-parse", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim() || null
+    );
   } catch {
     return null;
   }
 }
 
-function main() {
-  const allManifests = getAllManifests();
-  // PROVENANCE, twin of manifest-sync.service.ts: every row this SQL writes
-  // stamps `synced_by` / `synced_from`. `synced_by` is NULL by contract — this
-  // channel has no session, and the applier is whoever runs the SQL.
-  const syncedFrom = sqlString(sqlSyncedFrom(currentGitSha()));
-  const provenanceValues = `NULL, ${syncedFrom}`;
-  const provenanceSet =
-    "synced_by = EXCLUDED.synced_by, synced_from = EXCLUDED.synced_from";
-  const requestedSurfaceNames = new Set<string>();
-  const args = process.argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--surface") {
-      const name = args[index + 1];
-      if (!name || name.startsWith("--")) {
-        throw new Error("--surface requires a surface name");
-      }
-      requestedSurfaceNames.add(name);
-      index += 1;
-      continue;
-    }
-    if (arg.startsWith("--surface=")) {
-      const name = arg.slice("--surface=".length).trim();
-      if (!name) throw new Error("--surface requires a surface name");
-      requestedSurfaceNames.add(name);
-      continue;
-    }
-    throw new Error(`Unknown argument: ${arg}`);
-  }
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export interface EmitSurfaceSyncSqlOptions {
+  surfaceNames?: readonly string[];
+  organizationId: string;
+}
+
+function selectedManifests(surfaceNames: readonly string[]) {
+  const allManifests = getAllManifests();
   const manifests =
-    requestedSurfaceNames.size === 0
+    surfaceNames.length === 0
       ? allManifests
       : allManifests.filter((manifest) =>
-          requestedSurfaceNames.has(manifest.surfaceName),
+          surfaceNames.includes(manifest.surfaceName),
         );
-  const unresolvedNames = [...requestedSurfaceNames].filter(
+  const unresolvedNames = surfaceNames.filter(
     (name) => !manifests.some((manifest) => manifest.surfaceName === name),
   );
   if (unresolvedNames.length > 0) {
@@ -100,18 +81,46 @@ function main() {
       `Unknown surface manifest${unresolvedNames.length === 1 ? "" : "s"}: ${unresolvedNames.join(", ")}`,
     );
   }
-  const surfaceNames = manifests.map((m) => m.surfaceName);
+  return manifests;
+}
+
+export function emitSurfaceSyncSql({
+  surfaceNames = [],
+  organizationId,
+}: EmitSurfaceSyncSqlOptions): string {
+  if (!UUID_RE.test(organizationId)) {
+    throw new Error("--organization-id must be a UUID");
+  }
+  const manifests = selectedManifests([...new Set(surfaceNames)]);
+  // PROVENANCE, twin of manifest-sync.service.ts: every row this SQL writes
+  // stamps `synced_by` / `synced_from`. `synced_by` is NULL by contract — this
+  // channel has no session, and the applier is whoever runs the SQL.
+  const syncedFrom = sqlString(sqlSyncedFrom(currentGitSha()));
+  const provenanceValues = `NULL, ${syncedFrom}`;
+  const provenanceSet =
+    "synced_by = EXCLUDED.synced_by, synced_from = EXCLUDED.synced_from";
 
   const valueRows: string[] = [];
   const roleRows: string[] = [];
   const writeTargetRows: string[] = [];
   const clientToolRows: string[] = [];
   const surfaceUpdates: string[] = [];
+  const surfaceRows: string[] = [];
 
   for (const m of manifests) {
+    const [clientName] = m.surfaceName.split("/");
+    if (!clientName) {
+      throw new Error(`Surface name has no client prefix: ${m.surfaceName}`);
+    }
+    const urlPattern = resolveSurfaceUrlPattern(m);
+    const intro = m.intro?.trim() || null;
+    const parent = getRawManifest(m.surfaceName)?.inheritsFrom ?? null;
+    surfaceRows.push(
+      `(${sqlString(m.surfaceName)}, ${sqlString(clientName)}, '', ${sqlString(m.label)}, ${sqlString(JSON.stringify(m.groups ?? []))}::jsonb, ${sqlString(m.readiness)}, ${sqlStringOrNull(m.readinessNote)}, ${m.overlayId ? sqlString(m.overlayId) : "NULL"}, ${urlPattern ? sqlString(urlPattern) : "NULL"}, ${intro ? sqlStringOrNull(intro) : "NULL"}, ${parent ? sqlString(parent) : "NULL"})`,
+    );
     for (const v of m.values) {
       valueRows.push(
-        `(${sqlString(m.surfaceName)}, ${sqlString(v.name)}, ${sqlString(
+        `(${sqlString(organizationId)}, 'public', ${sqlString(m.surfaceName)}, ${sqlString(v.name)}, ${sqlString(
           v.label,
         )}, ${sqlString(v.description)}, ${sqlString(v.valueType)}, ${
           v.alwaysAvailable
@@ -124,7 +133,7 @@ function main() {
     }
     for (const r of m.agentRoles ?? []) {
       roleRows.push(
-        `(${sqlString(m.surfaceName)}, ${sqlString(r.name)}, ${sqlString(
+        `(${sqlString(organizationId)}, 'public', ${sqlString(m.surfaceName)}, ${sqlString(r.name)}, ${sqlString(
           r.label,
         )}, ${sqlString(r.description)}, ${sqlString(r.kind)}, ${
           r.defaultAgentId ? sqlString(r.defaultAgentId) : "NULL"
@@ -137,7 +146,7 @@ function main() {
     }
     for (const t of m.writeTargets ?? []) {
       writeTargetRows.push(
-        `(${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
+        `(${sqlString(organizationId)}, 'public', ${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
           t.label,
         )}, ${sqlString(t.description)}, ${sqlString(t.valueType)}, ${sqlString(
           t.mode,
@@ -151,7 +160,7 @@ function main() {
 
     for (const t of m.clientTools ?? []) {
       clientToolRows.push(
-        `(${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
+        `(${sqlString(organizationId)}, 'public', ${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
           t.label,
         )}, ${sqlString(t.description)}, ${sqlString(
           JSON.stringify(t.inputSchema),
@@ -159,11 +168,6 @@ function main() {
       );
     }
 
-    const urlPattern = resolveSurfaceUrlPattern(m);
-    const intro = m.intro?.trim() || null;
-    // inheritsFrom lives on the RAW manifest (inheritance resolution strips
-    // nothing, but read raw for provenance parity with the service).
-    const parent = getRawManifest(m.surfaceName)?.inheritsFrom ?? null;
     const sets: string[] = [];
     // Canonical label + value_groups are ALWAYS declared (THE NAMING LAW) and
     // therefore always mirrored — matching manifest-sync.service.ts step 3c.
@@ -184,63 +188,81 @@ function main() {
     }
   }
 
-  console.log("-- Guard: manifest surfaces missing a ui_surface row");
-  console.log(
-    `SELECT s.name FROM (VALUES ${surfaceNames
-      .map((n) => `(${sqlString(n)})`)
-      .join(
-        ", ",
-      )}) AS s(name) LEFT JOIN ui.ui_surface u ON u.name = s.name WHERE u.name IS NULL;`,
+  const out: string[] = [];
+  out.push(
+    "-- Register selected manifest surfaces. Existing ui_client rows are required; this emitter never creates clients.",
   );
-  console.log("");
-  console.log("-- Upsert all manifest values");
-  console.log(
-    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context, group_key, synced_by, synced_from) VALUES`,
+  out.push(
+    `INSERT INTO ui.ui_surface (name, client_name, description, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name) VALUES\n${surfaceRows.join(",\n")}\nON CONFLICT (name) DO NOTHING;`,
   );
-  console.log(valueRows.join(",\n"));
-  console.log(
-    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, group_key = EXCLUDED.group_key, ${provenanceSet}, updated_at = now();`,
+  out.push("");
+  out.push(
+    "-- Upsert all manifest values with explicit system ownership and public visibility",
+  );
+  out.push(
+    `INSERT INTO ui.ui_surface_value (organization_id, visibility, surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context, group_key, synced_by, synced_from) VALUES\n${valueRows.join(",\n")}\nON CONFLICT (surface_name, name) DO UPDATE SET organization_id = EXCLUDED.organization_id, visibility = EXCLUDED.visibility, label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, group_key = EXCLUDED.group_key, ${provenanceSet}, updated_at = now();`,
   );
   if (roleRows.length > 0) {
-    console.log("");
-    console.log("-- Upsert all manifest agent roles");
-    console.log(
-      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order, synced_by, synced_from) VALUES`,
+    out.push(
+      "",
+      "-- Upsert all manifest agent roles with explicit system ownership and public visibility",
     );
-    console.log(roleRows.join(",\n"));
-    console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, mandate_key = EXCLUDED.mandate_key, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, ${provenanceSet}, updated_at = now();`,
+    out.push(
+      `INSERT INTO ui.ui_surface_agent_role (organization_id, visibility, surface_name, name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order, synced_by, synced_from) VALUES\n${roleRows.join(",\n")}\nON CONFLICT (surface_name, name) DO UPDATE SET organization_id = EXCLUDED.organization_id, visibility = EXCLUDED.visibility, label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, mandate_key = EXCLUDED.mandate_key, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (writeTargetRows.length > 0) {
-    console.log("");
-    console.log("-- Upsert all manifest write targets");
-    console.log(
-      `INSERT INTO ui.ui_surface_write_target (surface_name, name, label, description, value_type, mode, updates_value, group_key, sort_order, apply_policy, kind_key, synced_by, synced_from) VALUES`,
+    out.push(
+      "",
+      "-- Upsert all manifest write targets with explicit system ownership and public visibility",
     );
-    console.log(writeTargetRows.join(",\n"));
-    console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, kind_key = EXCLUDED.kind_key, ${provenanceSet}, updated_at = now();`,
+    out.push(
+      `INSERT INTO ui.ui_surface_write_target (organization_id, visibility, surface_name, name, label, description, value_type, mode, updates_value, group_key, sort_order, apply_policy, kind_key, synced_by, synced_from) VALUES\n${writeTargetRows.join(",\n")}\nON CONFLICT (surface_name, name) DO UPDATE SET organization_id = EXCLUDED.organization_id, visibility = EXCLUDED.visibility, label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, kind_key = EXCLUDED.kind_key, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (clientToolRows.length > 0) {
-    console.log("");
-    console.log("-- Upsert all manifest client tools");
-    console.log(
-      `INSERT INTO ui.ui_surface_client_tool (surface_name, name, label, description, input_schema, mode, synced_by, synced_from) VALUES`,
+    out.push(
+      "",
+      "-- Upsert all manifest client tools with explicit system ownership and public visibility",
     );
-    console.log(clientToolRows.join(",\n"));
-    console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, input_schema = EXCLUDED.input_schema, mode = EXCLUDED.mode, ${provenanceSet}, updated_at = now();`,
+    out.push(
+      `INSERT INTO ui.ui_surface_client_tool (organization_id, visibility, surface_name, name, label, description, input_schema, mode, synced_by, synced_from) VALUES\n${clientToolRows.join(",\n")}\nON CONFLICT (surface_name, name) DO UPDATE SET organization_id = EXCLUDED.organization_id, visibility = EXCLUDED.visibility, label = EXCLUDED.label, description = EXCLUDED.description, input_schema = EXCLUDED.input_schema, mode = EXCLUDED.mode, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (surfaceUpdates.length > 0) {
-    console.log("");
-    console.log(
-      "-- Mirror url_pattern / intro / parent_surface_name (declared fields only)",
-    );
-    console.log(surfaceUpdates.join("\n"));
+    out.push("", "-- Mirror declared surface metadata");
+    out.push(surfaceUpdates.join("\n"));
   }
+  return out.join("\n");
 }
 
-main();
+function main() {
+  const surfaceNames: string[] = [];
+  let organizationId: string | undefined;
+  const args = process.argv.slice(2);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const value = args[index + 1];
+    if (arg === "--surface" || arg === "--organization-id") {
+      if (!value || value.startsWith("--"))
+        throw new Error(`${arg} requires a value`);
+      if (arg === "--surface") surfaceNames.push(value);
+      else organizationId = value;
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--surface=")) {
+      surfaceNames.push(arg.slice(10));
+      continue;
+    }
+    if (arg.startsWith("--organization-id=")) {
+      organizationId = arg.slice(18);
+      continue;
+    }
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+  if (!organizationId) throw new Error("--organization-id is required");
+  console.log(emitSurfaceSyncSql({ surfaceNames, organizationId }));
+}
+
+if (process.argv[1]?.endsWith("emit-surface-sync-sql.ts")) main();

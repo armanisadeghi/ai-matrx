@@ -168,6 +168,24 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-17` — **The Flashcard-set agent surface is registered and has production run and binding evidence, but is not fully certified.** Commit `b19524edf9` wired the route and manifest but did not synchronize its runtime registration; the live database was missing that one parent surface out of 200. The transactional repair seeded the complete 12-key mirror at 06:33:55Z. Run `a8c5bdb0-9640-4075-9630-70426bbf0083` completed around 06:38Z with two completed `chat.request` rows, `card_count=50`, the correct deck title and first question, and only the deferred context tool. Independent production proof then bound Badass Agent at User/Me scope with empty mappings: the success receipt appeared, the Agents menu showed Run/Settings/Remove controls, and the exact association carried the expected user-tier role before cleanup. Broader full surface certification is still required, so the surface remains `partial`.
+
+- `2026-09-16` — **Flashcard set detail is now a real agent surface, not a
+  library fallback.** `/education/flashcards/[setId]` had no
+  `SurfaceRuntimeProvider`; route resolution therefore named the library
+  surface while the Agents menu launched with no live values — zero of the
+  title, 50 cards, detail layers, or study signal reached the agent. The
+  dedicated `matrx-user/education-flashcard-set` manifest, exact dynamic-leaf
+  route resolver, and detail-page runtime now supply the loaded deck at launch.
+  The regression test pins the library/detail/editor split: never let a broad
+  prefix claim a child route whose vocabulary it cannot emit. Study-mode routes
+  remain intentionally separate until each has its own complete contract.
+
+- `2026-09-16` — Flashcard generation previews now use the same `MarkdownStream`
+  path and the same shared `max-w-3xl` reading column as an assistant message.
+  Both topic and source generation inherit the repair; the old direct
+  `FlashcardsBlock` mount and narrower `max-w-2xl` page constraint are gone.
+
 - `2026-09-14` — **FastFire discloses every fixed mandate job in the shared
   Agents menu.** The spoken answer grader, spoken-question TTS, and cached
   instant-help TTS are registered as surface roles only; the drill page gains

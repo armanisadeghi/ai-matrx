@@ -176,7 +176,8 @@ export function OpeningVisionSend({
   const store = useAppStore();
   const [failed, setFailed] = useState(false);
   const inFlightRef = useRef(false);
-  const { conversationId, agentId, conversationStarted } = binding;
+  const { conversationId, agentId, conversationStarted, conversationStartedKnown } =
+    binding;
   const vision = visionStatement?.trim() ?? "";
   const meta = ROLES[role];
 
@@ -223,6 +224,12 @@ export function OpeningVisionSend({
 
   useEffect(() => {
     if (!vision) return;
+    // 🚨 WAIT FOR THE ANSWER BEFORE ACTING ON IT (cold walk 5, finding 7). The
+    // persisted binding can never carry `conversation_started`, so before
+    // `/roles` answers this read `false` on a room that HAD been spoken in —
+    // and this effect would send the opening statement into it a second time.
+    // "Nobody has told us yet" is not "no".
+    if (!conversationStartedKnown) return;
     // The server's answer: this room has already been spoken in.
     if (conversationStarted) return;
     if (alreadySent(sessionId, conversationId)) return;
@@ -234,6 +241,7 @@ export function OpeningVisionSend({
   }, [
     vision,
     conversationStarted,
+    conversationStartedKnown,
     sessionId,
     conversationId,
     inputEntryReady,

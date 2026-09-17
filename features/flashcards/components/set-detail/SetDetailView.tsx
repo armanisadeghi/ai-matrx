@@ -138,6 +138,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationFlashcardSetScope,
+  type FlashcardSetSurfaceCard,
+  type FlashcardSetSurfaceMastery,
+} from "@/features/surfaces/manifests/education-flashcard-set.manifest";
+import { masteryTier } from "@/features/education/study/utils/masteryFsrs";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -191,6 +198,7 @@ const VOICE_STUDY_MODES = [
 ] as const;
 
 const EDU_BASE = "/education/flashcards";
+const SURFACE_NAME = "matrx-user/education-flashcard-set";
 
 /** A compact, non-flipping front/back peek for one card with detail badges. */
 function CardPeek({
@@ -401,6 +409,9 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
   >({});
+  const [masteryStatus, setMasteryStatus] = useState<
+    "pending" | "available" | "unavailable"
+  >("pending");
   // Bump to refetch (after enrich/deepen adds details/sub-cards). The fetch
   // lives in the effect so no setState fires synchronously in the effect body.
   const [reloadKey, setReloadKey] = useState(0);
@@ -409,6 +420,7 @@ export function SetDetailView({ setId }: { setId: string }) {
     let cancelled = false;
     void (async () => {
       setLoading(true);
+      setMasteryStatus("pending");
       const res = await fcService.getSetWithCards(setId);
       if (cancelled) return;
       if (!res.data) {
@@ -428,13 +440,21 @@ export function SetDetailView({ setId }: { setId: string }) {
           const mRes = await studyService.getMasteryBulk(
             res.data.cards.map((c) => ({ itemType: "fc_card", itemId: c.id })),
           );
-          if (!cancelled) {
+          if (!cancelled && !mRes.error) {
             const seed: Record<string, ItemMasteryRow | undefined> = {};
             for (const m of mRes.data ?? []) seed[m.item_id] = m;
             setMasteryByCard(seed);
+            setMasteryStatus("available");
+          } else if (!cancelled) {
+            // A missing mastery read is not the same as a learner with no
+            // history. Keep the optional surface value absent rather than
+            // handing an agent fabricated "new" evidence.
+            setMasteryByCard({});
+            setMasteryStatus("unavailable");
           }
         } else {
           setMasteryByCard({});
+          setMasteryStatus("available");
         }
       }
     })();
@@ -670,6 +690,73 @@ export function SetDetailView({ setId }: { setId: string }) {
       backImage: images.back ?? null,
     });
   };
+
+  // The header Agents menu is outside this route tree, so the detail page
+  // registers its own live runtime. The library's provider is absent here;
+  // without this exact surface the route resolver offered library agents with
+  // an empty bag even though the deck was visibly loaded.
+  const buildScope = () => {
+    const loaded = !!data && !error;
+    return createEducationFlashcardSetScope({
+      set_loaded: loaded,
+      set_id: setId,
+      ...(error ? { load_error: error } : {}),
+      ...(loaded
+        ? {
+            set_details: {
+              name: data.set.name,
+              topic: data.set.topic,
+              lesson: data.set.lesson,
+              description: data.set.description,
+              difficulty: data.set.difficulty,
+              visibility: data.set.visibility,
+            },
+            card_count: data.cards.length,
+            cards: data.cards.map(
+              (card, index): FlashcardSetSurfaceCard => ({
+                id: card.id,
+                position: card.position ?? index,
+                card_kind: asCardKind(card.card_kind),
+                front: card.front,
+                back: card.back,
+                pairs:
+                  asCardKind(card.card_kind) === CARD_KIND.matching
+                    ? matchingPairs(card)
+                    : null,
+                detail_layers: card.details.map((detail) => ({
+                  kind: detail.kind,
+                  text: detail.text,
+                  generation_status: detail.generation_status,
+                })),
+              }),
+            ),
+            ...(masteryStatus === "available"
+              ? {
+                  card_mastery: data.cards.flatMap(
+                    (card): FlashcardSetSurfaceMastery[] => {
+                      const mastery = masteryByCard[card.id];
+                      if (!mastery || (mastery.attempt_count ?? 0) === 0) return [];
+                      const { tier, pct } = masteryTier(mastery);
+                      return [{
+                        card_id: card.id,
+                        tier,
+                        recall_pct: pct,
+                        attempts: mastery.attempt_count ?? 0,
+                        lapses: mastery.lapses ?? 0,
+                      }];
+                    },
+                  ),
+                }
+              : {}),
+          }
+        : {}),
+    });
+  };
+
+  useSurfaceRuntimeRegistration({
+    surfaceName: SURFACE_NAME,
+    getScope: buildScope,
+  });
 
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">

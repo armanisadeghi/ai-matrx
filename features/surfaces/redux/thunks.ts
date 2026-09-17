@@ -1,5 +1,6 @@
 "use client";
 
+import { serializeSurfaceBindingError } from "@/features/surfaces/services/surface-registration-error";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -155,20 +156,28 @@ export const upsertAgentSurfaceBindingThunk = createAsyncThunk<
   AgentSurfaceBinding,
   UpsertBindingArgs,
   ThunkApi
->("agentSurfaceBindings/upsert", async (args, { dispatch }) => {
-  const saved = await upsertAgentSurfaceBinding(args);
-  dispatch(upsertBinding(saved));
-  return saved;
-});
+>(
+  "agentSurfaceBindings/upsert",
+  async (args, { dispatch }) => {
+    const saved = await upsertAgentSurfaceBinding(args);
+    dispatch(upsertBinding(saved));
+    return saved;
+  },
+  { serializeError: serializeSurfaceBindingError },
+);
 
 export const deleteAgentSurfaceBindingThunk = createAsyncThunk<
   void,
   { bindingId: string },
   ThunkApi
->("agentSurfaceBindings/delete", async ({ bindingId }, { dispatch }) => {
-  await deleteAgentSurfaceBinding(bindingId);
-  dispatch(removeBinding(bindingId));
-});
+>(
+  "agentSurfaceBindings/delete",
+  async ({ bindingId }, { dispatch }) => {
+    await deleteAgentSurfaceBinding(bindingId);
+    dispatch(removeBinding(bindingId));
+  },
+  { serializeError: serializeSurfaceBindingError },
+);
 
 /**
  * Batch upsert bindings across many surfaces for one agent. Each surface is an
