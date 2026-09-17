@@ -27,7 +27,7 @@ Org-scoped project management. Projects group work within an organization; tasks
   Google-native PLAN §4.7). Imported tasks are ordinary `workspace.tasks` rows
   carrying the origin spine (`origin='import'`, `source_type='google_tasks'`,
   `source_id`, `source_label`, `dedupe_key`) plus `source_list_id`,
-  `source_imported_at` and `source_snapshot` (aidream migration 0772). A
+  `source_imported_at` and `source_snapshot` (aidream migration 0778). A
   re-import rewrites a field ONLY where Google changed it and the Matrx value
   still equals that snapshot — a task edited here is never overwritten. Nothing
   is ever written back to Google.
@@ -165,7 +165,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
   Tasks", which opens the shared import window: task lists, checkboxes,
   already-imported badges, the server's honest count line, and a re-import that
   only takes what Google changed. No second task store and no new task columns
-  beyond the three origin stamps in aidream migration 0772.
+  beyond the three origin stamps in aidream migration 0778.
 - `2026-09-13` — **The initial `/tasks` hierarchy read has a terminal path.**
   `get_user_full_context` now aborts after 20 seconds and dispatches the
   existing retryable error state instead of leaving task workspaces in an

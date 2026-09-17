@@ -890,6 +890,12 @@ stand-in for the audit columns.
 
 ## Not built yet
 
+- Resolving a typed-by-hand address to a contact medium ANYWHERE in the
+  organization, so the send gate covers an address this particular record does
+  not hold. Today `preflight.ts` resolves only the addresses on the record, and
+  both the compose panel and the approval queue say out loud when an address
+  had nothing to check. Needs a reader in `features/crm/compliance/` that
+  returns medium ids (`findExistingMediumOwners` returns parties).
 - Associating a Gmail send with a **project** through `platform.associations`
   (the id is carried and recorded in `metadata`, never dropped silently).
 - A `crm.sending_event` row for a Gmail send: that table's `identity_id` is NOT
@@ -914,7 +920,7 @@ stand-in for the audit columns.
   longer equals what the last import wrote is reported as edited here and is
   never overwritten; "Update from Google" is the same call with the diff shown.
   Per-value provenance lands in `crm.party.field_provenance` (aidream migration
-  0772); until it is applied the write is skipped WITH its remedy, never
+  0778); until it is applied the write is skipped WITH its remedy, never
   silently. Nothing is ever written back to Google.
 
 - 2026-09-13 — **A customer row says who made it, and the grid has ONE chip for

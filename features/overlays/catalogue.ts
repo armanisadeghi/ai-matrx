@@ -60,6 +60,18 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // The two Google import panels (Google-native PLAN §4.5, §4.7). Singletons:
+  // opening again retargets the one window rather than stacking a copy.
+  googleContactsImportWindow: {
+    label: "Import from Google Contacts",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  googleTasksImportWindow: {
+    label: "Import from Google Tasks",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   liveRunWindow: {
     label: "AI Run",
     instanceMode: "multi",
