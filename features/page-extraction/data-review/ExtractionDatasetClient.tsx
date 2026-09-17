@@ -337,7 +337,20 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       },
       ...columns.map((column, index) => ({
         id: column.key,
-        header: column.label,
+        header: (
+          <span
+            title={COLUMN_SOURCE_META[column.source]?.hint}
+            className="inline-flex items-center gap-1"
+          >
+            {column.label}
+            {COLUMN_SOURCE_META[column.source]?.editable ? (
+              <Pencil
+                className="h-3 w-3 opacity-50"
+                aria-label="Editable column"
+              />
+            ) : null}
+          </span>
+        ),
         label: column.label,
         accessorFn: (row: PageExtractionResult) => cellValueFor(row, column),
         sortValue: (row: PageExtractionResult) => cellValueFor(row, column),
@@ -976,6 +989,8 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             </div>
           ) : (
             <MatrxDataTable<PageExtractionResult>
+              tableId={`extraction-dataset/${jobId}`}
+              detail={{ enabled: false }}
               data={displayRows}
               columns={tableColumns}
               getRowId={(row) => row.id}

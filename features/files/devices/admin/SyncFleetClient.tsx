@@ -83,11 +83,13 @@ function Stat({
 }
 
 function Table({
+  id,
   title,
   rows,
   empty,
   now,
 }: {
+  id: string;
   title: string;
   rows: SyncAdminRow[];
   empty: string;
@@ -184,6 +186,7 @@ function Table({
         </span>
       </header>
       <MatrxDataTable
+        tableId={`admin/sync-fleet/${id}`}
         data={rows}
         columns={columns}
         getRowId={(row) => row.id}
@@ -258,24 +261,28 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
       ) : null}
 
       <Table
+        id="over-quota"
         title="Over quota"
         rows={overQuota}
         empty="No account is over its storage limit."
         now={now}
       />
       <Table
+        id="stopped"
         title="Sync stopped — needs the person at that machine"
         rows={stalled}
         empty="Nothing is stopped."
         now={now}
       />
       <Table
+        id="degraded"
         title="Degraded but moving"
         rows={degraded}
         empty="Nothing is degraded."
         now={now}
       />
       <Table
+        id="behind"
         title="Devices behind — active mappings whose device stopped checking in"
         rows={behind}
         empty="Every active mapping has a device that checked in recently."
