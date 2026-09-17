@@ -14,7 +14,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, Loader2, Link2, Zap } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import {
+  isCapturedSurfaceRegistrationError,
+  isSurfaceRegistrationError,
+} from "@/features/surfaces/services/surface-registration-error";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Label } from "@/components/ui/label";
@@ -128,9 +132,7 @@ export function SurfaceAgentBindPanel({
   const [busy, setBusy] = useState(false);
   const [guardOpen, setGuardOpen] = useState(false);
   const [seededForAgent, setSeededForAgent] = useState<string | null>(null);
-  const [assocBindings, setAssocBindings] = useState<AgentSurfaceBinding[]>(
-    [],
-  );
+  const [assocBindings, setAssocBindings] = useState<AgentSurfaceBinding[]>([]);
   const [bindingsLoadedFor, setBindingsLoadedFor] = useState<string | null>(
     null,
   );
@@ -364,7 +366,13 @@ export function SurfaceAgentBindPanel({
         surfaceName,
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not save binding");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Could not save binding",
+      );
     } finally {
       setBusy(false);
     }
@@ -516,8 +524,9 @@ export function SurfaceAgentBindPanel({
             </div>
           ) : targets.length === 0 ? (
             <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
-              This agent has no variables or context policies to map. You can still
-              bind it — it will appear on the surface with no wired inputs.
+              This agent has no variables or context policies to map. You can
+              still bind it — it will appear on the surface with no wired
+              inputs.
             </p>
           ) : mapTab === "suggest" ? (
             <BindingSuggestionsTab

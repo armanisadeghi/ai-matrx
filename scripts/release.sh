@@ -742,6 +742,13 @@ else
     ok "Plain release commit contains version metadata only; patrol history remains unchanged."
 fi
 
+# Runtime dependency admission: manifests shipped in this exact commit must
+# have their database registrations. Independent of advisory quality gates.
+info "Checking committed surface registrations in the live database..."
+if ! pnpm exec tsx scripts/check-release-surface-registration.ts; then
+    die_after_commit "Surface registration is incomplete. The candidate is committed but unpushed. Run the named scoped surface sync, verify it, and resume delivery."
+fi
+
 # ── Tag ──────────────────────────────────────────────────────────────────────
 info "Creating tag $NEW_TAG..."
 git tag "$NEW_TAG"

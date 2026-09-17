@@ -95,26 +95,16 @@ What this surface IS, what the user does here, how to read its values.
    ```
    `check:surface-drift` validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**). It validates manifests *against themselves* and is blind to route coverage — which is how ten live `/agents/shortcuts` routes pointed at a surface with **no manifest and no DB row** until 2026-08-17.
    `check:surface-routes` closes that: it walks every `(core)` route through the real resolver. A mapping pointing at a surface with no manifest **fails** (a PHANTOM); a route resolving to nothing is **reported** unless it carries a written reason in that script's `DELIBERATELY_UNMAPPED` list. Never silence a route by adding it there without a real reason — that re-creates the blindness.
-4. **Sync the DB**:
-   - From the Surfaces admin page (`/administration/ui/surfaces`) → "Sync Manifests" button.
-   - Or via API: `POST /api/admin/surfaces/sync-manifests` (super-admin gated).
-   - The endpoint diffs `ALL_MANIFESTS` against the mirror and upserts — including `ui_surface.label` + `value_groups` (ALWAYS written) and per-value `group_key`. If a `ui_surface` row is missing for the surface, it's reported as `skippedMissingSurface` — you must seed the `ui_surface` row first.
-
-### Seeding the `ui_surface` row
-
-If you're adding a brand-new surface (not just adding values to an existing one), the `ui_surface` row must exist before the sync will accept SurfaceValues:
-
-- Easiest path: open `/administration/ui/surfaces` → "New Surface" → pick the client + enter the name.
-- Or via SQL (admin only, ON CASCADE on the FKs):
-  ```sql
-  INSERT INTO ui.ui_surface (name, client_name, description, sort_order, is_active)
-  VALUES ('<client>/<local>', '<client>', '<1-sentence description>', 300, true);
-  ```
-- If the surface is in the curated candidates list (`features/surfaces/data/surface-candidates.ts`), the admin "Add from candidates" dialog seeds it in one click.
+4. **Sync the focused DB mirror.** The client row must already exist; this transaction creates or updates the selected `ui_surface` and every declared child row:
+   ```bash
+   pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>
+   pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>
+   ```
+   It neither creates a client nor deletes or sweeps another surface. `--check` verifies surface metadata and every declared value, role, write target, and client tool, including system ownership and public visibility.
 
 ### Seeding a new `ui_client` row
 
-Rare. Only when the user explicitly asks for a new client domain (e.g. a new mobile app). Confirm first; then:
+Rare. Only when the user explicitly asks for a new client domain (e.g. a new mobile app). Confirm first; then use the approved client-registration path before its first surface sync.
 
 ```sql
 INSERT INTO ui.ui_client (name, description, sort_order, is_active)

@@ -17,7 +17,8 @@ Read this when you need the location of a surface type, helper, service, API rou
 | Binding service (associations edges) | `features/surfaces/services/bind-agent-to-surface.service.ts` |
 | Per-manifest README | `features/surfaces/manifests/README.md` |
 | Sync service (diff + upsert; mirrors label/value_groups/group_key) | `features/surfaces/services/manifest-sync.service.ts` |
-| Sync SQL emitter (agent-shell path) | `scripts/emit-surface-sync-sql.ts` |
+| Focused transactional sync + live check | `scripts/sync-surface-manifests-direct.ts` |
+| SQL builder used by the direct sync | `scripts/emit-surface-sync-sql.ts` |
 | Sync API (admin-gated) | `app/api/admin/surfaces/sync-manifests/route.ts` |
 | Drift API (admin-gated) | `app/api/admin/surfaces/drift-report/route.ts` |
 | Runtime resolver | `features/surfaces/utils/value-mapping-resolver.ts` |

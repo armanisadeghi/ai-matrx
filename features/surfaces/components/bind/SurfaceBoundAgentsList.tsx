@@ -11,7 +11,11 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import {
+  isCapturedSurfaceRegistrationError,
+  isSurfaceRegistrationError,
+} from "@/features/surfaces/services/surface-registration-error";
 
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
@@ -305,8 +309,12 @@ export function SurfaceBoundAgentsList({
             setDetachTarget(null);
             void refresh();
           } catch (e) {
-            toast.error(
-              e instanceof Error ? e.message : "Could not remove agent",
+            (isCapturedSurfaceRegistrationError(e)
+              ? toastErrorAlreadyCaptured
+              : toast.error)(
+              e instanceof Error || isSurfaceRegistrationError(e)
+                ? e.message
+                : "Could not remove agent",
             );
           } finally {
             setDetachBusy(false);

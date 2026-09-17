@@ -168,6 +168,8 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-17` — **The Flashcard-set agent surface is registered and has production run evidence, but is not fully certified.** Commit `b19524edf9` wired the route and manifest but did not synchronize its runtime registration; the live database was missing that one parent surface out of 200. The transactional repair seeded the complete 12-key mirror at 06:33:55Z. Run `a8c5bdb0-9640-4075-9630-70426bbf0083` completed around 06:38Z with two completed `chat.request` rows, `card_count=50`, the correct deck title and first question, and only the deferred context tool. The binding picker opens; independent proof of a full binding mutation is still required, so the surface remains `partial`.
+
 - `2026-09-16` — **Flashcard set detail is now a real agent surface, not a
   library fallback.** `/education/flashcards/[setId]` had no
   `SurfaceRuntimeProvider`; route resolution therefore named the library

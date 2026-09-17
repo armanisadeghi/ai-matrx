@@ -6,7 +6,11 @@ import { Inbox, Loader2, Save, Trash2 } from "lucide-react";
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import {
+  isCapturedSurfaceRegistrationError,
+  isSurfaceRegistrationError,
+} from "@/features/surfaces/services/surface-registration-error";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   AGENT_SCOPES,
@@ -272,7 +276,9 @@ function BindingForm({
       .unwrap()
       .catch((e) => {
         toast.error(
-          e instanceof Error ? e.message : "Failed to load surface values",
+          e instanceof Error || isSurfaceRegistrationError(e)
+            ? e.message
+            : "Failed to load surface values",
         );
       });
   }, [dispatch, surfaceName]);
@@ -351,7 +357,13 @@ function BindingForm({
       toast.success(existing ? "Binding updated" : "Binding created");
       onSaved(saved.id);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Save failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -375,7 +387,13 @@ function BindingForm({
       toast.success("Binding removed");
       onDeleted();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Delete failed",
+      );
     } finally {
       setBusy(false);
     }

@@ -64,8 +64,8 @@ Invoke `context-menu-v3` and follow its full contract:
 
 ### 8. Sync and document
 
-- Sync only the focused manifest with `npx tsx scripts/emit-surface-sync-sql.ts --surface <client>/<local>` and apply it through the sanctioned DB path.
-- Verify the live `ui_surface`, value, role, and write-target rows.
+- Sync only the focused manifest with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>`.
+- Verify it with the matching `--check --surface <client>/<local>` command; it reads the live `ui_surface` plus every declared value, role, write target, and client tool.
 - Update the feature's `FEATURE.md` and Change Log.
 
 ## Live completion gate

@@ -83,9 +83,8 @@ Every manifest declares `readiness: "verified" | "partial" | "stub"` (REQUIRED �
 
 ```
 1. Make sure ui_client row exists       (matrx-user / matrx-admin / matrx-public / chrome-extension)
-2. Make sure ui_surface row exists      (name = "<client>/<local-slug>", FK → ui_client)
-3. Add the manifest file + register     (features/surfaces/manifests/...)
-4. Sync the DB                          (POST /api/admin/surfaces/sync-manifests)
+2. Add the manifest file + register     (features/surfaces/manifests/...)
+3. Sync that surface's DB mirror        (direct transactional `--surface` command)
 ```
 
 Then in the surface's code: emit an `ApplicationScope` via `createXxxScope(...)` and pass `runtime: { surfaceName: "<client>/<local>" }` to `launchAgentExecution`.
@@ -255,7 +254,6 @@ The registry **injects the full baseline set into every manifest** (`withInjecte
 Before you say a surface is added:
 
 - [ ] `ui_client` row exists for the client
-- [ ] `ui_surface` row exists with the exact `<client>/<local>` name
 - [ ] `<local-slug>.manifest.ts` created in `features/surfaces/manifests/`
 - [ ] Manifest imported + included in `RAW_MANIFESTS` in `registry.ts`
 - [ ] Full contract present: `label` (canonical, unique per client), `urlPattern`, `intro`, `groups` (curated band 0–899), `inheritsFrom` where true
@@ -266,7 +264,7 @@ Before you say a surface is added:
 - [ ] Page elements tagged `data-surface-value` anchors for Locate
 - [ ] `pnpm check:surface-drift` passes
 - [ ] `pnpm check:surface-routes` passes — no phantom mapping, and this route is not silently undeclared
-- [ ] DB sync applied (admin UI or `POST /api/admin/surfaces/sync-manifests`)
+- [ ] Focused transactional sync applied and its `--check` passes
 - [ ] Eligible ordinary surface launches use `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`; agent-native primary launches use explicit `runtime: { surfaceName: null }`
 
 If anything in the checklist is unclear, re-read the relevant section above (or the reference file its pointer names) instead of guessing — the resolver is unforgiving when the contract drifts.
@@ -291,10 +289,10 @@ Registering a surface is a LAYERED recipe — each layer is independently shippa
 
 ## Layer 4 — DB sync (a manifest not synced is not registered)
 
-- A `ui_surface` row must EXIST first (surfaces admin `/administration/ui/surfaces`, or SQL insert with client + sort_order tier).
-- Canonical sync: **`POST /api/admin/surfaces/sync-manifests`** (surfaces admin button). From an agent shell: `pnpm tsx scripts/emit-surface-sync-sql.ts` → run the upsert via Supabase MCP (mirrors `manifest-sync.service.ts`).
-- Sync mirrors **`ui_surface.label` + `value_groups` (ALWAYS written)**, per-value `group_key` + `auto_context`, `url_pattern`, `intro`, `parent_surface_name`, `ui_surface_agent_role`.
-- **Verify live** — count `ui_surface_value` / `ui_surface_agent_role` rows for the surface; then `pnpm check:surface-drift` again (the live count is the real DB check).
+- A `ui_client` row must exist first. The focused sync creates or updates the selected `ui_surface` row; it never creates clients.
+- Run `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` after the manifest is registered. It changes only that surface and its declared children, in one transaction; it deletes and sweeps nothing.
+- Prove the live mirror with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>`. It compares the surface metadata and every declared value, role, write target, and client tool, including system ownership and public visibility.
+- Release independently runs `--check --registration-only` from an isolated archive of the committed candidate before tag/push. A failure is a runtime dependency failure, not advisory quality debt.
 
 ## Layer 5 — Runtime emitter (`buildScope`)
 

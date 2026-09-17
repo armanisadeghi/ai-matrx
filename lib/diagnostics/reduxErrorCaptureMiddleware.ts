@@ -22,13 +22,19 @@
  * Register once in `lib/redux/store.ts`. Never breaks the dispatch chain.
  */
 
+import { isCapturedSurfaceRegistrationError } from "@/features/surfaces/services/surface-registration-error";
 import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
 import type { ExecutionRejectionMeta } from "./executionRejectionMeta";
 
 interface RejectedAction {
   type: string;
-  error?: ExecutionRejectionMeta & { name?: string; message?: string; code?: string; stack?: string };
+  error?: ExecutionRejectionMeta & {
+    name?: string;
+    message?: string;
+    code?: string;
+    stack?: string;
+  };
   payload?: unknown;
   meta?: ExecutionRejectionMeta & {
     aborted?: boolean;
@@ -98,12 +104,20 @@ export const reduxErrorCaptureMiddleware: Middleware =
         }
         if (a.error?.name === "SessionUnavailableError") return result;
         if (isStreamWrapperDuplicate(a)) return result;
+        if (isCapturedSurfaceRegistrationError(a.error)) return result;
         captureError({
           source: "redux-rejected",
           relation: a.type.slice(0, -"/rejected".length),
-          code: a.error?.code ?? a.meta?.originalErrorName ?? a.error?.originalErrorName ?? a.error?.name,
+          code:
+            a.error?.code ??
+            a.meta?.originalErrorName ??
+            a.error?.originalErrorName ??
+            a.error?.name,
           message: messageOf(a),
-          name: a.meta?.originalErrorName ?? a.error?.originalErrorName ?? a.error?.name,
+          name:
+            a.meta?.originalErrorName ??
+            a.error?.originalErrorName ??
+            a.error?.name,
           requestId: a.meta?.executionRequestId ?? a.error?.executionRequestId,
           conversationId: a.meta?.conversationId ?? a.error?.conversationId,
           stack: a.error?.stack,
