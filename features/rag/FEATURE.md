@@ -85,4 +85,6 @@ features/rag/
 
 ## Change log
 
+- 2026-09-17 — **The active organization, never the "effective" one.** `useLibrary`'s summary hook, `useLibraryCatalog`, `useLibraryResources`, `LibraryCatalogPage` and `RagReviewRepairWorkspace` read `selectOrganizationId`. The catalog/summary RPCs are keyed on `auth.uid()` and the org only NARROWS them, so with none selected they still list honestly and simply claim no org entitlement; subscribe/unsubscribe and the review-repair run (which creates a job row and spends on a model run) now refuse by name with the remedy instead of filing the work in the user's personal workspace — the repair button is disabled with the reason underneath it (`common-docs/policies/context-is-carried-never-rebuilt.md`). `ensureOrgId` (personal-org resolver) is gone from the repair path.
+
 - 2026-08-29 — aligned admin library ingest with the live NDJSON endpoint contract; aligned open-library RLS candidates and `library_doc` access associations with the canonical judge; kept the generic catalog wrapper on the starter-pack `meaning_count` contract.

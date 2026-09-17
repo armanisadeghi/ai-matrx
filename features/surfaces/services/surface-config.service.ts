@@ -439,28 +439,56 @@ export function resolveSurfaceConfig(
 // ---------------------------------------------------------------------------
 
 export interface PrefScopeInput {
-  /** Exactly one set, or none = global (super admins only). */
+  /** Exactly one of the three tiers, or `global` for the platform tier. */
   userId?: string | null;
   organizationId?: string | null;
   scopeId?: string | null;
+  /**
+   * The PLATFORM-OWNED tier, stated by name (super admins only). Global rows
+   * are owned by the system organization — writing or matching them is a
+   * deliberate choice, never what an absent organization means.
+   */
+  global?: true;
+}
+
+/**
+ * The organization a NON-user, NON-scope tier addresses.
+ *
+ * 🚨 `scope.organizationId ?? SYSTEM_ORGANIZATION_ID` used to stand here, so a
+ * caller holding a null organization — the ordinary state while no org is
+ * selected — silently addressed the PLATFORM's rows: it read platform defaults
+ * as if they were the org's, and an insert on the same path stamped
+ * `matrx-system` onto a row the person believed was theirs. The platform tier
+ * is now asked for by name (`{ global: true }`), and a missing organization is
+ * a refusal with the remedy, never a substitution (the org an action acts in is
+ * the one the user selected: `common-docs/policies/context-is-carried-never-rebuilt.md`).
+ */
+function tierOrganizationId(scope: PrefScopeInput): string {
+  if (scope.global) return SYSTEM_ORGANIZATION_ID;
+  if (scope.organizationId) return scope.organizationId;
+  throw new Error(
+    "[surfaces] no organization is selected, so this surface setting cannot be read or saved — choose one from the organization picker in the header and try again. Nothing was changed. (Platform-wide settings must ask for the global tier by name.)",
+  );
 }
 
 /**
  * Columns to WRITE for a scope tier.
  *
  * NO NULL ORG (db-rules §2/§6e): there is no all-NULL "global" row any more.
- * Global is the system org, so an empty scope writes `matrx-system` explicitly.
+ * Global is the system org, and a caller asks for it BY NAME (`{ global: true }`)
+ * — an absent organization is a refusal, not the platform tier.
  *
  * Every insert sends the required owning organization explicitly. User and
- * ctx-scope callers may provide the known owner; otherwise the canonical
- * active/personal-org resolver supplies it. The DB backstops remain the final
- * integrity layer for older clients and direct writes.
+ * ctx-scope rows are owned by the user's own workspace, so those two tiers
+ * still resolve their owner through `ensureOrgId` when the caller does not
+ * name one. The DB backstops remain the final integrity layer for older
+ * clients and direct writes.
  */
 async function scopeInsertColumns(scope: PrefScopeInput) {
   const organizationId =
-    !scope.userId && !scope.scopeId && !scope.organizationId
-      ? SYSTEM_ORGANIZATION_ID
-      : await ensureOrgId(scope.organizationId);
+    scope.userId || scope.scopeId
+      ? await ensureOrgId(scope.organizationId)
+      : tierOrganizationId(scope);
   if (scope.userId) {
     return { user_id: scope.userId, scope_id: null, organization_id: organizationId };
   }
@@ -477,6 +505,9 @@ async function scopeInsertColumns(scope: PrefScopeInput) {
 /**
  * Narrow a query to the ONE row that owns a scope tier.
  *
+ * Throws when the org tier is asked for with no organization — see
+ * `tierOrganizationId`.
+ *
  * The org tier is now `user_id IS NULL AND scope_id IS NULL AND
  * organization_id = <org>` — matching the partial unique indexes the migration
  * rebuilt. The user and scope tiers do NOT constrain `organization_id`: it is
@@ -492,7 +523,7 @@ function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string,
   return q
     .is("user_id", null)
     .is("scope_id", null)
-    .eq("organization_id", scope.organizationId ?? SYSTEM_ORGANIZATION_ID);
+    .eq("organization_id", tierOrganizationId(scope));
 }
 
 /** Set the agent filling (surface, role, position) at a scope tier. */

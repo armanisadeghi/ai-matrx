@@ -13,7 +13,7 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectEffectiveOrganizationId,
+  selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -37,7 +37,10 @@ export function PipelineWorkspace({
 }: {
   initialItemId: string | null;
 }) {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
+  // `organization_id ?? personal_organization_id`, so with no organization
+  // selected the pipeline showed the PERSONAL workspace's items as the organization's.
+  const organizationId = useAppSelector(selectOrganizationId);
   const isMobile = useIsMobile();
 
   const [stage, setStage] = useState<PipelineStage>("intake");

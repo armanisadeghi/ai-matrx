@@ -12,15 +12,25 @@ import { BadgeCheck, FileUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 
 import { buildLabelBatchListConfig } from "../listConfig";
 import { CreateLabelBatchDialog } from "./CreateLabelBatchDialog";
 import { ImportIdentifiersDialog } from "./ImportIdentifiersDialog";
 
 export function LabelBatchesPage() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
+  // personal-org fallback, so an unselected picker listed (and created batches
+  // in) the PERSONAL workspace with nothing on screen saying so.
+  const organizationId = useAppSelector(selectOrganizationId);
+  // Without an org there is no list to build: say so rather than render a
+  // header over an empty page that looks broken.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -76,6 +86,9 @@ export function LabelBatchesPage() {
           </Link>
         </div>
       </PageHeader>
+      {!organizationId && orgBootstrapResolved && (
+        <OrganizationRequiredNotice what="Label batches" />
+      )}
       {config && (
         <EntityListPage
           config={config}

@@ -1981,7 +1981,14 @@ function RolesSection({
   const setPlatformOverride = async (roleName: string, agentId: string) => {
     setBusyRole(roleName);
     try {
-      await setRoleSelection({ surfaceName, roleName, agentId, scope: {} });
+      // The PLATFORM tier by name — `{}` used to mean it implicitly, which is
+      // the same shape a surface with no organization selected produces.
+      await setRoleSelection({
+        surfaceName,
+        roleName,
+        agentId,
+        scope: { global: true },
+      });
       toast.success(`Platform override set for ${roleName}`);
       onChanged();
     } catch (e) {
@@ -2332,7 +2339,8 @@ function NamespaceConfigEditorRow({
         surfaceName,
         namespace,
         config: parsed,
-        scope: {},
+        // The PLATFORM tier by name — this page writes the global defaults.
+        scope: { global: true },
       });
       toast.success(`${namespace} global config saved`);
       onChanged();
