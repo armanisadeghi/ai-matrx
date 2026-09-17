@@ -130,7 +130,17 @@ export function parseMailboxField(raw: string): MailboxFieldParse {
       return {
         ok: false,
         raw: piece,
-        reason: `"${piece}" is not an email address this can read.`,
+        // 🚨 THE REASON CARRIES ITS OWN REMEDY (one per rule) — a caller
+        // prints this sentence verbatim and never appends a second fix.
+        // Until 2026-09-17 `preflightGmailRecipients` bolted "separate them
+        // with commas" onto EVERY `!ok` parse, including the multi-address
+        // `To` refusal below (whose own remedy is "use Cc", not commas), so
+        // the screen told a person to do two contradictory things at once
+        // (Bugbot round 16, comment 4041900049).
+        reason:
+          `"${piece}" is not an email address this can read. Write it as ` +
+          "name@example.com, or as Name <name@example.com>, and separate " +
+          "multiple recipients with commas.",
       };
     }
     mailboxes.push(mailbox);

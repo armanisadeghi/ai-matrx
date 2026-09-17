@@ -156,6 +156,38 @@ describe("the /google-import contract this build renders", () => {
     expect(narrowContactFieldAction(undefined)).toBe("unknown");
   });
 
+  // 🚨 lane B-15's `ask` reimport policy (aidream `services/google_import/
+  // contacts.py`, 2026-09-17): a manual/Google disagreement under that policy
+  // is a "conflict" row — refused with a remedy, never a silent default that
+  // picks a side for the person. RED before adoption: `CONTACT_FIELD_ACTIONS`
+  // did not contain it, `decideContactField` fell through to the "always
+  // choosable, ticked" default (wrong — a conflict must start UNticked, like
+  // `kept_manual`), and the panel's `ACTION_COPY`/`ACTION_TONE` Records would
+  // have failed to type-check the moment the union grew this member.
+  it("knows the 'conflict' action (Google and a manual value disagree, policy = ask)", () => {
+    expect(CONTACT_FIELD_ACTIONS).toContain("conflict");
+    expect(narrowContactFieldAction("conflict")).toBe("conflict");
+  });
+
+  it("a 'conflict' row starts unticked, choosable, local wins by default — like kept_manual", () => {
+    const conflict = decideContactField({
+      action: "conflict",
+      explanation:
+        "Company says Acme here and Google says Acme Inc. Your organization's " +
+        "setting asks a person to decide this one, so NOTHING was written: " +
+        "tick company in the review to take Google's value, or leave it to " +
+        "keep what is here.",
+    });
+    expect(conflict).toMatchObject({
+      action: "conflict",
+      includeByDefault: false,
+      choosable: true,
+      localWins: true,
+    });
+    // The server's own sentence is shown, never a client-composed second one.
+    expect(conflict.explanation).toContain("NOTHING was written");
+  });
+
   it("knows every match state the resolver can report", () => {
     expect([...CONTACT_MATCH_STATES]).toEqual([
       "new",
@@ -225,6 +257,15 @@ describe("the /google-import contract this build renders", () => {
 });
 
 describe("THE GUARD: the panels adopt the contract honestly", () => {
+  // 🚨 A RENDER PROBE FOR "conflict": before adoption a plan carrying this
+  // action rendered `ACTION_COPY[decision.action]` as `undefined` (the Record
+  // had no key for it) — a screen naming nothing about a disagreement the
+  // person must resolve. The panel's map must give it real words.
+  it("the Contacts panel gives 'conflict' a real label, never undefined", () => {
+    const source = readFileSync(join(REPO_ROOT, PANELS[1]), "utf8");
+    expect(source).toMatch(/conflict:\s*"[^"]+"/);
+  });
+
   it("the Contacts panel decides every row through the one adapter", () => {
     const source = readFileSync(join(REPO_ROOT, PANELS[1]), "utf8");
     expect(source).toMatch(/decideContactField/);

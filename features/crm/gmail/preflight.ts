@@ -165,11 +165,18 @@ export async function preflightGmailRecipients(
     // 🚨 A RECIPIENT FIELD THIS CANNOT READ IS NEVER SENT. Guessing at
     // `Ada ada@example.com` is how the wrong person gets the message, and
     // waving it through is how a suppressed one does.
-    return (
-      `This message was not sent: ${parsed.reason} ` +
-      "Write each recipient as name@example.com, or as " +
-      "Name <name@example.com>, and separate them with commas."
-    );
+    //
+    // 🚨 THE PARSER'S SENTENCE IS PRINTED VERBATIM — EXACTLY ONE REMEDY, ONCE.
+    // Every `mailbox.ts` refusal already carries its own remedy for its own
+    // rule (the comma sentence for unreadable syntax; "one recipient in To;
+    // use Cc" for a multi-address `To`; group syntax and a bad domain would
+    // carry their own too). Until 2026-09-17 this gate appended the comma
+    // sentence to EVERY refusal here, so a multi-address `To` — whose own
+    // remedy is "use Cc", the opposite of "separate them with commas" — showed
+    // a screen that told the person to do two contradictory things at once
+    // (Bugbot round 16, comment 4041900049). Never compose a second remedy
+    // here; fix the parser's own sentence in `./mailbox.ts` instead.
+    return `This message was not sent: ${parsed.reason}`;
   }
   if (parsed.mailboxes.length === 0) {
     return "This message was not sent: it names no recipient.";

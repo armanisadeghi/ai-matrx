@@ -89,6 +89,13 @@ export type ContactFieldActionPending =
   | "kept_manual"
   /** Differs, with NO record of what the import wrote — kept, NOT called an edit. */
   | "unrecorded"
+  /**
+   * The organization's `reimport_policy` is `ask`: Google disagrees with a
+   * value this import did not write, and NOTHING is written until a person
+   * picks a side. Mirrors aidream `services/google_import/contacts.py`'s
+   * `FieldAction` (added 2026-09-17, lane B-15's `ask` reimport policy).
+   */
+  | "conflict"
   /** Nothing is decided until the person says which Person this is. */
   | "choice_required"
   | "added"

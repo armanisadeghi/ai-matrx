@@ -45,6 +45,7 @@ export const CONTACT_FIELD_ACTIONS = [
   "unchanged",
   "kept_manual",
   "unrecorded",
+  "conflict",
   "choice_required",
   "added",
   "present",
@@ -100,9 +101,14 @@ export interface ContactFieldDecision {
 /**
  * The one decision about a field row.
  *
- * `kept_manual` is the only state that starts unticked while remaining fully
- * choosable — local wins by DEFAULT, not by force (a disabled checkbox meant a
- * person who wanted Google's value could not take it, VERIFY-B1-B2 B2).
+ * `kept_manual` and `conflict` are the states that start unticked while
+ * remaining fully choosable — local wins by DEFAULT, not by force (a disabled
+ * checkbox meant a person who wanted Google's value could not take it,
+ * VERIFY-B1-B2 B2). `conflict` is the server's `reimport_policy = ask` branch:
+ * a manual value and Google's disagree, NOTHING is written, and the row is
+ * ticked to take Google's value or left to keep what is here — the exact same
+ * choice `kept_manual` already offers, so it shares the branch rather than
+ * getting a silent default that would have picked a side for the person.
  * `unrecorded` is offered ticked: nothing says the local value was ever chosen by
  * anyone, so Google's is not presumed wrong. `excluded` and `choice_required`
  * cannot be acted on here at all — the first because the server took it out of
@@ -123,7 +129,7 @@ export function decideContactField(
       localWins: false,
     };
   }
-  if (action === "kept_manual") {
+  if (action === "kept_manual" || action === "conflict") {
     return {
       action,
       explanation,

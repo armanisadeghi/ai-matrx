@@ -10,12 +10,27 @@
 // attributed; a second medium row for one address was never asked about).
 
 import { gmailRecipientOptions } from "./recipients";
-import { preflightGmailRecipients } from "./preflight";
+import { preflightGmailRecipients, recipientsOfSend } from "./preflight";
 import { assessGmailRecipientIntegrity } from "./recipient-integrity";
 import { gmailInteractionRow } from "./service";
 import { parseMailboxField, parseRecipientFields } from "./mailbox";
 import type { ContactPoint } from "@/features/crm/types";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
+
+// 🚨 EACH RULE'S REMEDY, NAMED ONCE. A refusal sentence names exactly one of
+// these — never zero (silent), never two (contradictory). Bugbot round 16
+// (comment 4041900049): until 2026-09-17 a multi-address `To` refusal carried
+// BOTH its own "use Cc" remedy AND the unreadable-syntax comma remedy bolted
+// on by `preflightGmailRecipients`, telling the person to do two different,
+// contradictory things.
+const REMEDY_MARKERS: RegExp[] = [
+  /separate multiple recipients with commas/i,
+  /one recipient in to; add others in cc/i,
+];
+
+function remedyCount(sentence: string): number {
+  return REMEDY_MARKERS.filter((marker) => marker.test(sentence)).length;
+}
 
 function emailPoint(address: string, id = address): ContactPoint {
   return {
@@ -127,6 +142,17 @@ describe("the send authority judges every PARSED address", () => {
     expect(refusal).toContain("a@x.com");
     expect(refusal).toContain("b@y.com");
     expect(refusal).toContain("Cc");
+    // 🚨 THE ON-SCREEN SENTENCE IS THE PARSER'S OWN, VERBATIM, ONE REMEDY
+    // ONLY. Bugbot round 16 (comment 4041900049): this refusal used to also
+    // carry the comma remedy — the opposite instruction from "use Cc" — so
+    // the screen contradicted itself. RED before the fix: `remedyCount` was
+    // 2 here (the parser's own "use Cc" line plus the appended comma line).
+    const parsed = recipientsOfSend("a@x.com, b@y.com", []);
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) return;
+    expect(refusal).toBe(`This message was not sent: ${parsed.reason}`);
+    expect(refusal).not.toMatch(/separate them with commas/i);
+    expect(remedyCount(refusal as string)).toBe(1);
   });
 
   it("still checks a second address written in Cc, where the remedy sends it", async () => {
@@ -157,6 +183,13 @@ describe("the send authority judges every PARSED address", () => {
     });
     expect(refusal).toContain("Ada ada@example.com");
     expect(refusal).toContain("was not sent");
+    // The unreadable-syntax remedy is the parser's own, printed verbatim,
+    // exactly once — never doubled by a second remedy from the gate.
+    const parsed = recipientsOfSend("Ada ada@example.com", []);
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) return;
+    expect(refusal).toBe(`This message was not sent: ${parsed.reason}`);
+    expect(remedyCount(refusal as string)).toBe(1);
   });
 
   it("treats an address it cannot normalize as CANNOT CONFIRM, never as clear", async () => {

@@ -1006,6 +1006,30 @@ holds the shapes.
 
 ## Change log
 
+- 2026-09-17 — **Bugbot round 16, PR 228 (review 5242015393, comment
+  4041900049, Medium), fixed: preflight no longer bolts a second, contradicting
+  remedy onto the parser's own refusal.** `parseToField`
+  (`gmail/mailbox.ts`) already refused a multi-address `To` with its own
+  remedy ("one recipient in To; add others in Cc") — but
+  `preflightGmailRecipients` (`gmail/preflight.ts`) treated EVERY `!ok` parse
+  as unreadable syntax and appended "…and separate them with commas" to all
+  of them, so the send was blocked (correctly) while the screen told the
+  person to do the opposite of the parser's own fix at the same time. The
+  class fix: a parse refusal's `reason` now carries its own remedy, once, at
+  the source (`parseMailboxField`'s unreadable-syntax case in `mailbox.ts`
+  gained the comma remedy it was missing; `parseToField`'s multi-address case
+  already had its own), and `preflightGmailRecipients` prints that sentence
+  VERBATIM — it never composes a second one. Census of every caller that
+  built a refusal sentence from a parse result
+  (`grep -rn "separate them with commas\|not an email address" features/`):
+  only `preflight.ts` composed one; `recipient-integrity.ts`'s
+  `addressesOf` reads a parse result but never turns a refusal into copy.
+  Guard: `send-authority.test.ts` — every corpus-style refusal case now
+  asserts the on-screen sentence equals `recipientsOfSend`'s own `reason`
+  (via `This message was not sent: ${reason}`) and that exactly one of the
+  two named remedy markers appears (`remedyCount`); RED before the fix (the
+  multi-address case carried both markers at once).
+
 - 2026-09-17 — **F-30: two of the four VERIFY-B1-B2-R4 findings, fixed**
   (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md` V1/V6/V7). **The
   recipient parser now agrees with the server on the `To` field.** Until this

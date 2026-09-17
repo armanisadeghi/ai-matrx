@@ -275,6 +275,35 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **the client `FieldAction` mirror adopts `conflict`**,
+  mirroring aidream commit `dfba3f5d0` (`aidream/services/google_import/
+  contacts.py`, lane B-15's `reimport_policy = ask`): when a manual value and
+  Google's disagree and the organization's setting says a person decides,
+  `_plan_field` now emits `action = "conflict"` and NOTHING is written until
+  the row is ticked. `field-labels.test.ts` § "mirrors the server's own
+  FieldAction literal" was RED at HEAD (the server's literal carried
+  `conflict`, this repo's `CONTACT_FIELD_ACTIONS` did not). Fix:
+  `ContactFieldActionPending` (`types.ts`) and `CONTACT_FIELD_ACTIONS`
+  (`contract.ts`) gained the member; `decideContactField` gives it the SAME
+  branch as `kept_manual` (starts unticked, choosable, local wins by
+  default — ticking takes Google's value, matching the server's own
+  "tick … to take Google's value, or leave it to keep what is here"
+  sentence) rather than falling through to the generic default, which would
+  have offered it ticked and silently picked Google's side for the person;
+  `GoogleContactsImportPanel.tsx`'s exhaustive `ACTION_COPY`/`ACTION_TONE`
+  `Record`s (keyed on the full union, so a missing member fails
+  `type-check`, never a silent `default`) gained a real label ("disagree —
+  you decide") — before this fix that Record could not even type-check once
+  the union grew the member. The review row still shows the server's own
+  `explanation` sentence verbatim (never a client-composed second one), plus
+  the existing "Tick the box to take Google's value instead." action line.
+  Guard: the mirror test itself (red-then-green against aidream's live
+  literal), plus new `field-labels.test.ts` cases for
+  `decideContactField({action:"conflict"})`'s shape and a static render
+  probe asserting the panel source names `conflict` with a real label
+  (before the fix the Record had no key for it, so the badge printed
+  `undefined`).
+
 - `2026-09-17` — F-30, two of the four VERIFY-B1-B2-R4 findings against the
   Google import panels (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md`
   D9/V9, V8). **D9's residual, closed:** `GoogleContactsImportPanel.tsx`'s

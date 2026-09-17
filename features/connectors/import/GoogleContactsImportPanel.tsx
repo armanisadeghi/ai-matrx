@@ -87,6 +87,9 @@ const ACTION_COPY: Record<ContactFieldActionPending | "unknown", string> = {
   unchanged: "already the same",
   kept_manual: "kept — yours wins",
   unrecorded: "kept — source unknown",
+  // Google and this record disagree; your organization's setting asks a
+  // person to decide, so nothing was written until this row is ticked.
+  conflict: "disagree — you decide",
   choice_required: "waiting on you",
   added: "linked to the Person",
   present: "already linked",
@@ -100,6 +103,7 @@ const ACTION_TONE: Record<ContactFieldActionPending | "unknown", string> = {
   unchanged: "text-muted-foreground",
   kept_manual: "text-amber-600 dark:text-amber-400",
   unrecorded: "text-amber-600 dark:text-amber-400",
+  conflict: "text-amber-600 dark:text-amber-400",
   choice_required: "text-amber-600 dark:text-amber-400",
   added: "text-foreground",
   present: "text-muted-foreground",
