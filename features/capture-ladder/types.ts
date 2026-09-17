@@ -1,0 +1,343 @@
+/**
+ * features/capture-ladder/types.ts
+ *
+ * THE CAPTURE LADDER — the closed vocabulary, the trail shape, the handoff row
+ * and the ladder law, as declared by the ONE cross-repo contract:
+ * `common-docs/projects/acquisition-frontier/extension-ladder/CONTRACT.md` §1–§3.
+ *
+ * 🚨 The ORDER is not ours. `aidream/packages/matrx-scraper/matrx_scraper/ladder.py`
+ * declares `RUNGS` once; every other repo imports the strings and never
+ * re-declares the order. This file is this repo's import of those strings — if
+ * it ever disagrees with that module, that module wins and this file is the bug.
+ *
+ * Nothing here talks to the network. The DB read lives in
+ * `captureHandoffTable.ts`, the React state in `useNeedsYou.ts`.
+ */
+
+// ---------------------------------------------------------------------------
+// §1 — the four rungs, in order
+// ---------------------------------------------------------------------------
+
+export const RUNGS = ["http", "browser", "own_browser", "human_drive"] as const;
+
+export type Rung = (typeof RUNGS)[number];
+
+export function isRung(value: unknown): value is Rung {
+  return (
+    typeof value === "string" && (RUNGS as readonly string[]).includes(value)
+  );
+}
+
+export function asRung(value: unknown): Rung | null {
+  return isRung(value) ? value : null;
+}
+
+/** 0-based position on the ladder. `-1` for anything that is not a rung. */
+export function rungIndex(rung: string): number {
+  return (RUNGS as readonly string[]).indexOf(rung);
+}
+
+/**
+ * The rung in ONE plain sentence fragment a non-technical person reads. Never a
+ * code on a screen — CONTRACT.md §1 names each rung in the person's words.
+ */
+export const RUNG_LABEL: Record<Rung, string> = {
+  http: "Read straight off the web",
+  browser: "Read by our own browser",
+  own_browser: "Read by your browser",
+  human_drive: "You drive the browser",
+};
+
+/** One more sentence of explanation, for the list where there is room. */
+export const RUNG_EXPLANATION: Record<Rung, string> = {
+  http: "A plain fetch of the page, the fastest way we have.",
+  browser:
+    "Our server browser opened the page for real, so anything the page draws with JavaScript is included.",
+  own_browser:
+    "Your own Chrome opens the page while you do nothing — it is already signed in, so it sees what you would see.",
+  human_drive:
+    "The extension shows you the page and gets out of the way. You sign in or click through, then press “I'm done, capture it”.",
+};
+
+// ---------------------------------------------------------------------------
+// THE LADDER LAW (§1) — never silently skip a rung
+// ---------------------------------------------------------------------------
+
+/** Thrown by {@link assertNoSkippedRung} — carries the offending pair in words. */
+export class SkippedRungError extends Error {
+  readonly from: string;
+  readonly to: string;
+
+  constructor(message: string, from: string, to: string) {
+    super(message);
+    this.name = "SkippedRungError";
+    this.from = from;
+    this.to = to;
+  }
+}
+
+/**
+ * THE LADDER LAW, re-asserted on the client.
+ *
+ * A capture may only move from rung *n* to rung *n+1*. It may STOP at any rung
+ * — a stop is recorded with its reason and is visible — but it is NEVER a jump.
+ * aidream asserts this when it writes a trail (`assert_no_skipped_rung`); we
+ * assert it again on every trail we are handed, because a client that renders a
+ * jump as if it were normal is how a silent skip survives.
+ *
+ * @param trail the ordered rung keys, oldest first — `rung_trail.map(e => e.rung)`
+ *              or any sequence of rung keys.
+ * @throws {SkippedRungError} on a jump, a repeat, a backwards step, or a key
+ *         that is not a rung at all.
+ */
+export function assertNoSkippedRung(trail: readonly string[]): void {
+  for (let i = 0; i < trail.length; i++) {
+    const current = trail[i];
+    const at = rungIndex(current);
+    if (at === -1) {
+      throw new SkippedRungError(
+        `“${current}” is not one of the four rungs (${RUNGS.join(", ")}).`,
+        i === 0 ? "(start)" : trail[i - 1],
+        current,
+      );
+    }
+    if (i === 0) continue;
+    const previous = trail[i - 1];
+    const before = rungIndex(previous);
+    if (at !== before + 1) {
+      throw new SkippedRungError(
+        at <= before
+          ? `The trail goes from “${previous}” back to “${current}” — a capture only ever moves forward.`
+          : `The trail jumps from “${previous}” straight to “${current}”, skipping ${RUNGS.slice(
+              before + 1,
+              at,
+            ).join(
+              ", ",
+            )}. A capture may stop at any rung, but it may never skip one.`,
+        previous,
+        current,
+      );
+    }
+  }
+}
+
+/** Non-throwing form — the reason sentence, or `null` when the trail is lawful. */
+export function skippedRungReason(trail: readonly string[]): string | null {
+  try {
+    assertNoSkippedRung(trail);
+    return null;
+  } catch (error) {
+    return error instanceof SkippedRungError ? error.message : String(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// §2 — the trail
+// ---------------------------------------------------------------------------
+
+/** One entry per rung attempted. CONTRACT.md §2. */
+export interface RungTrailEntry {
+  rung: Rung;
+  ok: boolean;
+  /** Machine class; `null` when ok. */
+  reason: string | null;
+  /** The plain sentence a person reads. */
+  note: string | null;
+  chars: number;
+  /** ISO-8601. */
+  at: string;
+}
+
+/**
+ * Why a capture stopped instead of climbing. Mutually exclusive with
+ * `next_rung`; one of the two is ALWAYS set on a failed result. A failed
+ * result carrying neither is the silent-skip defect (§2).
+ */
+export const STOP_CAUSES = [
+  "rung_disabled",
+  "not_escalatable",
+  "exhausted",
+] as const;
+
+export type StopCause = (typeof STOP_CAUSES)[number];
+
+export function asStopCause(value: unknown): StopCause | null {
+  return typeof value === "string" &&
+    (STOP_CAUSES as readonly string[]).includes(value)
+    ? (value as StopCause)
+    : null;
+}
+
+/** The stop cause in the person's words — never the code on a screen. */
+export const STOP_CAUSE_SENTENCE: Record<StopCause, string> = {
+  rung_disabled: "The next step is switched off in your settings.",
+  not_escalatable: "Nothing further we can do would beat this page.",
+  exhausted: "We tried every step there is.",
+};
+
+/**
+ * The escalation half of a failed capture result (§2). Present ALONGSIDE the
+ * trail on a scrape result; every field is optional here because the server
+ * half ships independently of this one — an absent field means "the server did
+ * not say", and a surface renders nothing rather than inventing a value.
+ */
+export interface LadderOutcome {
+  rung_trail?: RungTrailEntry[] | null;
+  next_rung?: Rung | null;
+  next_rung_reason?: string | null;
+  next_rung_note?: string | null;
+  /**
+   * What the PERSON does, when the next rung needs them. On the server's
+   * `ScrapeResult` (orchestrator.py) and absent from CONTRACT.md §2's field
+   * list — reported to the contract's owner rather than dropped.
+   */
+  next_rung_what_to_do?: string | null;
+  /** Honest estimate for the person. Same provenance as the field above. */
+  next_rung_estimated_seconds?: number | null;
+  stopped_because?: StopCause | null;
+}
+
+/** Reasons a person's own browser can beat — CONTRACT.md §2. */
+export const OWN_BROWSER_BEATABLE_REASONS = [
+  "login_wall",
+  "bad_status",
+  "cloudflare_block",
+  "empty_content",
+  "thin_content",
+  "low_text_content",
+  "wrong_resource",
+  "paywall",
+] as const;
+
+export type OwnBrowserBeatableReason =
+  (typeof OWN_BROWSER_BEATABLE_REASONS)[number];
+
+// ---------------------------------------------------------------------------
+// §3 — the handoff row (`media.capture_handoff`)
+// ---------------------------------------------------------------------------
+
+export const HANDOFF_STATUSES = [
+  "waiting",
+  "claimed",
+  "capturing",
+  "needs_drive",
+  "captured",
+  "failed",
+  "dismissed",
+] as const;
+
+export type HandoffStatus = (typeof HANDOFF_STATUSES)[number];
+
+export function asHandoffStatus(value: unknown): HandoffStatus | null {
+  return typeof value === "string" &&
+    (HANDOFF_STATUSES as readonly string[]).includes(value)
+    ? (value as HandoffStatus)
+    : null;
+}
+
+/** The two rungs a handoff row can be waiting on (§3, `rung` column). */
+export type HandoffRung = Extract<Rung, "own_browser" | "human_drive">;
+
+/**
+ * The statuses that mean a person still has something in front of them. The
+ * tray and `/capture/needs-you` read exactly these two (§8.1).
+ */
+export const NEEDS_YOU_STATUSES: readonly HandoffStatus[] = [
+  "waiting",
+  "needs_drive",
+];
+
+/**
+ * One row of `media.capture_handoff` as this app reads it.
+ *
+ * ⚠️ VERIFIED AGAINST THE LIVE TABLE, 2026-09-17. The table EXISTS on the live
+ * database; this interface was checked column-for-column against
+ * `information_schema.columns` for `media.capture_handoff` — not against the
+ * contract's prose, which omits `final_url` and the entity-table base columns
+ * (`version`, `metadata`, `created_by`, `updated_by`, `deleted_at`) that
+ * `platform.create_entity_table` adds to every row. Nullability below is the
+ * DATABASE's nullability, not a guess: `title`, `reason`, `reason_note`,
+ * `what_to_do`, `rung_trail`, `attempt_count`, `created_at`, `updated_at`,
+ * `version` and `metadata` are all NOT NULL there, so they are not `| null`
+ * here, and no screen needs an "if it is missing" branch for them.
+ *
+ * 🚨 This is a HAND-WRITTEN row type, which this repo normally forbids
+ * (generated types are the source of truth). It is hand-written for ONE reason,
+ * re-verified 2026-09-17: `media` is not in the `pnpm db-types` schema list
+ * (package.json line 64), so the generated `Database` type has no `media` key
+ * and `.schema("media")` cannot type-check on the generated client. The moment
+ * `media` joins that list, this interface is DELETED and every reader aliases
+ * `Database["media"]["Tables"]["capture_handoff"]["Row"]`.
+ */
+export interface CaptureHandoff {
+  id: string;
+  organization_id: string;
+  url: string;
+  /** Best-known title; `""` when unknown (NOT NULL, default `''`). */
+  title: string;
+  rung: HandoffRung;
+  status: HandoffStatus;
+  /** Machine class that sent it here. NOT NULL — the server always names one. */
+  reason: string;
+  /** ONE plain sentence: why your browser. NOT NULL. */
+  reason_note: string;
+  /** ONE plain sentence: what the person does. `""` for `own_browser`. NOT NULL. */
+  what_to_do: string;
+  /** Honest estimate for the person; `null` when unknown. */
+  estimated_seconds: number | null;
+  /** NOT NULL, defaults to `[]` — never absent, at worst empty. */
+  rung_trail: RungTrailEntry[];
+  batch_id: string | null;
+  library_id: string | null;
+  claimed_by: string | null;
+  claimed_at: string | null;
+  claim_expires_at: string | null;
+  attempt_count: number;
+  captured_item_id: string | null;
+  captured_chars: number | null;
+  captured_at: string | null;
+  /**
+   * Which rung actually captured it. The live CHECK constraint admits only
+   * `own_browser` and `human_drive` — a server rung never captures a handoff,
+   * because a handoff only exists once the server rungs are done.
+   */
+  captured_by_rung: HandoffRung | null;
+  /**
+   * Where the capture actually ended up after redirects. On the live table and
+   * absent from CONTRACT.md §3 — reported to the contract's owner.
+   */
+  final_url: string | null;
+  failure_note: string | null;
+
+  // ── The entity-table base columns (`platform.create_entity_table`) ────────
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Soft delete is ON for this table; every read filters `deleted_at IS NULL`. */
+  deleted_at: string | null;
+  version: number;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * How long this will take, in the person's words. `null` when the server did
+ * not say — a surface then shows nothing, never a made-up number.
+ */
+export function describeEstimate(seconds: number | null): string | null {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return null;
+  if (seconds < 90) return `about ${Math.round(seconds)} seconds`;
+  const minutes = Math.round(seconds / 60);
+  return minutes === 1 ? "about a minute" : `about ${minutes} minutes`;
+}
+
+/**
+ * The ONE sentence that tells a `needs_drive` row apart from a `waiting` one —
+ * the difference between "your browser will do this by itself" and "you have to
+ * click through this one". Contract §3/§7.4.
+ */
+export function describeWhoActs(handoff: CaptureHandoff): string {
+  return handoff.status === "needs_drive" || handoff.rung === "human_drive"
+    ? "You need to open this one yourself"
+    : "Your browser will do this on its own";
+}
