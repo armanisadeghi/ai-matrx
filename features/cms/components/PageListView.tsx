@@ -331,6 +331,7 @@ export default function PageListView({
         columns={columns}
         getRowId={(page) => page.id}
         defaultSort={{ id: "sort_order", direction: "asc" }}
+        rowCopyPlacement="menu"
         detail={{ enabled: false }}
         onRowOpen={(page) => onOpenPage(page.id)}
         isLoading={isLoading && pages.length === 0}
