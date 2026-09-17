@@ -87,6 +87,41 @@ export interface EntityRefResolved {
 
 export type EntityRef = EntityRefResolved | EntityRefHidden;
 
+/**
+ * Search traffic `seo._tm_item` hangs on a `web_page` pointer (round 19, D5):
+ * clicks and impressions summed from Search Console over the last
+ * `performance_window_days` (the `seo.topical_map.performance_window_days`
+ * knob, default 28, clamped 1..365 and resolved per organization/brand/site/user).
+ *
+ * Deduplicated to the freshest observation per (page, provider, date) and
+ * summed across providers — the question is whether anyone arrives from search
+ * at all, not how one provider is doing. A page with no observations reports
+ * `0`, which is a real zero, not a missing reading.
+ */
+export interface PagePerformance {
+  clicks: number;
+  impressions: number;
+  performance_window_days: number;
+}
+
+/**
+ * A `web_page` pointer carrying its traffic. Only a page the caller can
+ * actually OPEN gets the numbers: a forbidden / missing / unregistered ref
+ * comes back as the plain {@link EntityRefHidden}, byte-identical to before
+ * round 19. Narrow with {@link isWebPageItem} before reading `clicks`.
+ */
+export interface WebPageItem extends EntityRefResolved, PagePerformance {
+  type: "web_page";
+}
+
+/** One rendered pointer from `seo._tm_item`: a page carries traffic, nothing else does. */
+export type MapItemRef = WebPageItem | EntityRefResolved;
+
+/** Narrows a {@link MapItemRef} to the `web_page` variant that carries traffic. */
+export function isWebPageItem(item: MapItemRef): item is WebPageItem {
+  return item.type === "web_page" && "clicks" in item;
+}
+
 /** Narrows an {@link EntityRef} to the variant that actually carries row data. */
 export function isResolvedEntityRef(ref: EntityRef | null | undefined): ref is EntityRefResolved {
   return !!ref && !("hidden" in ref);
@@ -312,7 +347,7 @@ export interface MapTopicAssociationResolved {
    * also carries `facet` (its facet key) and `ref` (whatever entity the value
    * points at: null when it names none, hidden when the caller cannot open it).
    */
-  item: EntityRefResolved & { facet?: string; ref?: EntityRef | null };
+  item: MapItemRef & { facet?: string; ref?: EntityRef | null };
 }
 
 /**
@@ -415,7 +450,14 @@ export interface MapTopicPatch {
   parent_slug?: string | null;
 }
 
-export type MapTopicStatus = "proposed" | "active" | "retired";
+/**
+ * Round 19 added `rejected`: a refused proposal keeps its row and every reader
+ * hides it (`seo._tm_topics`, and by slug `map_topic_associations` /
+ * `map_topic_facets`, where it reads as the SAME P0002 an invented slug gets).
+ * Only a `proposed` topic may take it — an active topic is retired instead.
+ * {@link MapTopicsRejectResult} and `seo.list_map_history` are its two doors.
+ */
+export type MapTopicStatus = "proposed" | "active" | "retired" | "rejected";
 
 /** One rejected edit. `slug` is whatever the caller sent, so it can be null. */
 export interface MapTopicPatchError {
@@ -523,8 +565,10 @@ export type MapDryRunFunction =
   | "split_map_topic"
   | "retire_map_topics"
   | "set_map_topic_facet"
+  | "reject_map_topics"
   | "set_page_map_topics"
   | "set_pages_map_topics"
+  | "set_page_intents"
   | "create_map_facet_values"
   | "set_site_map"
   | "set_page_map_facet";
@@ -538,4 +582,317 @@ export interface MapDryRunResult {
   dry_run: true;
   function: MapDryRunFunction;
   would_return: Json;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// ROUND 19 — page intents, topic gaps, rejection, and what left the map.
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * What to do with a topic that is being REJECTED while attachments still hang
+ * off it. Deliberately not {@link MapTopicRemovalPolicy}: retire's vocabulary
+ * says `retire`, rejection's says `reject` (keep them and reject anyway), and
+ * `seo.reject_map_topics` raises 22023 on anything outside this list.
+ * `merge_into:<slug>` moves them onto that topic, which may not itself be in
+ * the batch.
+ */
+export type MapTopicRejectionPolicy =
+  | "error"
+  | "reject"
+  | "parent"
+  | `merge_into:${string}`;
+
+/** One line of the rejection report from `seo._tm_reject_topics`. */
+export interface MapTopicRejection {
+  slug: string;
+  /**
+   * `rejected` (nothing was attached), `rejected_with_attachments`,
+   * `attachments_moved_to_parent`, or `attachments_merged_into_<slug>`.
+   */
+  action: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of `seo.reject_map_topics`. */
+export interface MapTopicsRejectResult {
+  ok: true;
+  rejected: MapTopicRejection[];
+}
+
+/**
+ * One topic that left the map, from `seo.list_map_history`. `jsonb_strip_nulls`ed,
+ * so every optional key is simply absent rather than null.
+ */
+export interface MapHistoryEntry {
+  slug: string;
+  name: string;
+  status: MapTopicStatus;
+  description?: string;
+  /** Absent when the topic sits at the root. */
+  parent_slug?: string;
+  version?: number;
+  /** Absent — rather than `{}` — when nothing still hangs off the topic. */
+  attachments?: MapTopicAttachments;
+  /**
+   * When the topic reached its CURRENT status, read from `history.row_versions`;
+   * falls back to the topic's own `updated_at` when no snapshot carries it.
+   */
+  changed_at: string;
+  /**
+   * The actor, as a BARE uuid. `platform.entity_types` has no token for a user,
+   * so there is no entity ref to resolve here — the client's own user surface
+   * renders the name. Absent when no snapshot recorded an actor.
+   */
+  changed_by?: string;
+  /** The actor's tier on that snapshot, when one was recorded. */
+  changed_by_tier?: string;
+}
+
+/** Result of `seo.list_map_history`. `total` counts the whole filtered set, not the page. */
+export interface MapHistoryResult {
+  total: number;
+  limit: number;
+  offset: number;
+  items: MapHistoryEntry[];
+}
+
+/** Where a page is going. The vocabulary of `map_page_intent` v1. */
+export type PageIntentDisposition =
+  | "keep"
+  | "move"
+  | "merge"
+  | "redirect"
+  | "rewrite"
+  | "delete";
+
+/** How far along the decision is. Defaults to `proposed` when an item omits it. */
+export type PageIntentState = "proposed" | "accepted" | "done";
+
+/** Who decided. `seo.set_page_intents` takes this once for the whole batch. */
+export type PageIntentSource = "mapper" | "human" | "agent";
+
+/**
+ * The stored payload of a page's one `intent` edge — `platform.edge_payload_kind`
+ * `map_page_intent` v1, whose cross-rules live in the JSON schema itself and
+ * therefore hold for a direct insert by a server lane as much as for the RPC:
+ *
+ * - `merge` and `redirect` need EXACTLY ONE of `into_page_id` / `into_node_id`
+ *   (`oneOf`: neither is refused, both are refused);
+ * - `keep`, `move`, `rewrite` and `delete` forbid BOTH.
+ *
+ * `into_node_id` names a `plan.node` — a planned page — so an intent can point
+ * at a page that does not exist yet. `note` is cut at 300 characters by the
+ * writer. `jsonb_strip_nulls` means an absent key, never a null one.
+ */
+interface PageIntentPayloadBase {
+  state: PageIntentState;
+  source: PageIntentSource;
+  note?: string;
+}
+
+export type PageIntentPayload =
+  | (PageIntentPayloadBase & {
+      disposition: "merge" | "redirect";
+      into_page_id: string;
+      into_node_id?: never;
+    })
+  | (PageIntentPayloadBase & {
+      disposition: "merge" | "redirect";
+      into_node_id: string;
+      into_page_id?: never;
+    })
+  | (PageIntentPayloadBase & {
+      disposition: "keep" | "move" | "rewrite" | "delete";
+      into_page_id?: never;
+      into_node_id?: never;
+    });
+
+/**
+ * Which page an intent is about. Named by `page_id` or by `url` (id wins when
+ * both are given) and it must be a live page OF the call's site — foreign,
+ * invented and off-site pages are one per-item 42501, so the results array is
+ * no existence oracle for any id or URL in the database.
+ */
+type PageIntentTarget =
+  | { page_id: string; url?: string }
+  | { page_id?: undefined; url: string };
+
+/**
+ * The decision itself, with the destination rule of `map_page_intent` v1 and
+ * the writer's topic rule on top:
+ *
+ * - `move`, `merge` and `redirect` MOVE the page, so `topic_slug` names where
+ *   it is going and is required (22023 without it);
+ * - `keep`, `rewrite` and `delete` derive the topic from the page's own
+ *   highest-confidence `covers` edge when `topic_slug` is omitted — and raise
+ *   22023 when the page covers no topic in this map, so there is nothing to
+ *   derive it from.
+ *
+ * A `topic_slug` must name a live topic of the site's map; a retired or
+ * rejected one raises P0002.
+ */
+type PageIntentDecision =
+  | { disposition: "merge" | "redirect"; topic_slug: string; into_page_id: string; into_node_id?: never }
+  | { disposition: "merge" | "redirect"; topic_slug: string; into_node_id: string; into_page_id?: never }
+  | { disposition: "move"; topic_slug: string; into_page_id?: never; into_node_id?: never }
+  | { disposition: "keep" | "rewrite" | "delete"; topic_slug?: string; into_page_id?: never; into_node_id?: never };
+
+/** One item of `seo.set_page_intents`. `source` is the call's, never the item's. */
+export type SetPageIntentsItem = PageIntentTarget &
+  PageIntentDecision & {
+    /** Defaults to `proposed` when omitted. */
+    state?: PageIntentState;
+    /** Cut at 300 characters by the writer. */
+    note?: string;
+  };
+
+/** One page whose intent was written. `url` is echoed; absent when the page was named by id. */
+export interface SetPageIntentsSuccess {
+  ok: true;
+  page_id: string;
+  url?: string;
+}
+
+/**
+ * One page that could not be given an intent. The batch keeps going.
+ * `page_id` and `url` are echoed from the item, so both can be absent.
+ */
+export interface SetPageIntentsFailure {
+  ok: false;
+  page_id?: string;
+  url?: string;
+  /** SQLERRM from the failed item — a message, never a code. */
+  error: string;
+}
+
+export type SetPageIntentsRow = SetPageIntentsSuccess | SetPageIntentsFailure;
+
+/** Result of `seo.set_page_intents`. `ok` is true only when `failed` is 0. */
+export interface SetPageIntentsResult {
+  ok: boolean;
+  /** The map the site uses — the call raises P0002 when it uses none. */
+  map_id: string;
+  set: number;
+  failed: number;
+  results: SetPageIntentsRow[];
+}
+
+/**
+ * The page as the bulk screen renders it: the pointer plus its traffic over
+ * `performance_window_days`. Built directly by `seo.list_page_intents` in ONE
+ * set-based aggregate over the window's pages — this screen opens on
+ * 4,000-page sites — so it is the {@link WebPageItem} shape without going
+ * through `seo._tm_item`. `label`, `url` and `site_id` are stripped when null.
+ */
+export interface PageIntentPageRef extends PagePerformance {
+  type: "web_page";
+  id: string;
+  label?: string;
+  url?: string;
+  site_id?: string;
+}
+
+/** One `covers` edge: where the page sits TODAY. */
+export interface PageIntentCurrentTopic {
+  slug: string;
+  name: string;
+  confidence?: number;
+  source?: string;
+}
+
+/** The page's one intent, rendered. `jsonb_strip_nulls`ed. */
+export interface PageIntentRecord {
+  /** Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits today (delete). */
+  topic: { slug: string; name: string };
+  disposition: PageIntentDisposition;
+  state: PageIntentState;
+  source: PageIntentSource;
+  note?: string;
+  /**
+   * The destination of a `merge` or `redirect`, resolved through `seo._tm_ref`
+   * — a `web_page` or a `plan_node`, or `{type, hidden: true}` when the caller
+   * cannot open it. Absent for every other disposition.
+   */
+  into?: EntityRef;
+  updated_at: string;
+}
+
+/**
+ * One row of `seo.list_page_intents`: a page that has an intent, a coverage
+ * edge, or both. `intent` is present and NULL when the page has none — this
+ * result is not `jsonb_strip_nulls`ed at the row level, so the key never
+ * vanishes.
+ */
+export interface PageIntentItem {
+  page: PageIntentPageRef;
+  current_topics: PageIntentCurrentTopic[];
+  intent: PageIntentRecord | null;
+}
+
+/**
+ * Result of `seo.list_page_intents`. ONE INTENT PER PAGE is the contract;
+ * `duplicate_intents` counts edges this read had to collapse (newest wins) if
+ * duplicates ever appear through another path, so a screen can say so out loud
+ * instead of silently showing one of them. It is 0 on a healthy map.
+ */
+export interface PageIntentsResult {
+  total: number;
+  limit: number;
+  offset: number;
+  performance_window_days: number;
+  duplicate_intents: number;
+  items: PageIntentItem[];
+}
+
+/** One topic that should have a page and has none. */
+export interface MapTopicGap {
+  slug: string;
+  name: string;
+  status: MapTopicStatus;
+  depth: number;
+  keyword_count: number;
+}
+
+/**
+ * Result of `seo.list_topic_gaps`. `total` is the whole answer — this read is
+ * not paged.
+ */
+export interface MapTopicGapsResult {
+  total: number;
+  items: MapTopicGap[];
+}
+
+/** What `listPageIntents` may narrow by. Every filter is optional. */
+export interface PageIntentsListOptions {
+  /**
+   * One access-checked site. Omitted (or null), the page set is every site
+   * related to this map THAT THE CALLER MAY VIEW — never "all sites".
+   */
+  siteId?: string | null;
+  /**
+   * A live topic of this map. It matches a page related to that topic EITHER
+   * WAY — by its intent or by its coverage. P0002 when the slug is unknown,
+   * retired or rejected.
+   */
+  topicSlug?: string | null;
+  disposition?: PageIntentDisposition | null;
+  state?: PageIntentState | null;
+  /** Clamped to 1..1000 by the function; 200 when omitted. */
+  limit?: number;
+  /** Clamped to >= 0; 0 when omitted. */
+  offset?: number;
+}
+
+/** What `listMapHistory` may narrow by. */
+export interface MapHistoryListOptions {
+  /**
+   * Which statuses to list. Any of `proposed`, `active`, `retired`,
+   * `rejected`; anything else raises 22023. Omitted means what LEFT the map:
+   * `["rejected", "retired"]`.
+   */
+  status?: MapTopicStatus[];
+  /** Clamped to 1..1000 by the function; 200 when omitted. */
+  limit?: number;
+  /** Clamped to >= 0; 0 when omitted. */
+  offset?: number;
 }

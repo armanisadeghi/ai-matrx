@@ -25,7 +25,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "esign.delegation.allowed": ["esign._act_delegate", "esign.resolve_config_snapshot", "hr.punch_record", "public.hr_directory_list"],
   "esign.download.url_ttl_seconds": ["esign.resolve_config_snapshot"],
   "esign.expiry_days.sensitive": ["esign.resolve_config_snapshot"],
-  "esign.expiry_days.standard": ["esign.resolve_config_snapshot"],
+  "esign.expiry_days.standard": ["esign.resolve_config_snapshot", "platform.provision_validate"],
   "esign.hash.algorithm": ["esign.resolve_config_snapshot"],
   "esign.outsider.session.ttl_minutes.esign_signer": ["esign.resolve_config_snapshot"],
   "esign.outsider.verification.default_factor.esign_signer": ["esign.resolve_config_snapshot"],
@@ -35,7 +35,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "esign.retention.default_trigger": ["esign.resolve_config_snapshot"],
   "esign.signature.allow_drawn": ["esign.config_set", "esign.resolve_config_snapshot"],
   "esign.signature.allow_typed": ["esign.config_set", "esign.resolve_config_snapshot"],
-  "esign.signing_order.default": ["public.esign_create_envelope", "public.hr_directory_list"],
+  "esign.signing_order.default": ["platform.provision", "platform.provision_validate", "public.esign_create_envelope", "public.hr_directory_list"],
   "extensibility.custom_entities.max_definitions_per_org": ["platform._custom_entity_definition_guard"],
   "extensibility.custom_entities.max_fields_per_definition": ["platform._custom_field_definition_guard", "platform.extensibility_knob"],
   "extensibility.custom_entities.max_records_per_definition": ["platform._custom_record_guard", "platform.extensibility_knob"],
@@ -124,6 +124,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "hr.workflow.tick_batch_max": ["hr.wf_tick"],
   "hr.workflow.timeout_warning_lead_hours": ["hr.wf_activate_step", "hr.wf_tick"],
   "marketing.run_console.run_history_page_size": ["public.admin_list_run_history"],
+  "masterwork.capture_plan.horizon_days": ["hr.leave_project_balance"],
   "platform.access.emergency_door_justification_min_chars": ["iam._door_min_chars"],
   "platform.access.emergency_door_ttl_minutes": ["iam._door_ttl_minutes"],
   "platform.reachability.selfheal_pause": ["platform.heal_reachability_drift"],
@@ -144,6 +145,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "seo.topical_map.outline_max_chars": ["seo.map_outline"],
   "seo.topical_map.overview_max_nodes": ["seo.map_outline"],
   "seo.topical_map.overview_min_nodes": ["seo.map_outline"],
+  "seo.topical_map.performance_window_days": ["seo._tm_perf_days"],
   "seo.topical_map.topic_description_max_chars": ["seo.patch_map_topics", "seo.upsert_map_topics"],
 };
 

@@ -15214,6 +15214,93 @@ export type Database = {
   }
   communication: {
     Tables: {
+      calendar_event: {
+        Row: {
+          all_day: boolean
+          attendees: Json
+          calendar_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ends_at: string | null
+          external_id: string
+          external_updated_at: string | null
+          id: string
+          location: string | null
+          meeting_url: string | null
+          metadata: Json
+          organization_id: string
+          organizer_email: string | null
+          provider: string
+          starts_at: string | null
+          sync_status: string
+          sync_status_reason: string | null
+          synced_at: string | null
+          synced_via_connection_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          all_day?: boolean
+          attendees?: Json
+          calendar_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ends_at?: string | null
+          external_id: string
+          external_updated_at?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          metadata?: Json
+          organization_id: string
+          organizer_email?: string | null
+          provider?: string
+          starts_at?: string | null
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          synced_via_connection_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          all_day?: boolean
+          attendees?: Json
+          calendar_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ends_at?: string | null
+          external_id?: string
+          external_updated_at?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          organizer_email?: string | null
+          provider?: string
+          starts_at?: string | null
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          synced_via_connection_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -53229,6 +53316,7 @@ export type Database = {
           token: string
         }[]
       }
+      record_transfer_refusal: { Args: { p_refusal: Json }; Returns: string }
       rulebook_ids_curated_by: { Args: { p_uid: string }; Returns: string[] }
       runnable_agent_fields: {
         Args: { p_agent_id: string }
@@ -58779,6 +58867,7 @@ export type Database = {
       assists: {
         Row: {
           action: Json
+          auto_apply_at: string | null
           body: string | null
           confidence: number | null
           created_at: string
@@ -58817,6 +58906,7 @@ export type Database = {
         }
         Insert: {
           action: Json
+          auto_apply_at?: string | null
           body?: string | null
           confidence?: number | null
           created_at?: string
@@ -58855,6 +58945,7 @@ export type Database = {
         }
         Update: {
           action?: Json
+          auto_apply_at?: string | null
           body?: string | null
           confidence?: number | null
           created_at?: string
@@ -62955,6 +63046,27 @@ export type Database = {
         }
         Relationships: []
       }
+      provision_marker: {
+        Row: {
+          active: boolean
+          set_at: string
+          set_by: string
+          txid: unknown
+        }
+        Insert: {
+          active?: boolean
+          set_at?: string
+          set_by?: string
+          txid: unknown
+        }
+        Update: {
+          active?: boolean
+          set_at?: string
+          set_by?: string
+          txid?: unknown
+        }
+        Relationships: []
+      }
       provision_rule_message: {
         Row: {
           field_path: string
@@ -62997,6 +63109,30 @@ export type Database = {
           name?: string
           schema?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      provision_shape_debt: {
+        Row: {
+          detail: Json
+          kind: string
+          noted_at: string
+          object_ref: string
+          txid: unknown
+        }
+        Insert: {
+          detail: Json
+          kind: string
+          noted_at?: string
+          object_ref: string
+          txid: unknown
+        }
+        Update: {
+          detail?: Json
+          kind?: string
+          noted_at?: string
+          object_ref?: string
+          txid?: unknown
         }
         Relationships: []
       }
@@ -63054,6 +63190,39 @@ export type Database = {
           token?: string
           type?: string
           verb?: string
+        }
+        Relationships: []
+      }
+      provision_spec_grandfather: {
+        Row: {
+          id: string
+          lane: string
+          object_ref: string
+          owner: string
+          reason: string
+          review_by: string
+          seeded_at: string
+          seeded_by: string
+        }
+        Insert: {
+          id?: string
+          lane: string
+          object_ref: string
+          owner: string
+          reason: string
+          review_by: string
+          seeded_at?: string
+          seeded_by?: string
+        }
+        Update: {
+          id?: string
+          lane?: string
+          object_ref?: string
+          owner?: string
+          reason?: string
+          review_by?: string
+          seeded_at?: string
+          seeded_by?: string
         }
         Relationships: []
       }
@@ -65552,6 +65721,7 @@ export type Database = {
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
       heal_reachability_drift: { Args: never; Returns: Json }
+      is_provisioning: { Args: never; Returns: boolean }
       knob_index: {
         Args: {
           p_device_id?: string
@@ -65762,6 +65932,7 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           action: Json
+          auto_apply_at: string | null
           body: string | null
           confidence: number | null
           created_at: string
@@ -65932,6 +66103,7 @@ export type Database = {
         }[]
       }
       provision_live_vocabulary: { Args: { p_name: string }; Returns: string[] }
+      provision_marker_set: { Args: { p_on?: boolean }; Returns: undefined }
       provision_options: {
         Args: { p_kind?: string; p_org_id?: string }
         Returns: Json
@@ -65941,6 +66113,8 @@ export type Database = {
         Args: { p_org_id?: string; p_spec: Json }
         Returns: Json
       }
+      provision_spec_grandfather_count: { Args: never; Returns: number }
+      provision_spec_grandfather_seed: { Args: never; Returns: number }
       provision_validate: {
         Args: { p_lane?: string; p_org_id?: string; p_spec: Json }
         Returns: Json
@@ -66876,6 +67050,7 @@ export type Database = {
       _schema_migrations: {
         Row: {
           applied_at: string
+          chair_step: string | null
           checksum: string
           duration_ms: number
           filename: string
@@ -66883,6 +67058,7 @@ export type Database = {
         }
         Insert: {
           applied_at?: string
+          chair_step?: string | null
           checksum: string
           duration_ms: number
           filename: string
@@ -66890,6 +67066,7 @@ export type Database = {
         }
         Update: {
           applied_at?: string
+          chair_step?: string | null
           checksum?: string
           duration_ms?: number
           filename?: string
@@ -89388,7 +89565,19 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      _tm_page_perf: {
+        Args: { p_days: number; p_page_ids: string[] }
+        Returns: Json
+      }
+      _tm_perf_days: {
+        Args: { p_org: string; p_site: string }
+        Returns: number
+      }
       _tm_ref: { Args: { p_id: string; p_type: string }; Returns: Json }
+      _tm_reject_topics: {
+        Args: { p_ids: string[]; p_map_id: string; p_policy: string }
+        Returns: Json
+      }
       _tm_remove_topics: {
         Args: {
           p_ids: string[]
@@ -91675,6 +91864,31 @@ export type Database = {
           value_source: string
         }[]
       }
+      list_map_history: {
+        Args: {
+          p_limit?: number
+          p_map_id: string
+          p_offset?: number
+          p_status?: string[]
+        }
+        Returns: Json
+      }
+      list_page_intents: {
+        Args: {
+          p_disposition?: string
+          p_limit?: number
+          p_map_id: string
+          p_offset?: number
+          p_site_id?: string
+          p_state?: string
+          p_topic_slug?: string
+        }
+        Returns: Json
+      }
+      list_topic_gaps: {
+        Args: { p_map_id: string; p_site_id?: string }
+        Returns: Json
+      }
       map_diagnostics: {
         Args: { p_limit?: number; p_map_id: string; p_site_id?: string }
         Returns: Json
@@ -91797,6 +92011,10 @@ export type Database = {
           status: string
         }[]
       }
+      reject_map_topics: {
+        Args: { p_map_id: string; p_on_attachments?: string; p_slugs: string[] }
+        Returns: Json
+      }
       release_page_measurement_quarantine: {
         Args: { p_page_id: string; p_reason?: string; p_strategy?: string }
         Returns: {
@@ -91875,6 +92093,10 @@ export type Database = {
           p_slug: string
           p_value_slug: string
         }
+        Returns: Json
+      }
+      set_page_intents: {
+        Args: { p_items: Json; p_site_id: string; p_source: string }
         Returns: Json
       }
       set_page_map_facet: {
@@ -97782,6 +98004,60 @@ export type Database = {
           },
         ]
       }
+      channel_analytics_daily: {
+        Row: {
+          avg_view_duration_seconds: number
+          channel_resource_id: string
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          metadata: Json
+          organization_id: string
+          subscribers_gained: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          video_external_id: string | null
+          views: number
+          watch_time_minutes: number
+        }
+        Insert: {
+          avg_view_duration_seconds?: number
+          channel_resource_id: string
+          created_at?: string
+          created_by?: string | null
+          date: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          subscribers_gained?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          video_external_id?: string | null
+          views?: number
+          watch_time_minutes?: number
+        }
+        Update: {
+          avg_view_duration_seconds?: number
+          channel_resource_id?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          subscribers_gained?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          video_external_id?: string | null
+          views?: number
+          watch_time_minutes?: number
+        }
+        Relationships: []
+      }
       crawl_event: {
         Row: {
           crawl_url_id: string | null
@@ -100256,6 +100532,156 @@ export type Database = {
           },
         ]
       }
+      tag_manager_snapshot: {
+        Row: {
+          container_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          findings: Json
+          has_consent: boolean
+          has_conversion_tag: boolean
+          has_ga4: boolean
+          id: string
+          metadata: Json
+          organization_id: string
+          provider: string
+          site_id: string
+          taken_at: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          container_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          findings?: Json
+          has_consent: boolean
+          has_conversion_tag: boolean
+          has_ga4: boolean
+          id?: string
+          metadata?: Json
+          organization_id: string
+          provider?: string
+          site_id: string
+          taken_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          container_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          findings?: Json
+          has_consent?: boolean
+          has_conversion_tag?: boolean
+          has_ga4?: boolean
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          provider?: string
+          site_id?: string
+          taken_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_manager_snapshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_manager_snapshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+        ]
+      }
+      youtube_video: {
+        Row: {
+          channel_resource_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          external_id: string
+          external_url: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_at: string | null
+          stats: Json
+          sync_status: string
+          sync_status_reason: string | null
+          synced_at: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          channel_resource_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          external_id: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_at?: string | null
+          stats?: Json
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          channel_resource_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          external_id?: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_at?: string | null
+          stats?: Json
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_latest_result: {
@@ -100850,6 +101276,81 @@ export type Database = {
   }
   workbench: {
     Tables: {
+      google_document: {
+        Row: {
+          body_text: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          external_id: string
+          external_modified_at: string | null
+          external_url: string | null
+          id: string
+          metadata: Json
+          mime_kind: string
+          organization_id: string
+          owner_email: string | null
+          resource_id: string
+          sync_status: string
+          sync_status_reason: string | null
+          synced_at: string | null
+          synced_via_connection_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_id: string
+          external_modified_at?: string | null
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          mime_kind: string
+          organization_id: string
+          owner_email?: string | null
+          resource_id: string
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          synced_via_connection_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_id?: string
+          external_modified_at?: string | null
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          mime_kind?: string
+          organization_id?: string
+          owner_email?: string | null
+          resource_id?: string
+          sync_status?: string
+          sync_status_reason?: string | null
+          synced_at?: string | null
+          synced_via_connection_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       heatmap_saves: {
         Row: {
           created_at: string | null
@@ -101504,6 +102005,7 @@ export type Database = {
           is_public: boolean
           metadata: Json
           organization_id: string
+          source_row_ref: string | null
           table_id: string
           updated_at: string
           updated_by: string | null
@@ -101519,6 +102021,7 @@ export type Database = {
           is_public?: boolean
           metadata?: Json
           organization_id: string
+          source_row_ref?: string | null
           table_id: string
           updated_at?: string
           updated_by?: string | null
@@ -101534,6 +102037,7 @@ export type Database = {
           is_public?: boolean
           metadata?: Json
           organization_id?: string
+          source_row_ref?: string | null
           table_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -101652,6 +102156,7 @@ export type Database = {
           project_id: string | null
           row_ordering_config: Json | null
           sheet_index: number | null
+          sync_source: Json | null
           table_name: string
           task_id: string | null
           template_id: string | null
@@ -101676,6 +102181,7 @@ export type Database = {
           project_id?: string | null
           row_ordering_config?: Json | null
           sheet_index?: number | null
+          sync_source?: Json | null
           table_name: string
           task_id?: string | null
           template_id?: string | null
@@ -101700,6 +102206,7 @@ export type Database = {
           project_id?: string | null
           row_ordering_config?: Json | null
           sheet_index?: number | null
+          sync_source?: Json | null
           table_name?: string
           task_id?: string | null
           template_id?: string | null
