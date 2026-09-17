@@ -274,3 +274,133 @@ export function buildTeachBackRequest(input: {
   if (input.roundCap) body.round_cap = input.roundCap;
   return body;
 }
+
+// ── THE SESSION SURVIVES THE PAGE ────────────────────────────────────────────
+//
+// 🚨 A TEACH-BACK'S ROUNDS ARE NOT MOUNT-TIME REACT STATE (cold walk 6,
+// 2026-09-17). The session lives on the client by design — every round is one
+// HTTP call carrying the rounds so far, because the screen is the only thing
+// that knows what the Expert has actually heard. That was true and fine; what
+// was NOT fine is that it lived ONLY in `useState`. An Expert corrected round
+// 1, the room visibly acted on it — rules landed on the Rulebook — she came
+// back to the page, signed off, and the screen told her "You corrected 0
+// rounds". The rejoin had rebuilt the session from the durable run's LAST
+// round alone, so the request carried no correction at all: the count was
+// zero because the history was gone, and the explainer had lost her
+// corrections with it.
+//
+// So the rounds are persisted through the shared wizard-draft primitive
+// (`lib/wizard-draft`, warm-cache → IDB, 7-day TTL), keyed per Rulebook, and
+// a rejoin puts the WHOLE session back. What cannot be put back is never
+// counted: see `reachedRound` — the screen says it does not know rather than
+// printing a number that is a lie.
+
+/** What one teach-back session needs to come back whole. */
+export interface TeachBackSession {
+  rounds: TeachBackRound[];
+  /**
+   * The explainer's "least sure about" line, keyed by the explanation it
+   * belongs to — a screen affordance, never part of the wire contract. Keyed,
+   * not positional: a rejoin restores the history and the live round in an
+   * order nobody controls, and a parallel array would put the wrong sentence
+   * under the wrong round.
+   */
+  uncertainParts: Record<string, string>;
+  /** The decision the Expert named at the start. */
+  topic: string;
+  /**
+   * The highest round number the SERVER has said we are on. Compared against
+   * `rounds.length` to know whether the history on this device is the whole
+   * session — the one thing that makes "You corrected N rounds" safe to say.
+   */
+  reachedRound: number;
+}
+
+export const EMPTY_TEACH_BACK_SESSION: TeachBackSession = {
+  rounds: [],
+  uncertainParts: {},
+  topic: "",
+  reachedRound: 0,
+};
+
+/** The draft key for one Rulebook's teach-back. One session per Rulebook. */
+export function teachBackWizardId(rulebookId: string): string {
+  return `masterwork-teach-back:${rulebookId}`;
+}
+
+function readRound(raw: unknown): TeachBackRound | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  if (typeof row.explanation !== "string") return null;
+  const basis = String(row.basis ?? "");
+  return {
+    subject: String(row.subject ?? ""),
+    explanation: row.explanation,
+    basis: basis === "rulebook" || basis === "generalist" ? basis : "",
+    rule_ids: Array.isArray(row.rule_ids)
+      ? row.rule_ids.map((id) => String(id))
+      : [],
+    correction: typeof row.correction === "string" ? row.correction : "",
+  };
+}
+
+/**
+ * Pure, called on render. A round we cannot read is REPORTED, never dropped in
+ * silence — a lost correction is the exact bug this persistence exists for.
+ */
+export function restoreTeachBackSession(data: Record<string, unknown>): {
+  values: TeachBackSession;
+  rejectedKeys: string[];
+} {
+  const rejectedKeys: string[] = [];
+  const rounds: TeachBackRound[] = [];
+  if (Array.isArray(data.rounds)) {
+    data.rounds.forEach((raw, index) => {
+      const round = readRound(raw);
+      if (round) rounds.push(round);
+      else rejectedKeys.push(`rounds[${index}]`);
+    });
+  } else if (data.rounds !== undefined) {
+    rejectedKeys.push("rounds");
+  }
+  const uncertainParts: Record<string, string> = {};
+  if (data.uncertainParts && typeof data.uncertainParts === "object") {
+    for (const [key, value] of Object.entries(
+      data.uncertainParts as Record<string, unknown>,
+    )) {
+      if (typeof value === "string") uncertainParts[key] = value;
+      else rejectedKeys.push(`uncertainParts[${key}]`);
+    }
+  } else if (data.uncertainParts !== undefined) {
+    rejectedKeys.push("uncertainParts");
+  }
+  const reached = Number(data.reachedRound ?? 0);
+  return {
+    values: {
+      rounds,
+      uncertainParts,
+      topic: typeof data.topic === "string" ? data.topic : "",
+      // A short history must never look complete: if we could not read some
+      // rounds back, the session still reached at least as far as it claimed.
+      reachedRound: Number.isFinite(reached) && reached > 0 ? reached : 0,
+    },
+    rejectedKeys,
+  };
+}
+
+/**
+ * How many rounds the Expert corrected — or `null` when this device does not
+ * hold the whole session and therefore cannot honestly say.
+ *
+ * NEVER derived from the answer box on screen, and never from a count the
+ * request did not actually carry: `reachedRound` is the server's own round
+ * number, so a history shorter than it is a history with holes in it.
+ */
+export function correctedRoundCount(session: {
+  rounds: TeachBackRound[];
+  reachedRound: number;
+}): number | null {
+  if (session.reachedRound > session.rounds.length) return null;
+  return session.rounds.filter((round) => (round.correction ?? "").trim())
+    .length;
+}

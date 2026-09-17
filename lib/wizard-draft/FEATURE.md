@@ -90,10 +90,12 @@ const resolution = resolveWizardStep<1 | 2>({
 
 - `2026-09-17` — A RESTORED DRAFT IS ANNOUNCED (cold walk 6). `applyOnce`,
   `didRestore`, `acknowledge` and `discard` added to `useWizardDraft`, plus
-  `<WizardDraftRestored>`. Adopted by all three consumers: the Masterwork
-  guided start, the Research init wizard (migrated off its own hand-rolled
-  slice read) and the Masterwork rule editor (which restores an abandoned
-  unsaved edit over the saved rule). Guard:
+  `<WizardDraftRestored>`. Adopted by every consumer: the Masterwork guided
+  start, the Research init wizard (migrated off its own hand-rolled slice
+  read), the Masterwork rule editor (which restores an abandoned unsaved edit
+  over the saved rule) and the Masterwork teach-back, whose whole session —
+  every round and every correction — now lives here instead of in mount-time
+  React state. Guard:
   `__tests__/restored-draft-is-announced.test.tsx` — the notice on screen, the
   "Start fresh" remedy, and a census so the next wizard cannot repeat it.
 

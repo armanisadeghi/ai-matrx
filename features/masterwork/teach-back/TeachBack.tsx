@@ -63,12 +63,18 @@ import {
   TEACH_BACK_KNOB_FEATURE,
   TEACH_BACK_PATH,
   buildTeachBackRequest,
+  correctedRoundCount,
   describeBasis,
   describeCorrection,
   parseTeachBackRound,
+  restoreTeachBackSession,
+  teachBackWizardId,
   type TeachBackRound,
   type TeachBackRoundResult,
+  type TeachBackSession,
 } from "./service";
+import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 
 interface KnobState {
   rounds: number;
@@ -101,12 +107,42 @@ export function TeachBack({
   // BESIDE the wire rounds, never on them: `TeachBackRound` is the request
   // contract (the server forbids extra keys), and this is a screen affordance —
   // the invitation to interrupt — not something the distiller ever reads.
-  const [uncertainParts, setUncertainParts] = useState<string[]>([]);
+  // Keyed by the explanation it belongs to, never by position: a rejoin puts
+  // the saved history and the round the durable run hands back into state in
+  // an order nobody controls, and a parallel array would land the wrong
+  // sentence under the wrong round.
+  const [uncertainParts, setUncertainParts] = useState<Record<string, string>>(
+    {},
+  );
   const [correction, setCorrection] = useState("");
   const [lastCorrection, setLastCorrection] = useState<string | null>(null);
   const [finished, setFinished] = useState<TeachBackRoundResult | null>(null);
   const [signing, setSigning] = useState(false);
   const [signatureProblem, setSignatureProblem] = useState<string | null>(null);
+  /**
+   * THE FURTHEST ROUND THE SERVER HAS SAID WE ARE ON. It is what makes the
+   * count safe to print: a history shorter than this is a history with holes,
+   * and a screen that counted it anyway would say "You corrected 0 rounds" to
+   * somebody who corrected one (cold walk 6, 2026-09-17).
+   */
+  const [reachedRound, setReachedRound] = useState(0);
+
+  // THE SESSION SURVIVES THE PAGE. Every round is one HTTP call carrying the
+  // rounds so far, so a session that lived only in `useState` lost every
+  // correction the moment the tab reloaded: the rejoin rebuilt it from the
+  // durable run's LAST round, the request went out with no correction in it,
+  // and the sign-off screen counted zero. Persisted through the shared
+  // wizard-draft primitive, per Rulebook.
+  const {
+    restored: restoredSession,
+    applyOnce: applySessionOnce,
+    didRestore: sessionRestored,
+    acknowledge: acknowledgeSession,
+    patch: patchSession,
+    clear: clearSession,
+  } = useWizardDraft<TeachBackSession>(teachBackWizardId(rulebook.id), {
+    restore: restoreTeachBackSession,
+  });
 
   const [knobs, setKnobs] = useState<KnobState>(PENDING_KNOBS);
   useEffect(() => {
@@ -190,27 +226,90 @@ export function TeachBack({
     setAdopted(result.roundIndex);
     setLastCorrection(describeCorrection(result));
     if (result.rulesAdded > 0) onChanged?.();
+    // The server's own round number, whether the payload is a round or the end
+    // of the session. It is the yardstick the saved history is measured
+    // against, so it is remembered before anything else.
+    setReachedRound((previous) => Math.max(previous, result.roundIndex));
     if (result.done) {
       setFinished(result);
       return;
     }
-    setRounds((previous) => [
-      ...previous,
-      {
-        subject: result.subject,
-        explanation: result.explanation,
-        basis: result.basis,
-        rule_ids: result.ruleIdsCited,
-        correction: "",
-      },
-    ]);
-    setUncertainParts((previous) => [...previous, result.uncertainPart]);
+    // A REJOIN IS NOT A NEW ROUND. The restored session may already hold the
+    // round this payload describes; appending it again would show the
+    // explanation twice and send it twice. Decided INSIDE the updater, because
+    // the restore and this adoption can land in either order.
+    setRounds((previous) => {
+      if (previous.some((round) => round.explanation === result.explanation))
+        return previous;
+      return [
+        ...previous,
+        {
+          subject: result.subject,
+          explanation: result.explanation,
+          basis: result.basis,
+          rule_ids: result.ruleIdsCited,
+          correction: "",
+        },
+      ];
+    });
+    if (result.uncertainPart) {
+      setUncertainParts((previous) => ({
+        ...previous,
+        [result.explanation]: result.uncertainPart,
+      }));
+    }
     setCorrection("");
     if (voiceOn) speakExplanation(result.explanation);
     // `finished` is read only to let a done payload settle once; adding it to
     // the deps would re-run this effect on the state it just set.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, adopted, onChanged, voiceOn, speakExplanation]);
+
+  // ── PUTTING THE SESSION BACK ──────────────────────────────────────────────
+  // Exactly once per mount, and announced on screen: the Expert sees that she
+  // is back in the teach-back she was in the middle of, not starting a new one.
+  useEffect(() => {
+    applySessionOnce((saved) => {
+      if (saved.rounds.length === 0) return;
+      // MERGE, NEVER CLOBBER. The durable run may already have put the current
+      // round on screen before this read came back; the saved history goes in
+      // FRONT of it, which is exactly what was missing from the request.
+      setRounds((previous) => {
+        const known = new Set(saved.rounds.map((round) => round.explanation));
+        const extra = previous.filter((round) => !known.has(round.explanation));
+        return [...saved.rounds, ...extra];
+      });
+      setUncertainParts((previous) => ({ ...saved.uncertainParts, ...previous }));
+      setReachedRound((previous) => Math.max(previous, saved.reachedRound));
+      setTopic((current) => current || saved.topic);
+    });
+  }, [applySessionOnce, restoredSession]);
+
+  // ── KEEPING IT ────────────────────────────────────────────────────────────
+  // Written on every change, including the correction the Expert just sent —
+  // THE thing the old session lost on a reload.
+  useEffect(() => {
+    if (rounds.length === 0 && reachedRound === 0) return;
+    patchSession({ rounds, uncertainParts, topic, reachedRound });
+    // `patchSession` is a fresh closure each render; the payload is the
+    // dependency that matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rounds, uncertainParts, topic, reachedRound]);
+
+  // The session is over: the rounds are on the Rulebook, and a finished
+  // teach-back must never come back as an in-progress one.
+  useEffect(() => {
+    if (finished) clearSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
+
+  /**
+   * How many rounds she corrected — counted off the rounds this screen is
+   * actually holding, or `null` when the history here is shorter than the
+   * round the server says we reached. Never the answer box, never a number
+   * the request did not carry.
+   */
+  const correctedRounds = correctedRoundCount({ rounds, reachedRound });
 
   const running = run.running;
   const started = rounds.length > 0 || finished !== null;
@@ -300,12 +399,14 @@ export function TeachBack({
   const restart = () => {
     run.reset();
     setRounds([]);
-    setUncertainParts([]);
+    setUncertainParts({});
     setCorrection("");
     setFinished(null);
     setLastCorrection(null);
     setSignatureProblem(null);
     setAdopted(-1);
+    setReachedRound(0);
+    clearSession();
   };
 
   if (!canEdit) {
@@ -406,6 +507,16 @@ export function TeachBack({
               : "The words are on screen; the voice is turned off here."}
           </p>
         </div>
+      ) : null}
+
+      {/* ── SHE IS BACK IN THE ONE SHE WAS IN THE MIDDLE OF ──────────────── */}
+      {sessionRestored && rounds.length > 0 && !finished ? (
+        <WizardDraftRestored
+          what="the teach-back you had going"
+          onStartFresh={restart}
+          onDismiss={acknowledgeSession}
+          startFreshLabel="Start a new one"
+        />
       ) : null}
 
       {/* ── WHAT THE LAST CORRECTION WAS WORTH ───────────────────────────── */}
@@ -617,9 +728,9 @@ export function TeachBack({
       ) : null}
 
       {/* ── WHAT IT WASN'T SURE ABOUT — the invitation to interrupt ──────── */}
-      {current && !finished && uncertainParts[rounds.length - 1] ? (
+      {current && !finished && uncertainParts[current.explanation] ? (
         <p className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-          The part I&apos;m least sure about: {uncertainParts[rounds.length - 1]}
+          The part I&apos;m least sure about: {uncertainParts[current.explanation]}
         </p>
       ) : null}
 
@@ -627,10 +738,30 @@ export function TeachBack({
       {finished ? (
         <section className="rounded-lg border border-border bg-card p-4">
           <h2 className="text-base font-semibold">That&apos;s the teach-back done</h2>
+          {/* 🚨 THE COUNT COMES FROM THE ROUNDS THAT ACTUALLY EXIST, AND WHEN
+              THEY DO NOT ALL EXIST HERE IT SAYS SO (cold walk 6, 2026-09-17).
+              This read the server's `answered_rounds`, which counts the
+              corrections in the REQUEST — and after a rejoin the request
+              carried a session rebuilt from one round, so an Expert who had
+              corrected round 1 and watched rules land on her Rulebook was told
+              "You corrected 0 rounds". The session is persisted now, so the
+              number is real; when this device genuinely does not hold the
+              whole session, the screen says that instead of counting. */}
           <p className="mt-1 text-sm text-muted-foreground">
-            It stopped because {finished.doneReason || "it ran out of rounds"}. You
-            corrected {finished.answeredRounds}{" "}
-            {finished.answeredRounds === 1 ? "round" : "rounds"}.
+            It stopped because {finished.doneReason || "it ran out of rounds"}.{" "}
+            {correctedRounds === null ? (
+              <>
+                Part of this teach-back happened somewhere else — another device,
+                or before this browser&apos;s history was cleared — so we
+                can&apos;t say here how many rounds you corrected. Everything you
+                corrected is saved on the Rulebook.
+              </>
+            ) : (
+              <>
+                You corrected {correctedRounds}{" "}
+                {correctedRounds === 1 ? "round" : "rounds"}.
+              </>
+            )}
           </p>
           {finished.signatureNote ? (
             <p
