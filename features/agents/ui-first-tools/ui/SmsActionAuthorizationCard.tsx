@@ -10,6 +10,7 @@ import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { AgentCardShell } from "./AgentCardShell";
 import type { PendingAsk } from "../redux/pending-asks.slice";
 import {
@@ -167,13 +168,17 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
           Your text assistant requested <strong>{ask.toolName}</strong>. Approval
           applies only to these exact arguments and expires after 15 minutes.
         </p>
-        <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs whitespace-pre-wrap sm:max-h-40 sm:overflow-auto">
-          {JSON.stringify(
-            redactSmsActionArguments(ask.smsActionArguments ?? {}),
-            null,
-            2,
-          )}
-        </pre>
+        {/* THE EXACT ARGUMENTS, as a document — never a JSON payload. This
+            card asks a PERSON to authorize a side effect, so what it shows has
+            to be readable by one: `StructuredValueView` is the platform's
+            structured floor (humanized labels, prose through the markdown
+            renderer, uniform lists as a table) with the raw data one click
+            away for anyone who wants it. Same defect class as the surface-write
+            approval card's JSON dump (cold walk 3, finding 4). The arguments
+            carry no registered kind, so the floor is the whole answer here. */}
+        <StructuredValueView
+          value={redactSmsActionArguments(ask.smsActionArguments ?? {})}
+        />
         {otpSent ? (
           <div className="space-y-2">
             <p>Enter the verification code sent to {email}.</p>

@@ -34,6 +34,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ChangeDiff } from "@/components/ui/change-diff";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
@@ -62,6 +64,35 @@ const VERB_META: Record<
 
 function capitalize(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+/**
+ * The structured body of an approval — THE ONE PIPELINE, never a second
+ * renderer.
+ *
+ * A declared `kind` goes through `KindInstanceRender`, which is the SAME
+ * `applyIrKindRoute` path that draws the payload in chat, in a run readout and
+ * on the kind's own page; it also owns the "no component for this kind"
+ * decision, so this card never second-guesses the registry. Without a kind
+ * there is nothing to route, so the value goes straight to the platform's
+ * structured floor — a human document with the raw data one click away.
+ *
+ * Either way a person sees labelled English, never a JSON payload
+ * (cold walk 3, finding 4; THE FOURTH LAW).
+ */
+function ProposedValueBody({ value, kind }: { value: unknown; kind?: string }) {
+  return (
+    <div className="mt-1.5 rounded-lg border border-border/60 bg-background/60 p-2.5">
+      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        Proposed value
+      </div>
+      {kind ? (
+        <KindInstanceRender kind={kind} value={value} variant="bare" />
+      ) : (
+        <StructuredValueView value={value} />
+      )}
+    </div>
+  );
 }
 
 export function ApprovalCard({ ask }: ApprovalCardProps) {
@@ -257,6 +288,14 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
         </p>
       ) : null}
       {change.fields.length > 0 ? <ChangeDiff fields={change.fields} /> : null}
+      {change.proposedValue ? (
+        <ProposedValueBody
+          value={change.proposedValue.value}
+          {...(change.proposedValue.kind === undefined
+            ? {}
+            : { kind: change.proposedValue.kind })}
+        />
+      ) : null}
     </AgentCardShell>
   );
 }
