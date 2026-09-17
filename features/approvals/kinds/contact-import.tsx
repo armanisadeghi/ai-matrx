@@ -38,6 +38,7 @@
  */
 
 import type { Json } from "@/types/database.types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { importMatchKeyWords } from "@/features/connectors/import/field-labels";
 import type { ApprovalKind, ApprovalScope } from "../types";
 import {
@@ -186,6 +187,7 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
   const kept = readArray(plan, "kept_fields");
   const refused = readArray(plan, "refused_fields");
   const reimportPolicy = readString(plan, "reimport_policy");
+  const personId = readString(plan, "person_id");
   const personName = readString(plan, "person_name");
   const matchedBy = readString(plan, "matched_by");
   // Law 4 (nothing fails silently): a warning the server carries — a missing
@@ -206,7 +208,10 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
           <ul className="list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
             {ambiguous.map((candidate) => (
               <li key={candidate.personId}>
-                {candidate.personName}
+                {/* Bugbot round 19, PR 228, comment 4042012328: naming a
+                 * Person without a way to open them is a dead end — reuse
+                 * the platform's ONE entity door, never a second one. */}
+                <EntityRef token="party" id={candidate.personId} name={candidate.personName} />
                 {candidate.matchedBy
                   ? ` — matched by ${importMatchKeyWords(candidate.matchedBy)}`
                   : ""}
@@ -257,9 +262,18 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
           approving this proposal would import nothing.
         </p>
       )}
-      {(personName || matchedBy) && (
+      {(personId || personName || matchedBy) && (
         <p className="text-[11px] text-muted-foreground">
-          {personName ? `Matches ${personName}` : "Matches an existing Person"}
+          Matches{" "}
+          {/* Bugbot round 19, PR 228, comment 4042012328: the matched Person
+           * is a real record — open it through the same door the contacts
+           * import panel already uses (`token: "party"`, `/crm/{id}`),
+           * never a name with nowhere to go. */}
+          {personId ? (
+            <EntityRef token="party" id={personId} name={personName ?? "this Person"} />
+          ) : (
+            personName ?? "an existing Person"
+          )}
           {matchedBy ? ` by ${importMatchKeyWords(matchedBy)}.` : "."}
         </p>
       )}

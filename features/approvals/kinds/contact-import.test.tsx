@@ -14,6 +14,12 @@
  * Approve-less row every other unreadable Google payload gets. This drives
  * the REAL `contactImportKind`; only the store seam
  * (`listPendingProposals`) and the network door are mocked.
+ *
+ * Bugbot round 19 (PR 228, comment 4042012328): the matched Person and every
+ * ambiguous candidate are named from `would_write` but neither opened — a
+ * named identity with no door is a dead end (`no-dead-ends` skill). Both now
+ * render through `EntityRef` (`token: "party"`), the same door the contacts
+ * import panel already uses for the same plan's Person — never a second one.
  */
 
 import * as React from "react";
@@ -75,6 +81,17 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "user-1",
+}));
+// Same stub `google-kinds.test.tsx` uses for the ONE entity door — a real
+// `EntityRef` pulls in the peek registry and the route registry, which this
+// suite has no business exercising; it only needs to prove the door is
+// rendered, carrying the Person's id.
+jest.mock("@/components/official/entity-ref/EntityRef", () => ({
+  EntityRef: ({ token, id, name }: { token: string; id: string; name?: string }) => (
+    <a data-testid="entity-ref" data-token={token} data-id={id}>
+      {name ?? id}
+    </a>
+  ),
 }));
 
 /* eslint-disable import/first -- after the mocks above */
@@ -228,6 +245,13 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     expect(body).toContain("its email address");
     expect(body).toContain("manual wins");
     expect(text(node, "blocked-reason")).toBe("");
+    // Bugbot round 19 (PR 228, comment 4042012328): the matched Person is
+    // named — it must also OPEN. A door carrying the plan's `person_id`,
+    // never a name with nowhere to go.
+    const matchedDoor = node.querySelector('[data-testid="entity-ref"][data-id="party-1"]');
+    expect(matchedDoor).not.toBeNull();
+    expect(matchedDoor?.getAttribute("data-token")).toBe("party");
+    expect(matchedDoor?.textContent).toBe("Dana Chen");
   });
 
   it("an empty field_map with would_write.writes=0 says 'already here or kept', never 'the agent needs fixing'", async () => {
@@ -369,6 +393,15 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     expect(body).toContain("its email address");
     expect(body).toContain("its Google Contacts id");
     expect(text(node, "accept-effect")).toContain("Nothing");
+    // Bugbot round 19 (PR 228, comment 4042012328): every named candidate is
+    // a door — a refusal that names a Person with no way to open them is a
+    // dead end even though there is no Approve to click.
+    const doorA = node.querySelector('[data-testid="entity-ref"][data-id="party-a"]');
+    const doorB = node.querySelector('[data-testid="entity-ref"][data-id="party-b"]');
+    expect(doorA?.getAttribute("data-token")).toBe("party");
+    expect(doorA?.textContent).toBe("Dana Chen");
+    expect(doorB?.getAttribute("data-token")).toBe("party");
+    expect(doorB?.textContent).toBe("D. Chen");
   });
 
   it("a proposal with no would_write (no such row exists live — the pre-B-15 shape is dead, not a fallback) gets the honest unrenderable row, never a client-derived count", async () => {
