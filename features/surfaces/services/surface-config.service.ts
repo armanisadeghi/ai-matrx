@@ -200,6 +200,18 @@ export async function fetchSurfaceConfigBundle(
   // organization's without a hardcoded UUID. It is awaited with them (never
   // fire-and-forget) so the classifier is never asked before the answer is in,
   // and a failure screams instead of silently demoting platform rows.
+  // The priming runs BESIDE the three row reads, not inside their Promise.all:
+  // a fourth, differently-typed element there pushed the tuple past the
+  // PostgREST type parser's instantiation budget and every row came back typed
+  // as a ParserError (2026-09-17). It is still awaited before the rows are
+  // classified, so the classifier is never asked before the answer is in.
+  const systemOrganizationPrimed = resolveSystemOrgId(client).catch((e: unknown) => {
+    console.error(
+      "[surface-config] could not resolve the system organization — platform-owned rows will read as ordinary organization rows:",
+      e,
+    );
+    return null;
+  });
   const [rolesRes, prefsRes, configRes] = await Promise.all([
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
@@ -233,14 +245,8 @@ export async function fetchSurfaceConfigBundle(
       )
       .is("deleted_at", null)
       .eq("surface_name", surfaceName),
-    resolveSystemOrgId(client).catch((e: unknown) => {
-      console.error(
-        "[surface-config] could not resolve the system organization — platform-owned rows will read as ordinary organization rows:",
-        e,
-      );
-      return null;
-    }),
   ]);
+  await systemOrganizationPrimed;
   if (rolesRes.error) throw rolesRes.error;
   if (prefsRes.error) throw prefsRes.error;
   if (configRes.error) throw configRes.error;
@@ -553,16 +559,31 @@ async function scopeInsertColumns(scope: PrefScopeInput) {
  * the row's owning org, not part of its identity, and their own unique indexes
  * are keyed on the tier column alone.
  */
-async function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
+/**
+ * The organization the org/global tier of `scope` addresses, or null when the
+ * scope is a user or scope tier (which never filters by organization).
+ * Resolved BEFORE `matchScope` runs: a PostgREST builder is thenable, so an
+ * `async` matcher returning it was unwrapped into its RESPONSE by the caller's
+ * `await` and the next `.maybeSingle()` had nothing to call (2026-09-17).
+ */
+async function tierOrganizationFor(scope: PrefScopeInput): Promise<string | null> {
+  if (scope.userId || scope.scopeId) return null;
+  return tierOrganizationId(scope);
+}
+
+function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
   q: T,
   scope: PrefScopeInput,
-): Promise<T> {
+  tierOrganization: string | null,
+): T {
   if (scope.userId) return q.eq("user_id", scope.userId).is("scope_id", null);
   if (scope.scopeId) return q.is("user_id", null).eq("scope_id", scope.scopeId);
-  return q
-    .is("user_id", null)
-    .is("scope_id", null)
-    .eq("organization_id", await tierOrganizationId(scope));
+  if (!tierOrganization) {
+    throw new Error(
+      "[surfaces] matchScope: the org/global tier needs its organization resolved first (tierOrganizationFor).",
+    );
+  }
+  return q.is("user_id", null).is("scope_id", null).eq("organization_id", tierOrganization);
 }
 
 /** Set the agent filling (surface, role, position) at a scope tier. */
@@ -590,7 +611,7 @@ export async function setRoleSelection(args: {
     .eq("role_name", roleName)
     .eq("kind", "selection")
     .eq("position", position);
-  q = await matchScope(q, scope);
+  q = matchScope(q, scope, await tierOrganizationFor(scope));
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -671,7 +692,7 @@ export async function setNamespaceConfig(args: {
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("namespace", namespace);
-  q = await matchScope(q, scope);
+  q = matchScope(q, scope, await tierOrganizationFor(scope));
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 

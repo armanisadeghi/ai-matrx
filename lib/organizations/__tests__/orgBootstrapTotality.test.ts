@@ -127,7 +127,7 @@ describe("appContextPolicy.remote.fetch answers on every exit", () => {
   const authIdentity = { type: "auth" as const, userId: USER };
 
   async function runFetch(signal: AbortSignal, identity: unknown) {
-    const fetcher = appContextPolicy.remote?.fetch;
+    const fetcher = appContextPolicy.config.remote?.fetch;
     if (!fetcher) throw new Error("appContextPolicy has no remote fetch");
     return (await fetcher({
       identity,

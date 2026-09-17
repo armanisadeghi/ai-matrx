@@ -175,10 +175,14 @@ function CreateAppWindowBody({
       try {
         const res = await fetch("/api/agent-apps", {
           method: "POST",
-          headers: applyOrganizationContextHeader(
-            { "Content-Type": "application/json" },
-            selectedOrganizationId ?? undefined,
-          ),
+          // A global (platform-scoped) app carries no organization; every
+          // other scope was refused above without one, so here it is present.
+          headers: selectedOrganizationId
+            ? applyOrganizationContextHeader(
+                { "Content-Type": "application/json" },
+                selectedOrganizationId,
+              )
+            : { "Content-Type": "application/json" },
           body: JSON.stringify({ ...input, scope }),
         });
 
