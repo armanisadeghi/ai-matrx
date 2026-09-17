@@ -26,9 +26,13 @@ export function DetailPageShell({
     <>
       <RouteHeader
         left={
-          <div className="flex min-w-0 items-center gap-0 p-0">
+          <div className="flex min-w-0 flex-1 items-center gap-0 p-0">
             <ChevronLeftTapButton onClick={onBack} ariaLabel="Back" tooltip="Back" />
-            <div className="min-w-0 max-w-[40vw] sm:max-w-[48vw]">{titleNode}</div>
+            {/* D2: at 390px a 40vw cap left 156px for the name and it vanished
+                behind the icon and the chip. The title takes the row it has and
+                truncates; the chip and the id stepped out of the bar entirely
+                (they are in the body's meta line). */}
+            <div className="min-w-0 flex-1 sm:max-w-[48vw]">{titleNode}</div>
           </div>
         }
         right={actions}

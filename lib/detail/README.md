@@ -5,7 +5,8 @@
 > rules, then wrap it in this reusable thing from the package, which then instantly gives you
 > all 3 for free."*
 
-ONE registration per record type → three presentations for free:
+ONE registration per record type → three presentations for free (keyboard: Escape closes,
+the arrows move between records — `[` / `]` are aliases — and Cmd/Ctrl+Enter saves):
 
 | Presentation | What it is | Host shell (matrx-frontend) |
 |---|---|---|
@@ -18,10 +19,13 @@ Champions: Notion (side peek / center peek / full page, per-database "open pages
 
 ## Why this directory is a package with a different address
 
-npm publishing is not possible from the environment this was built in (no `NPM_TOKEN` /
-`NODE_AUTH_TOKEN`, no auth in `~/.npmrc`), so the module lives here with a **clean package
-boundary** and becomes `@ai-matrx/detail` (`aidream/apps/shared/detail`) by a `mv`, not a
-rewrite:
+**It is not a package yet, and saying so plainly matters**: `@ai-matrx/detail` does not exist
+on npm, nothing installs it, and no `mv` has been tested. What is true is the BOUNDARY: this
+directory imports nothing from `features/**` or `@/…`, every app-specific capability arrives
+as a port, and the extraction is therefore a move rather than a rewrite. npm publishing was
+not possible from the environment this was built in (no `NPM_TOKEN` / `NODE_AUTH_TOKEN`, no
+auth in `~/.npmrc`), so the publish is **owed** — Arman asked for a package
+(`aidream/apps/shared/detail`), and until it ships this is a package-shaped directory:
 
 - **No imports from `features/**` or `@/…` app modules.** Allowed: `react`, `lucide-react`,
   `@ai-matrx/design-system` (`cn`, `Skeleton`), `@ai-matrx/associations` (+ `/react`).
@@ -118,12 +122,19 @@ already wraps its canonical views and is not on this list.)
 
 ## Not done (honest)
 
-- Per-record-type override of the presentation. The platform rung for it is `table` (keyed by
-  a `platform.entity_types` row id) and the client cannot address it yet — the published entity
-  metadata carries no row id. The knob names organization and user only, so nothing on a
-  settings screen promises what the reader cannot honour. Add `table` in the same change that
-  teaches the reader the id.
+- **The npm package.** See above: the boundary holds, the publish is owed.
+- **The per-record-type override is implemented but its knob row is not applied.**
+  `ui.detail.presentation_by_type` (a json map, organization → user, read before the default)
+  is read by `DetailHost`, written by `DetailPresentationPane` and covered by tests;
+  `migrations/detail_presentation_by_type_knob.sql` has not been applied, because the session
+  that wrote it had no database egress. Until it is, `knob_resolve` raises for the key, the
+  host catches it and warns once naming the file, and every type opens as
+  `default_presentation` says. (The platform's own `table` rung stays unusable from a browser:
+  it is keyed by a `platform.entity_types` row id and that table is admin-only by a restrictive
+  policy.)
 - The source health strip is a rendered slot with a full contract; no registration feeds it
   yet (the synced-record primitive, U-P3, is the first).
-- An editor inside a detail (Cmd/Ctrl+Enter saves) — the hook and registration point exist;
-  the item-presentation registration is read-only.
+- **An editable record body.** Cmd/Ctrl+Enter now saves — `DetailPresentationPane` registers
+  it — but the thing it saves is the detail's own presentation setting, because no record type
+  on this branch has an editable body. The first registration that ships an editor registers
+  its own save the same way and takes the chord over.
