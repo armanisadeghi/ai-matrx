@@ -31,7 +31,7 @@ importers:
         version: 0.3.5(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/associations':
         specifier: latest
-        version: 0.9.22(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.9.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/browser-audio':
         specifier: latest
         version: 0.3.8(react@19.3.0)
@@ -891,8 +891,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/associations@0.9.22':
-    resolution: {integrity: sha512-T0922NcNAP1SPA+EWhn2a6FUNKv/CLMYMig9Mzh+dP897k58qdpof/UE5YkYAz6RF/tp91MjtnebXUUDwRvj8w==}
+  '@ai-matrx/associations@0.9.23':
+    resolution: {integrity: sha512-LuRW8nZvnEWbtY0OElgJY5G4zzw7v4TU4v99jncVVYJHx+6i+kiCTd+paawRr3TX1ZkNNnrBS0Ef0dkuQAXZ1g==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12864,7 +12864,7 @@ snapshots:
       - react-native
       - react-native-svg
 
-  '@ai-matrx/associations@0.9.22(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/associations@0.9.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/design-system': 0.21.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.15.5(react@19.3.0)
@@ -12973,7 +12973,7 @@ snapshots:
 
   '@ai-matrx/media@0.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/associations': 0.9.22(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/associations': 0.9.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.15.5(react@19.3.0)
       react: 19.3.0
       tailwind-merge: 3.7.0
