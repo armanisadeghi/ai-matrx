@@ -40,6 +40,14 @@ export interface TriageRunHandle {
   /** Wipe a finished sort — the dialog calls it on close, so reopening starts
    * from the form instead of from the last answer. */
   reset: () => void;
+  /**
+   * May the dialog pull itself open for this sort? Live, and not already
+   * closed away from. See `DurableRunHandle.surfacing` — cold walk 7,
+   * finding 3.
+   */
+  surfacing: boolean;
+  /** Remember on the RECEIPT that the Expert closed this sort away. */
+  dismiss: () => void;
 }
 
 export function useTriageRun(rulebookId: string): TriageRunHandle {
@@ -82,5 +90,7 @@ export function useTriageRun(rulebookId: string): TriageRunHandle {
     result: run.result,
     start,
     reset: run.reset,
+    surfacing: run.surfacing,
+    dismiss: run.dismiss,
   };
 }

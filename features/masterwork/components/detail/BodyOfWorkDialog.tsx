@@ -41,7 +41,6 @@ import {
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 import {
   durableRunDialogOnOpenChange,
-  shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
 
 /**
@@ -251,21 +250,24 @@ export function BodyOfWorkDialog({
   // Clearing it the moment the run is no longer running lets the NEXT live run
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
-  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
-    // A run the user deliberately closed out of stays closed — otherwise an
-    // honest close is instantly undone by this latch and the dialog cannot be
-    // dismissed at all. The NEXT run still surfaces.
-    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   const pieceCount = files.length + parseUrls(urlsText).length;
 
@@ -668,7 +670,9 @@ export function BodyOfWorkDialog({
         running,
         reset,
         onOpenChange: (next) => {
-          if (!next && running) dismissedRunIdRef.current = run.runId;
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
           onOpenChange(next);
         },
         runLabel: "Reading your published work",

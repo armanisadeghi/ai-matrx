@@ -405,6 +405,27 @@ interface RunPointer {
    * the pointer, the ceiling is real wall-clock time.
    */
   lostLiveViewAt?: number;
+  /**
+   * 🚨 THE PERSON CLOSED THE SURFACE THAT WAS FOLLOWING THIS RUN, and does not
+   * want it dragged back open (cold walk 7, finding 3, 2026-09-17).
+   *
+   * Every durable-run dialog carries an auto-reopen latch so a live run
+   * started elsewhere surfaces instead of hiding behind an armed Start button.
+   * The "I closed it" half of that lived in a `useRef` at the call site —
+   * per MOUNT. `/masterwork/[id]` is one component instance across client-side
+   * navigation, and a plain later visit is a fresh mount either way, so the
+   * dismissal was forgotten every time while the RECEIPT survived in
+   * localStorage for an hour. The walk closed a completed Shadow-the-inbox
+   * sitting and had it reopen on top of the Rulebook page three separate
+   * times on later, unrelated visits with no query param — once claiming a
+   * finished run was "still going on the server. Reconnecting…" — each time
+   * blocking a real control underneath it.
+   *
+   * A dismissal is a fact about the RUN, so it lives on the run's receipt
+   * beside every other fact about it. The next run still surfaces: a fresh
+   * launch writes a fresh pointer with no dismissal on it.
+   */
+  dismissed?: boolean;
 }
 
 function pointerKey(wire: DurableRunWire, key: string): string {
@@ -440,6 +461,7 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
       startedAt,
       target: typeof parsed.target === "string" ? parsed.target : null,
       settled: parsed.settled === true,
+      dismissed: parsed.dismissed === true,
       ...(typeof parsed.lostLiveViewAt === "number"
         ? { lostLiveViewAt: parsed.lostLiveViewAt }
         : {}),
@@ -468,13 +490,20 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
 export function peekDurableRun(
   wire: DurableRunWire,
   key: string,
-): { runId: string; startedAt: number; live: boolean } | null {
+): {
+  runId: string;
+  startedAt: number;
+  live: boolean;
+  /** The person already closed the surface following this run. */
+  dismissed: boolean;
+} | null {
   const pointer = readPointer(wire, key);
   if (!pointer) return null;
   return {
     runId: pointer.runId,
     startedAt: pointer.startedAt,
     live: pointer.settled !== true,
+    dismissed: pointer.dismissed === true,
   };
 }
 
@@ -724,6 +753,22 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
    * Null when nothing is in flight. A surface must never hardcode its own.
    */
   waitMessage: string | null;
+  /**
+   * SHOULD A SURFACE PULL ITSELF OPEN FOR THIS RUN?
+   *
+   * True only when there is a run in flight under this key that the person has
+   * not already closed away from. Every durable-run dialog's auto-reopen latch
+   * asks this instead of `running` (cold walk 7, finding 3): `running` is also
+   * true for `"rejoining"`, which is the state a restored receipt sits in, so
+   * latching on it reopened completed sittings on unrelated later visits.
+   */
+  surfacing: boolean;
+  /**
+   * The person closed the surface that was following this run — remember it on
+   * the RECEIPT, not in this mount, so a later visit does not drag the same
+   * finished sitting back onto the screen. The next run still surfaces.
+   */
+  dismiss: () => void;
 }
 
 export interface DurableRunLaunchOptions {
@@ -1390,6 +1435,10 @@ export function useDurableRun<TResult>(
       // new run's id.
       stopReconnect();
       clearPointer(wire, key);
+      // A NEW run was never dismissed. The receipt is gone, so the dismissal
+      // that rode on it is gone with it — this only catches the mount up.
+      dismissedRunIdRef.current = null;
+      setDismissed(false);
       // A deliberate launch answers the "what is here?" question outright.
       setRestoring(false);
       runIdRef.current = null;
@@ -1461,6 +1510,33 @@ export function useDurableRun<TResult>(
   );
 
   // ── The durable half: rejoin whatever was still running when we arrived ──
+  /**
+   * Has the person closed the surface following the run on this receipt?
+   * Seeded from the receipt on mount, so it survives navigation exactly as the
+   * receipt does. A fresh launch clears it.
+   */
+  const [dismissed, setDismissed] = useState(false);
+  const dismissedRunIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const { wire, key } = optionsRef.current;
+    const pointer = readPointer(wire, key);
+    if (pointer?.dismissed) {
+      dismissedRunIdRef.current = pointer.runId;
+      setDismissed(true);
+    }
+    // Once per mount, against the same receipt the rejoin reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismiss = useCallback(() => {
+    const { wire, key } = optionsRef.current;
+    const pointer = readPointer(wire, key);
+    if (!pointer) return;
+    dismissedRunIdRef.current = pointer.runId;
+    writePointer(wire, key, { ...pointer, dismissed: true });
+    setDismissed(true);
+  }, []);
+
   const rejoinedRef = useRef(false);
   useEffect(() => {
     if (rejoinedRef.current) return;
@@ -1810,6 +1886,11 @@ export function useDurableRun<TResult>(
     expectedMs,
     overdue,
     waitMessage,
+    surfacing:
+      running &&
+      Boolean(state.runId) &&
+      !(dismissed && state.runId === dismissedRunIdRef.current),
+    dismiss,
   };
 }
 

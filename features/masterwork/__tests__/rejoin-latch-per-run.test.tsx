@@ -73,6 +73,11 @@ function fakeRun() {
     reset: jest.fn(),
     fail: jest.fn(),
     retry: jest.fn(),
+    // Every one of these dialogs latches on `surfacing`, not `running`: a
+    // live run the Expert has not closed away from (cold walk 7, finding 3).
+    // This suite is about the per-RUN latch, so nothing here dismisses.
+    surfacing: running,
+    dismiss: jest.fn(),
   };
 }
 
