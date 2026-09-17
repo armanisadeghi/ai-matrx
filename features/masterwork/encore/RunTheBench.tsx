@@ -53,6 +53,7 @@ import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
+import { RunStages } from "../components/RunStages";
 import { createSittingStore, type SittingBase } from "../sitting/sitting";
 import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
@@ -564,18 +565,19 @@ export function RunTheBench({
                 {run.running ? "Trial running…" : "Run the trial"}
               </GatedActionButton>
 
+              {/* The server's WHOLE account, not just its latest line. This
+                  read `run.stage` — one sentence, replaced by the next one and
+                  thrown away when the run ended — which is the shape cold walk
+                  8 found the Meeting Scavenger losing a "we read N moments and
+                  none was a judgment call" explanation through. A bench run is
+                  the most expensive thing on this page: what it did with the
+                  money has to survive the run finishing. */}
+              <RunStages
+                run={run}
+                waitingMessage="Running the trial across every arm…"
+              />
               {run.running ? (
-                <div className="space-y-1">
-                  {run.waitMessage ? (
-                    <p className="text-xs text-muted-foreground">
-                      {run.waitMessage}
-                    </p>
-                  ) : null}
-                  {run.stage ? (
-                    <p className="text-xs text-foreground">{run.stage}</p>
-                  ) : null}
-                  <DurableRunInterruption interruption={run.interruption} />
-                </div>
+                <DurableRunInterruption interruption={run.interruption} />
               ) : null}
 
 
