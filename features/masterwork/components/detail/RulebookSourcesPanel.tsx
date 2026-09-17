@@ -65,6 +65,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import {
+  countRulesForSource,
   entitySourceKey,
   sourceSectionYields,
   urlSourceKey,
@@ -280,9 +281,13 @@ export function RulebookSourcesPanel({
       }
       if (meta.words) bits.push(`${meta.words.toLocaleString()} words`);
       if (meta.source_key) {
-        const produced = (rulebook.rules ?? []).filter(
-          (rule) => rule.source_ref?.source === meta.source_key,
-        ).length;
+        // THE ONE JOIN (../../sourceSections) — the same predicate the kept
+        // Sources list counts with, so two screens can never disagree about
+        // how many rules one source produced.
+        const produced = countRulesForSource(
+          rulebook.rules,
+          meta.source_key,
+        );
         bits.push(
           produced === 1 ? "1 rule so far" : `${produced} rules so far`,
         );
@@ -548,6 +553,20 @@ export function RulebookSourcesPanel({
           >
             <ExternalLink className="h-3 w-3" />
             Full page
+          </Link>
+          {/* The other half of this feature, and a different question: this
+              panel is what we are ABOUT to read; that page is what we KEPT —
+              the Expert's own words, still readable after the rules were drawn
+              out of them. Without this door the kept material is reachable only
+              by typing a URL. */}
+          <Link
+            href={`/masterwork/${rulebook.id}/sources/kept`}
+            data-tap-target
+            className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            title="Read the material this Rulebook kept"
+          >
+            <Library className="h-3 w-3" />
+            Kept material
           </Link>
         </div>
       ) : null}
