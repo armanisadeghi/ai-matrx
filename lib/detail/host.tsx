@@ -176,7 +176,9 @@ export function useDetailHost(): DetailHostPorts {
         "Bind them in the host's DetailHost.tsx.",
     );
   }
-  return { shells: {}, ...ports } as DetailHostPorts;
+  // The context value itself (the provider always sets `shells`), so the
+  // object a consumer depends on keeps its identity between renders.
+  return ports as DetailHostPorts;
 }
 
 /** The record-type map, or an error naming which entry forgot to bind it. */
@@ -205,9 +207,4 @@ export function requireShell<K extends keyof DetailShells>(
     );
   }
   return shell;
-}
-
-/** Non-throwing probe — for surfaces that must degrade honestly instead of crashing. */
-export function useDetailHostOrNull(): Partial<DetailHostPorts> | null {
-  return useContext(DetailHostContext);
 }

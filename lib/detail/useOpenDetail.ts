@@ -27,9 +27,10 @@ export type OpenDetail = (request: DetailOpenRequest) => Promise<DetailPresentat
 export function useOpenDetail(warmType?: string | null): OpenDetail {
   const host = useDetailHost();
 
+  const warmPresentation = host.warmPresentation;
   useEffect(() => {
-    if (warmType) host.warmPresentation(warmType);
-  }, [host, warmType]);
+    if (warmType) warmPresentation(warmType);
+  }, [warmPresentation, warmType]);
 
   return async (request) => {
     const data: DetailInstanceData = {

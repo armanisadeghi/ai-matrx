@@ -11,7 +11,7 @@
 // `page` is a route (`pageHref`), never a `?panels=` token — it is the one
 // presentation that changes the URL.
 
-import { isDetailPresentation, type DetailPresentation, type DetailRef } from "./types";
+import type { DetailPresentation, DetailRef } from "./types";
 
 export const DETAIL_URL_TYPE_KEY = "detail";
 export const DETAIL_URL_AS_ARG = "as";
@@ -34,11 +34,4 @@ export function presentationFromUrlArg(
   value: string | undefined,
 ): Exclude<DetailPresentation, "page"> {
   return value === "docked" ? "docked" : "window";
-}
-
-export function coercePresentation(
-  value: unknown,
-  fallback: DetailPresentation = "window",
-): DetailPresentation {
-  return isDetailPresentation(value) ? value : fallback;
 }

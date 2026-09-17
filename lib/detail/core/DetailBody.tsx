@@ -257,17 +257,20 @@ function HistorySection({ core }: { core: DetailCore }) {
   const wanted = core.recordType?.history ?? Boolean(token);
   const [state, setState] = useState<HistoryState>({ status: "loading" });
   const lastKey = useRef<string | null>(null);
+  // The port function, not the host object: the effect must re-run for a new
+  // record, never for a re-render.
+  const listHistory = host.history.list;
+  const recordId = core.ref.id;
 
   useEffect(() => {
     if (!wanted || !token) return undefined;
-    const key = `${token}:${core.ref.id}`;
+    const key = `${token}:${recordId}`;
     if (lastKey.current !== key) {
       lastKey.current = key;
       setState({ status: "loading" });
     }
     const controller = new AbortController();
-    void host.history
-      .list(token, core.ref.id, controller.signal)
+    void listHistory(token, recordId, controller.signal)
       .then((entries) => {
         if (!controller.signal.aborted) setState({ status: "ready", entries });
       })
@@ -279,7 +282,7 @@ function HistorySection({ core }: { core: DetailCore }) {
         });
       });
     return () => controller.abort();
-  }, [host, wanted, token, core.ref.id]);
+  }, [listHistory, wanted, token, recordId]);
 
   if (!wanted || !token) return null;
   const ActorCell = host.doors.RefCell;

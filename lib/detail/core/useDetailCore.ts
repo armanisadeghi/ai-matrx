@@ -10,7 +10,6 @@
 import { useEffect } from "react";
 
 import { requireResolveType, useDetailHost } from "../host";
-import { fieldsFromRow } from "../format";
 import { useDetailKeyboard, type DetailKeyboard } from "../useDetailKeyboard";
 import { useDetailRecord } from "../useDetailRecord";
 import type {
@@ -98,9 +97,10 @@ export function useDetailCore(
 
   // Keep the setting warm for this type so a switch or a neighbour opens
   // without an awaited round-trip.
+  const warmPresentation = host.warmPresentation;
   useEffect(() => {
-    host.warmPresentation(data.type);
-  }, [host, data.type]);
+    warmPresentation(data.type);
+  }, [warmPresentation, data.type]);
 
   const openNeighbour = (delta: 1 | -1) => {
     const target = neighbour(data.list, delta);
@@ -165,12 +165,4 @@ export function useDetailCore(
     switchTo,
     close,
   };
-}
-
-/** Field derivation for registrations that render a raw row generically. */
-export function genericFields(
-  row: DetailRow,
-  doors: { tokenFromColumnName: (c: string) => string | null; isUuidValue: (v: unknown) => v is string },
-): DetailField[] {
-  return fieldsFromRow(row, doors);
 }
