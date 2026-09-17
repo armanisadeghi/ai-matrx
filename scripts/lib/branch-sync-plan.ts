@@ -255,15 +255,82 @@ async function renderEntityTypeRow(
 // ---------------------------------------------------------------------------
 
 async function renderFunction(client: pg.Client, identity: string): Promise<string[]> {
-  const rows = await one<{ def: string }>(
+  const rows = await one<{ def: string; secdef: boolean; schema: string; name: string }>(
     client,
-    `select pg_get_functiondef(p.oid) as def
+    `select pg_get_functiondef(p.oid) as def, p.prosecdef as secdef,
+            n.nspname as schema, p.proname as name
        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' = $1`,
     [identity],
   );
   if (rows.length === 0) return [`-- UNSUPPORTED: function ${identity} vanished between the two reads.`, ""];
-  return [`${rows[0].def};`, ""];
+  const out = [`${rows[0].def};`, ""];
+  if (rows[0].secdef) {
+    out.push(...(await renderDoorRow(client, rows[0].schema, rows[0].name, identity)));
+  }
+  return out;
+}
+
+/**
+ * THE DOOR ROW TRAVELS WITH THE FUNCTION, IN THE SAME TRANSACTION.
+ *
+ * A SECURITY DEFINER function runs as `postgres` (BYPASSRLS), so `provision_shape_guard`
+ * refuses the COMMIT unless `platform.client_callable_door` says IN DATA who may call it.
+ * DD-223 refuses a door row naming a function that does not exist yet, so the row can only
+ * come after the CREATE — which is exactly here. The row is production's own.
+ *
+ * `identity_argtypes` is the one column NOT copied: it holds per-database type OIDs, and
+ * production's OIDs mean something else on the branch. It is recomputed from the branch's
+ * own catalog through `platform.door_argtypes`, which is what every migration does.
+ */
+async function renderDoorRow(
+  client: pg.Client,
+  schema: string,
+  name: string,
+  identity: string,
+): Promise<string[]> {
+  const rows = await one<{ stmt: string | null }>(
+    client,
+    `select 'insert into platform.client_callable_door ('
+            || string_agg(quote_ident(k), ', ' order by ord)
+            || ', identity_argtypes) select '
+            || string_agg(case when v is null then 'null' else quote_literal(v) end
+                          || '::' || t, ', ' order by ord)
+            || ', platform.door_argtypes(p.proargtypes) from pg_proc p'
+            || ' join pg_namespace n on n.oid = p.pronamespace where n.nspname = '
+            || quote_literal($1) || ' and p.proname = ' || quote_literal($2)
+            || ' and pg_get_function_identity_arguments(p.oid) = '
+            || quote_literal($3) || ' on conflict do nothing;' as stmt
+       from (
+         select (j).key as k, (j).value as v, ord,
+                (select format_type(a.atttypid, a.atttypmod)
+                   from pg_attribute a
+                  where a.attrelid = 'platform.client_callable_door'::regclass
+                    and a.attname = (j).key and not a.attisdropped) as t
+           from (
+             select jsonb_each_text(to_jsonb(d)) as j, row_number() over () as ord
+               from platform.client_callable_door d
+              where d.schema_name = $1 and d.function_name = $2
+           ) s
+       ) q
+      where k <> 'identity_argtypes'`,
+    [schema, name, identity.slice(identity.indexOf("(") + 1, identity.lastIndexOf(")"))],
+  );
+  const stmt = rows[0]?.stmt ?? null;
+  if (!stmt) {
+    return [
+      `-- NO DOOR ROW ON PRODUCTION for the SECURITY DEFINER function ${identity}.`,
+      `--   provision_shape_guard will charge a definer_no_door debt and refuse the COMMIT.`,
+      `--   Inventing a door row production does not have would make the branch differ in a`,
+      `--   NEW way to stop it differing in an old one, so this is a decision, not a fill-in:`,
+      `--   take the guard's documented lane-A escape (disable and re-enable`,
+      `--   platform.provision_shape_debt's provision_shape_settled trigger inside THIS`,
+      `--   transaction, with a proof that raises if it is left off), as`,
+      `--   w0_sync_ruling_schema_functions.sql does for iam.record_transfer_refusal(jsonb).`,
+      "",
+    ];
+  }
+  return [`-- ${identity} is SECURITY DEFINER: production's door row, in the same transaction.`, stmt, ""];
 }
 
 async function renderPolicy(
