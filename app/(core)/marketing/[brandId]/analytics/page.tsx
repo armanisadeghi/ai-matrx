@@ -1,10 +1,30 @@
-// Reserved brand-workspace route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.analytics` in lib/coming-soon/registry.ts
-// and the section is declared in features/marketing/lib/brand-sections.ts.
+import { Suspense } from "react";
 
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { BrandAnalyticsWorkspace } from "@/features/marketing/analytics/components/BrandAnalyticsWorkspace";
+import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 
-export default function BrandAnalyticsPage() {
-  return <MarketingComingSoon comingSoonId="marketing.analytics" />;
+/**
+ * This client's Analytics — the brand's websites with their Google Analytics
+ * headline numbers, each opening the canonical `SiteAnalyticsPanel` in a window.
+ * Replaces the Coming-Soon placeholder (google-native PLAN §4.9 Plane A).
+ */
+export default async function BrandAnalyticsPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
+  const brand = await resolveBrandParam(brandId);
+  if (!brand) {
+    return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
+  }
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <Suspense fallback={<LoadingSurface label="Loading this client's Analytics…" />}>
+        <BrandAnalyticsWorkspace brandId={brand.id} />
+      </Suspense>
+    </div>
+  );
 }

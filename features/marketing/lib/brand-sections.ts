@@ -201,12 +201,10 @@ export const MARKETING_BRAND_SECTIONS = [
     name: "Analytics",
     titlePrefix: "Analytics",
     description:
-      "Cross-channel traffic, conversion, and attribution for this client.",
+      "Google Analytics traffic and conversion per website today; the other channels join it as they land.",
     letter: "Ay",
     iconName: "ChartNoAxesColumn",
     group: "Insight",
-    status: "coming-soon",
-    comingSoonId: "marketing.analytics",
   },
   {
     slug: "planning",

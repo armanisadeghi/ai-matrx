@@ -221,6 +221,9 @@ const LiveIntegrationsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/connectors/LiveIntegrationsWindow"),
 );
+const ConnectorConsentDialog = lazyOverlay(
+  () => import("@/features/connectors/ConnectorConsentDialog"),
+);
 const AgentSkillsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
   { ssr: false },
@@ -710,6 +713,11 @@ const MatcherReviewWindow = lazyOverlay(
 const SiteDiscoveryWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/SiteDiscoveryWindow"),
+  { ssr: false },
+);
+const SiteAnalyticsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteAnalyticsWindow"),
   { ssr: false },
 );
 const KeywordWindow = lazyOverlay(
@@ -1210,6 +1218,9 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSkillsWindow"),
     ),
+    connectorConsentDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleConnectWindow"),
     ),
@@ -1459,6 +1470,9 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "matcherReviewWindow"),
     ),
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteAnalyticsWindow"),
+    ),
     siteDiscoveryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "siteDiscoveryWindow"),
     ),
@@ -1603,6 +1617,9 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSkillsWindow"),
     ) as Record<string, unknown> | null,
+    connectorConsentDialog: useAppSelector((s) =>
+      selectOverlayData(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleConnectWindow"),
     ) as Record<string, unknown> | null,
@@ -1879,6 +1896,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
+    ) as Record<string, unknown> | null,
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteAnalyticsWindow"),
     ) as Record<string, unknown> | null,
     siteDiscoveryWindow: useAppSelector((s) =>
       selectOverlayData(s, "siteDiscoveryWindow"),
@@ -2585,6 +2605,36 @@ export default function OverlayController() {
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* connectorConsentDialog */}
+      {(() => {
+        const isOpen = isOpenById.connectorConsentDialog;
+        const data = dataById.connectorConsentDialog as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ConnectorConsentDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "connectorConsentDialog" }))
+            }
+            initialConnectionId={
+              typeof data?.initialConnectionId === "string"
+                ? data.initialConnectionId
+                : null
+            }
+            initialProductKeys={
+              Array.isArray(data?.initialProductKeys)
+                ? (data.initialProductKeys as unknown[]).filter(
+                    (key): key is string => typeof key === "string",
+                  )
+                : undefined
             }
           />
         );
@@ -5110,6 +5160,31 @@ export default function OverlayController() {
             siteId={siteId}
             brandId={str("brandId")}
             organizationId={str("organizationId")}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteAnalyticsWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteAnalyticsWindow;
+        const data = dataById.siteAnalyticsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteAnalyticsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteAnalyticsWindow" }))
+            }
+            siteId={siteId}
             siteLabel={str("siteLabel")}
           />
         );
