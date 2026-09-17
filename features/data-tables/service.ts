@@ -137,6 +137,12 @@ export type UserTableListItem = {
   is_public?: boolean;
   created_at?: string;
   updated_at?: string;
+  /**
+   * Newest of the dataset's, its rows' and its columns' stamps. The list comes
+   * back ordered by this, newest first — a dataset's own `updated_at` does not
+   * move when a cell or a column changes.
+   */
+  last_activity_at?: string;
 };
 
 /**

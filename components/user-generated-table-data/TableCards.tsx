@@ -65,6 +65,8 @@ interface UserTable {
   row_count: number;
   field_count: number;
   updated_at: string;
+  /** Newest of the table's, its rows' and its columns' stamps — what `get_user_tables` orders by. */
+  last_activity_at?: string;
   is_public: boolean;
   /** Canonical sharing reach. Legacy rows may predate it — see VisibilityBadge. */
   visibility?: string | null;
@@ -564,7 +566,7 @@ export default function TableCards() {
             <div className="flex flex-col space-y-1.5">
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-500">
                 <Calendar size={12} className="mr-1" />
-                <span>Updated: {formatDate(table.updated_at)}</span>
+                <span>Updated: {formatDate(table.last_activity_at ?? table.updated_at)}</span>
               </div>
 
               {/* THE BADGE MUST NOT LIE. This read the legacy `is_public`
@@ -744,6 +746,8 @@ export default function TableCards() {
                   <TableListItem
                     key={table.id}
                     {...table}
+                    // The date shown is the one the list is ordered by.
+                    updated_at={table.last_activity_at ?? table.updated_at}
                     // Same rule as the cards: an example table is never
                     // "owned" for the purpose of rename/delete controls.
                     isOwned={!isExampleTable(table)}
@@ -839,6 +843,7 @@ export default function TableCards() {
                       <TableListItem
                         key={table.id}
                         {...table}
+                        updated_at={table.last_activity_at ?? table.updated_at}
                         isOwned={false}
                         onNavigate={handleNavigate}
                         isNavigating={navigatingId === table.id}

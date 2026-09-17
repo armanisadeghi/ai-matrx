@@ -50,6 +50,8 @@ vision: []
 
 10. **Header right-click: what a spreadsheet user still expects** (independent reviewer, 2026-09-17, after the rename + menu-order work passed review as `fa5d2ad7-371f-4f62-9f01-70b3568bb2fd`): Freeze column, Duplicate column, Move column left/right, Resize / auto-fit width, Clear column contents, and Filter in the right-click menu (today it lives only in the header's small arrow menu). Each delegates to a handler the grid must already have or gain once — no new write path in `grid-context-menu.ts`.
 
+11. **Example tables wear a "Your organization" badge on `/data`** for the account that owns them (seen 2026-09-17). They belong to the platform's system organization; the badge should say so (or be absent) rather than claim the viewer's org.
+
 ## Done
 
 - Copy / cut / paste on a selected cell, block paste from Excel/Sheets, choice cell select-then-open — `grid-clipboard.ts`, `useGridSelection.ts`.
@@ -60,6 +62,7 @@ vision: []
 - Wide tables (over eight visible columns) scroll instead of overlapping — viewer `FIXED_LAYOUT_MAX_COLUMNS`.
 - Validation rules: model, Table Settings editor, cell/form/agent/paste refusal, amber for stored violations, strict-mode trigger — `validation.ts`, `udt_validation_rules_strict_enforcement.sql`.
 - Formula language + `formula` format + grid rendering (read-only, `#ERROR`) + expression editor — `formulas.ts`, `FormulaExpressionEditor.tsx`.
+- **2026-09-17:** the `/data` list (and every table picker) is ordered by most recent ACTIVITY — table, rows or columns, whichever is newest — instead of creation date; the card shows that date. `get_user_tables` replaced via `migrations/udt_get_user_tables_orders_by_last_activity.sql`, verified live.
 - **2026-09-17 (Arman testing the right-click himself):** header right-click opens on the column's own actions with **Rename column** first (inline rename in the header, formulas that name the column are rewritten, Table Settings shares the rewrite); the menu is ordered by what was clicked (Cell → Row → Column → Table, dead groups not offered) through a new shared v3 primitive, `primary` sections. Not yet independently reviewed — file a review-queue row if this grows further.
 - **2026-09-15 (after review):** formula editor names an unknown `{reference}` instead of "Valid"; example tables read-only for everyone in the UI, including the seeding admin; three reviewer fixes listed under item 6.
 - **2026-09-15:** formula values in every server-fed reader (copy / export / agent scope / filter / client sort) through ONE helper `withComputedColumns`; formula columns refused off-grid (row forms, new-column form, agent `cell_value`); header sort/filter on a formula column honest (client-side or refused with the reason); a row saved without the referenced cell is BLANK not `#ERROR` (live-found, guarded); Project Tracker example carries `Budget per point = {Budget} / {Story points}` as currency (reseeded; new id `30374c26-f16d-4e78-ab12-01495f86b954` — the ids in Resources above for the other two examples are unchanged); formula editor + rendered column + sort + Edit Row + Copy verified live on the local preview; surface mirror re-synced and `check:surface-drift` OK; aidream ORM regen confirmed a no-op (table models only). Test table now also carries a `Double area` formula column (kept as the live example).
