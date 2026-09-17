@@ -4,6 +4,10 @@
 
 **Status:** live everywhere — the ONLY context menu (`features/context-menu-v2/` deleted 2026-07-19). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.
 
+## Change log
+
+- `2026-09-17` — Native numeric inputs retain their browser editing contract. Selection capture treats inputs without a supported selection API as one whole value, routes edits through the controlled replacement callback, and skips unsupported range restoration; text inputs and textareas retain partial selections.
+
 `EditableContextMenu` / `NonEditableContextMenu` wrap children; the menu does everything automatically from `surfaceName` + a few value props. **The single most important contract is value mapping** (below) — the AI shortcuts and bound agents depend on it.
 
 ---

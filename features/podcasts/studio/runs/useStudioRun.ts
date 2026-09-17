@@ -137,6 +137,11 @@ export interface UseStudioRun {
   ) => Promise<void>;
   /** Durable run record (null until loaded / for a brand-new live run). */
   detail: RunDetail | null;
+  /** The durable agent_run id the moment it is known — from the loaded record
+   *  OR the live stream's `podcast_run` event (which arrives long before any
+   *  `detail` exists on an in-place run). Key anything run-scoped on this,
+   *  never on `detail?.run_id`. */
+  agentRunId: string | null;
   recovery: RecoveryState;
   selectedCoverUrl: string | null;
   selectCover: (url: string) => void;
@@ -207,6 +212,17 @@ export function useStudioRun(runId: string): UseStudioRun {
   const audioEncodingRef = useRef<"pcm_s16le" | "mp3" | null>(null);
   const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
+  // The durable agent_run id as RENDER state, mirrored from the ref. The ref
+  // alone was the 2026-09-17 defect: during an in-place run the id arrives on
+  // the live `podcast_run` event, lands only in the ref, and nothing re-renders
+  // — so every consumer keyed on `detail?.run_id` (the Run Truth inspector)
+  // saw null until a full reload. Every write to the ref goes through
+  // `adoptBackendRunId` so the two can never disagree.
+  const [agentRunId, setAgentRunId] = useState<string | null>(null);
+  const adoptBackendRunId = useCallback((id: string | null) => {
+    backendRunIdRef.current = id;
+    setAgentRunId(id);
+  }, []);
   const resumeAttemptsRef = useRef(0);
   const completedRef = useRef(false);
   const imgUrlsRef = useRef<string[]>([]);
@@ -248,6 +264,8 @@ export function useStudioRun(runId: string): UseStudioRun {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a different run identity must not inherit the prior run's orphan verdict.
     setOrphaned(false);
     setCanRerun(false);
+    // Paired with the ref reset above: a new run identity has no durable id yet.
+    setAgentRunId(null);
 
     // requestRef is a ref (read inside stream callbacks) but the banner needs a
     // reactive, source-aware flag — set both through one seam so an orphaned
@@ -356,7 +374,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (raw.type === "podcast_run") {
         const r = raw as PodcastRunEvent;
         if (r.run_id && backendRunIdRef.current !== r.run_id) {
-          backendRunIdRef.current = r.run_id;
+          adoptBackendRunId(r.run_id);
           persist({ backend_run_id: r.run_id });
           // A durable run id existing is the exact negation of "orphaned".
           setOrphaned(false);
@@ -820,7 +838,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       setStalled(false);
       // A durable record exists — by definition not orphaned.
       setOrphaned(false);
-      backendRunIdRef.current = d.run_id;
+      adoptBackendRunId(d.run_id);
       setRequest(
         d.request && Object.keys(d.request).length > 0
           ? (d.request as unknown as PodcastGenerateRequest)
@@ -880,7 +898,7 @@ export function useStudioRun(runId: string): UseStudioRun {
           ? mergeRowPrompts(detailToRunState(runDetail), row)
           : detailToRunState(runDetail);
         setState(fromDetail);
-        backendRunIdRef.current = runDetail.run_id;
+        adoptBackendRunId(runDetail.run_id);
         setRequest(
           runDetail.request && Object.keys(runDetail.request).length > 0
             ? (runDetail.request as unknown as PodcastGenerateRequest)
@@ -896,7 +914,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       } else if (row) {
         setState(rowToRunState(row));
         setSelectedCoverUrl(row.selected_cover_url ?? null);
-        backendRunIdRef.current = row.backend_run_id ?? null;
+        adoptBackendRunId(row.backend_run_id ?? null);
         imgUrlsRef.current = [...(row.image_urls ?? [])];
         vidUrlsRef.current = [...(row.video_urls ?? [])];
         // The row carries the originating request, so Re-run works even with no
@@ -1035,7 +1053,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       livePlayerRef.current?.destroy();
       livePlayerRef.current = null;
     };
-  }, [runId, dispatch, persist]);
+  }, [runId, dispatch, persist, adoptBackendRunId]);
 
   // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
   // the run stalled and settle lingering "queued" assets to failed.
@@ -1276,6 +1294,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     regenerateAsset,
     addAsset,
     detail,
+    agentRunId,
     recovery,
     selectedCoverUrl,
     selectCover,

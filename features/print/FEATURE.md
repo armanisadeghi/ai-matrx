@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-11`
+**Last updated:** `2026-09-17`
 
 ---
 
@@ -35,7 +35,7 @@ The platform's print hub: one index at `/print` of everything AI Matrx can put o
 
 **Services / APIs**
 
-- Everything under `/print/*` except `order` runs entirely in the browser against `@ai-matrx/print`. No server, no database, no organization context.
+- Printing under `/print/*` except `order` runs in the browser against `@ai-matrx/print`. Optional agent menus use the shared surface registry, user bindings and execution services; they do not move printing to a server.
 - `/print/order` calls `GET /lulu/catalog`, `POST /lulu/price`, the shipping and order endpoints, and `GET /lulu/payment-mode` on aidream — all through the generated typed client (`lib/api/typed-client`), all bound to `types/python-generated/api-types.ts`.
 
 **Redux slice(s)** — none. `/print/order` reads `selectOrganizationId` from `appContextSlice`; nothing here owns state.
@@ -75,6 +75,8 @@ No tables of its own. `/print/order` writes orders through the aidream order API
 - **The section pages are deliberately un-gated.** They render for guests because they genuinely work for guests. Do not add an auth branch to `app/(core)/print/layout.tsx` — only `/print` itself and `/print/order` branch.
 - **Print windows are unauthenticated documents.** Every image a printer emits must be inlined as a data URI; a fetched URL renders blank.
 - **No agent disclosure.** These surfaces run fixed printers, not mandates. There is no AI job here to register, and disclosure may never invent one.
+- **Barcode Preview is agent-aware without agent disclosure.** `/print/barcodes` registers `matrx-user/barcode-preview`, emits its live input and preview state through `SurfaceRuntimeProvider`, and mounts editable and presentational v3 context menus. Menu edits update the local controlled input; preview results belong to the current input and symbology. There is no fixed AI role or persisted entity write target.
+- **Markdown to PDF is agent-aware without agent disclosure.** `/print/documents` registers `matrx-user/markdown-pdf`, emits the live markdown and PDF-generation status through `SurfaceRuntimeProvider`, and wraps `ProTextarea` in the canonical editable menu with the real Download PDF action. The document is declared once as `content`. There is no fixed AI role or persisted entity write target; menu edits update the local editor state.
 
 ---
 
@@ -113,6 +115,11 @@ Migrated out of `(dev)` on 2026-09-11. The demo routes `/demos/print-studio` and
 ---
 
 ## Change log
+
+- `2026-09-17` — Luna: Registered `/print/documents` as `matrx-user/markdown-pdf`, added live surface scope and canonical editable context-menu wiring while preserving the existing browser PDF conversion and download behavior. The focused live mirror sync/check passed. Authenticated browser integration and independent acceptance remain pending.
+
+- `2026-09-17` — Codex Luna: Added the Barcode Preview surface integration candidate. Added the `matrx-user/barcode-preview` manifest and live scope, route resolution, runtime provider, and canonical read-only context menu while preserving barcode normalization and SVG generation behavior.
+- `2026-09-17` — Codex Luna: Corrected the Barcode Preview async race. Generated SVG/error results now carry their input and symbology identity plus a request guard, so stale settlements cannot expose old preview content or status. Added focused race tests, ProInput-backed editable v3 wiring, canonical labels, and Locate anchors; the focused live manifest mirror is synchronized and verified.
 
 - `2026-09-11` — Claude Fable 5.1: Verified live on `localhost:3001` — all 14 `/print` routes serve (`/print/admin` 307s for a non-admin, correctly); hub, QR, flashcards, label sheets, markdown, practice tests and the order page screenshotted; the flashcards printer proven to request a print window; signed-out `/print` serves the marketing landing; mobile (375×812) passes on the hub and on a section page. Review row `6b1ed4e2-963c-481d-9cf5-2e7b1719751f`; the two older demo rows were repointed to `/print` and `/print/order`.
 - `2026-09-11` — Claude Fable 5.1: Built the Print hub as a `(core)` feature. Moved the 11 print-studio sections and the whole Lulu calculator + order flow out of `app/(dev)/demos/` into `features/print/`; added `/print` (hub, with a public `PrintLanding` for guests), 11 section routes, `/print/order`, and `/print/admin`. Registered Print in the shell nav and in `MODULE_LANDING_DIRECTORY`; cross-linked the commerce label surfaces and flashcards set detail. `ordering-gate.ts` and `OrderFlow.tsx` moved byte-identical.

@@ -20,6 +20,7 @@
  *   workspace   Which calculator/route the user is on
  *   the_claim   The claim being rated
  *   the_rating  The injuries and the computed result
+ *   utility     Inputs and results for the open utility calculator
  */
 
 import type {
@@ -48,6 +49,13 @@ const groups: SurfaceValueGroup[] = [
     label: "Injuries & rating",
     sortOrder: 300,
     description: "The rated injuries and the calculator's current result.",
+  },
+  {
+    key: "utility",
+    label: "Utility calculator",
+    sortOrder: 400,
+    description:
+      "Inputs and calculated outputs for the open utility calculator.",
   },
 ];
 
@@ -185,13 +193,101 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 330,
     group: "the_rating",
   },
+  {
+    name: "weekly_payment",
+    label: "Weekly payment amount",
+    description:
+      "Weekly payment amount entered in the Present Value utility. Zero when the field is empty or set to zero.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 12,
+    sortOrder: 400,
+    group: "utility",
+  },
+  {
+    name: "number_of_weeks",
+    label: "Number of weeks",
+    description:
+      "Number of future weekly payments entered in the Present Value utility. Zero when the field is empty or set to zero.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 410,
+    group: "utility",
+  },
+  {
+    name: "annual_interest_rate",
+    label: "Annual interest rate",
+    description:
+      "Annual percentage rate used to discount future payments in the Present Value utility. Zero when the field is empty or set to zero.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 420,
+    group: "utility",
+  },
+  {
+    name: "present_value",
+    label: "Present value",
+    description:
+      "Calculated lump-sum value today for the Present Value utility. Absent while the payment or week inputs are not positive.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 14,
+    sortOrder: 430,
+    group: "utility",
+  },
+  {
+    name: "total_payments",
+    label: "Total payments",
+    description:
+      "Undiscounted total of all future payments in the Present Value utility. Absent while the calculation inputs are incomplete.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 14,
+    sortOrder: 440,
+    group: "utility",
+  },
+  {
+    name: "discount_amount",
+    label: "Discount amount",
+    description:
+      "Difference between undiscounted payments and their present value. Absent while the calculation inputs are incomplete.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 14,
+    sortOrder: 450,
+    group: "utility",
+  },
+  {
+    name: "discount_percent",
+    label: "Discount %",
+    description:
+      "Percentage reduction from undiscounted payments to present value. Absent while the calculation inputs are incomplete.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 460,
+    group: "utility",
+  },
+  {
+    name: "utility_calculation_ready",
+    label: "Utility calculation ready",
+    description:
+      "True when the Present Value utility has positive payment and week inputs and can show a result. False otherwise.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 470,
+    group: "utility",
+  },
 ];
 
 export const legalCaWcManifest: SurfaceManifest = {
   surfaceName: "matrx-user/legal-ca-wc",
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Vocabulary declared 2026-08-17 to close an undeclared product vertical (/legal/ca-wc/**). The three utility calculators' own inputs are not declared, and no runtime emitter is wired.",
+    "The Present Value utility now emits its declared inputs and results. The Weeks, Life Expectancy, and AWC utility calculators still need their own declared values and emitters, followed by live surface verification.",
   label: "CA Workers' Comp",
   urlPattern: "/legal/ca-wc",
   intro: `<surface_intro>
@@ -201,7 +297,10 @@ Read claim_rating_inputs and injuries as what the math actually consumes; the re
 This is real personal data about a real injured worker. Never repeat it beyond what the task needs, and never invent a value that was not entered.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(
+    pickBaseline("selection", "context"),
+    surfaceSpecific,
+  ),
 };
 
 /** One entry as emitted in `injuries`. */
@@ -236,6 +335,14 @@ export function createLegalCaWcScope(values: {
   injury_count?: number;
   final_rating?: number;
   draft_is_ready?: boolean;
+  weekly_payment?: number;
+  number_of_weeks?: number;
+  annual_interest_rate?: number;
+  present_value?: number;
+  total_payments?: number;
+  discount_amount?: number;
+  discount_percent?: number;
+  utility_calculation_ready?: boolean;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

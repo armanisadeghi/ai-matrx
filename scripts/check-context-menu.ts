@@ -85,8 +85,11 @@
  *               Renamed 2026-09-09; this guard is why it cannot come back.
  *   attribution — a `sourceFeature` value that is not in the generated
  *               SOURCE_FEATURES allow-list. That list comes from the Python
- *               server and cannot be extended here, so an invented value
- *               silently misattributes every agent run the menu launches.
+ *               server and cannot be extended here. A value that is not a
+ *               genuine product feature silently misattributes every agent
+ *               run; a genuine missing product must be registered in the
+ *               canonical Python registry and regenerated, never relabeled
+ *               as the nearest existing feature.
  *               Checked directly against the generated file because tsc only
  *               speaks once the whole tree compiles — and during a fleet run
  *               the tree is often red from another session, which is exactly
@@ -460,7 +463,9 @@ function densityViolations(src: string): string[] {
  *
  * `SOURCE_FEATURES` is AUTO-GENERATED from the Python server's provenance
  * allow-list — it cannot be extended from this repo, so a value that is not in
- * it is always wrong, never a missing entry to add. Two fleet workers invented
+ * it is either an invented value or a genuine product missing from the
+ * canonical registry. Register the genuine product there and regenerate; do
+ * not relabel it as the nearest existing feature. Two fleet workers invented
  * one anyway ("admin-relationships", "hr") because the prop reads like free
  * text. It is not: it is how a run launched from this menu is attributed to
  * its true caller, so a wrong value silently files runs under the wrong
@@ -491,7 +496,7 @@ function attributionFindings(files: Map<string, string>): Finding[] {
         out.push({
           population: "attribution",
           file: path,
-          detail: `sourceFeature="${m[1]}" is not in the generated SOURCE_FEATURES allow-list — pick an existing value, never invent one`,
+          detail: `sourceFeature="${m[1]}" is not in the generated SOURCE_FEATURES allow-list — use a true registered feature; if this is a genuine missing product, register it in aidream's canonical source-attribution registry and regenerate`,
         });
     }
   }
