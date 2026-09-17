@@ -41,31 +41,12 @@ export interface GoogleConnectionSummary {
    */
   health: GoogleConnectionHealth;
   /**
-   * The server's per-capability call record for this connection (see
-   * `CapabilityHealthPending` below). Open JSON on purpose: it is narrowed by a
-   * runtime `__kind` guard in `features/connectors/google-capability-health.ts`,
+   * The server's per-capability call record for this connection, taken
+   * straight from the generated `capability_health` column
+   * (`users.integration_connections`). Open JSON on purpose: it is narrowed by
+   * a runtime `__kind` guard in `features/connectors/google-capability-health.ts`,
    * never cast.
    */
-  capability_health: unknown;
-}
-
-/**
- * 🚨 A STAND-IN FOR A COLUMN THE GENERATED TYPES DO NOT CARRY YET, AND IT SAYS
- * SO. `users.integration_connections.capability_health` went live with
- * `0777_google_per_capability_call_health.sql`; `types/database.types.ts` was
- * last regenerated before it, so the generated `Row` has no such key.
- *
- * REMEDY, and the only one: run `pnpm db-types` (it needs the database
- * credentials this container does not hold), then delete this interface and
- * take the column from the generated row like every other one. A compile-time
- * guard in `features/marketing/google/service.ts` FAILS the moment the
- * generated row gains the column, so this stand-in cannot outlive its reason.
- *
- * It is deliberately `unknown`, not a hand-mirrored shape: hand-mirroring a
- * generated type is the drift this repo's type standard bans, and the value is
- * jsonb that must be narrowed at runtime anyway.
- */
-export interface CapabilityHealthPending {
   capability_health: unknown;
 }
 

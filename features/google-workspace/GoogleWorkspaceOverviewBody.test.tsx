@@ -139,6 +139,7 @@ const first = {
   metadata: {},
   credential_present: true,
   credential_stable: true,
+  capability_health: null,
   health: "connected" as const,
 };
 const second = {

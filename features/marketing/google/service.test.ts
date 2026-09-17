@@ -70,6 +70,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -100,6 +101,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -139,6 +141,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
     const foreign = {
@@ -197,6 +200,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 

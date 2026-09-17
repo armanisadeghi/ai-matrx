@@ -56,18 +56,10 @@ describe("listGoogleConnectionInventory auth boundary", () => {
       eq: jest.fn(() => connectionQuery),
       is: jest.fn(() => connectionQuery),
       order: jest.fn(() => connectionQuery),
-      // The query ends `.abortSignal(...).returns<ConnectionRow[]>()` — the
-      // typed ending `capability_health` needs while the generated row lacks the
-      // column. This mock stopped at `abortSignal`, so the suite failed on head
-      // with "…returns is not a function" and proved nothing about the
-      // projection it exists to guard (found by F-19, unrelated to its items).
-      // Thenable AND `.returns()`-able, so the suite survives whichever shape
-      // the query has: `.returns<ConnectionRow[]>()` while `capability_health`
-      // is ungenerated, and a bare awaited builder once it is generated and the
-      // stand-in in `service.ts` is deleted.
-      abortSignal: jest.fn(() =>
-        Object.assign(connectionResult, { returns: () => connectionResult }),
-      ),
+      // The query ends `.abortSignal(...)` — the generated row now carries
+      // `capability_health`, so the builder is awaited directly with no
+      // `.returns<>()` ending to shim.
+      abortSignal: jest.fn(() => connectionResult),
     };
     const connectionResult = Promise.resolve({
         data: [
@@ -89,6 +81,7 @@ describe("listGoogleConnectionInventory auth boundary", () => {
             metadata: {},
             credential_present: false,
             credential_stable: false,
+            capability_health: null,
           },
         ],
         error: null,
