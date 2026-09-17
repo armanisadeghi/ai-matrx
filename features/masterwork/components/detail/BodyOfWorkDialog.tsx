@@ -368,6 +368,16 @@ export function BodyOfWorkDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE, NOT TO THE DIALOG CHROME. This
+          surface renders as a dialog AND as its own page; putting the notice
+          under <DialogHeader> meant the page half restored work in silence. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the links you had listed, and what you called them"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -667,13 +677,6 @@ export function BodyOfWorkDialog({
           <DialogDescription>{BODY_OF_WORK_DESCRIPTION}</DialogDescription>
         </DialogHeader>
 
-        {sitting.resumed ? (
-          <SittingResumed
-            what="the links you had listed, and what you called them"
-            onDiscard={sitting.discard}
-            onAcknowledge={sitting.acknowledge}
-          />
-        ) : null}
         {content}
       </DialogContent>
     </Dialog>

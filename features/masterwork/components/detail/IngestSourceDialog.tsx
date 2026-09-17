@@ -621,6 +621,17 @@ export function IngestSourceDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* THE NOTICE BELONGS TO THE LANE, NOT TO ONE FIELD. It used to live
+            inside the paste block, so the file and voice lanes — which never
+            render that block — put the Expert's source note back in silence. */}
+        {sitting.resumed ? (
+          <SittingResumed
+            what="what you had put in here, and what you called it"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
+
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -879,13 +890,6 @@ export function IngestSourceDialog({
               {/* A restore is never silent, and neither is a browser that
                   refuses to keep the draft — the user has to know which of the
                   two they are in before they paste an hour of work. */}
-              {sitting.resumed ? (
-                <SittingResumed
-                  what="what you had put in here, and what you called it"
-                  onDiscard={sitting.discard}
-                  onAcknowledge={sitting.acknowledge}
-                />
-              ) : null}
               {!sitting.available ? (
                 <p className="text-xs text-amber-600 dark:text-amber-500">
                   This browser will not let us keep a copy of what you type
