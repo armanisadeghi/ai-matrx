@@ -129,16 +129,20 @@ export function GoogleContactsImportPanel({
     [organizationId],
   );
 
+  // ONE read on mount, debounced only on later keystrokes. Two effects both
+  // firing for the empty query meant the debounced one ABORTED the first — a
+  // wasted Google Contacts request and a slower first paint.
+  const typedRef = useRef(false);
   useEffect(() => {
-    void load("");
-    return () => abortRef.current?.abort();
-  }, [load]);
-
-  useEffect(() => {
+    if (!typedRef.current) {
+      void load("");
+      return () => abortRef.current?.abort();
+    }
     const handle = window.setTimeout(() => void load(query), 250);
     return () => window.clearTimeout(handle);
-    // `load` is stable per organization; re-running on every keystroke is the point.
+    // `load` is stable per organization; re-running per keystroke is the point.
   }, [query, load]);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const contacts = search?.contacts ?? [];
   const selectedSet = useMemo(() => new Set(selected), [selected]);
@@ -418,7 +422,10 @@ export function GoogleContactsImportPanel({
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              typedRef.current = true;
+              setQuery(event.target.value);
+            }}
             placeholder="Search your Google contacts"
             className="h-9 pl-7 text-base sm:text-sm"
           />

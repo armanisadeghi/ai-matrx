@@ -66,6 +66,7 @@ import {
 import {
   ANALYTICS_RANGE_DAYS,
   DEFAULT_ANALYTICS_RANGE,
+  perCollectedDay,
   readSiteAnalyticsWindow,
   type AnalyticsRangeDays,
   type AnalyticsTotals,
@@ -92,6 +93,12 @@ function percentDelta(current: number, previous: number): string | null {
   const delta = ((current - previous) / previous) * 100;
   const rounded = Math.abs(delta) >= 10 ? Math.round(delta) : Number(delta.toFixed(1));
   return `${rounded > 0 ? "+" : ""}${rounded}%`;
+}
+
+function rate(value: number): string {
+  return value >= 10
+    ? Intl.NumberFormat().format(Math.round(value))
+    : Number(value.toFixed(1)).toString();
 }
 
 const TILES: ReadonlyArray<{
@@ -443,6 +450,16 @@ export function SiteAnalyticsPanel({
               const previous = data.previousTotals[tile.key];
               const delta = percentDelta(current, previous);
               const improved = current >= previous;
+              // THE COMPARISON IS REFUSED WHEN THE WINDOWS WERE NOT COLLECTED
+              // ALIKE (window.ts rule 3). Before this, a current window with 28
+              // of 28 days against a previous window with 6 printed "+232%" on
+              // a site whose traffic per collected day had FALLEN ~29%.
+              const refused = data.comparison.state === "refused";
+              const nowRate = perCollectedDay(current, data.daysWithData);
+              const thenRate = perCollectedDay(
+                previous,
+                data.comparison.previousDaysWithData,
+              );
               return (
                 <div
                   key={tile.key}
@@ -453,16 +470,33 @@ export function SiteAnalyticsPanel({
                   <p className="text-lg font-semibold leading-6 text-foreground">
                     {integer(current)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {delta ? (
-                      <span className={improved ? "text-success" : "text-destructive"}>
-                        {delta}
-                      </span>
-                    ) : (
-                      <span>no change</span>
-                    )}
-                    {` vs ${integer(previous)} in the previous ${range} days`}
-                  </p>
+                  {refused ? (
+                    <>
+                      <p className="text-[11px] font-medium text-warning">
+                        {`No comparison — the previous ${range} days have only ${data.comparison.previousDaysWithData} of ${range} days collected`}
+                      </p>
+                      {nowRate !== null && thenRate !== null ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          {`Per collected day: ${rate(nowRate)} now vs ${rate(thenRate)} then — the only figure the two windows can honestly be read against.`}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">
+                          {`${integer(previous)} were stored for the previous window, over ${data.comparison.previousDaysWithData} collected days.`}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      {delta ? (
+                        <span className={improved ? "text-success" : "text-destructive"}>
+                          {delta}
+                        </span>
+                      ) : (
+                        <span>no change</span>
+                      )}
+                      {` vs ${integer(previous)} in the previous ${range} days`}
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -502,6 +536,12 @@ export function SiteAnalyticsPanel({
             <p className="text-[11px] text-muted-foreground">
               {`${data.daysWithData} of the last ${range} days have stored rows — the rest were never collected, so they count as zero in the totals above.`}
             </p>
+          ) : null}
+
+          {/* Coverage of BOTH windows, in one sentence. Measuring only the
+              current window is what let the +232% through. */}
+          {data.comparison.caveat ? (
+            <p className="text-[11px] text-warning">{data.comparison.caveat}</p>
           ) : null}
 
           <MatrxDataTable

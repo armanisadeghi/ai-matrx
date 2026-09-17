@@ -94,10 +94,111 @@ export interface SiteAnalyticsWindowData {
   landingPages: AnalyticsLandingPage[];
   /** Days in the current window that have at least one stored row. */
   daysWithData: number;
+  /** Days in the PREVIOUS window that have at least one stored row. */
+  previousDaysWithData: number;
+  /** The comparison verdict — never a bare percentage over unequal coverage. */
+  comparison: AnalyticsComparison;
   /** Rows read, and rows discarded as superseded by a newer run. */
   rowsRead: number;
   rowsSuperseded: number;
   caveats: AnalyticsCaveat[];
+}
+
+/**
+ * RULE 3 — A COMPARISON IS REFUSED WHEN THE TWO WINDOWS WERE NOT COLLECTED
+ * ALIKE (added 2026-09-17 after zero-authorship verification defect B-2).
+ *
+ * Measured on live site `d0aff5b6-…` (All Green Recycling, org `5dc930e9…`):
+ * the current 28-day window has 28 of 28 days stored, the previous window has
+ * 6 of 28. Winning-run-deduped sessions are 14,909 against 4,485, so the tile
+ * printed about **+232%** — while per COLLECTED day the site went from 748/day
+ * to 532/day, a ~29% FALL. The only coverage disclosure on the panel measured
+ * the CURRENT window (`daysWithData < range`), so on this site it never fired:
+ * the screen whose whole premise is GA4 honesty printed a number that was
+ * wrong in direction.
+ *
+ * WHAT THE CHAMPIONS DO. Databox withholds the current-vs-prior change when a
+ * period is incomplete and says which period it left out, rather than
+ * normalizing it into a rate nobody asked for; Looker Studio does neither —
+ * it compares the raw totals and prints the +232%, which is the failure we are
+ * beating. We follow Databox: the percentage is REFUSED and the reason is
+ * printed on the number, with both windows' collected-day counts and the
+ * per-collected-day figures so the reader still learns which way it moved.
+ *
+ * "Collected alike" is deliberately not "identical": a window may legitimately
+ * miss a day. The tolerance is `COMPARISON_COVERAGE_TOLERANCE_DAYS`, matching
+ * the existing Search Console rule (`SiteKpiPeeks.trendPercent` suppresses a
+ * delta below 21 of 28 prior days — 75%); here the two windows must also be
+ * within that tolerance OF EACH OTHER, because the direction of the error is
+ * the gap between them.
+ */
+export type AnalyticsComparisonState = "comparable" | "refused";
+
+export interface AnalyticsComparison {
+  state: AnalyticsComparisonState;
+  /** Days with stored rows in each window, and the window length. */
+  currentDaysWithData: number;
+  previousDaysWithData: number;
+  windowDays: number;
+  /**
+   * The sentence to print ON the number when the comparison is refused, and
+   * the coverage caveat to print beside it when it is not. Never null when
+   * either window is short — a complete pair prints nothing.
+   */
+  caveat: string | null;
+}
+
+/** Below this share of a window, a window is not "collected" for comparison. */
+export const COMPARISON_COVERAGE_MIN_SHARE = 0.75;
+/** …and the two windows may not differ by more than this many days. */
+export const COMPARISON_COVERAGE_TOLERANCE_DAYS = 3;
+
+/**
+ * Judge the two windows' coverage. Pure, so the rule is provable with rows a
+ * test writes by hand.
+ */
+export function judgeAnalyticsComparison(input: {
+  currentDaysWithData: number;
+  previousDaysWithData: number;
+  windowDays: number;
+}): AnalyticsComparison {
+  const { currentDaysWithData, previousDaysWithData, windowDays } = input;
+  const base = {
+    currentDaysWithData,
+    previousDaysWithData,
+    windowDays,
+  };
+  const previousShare =
+    windowDays > 0 ? previousDaysWithData / windowDays : 0;
+  const gap = Math.abs(currentDaysWithData - previousDaysWithData);
+  const refused =
+    previousDaysWithData === 0 ||
+    previousShare < COMPARISON_COVERAGE_MIN_SHARE ||
+    gap > COMPARISON_COVERAGE_TOLERANCE_DAYS;
+  if (refused) {
+    return {
+      ...base,
+      state: "refused",
+      caveat: `No comparison: the previous ${windowDays} days have only ${previousDaysWithData} of ${windowDays} days collected, against ${currentDaysWithData} of ${windowDays} now. A percentage across those two windows would measure our collection, not this site's traffic.`,
+    };
+  }
+  const short = currentDaysWithData < windowDays || previousDaysWithData < windowDays;
+  return {
+    ...base,
+    state: "comparable",
+    caveat: short
+      ? `Coverage: ${currentDaysWithData} of ${windowDays} days collected now and ${previousDaysWithData} of ${windowDays} before, so both totals are slightly under-counted.`
+      : null,
+  };
+}
+
+/** Per collected day — the honest figure when the totals are not comparable. */
+export function perCollectedDay(
+  total: number,
+  daysWithData: number,
+): number | null {
+  if (daysWithData <= 0) return null;
+  return total / daysWithData;
 }
 
 export interface RawRow {
@@ -213,6 +314,12 @@ export async function readSiteAnalyticsWindow(
       previousSeries: [],
       landingPages: [],
       daysWithData: 0,
+      previousDaysWithData: 0,
+      comparison: judgeAnalyticsComparison({
+        currentDaysWithData: 0,
+        previousDaysWithData: 0,
+        windowDays: days,
+      }),
       rowsRead: 0,
       rowsSuperseded: 0,
       caveats: [],
@@ -355,6 +462,14 @@ export function aggregateAnalyticsRows(
       (a, b) => b.sessions - a.sessions,
     ),
     daysWithData: series.length,
+    previousDaysWithData: previousSeries.length,
+    // Rule 3: the caveat logic measures BOTH windows, never only the current
+    // one — that is exactly how the +232% got printed.
+    comparison: judgeAnalyticsComparison({
+      currentDaysWithData: series.length,
+      previousDaysWithData: previousSeries.length,
+      windowDays: bounds.days,
+    }),
     rowsRead: rows.length,
     rowsSuperseded,
     caveats: ga4Caveats({

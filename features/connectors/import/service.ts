@@ -28,9 +28,15 @@ const TASK_LIST_PATH = "/google-import/tasks/list";
 const TASK_IMPORT_PATH = "/google-import/tasks/import";
 
 export async function fetchContactFieldSpecs(
+  organizationId: string,
   signal?: AbortSignal,
 ): Promise<ContactFieldSpecPending[]> {
   const { data } = await getJson<ContactFieldSpecPending[]>(CONTACT_FIELDS_PATH, {
+    // ONE explicit organization per call. Without this the transport stamps
+    // `X-Organization-Id` from the Redux selection, which is NOT necessarily
+    // the org the panel is writing into (a CRM list scoped to another org, or
+    // the personal fallback) — a header/body disagreement the server refuses.
+    organizationId,
     signal,
   });
   return data;
@@ -55,7 +61,7 @@ export async function searchGoogleContacts(
       limit: args.limit ?? 50,
       google_account: args.googleAccount ?? null,
     },
-    { signal: args.signal },
+    { organizationId: args.organizationId, signal: args.signal },
   );
   return data;
 }
@@ -87,7 +93,7 @@ export async function importGoogleContacts(
         fields: contact.fields ?? [],
       })),
     },
-    { signal: args.signal },
+    { organizationId: args.organizationId, signal: args.signal },
   );
   return data;
 }
@@ -107,7 +113,7 @@ export async function listGoogleTasks(
       organization_id: args.organizationId,
       google_account: args.googleAccount ?? null,
     },
-    { signal: args.signal },
+    { organizationId: args.organizationId, signal: args.signal },
   );
   return data;
 }
@@ -135,7 +141,7 @@ export async function importGoogleTasks(
       project_id: args.projectId ?? null,
       dry_run: args.dryRun,
     },
-    { signal: args.signal },
+    { organizationId: args.organizationId, signal: args.signal },
   );
   return data;
 }

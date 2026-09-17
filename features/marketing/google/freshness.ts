@@ -10,9 +10,14 @@
  * providers today: Search Console (~3 days behind) and GA4 (~1 day behind).
  * The warning threshold is a KNOB, not a constant — `google.marketing`
  * `freshness_warning_hours` (default 72, basis "GSC API lag is 2–3 days"),
- * seeded in `migrations/google_marketing_knobs.sql`. A knob with no row RAISES
- * by design (`lib/knobs/featureKnobs.ts`), so the reader below turns that into a
- * visible, named stand-in instead of a blank line or a swallowed error.
+ * seeded in `migrations/google_marketing_knobs.sql` and LIVE since
+ * 2026-09-17 06:37:24Z (`platform.feature_knob`, value 72, read back
+ * 2026-09-17 — the earlier "not yet applied / cannot warn yet" note in this
+ * file and in both FEATURE.md files was already stale when it was written).
+ * A knob with no row RAISES by design (`lib/knobs/featureKnobs.ts`), so the
+ * reader below still turns an unreadable knob into a visible, named stand-in
+ * instead of a blank line or a swallowed error — that path now means the READ
+ * failed, not that the row is missing.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -92,7 +97,7 @@ export function describeFreshness(
     neverPulled: !pulled,
     thresholdUnavailable:
       input.warningAfterHours === null && pulled
-        ? `The staleness threshold is not configured, so this line cannot warn you yet. Seed the ${GOOGLE_MARKETING_KNOB_FEATURE}.${FRESHNESS_WARNING_HOURS_KNOB} knob (migrations/google_marketing_knobs.sql) and apply it.`
+        ? `This line cannot warn you about staleness right now: the ${GOOGLE_MARKETING_KNOB_FEATURE}.${FRESHNESS_WARNING_HOURS_KNOB} setting could not be read. The row is live (72 hours since 2026-09-17), so this is a failed read, not a missing setting — reload, and if it persists tell an administrator that the knob read is failing.`
         : null,
   };
 }

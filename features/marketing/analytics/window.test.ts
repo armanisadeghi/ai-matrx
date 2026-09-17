@@ -11,6 +11,7 @@
 
 import {
   aggregateAnalyticsRows,
+  perCollectedDay,
   type RawRow,
 } from "@/features/marketing/analytics/window";
 
@@ -134,5 +135,147 @@ describe("aggregateAnalyticsRows — landing pages and caveats", () => {
     }).caveats.map((c) => c.id);
     expect(ids).toContain("thresholding");
     expect(ids).toContain("sampling");
+  });
+});
+
+/*
+  RULE 3 — THE COMPARISON IS REFUSED WHEN THE TWO WINDOWS WERE NOT COLLECTED
+  ALIKE. Reconstructed from the live shape the zero-authorship verifier
+  measured on 2026-09-17 (All Green Recycling, site
+  `d0aff5b6-0710-4848-8304-164db3c80ab7`, org `5dc930e9-…`): the current 28-day
+  window had 28 of 28 days stored totalling 14,909 winning-run sessions, the
+  previous window had 6 of 28 days totalling 4,485. The panel printed about
+  +232%, while per collected day the site had gone from ~748/day to ~532/day —
+  a ~29% FALL. Rows below are written by hand in that shape; the numbers are the
+  verifier's.
+*/
+describe("rule 3 — an uncollected previous window refuses the comparison", () => {
+  const WINDOW_DAYS = 28;
+  const currentStart = "2026-08-01";
+  const currentEnd = "2026-08-28";
+  const previousStart = "2026-07-04";
+  const previousEnd = "2026-07-31";
+
+  function day(start: string, offset: number): string {
+    const [y, m, d] = start.split("-").map(Number);
+    return new Date(Date.UTC(y, (m ?? 1) - 1, (d ?? 1) + offset))
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  /** 28 collected days now (14,909 sessions), 6 collected days before (4,485). */
+  function liveShapedRows(): RawRow[] {
+    const rows: RawRow[] = [];
+    for (let offset = 0; offset < 28; offset += 1) {
+      rows.push(
+        row({
+          date: day(currentStart, offset),
+          run_id: `cur-${offset}`,
+          created_at: `2026-08-29T0${offset % 10}:00:00Z`,
+          sessions: offset === 27 ? 14_909 - 532 * 27 : 532,
+          users: 400,
+        }),
+      );
+    }
+    for (let offset = 0; offset < 6; offset += 1) {
+      rows.push(
+        row({
+          date: day(previousStart, offset),
+          run_id: `prev-${offset}`,
+          created_at: `2026-07-12T0${offset}:00:00Z`,
+          sessions: offset === 5 ? 4_485 - 748 * 5 : 748,
+          users: 500,
+        }),
+      );
+    }
+    return rows;
+  }
+
+  const liveBounds = {
+    start: currentStart,
+    end: currentEnd,
+    previousStart,
+    previousEnd,
+    days: WINDOW_DAYS,
+    metadata: { timeZone: "America/Los_Angeles", currencyCode: "USD" },
+  };
+
+  it("reproduces the live totals the +232% was computed from", () => {
+    const result = aggregateAnalyticsRows(liveShapedRows(), liveBounds);
+    expect(result.totals.sessions).toBe(14_909);
+    expect(result.previousTotals.sessions).toBe(4_485);
+    expect(result.daysWithData).toBe(28);
+    expect(result.previousDaysWithData).toBe(6);
+  });
+
+  it("refuses the comparison and says which window is short", () => {
+    const result = aggregateAnalyticsRows(liveShapedRows(), liveBounds);
+    expect(result.comparison.state).toBe("refused");
+    expect(result.comparison.caveat).toContain("6 of 28");
+    expect(result.comparison.caveat).toContain("28 of 28");
+  });
+
+  it("the per-collected-day figures move the OTHER WAY from the raw totals", () => {
+    const result = aggregateAnalyticsRows(liveShapedRows(), liveBounds);
+    const now = perCollectedDay(result.totals.sessions, result.daysWithData);
+    const then = perCollectedDay(
+      result.previousTotals.sessions,
+      result.previousDaysWithData,
+    );
+    expect(now).not.toBeNull();
+    expect(then).not.toBeNull();
+    // +232% on the totals; ~-29% per collected day. The direction of the
+    // number the panel used to print was wrong, not just its precision.
+    expect(Math.round(((14_909 - 4_485) / 4_485) * 100)).toBe(232);
+    expect((now as number) < (then as number)).toBe(true);
+    expect(
+      Math.round((((now as number) - (then as number)) / (then as number)) * 100),
+    ).toBe(-29);
+  });
+
+  it("allows the comparison when both windows are fully collected", () => {
+    const rows: RawRow[] = [];
+    for (let offset = 0; offset < 28; offset += 1) {
+      rows.push(
+        row({ date: day(currentStart, offset), run_id: `c${offset}`, sessions: 500 }),
+      );
+      rows.push(
+        row({ date: day(previousStart, offset), run_id: `p${offset}`, sessions: 700 }),
+      );
+    }
+    const result = aggregateAnalyticsRows(rows, liveBounds);
+    expect(result.comparison.state).toBe("comparable");
+    expect(result.comparison.caveat).toBeNull();
+  });
+
+  it("tolerates a couple of missing days rather than refusing everything", () => {
+    const rows: RawRow[] = [];
+    for (let offset = 0; offset < 27; offset += 1) {
+      rows.push(
+        row({ date: day(currentStart, offset), run_id: `c${offset}`, sessions: 500 }),
+      );
+    }
+    for (let offset = 0; offset < 26; offset += 1) {
+      rows.push(
+        row({ date: day(previousStart, offset), run_id: `p${offset}`, sessions: 700 }),
+      );
+    }
+    const result = aggregateAnalyticsRows(rows, liveBounds);
+    expect(result.comparison.state).toBe("comparable");
+    // …and it still says both windows are short, ON the number.
+    expect(result.comparison.caveat).toContain("27 of 28");
+    expect(result.comparison.caveat).toContain("26 of 28");
+  });
+
+  it("refuses when the PREVIOUS window has nothing at all", () => {
+    const rows: RawRow[] = [];
+    for (let offset = 0; offset < 28; offset += 1) {
+      rows.push(
+        row({ date: day(currentStart, offset), run_id: `c${offset}`, sessions: 500 }),
+      );
+    }
+    const result = aggregateAnalyticsRows(rows, liveBounds);
+    expect(result.comparison.state).toBe("refused");
+    expect(result.comparison.previousDaysWithData).toBe(0);
   });
 });

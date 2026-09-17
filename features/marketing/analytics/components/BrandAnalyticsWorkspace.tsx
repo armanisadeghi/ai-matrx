@@ -136,6 +136,16 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
               </div>
             ))}
           </dl>
+          {/* COVERAGE ON THE NUMBER (window.ts rule 3): a 28-day total built
+              from nine collected days is not a 28-day total, and the reader
+              cannot see that from the figure. The panel refuses comparisons on
+              the same evidence; this card carries no comparison, so it states
+              the coverage and stops there. */}
+          {data && data.dataThrough && data.daysWithData < DEFAULT_ANALYTICS_RANGE ? (
+            <p className="text-[11px] leading-4 text-warning">
+              {`${data.daysWithData} of the last ${DEFAULT_ANALYTICS_RANGE} days were collected — the rest were never synced and count as zero above.`}
+            </p>
+          ) : null}
           <DataFreshnessLine
             provider="analytics"
             dataThrough={data?.dataThrough ?? null}
