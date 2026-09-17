@@ -47,9 +47,30 @@
  * and compared, so this cannot diff production against itself and report "no drift". No
  * secret is ever printed.
  *
- * `--self-test` proves the check RED without touching either database's contents: it
- * re-runs the comparison with the FIRST exception entry removed and asserts the exit code
- * flips to 1 and that the objects that entry covered are the ones named.
+ * THE FAILING SET vs INFORMATIONAL (lane W3-DRIFT-SCOPE, 2026-09-17)
+ * ------------------------------------------------------------------
+ * Production's FEATURE schemas (`seo`, `crm`, `web`, `communication`, …) move every hour
+ * from other teams' work that has nothing to do with this campaign, so a check that fails
+ * on ANY production-only object flaps red for reasons no lane here can or should fix. This
+ * gate now fails the exit code ONLY on drift the campaign actually rehearses against:
+ *   · schemas `platform`, `iam`, `history` — the three this campaign RULES on;
+ *   · "custom-adjacent guards" — every function, trigger, policy or event trigger scoped to
+ *     schema `custom` (NOT its plain relations, which `platform.provision()` builds on
+ *     purpose and are excluded exactly as before) — these are the guardrails, like
+ *     `provision_shape_guard`, that make the campaign's own tables safe;
+ *   · EVERY event trigger, in ANY schema — an event trigger is a database-wide guard by
+ *     definition, so one production holds and the branch lacks is never "somebody else's
+ *     schema";
+ *   · the grants clause below, unchanged.
+ * Every other schema's production-only object is still measured and printed — an
+ * INFORMATIONAL section, counts by schema plus the first ten objects — but it never moves
+ * the exit code. `--strict` restores the old fail-on-anything behaviour (every schema is
+ * in the failing set) for whoever wants the exhaustive answer.
+ *
+ * `--self-test` proves both halves without touching either database's contents or the
+ * exceptions file: it plants one synthetic production-only object in `platform` (inside the
+ * failing set) and asserts the exit path goes RED, then plants one in `seo` (outside it) and
+ * asserts the exit path stays GREEN with that object named in the informational count.
  *
  * THE SECOND CLAUSE — GRANTS, AND IT RUNS THE OTHER WAY ROUND (lane W2-GRANTS, 2026-09-17)
  * ----------------------------------------------------------------------------------------
@@ -137,6 +158,12 @@ const PUBLIC_SCRATCH = new Set(
 );
 
 function isCampaignOwned(o: Obj): boolean {
+  // `custom`'s plain relations (tables/views) are what `platform.provision()` builds on
+  // purpose and stay fully excluded, as always. Everything else scoped to `custom` —
+  // functions, triggers, policies, event triggers — is a GUARD, not a provisioned table,
+  // and `isFailingScope` below puts it back in the failing set even though its schema is
+  // campaign-owned.
+  if (o.schema === "custom") return o.kind === "relation";
   if (CAMPAIGN_SCHEMAS.has(o.schema)) return true;
   if (o.schema.startsWith("zz_")) return true;
   if (o.schema === "public") {
@@ -145,6 +172,22 @@ function isCampaignOwned(o: Obj): boolean {
   }
   // realtime's per-day message partitions: created by the platform, not by anyone here.
   if (o.identity.includes("realtime.messages_20")) return true;
+  return false;
+}
+
+/** The three schemas this campaign RULES on — never a lane's exception (see loadExceptions). */
+const FAILING_SCHEMAS = new Set(["platform", "iam", "history"]);
+
+/**
+ * THE FAILING SET: drift here fails the exit code. Everything else is measured and
+ * printed but is INFORMATIONAL only — see the header comment for why. `strict` makes
+ * every schema failing, matching the pre-2026-09-17 exhaustive behaviour.
+ */
+function isFailingScope(o: Obj, strict: boolean): boolean {
+  if (strict) return true;
+  if (o.kind === "event_trigger") return true; // any schema — a guard by definition
+  if (FAILING_SCHEMAS.has(o.schema)) return true;
+  if (o.schema === "custom" && o.kind !== "relation") return true; // custom-adjacent guards
   return false;
 }
 
@@ -237,9 +280,12 @@ function excuseKey(o: Obj): string {
 }
 
 interface Verdict {
+  /** Failing-scope, unexcused — this is what fails the exit code. */
   readonly missing: Obj[];
   readonly excused: Obj[];
   readonly stale: string[];
+  /** Outside the failing scope — printed, never gates the exit code (unless `--strict`). */
+  readonly informational: Obj[];
 }
 
 function judge(
@@ -247,6 +293,7 @@ function judge(
   branch: Map<string, Obj>,
   exceptions: readonly ExceptionEntry[],
   skipSchemas: ReadonlySet<string>,
+  strict: boolean,
 ): Verdict {
   const excused = new Map<string, string>(); // "kind identity" -> schema
   for (const e of exceptions) {
@@ -255,6 +302,7 @@ function judge(
   }
   const missing: Obj[] = [];
   const excusedHits: Obj[] = [];
+  const informational: Obj[] = [];
   const used = new Set<string>();
   for (const [key, o] of prod) {
     if (branch.has(key)) continue;
@@ -265,11 +313,38 @@ function judge(
       excusedHits.push(o);
       continue;
     }
-    missing.push(o);
+    if (isFailingScope(o, strict)) {
+      missing.push(o);
+    } else {
+      informational.push(o);
+    }
   }
   const stale = [...excused.keys()].filter((k) => !used.has(k)).sort();
   missing.sort((a, b) => excuseKey(a).localeCompare(excuseKey(b)));
-  return { missing, excused: excusedHits, stale };
+  informational.sort((a, b) => excuseKey(a).localeCompare(excuseKey(b)));
+  return { missing, excused: excusedHits, stale, informational };
+}
+
+function printInformational(items: readonly Obj[]): void {
+  if (items.length === 0) return;
+  const bySchema = new Map<string, number>();
+  for (const o of items) bySchema.set(o.schema, (bySchema.get(o.schema) ?? 0) + 1);
+  console.log(
+    `\n${C.cyan}INFORMATIONAL — ${items.length} production object(s) outside the campaign's rehearsed schemas${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}platform, iam, history, custom's guards and every event trigger are what this gate\n` +
+      `  fails on. These move on other teams' schedule and are printed, never gated — pass\n` +
+      `  --strict to fail on them too.${C.reset}`,
+  );
+  console.log(
+    `  by schema: ${[...bySchema.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([s, n]) => `${s} ${n}`)
+      .join(" · ")}`,
+  );
+  console.log(`  first ${Math.min(10, items.length)}:`);
+  for (const o of items.slice(0, 10)) console.log(`    ${C.dim}${excuseKey(o)}${C.reset}`);
 }
 
 function printVerdict(v: Verdict, label: string): void {
@@ -474,12 +549,69 @@ function printGrantVerdict(v: GrantVerdict): void {
   if (v.looser.length > 40) console.log(`  ${C.dim}… and ${v.looser.length - 40} more${C.reset}`);
 }
 
+/** A synthetic production-only object for `--self-test` — never written to any database. */
+function fakeObj(kind: Kind, schema: string, name: string): Obj {
+  return { kind, schema, identity: `${schema}.${name}` };
+}
+
+/**
+ * `--self-test` proves the failing/informational split without touching either database's
+ * contents: plant ONE production-only object inside the failing scope (`platform`) and
+ * require the exit path to go RED, then ONE outside it (`seo`) and require the exit path to
+ * stay GREEN with that object counted as informational. Runs against the SAME `prod`/`branch`
+ * maps `main` already fetched — it never re-queries.
+ */
+function selfTest(
+  prod: Map<string, Obj>,
+  branch: Map<string, Obj>,
+  exceptions: readonly ExceptionEntry[],
+): boolean {
+  console.log(
+    `\n${C.cyan}== --self-test: planted objects, no database touched ==${C.reset}`,
+  );
+
+  const redFake = fakeObj("function", "platform", "__self_test_planted_guard__()");
+  const redProd = new Map(prod);
+  redProd.set("__self_test_red__", redFake);
+  const red = judge(redProd, branch, exceptions, new Set(), false);
+  const redOk =
+    red.missing.length > 0 && red.missing.some((o) => o.identity === redFake.identity);
+  console.log(
+    `  RED   planted in platform: ${red.missing.length} failing-scope missing (exit ${red.missing.length > 0 ? 1 : 0}) ${redOk ? "OK" : "FAILED"}`,
+  );
+
+  const greenFake = fakeObj("function", "seo", "__self_test_planted_fn__()");
+  const greenProd = new Map(prod);
+  greenProd.set("__self_test_green__", greenFake);
+  const green = judge(greenProd, branch, exceptions, new Set(), false);
+  const greenOk =
+    green.missing.length === 0 &&
+    green.informational.some((o) => o.identity === greenFake.identity);
+  console.log(
+    `  GREEN planted in seo:      ${green.missing.length} failing-scope missing / ${green.informational.length} informational (exit ${green.missing.length > 0 ? 1 : 0}) ${greenOk ? "OK" : "FAILED"}`,
+  );
+
+  const ok = redOk && greenOk;
+  if (!ok) {
+    console.log(
+      `${C.red}SELF-TEST FAILED — the failing/informational split is not doing what this file claims.${C.reset}\n` +
+        `  This check cannot be trusted to go red on its own scope, so it is not a guard.`,
+    );
+  } else {
+    console.log(
+      `${C.green}  SELF-TEST PASSED — platform drift fails, seo drift is informational only.${C.reset}`,
+    );
+  }
+  return ok;
+}
+
 async function main(): Promise<number> {
-  const selfTest = process.argv.includes("--self-test");
+  const runSelfTest = process.argv.includes("--self-test");
+  const strict = process.argv.includes("--strict");
   const exceptions = loadExceptions();
   const { prod, branch, prodGrants, branchGrants } = await measure();
 
-  const real = judge(prod, branch, exceptions, new Set());
+  const real = judge(prod, branch, exceptions, new Set(), strict);
   const fnIdentities = (m: Map<string, Obj>) =>
     new Set([...m.values()].filter((o) => o.kind === "function").map((o) => o.identity));
   const grantVerdict = judgeGrants(
@@ -489,39 +621,17 @@ async function main(): Promise<number> {
     fnIdentities(branch),
   );
 
-  if (selfTest) {
-    // RED, without touching a database: run the SAME comparison with the first
-    // exception entry removed, and require the exit code to flip.
-    const planted = exceptions[0];
-    if (!planted) {
-      console.log(`${C.red}--self-test needs at least one exception entry to remove.${C.reset}`);
-      return 1;
-    }
-    const red = judge(prod, branch, exceptions, new Set([planted.schema]));
-    console.log(
-      `\n${C.cyan}== --self-test: the exclusion for schema "${planted.schema}" is removed ==${C.reset}`,
-    );
-    const expected = real.missing.length + planted.objects.length;
-    const ok =
-      red.missing.length === expected &&
-      red.missing.length > real.missing.length &&
-      planted.objects.every((o) => red.missing.some((m) => excuseKey(m) === o));
-    console.log(
-      `  with it:    ${real.missing.length} missing (exit ${real.missing.length > 0 ? 1 : 0})\n` +
-        `  without it: ${red.missing.length} missing (exit 1), and every one of the ${planted.objects.length}` +
-        ` objects that entry covered is named`,
-    );
-    if (!ok) {
-      console.log(
-        `${C.red}SELF-TEST FAILED — removing a real exclusion did not produce exactly its objects.${C.reset}\n` +
-          `  This check cannot be trusted to go red, so it is not a guard. Exit 1.`,
-      );
-      return 1;
-    }
-    console.log(`${C.green}  SELF-TEST PASSED — the check goes RED when an excuse is withdrawn.${C.reset}`);
+  if (runSelfTest && !selfTest(prod, branch, exceptions)) {
+    return 1;
   }
 
-  printVerdict(real, "campaign-owned namespaces excluded in code; the rest by name");
+  printVerdict(
+    real,
+    strict
+      ? "--strict: every schema is failing-scope, campaign-owned namespaces excluded in code"
+      : "failing scope: platform, iam, history, custom-adjacent guards, all event triggers",
+  );
+  if (!strict) printInformational(real.informational);
   printGrantVerdict(grantVerdict);
 
   if (grantVerdict.looser.length > 0) {
@@ -551,9 +661,9 @@ async function main(): Promise<number> {
   }
 
   console.log(
-    `\n${C.green}NO BRANCH SCHEMA DRIFT${C.reset} — production holds no event trigger, function, trigger,\n` +
-      `  policy or table that the rehearsal branch lacks, beyond ${real.excused.length} named exception(s).\n` +
-      `  platform, iam and history carry NO exceptions at all.`,
+    `\n${C.green}NO BRANCH SCHEMA DRIFT IN THE FAILING SET${C.reset} — platform, iam, history, custom's\n` +
+      `  guards and every event trigger match, beyond ${real.excused.length} named exception(s).\n` +
+      `  platform, iam and history carry NO exceptions at all.${strict ? " (--strict: this covers every schema.)" : ` ${real.informational.length} other-schema object(s) printed above as informational and NOT gated.`}`,
   );
   console.log(
     `${C.green}NO BRANCH GRANT DRIFT${C.reset} — no function EXECUTE the branch gives anon, authenticated\n` +
