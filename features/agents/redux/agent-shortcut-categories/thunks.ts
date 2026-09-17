@@ -32,6 +32,7 @@ import type {
 import { selectCategoryById } from "./selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -111,10 +112,15 @@ export const createCategory = createAsyncThunk<
     ...categoryDefToRowPatch(rest as Partial<AgentShortcutCategoryDef>),
     organization_id: scopeFields.organizationId,
   };
+  // The route admits the organization from the header (the body value is only
+  // the confirming claim), stamped through the sanctioned kernel.
   const response = await fetch("/api/agent-shortcut-categories", {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: applyOrganizationContextHeader(
+      { "Content-Type": "application/json" },
+      scopeFields.organizationId,
+    ),
     body: JSON.stringify(body),
   });
   const result = await parseJsonOrThrow<{ data: CategoryApiRow }>(response);
