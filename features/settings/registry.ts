@@ -39,6 +39,7 @@ import {
   FileSpreadsheet,
   Gauge,
   Archive,
+  Clapperboard,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -85,6 +86,7 @@ import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
 import ListsTab from "./tabs/ListsTab";
+import SourceLibrarySettingsTab from "@/features/source-library/settings/SourceLibrarySettingsTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 
@@ -682,6 +684,27 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["org", "orgs", "team", "teams", "workspace", "members"],
     component: OrganizationsTab,
     persistence: "synced",
+  },
+  {
+    id: "organizations.mediaCatalog",
+    label: "Media Source Catalog",
+    icon: Clapperboard,
+    parentId: "organizations",
+    description:
+      "How this organization catalogues Libraries, Sources and Actions. The server declares every setting here.",
+    searchKeywords: [
+      "media",
+      "library",
+      "source",
+      "catalog",
+      "youtube",
+      "shorts",
+      "transcript",
+      "captions",
+      "classify",
+    ],
+    component: SourceLibrarySettingsTab,
+    persistence: "server",
   },
 
   // ── Integrations ──────────────────────────────────────────────────────────

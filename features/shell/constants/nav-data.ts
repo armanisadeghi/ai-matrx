@@ -1550,6 +1550,18 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
+    // Media Source Catalog — paste a channel, get every video catalogued in
+    // seconds, then transcribe and act on a selection (features/source-library).
+    label: "Libraries",
+    href: "/libraries",
+    iconName: "Video",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Catalogue a whole YouTube channel, then transcribe and act on it.",
+    color: "red",
+  },
+  {
     // Transcripts umbrella — one feature, slash-versioned sub-routes.
     // `/transcripts` is BOTH the public landing (for guests) AND the
     // canonical processor workspace (for authed users); server-side

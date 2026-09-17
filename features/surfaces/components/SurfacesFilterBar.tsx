@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,6 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Input } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,
@@ -35,7 +34,6 @@ export type ReadinessFilter = SurfaceReadinessBucket | "all";
 export type CheckedFilter = "all" | "never" | "stale" | "fresh";
 
 export interface SurfacesFilterState {
-  search: string;
   status: StatusFilter;
   client: string;
   manifest: ManifestFilter;
@@ -48,7 +46,6 @@ export interface SurfacesFilterState {
 }
 
 export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
-  search: "",
   status: "all",
   client: "__all__",
   manifest: "all",
@@ -183,18 +180,7 @@ export function SurfacesFilterBar({
   );
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card">
-      <div className="relative flex-1 max-w-md min-w-[180px]">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          value={state.search}
-          onChange={(e) => onChange({ search: e.target.value })}
-          placeholder="Search surfaces by name or description…"
-          className="pl-7 h-7 text-xs"
-          style={{ fontSize: "16px" }}
-        />
-      </div>
-
+    <>
       <Select
         value={state.client}
         onValueChange={(v) => onChange({ client: v })}
@@ -263,6 +249,6 @@ export function SurfacesFilterBar({
         parentNames={sortedParentNames}
         onChange={(parent) => onChange({ parent })}
       />
-    </div>
+    </>
   );
 }

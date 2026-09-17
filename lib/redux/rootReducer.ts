@@ -47,6 +47,7 @@ import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import { pdfBatchExtractDebugReducer } from "@/features/pdf-extractor/state/pdfBatchExtractDebugSlice";
+import sourceLibraryReducer from "@/features/source-library/redux/sourceLibrarySlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import visionInterviewReducer from "@/features/vision-interview/redux/vision-interview.slice";
 import fastFireReducer from "@/features/flashcards/fast-fire/redux/fastFireSlice";
@@ -223,6 +224,9 @@ export const slimReducerMap = {
   // edits per open map. Views are ROUTES, so this slice is what makes selection
   // and expansion survive switching between outline/table/graph/text.
   topicalMap: topicalMapReducer,
+  // Media Source Catalog — what a Library sync and a selection job are doing
+  // right now. A CACHE over the server's own mount reads, never the truth.
+  sourceLibrary: sourceLibraryReducer,
   transcriptStudio: transcriptStudioReducer,
   // Vision Interview — multi-agent interview room (features/vision-interview)
   visionInterview: visionInterviewReducer,

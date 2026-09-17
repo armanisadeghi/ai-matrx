@@ -36,6 +36,7 @@ import {
   Globe,
   Hammer,
   Layers,
+  Library,
   Link2,
   Loader2,
   Plus,
@@ -677,6 +678,30 @@ export function RulebookSourcesPanel({
                     >
                       <Plus className="size-3.5" />
                       From your workspace
+                    </Button>
+                    {/* A DOOR, NOT A THIRD CAPTURE FLOW. One link at a time is
+                        the wrong shape for someone whose method lives in a
+                        YouTube channel; the Media Source Catalog already
+                        catalogues a whole channel into a Library of Sources.
+                        So this sibling navigates there carrying where it came
+                        from — no `aria-expanded`/`aria-pressed`, because
+                        nothing opens below the row and a toggle that never
+                        toggles is exactly the lie the two buttons above were
+                        fixed for. */}
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <Link
+                        href={`/libraries?from=rulebook&rulebook_id=${rulebook.id}`}
+                        data-tap-target
+                        title="Catalogue a whole YouTube channel in Libraries"
+                      >
+                        <Library className="size-3.5" />
+                        Bring a whole channel
+                      </Link>
                     </Button>
                   </>
                 }

@@ -97,6 +97,38 @@
  *     dblink, pg_trgm, plpgsql_check, pg_prewarm), owned by `supabase_admin` — the newer
  *     Supabase image grants the client roles explicitly on top of the `PUBLIC` grant both
  *     images carry, and `postgres` cannot revoke them because it is not the grantor.
+ *
+ * THE THIRD CLAUSE — DEFAULT PRIVILEGES, THE GRANT THAT HAS NOT HAPPENED YET (2026-09-17)
+ * ----------------------------------------------------------------------------------------
+ * The grants clause reads objects that EXIST. `pg_default_acl` is the other half: it decides
+ * what the NEXT object a lane creates will be born holding. A branch entry production does
+ * not have makes every function, table and sequence a lane creates from now on wider than
+ * production's, and the grants clause cannot see it, because a brand-new branch object is
+ * absent from production and is skipped there by design (`notShared`).
+ *
+ * This clause exists because a night lane reported that new functions in `iam` and
+ * `platform` were acquiring an `authenticated` EXECUTE grant "production would not give
+ * them", and the only way to settle it was a hand-written scratchpad query nobody would run
+ * again. They are not: NEITHER database carries a `pg_default_acl` entry for `iam` or
+ * `platform`, and the explicit grant on a new function there is written by the DD-202 birth
+ * guard `platform.close_new_functions_to_anon_impl`, which is byte-identical on both and
+ * REVOKES `PUBLIC`/`anon` while writing down the reach the function already had. A claim
+ * about default privileges now has a command instead of a memory.
+ *
+ * SO: a `pg_default_acl` (schema, grantor, objtype, grantee, privilege) the BRANCH has and
+ * PRODUCTION does not, for `anon`, `authenticated` or `service_role`, FAILS this check.
+ * Bounded by the same rules the other two use, each counted rather than silently dropped:
+ *   · campaign-owned namespaces and `zz_*` are the campaign's.
+ *   · Supabase-managed schemas are the platform image's.
+ *   · an entry whose GRANTOR is a Supabase-managed role is that role's to speak for, never
+ *     this campaign's (`supabase_admin`, `supabase_auth_admin`, `pgsodium*`, …).
+ *   · an entry naming a role that exists on only ONE database is not drift this campaign may
+ *     close: `svc_seo` (LOGIN, BYPASSRLS) and `cli_login_postgres` are production-only and
+ *     `v5/BRANCH-GRANT-DRIFT.md` records them as NEVER MINTED on the branch. Counted as
+ *     `roleAbsent` and printed.
+ * The production-only direction (the branch being TIGHTER) is counted and printed, never
+ * failed — it denies reads production allows, which wastes a lane's time but never
+ * manufactures a green.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -384,6 +416,10 @@ async function measure(): Promise<{
   branch: Map<string, Obj>;
   prodGrants: GrantRow[];
   branchGrants: GrantRow[];
+  prodDefaults: DefaultAclRow[];
+  branchDefaults: DefaultAclRow[];
+  prodRoles: Set<string>;
+  branchRoles: Set<string>;
 }> {
   const prodEnv = loadDbEnv();
   if ("missing" in prodEnv) {
@@ -422,6 +458,10 @@ async function measure(): Promise<{
     const branch = await inventory(branchClient);
     const prodGrants = await grants(prodClient);
     const branchGrants = await grants(branchClient);
+    const prodDefaults = await defaultAcls(prodClient);
+    const branchDefaults = await defaultAcls(branchClient);
+    const prodRoles = await roleNames(prodClient);
+    const branchRoles = await roleNames(branchClient);
     console.log(
       `\ninventory: production ${prod.size} object(s) / branch ${branch.size} object(s)` +
         ` across ${KINDS.join(", ")}`,
@@ -430,7 +470,14 @@ async function measure(): Promise<{
       `grants:    production ${prodGrants.length} / branch ${branchGrants.length} function EXECUTE row(s)` +
         ` for anon, authenticated, service_role and PUBLIC`,
     );
-    return { prod, branch, prodGrants, branchGrants };
+    console.log(
+      `defaults:  production ${prodDefaults.length} / branch ${branchDefaults.length} pg_default_acl grant row(s)` +
+        ` — what the NEXT object created in each schema is born holding`,
+    );
+    return {
+      prod, branch, prodGrants, branchGrants,
+      prodDefaults, branchDefaults, prodRoles, branchRoles,
+    };
   } finally {
     await prodClient.end().catch(() => {});
     if (branchClient) await branchClient.end().catch(() => {});
@@ -549,6 +596,150 @@ function printGrantVerdict(v: GrantVerdict): void {
   if (v.looser.length > 40) console.log(`  ${C.dim}… and ${v.looser.length - 40} more${C.reset}`);
 }
 
+// ---------------------------------------------------------------------------
+// THE DEFAULT-PRIVILEGES CLAUSE — what the NEXT object will be born holding.
+// ---------------------------------------------------------------------------
+
+/**
+ * Roles the Supabase platform image owns. An entry they GRANT is theirs to speak for; an
+ * entry they RECEIVE is not a client door.
+ */
+const SUPABASE_ROLES = new Set([
+  "supabase_admin", "supabase_auth_admin", "supabase_storage_admin",
+  "supabase_realtime_admin", "supabase_read_only_user", "supabase_replication_admin",
+  "pgsodium_keyholder", "pgsodium_keyiduser", "pgbouncer", "authenticator", "dashboard_user",
+]);
+
+/**
+ * One row per (schema, grantor, objtype, grantee, privilege). `aclexplode` is what makes a
+ * NULL-vs-listed comparison honest, exactly as in the grants clause.
+ */
+const DEFAULT_ACL_SQL = `
+select n.nspname                                   as schema,
+       pg_get_userbyid(d.defaclrole)               as grantor,
+       d.defaclobjtype::text                       as objtype,
+       case when a.grantee = 0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end as grantee,
+       a.privilege_type                            as privilege
+  from pg_default_acl d
+  join pg_namespace n on n.oid = d.defaclnamespace
+  cross join lateral aclexplode(d.defaclacl) a
+`;
+
+interface DefaultAclRow {
+  readonly schema: string;
+  readonly grantor: string;
+  readonly objtype: string;
+  readonly grantee: string;
+  readonly privilege: string;
+}
+
+async function defaultAcls(client: pg.Client): Promise<DefaultAclRow[]> {
+  await client.query("begin transaction read only");
+  try {
+    const { rows } = await client.query<DefaultAclRow>(DEFAULT_ACL_SQL);
+    return rows;
+  } finally {
+    await client.query("rollback");
+  }
+}
+
+interface DefaultAclVerdict {
+  /** Branch-only entries for a client role — the dangerous direction. */
+  readonly looser: readonly string[];
+  /** Production-only entries for a client role — printed, never failed. */
+  readonly tighter: readonly string[];
+  /** Skipped, BOTH directions: the grantor or grantee role exists on only one database. */
+  readonly roleAbsent: number;
+  /** Skipped, BOTH directions: Supabase-managed, campaign-owned, or a non-client grantee. */
+  readonly notOurs: number;
+}
+
+/**
+ * Both directions are walked and every exclusion is counted in the SAME two totals, so a
+ * `seo | svc_seo | r | authenticated | SELECT` that only production has is a printed number
+ * rather than a row that quietly vanished. The first draft of this function counted the
+ * branch direction only, and that production entry disappeared with no trace at all.
+ */
+function judgeDefaultAcls(
+  prod: readonly DefaultAclRow[],
+  branch: readonly DefaultAclRow[],
+  prodRoles: ReadonlySet<string>,
+  branchRoles: ReadonlySet<string>,
+): DefaultAclVerdict {
+  const key = (d: DefaultAclRow) =>
+    `${d.schema} | ${d.grantor} | ${d.objtype} | ${d.grantee} | ${d.privilege}`;
+  const prodSet = new Set(prod.map(key));
+  const branchSet = new Set(branch.map(key));
+  const looser: string[] = [];
+  const tighter: string[] = [];
+  let roleAbsent = 0;
+  let notOurs = 0;
+
+  const bothHaveRole = (r: string) =>
+    r === "PUBLIC" || (prodRoles.has(r) && branchRoles.has(r));
+
+  const consider = (d: DefaultAclRow, otherSet: ReadonlySet<string>, sink: string[]) => {
+    if (otherSet.has(key(d))) return;
+    if (
+      !(CLIENT_ROLES as readonly string[]).includes(d.grantee) ||
+      CAMPAIGN_SCHEMAS.has(d.schema) ||
+      d.schema.startsWith("zz_") ||
+      SUPABASE_SCHEMAS.has(d.schema) ||
+      SUPABASE_ROLES.has(d.grantor)
+    ) {
+      notOurs += 1;
+      return;
+    }
+    if (!bothHaveRole(d.grantor) || !bothHaveRole(d.grantee)) {
+      roleAbsent += 1;
+      return;
+    }
+    sink.push(key(d));
+  };
+
+  for (const d of branch) consider(d, prodSet, looser);
+  for (const d of prod) consider(d, branchSet, tighter);
+  looser.sort();
+  tighter.sort();
+  return { looser, tighter, roleAbsent, notOurs };
+}
+
+function printDefaultAclVerdict(v: DefaultAclVerdict): void {
+  if (v.tighter.length > 0) {
+    console.log(
+      `\n${C.dim}default privileges — ${v.tighter.length} production entr(ies) for a client role the branch lacks.` +
+        ` Printed, never failed: the branch denies something production allows, which wastes a lane's` +
+        ` time but cannot manufacture a green.${C.reset}`,
+    );
+    for (const t of v.tighter.slice(0, 20)) console.log(`  ${C.dim}TIGHTER ${t}${C.reset}`);
+    if (v.tighter.length > 20) {
+      console.log(`  ${C.dim}… and ${v.tighter.length - 20} more${C.reset}`);
+    }
+  }
+  if (v.looser.length === 0) return;
+  console.log(
+    `\n${C.red}THE BRANCH CARRIES ${v.looser.length} DEFAULT PRIVILEGE(S) PRODUCTION DOES NOT${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}pg_default_acl decides what the NEXT object a lane creates is BORN holding, so this\n` +
+      `  widens every function, table and sequence the campaign has not written yet — and the\n` +
+      `  grants clause cannot see it, because a brand-new branch object is absent from\n` +
+      `  production and is skipped there by design.${C.reset}`,
+  );
+  for (const l of v.looser.slice(0, 40)) console.log(`  ${C.red}LOOSER ${C.reset}${l}`);
+  if (v.looser.length > 40) console.log(`  ${C.dim}… and ${v.looser.length - 40} more${C.reset}`);
+}
+
+async function roleNames(client: pg.Client): Promise<Set<string>> {
+  await client.query("begin transaction read only");
+  try {
+    const { rows } = await client.query<{ rolname: string }>("select rolname from pg_roles");
+    return new Set(rows.map((r) => r.rolname));
+  } finally {
+    await client.query("rollback");
+  }
+}
+
 /** A synthetic production-only object for `--self-test` — never written to any database. */
 function fakeObj(kind: Kind, schema: string, name: string): Obj {
   return { kind, schema, identity: `${schema}.${name}` };
@@ -609,7 +800,10 @@ async function main(): Promise<number> {
   const runSelfTest = process.argv.includes("--self-test");
   const strict = process.argv.includes("--strict");
   const exceptions = loadExceptions();
-  const { prod, branch, prodGrants, branchGrants } = await measure();
+  const {
+    prod, branch, prodGrants, branchGrants,
+    prodDefaults, branchDefaults, prodRoles, branchRoles,
+  } = await measure();
 
   const real = judge(prod, branch, exceptions, new Set(), strict);
   const fnIdentities = (m: Map<string, Obj>) =>
@@ -619,6 +813,12 @@ async function main(): Promise<number> {
     branchGrants,
     fnIdentities(prod),
     fnIdentities(branch),
+  );
+  const defaultVerdict = judgeDefaultAcls(
+    prodDefaults,
+    branchDefaults,
+    prodRoles,
+    branchRoles,
   );
 
   if (runSelfTest && !selfTest(prod, branch, exceptions)) {
@@ -633,6 +833,20 @@ async function main(): Promise<number> {
   );
   if (!strict) printInformational(real.informational);
   printGrantVerdict(grantVerdict);
+  printDefaultAclVerdict(defaultVerdict);
+
+  if (defaultVerdict.looser.length > 0) {
+    console.log(
+      `\n${C.red}BRANCH DEFAULT-PRIVILEGE DRIFT — ${defaultVerdict.looser.length} entr(ies) the branch has and production does not.${C.reset}`,
+    );
+    console.log(
+      `  Level them with a catalog-derived file in migrations/rehearsal/ headed \`-- target: branch\`,\n` +
+        `  using ALTER DEFAULT PRIVILEGES for the SAME grantor role production names, then re-run this\n` +
+        `  check. Do NOT excuse one in the exceptions file — that file is about objects the branch\n` +
+        `  LACKS, and a privilege it should not hand out is the opposite problem. Exit 1.`,
+    );
+    return 1;
+  }
 
   if (grantVerdict.looser.length > 0) {
     console.log(
@@ -670,7 +884,14 @@ async function main(): Promise<number> {
       `  or service_role that production withholds. ${grantVerdict.redundant} branch-only grant(s) were\n` +
       `  counted and NOT failed because production already grants that function to PUBLIC, so they\n` +
       `  widen nothing; ${grantVerdict.notShared} were skipped because the function is not on both\n` +
-      `  databases, which is the schema clause's subject. Exit 0.`,
+      `  databases, which is the schema clause's subject.`,
+  );
+  console.log(
+    `${C.green}NO BRANCH DEFAULT-PRIVILEGE DRIFT${C.reset} — no pg_default_acl entry the branch gives anon,\n` +
+      `  authenticated or service_role that production does not. ${defaultVerdict.tighter.length} production-only\n` +
+      `  entr(ies) printed above and NOT failed; ${defaultVerdict.roleAbsent} skipped because the grantor or grantee\n` +
+      `  role exists on only one database (svc_seo is never minted here); ${defaultVerdict.notOurs} skipped as\n` +
+      `  Supabase-managed or campaign-owned. Exit 0.`,
   );
   return 0;
 }
