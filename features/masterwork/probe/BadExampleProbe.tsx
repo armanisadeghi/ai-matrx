@@ -149,21 +149,56 @@ export function BadExampleProbe({
     setCritique("");
   }, [result, adopted, onChanged]);
 
+  // THE CASE COMES BACK WITH THE RUN. `caseBrief` is mount-local state, and
+  // the rounds are not: a refresh, a navigation away and back, or a later
+  // session restores the round from the durable pointer while the case it was
+  // about would have come back empty — which left BOTH buttons on a live round
+  // silently inert and the Expert's typed critique lost (cold walk 3,
+  // 2026-09-16). The launch hands the brief to the run's receipt
+  // (`memo` below) and the restore hands it back.
+  const restoredCaseBrief = run.memo?.case_brief ?? "";
+  useEffect(() => {
+    if (!restoredCaseBrief) return;
+    setCaseBrief((current) => (current.trim() ? current : restoredCaseBrief));
+  }, [restoredCaseBrief]);
+
   const running = run.running;
   const current = rounds.length ? rounds[rounds.length - 1] : null;
   const started = rounds.length > 0 || finished !== null;
   const roundCount = result?.roundCount || knobs.rounds;
   /** What is still missing before a probe can start, in plain words. */
   const caseBriefProblem = validateCaseBrief(caseBrief);
+  /**
+   * The case is locked once the probe is under way — but ONLY when we still
+   * hold it. A restored round whose brief did not come back must be able to
+   * take it again, or the screen locks the person out of their own session.
+   */
+  const caseLocked = started && !caseBriefProblem;
 
   const send = async (finish: boolean) => {
-    // THE GATE IS THE BUTTON, NOT A BANNER. `caseBriefProblem` is already the
-    // reason on "Write the first one", so a press with an empty case cannot
-    // reach here; once the probe has started the case is locked and valid.
-    // A not-yet-typed field is a PROMPT, never an alarm — this used to paint
-    // the same sentence in destructive red the moment somebody pressed the
-    // first button on the screen (cold walk, 2026-09-16).
-    if (caseBriefProblem) return;
+    // THE GATE IS THE BUTTON, NOT A BANNER — but a guard that cannot proceed
+    // still SAYS SO. `caseBriefProblem` is already the reason on "Write the
+    // first one", so a press with an empty case does not normally reach here.
+    // It DID on a restored round, where the case brief was gone and this line
+    // was a bare `return`: both buttons were inert, nothing was sent, nothing
+    // was said, and the critique the Expert had just typed was lost (cold walk
+    // 3, 2026-09-16). Nothing fails silently — a press that cannot proceed
+    // names the reason and the way out, in the same place `run.error` renders.
+    // A not-yet-typed field is still a PROMPT, never an alarm, before the
+    // probe has started: there the button's own reason is already on screen.
+    if (caseBriefProblem) {
+      if (started) {
+        run.fail(
+          "We couldn't bring back what you told us this probe was about, so " +
+            "there is nothing to write the next example from. Say what kind " +
+            "of work it is again in the box at the top — everything you have " +
+            "already answered is saved on the Rulebook.",
+        );
+      } else {
+        run.fail(`${caseBriefProblem}, then press this again.`);
+      }
+      return;
+    }
     // The Expert's answer rides on the LAST round, because that is the one the
     // server distils. Building it anywhere but here would let the screen send
     // an answer attached to the wrong example.
@@ -183,6 +218,9 @@ export function BadExampleProbe({
         roundCap: knobs.rounds,
       }),
       finish ? "your last answer" : `round ${rounds.length + 1}`,
+      // The brief travels with the run's receipt so a restored round is still
+      // a round about the same kind of work — see `restoredCaseBrief`.
+      { memo: { case_brief: caseBrief.trim() } },
     );
   };
 
@@ -227,15 +265,25 @@ export function BadExampleProbe({
           value={caseBrief}
           onChange={(e) => setCaseBrief(e.target.value)}
           enableVoice={knobs.voiceDefaultOn}
-          disabled={started}
+          // LOCKED ONLY WHEN THERE IS SOMETHING TO LOCK. A disabled empty box
+          // over a live round is a dead end: the one thing that would make the
+          // round sendable is the one thing the screen refuses to take.
+          disabled={caseLocked}
           placeholder="e.g. Deciding whether a pallet of mixed office electronics goes to data destruction or straight to sorting."
           rows={2}
           className="text-base sm:text-sm"
         />
-        {started ? (
+        {caseLocked ? (
           <p className="mt-2 text-xs text-muted-foreground">
             Locked for this probe, so every round is about the same kind of work.
             Finish or stop, then start a new one to change it.
+          </p>
+        ) : null}
+        {started && caseBriefProblem ? (
+          <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+            This probe is still going, but we couldn&apos;t bring back what you
+            said it was about. Say it again here and carry on — your answers so
+            far are saved on the Rulebook.
           </p>
         ) : null}
       </section>
@@ -333,7 +381,13 @@ export function BadExampleProbe({
                 reads as a half-built screen; the case the Expert typed is the
                 true name of what we wrote for them. */}
             <h2 className="mb-2 text-base font-semibold text-foreground">
-              {current.example_title || `A ${caseBrief.trim() || "work"} that looks right`}
+              {/* NEVER A SENTENCE BUILT FROM EMPTY STATE. With the case brief
+                  missing this read "A work that looks right" — a placeholder
+                  wearing the voice of a real heading. */}
+              {current.example_title ||
+                (caseBrief.trim()
+                  ? `A ${caseBrief.trim()} that looks right`
+                  : "The example we wrote for you")}
             </h2>
             {/* 🚨 A SPECIMEN CARRIES NO ACTIONS (jobs-bar-2026-09-16 lanes-b
                 item C, feedback 729b59bd). `actionsVariant="none"` only silenced

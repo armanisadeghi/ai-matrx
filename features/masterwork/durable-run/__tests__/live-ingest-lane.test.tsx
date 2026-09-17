@@ -146,6 +146,9 @@ function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
     result: settled ? FAKE_RESULT : null,
     error: null,
     stoppedMessage: null,
+    // This lane launches with no memo; the field exists because a durable run
+    // now carries back what it was launched with (`DurableRunState.memo`).
+    memo: null,
     rejoinedTarget: running ? "your pasted source" : null,
     interruption: null,
     requestId: null,

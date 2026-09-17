@@ -356,6 +356,23 @@ export interface DurableRunState<TResult> {
    * or the surface owns its display (`live.surfaceOwnsDisplay`).
    */
   requestId: string | null;
+  /**
+   * WHAT THE RUN WAS LAUNCHED WITH that the answer cannot rebuild.
+   *
+   * A durable run restores its ANSWER on a reload — but a surface whose next
+   * request needs the ORIGINAL input had nothing to restore it from, because
+   * that input lives in mount-local `useState` the reload threw away. The Bad
+   * Example Probe is the proven case: its rounds came back from the durable
+   * row while the case brief they were about came back empty, so the button
+   * that sends the next round could not build a request at all and the
+   * Expert's typing vanished (cold walk 3, 2026-09-16).
+   *
+   * So a launch may hand over the few strings the NEXT request will need
+   * (`launch(body, target, { memo })`); they ride on the run's own receipt and
+   * come back here on a rejoin or a settled restore. Small and string-only on
+   * purpose — it is a memo, not a second copy of the request.
+   */
+  memo: Record<string, string> | null;
 }
 
 interface RunPointer {
@@ -364,6 +381,11 @@ interface RunPointer {
   target: string | null;
   /** Exact request tenancy used by this launch. A rejoin is the same run. */
   scopeOverrides?: Record<string, string>;
+  /**
+   * The launch's memo — the few input strings the NEXT request needs and the
+   * answer cannot rebuild. See `DurableRunState.memo`.
+   */
+  memo?: Record<string, string>;
   /**
    * The run reached a good terminal state here. The pointer is KEPT so a
    * reload re-reads the finished result off the durable row — losing an answer
@@ -399,15 +421,17 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
       window.localStorage.removeItem(pointerKey(wire, key));
       return null;
     }
-    const rawScopeOverrides = parsed.scopeOverrides;
-    const scopeOverrides =
-      rawScopeOverrides &&
-      typeof rawScopeOverrides === "object" &&
-      Object.values(rawScopeOverrides).every(
+    const stringMap = (raw: unknown): Record<string, string> | undefined =>
+      raw &&
+      typeof raw === "object" &&
+      !Array.isArray(raw) &&
+      Object.values(raw as Record<string, unknown>).every(
         (value) => typeof value === "string",
       )
-        ? (rawScopeOverrides as Record<string, string>)
+        ? (raw as Record<string, string>)
         : undefined;
+    const scopeOverrides = stringMap(parsed.scopeOverrides);
+    const memo = stringMap(parsed.memo);
     return {
       runId: parsed.runId,
       startedAt,
@@ -417,6 +441,7 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
         ? { lostLiveViewAt: parsed.lostLiveViewAt }
         : {}),
       ...(scopeOverrides ? { scopeOverrides } : {}),
+      ...(memo ? { memo } : {}),
     };
   } catch {
     // A corrupt pointer must never break the tool it belongs to.
@@ -691,6 +716,12 @@ export interface DurableRunLaunchOptions {
    * error (2026-09-14). Persisted with the launch so `retry` replays it.
    */
   pathParams?: Record<string, string>;
+  /**
+   * The few input strings the NEXT request will need and this run's answer
+   * cannot rebuild — carried on the run's own receipt and handed back as
+   * `memo` after a rejoin or a settled restore. See `DurableRunState.memo`.
+   */
+  memo?: Record<string, string>;
 }
 
 function initialState<TResult>(): DurableRunState<TResult> {
@@ -705,6 +736,7 @@ function initialState<TResult>(): DurableRunState<TResult> {
     rejoinedTarget: null,
     interruption: null,
     requestId: null,
+    memo: null,
   };
 }
 
@@ -765,6 +797,8 @@ export function useDurableRun<TResult>(
   const pendingScopeOverridesRef = useRef<Record<string, string> | undefined>(
     undefined,
   );
+  /** The memo of the launch in flight, written onto the receipt with it. */
+  const pendingMemoRef = useRef<Record<string, string> | undefined>(undefined);
 
   /**
    * When the run in flight began — the launch instant, or, for a run this tab
@@ -930,6 +964,11 @@ export function useDurableRun<TResult>(
             target: pendingTargetRef.current,
             ...(pendingScopeOverridesRef.current
               ? { scopeOverrides: pendingScopeOverridesRef.current }
+              : {}),
+            // The memo rides with the receipt, so the input this run was
+            // launched with survives everything the answer survives.
+            ...(pendingMemoRef.current
+              ? { memo: pendingMemoRef.current }
               : {}),
           });
         }
@@ -1264,6 +1303,7 @@ export function useDurableRun<TResult>(
         launchOptions?.scopeOverrides ?? defaultScopeOverrides;
       pendingTargetRef.current = target ?? null;
       pendingScopeOverridesRef.current = scopeOverrides;
+      pendingMemoRef.current = launchOptions?.memo;
       lastLaunchRef.current = { body, target, options: launchOptions };
       startedAtRef.current = Date.now();
       setElapsedMs(0);
@@ -1277,6 +1317,7 @@ export function useDurableRun<TResult>(
         ...initialState<TResult>(),
         status: "running",
         stage: "Connecting",
+        memo: launchOptions?.memo ?? null,
       });
       try {
         const response = await dispatch(
@@ -1363,6 +1404,10 @@ export function useDurableRun<TResult>(
       stage: pointer.settled ? null : "Picking up where you left off",
       runId: pointer.runId,
       rejoinedTarget: pointer.target,
+      // WHAT THIS RUN WAS LAUNCHED WITH comes back with it. Without this a
+      // restored surface holds the answer and not the question, and its next
+      // request cannot be built at all (`DurableRunState.memo`).
+      memo: pointer.memo ?? null,
     });
     void rejoinDurableRun({
       dispatch,

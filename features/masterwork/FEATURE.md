@@ -327,6 +327,10 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   because the screen is the only thing that knows what the Expert has actually seen — which is what
   makes a probe resumable through the ordinary durable-run pointer rather than a bespoke session
   row nothing else in Masterwork has.
+  🚨 **THE CASE BRIEF RIDES ON THE RUN'S RECEIPT** (`launch(..., { memo: { case_brief } })` →
+  `run.memo`). The rounds are restored by the pointer and the brief is mount-local state, so
+  without the memo a restored round is a round about nothing: never rebuild the request from
+  `caseBrief` alone, and never lock the case box while the brief is missing.
   🚨 **`probe_label` IS NEVER RENDERED.** The generator names the boundary it probed so the next
   round cannot re-probe covered ground; it rides the wire as session state and is not a caption. A
   probe whose answer is on the screen is not a probe. The example is labelled as OURS above the
@@ -436,6 +440,41 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   two ways.
 
 ## Change Log
+
+- `2026-09-16` — 🚨 **A restored probe round had the answer and not the question, and both its
+  buttons died in silence** (jobs-bar cold walk 3, finding #1, live-confirmed by a first-time
+  Expert). `rounds` come back from the durable-run pointer; `caseBrief` is mount-local
+  `useState("")` and did not. So after a refresh — or a navigation away and back, or a later
+  session — the example, "Round 1 of 5" and the answer box were all on screen while the case box
+  was empty AND disabled under "Locked for this probe", and `send()`'s opening
+  `if (caseBriefProblem) return;` swallowed every press of "Send this and show me the next one"
+  and "I'd never see that — stop here": no request, no error, no spinner, and the critique the
+  Expert had just typed was gone. Three halves, root first. (1) THE PLATFORM PRIMITIVE: a durable
+  run now carries a `memo` — the few input strings the NEXT request needs and the answer cannot
+  rebuild — passed as `launch(body, target, { memo })`, written onto the run's own receipt beside
+  `scopeOverrides`, and handed back as `run.memo` on a rejoin or a settled restore
+  (`lib/durable-run/useDurableRun.ts`). It restores from what the run ALREADY stores; no second
+  store, and no server change (the probe response does not echo `case_brief`, and aidream was out
+  of scope for this fix). The probe launches with `{ case_brief }` and reads it back. (2) NOTHING
+  FAILS SILENTLY: the guard no longer returns void — a press that cannot proceed says why and what
+  to do, in the same place `run.error` renders, and the case box is locked only while we still
+  HOLD a case, so a restore that genuinely lost it can take it again instead of locking the Expert
+  out of their own session. (3) The heading fallback `A ${caseBrief || "work"} that looks right`
+  rendered "A work that looks right" — a sentence built from empty state — and now names the
+  example honestly when the brief is missing. Guard:
+  `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx` drives the REAL screen over the
+  REAL durable-run hook, launching and settling a round in one mount and rejoining it in a second
+  off the pointer the first one really wrote (only the transport is faked). Three cases, two
+  expected values: the restored round SENDS with that exact brief and critique (and the stop
+  button too), and a receipt with no memo sends NOTHING and says so on screen. All proven RED on
+  the pre-fix code and against three separate mutations (memo dropped from the receipt, restore
+  removed, guard back to a bare `return`). Census of the sibling lanes (every early-return click
+  handler under `features/masterwork/`, 24 handlers): no other offender — each one's condition is
+  either checked verbatim in its button's `reason`/`disabled` or structurally impossible while
+  that button renders. Left behind, deliberately: the Teach-Back's `topic` is also mount-local and
+  is not yet carried in a memo — nothing there goes inert (it gates no control and the server
+  picks its own subject when it is empty), so a restored teach-back sends an empty topic rather
+  than the Expert's.
 
 - `2026-09-16` — 🚨 **A Rulebook page carried the PREVIOUS Rulebook's words** (jobs-bar cold
   walk 2, finding #1's closing lead). Both rulebook-scoped page scaffolds are one element
