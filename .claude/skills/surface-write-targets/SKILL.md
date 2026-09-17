@@ -110,10 +110,12 @@ Mock nothing. On the one machine-wide dev server (`pnpm preview:start`, port
    redo only the valid applies + a decline, and check that load — otherwise
    you find your own test and report a defect that is not one.
 
-Then run `pnpm check:surface-drift` and `pnpm type-check`. Also run the
-manifest sync (admin surfaces page) or note it pending — the DB mirror
-(`ui.ui_surface_write_target`) is what lets aidream advertise targets
-server-side; the client tool works either way.
+Then run `pnpm check:surface-drift` and `pnpm type-check`. When this task is
+authorized to integrate the manifest, run the focused sync and matching
+`--check` from `surface-authoring` Layer 4; record that receipt before claiming
+the target is available to server-side agents. A source-only incremental change
+may remain `partial` with its owner and boundary named, but "pending" cannot
+support a functioning-integration, `verified`, or certification claim.
 
 ## Step 4 — document + the avalanche contract
 
