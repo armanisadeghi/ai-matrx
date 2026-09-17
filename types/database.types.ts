@@ -92299,6 +92299,18 @@ export type Database = {
         Args: { p_items: Json; p_site_id: string; p_source?: string }
         Returns: Json
       }
+      set_site_keyword_map_home: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          created: number
+          homed: number
+          kept: number
+          kept_human: number
+          moved: number
+          no_map: number
+          no_offering: number
+        }[]
+      }
       set_site_map: {
         Args: { p_map_id: string; p_site_id: string }
         Returns: Json
