@@ -13,9 +13,14 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import {
+  closeOverlay,
+  openOverlay,
+  selectOverlay,
+} from "@/lib/redux/slices/overlaySlice";
 import type { DetailInstanceData } from "@/lib/detail/types";
+import { announceSingletonReplacement } from "@/features/window-panels/detail/singletonReplacement";
 
 const OVERLAY_ID = "detailDocked" as const;
 
@@ -27,8 +32,21 @@ export interface DetailDockedHandle {
 
 export function useOpenDetailDocked() {
   const dispatch = useAppDispatch();
-  return useCallback(
-    (opts: OpenDetailDockedOptions): DetailDockedHandle => {
+  const store = useAppStore();
+  // 🚨 D8 — the singleton is kept, the silence is not. `announce` is false only
+  // for the Undo re-open, which the toast it came from already explained.
+  const open = useCallback(
+    (opts: OpenDetailDockedOptions, announce = true): DetailDockedHandle => {
+      if (announce) {
+        const before = selectOverlay(store.getState(), OVERLAY_ID);
+        announceSingletonReplacement({
+          previousData: before.data,
+          previousWasOpen: before.isOpen,
+          next: opts,
+          surface: "docked panel",
+          reopen: (data) => open(data, false),
+        });
+      }
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -46,8 +64,9 @@ export function useOpenDetailDocked() {
         close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
       };
     },
-    [dispatch],
+    [dispatch, store],
   );
+  return open;
 }
 
 /** Close the singleton from anywhere (the host's `close` port). */
