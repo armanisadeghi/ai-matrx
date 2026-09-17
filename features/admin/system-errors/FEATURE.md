@@ -73,6 +73,14 @@ links to — is already declared in the admin navigation registry.
 
 ## Invariants
 
+- **Healed is still an error.** A media render whose primary lane died and
+  was served by the heal ladder lands here as its own kind `media-healed`
+  (chip), `error_type = healed:<diagnosis>` (badge — the NAMED root cause,
+  e.g. `healed:cookie-not-sent-by-browser`), the whole lane ladder in the
+  payload. It is written `durable` from the client so no tier rule can quiet
+  it: "errors that fix themselves" are counted and burned down, never the
+  norm (Arman, 2026-09-16). A dead ladder stays kind `media` with the
+  diagnosis as `error_type`.
 - **A notice never modifies the page underneath it** (Arman, 2026-09-12). The
   outage notice FLOATS: fixed, movable (`useDraggableFloat`), mutable. It
   publishes no height, measures nothing, and reserves no layout — a full-width

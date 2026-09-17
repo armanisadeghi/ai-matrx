@@ -64,7 +64,16 @@ in the same change.
    it releases that URL's handle when the media ref changes or the hook unmounts. Only
    `"element"` transport may bind `resolution.src` to a media element and enter the one-retry
    session-refresh recovery path. The host never substitutes an endpoint URL for a blob URL or
-   owns a second cleanup/retry policy.
+   owns a second cleanup/retry policy. **After the one retry, the package's heal ladder runs**
+   (`@ai-matrx/media` 0.6 / `@ai-matrx/data` 0.16 `healLoadError`: bearer byte fetch on the
+   primary files host, then the alternate host — lanes that need no cookie); every host passes
+   `failureRef` and binds `healedSrc` when set. The user is never denied while a lane works, and
+   the result is captured either way: a healed render is its own family `media-healed` in the
+   error catcher with `code = healed:<diagnosis>` and the whole ladder on the row, `durable`
+   (2026-09-16: five "Image unavailable" rows in Arman's Chrome said only "failed after retry"
+   while the bearer lane would have served the file; root cause = third-party cookies blocked).
+   Our own `/files/{id}/download` endpoint is never a "permanent CDN URL" and an unknown
+   visibility is `personal`, never `public` (`isPermanentCdn`, `from-image-output-data`).
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
