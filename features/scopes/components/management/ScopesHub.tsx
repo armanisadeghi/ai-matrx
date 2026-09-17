@@ -13,7 +13,14 @@
 
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useState,
+  useTransition,
+  type ReactNode,
+  type HTMLAttributes,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -305,16 +312,43 @@ function ScopeTypeTable({
       header: type.label_singular,
       accessorKey: "name",
       cell: (scope) => (
-        <EntityRef token="scope" id={scope.id} name={scope.name} href={`${typeHref}/${scope.id}`} showIcon={false} className={cn("font-medium", activeScopeIds.has(scope.id) && "font-semibold")} />
+        <EntityRef
+          token="scope"
+          id={scope.id}
+          name={scope.name}
+          href={`${typeHref}/${scope.id}`}
+          showIcon={false}
+          className={cn(
+            "font-medium",
+            activeScopeIds.has(scope.id) && "font-semibold",
+          )}
+        />
       ),
     },
     ...columns.map((item): MatrxColumnDef<ScopeTypeNode["scopes"][number]> => ({
       id: item.id,
-      header: item.display_name,
-      accessorFn: (scope) => summarizeContextCell(valuesByScope[scope.id]?.[item.id]) ?? "",
+      header: (
+        <span title={item.description || item.display_name}>
+          {item.display_name}
+        </span>
+      ),
+      label: item.display_name,
+      accessorFn: (scope) => {
+        const value = valuesByScope[scope.id]?.[item.id];
+        return value ? (summarizeContextCell(value) ?? "") : "";
+      },
       cell: (scope) => {
-        const summary = summarizeContextCell(valuesByScope[scope.id]?.[item.id]);
-        return summary ? <span className="block truncate text-foreground/90" title={summary}>{summary}</span> : <span className="text-muted-foreground/50">{cellsStatus === "loading" ? "…" : "—"}</span>;
+        const value = valuesByScope[scope.id]?.[item.id];
+        const summary = value ? summarizeContextCell(value) : null;
+        return summary ? (
+          <span className="block truncate text-foreground/90" title={summary}>
+            {summary}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/50">
+            {cellsStatus === "loading" ? "…" : "—"}
+          </span>
+        );
       },
     })),
   ];
@@ -377,14 +411,35 @@ function ScopeTypeTable({
         </div>
       ) : (
         <MatrxDataTable
+          tableId={`scopes/${org.id}/${type.id}`}
           data={type.scopes}
           columns={tableColumns}
           getRowId={(scope) => scope.id}
-          pageSize={0}
-          hidePagination
-          hideToolbar
-          onRowOpen={(scope) => startTransition(() => router.push(`${typeHref}/${scope.id}`))}
-          rowClassName={(scope) => cn(isPending && "pointer-events-none opacity-60", activeScopeIds.has(scope.id) && "bg-primary/5")}
+          detail={{ enabled: false }}
+          isFetching={cellsStatus === "loading"}
+          toolbar={{
+            searchPlaceholder: `Search ${type.label_plural.toLowerCase()}…`,
+          }}
+          onRowOpen={(scope) =>
+            startTransition(() => router.push(`${typeHref}/${scope.id}`))
+          }
+          rowWrapper={(scope, row) =>
+            isValidElement<HTMLAttributes<HTMLTableRowElement>>(row) &&
+            activeScopeIds.has(scope.id)
+              ? cloneElement(row, {
+                  style: {
+                    ...row.props.style,
+                    boxShadow: `inset 2px 0 0 ${type.color}`,
+                  },
+                })
+              : row
+          }
+          rowClassName={(scope) =>
+            cn(
+              isPending && "pointer-events-none opacity-60",
+              activeScopeIds.has(scope.id) && "bg-primary/5",
+            )
+          }
         />
       )}
     </section>

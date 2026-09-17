@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
   ClientComponent,
   ClientPageSummary,
@@ -13,7 +17,6 @@ import {
 } from "@/features/cms/utils/contentVolume";
 import { Button } from "@/components/ui/button";
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
-import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
@@ -30,14 +33,9 @@ import {
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
-  Search,
-  X,
   Loader2,
   AlertCircle,
   FileText,
-  MoreHorizontal,
-  ArrowUpDown,
-  RefreshCw,
   Home,
   Navigation,
   Globe,
@@ -97,9 +95,6 @@ const PAGE_TYPE_COLORS: Record<string, string> = {
   listing: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-400",
 };
 
-type SortField = "title" | "category" | "updated_at" | "sort_order";
-type SortDir = "asc" | "desc";
-
 export default function PageListView({
   site,
   pages,
@@ -112,9 +107,6 @@ export default function PageListView({
   onRefresh,
   onFocusPage,
 }: PageListViewProps) {
-  const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<SortField>("sort_order");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ClientPageSummary | null>(
     null,
@@ -134,64 +126,174 @@ export default function PageListView({
     return Array.from(cats).sort() as string[];
   }, [pages]);
 
-  // ── Filter & sort ────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    let result = [...pages];
+  const columns: MatrxColumnDef<ClientPageSummary>[] = [
+    {
+      id: "title",
+      header: "Page",
+      accessorKey: "title",
+      width: 300,
+      cell: (page) => {
+        const CatIcon = (CATEGORY_ICONS[page.category ?? ""] ??
+          FileCode) as React.FC<{ className?: string }>;
+        const volume = classifyContentVolume(page.content_stats);
+        return (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
+                <CatIcon className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground truncate">
+                    {page.title}
+                  </span>
+                  {page.is_home_page && (
+                    <Home className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                  )}
+                  {page.show_in_nav && (
+                    <Navigation className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                  /{page.slug}
+                  {volume && (
+                    // Compact content cue beside the slug on narrow screens.
+                    <span
+                      className={`sm:hidden inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
+                      title={`${volume.label} · ${volume.htmlDisplay} chars — ${volume.detail}`}
+                    />
+                  )}
+                </span>
+              </div>
+            </div>
+          </>
+        );
+      },
+    },
+    {
+      id: "category",
+      header: "Category",
+      accessorKey: "category",
+      width: 180,
+      cell: (page) => {
+        const typeColor =
+          PAGE_TYPE_COLORS[page.page_type ?? ""] ?? PAGE_TYPE_COLORS.standard;
+        return (
+          <>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] capitalize">
+                {page.category ?? "general"}
+              </Badge>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}
+              >
+                {page.page_type ?? "standard"}
+              </span>
+            </div>
+          </>
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (page) =>
+        `${page.is_published ? "Published" : "Unpublished"}${page.has_draft ? " Draft" : ""}`,
+      width: 160,
+      cell: (page) => {
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              {page.is_published ? (
+                <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
+                  <Globe className="h-2.5 w-2.5 mr-1" />
+                  Published
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px]">
+                  Unpublished
+                </Badge>
+              )}
+              {page.has_draft && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400"
+                >
+                  Draft
+                </Badge>
+              )}
+            </div>
+          </>
+        );
+      },
+    },
+    {
+      id: "content",
+      header: "Content",
+      accessorFn: (page) =>
+        classifyContentVolume(page.content_stats)?.htmlDisplay ?? "",
+      width: 160,
+      cell: (page) => {
+        const volume = classifyContentVolume(page.content_stats);
+        return (
+          <>
+            {volume ? (
+              <span
+                className="inline-flex items-center gap-1.5"
+                title={volume.detail}
+              >
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
+                />
+                <span
+                  className={`text-[11px] font-medium ${VOLUME_TEXT[volume.stage]}`}
+                >
+                  {volume.label}
+                </span>
+                {volume.stage !== "empty" && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {volume.htmlDisplay}
+                    {volume.source === "draft" ? " (draft)" : ""}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">—</span>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      id: "updated_at",
+      header: "Updated",
+      accessorKey: "updated_at",
+      width: 140,
+      cell: (page) => {
+        return (
+          <>
+            <span className="text-xs text-muted-foreground">
+              {new Date(page.updated_at).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </>
+        );
+      },
+    },
+    {
+      id: "sort_order",
+      accessorKey: "sort_order",
+      header: "Order",
+      hidden: true,
+    },
+  ];
 
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.slug.toLowerCase().includes(q) ||
-          (p.category ?? "").toLowerCase().includes(q) ||
-          idMatchesQuery(p, q),
-      );
-    }
-
-    if (categoryFilter) {
-      result = result.filter((p) => p.category === categoryFilter);
-    }
-
-    result.sort((a, b) => {
-      let aVal: string | number = "";
-      let bVal: string | number = "";
-
-      switch (sortField) {
-        case "title":
-          aVal = a.title.toLowerCase();
-          bVal = b.title.toLowerCase();
-          break;
-        case "category":
-          aVal = (a.category ?? "").toLowerCase();
-          bVal = (b.category ?? "").toLowerCase();
-          break;
-        case "updated_at":
-          aVal = a.updated_at;
-          bVal = b.updated_at;
-          break;
-        case "sort_order":
-          aVal = a.sort_order;
-          bVal = b.sort_order;
-          break;
-      }
-
-      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [pages, search, categoryFilter, sortField, sortDir]);
-
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDir("asc");
-    }
-  };
+  const categoryRows = categoryFilter
+    ? pages.filter((page) => page.category === categoryFilter)
+    : pages;
 
   // ── Loading ──────────────────────────────────────────────────────────
   if (isLoading && pages.length === 0) {
@@ -223,331 +325,112 @@ export default function PageListView({
 
   return (
     <div className="p-4 sm:p-6 space-y-4 max-w-[1400px] mx-auto">
-      {/* ── Toolbar ─────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search pages…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-8 text-sm"
-          />
-          {search && (
-            <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer active:scale-[0.85] active:transition-none"
-              onClick={() => setSearch("")}
+      <MatrxDataTable<ClientPageSummary>
+        tableId={`cms/site/${site.id}/pages`}
+        data={categoryRows}
+        columns={columns}
+        getRowId={(page) => page.id}
+        defaultSort={{ id: "sort_order", direction: "asc" }}
+        detail={{ enabled: false }}
+        onRowOpen={(page) => onOpenPage(page.id)}
+        isLoading={isLoading && pages.length === 0}
+        isFetching={isLoading && pages.length > 0}
+        toolbar={{
+          title: "Pages",
+          searchPlaceholder: "Search pages…",
+          refresh: { onRefresh },
+          facets: [
+            {
+              type: "button-group",
+              id: "category",
+              value: categoryFilter ?? "",
+              defaultValue: "",
+              options: [
+                { value: "", label: "All" },
+                ...categories.map((category) => ({
+                  value: category,
+                  label: category,
+                })),
+              ],
+              onChange: (value) => setCategoryFilter(value || null),
+            },
+          ],
+          actions: (
+            <SurfaceRoleAgentButton
+              surfaceName="matrx-user/cms-site"
+              roleName="site_editor"
+              label="Site editor AI"
+            />
+          ),
+        }}
+        rowWrapper={(page, row) =>
+          React.isValidElement<React.HTMLAttributes<HTMLTableRowElement>>(row)
+            ? React.cloneElement(row, {
+                onMouseEnter: () => onFocusPage?.(page.id),
+                onFocus: () => onFocusPage?.(page.id),
+              })
+            : row
+        }
+        rowActions={(page) => {
+          const editorHref = cmsPageEditorHref(site.id, page.id);
+          const previewHref = clientPageUrl({
+            siteSlug: site.slug,
+            slug: page.slug,
+            route: page.route,
+            category: page.category,
+            preview: true,
+            previewToken: sitePreviewToken(site),
+          });
+          const liveHref = page.is_published
+            ? clientPageUrl({
+                siteSlug: site.slug,
+                slug: page.slug,
+                route: page.route,
+                category: page.category,
+                domain: activeSiteDomain(site),
+              })
+            : null;
+          const planHref =
+            site.web_site_id && page.plan_node_id
+              ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}`
+              : null;
+          // The page's AFTER: measured pages open the editor's Measure
+          // tab (the join is web_page_id, already on the summary row).
+          const measureHref = page.web_page_id
+            ? cmsPageEditorHref(site.id, page.id, "measure")
+            : null;
+
+          return (
+            <ItemMenu
+              align="end"
+              contentMinWidth="15rem"
+              config={() =>
+                buildCmsPageMenu({
+                  page,
+                  editorHref,
+                  previewHref,
+                  liveHref,
+                  planHref,
+                  measureHref,
+                  onAi: () => setAiTarget({ page, intent: "build-edit" }),
+                  onReview: () => setAiTarget({ page, intent: "review" }),
+                  onPublish: () => setPublishTarget(page),
+                  onDelete: () => setDeleteTarget(page),
+                })
+              }
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Category filter */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          <Button
-            variant={categoryFilter === null ? "default" : "outline"}
-            size="sm"
-            className="h-7 text-xs flex-shrink-0"
-            onClick={() => setCategoryFilter(null)}
-          >
-            All
-          </Button>
-          {categories.map((cat) => (
-            <Button
-              key={cat}
-              variant={categoryFilter === cat ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs flex-shrink-0 capitalize"
-              onClick={() => setCategoryFilter(cat)}
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
-
-        <SurfaceRoleAgentButton
-          surfaceName="matrx-user/cms-site"
-          roleName="site_editor"
-          label="Site editor AI"
-          className="h-8 flex-shrink-0"
-        />
-
-        {/* Refresh */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 flex-shrink-0"
-          onClick={onRefresh}
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
-          />
-        </Button>
-      </div>
-
-      {/* ── Table ───────────────────────────────────────────────── */}
-      {filtered.length === 0 ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <FileText className="h-10 w-10 opacity-30" />
-            <p className="text-sm font-medium">
-              {pages.length === 0
-                ? "No pages yet"
-                : "No pages match your filters"}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-border overflow-hidden bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
-                      onClick={() => toggleSort("title")}
-                    >
-                      Page
-                      <ArrowUpDown className="h-3 w-3" />
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
-                      onClick={() => toggleSort("category")}
-                    >
-                      Category
-                      <ArrowUpDown className="h-3 w-3" />
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">
-                    Status
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">
-                    Content
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
-                      onClick={() => toggleSort("updated_at")}
-                    >
-                      Updated
-                      <ArrowUpDown className="h-3 w-3" />
-                    </button>
-                  </th>
-                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground w-12">
-                    {/* actions */}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((page) => {
-                  const CatIcon = (CATEGORY_ICONS[page.category ?? ""] ??
-                    FileCode) as React.FC<{ className?: string }>;
-                  const volume = classifyContentVolume(page.content_stats);
-                  const typeColor =
-                    PAGE_TYPE_COLORS[page.page_type ?? ""] ??
-                    PAGE_TYPE_COLORS.standard;
-                  const editorHref = cmsPageEditorHref(site.id, page.id);
-                  const previewHref = clientPageUrl({
-                    siteSlug: site.slug,
-                    slug: page.slug,
-                    route: page.route,
-                    category: page.category,
-                    preview: true,
-                    previewToken: sitePreviewToken(site),
-                  });
-                  const liveHref = page.is_published
-                    ? clientPageUrl({
-                        siteSlug: site.slug,
-                        slug: page.slug,
-                        route: page.route,
-                        category: page.category,
-                        domain: activeSiteDomain(site),
-                      })
-                    : null;
-                  const planHref =
-                    site.web_site_id && page.plan_node_id
-                      ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}`
-                      : null;
-                  // The page's AFTER: measured pages open the editor's Measure
-                  // tab (the join is web_page_id, already on the summary row).
-                  const measureHref = page.web_page_id
-                    ? cmsPageEditorHref(site.id, page.id, "measure")
-                    : null;
-
-                  return (
-                    <tr
-                      key={page.id}
-                      data-row-id={page.id}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/20 active:bg-muted/50 cursor-pointer transition-colors select-none"
-                      onClick={() => onOpenPage(page.id)}
-                      onMouseEnter={() => onFocusPage?.(page.id)}
-                      onFocus={() => onFocusPage?.(page.id)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
-                            <CatIcon className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-foreground truncate">
-                                {page.title}
-                              </span>
-                              {page.is_home_page && (
-                                <Home className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                              )}
-                              {page.show_in_nav && (
-                                <Navigation className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                              )}
-                            </div>
-                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-                              /{page.slug}
-                              {volume && (
-                                // Mobile-visible twin of the Content column (that column is hidden below sm).
-                                <span
-                                  className={`sm:hidden inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
-                                  title={`${volume.label} · ${volume.htmlDisplay} chars — ${volume.detail}`}
-                                />
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] capitalize"
-                          >
-                            {page.category ?? "general"}
-                          </Badge>
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}
-                          >
-                            {page.page_type ?? "standard"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <div className="flex items-center gap-1.5">
-                          {page.is_published ? (
-                            <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
-                              <Globe className="h-2.5 w-2.5 mr-1" />
-                              Published
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">
-                              Unpublished
-                            </Badge>
-                          )}
-                          {page.has_draft && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400"
-                            >
-                              Draft
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        {volume ? (
-                          <span
-                            className="inline-flex items-center gap-1.5"
-                            title={volume.detail}
-                          >
-                            <span
-                              className={`inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
-                            />
-                            <span
-                              className={`text-[11px] font-medium ${VOLUME_TEXT[volume.stage]}`}
-                            >
-                              {volume.label}
-                            </span>
-                            {volume.stage !== "empty" && (
-                              <span className="text-[11px] text-muted-foreground tabular-nums">
-                                {volume.htmlDisplay}
-                                {volume.source === "draft" ? " (draft)" : ""}
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(page.updated_at).toLocaleDateString(
-                            undefined,
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
-                          )}
-                        </span>
-                      </td>
-                      <td
-                        className="px-4 py-3 text-right"
-                        // Radix menu content is portaled in the DOM but still
-                        // bubbles through this React ancestor. Stop here so a
-                        // menu action never also activates the clickable row.
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <ItemMenu
-                          align="end"
-                          contentMinWidth="15rem"
-                          config={() =>
-                            buildCmsPageMenu({
-                              page,
-                              editorHref,
-                              previewHref,
-                              liveHref,
-                              planHref,
-                              measureHref,
-                              onAi: () =>
-                                setAiTarget({ page, intent: "build-edit" }),
-                              onReview: () =>
-                                setAiTarget({ page, intent: "review" }),
-                              onPublish: () => setPublishTarget(page),
-                              onDelete: () => setDeleteTarget(page),
-                            })
-                          }
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            aria-label={`Actions for ${page.title}`}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </ItemMenu>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Count ───────────────────────────────────────────────── */}
-      {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          Showing {filtered.length} of {pages.length} pages
-        </p>
-      )}
+              <MoreHorizontalTapButton
+                variant="transparent"
+                ariaLabel={`Actions for ${page.title}`}
+              />
+            </ItemMenu>
+          );
+        }}
+        emptyState={{
+          title:
+            pages.length === 0 ? "No pages yet" : "No pages match your filters",
+        }}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

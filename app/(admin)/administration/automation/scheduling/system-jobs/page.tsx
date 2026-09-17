@@ -26,14 +26,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  Loader2,
-  Pencil,
-  Play,
-  Power,
-} from "lucide-react";
+import { AlertTriangle, Loader2, Pencil, Play, Power } from "lucide-react";
 import cronstrue from "cronstrue";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PencilTapButton, PlayTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
@@ -438,19 +437,18 @@ export default function SystemJobsPage() {
           const expr = String(
             (trig.config as Record<string, unknown> | null)?.expression ?? "",
           );
-          const hint = cronHint(expr);
           return (
-            <div className="min-w-0">
-              <span className="font-mono text-xs">{expr || "cron"}</span>
-              {hint && (
-                <div
-                  className="text-[11px] text-muted-foreground line-clamp-1"
-                  title={hint}
-                >
-                  {hint}
-                </div>
-              )}
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs line-clamp-2" tabIndex={0}>
+                  {cadenceText(r)}
+                  {trig.enabled === false ? " (trigger off)" : ""}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <code>{expr || "No cron expression"}</code>
+              </TooltipContent>
+            </Tooltip>
           );
         }
         return (
@@ -514,11 +512,32 @@ export default function SystemJobsPage() {
     const isBusy = busy.has(r.id);
     return (
       <>
-        <TapTargetButtonTransparent ariaLabel={isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"} disabled={isBusy} onClick={() => void toggleEnabled(r)}>
+        <TapTargetButtonTransparent
+          ariaLabel={
+            isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"
+          }
+          disabled={isBusy}
+          onClick={() => void toggleEnabled(r)}
+        >
           {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
         </TapTargetButtonTransparent>
-        <PencilTapButton variant="transparent" ariaLabel="Edit job" disabled={isBusy} onClick={() => setEditing(r)} />
-        <PlayTapButton variant="transparent" ariaLabel="Run job now" disabled={isBusy || r.handler_registered === false} tooltip={r.handler_registered === false ? "No handler registered — nothing would run." : "Run job now"} onClick={() => void runNow(r)} />
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel="Edit job"
+          disabled={isBusy}
+          onClick={() => setEditing(r)}
+        />
+        <PlayTapButton
+          variant="transparent"
+          ariaLabel="Run job now"
+          disabled={isBusy || r.handler_registered === false}
+          tooltip={
+            r.handler_registered === false
+              ? "No handler registered — nothing would run."
+              : "Run job now"
+          }
+          onClick={() => void runNow(r)}
+        />
       </>
     );
   };
@@ -659,18 +678,23 @@ export default function SystemJobsPage() {
       width: 200,
       cell: (r) => {
         const hint = cronHint(r.schedule);
+        const label =
+          hint ??
+          (/^\s*\d+\s+seconds?\s*$/i.test(r.schedule)
+            ? `Every ${r.schedule.trim()}`
+            : r.schedule);
         return (
-          <div className="min-w-0">
-            <span className="font-mono text-xs">{r.schedule}</span>
-            {hint && (
-              <div
-                className="text-[11px] text-muted-foreground line-clamp-1"
-                title={hint}
-              >
-                {hint}
-              </div>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs line-clamp-2" tabIndex={0}>
+                {label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <code>{r.schedule}</code>
+              <p>Uses the database scheduler timezone.</p>
+            </TooltipContent>
+          </Tooltip>
         );
       },
     },
@@ -765,10 +789,25 @@ export default function SystemJobsPage() {
     const isBusy = dbBusy.has(j.jobid);
     return (
       <>
-        <TapTargetButtonTransparent ariaLabel={isBusy ? "Updating database job" : j.active ? "Disable database job" : "Enable database job"} disabled={isBusy} onClick={() => void toggleDbActive(j)}>
+        <TapTargetButtonTransparent
+          ariaLabel={
+            isBusy
+              ? "Updating database job"
+              : j.active
+                ? "Disable database job"
+                : "Enable database job"
+          }
+          disabled={isBusy}
+          onClick={() => void toggleDbActive(j)}
+        >
           {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
         </TapTargetButtonTransparent>
-        <PencilTapButton variant="transparent" ariaLabel="Edit database job" disabled={isBusy} onClick={() => setEditingDbJob(j)} />
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel="Edit database job"
+          disabled={isBusy}
+          onClick={() => setEditingDbJob(j)}
+        />
       </>
     );
   };

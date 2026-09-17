@@ -618,6 +618,10 @@ export default function ProofRunsClient() {
         </CardHeader>
         <CardContent className="space-y-2">
           <MatrxDataTable
+            tableId="admin/proof-runs"
+            isLoading={loading && runs.length === 0}
+            isFetching={loading && runs.length > 0}
+            detail={{ enabled: false }}
             data={runs}
             columns={proofRunColumns}
             getRowId={(row) => row.id}
@@ -628,7 +632,7 @@ export default function ProofRunsClient() {
             }}
             onRowOpen={(row) => void openRunDetail(row.id)}
             emptyState={{ title: "No runs yet." }}
-            toolbar={{ search: true, searchPlaceholder: "Search recent runs…" }}
+            toolbar={{ searchPlaceholder: "Search recent runs…", refresh: { onRefresh: refresh } }}
           />
 
           {openRun ? (

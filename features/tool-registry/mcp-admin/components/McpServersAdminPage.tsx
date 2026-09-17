@@ -862,6 +862,7 @@ function ToolsTab({
         }}
         copy={{
           label: `Tools of ${slug}`,
+          export: (_visible, all) => ({ items: [jsonExportItem(() => all), csvExportItem(() => all as unknown as Array<Record<string, unknown>>, "CSV")] }),
           location: PAGE_LOCATION,
           rowKind: "mcp-server-tool",
           listKind: "mcp-server-tools",

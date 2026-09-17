@@ -18,7 +18,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Filter, Table2 } from "lucide-react";
+import { FileText, Filter, Loader2, Table2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +67,7 @@ export function ExtractionCatalogClient() {
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [filterScopeIds, setFilterScopeIds] = useState<string[]>([]);
   const [scopesByJob, setScopesByJob] = useState<Record<string, string[]>>({});
@@ -113,6 +114,7 @@ export function ExtractionCatalogClient() {
 
   const open = useCallback(
     (jobId: string) => {
+      setNavigatingId(jobId);
       startTransition(() => router.push(`/knowledge/extractions/${jobId}`));
     },
     [router],
@@ -125,7 +127,7 @@ export function ExtractionCatalogClient() {
       accessorKey: "name",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {isPending && navigatingId === row.jobId ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-label="Opening dataset" /> : <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />}
           <span className="min-w-0 font-medium">{row.name}</span>
           {row.kind === "validation" ? (
             <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
