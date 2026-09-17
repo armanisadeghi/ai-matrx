@@ -256,6 +256,30 @@ export function RunTheBench({
   // button, never a button that does nothing. The sentence is the server's.
   // ─────────────────────────────────────────────────────────────────────────
   if (bench.status === "loading") return null;
+  // 🚨 A TRIAL ALREADY RUNNING IS NOT A CLOSED DOOR (production walk 4, wall
+  // W3). While one was in flight this block said "Run the Bench: not from
+  // here" — a sentence about WHO the viewer is — to the admin whose trial it
+  // was. There is nothing to start because one is already going, and that is
+  // what the screen says, in the server's own words.
+  if (bench.running) {
+    return (
+      <div
+        className={cn(
+          "mt-2 rounded-md border border-dashed border-border px-2 py-1.5",
+          className,
+        )}
+        data-testid="bench-door-running"
+      >
+        <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>Run the Bench: one is already running</span>
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {bench.running.headline}
+        </p>
+      </div>
+    );
+  }
   if (!canRun || !form) {
     const reason =
       bench.howToRun.trim() ||

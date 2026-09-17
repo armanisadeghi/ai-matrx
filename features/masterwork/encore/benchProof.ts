@@ -210,9 +210,26 @@ export function parseBenchArm(raw: Record<string, unknown>): BenchArmWire | null
   };
 }
 
+/**
+ * A trial that is IN FLIGHT right now, as the server describes it. Read from
+ * the `platform.masterwork_run` row, so it survives a refresh and a different
+ * device — the panel is not guessing from a stream it happens to hold.
+ */
+export interface BenchRunningWire {
+  run_id: string;
+  started_at: string;
+  label: string;
+  elapsed_minutes: number;
+  /** null = already past the typical time; the headline says so in words. */
+  remaining_minutes: number | null;
+  /** The server's own sentence. Rendered, never re-written here. */
+  headline: string;
+}
+
 interface BenchProofResponseWire {
   rulebook_id: string;
   proof: BenchProofWire | null;
+  running?: BenchRunningWire | null;
   reason: string | null;
   can_run_here: boolean;
   /**
@@ -237,29 +254,77 @@ interface BenchRunAbility {
   form: BenchRunFormWire | null;
   /** The server's own reason/where-it-runs sentence. */
   howToRun: string;
+  /**
+   * A trial running RIGHT NOW, or null.
+   *
+   * 🚨 A FIELD, NOT A FOURTH STATUS (production walk 4, wall W3, 2026-09-16).
+   * "Is a trial running?" is independent of "is there a banked proof?" — a
+   * Masterwork can hold last week's record and be back on the bench this
+   * minute, and the Operator is owed both sentences. A fourth status would
+   * force the screen to pick one and drop the other, which is how the panel
+   * came to show a PERMISSION message to the admin who had started the trial
+   * herself.
+   */
+  running: BenchRunningWire | null;
 }
 
 export type BenchProofState =
   | { status: "loading" }
   | ({ status: "record"; proof: BenchProofWire } & BenchRunAbility)
   | ({ status: "none"; reason: string } & BenchRunAbility)
-  | ({ status: "unavailable"; reason: string; canRunHere: false } & Omit<
-      BenchRunAbility,
-      "canRunHere"
-    >);
+  | ({
+      status: "unavailable";
+      /** The panel's lead line — it differs by WHY, and that matters. */
+      headline: string;
+      reason: string;
+      canRunHere: false;
+    } & Omit<BenchRunAbility, "canRunHere">);
 
-/** Said when the viewer cannot read the Rulebook, or the server cannot answer. */
+/** Said when the viewer really cannot read the Rulebook. A PERMISSION claim. */
 export const CANNOT_TELL =
   "Only people who can open this Masterwork's Rulebook can see whether a bench trial exists for it.";
 
-/** The one "can't tell from here" value — never a hand-built copy of it. */
+export const CANNOT_TELL_HEADLINE = "Bench proof: can't tell from here";
+export const CHECK_FAILED_HEADLINE = "Bench proof: couldn't check just now";
+
+/**
+ * The viewer is not allowed to know. Used ONLY when the server actually said
+ * so (401/403) or when there is no Rulebook to ask about.
+ */
 export const UNAVAILABLE: BenchProofState = {
   status: "unavailable",
+  headline: CANNOT_TELL_HEADLINE,
   reason: CANNOT_TELL,
   canRunHere: false,
   form: null,
   howToRun: "",
+  running: null,
 };
+
+/**
+ * 🚨 A FAILED READ IS NOT A DENIED ONE (production walk 4, wall W3).
+ * This function used to be one line — every error became `UNAVAILABLE`, whose
+ * sentence is a permission claim. During an in-flight Bench trial the Encore
+ * page's read came back with "Select an organization before sending this
+ * request." (production error row 9ce676a8, 2026-09-17T02:58:27Z), and the
+ * admin who had started that very trial was told she was not allowed to see
+ * whether it existed. A timeout, a 500 and a missing org header are all
+ * "we couldn't check", and none of them is "you may not know".
+ */
+export function checkFailed(message: string): BenchProofState {
+  const detail = (message || "").trim();
+  return {
+    status: "unavailable",
+    headline: CHECK_FAILED_HEADLINE,
+    reason:
+      (detail ? `${detail} ` : "") +
+      "This is not a permission problem — reload to try again.",
+    canRunHere: false,
+    form: null,
+    howToRun: "",
+    running: null,
+  };
+}
 
 /**
  * The Bench answer for one Rulebook. Never throws into a page: a failure is one
@@ -279,16 +344,23 @@ export async function getBenchProof(
       pathParams: { rulebook_id: rulebookId } as never,
     }),
   );
-  const error = (result as { error?: { message?: string } }).error;
+  const error = (result as { error?: { message?: string; status?: number } })
+    .error;
   const wire = (result as { data?: BenchProofResponseWire }).data;
   if (error || !wire) {
-    return UNAVAILABLE;
+    // Only the server saying "no" is a permission answer. Everything else —
+    // 500, timeout, a missing org header, no body at all — is a failed check,
+    // and says so.
+    const status = error?.status;
+    if (status === 401 || status === 403) return UNAVAILABLE;
+    return checkFailed(error?.message ?? "We couldn't reach the bench record.");
   }
   // `form` is the server's promise that a start is actually possible. If it is
   // missing we do NOT offer the door, whatever `can_run_here` said — a button
   // with no form behind it is the dead control this file refuses.
   const form = wire.form ?? null;
   const canRunHere = wire.can_run_here && form !== null;
+  const running = wire.running ?? null;
   if (wire.proof) {
     return {
       status: "record",
@@ -296,6 +368,7 @@ export async function getBenchProof(
       canRunHere,
       form,
       howToRun: wire.how_to_run,
+      running,
     };
   }
   return {
@@ -308,5 +381,6 @@ export async function getBenchProof(
     canRunHere,
     form,
     howToRun: wire.how_to_run,
+    running,
   };
 }

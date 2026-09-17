@@ -26,7 +26,7 @@
 // line. And no dead control — the Bench has no button in the app yet, so the
 // screen SAYS where it runs instead of showing one that does nothing.
 
-import { BadgeCheck, FlaskConical } from "lucide-react";
+import { BadgeCheck, FlaskConical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 import { formatRelativeTime } from "@/utils/datetime";
@@ -79,6 +79,31 @@ export function auditionSentence(verdict: string | null | undefined): {
   return { text, legacy: false };
 }
 
+/**
+ * A trial that is running RIGHT NOW. Shown ABOVE whatever else the panel has
+ * to say, because "it is happening" is the most important true thing on the
+ * screen while it is happening — and because the alternative, which is what
+ * shipped, was a permission message shown to the person who started it.
+ */
+function BenchRunningLine({ bench }: { bench: BenchProofState }) {
+  if (bench.status === "loading" || !bench.running) return null;
+  return (
+    <div
+      className="mt-2 rounded-md border border-border px-2 py-1.5"
+      data-testid="bench-running"
+    >
+      <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+        <Loader2
+          className="h-3.5 w-3.5 shrink-0 animate-spin"
+          aria-hidden="true"
+        />
+        {/* The SERVER's sentence, with the estimate already in it. */}
+        <span>{bench.running.headline}</span>
+      </p>
+    </div>
+  );
+}
+
 /** The Bench half: a record, or a plain no — never silence, never a fake door. */
 function BenchLine({ bench }: { bench: BenchProofState }) {
   if (bench.status === "loading") {
@@ -89,6 +114,24 @@ function BenchLine({ bench }: { bench: BenchProofState }) {
     );
   }
 
+  if (bench.running) {
+    // A trial in flight answers the question the panel is asking. Any banked
+    // record still shows underneath it — both are true at once.
+    return (
+      <>
+        <BenchRunningLine bench={bench} />
+        {bench.status === "record" ? <BenchRecordLine bench={bench} /> : null}
+      </>
+    );
+  }
+
+  return <BenchRecordLine bench={bench} />;
+}
+
+/** The banked record, or the honest no. Split out so a running trial can show
+ *  its own line above an existing record without duplicating either. */
+function BenchRecordLine({ bench }: { bench: BenchProofState }) {
+  if (bench.status === "loading") return null;
   if (bench.status === "record") {
     const { proof } = bench;
     // Built by the shared `benchFacts` so the live dialog and this banked
@@ -122,10 +165,11 @@ function BenchLine({ bench }: { bench: BenchProofState }) {
   }
 
   // "unavailable" and "none" both say the true thing and what would change it.
+  // The unavailable headline comes FROM THE STATE: "can't tell from here" is a
+  // permission sentence and is said only when the server actually refused, not
+  // whenever a read failed (wall W3).
   const benchHeadline =
-    bench.status === "none"
-      ? "No bench proof yet"
-      : "Bench proof: can't tell from here";
+    bench.status === "none" ? "No bench proof yet" : bench.headline;
   return (
     <div className="mt-2 rounded-md border border-dashed border-border px-2 py-1.5">
       <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">

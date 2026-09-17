@@ -156,6 +156,7 @@ const CANNOT_RUN: BenchProofState = {
   canRunHere: false,
   form: null,
   howToRun: NO_MASTERWORK_REASON,
+  running: null,
 };
 
 const CAN_RUN: BenchProofState = {
@@ -164,6 +165,7 @@ const CAN_RUN: BenchProofState = {
   canRunHere: true,
   form: FORM,
   howToRun: "",
+  running: null,
 };
 
 function verdict(over: Partial<BenchVerdictWire>): BenchVerdictWire {

@@ -25,7 +25,13 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { AuditionProof, auditionSentence } from "./AuditionProof";
-import type { BenchProofState, BenchProofWire } from "./benchProof";
+import {
+  CANNOT_TELL_HEADLINE,
+  CHECK_FAILED_HEADLINE,
+  checkFailed,
+  type BenchProofState,
+  type BenchProofWire,
+} from "./benchProof";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -69,6 +75,7 @@ const NONE: BenchProofState = {
   form: null,
   howToRun:
     "The Bench runs from the command line today — there is no button for it in the app yet.",
+  running: null,
 };
 
 describe("the Audition score is presented as a quick check, never as proof", () => {
@@ -138,6 +145,7 @@ describe("the Audition score is presented as a quick check, never as proof", () 
       canRunHere: false,
       form: null,
       howToRun: "",
+      running: null,
     });
     const text = host.textContent ?? "";
     expect(text).toContain(RECORD.headline);
@@ -156,10 +164,12 @@ describe("the Audition score is presented as a quick check, never as proof", () 
   it("says 'can't tell from here' rather than a false no", () => {
     render({
       status: "unavailable",
+      headline: CANNOT_TELL_HEADLINE,
       reason: "Only people who can open this Masterwork's Rulebook can see it.",
       canRunHere: false,
       form: null,
       howToRun: "",
+      running: null,
     });
     const text = host.textContent ?? "";
     expect(text).toContain("can't tell from here");
@@ -193,5 +203,88 @@ describe("the source itself carries no proof claim", () => {
     );
     expect(source).not.toContain("Expert match ${");
     expect(source).not.toMatch(/THE PROOF, in Operator words/);
+  });
+});
+
+/**
+ * WALL W3 — A FAILED READ IS NOT A DENIED ONE, AND A RUNNING TRIAL IS NOT A
+ * MISSING PROOF (production walk 4, 2026-09-16).
+ *
+ * What the walker saw, as the owning admin, on her own Masterwork, while the
+ * Bench trial SHE had just started was still running:
+ *
+ *   "Bench proof: can't tell from here — Only people who can open this
+ *    Masterwork's Rulebook can see whether a bench trial exists for it."
+ *   "Run the Bench: not from here — Only people who can open this Masterwork's
+ *    Rulebook can see whether a bench trial exists for it."
+ *
+ * Neither sentence was true. She could open the Rulebook seconds later with
+ * full read/write. The read had failed with "Select an organization before
+ * sending this request." (production system_error 9ce676a8, 02:58:27Z), and
+ * `getBenchProof` mapped EVERY failure onto the one state whose sentence is a
+ * permission claim.
+ *
+ * Two legs, both proven red against the pre-fix component:
+ *   (1) a non-permission failure never says "can't tell from here";
+ *   (2) an in-flight trial is announced with the server's own estimate, and
+ *       neither panel claims the viewer lacks permission.
+ */
+describe("wall W3 — the bench panel never mistakes a failure for a refusal", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  const render = (bench: BenchProofState) =>
+    act(() => {
+      root.render(<AuditionProof variant="panel" score={62} bench={bench} />);
+    });
+
+  it("(1) says the read failed — not that the viewer may not know", () => {
+    render(checkFailed("Select an organization before sending this request."));
+    const text = host.textContent ?? "";
+    expect(text).toContain(CHECK_FAILED_HEADLINE);
+    expect(text).toContain("Select an organization before sending this request.");
+    expect(text).toContain("not a permission problem");
+    // The exact sentence the walker was shown must be impossible here.
+    expect(text).not.toContain(CANNOT_TELL_HEADLINE);
+    expect(text).not.toContain("Only people who can open");
+  });
+
+  it("(2) announces an in-flight trial with the server's estimate", () => {
+    render({
+      status: "none",
+      reason: "A bench trial is running — results in about 9 minutes.",
+      canRunHere: true,
+      form: null,
+      howToRun: "",
+      running: {
+        run_id: "7274e57f-c4d3-4297-a761-cd51f7d22fa5",
+        started_at: "2026-09-17T02:54:18Z",
+        label: "Trial Bench — deciding whether to approve overtime",
+        elapsed_minutes: 4,
+        remaining_minutes: 9,
+        headline:
+          "A bench trial is running — results in about 9 minutes (about how long " +
+          "these usually take). You can leave this page; it keeps running and the " +
+          "result will be here.",
+      },
+    });
+    const text = host.textContent ?? "";
+    expect(text).toContain("A bench trial is running");
+    expect(text).toContain("about 9 minutes");
+    expect(text).not.toContain(CANNOT_TELL_HEADLINE);
+    expect(text).not.toContain("Only people who can open");
+    // And it is not reported as an absence either.
+    expect(text).not.toContain("No bench proof yet");
   });
 });
