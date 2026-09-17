@@ -31,6 +31,7 @@ import {
   getCachedSpokenFrontFileId,
 } from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
 import type { VoiceTutorCardContext } from "./VoiceTutorPanel";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 const VoiceTutorPanel = lazy(() =>
   import("./VoiceTutorPanel").then((m) => ({ default: m.VoiceTutorPanel })),
@@ -55,6 +56,7 @@ export function CardAudioHelp({
   spokenFrontFileId?: string | null;
   className?: string;
 }) {
+  useFlashcardMandates(["spokenFrontTts"]);
   const dispatch = useAppDispatch();
   const [fileId, setFileId] = useState<string | null>(
     spokenFrontFileId ?? null,

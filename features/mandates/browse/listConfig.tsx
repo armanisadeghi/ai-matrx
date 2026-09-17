@@ -21,6 +21,54 @@ import {
   type MandateListRow,
 } from "./types";
 
+export function mandateCopyFor(
+  hrefFor: (row: MandateListRow) => string,
+  location: string,
+) {
+  return {
+    label: "Mandate",
+    listLabel: "Mandates",
+    location,
+    rowKind: "mandate-browse-row",
+    listKind: "mandate-browse-list",
+    rowDescription:
+      "One mandate — a named job fulfilled by an interchangeable agent. Registry metadata plus the caller's own resolution.",
+    listDescription:
+      "The mandate registry as currently filtered and sorted, with per-caller resolution (who decides each job).",
+    humanRow: (row: MandateListRow) =>
+      `${row.label} (${row.mandate_key}) — ${layerMeta(row.resolved_layer).label} · ` +
+      `${row.resolved_agent_name ?? "no holder"}${row.drift ? ` · ${row.drift}` : ""}`,
+    agentRow: (row: MandateListRow) => ({
+      id: row.id,
+      mandate_key: row.mandate_key,
+      label: row.label,
+      description: row.description,
+      feature: row.feature,
+      home_organization_id: row.home_organization_id,
+      provision_key: row.provision_key,
+      offered_count: row.offered_count,
+      output_kind: row.output_kind,
+      resolved_layer: row.resolved_layer,
+      resolved_agent_name: row.resolved_agent_name,
+      drift: row.drift,
+      health: row.health,
+      href: hrefFor(row),
+    }),
+    rowAttributes: (row: MandateListRow) => ({
+      id: row.id,
+      key: row.mandate_key,
+      label: row.label,
+      home: row.home_organization_id,
+      layer: row.resolved_layer,
+      health: row.health,
+    }),
+    listAttributes: (visible: MandateListRow[], all: MandateListRow[]) => ({
+      rows: visible.length,
+      rows_total: all[0]?.total_count ?? visible.length,
+    }),
+  };
+}
+
 export const mandateListConfig: EntityListConfig<MandateListRow> = {
   surfaceKey: "agent-mandates",
   entityLabel: { singular: "mandate", plural: "mandates" },
@@ -112,48 +160,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   noneLabels: {
     output_kind: "Unspecified",
   },
-  copy: {
-    label: "Mandate",
-    listLabel: "Mandates",
-    location: "/mandates",
-    rowKind: "mandate-browse-row",
-    listKind: "mandate-browse-list",
-    rowDescription:
-      "One mandate — a named job fulfilled by an interchangeable agent. Registry metadata plus the caller's own resolution.",
-    listDescription:
-      "The mandate registry as currently filtered and sorted, with per-caller resolution (who decides each job).",
-    humanRow: (row) =>
-      `${row.label} (${row.mandate_key}) — ${layerMeta(row.resolved_layer).label} · ` +
-      `${row.resolved_agent_name ?? "no holder"}${row.drift ? ` · ${row.drift}` : ""}`,
-    agentRow: (row) => ({
-      id: row.id,
-      mandate_key: row.mandate_key,
-      label: row.label,
-      description: row.description,
-      feature: row.feature,
-      home_organization_id: row.home_organization_id,
-      provision_key: row.provision_key,
-      offered_count: row.offered_count,
-      output_kind: row.output_kind,
-      resolved_layer: row.resolved_layer,
-      resolved_agent_name: row.resolved_agent_name,
-      drift: row.drift,
-      health: row.health,
-      href: mandateRoute(row),
-    }),
-    rowAttributes: (row) => ({
-      id: row.id,
-      key: row.mandate_key,
-      label: row.label,
-      home: row.home_organization_id,
-      layer: row.resolved_layer,
-      health: row.health,
-    }),
-    listAttributes: (visible, all) => ({
-      rows: visible.length,
-      rows_total: all[0]?.total_count ?? visible.length,
-    }),
-  },
+  copy: mandateCopyFor(mandateRoute, "/mandates"),
   views: {
     cards: (p) => <MandateBrowseCards {...p} />,
     rows: (p) => <MandateBrowseRows {...p} />,

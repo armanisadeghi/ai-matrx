@@ -35,6 +35,8 @@ import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDis
 import MemoryHintBlock from "@/components/mardown-display/blocks/memory-aid/MemoryHintBlock";
 import { memoryHint, memoryHintFromDetail } from "../lanes/memoryHint";
 import type { MemoryHintPayload } from "@/features/content-ir/kinds/memory-aid";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { EDU_MEMORY_MANDATES } from "../mandates";
 
 export function MemoryAidButton({
   cardId,
@@ -67,6 +69,13 @@ export function MemoryAidButton({
   struggling?: boolean;
   className?: string;
 }) {
+  useDeclaredSurfaceMandates([
+    {
+      mandateKey: EDU_MEMORY_MANDATES.memoryHint,
+      does: "Creates a memory aid for the current flashcard.",
+      surfaceName: "matrx-user/education-flashcards",
+    },
+  ]);
   const dispatch = useAppDispatch();
   // The run's conversation instance is owned HERE (the inline display is the
   // screen), not by a floating window. The HOST MOUNTS THIS COMPONENT WITH

@@ -33,6 +33,7 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { fcService } from "../../data/fcService";
 import { buildDeckOverviewRequest } from "../../data/podcastOverview";
 import type { FcSetRow, CardWithDetails } from "../../data/types";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 /**
  * WP3 gap 12 + Q15 lane 1 — deck-level per-card audio prep, ONE component for
@@ -173,6 +174,7 @@ export function AudioOverviewSection({
   /** Refetch after batch card-audio prep so the coverage count is honest. */
   onCardsChanged?: () => void;
 }) {
+  useFlashcardMandates(["spokenFrontTts", "enrichCard", "helperTts"]);
   const { state, start, cancel, reset } = usePodcastRun();
   const [persisting, setPersisting] = useState(false);
   // Guards against double-persisting the same completed run — `state.status`
