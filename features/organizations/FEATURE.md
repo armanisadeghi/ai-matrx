@@ -284,6 +284,15 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-17` — **F-40b fix (Bugbot round 22, PR 228 comment 4042337969).**
+  `PartyPeek`'s catch block flattened the thrown error to `e.message` before
+  handing it to `AccessGate`, so `fetchPartyDetail`'s `RecordUnavailableError`
+  (a zero-row/RLS miss) always classified as a transient fault — the gate could
+  render "you can open this, try again" for a Person the caller is genuinely
+  denied. The catch now keeps the error OBJECT, matching every other peek kind
+  in `features/organizations/peek/kinds/` (none of which flatten a caught
+  error). Census: no sibling in that directory has the same pattern.
+  `PartyPeek.test.tsx` proves it red-then-green.
 - `2026-09-14` — The AI budget section (`OrgManage` `#ai-budget`) shows
   `OrgBatchSavings`: this organization's batch spend and savings for the last 30
   days from `batch.savings_summary` (RLS authorizes; the org id only scopes).

@@ -51,7 +51,11 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
   const [loading, setLoading] = React.useState(true);
   // A read that FAILED is not a record that is not there — the gate below says
   // which, and never reports an empty Person for data we could not read.
-  const [error, setError] = React.useState<string | null>(null);
+  // 🚨 The thrown error OBJECT is kept, never flattened to its `.message`:
+  // `fetchPartyDetail` throws `RecordUnavailableError` on a zero-row/RLS miss,
+  // and only `classifyDataError` (fed the real object) can tell that apart from
+  // a transient fault — a bare string always reads as a fault (Bugbot #4042337969).
+  const [error, setError] = React.useState<unknown>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -64,7 +68,7 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
       } catch (e) {
         if (!cancelled) {
           setDetail(null);
-          setError(e instanceof Error ? e.message : String(e));
+          setError(e);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -155,7 +159,7 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
         </>
       ) : (
         // Denied / deleted / missing / transient each render their TRUE state.
-        <AccessGate token="party" id={id} error={error ?? undefined} />
+        <AccessGate token="party" id={id} error={error} />
       )}
     </PeekDialog>
   );
