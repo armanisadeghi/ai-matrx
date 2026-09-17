@@ -48,6 +48,8 @@ vision: []
 8. ~~**Long cell text paints over the next column**~~ — FIXED 2026-09-17: the body cell clips (`overflow-hidden`) and `FormattedFieldValue` gives a truncating plain/markdown value a box so it ends in "…"; verified live on the Project Tracker example (Summary, Notes).
 9. **Dev-preview observation, not a product defect as far as known:** on the shared preview the route `/data/[id]` once fired hundreds of `?_rsc=` refetches (`ERR_INSUFFICIENT_RESOURCES`) around a Fast Refresh rebuild and fell back to a full navigation, losing an open dialog. Seen once; if it recurs on production it is a real bug (a `router.refresh`/prefetch loop).
 
+10. **Header right-click: what a spreadsheet user still expects** (independent reviewer, 2026-09-17, after the rename + menu-order work passed review as `fa5d2ad7-371f-4f62-9f01-70b3568bb2fd`): Freeze column, Duplicate column, Move column left/right, Resize / auto-fit width, Clear column contents, and Filter in the right-click menu (today it lives only in the header's small arrow menu). Each delegates to a handler the grid must already have or gain once — no new write path in `grid-context-menu.ts`.
+
 ## Done
 
 - Copy / cut / paste on a selected cell, block paste from Excel/Sheets, choice cell select-then-open — `grid-clipboard.ts`, `useGridSelection.ts`.
