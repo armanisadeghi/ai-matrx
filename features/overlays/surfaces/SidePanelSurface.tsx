@@ -183,7 +183,16 @@ export function SidePanelSurface({
         minSize={minPct}
         maxSize={maxPct}
         contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
-        className={cn("z-40")}
+        // 🚨 A DOCKED PANEL STARTS BELOW THE APP SHELL HEADER. The host's
+        // container is `fixed inset-y-0`, so every panel that uses this
+        // surface used to begin at y=0 and draw its own title row, id chip and
+        // icons on top of the shell header's right-hand cluster — the org
+        // switcher, search and avatar were under it and unclickable
+        // (VERIFY-U-P1, D3, seen on the Detail primitive's docked
+        // presentation). The padding is on the FIXED CONTAINER, so the panel
+        // card's `h-full` resolves against the remaining height: the class is
+        // fixed once here for every docked panel, not offset per panel.
+        className={cn("z-40 pt-[var(--header-height)]")}
       >
         {children}
       </MatrxDynamicPanelHost>
