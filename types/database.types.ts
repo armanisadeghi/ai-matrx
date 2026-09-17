@@ -89561,6 +89561,10 @@ export type Database = {
         }
         Returns: number
       }
+      _tm_live_topic_id: {
+        Args: { p_map_id: string; p_slug: string }
+        Returns: string
+      }
       _tm_map: {
         Args: {
           p_level: Database["public"]["Enums"]["permission_level"]
