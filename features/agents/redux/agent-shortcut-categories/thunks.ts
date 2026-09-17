@@ -34,6 +34,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -162,7 +163,14 @@ export const duplicateCategory = createAsyncThunk<
   // The route ADMITS the organization from the header and refuses without
   // one, so the selection is required here — the same way `createCategory`
   // carries `scopeFields.organizationId` — never a header with nothing in it.
-  const organizationId = requireSelectedOrgId();
+  // Spoken to the person and RETHROWN: the six dispatchers of this thunk
+  // show no refusal of their own, and a duplicate that quietly never appears
+  // is the silence this guard exists to stop.
+  const organizationId = await withOrganizationRefusalShown(
+    "duplicated",
+    async () => requireSelectedOrgId(),
+    { subject: "The category" },
+  );
 
   const body: Record<string, unknown> = {};
   if (typeof label === "string") body.label = label;

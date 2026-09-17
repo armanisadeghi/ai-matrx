@@ -11,7 +11,6 @@
     "features/agent-comparison/service/comparisonSetsService.ts",
     "features/agent-comparison/service/responseFeedbackService.ts",
     "features/agent-connections/redux/skl/thunks.ts",
-    "features/agent-shortcuts/resolveShortcutWriteScope.ts",
     "features/agents/agent-creators/services/agentBuilderService.ts",
     "features/agents/components/memory/service/agent-memory.service.ts",
     "features/agents/redux/agent-shortcuts/thunks.ts",
