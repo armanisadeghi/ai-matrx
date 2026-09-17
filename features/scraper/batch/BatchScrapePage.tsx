@@ -32,6 +32,15 @@
 //   - `parseUrlList` (`features/scraper/batch/parseUrlList.ts`) — the paste
 //     reader, already written for this surface.
 //
+// THE CAPTURE LADDER (2026-09-17, CONTRACT.md §8.2): this screen gained a
+// **Rung** column and a **Send the rest to my browser** action. A page that our
+// server cannot read is not a dead row any more — it is a row the server has
+// already decided the person's own logged-in Chrome could read, and the button
+// queues exactly those. The selection rule is NOT this file's: it is
+// `stoppedAtOwnBrowser` / `selectOwnBrowserUrls`, which refuse any row the
+// server did not mark `next_rung === "own_browser"`, because inferring the next
+// rung on the client is how a rung gets skipped.
+//
 // LIBRARY HAND-OFF: there is no scraped-content "Library" write path in this
 // repo (`features/source-library` is the YouTube/video Media Source Catalog —
 // a different noun for a different kind of source). Inventing a Library
@@ -67,6 +76,7 @@ import {
   RotateCw,
   ExternalLink,
   NotebookPen,
+  MonitorSmartphone,
 } from "lucide-react";
 import {
   useScraperApi,
@@ -78,10 +88,23 @@ import {
   describeParsedUrlList,
   BATCH_URL_CAP,
 } from "@/features/scraper/batch/parseUrlList";
+import {
+  describeRung,
+  stoppedAtOwnBrowser,
+  type LadderCandidate,
+} from "@/features/capture-ladder/ladderOutcome";
+import { sendUrlsToOwnBrowser } from "@/features/capture-ladder/sendToOwnBrowser";
+import { NEEDS_YOU_ROUTE } from "@/features/capture-ladder/NeedsYouTray";
 
 type RowStatus = "pending" | "success" | "failed";
 
-interface BatchRow {
+/**
+ * `LadderCandidate` is structural on purpose — a row only has to expose `url`
+ * and `ladder` for the ladder's own selection rule to judge it, and this table
+ * satisfying that interface is what lets the rule live in one place instead of
+ * being re-typed here as a filter over `result`.
+ */
+interface BatchRow extends LadderCandidate {
   url: string;
   status: RowStatus;
   result: BatchScrapeRow["result"];
@@ -89,7 +112,13 @@ interface BatchRow {
 }
 
 function toPending(url: string): BatchRow {
-  return { url, status: "pending", result: null, failureMessage: null };
+  return {
+    url,
+    status: "pending",
+    result: null,
+    failureMessage: null,
+    ladder: null,
+  };
 }
 
 function fromBatchRow(row: BatchScrapeRow): BatchRow {
@@ -98,6 +127,8 @@ function fromBatchRow(row: BatchScrapeRow): BatchRow {
     status: row.success ? "success" : "failed",
     result: row.result,
     failureMessage: row.failureMessage,
+    // The server's verdict, carried verbatim. `null` when it did not give one.
+    ladder: row.result?.ladder ?? null,
   };
 }
 
@@ -147,6 +178,7 @@ export default function BatchScrapePage() {
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [sendingToBrowser, setSendingToBrowser] = useState(false);
 
   // Guards a retry's callback against landing after a NEW full run started —
   // the row it would update may no longer exist in `rows` at all.
@@ -260,6 +292,43 @@ export default function BatchScrapePage() {
     [organizationId],
   );
 
+  // Every row the SERVER sent to rung 3. Not "every failure" — a 404 is a 404
+  // in anybody's browser, and offering to retry it in the person's own Chrome
+  // would be asking them to do something that cannot work.
+  const ownBrowserRows = useMemo(
+    () => rows.filter(stoppedAtOwnBrowser),
+    [rows],
+  );
+
+  const handleSendToOwnBrowser = useCallback(async () => {
+    setSendingToBrowser(true);
+    try {
+      await ensureOrganizationContext({ organizationId });
+      // Throws rather than return a row the server did not send to rung 3 —
+      // deliberately uncaught as a selection bug, caught here only so the
+      // person sees the sentence instead of a blank button.
+      const outcome = await sendUrlsToOwnBrowser(ownBrowserRows);
+      if (outcome.kind === "sent") {
+        toast.success(outcome.sentence);
+      } else if (outcome.kind === "nothing_to_send") {
+        toast.error(outcome.sentence);
+      } else {
+        // `not_available` and `refused` are both "nothing was queued" — said
+        // out loud, never a button that appears to work and does nothing.
+        toast.error(outcome.sentence);
+      }
+    } catch (error) {
+      if (isOrganizationSelectionCancelled(error)) return;
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Nothing was sent to your browser and we could not say why.",
+      );
+    } finally {
+      setSendingToBrowser(false);
+    }
+  }, [organizationId, ownBrowserRows]);
+
   const columns: MatrxColumnDef<BatchRow>[] = [
     {
       accessorKey: "url",
@@ -287,17 +356,61 @@ export default function BatchScrapePage() {
     {
       id: "size",
       header: "Chars / Words",
-      accessorFn: (row) => row.result?.contentChars ?? row.result?.overview.char_count ?? null,
+      accessorFn: (row) =>
+        row.result?.contentChars ?? row.result?.overview.char_count ?? null,
       cell: (row) => {
         const chars =
           row.result?.contentChars ?? row.result?.overview.char_count ?? null;
-        if (chars == null) return <span className="text-muted-foreground">—</span>;
+        if (chars == null)
+          return <span className="text-muted-foreground">—</span>;
         const words = wordCount(chars);
         return (
           <span className="text-sm text-muted-foreground">
             {chars.toLocaleString()} chars
             {words != null ? ` · ${words.toLocaleString()} words` : ""}
           </span>
+        );
+      },
+    },
+    {
+      id: "rung",
+      header: "Rung",
+      filter: false,
+      cell: (row) => {
+        if (row.status === "pending") {
+          return <span className="text-xs text-muted-foreground">—</span>;
+        }
+        const rung = describeRung(row.ladder, row.status === "success");
+        // The server said nothing about the ladder. Say nothing — never invent
+        // a rung nobody ran. (Every response from before the ladder build, and
+        // every response until the aidream ladder half deploys.)
+        if (!rung) {
+          return (
+            <span
+              className="text-xs text-muted-foreground"
+              title="This server has not told us which step read this page."
+            >
+              Not said
+            </span>
+          );
+        }
+        return (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-xs font-medium text-foreground">
+              {rung.reached}
+            </span>
+            {rung.next ? (
+              <span
+                className={
+                  rung.waitingOnYou
+                    ? "text-[11px] text-amber-700 dark:text-amber-400"
+                    : "text-[11px] text-muted-foreground"
+                }
+              >
+                {rung.next}
+              </span>
+            ) : null}
+          </div>
         );
       },
     },
@@ -392,60 +505,95 @@ export default function BatchScrapePage() {
               </p>
             </div>
           ) : (
-            <MatrxDataTable<BatchRow>
-              tableId="scraper-batch-results"
-              data={rows}
-              columns={columns}
-              getRowId={(row) => row.url}
-              isLoading={rows.length === 0 && isLoading}
-              isFetching={isLoading}
-              viewTabs={false}
-              hidePagination={rows.length <= 25}
-              density="condensed"
-              rowActions={(row) =>
-                row.status === "failed" ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 text-xs"
-                    disabled={retrying.has(row.url) || isLoading}
-                    onClick={() => void handleRetry(row.url)}
-                  >
-                    {retrying.has(row.url) ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RotateCw className="h-3 w-3" />
-                    )}
-                    Retry
-                  </Button>
-                ) : null
-              }
-              selection={{
-                selectedIds,
-                onSelectedIdsChange: setSelectedIds,
-                isRowSelectable: (row) => row.status === "success",
-                noun: "page",
-                actions: (selected) => (
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs"
-                    disabled={saving}
-                    onClick={() => void handleSaveSelectedToNotes(selected)}
-                  >
-                    {saving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <NotebookPen className="h-3.5 w-3.5" />
-                    )}
-                    Save selected to Notes
-                  </Button>
-                ),
-              }}
-              emptyState={{
-                title: "No pages yet",
-                description: "Paste links above and press Scrape.",
-              }}
-            />
+            <div className="flex h-full min-h-0 flex-col gap-2">
+              {/* ABSENT when nothing stopped at the person's own browser — not
+                  a greyed button that looks broken. The one honest state for
+                  "there is nothing to send" is no control at all. */}
+              {ownBrowserRows.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-3 py-2">
+                  <p className="min-w-0 text-xs text-amber-800 dark:text-amber-300">
+                    {ownBrowserRows.length === 1
+                      ? "1 page would not open for us, but it should open in your own browser — you are already signed in there."
+                      : `${ownBrowserRows.length} pages would not open for us, but they should open in your own browser — you are already signed in there.`}
+                  </p>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <a
+                      href={NEEDS_YOU_ROUTE}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      What is already waiting
+                    </a>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      disabled={sendingToBrowser}
+                      onClick={() => void handleSendToOwnBrowser()}
+                    >
+                      {sendingToBrowser ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <MonitorSmartphone className="h-3.5 w-3.5" />
+                      )}
+                      Send the rest to my browser
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              <MatrxDataTable<BatchRow>
+                tableId="scraper-batch-results"
+                data={rows}
+                columns={columns}
+                getRowId={(row) => row.url}
+                isLoading={rows.length === 0 && isLoading}
+                isFetching={isLoading}
+                viewTabs={false}
+                hidePagination={rows.length <= 25}
+                density="condensed"
+                rowActions={(row) =>
+                  row.status === "failed" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={retrying.has(row.url) || isLoading}
+                      onClick={() => void handleRetry(row.url)}
+                    >
+                      {retrying.has(row.url) ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RotateCw className="h-3 w-3" />
+                      )}
+                      Retry
+                    </Button>
+                  ) : null
+                }
+                selection={{
+                  selectedIds,
+                  onSelectedIdsChange: setSelectedIds,
+                  isRowSelectable: (row) => row.status === "success",
+                  noun: "page",
+                  actions: (selected) => (
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      disabled={saving}
+                      onClick={() => void handleSaveSelectedToNotes(selected)}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <NotebookPen className="h-3.5 w-3.5" />
+                      )}
+                      Save selected to Notes
+                    </Button>
+                  ),
+                }}
+                emptyState={{
+                  title: "No pages yet",
+                  description: "Paste links above and press Scrape.",
+                }}
+              />
+            </div>
           )}
         </div>
       </div>

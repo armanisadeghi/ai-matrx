@@ -46,6 +46,8 @@ import type {
 } from "@/features/scraper/types/scraper-api";
 import { asScrapeEngine, asContentWarning } from "@/features/scraper/types/scraper-api";
 import type { ContentWarning } from "@/features/scraper/types/scraper-api";
+import { readLadderOutcome } from "@/features/capture-ladder/ladderOutcome";
+import type { LadderOutcome } from "@/features/capture-ladder/types";
 
 /** Standalone scraper service mounts the package router below `/api`. */
 export function scraperServiceEndpoint(endpoint: string): string {
@@ -124,6 +126,18 @@ export interface ScraperResult {
   contentChars: number | null;
   /** True when a configured proxy was skipped/bypassed for this row. */
   proxyBypassed: boolean | null;
+  /**
+   * THE CAPTURE LADDER's verdict on this row — which rungs ran, which one comes
+   * next and why, or why nothing does. `null` when the backend said nothing
+   * about the ladder at all, which is every response older than the ladder
+   * build. See `features/capture-ladder/ladderOutcome.ts` and
+   * `common-docs/projects/acquisition-frontier/extension-ladder/CONTRACT.md` §2.
+   *
+   * Never inferred from `escalated`/`escalationReason`: those describe rung 1 →
+   * rung 2 only, and guessing the rest on the client is exactly how a rung gets
+   * skipped.
+   */
+  ladder: LadderOutcome | null;
 }
 
 export interface ScraperApiState {
@@ -748,6 +762,7 @@ function mapToScraperResult(
         : null,
     proxyBypassed:
       typeof raw.proxy_bypassed === "boolean" ? raw.proxy_bypassed : null,
+    ladder: readLadderOutcome(raw),
   };
 }
 
