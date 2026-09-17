@@ -275,6 +275,17 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **The capability census grew a RENDER leg (V13-3, second half).**
+  The first census proved a declared capability had a product row and its resource
+  types were attachable; it could not see that `google_presentation` was
+  attachable and unrenderable at once. `capability-keys-are-the-servers-keys.test.ts`
+  now also reads the server's `eligible_resource_types` and its
+  `ResourceType` union and fails, by name, on a type the client cannot list, name
+  or open — measured against `features/google-workspace/resource-types.ts` (the one
+  file-type record) and `features/marketing/google/types.ts` (the one
+  connection-resource-type list). Both new legs announce UNMEASURED when the
+  sibling aidream checkout is absent, like the rest of the file.
+
 - `2026-09-17` — **VERIFY-U-P2-R4 answered: V13-1, V13-2, V13-3, V13-4, V13-5 and
   the client half of V13-6.** The verifier's verdict was REOPEN, and every one of
   those is now fixed at the class with a census or a branch enumeration behind it

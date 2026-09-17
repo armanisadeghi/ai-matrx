@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import {
-  ExternalLink,
-  FileText,
-  Loader2,
-  Mail,
-  Plus,
-  Table2,
-} from "lucide-react";
+import { ExternalLink, Loader2, Mail, Plus } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { toast, recordToast } from "@/lib/toast";
@@ -27,6 +20,11 @@ import {
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
 import { registerSelectedGoogleFile } from "@/features/google-workspace/service";
+import {
+  googleWorkspaceFileType,
+  googleWorkspacePickLabel,
+} from "@/features/google-workspace/resource-types";
+import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import {
   eligibleGoogleConnections,
@@ -120,12 +118,11 @@ function GoogleWorkspaceConnectBodyContent({
   );
   const files = useMemo(() => {
     const rows = inventory.data?.resources ?? [];
-    return rows.filter(
-      (row) =>
-        row.connection_id === connection?.id &&
-        (row.resource_type === "google_document" ||
-          row.resource_type === "google_spreadsheet"),
-    );
+    // The file types come from the ONE record, so a type the server ships is
+    // never filtered out of a person's own connected-files list (V13-3).
+    return rows
+      .filter((row) => row.connection_id === connection?.id)
+      .filter(isGoogleWorkspaceFileRow);
   }, [connection?.id, inventory.data?.resources]);
 
   const selectConnection = useCallback((connectionId: string) => {
@@ -359,15 +356,19 @@ function GoogleWorkspaceConnectBodyContent({
                   : "Opening Google…"
                 : mode === "drive-import"
                   ? "Choose files to import"
-                  : "Choose a Doc or Sheet"}
+                  : googleWorkspacePickLabel()}
             </Button>
 
             {mode === "workspace" && files.length ? (
               <div className="overflow-hidden rounded-md border border-border">
                 {files.map((file) => {
-                  const isSheet = file.resource_type === "google_spreadsheet";
-                  const link = file.metadata?.web_view_link;
-                  const Icon = isSheet ? Table2 : FileText;
+                  const fileType = googleWorkspaceFileType(file.resource_type);
+                  const link =
+                    typeof file.metadata?.web_view_link === "string" &&
+                    file.metadata.web_view_link
+                      ? file.metadata.web_view_link
+                      : fileType.hrefFor(file.resource_ref);
+                  const Icon = fileType.icon;
                   return (
                     <div
                       key={file.id}
@@ -375,11 +376,7 @@ function GoogleWorkspaceConnectBodyContent({
                       className="flex items-center gap-2 border-b border-border/60 px-2.5 py-1.5 last:border-b-0"
                     >
                       <Icon
-                        className={
-                          isSheet
-                            ? "h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                            : "h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400"
-                        }
+                        className={`h-4 w-4 shrink-0 ${fileType.iconClassName}`}
                       />
                       <span className="truncate text-sm text-foreground">
                         {file.display_name}

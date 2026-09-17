@@ -18,7 +18,13 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ExternalLink, FileText, Loader2, Plus, Table2 } from "lucide-react";
+import { ExternalLink, Loader2, Plus } from "lucide-react";
+import {
+  googleWorkspaceFileType,
+  googleWorkspacePickLabel,
+  type GoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
+import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
@@ -34,7 +40,16 @@ import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 export interface GoogleResourcePickerProps {
   onBack: () => void;
   /** Called with the file ids the user attached. */
-  onSelect: (file: { fileId: string; name: string; isSheet: boolean }) => void;
+  /**
+   * The picked file, carrying its REAL type. It used to carry `isSheet: boolean`
+   * — a boolean cannot say "Slides deck", so a third file type would have been
+   * attached to the conversation as a Sheet.
+   */
+  onSelect: (file: {
+    fileId: string;
+    name: string;
+    resourceType: GoogleWorkspaceResourceType;
+  }) => void;
   /** File ids already attached to this message, so they read as attached. */
   attachedFileIds?: readonly string[];
 }
@@ -67,12 +82,9 @@ export function GoogleResourcePicker({
 
   const files = useMemo(
     () =>
-      (inventory.data?.resources ?? []).filter(
-        (row) =>
-          row.connection_id === selectedConnection?.id &&
-          (row.resource_type === "google_document" ||
-            row.resource_type === "google_spreadsheet"),
-      ),
+      (inventory.data?.resources ?? [])
+        .filter((row) => row.connection_id === selectedConnection?.id)
+        .filter(isGoogleWorkspaceFileRow),
     [inventory.data?.resources, selectedConnection?.id],
   );
 
@@ -130,16 +142,20 @@ export function GoogleResourcePicker({
               </p>
               <Button size="sm" variant="outline" onClick={connect}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Choose a Doc or Sheet
+                {googleWorkspacePickLabel()}
               </Button>
             </div>
           ) : (
             <>
               <div className="max-h-64 overflow-y-auto">
                 {files.map((file) => {
-                  const isSheet = file.resource_type === "google_spreadsheet";
-                  const Icon = isSheet ? Table2 : FileText;
-                  const link = file.metadata?.web_view_link;
+                  const fileType = googleWorkspaceFileType(file.resource_type);
+                  const Icon = fileType.icon;
+                  const link =
+                    typeof file.metadata?.web_view_link === "string" &&
+                    file.metadata.web_view_link
+                      ? file.metadata.web_view_link
+                      : fileType.hrefFor(file.resource_ref);
                   const isAttached = attached.has(file.resource_ref);
                   return (
                     <div
@@ -154,7 +170,7 @@ export function GoogleResourcePicker({
                           onSelect({
                             fileId: file.resource_ref,
                             name: file.display_name,
-                            isSheet,
+                            resourceType: file.resource_type,
                           });
                         }}
                         className={cn(
@@ -165,9 +181,7 @@ export function GoogleResourcePicker({
                         <Icon
                           className={cn(
                             "h-4 w-4 shrink-0",
-                            isSheet
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-sky-600 dark:text-sky-400",
+                            fileType.iconClassName,
                           )}
                         />
                         <span className="truncate text-sm text-foreground">

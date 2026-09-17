@@ -1,5 +1,12 @@
-export type GoogleWorkspaceResourceType =
-  "google_document" | "google_spreadsheet";
+/**
+ * The file types are DECLARED ONCE, in `./resource-types.ts`, together with
+ * everything a surface needs to draw one. This union used to be a hand-typed
+ * pair here, which is how `google_presentation` — a type the server has shipped
+ * and already registered live — reached the attach call and then had nowhere to
+ * render (V13-3).
+ */
+export type { GoogleWorkspaceResourceType } from "./resource-types";
+import type { GoogleWorkspaceResourceType } from "./resource-types";
 
 export interface SelectedGoogleFile {
   id: string;

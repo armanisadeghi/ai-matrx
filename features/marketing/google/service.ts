@@ -16,6 +16,7 @@ import type {
   TagManagerInventory,
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
+import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -237,13 +238,12 @@ function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
 export function connectionResource(
   row: GoogleConnectionResourceRow,
 ): GoogleConnectionResource {
-  if (
-    row.resource_type !== "search_console_property" &&
-    row.resource_type !== "analytics_property" &&
-    row.resource_type !== "youtube_channel" &&
-    row.resource_type !== "google_document" &&
-    row.resource_type !== "google_spreadsheet"
-  ) {
+  // The set is DERIVED (`GOOGLE_CONNECTION_RESOURCE_TYPES`), never re-typed
+  // here: this guard hand-listed five types, so the `google_presentation` row
+  // the server registers threw and one deck emptied every Google surface in the
+  // app. It still throws on a genuinely unknown type — that is a row shape we
+  // cannot render, and a silent drop would hide the connected resource.
+  if (!isGoogleConnectionResourceType(row.resource_type)) {
     throw new Error(
       `Unknown Google connection resource type: ${row.resource_type}`,
     );

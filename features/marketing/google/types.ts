@@ -1,3 +1,7 @@
+import {
+  GOOGLE_WORKSPACE_RESOURCE_TYPES,
+  type GoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
 import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -56,20 +60,67 @@ export type GoogleConnectionHealth = "connected" | "needs_reauth" | "revoked";
 export type GoogleCapabilityMetadata =
   components["schemas"]["GoogleCapabilityMetadata"];
 
+/**
+ * The resource types that are NOT Picker-chosen Workspace files — each
+ * discovered from the provider's own API rather than chosen by a person.
+ */
+const GOOGLE_MARKETING_RESOURCE_TYPES = [
+  "search_console_property",
+  "analytics_property",
+  "youtube_channel",
+] as const;
+
+/**
+ * EVERY resource type a `users.integration_connection_resources` row may carry
+ * for Google. The Workspace half is spread from the ONE file-type record
+ * (`features/google-workspace/resource-types.ts`) rather than re-typed here:
+ * this union used to hand-list "google_document | google_spreadsheet", so the
+ * `google_presentation` row the server had already registered made
+ * `connectionResource` THROW and took the entire inventory read — accounts,
+ * properties, channels and files alike — down with it (V13-3).
+ */
+export type GoogleConnectionResourceType =
+  | (typeof GOOGLE_MARKETING_RESOURCE_TYPES)[number]
+  | GoogleWorkspaceResourceType;
+
+export const GOOGLE_CONNECTION_RESOURCE_TYPES: readonly GoogleConnectionResourceType[] =
+  [...GOOGLE_MARKETING_RESOURCE_TYPES, ...GOOGLE_WORKSPACE_RESOURCE_TYPES];
+
+export function isGoogleConnectionResourceType(
+  value: unknown,
+): value is GoogleConnectionResourceType {
+  return (
+    typeof value === "string" &&
+    (GOOGLE_CONNECTION_RESOURCE_TYPES as readonly string[]).includes(value)
+  );
+}
+
 export interface GoogleConnectionResource {
   id: string;
   connection_id: string;
-  resource_type:
-    | "search_console_property"
-    | "analytics_property"
-    | "youtube_channel"
-    | "google_document"
-    | "google_spreadsheet";
+  resource_type: GoogleConnectionResourceType;
   resource_ref: string;
   display_name: string;
   permission_level: string | null;
   discovered_at: string;
   metadata: Record<string, unknown>;
+}
+
+/**
+ * Is this connected-resource row one of the Workspace files a person picks
+ * through Google Picker? THE ONE narrowing predicate — every list, icon and
+ * detail that switches on a file type goes through it, so adding a file type to
+ * `features/google-workspace/resource-types.ts` widens all of them at once
+ * instead of leaving a fourth surface filtering it out.
+ */
+export function isGoogleWorkspaceFileRow(
+  row: GoogleConnectionResource,
+): row is GoogleConnectionResource & {
+  resource_type: GoogleWorkspaceResourceType;
+} {
+  return (GOOGLE_WORKSPACE_RESOURCE_TYPES as readonly string[]).includes(
+    row.resource_type,
+  );
 }
 
 export interface GoogleConnectionInventory {

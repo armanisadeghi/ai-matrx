@@ -7,6 +7,7 @@ import type {
   ReviewedGmailReceipt,
   SelectedGoogleFile,
 } from "@/features/google-workspace/types";
+import { isGoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 
 export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
 
@@ -84,8 +85,7 @@ export interface GoogleWriteProposed {
 }
 
 export type GoogleWriteOutcome<T> =
-  | { proposed: false; result: T }
-  | GoogleWriteProposed;
+  { proposed: false; result: T } | GoogleWriteProposed;
 
 /** The door to the queued proposal. One place builds it. */
 export function approvalQueueHref(assistId: string): string {
@@ -132,11 +132,15 @@ export async function registerSelectedGoogleFile(
 
 function selectedFile(body: Record<string, unknown>): SelectedGoogleFile {
   const resourceType = requiredString(body, "resource_type");
-  if (
-    resourceType !== "google_document" &&
-    resourceType !== "google_spreadsheet"
-  ) {
-    throw new Error("Google Workspace returned an unsupported file type.");
+  // Measured against the ONE record, not a hand-typed pair: a Slides deck the
+  // server happily registers used to be answered "unsupported file type" here
+  // while the row it had just written sat in the person's connected files
+  // (V13-3). A type this client genuinely cannot render still refuses — loudly,
+  // and naming what came back.
+  if (!isGoogleWorkspaceResourceType(resourceType)) {
+    throw new Error(
+      `Google Workspace returned a file type this screen cannot show yet (${resourceType}). Open the file in Google, and tell us so we can add it.`,
+    );
   }
   const webViewLink = body.web_view_link;
   if (webViewLink !== null && typeof webViewLink !== "string") {

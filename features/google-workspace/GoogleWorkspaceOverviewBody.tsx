@@ -25,6 +25,8 @@ import {
   type GoogleCapabilityKey,
 } from "@/features/marketing/google/service";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
+import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
+import { googleWorkspaceFileType } from "@/features/google-workspace/resource-types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
   GoogleCapabilityMetadata,
@@ -681,10 +683,12 @@ function UnavailableRequestedAccount({
 function googleResourceHref(resource: GoogleConnectionResource): string {
   const storedLink = resource.metadata.web_view_link;
   if (typeof storedLink === "string" && storedLink) return storedLink;
-  if (resource.resource_type === "google_document")
-    return `https://docs.google.com/document/d/${encodeURIComponent(resource.resource_ref)}/edit`;
-  if (resource.resource_type === "google_spreadsheet")
-    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(resource.resource_ref)}/edit`;
+  // Workspace files get their door from the ONE file-type record, so a type the
+  // server adds cannot fall through to the Search Console URL below (V13-3).
+  if (isGoogleWorkspaceFileRow(resource))
+    return googleWorkspaceFileType(resource.resource_type).hrefFor(
+      resource.resource_ref,
+    );
   if (resource.resource_type === "youtube_channel")
     return `https://www.youtube.com/channel/${encodeURIComponent(resource.resource_ref)}`;
   if (resource.resource_type === "analytics_property")

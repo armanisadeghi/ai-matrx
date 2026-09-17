@@ -139,6 +139,30 @@ attachment it cannot open. Server half:
 
 ## Invariants
 
+- 🚨 **THE FILE TYPES ARE DECLARED ONCE — `resource-types.ts`.**
+  `GOOGLE_WORKSPACE_FILE_TYPES` is the ONE record of every file type a person can
+  pick through Google Picker, and it carries everything a surface needs to draw
+  one: the person-facing label, the Lucide icon and its accent, the door at
+  Google (`hrefFor`), which read THIS CLIENT has (`clientRead`), whether it can
+  be written (`writable`), and the honest sentence to show when it cannot be read
+  here (`readOnlyNote`). Every list filter goes through `isGoogleWorkspaceFileRow`
+  (declared once, in `features/marketing/google/types.ts`, beside the row type);
+  every icon, name, door and detail comes from the record. **Never a hand-typed
+  `"google_document" | "google_spreadsheet"` and never `isSheet: boolean`** — a
+  boolean cannot say "Slides deck". A file type whose `clientRead` is `null` NEVER
+  falls through to another type's reader: the old `if (Doc) … else sheet` asked
+  the Sheets API for a presentation id and showed Google's error as though the
+  person's deck were broken. Guards: `features/connectors/__tests__/capability-keys-are-the-servers-keys.test.ts`
+  censuses the record against the server's own `eligible_resource_types` and
+  `ResourceType` union in the sibling aidream checkout (UNMEASURED, out loud, when
+  that checkout is absent), and `a-connected-deck-has-a-row-and-a-door.test.tsx`
+  proves a `google_presentation` row is listed by name, opens, and gets an honest
+  read-only detail. Why: `slides` has been an `available` capability with
+  `eligible_resource_types = ("google_presentation",)` and a live successful
+  `slides.read` call, while six hand-typed pairs in this repo had never heard of
+  it — so a picked deck was accepted by the attach call and then had no row, no
+  name and no door, and `connectionResource` THREW on the row, emptying every
+  Google surface in the app (V13-3).
 - 🚨 **A WRITE MAY COME BACK AS A PROPOSAL, AND EVERY CALLER SAYS SO.** The four
   direct write calls in `service.ts` — `documents/create`, `sheets/create`,
   `documents/append`, `sheets/write` — return `GoogleWriteOutcome<T>`: either the
@@ -197,6 +221,24 @@ attachment it cannot open. Server half:
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-17` — **A Slides deck a person picks now has a row, a name, a door and
+  an honest detail (V13-3, client half).** The file types moved into ONE record,
+  `resource-types.ts`, and the six hand-typed `google_document |
+  google_spreadsheet` pairs were replaced by it: the review workspace's list
+  filter, icon, kind label and door; the connect body's connected-files list and
+  its pick-button copy (derived, so a new type cannot leave "Choose a Doc or
+  Sheet" behind); the chat resource picker's list, icon and its `isSheet: boolean`
+  handoff (now the real `resourceType`); `service.ts`'s registered-file guard;
+  `GoogleWorkspaceOverviewBody`'s door builder; and — the sharpest one —
+  `features/marketing/google/service.ts`'s `connectionResource`, which threw on a
+  deck and so took the WHOLE inventory read (accounts, properties, channels,
+  files) down with it. A file type with no client reader gets a read-only detail
+  that shows only facts the row really holds (name, kind, last edited in Google,
+  how it entered, when it was connected) plus **Open in Google**, and its Read
+  button now refuses by name instead of calling the Sheets API with a
+  presentation id. The door on a file row is no longer conditional on a stored
+  `web_view_link` — the type's canonical URL always exists.
 
 - `2026-09-17` — **one recipient parser, and the reviewed send says who it
   reached** (lane F-25, closing the seam F-20 flagged plus aidream lane B-10's

@@ -37,6 +37,12 @@ import {
   parseGoogleCapabilityHealth,
 } from "../google-capability-health";
 import { productHealth, type ConnectorCapabilityRollout } from "../health";
+import {
+  GOOGLE_WORKSPACE_FILE_TYPES,
+  GOOGLE_WORKSPACE_RESOURCE_TYPES,
+  isGoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
+import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
 
 const AIDREAM_ROOT =
   process.env.AIDREAM_DIR ?? join(process.cwd(), "..", "aidream");
@@ -256,4 +262,117 @@ describe("the live slides success on the row that now carries it", () => {
     // The capability key itself never reaches the person (D6).
     expect(`${row.reason} ${row.label} ${row.remedy ?? ""}`).not.toContain("slides");
   });
+});
+
+/**
+ * THE OTHER HALF OF V13-3, MEASURED: a resource type the server declares and
+ * this client cannot RENDER.
+ *
+ * The first census above proves the type is attachable — that a product row
+ * grants it. That is not enough, and the gap is what shipped on 2026-09-17:
+ * `google_presentation` was attachable (lane F-32 added it to
+ * `workspace_files.attachableResourceTypes`) while
+ * `features/google-workspace`'s hand-typed pair had never heard of it, so the
+ * deck was accepted by the attach call and then had no row, no icon, no name
+ * and no door — and `features/marketing/google/service.ts`'s resource guard
+ * THREW on it, taking the whole Google inventory read down with it.
+ *
+ * This leg reads the server's `eligible_resource_types` for every SURFACED
+ * capability and demands a renderer entry in the ONE client record
+ * (`features/google-workspace/resource-types.ts`). It fails, by name, on a type
+ * the server declares that a surface could not draw — including a type added to
+ * `capabilities.py` tomorrow.
+ */
+describe("every file type the server declares can be rendered", () => {
+  it("keeps the client record and the provider's attachable set identical", () => {
+    const workspace = GOOGLE_CONNECTOR_PROVIDER.products.find(
+      (product) => product.key === "workspace_files",
+    )!;
+    expect([...GOOGLE_WORKSPACE_RESOURCE_TYPES].sort()).toEqual(
+      [...workspace.attachableResourceTypes].sort(),
+    );
+  });
+
+  it("gives every rendered type a person-facing name that is not the wire token", () => {
+    for (const type of GOOGLE_WORKSPACE_RESOURCE_TYPES) {
+      const descriptor = GOOGLE_WORKSPACE_FILE_TYPES[type];
+      expect(descriptor.label.length).toBeGreaterThan(0);
+      expect(descriptor.label).not.toContain("_");
+      // A type with no client read must SAY so; a blank detail is the dead end.
+      if (descriptor.clientRead === null) {
+        expect(descriptor.readOnlyNote?.length ?? 0).toBeGreaterThan(20);
+      }
+      // And the door always exists, read or no read.
+      expect(descriptor.hrefFor("1AbC")).toMatch(/^https:\/\//);
+    }
+  });
+
+  (hasServer ? it : it.skip)(
+    "knows every resource type a surfaced capability is eligible for",
+    () => {
+      // A type this list has never heard of makes `connectionResource` throw,
+      // and ONE such row empties every Google surface in the app.
+      const unknown: string[] = [];
+      for (const [key, types] of resourceTypesFromServer()) {
+        if (key in NOT_SURFACED) continue;
+        for (const type of types) {
+          if (!isGoogleConnectionResourceType(type)) {
+            unknown.push(
+              `${key} is eligible for '${type}', which features/marketing/google/types.ts does not list — one such row throws and takes the whole Google inventory read with it`,
+            );
+          }
+        }
+      }
+      expect(unknown).toEqual([]);
+    },
+  );
+
+  (hasServer ? it : it.skip)(
+    "can render every file type the Workspace-files product can attach",
+    () => {
+      const workspace = GOOGLE_CONNECTOR_PROVIDER.products.find(
+        (product) => product.key === "workspace_files",
+      )!;
+      const unrenderable: string[] = [];
+      for (const [key, types] of resourceTypesFromServer()) {
+        if (!workspace.capabilityKeys.includes(key)) continue;
+        for (const type of types) {
+          if (!isGoogleWorkspaceResourceType(type)) {
+            unrenderable.push(
+              `${key} is eligible for '${type}', which features/google-workspace/resource-types.ts cannot render — a person who picks one gets no row, no name and no door`,
+            );
+          }
+        }
+      }
+      expect(unrenderable).toEqual([]);
+    },
+  );
+
+  (hasServer ? it : it.skip)(
+    "renders exactly the file types the server's ResourceType union declares",
+    () => {
+      const serviceSource = join(
+        AIDREAM_ROOT,
+        "aidream",
+        "services",
+        "google_workspace",
+        "service.py",
+      );
+      if (!existsSync(serviceSource)) {
+        console.warn(
+          `UNMEASURED: ${serviceSource} is absent, so the client's file-type` +
+            " record was not measured against the server's ResourceType union.",
+        );
+        return;
+      }
+      const union = readFileSync(serviceSource, "utf8").match(
+        /ResourceType = Literal\[([^\]]*)\]/,
+      );
+      expect(union).not.toBeNull();
+      const declared = [...union![1]!.matchAll(/"([a-z0-9_]+)"/g)]
+        .map((m) => m[1]!)
+        .sort();
+      expect([...GOOGLE_WORKSPACE_RESOURCE_TYPES].sort()).toEqual(declared);
+    },
+  );
 });

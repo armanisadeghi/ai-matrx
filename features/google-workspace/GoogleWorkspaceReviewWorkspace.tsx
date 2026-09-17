@@ -8,7 +8,6 @@ import {
   ChevronDown,
   CircleAlert,
   ExternalLink,
-  FileSpreadsheet,
   FileText,
   Loader2,
   LockKeyhole,
@@ -46,6 +45,12 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
+import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
+import {
+  googleWorkspaceFileType,
+  googleWorkspacePickLabel,
+  type GoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
 import {
   DEFAULT_GOOGLE_SHEET_RANGE,
   SENT_FOR_APPROVAL_MESSAGE,
@@ -93,14 +98,23 @@ function hasScope(connection: GoogleConnectionSummary, scope: string): boolean {
   return connection.scopes.includes(scope);
 }
 
-function workspaceResource(
-  resource: GoogleConnectionResource,
-): resource is GoogleConnectionResource & {
-  resource_type: "google_document" | "google_spreadsheet";
-} {
+/**
+ * THE PREDICATE IS SHARED (`isGoogleWorkspaceFileRow`). It used to be a local
+ * hand-typed pair here, which is how a Slides deck the server had already
+ * registered was filtered out of this list — a connected, named file with no
+ * row and no door (V13-3).
+ */
+/** The door at Google: the row's own stored link, or the type's canonical URL. */
+function resourceDoor(
+  resource: GoogleConnectionResource & {
+    resource_type: GoogleWorkspaceResourceType;
+  },
+): string {
   return (
-    resource.resource_type === "google_document" ||
-    resource.resource_type === "google_spreadsheet"
+    metadataLink(resource) ??
+    googleWorkspaceFileType(resource.resource_type).hrefFor(
+      resource.resource_ref,
+    )
   );
 }
 
@@ -184,11 +198,9 @@ export function GoogleWorkspaceReviewWorkspace({
   };
   const selectedResources = useMemo(
     () =>
-      (inventory.data?.resources ?? []).filter(
-        (resource) =>
-          resource.connection_id === effectiveConnectionId &&
-          workspaceResource(resource),
-      ),
+      (inventory.data?.resources ?? [])
+        .filter((resource) => resource.connection_id === effectiveConnectionId)
+        .filter(isGoogleWorkspaceFileRow),
     [effectiveConnectionId, inventory.data?.resources],
   );
   const selectedResource = useMemo(
@@ -279,8 +291,19 @@ export function GoogleWorkspaceReviewWorkspace({
 
   const readSelected = () => {
     if (!activeConnection || !selectedResource) return;
+    const fileType = googleWorkspaceFileType(selectedResource.resource_type);
+    // A file type with no client read NEVER falls through to the Sheets
+    // reader. That fall-through is what the old `if Doc … else sheet` did to a
+    // Slides deck: it asked the Sheets API for a presentation id and showed
+    // Google's error as if the deck were broken.
+    if (fileType.clientRead === null) {
+      toast.info(`${fileType.label}s cannot be read on this screen yet.`, {
+        description: fileType.readOnlyNote ?? undefined,
+      });
+      return;
+    }
     void run("read-file", async () => {
-      if (selectedResource.resource_type === "google_document") {
+      if (fileType.clientRead === "document") {
         const result = await readGoogleDocument(
           activeConnection.id,
           selectedResource.resource_ref,
@@ -321,8 +344,15 @@ export function GoogleWorkspaceReviewWorkspace({
 
   const writeSelected = () => {
     if (!activeConnection || !selectedResource) return;
+    const fileType = googleWorkspaceFileType(selectedResource.resource_type);
+    if (!fileType.writable) {
+      toast.info(`AI Matrx does not write to ${fileType.label}s.`, {
+        description: fileType.readOnlyNote ?? undefined,
+      });
+      return;
+    }
     void run("write-file", async () => {
-      if (selectedResource.resource_type === "google_document") {
+      if (fileType.clientRead === "document") {
         const outcome = await appendGoogleDocument(
           activeConnection.id,
           selectedResource.resource_ref,
@@ -629,7 +659,7 @@ export function GoogleWorkspaceReviewWorkspace({
                     Test the file connection
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Choose one Doc or Sheet, then try a read or update.
+                    Choose a file, then try a read or update.
                   </span>
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -652,7 +682,7 @@ export function GoogleWorkspaceReviewWorkspace({
                     {busy === "pick-file" && (
                       <Loader2 className="animate-spin" />
                     )}
-                    Choose a Doc or Sheet
+                    {googleWorkspacePickLabel()}
                   </Button>
                 </div>
                 {selectedResources.length === 0 ? (
@@ -663,7 +693,15 @@ export function GoogleWorkspaceReviewWorkspace({
                   <>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {selectedResources.map((resource) => {
-                        const link = metadataLink(resource);
+                        const fileType = googleWorkspaceFileType(
+                          resource.resource_type,
+                        );
+                        const FileIcon = fileType.icon;
+                        // Never conditional: a named file always opens. The row
+                        // used to hide this link whenever the stored
+                        // `web_view_link` was absent, which is a dead end on a
+                        // record we can address by id.
+                        const link = resourceDoor(resource);
                         const selected = resource.id === selectedResourceId;
                         return (
                           <div
@@ -679,34 +717,28 @@ export function GoogleWorkspaceReviewWorkspace({
                               onClick={() => setSelectedResourceId(resource.id)}
                               className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
                             >
-                              {resource.resource_type === "google_document" ? (
-                                <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
-                              ) : (
-                                <FileSpreadsheet className="mt-0.5 h-5 w-5 text-emerald-600" />
-                              )}
+                              <FileIcon
+                                className={`mt-0.5 h-5 w-5 ${fileType.iconClassName}`}
+                              />
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm font-medium">
                                   {resource.display_name}
                                 </span>
                                 <span className="block text-xs text-muted-foreground">
-                                  {resource.resource_type === "google_document"
-                                    ? "Google Doc"
-                                    : "Google Sheet"}
+                                  {fileType.label}
                                 </span>
                               </span>
                             </button>
-                            {link && (
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mr-3 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-                                aria-label={`Open ${resource.display_name} in Google`}
-                              >
-                                Open in Google
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            )}
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mr-3 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                              aria-label={`Open ${resource.display_name} in Google`}
+                            >
+                              Open in Google
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
                           </div>
                         );
                       })}
@@ -837,6 +869,12 @@ export function GoogleWorkspaceReviewWorkspace({
                         </div>
                       </div>
                     )}
+
+                    {selectedResource &&
+                      googleWorkspaceFileType(selectedResource.resource_type)
+                        .clientRead === null && (
+                        <ReadOnlyFileDetail resource={selectedResource} />
+                      )}
                   </>
                 )}
               </CardContent>
@@ -972,6 +1010,87 @@ export function GoogleWorkspaceReviewWorkspace({
           </Card>
         </Collapsible>
       )}
+    </div>
+  );
+}
+/**
+ * A connected file this client has no reader for — today, a Google Slides deck.
+ *
+ * It is NOT a blank panel and NOT a disabled-looking one: it shows every fact
+ * the registered row actually holds (name, what it is, when Google last saw it
+ * edited, how it entered AI Matrx, when it was connected) and opens the door.
+ * Nothing here is invented — there is no owner field on the row, so no owner is
+ * claimed — and it says in one sentence why the slides themselves are not on
+ * this screen, which is the difference between an honest surface and a dead end.
+ */
+function ReadOnlyFileDetail({
+  resource,
+}: {
+  resource: GoogleConnectionResource & {
+    resource_type: GoogleWorkspaceResourceType;
+  };
+}) {
+  const fileType = googleWorkspaceFileType(resource.resource_type);
+  const FileIcon = fileType.icon;
+  const modified = resource.metadata.modified_time;
+  const source = resource.metadata.selection_source;
+  const facts: { label: string; value: string }[] = [
+    { label: "What it is", value: fileType.label },
+    ...(typeof modified === "string" && modified
+      ? [
+          {
+            label: "Last edited in Google",
+            value: new Date(modified).toLocaleString(),
+          },
+        ]
+      : []),
+    {
+      label: "How it got here",
+      value:
+        source === "matrx_created"
+          ? "AI Matrx created it for you"
+          : "You chose it in Google Picker",
+    },
+    {
+      label: "Connected",
+      value: new Date(resource.discovered_at).toLocaleString(),
+    },
+  ];
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <FileIcon
+            className={`mt-0.5 h-5 w-5 shrink-0 ${fileType.iconClassName}`}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-medium">{resource.display_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {fileType.readOnlyNote}
+            </p>
+          </div>
+        </div>
+        <Button asChild type="button" variant="outline" size="sm">
+          <a
+            href={resourceDoor(resource)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open in Google
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+      </div>
+      <dl className="grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
+        {facts.map((fact) => (
+          <div key={fact.label} className="flex min-w-0 justify-between gap-3">
+            <dt className="text-muted-foreground">{fact.label}</dt>
+            <dd className="truncate text-right text-foreground">
+              {fact.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
