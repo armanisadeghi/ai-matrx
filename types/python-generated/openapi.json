@@ -38463,6 +38463,58 @@
         }
       }
     },
+    "/seo/brands/{brand_id}/map/author": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Author Brand Map",
+        "description": "How a topical map starts — ONE entry behind the \"start a map\" screen.\n\n`body.source_kind` picks the tile: `data` | `documents` | `prompt` |\n`web_search` | `existing_research` | `new_research`. The service resolves that\nsource to text, runs the `seo.map_author` mandate, dry-runs the tree it gets\nback, and writes it — `proposed` or `active` according to the resolved\n`map_agent_change_mode`. Streams a named stage per step; rejoin with\n`POST /seo/collections/{run_id}/rejoin`.\n\n`new_research` is the one source that does NOT author a map on this call: it\ncommissions a `content_topic_map` research run and answers with its id, because\nthe research IS the source and it has to finish first.",
+        "operationId": "author_brand_map_seo_brands__brand_id__map_author_post",
+        "parameters": [
+          {
+            "name": "brand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Brand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorMapRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/strategy": {
       "get": {
         "tags": [
@@ -99765,6 +99817,162 @@
         "additionalProperties": false,
         "type": "object",
         "title": "AuthenticatorListResponse"
+      },
+      "AuthorMapRequest": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "data",
+              "documents",
+              "existing_research",
+              "new_research",
+              "prompt",
+              "web_search"
+            ],
+            "title": "Source Kind"
+          },
+          "map_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map Id"
+          },
+          "map_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map Name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "document_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Text"
+          },
+          "document_file_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Document File Ids"
+          },
+          "web_search_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web Search Text"
+          },
+          "web_search_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web Search Query"
+          },
+          "research_topic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Research Topic Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "section_parent_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Parent Slug"
+          },
+          "emphasis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emphasis"
+          },
+          "change_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "apply",
+                  "ask",
+                  "propose"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Mode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind"
+        ],
+        "title": "AuthorMapRequest",
+        "description": "The one body `POST /seo/brands/{brand_id}/map/author` takes.\n\nExactly one source kind per call. Every field that belongs to another source\nkind is refused rather than ignored — a body that silently drops the thing the\nperson chose is the \"screen that lies\" defect."
       },
       "AuthorityCandidate": {
         "properties": {

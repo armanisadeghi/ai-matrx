@@ -19832,6 +19832,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/brands/{brand_id}/map/author": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Author Brand Map
+         * @description How a topical map starts — ONE entry behind the "start a map" screen.
+         *
+         *     `body.source_kind` picks the tile: `data` | `documents` | `prompt` |
+         *     `web_search` | `existing_research` | `new_research`. The service resolves that
+         *     source to text, runs the `seo.map_author` mandate, dry-runs the tree it gets
+         *     back, and writes it — `proposed` or `active` according to the resolved
+         *     `map_agent_change_mode`. Streams a named stage per step; rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `new_research` is the one source that does NOT author a map on this call: it
+         *     commissions a `content_topic_map` research run and answers with its id, because
+         *     the research IS the source and it has to finish first.
+         */
+        post: operations["author_brand_map_seo_brands__brand_id__map_author_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/strategy": {
         parameters: {
             query?: never;
@@ -44411,6 +44442,45 @@ export interface components {
         AuthenticatorListResponse: {
             /** Entries */
             entries?: components["schemas"]["AuthenticatorEntryOut"][];
+        };
+        /**
+         * AuthorMapRequest
+         * @description The one body `POST /seo/brands/{brand_id}/map/author` takes.
+         *
+         *     Exactly one source kind per call. Every field that belongs to another source
+         *     kind is refused rather than ignored — a body that silently drops the thing the
+         *     person chose is the "screen that lies" defect.
+         */
+        AuthorMapRequest: {
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "data" | "documents" | "existing_research" | "new_research" | "prompt" | "web_search";
+            /** Map Id */
+            map_id?: string | null;
+            /** Map Name */
+            map_name?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /** Document Text */
+            document_text?: string | null;
+            /** Document File Ids */
+            document_file_ids?: string[];
+            /** Web Search Text */
+            web_search_text?: string | null;
+            /** Web Search Query */
+            web_search_query?: string | null;
+            /** Research Topic Id */
+            research_topic_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Section Parent Slug */
+            section_parent_slug?: string | null;
+            /** Emphasis */
+            emphasis?: string | null;
+            /** Change Mode */
+            change_mode?: ("apply" | "ask" | "propose") | null;
         };
         /** AuthorityCandidate */
         AuthorityCandidate: {
@@ -151079,6 +151149,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    author_brand_map_seo_brands__brand_id__map_author_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorMapRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
