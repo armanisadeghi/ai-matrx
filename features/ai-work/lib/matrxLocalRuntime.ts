@@ -96,6 +96,16 @@ function asLocalEnvelope(payload: unknown): LocalEnvelope | null {
 const BROADCAST_EVENT = "message";
 const DEFAULT_TIMEOUT_MS = 8_000;
 
+/**
+ * THE offline sentence. There is no presence table for the desktop app — the
+ * timeout on this channel IS the online/offline signal — so this is the one
+ * wording for "that Mac did not answer", used by the RPC timeout and by every
+ * surface that reports reachability. A second phrasing elsewhere would let two
+ * screens disagree about the same silence.
+ */
+export const MATRX_LOCAL_UNREACHABLE_SENTENCE =
+  "Matrx Local did not answer. Make sure the desktop app is running and signed in on your Mac.";
+
 export type LocalRuntimeCapability = {
   state: "loading" | "ready" | "unreachable";
   available: boolean;
@@ -269,11 +279,7 @@ export async function callMatrxLocal<T>(
   const reply = await new Promise<RpcReply>((resolve, reject) => {
     const timer = setTimeout(() => {
       pending.delete(requestId);
-      reject(
-        new Error(
-          "Matrx Local did not answer. Make sure the desktop app is running and signed in on your Mac.",
-        ),
-      );
+      reject(new Error(MATRX_LOCAL_UNREACHABLE_SENTENCE));
     }, timeoutMs);
 
     pending.set(requestId, (envelope) => {
@@ -350,6 +356,72 @@ export async function startLocalRuntimeSession(input: {
   // Starting a session takes a few seconds (the runtime waits for the
   // transcript + first mirror so it can answer with the conversation id).
   return callMatrxLocal<LocalRuntimeRun>("coding_runtime.start", input, 45_000);
+}
+
+// ── Sync truth and reconciliation (CS-25) ───────────────────────────────────
+//
+// The Mac owns the two layers no server can see: Claude's own `.jsonl`
+// transcript and the local mirror of the cloud conversation. So "is this
+// conversation actually in sync?" can only be ANSWERED there, and the honest
+// door from a browser is this same bridge. A timeout here is the offline
+// signal — there is no presence table — and it is rendered as "this Mac is not
+// reachable", never as agreement.
+
+/** One step the engine performed, in its own words (contract §5). */
+export interface LocalReconcileAction {
+  step: string;
+  outcome: string;
+  detail?: string | null;
+}
+
+/** The engine's `SyncTruth.verdict` block (contract §5). */
+export interface LocalSyncVerdict {
+  code: string;
+  reason: string | null;
+  sentence: string;
+  remedy: string | null;
+  reconcilable: boolean;
+}
+
+/** The engine's `SyncTruth.counts` block — the §3 four, in order. */
+export interface LocalSyncCounts {
+  transcript: number | null;
+  delivered: number | null;
+  cloud_messages: number | null;
+  mirror_messages: number | null;
+}
+
+export interface LocalSyncTruth {
+  schema_version: number;
+  session_id: string;
+  provider: string;
+  verdict: LocalSyncVerdict;
+  counts: LocalSyncCounts;
+}
+
+export interface LocalReconcileResult {
+  actions: LocalReconcileAction[];
+  truth: LocalSyncTruth;
+}
+
+/**
+ * Ask the owning Mac to reconcile one coding session: deliver what never
+ * arrived, ask the server to re-project what failed, pull the cloud copy down,
+ * and answer with the NEW truth (contract §5).
+ *
+ * The timeout is generous because a first reconcile imports a whole transcript
+ * — a 3,500-entry session is normal. Reachability is decided BEFORE this call
+ * by `readLocalRuntimeCapability()` at its 8s default, so an offline Mac is
+ * reported in seconds rather than after this ceiling.
+ */
+export async function reconcileCodingSession(
+  providerSessionId: string,
+): Promise<LocalReconcileResult> {
+  return callMatrxLocal<LocalReconcileResult>(
+    "coding_session.reconcile",
+    { provider_session_id: providerSessionId },
+    180_000,
+  );
 }
 
 /** Native-resume verdict from Claude's OWN local store on the user's Mac. */

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2025",
+  "version": "0.4.2030",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -241,6 +241,8 @@
     "check:surface-write-handlers:self-test": "tsx scripts/check-surface-write-handlers.ts --self-test",
     "check:hr-custom-field-targets": "tsx scripts/check-hr-custom-field-targets.ts",
     "check:hr-custom-field-targets:self-test": "tsx scripts/check-hr-custom-field-targets.ts --self-test",
+    "check:artifact-read-latency": "tsx scripts/check-artifact-read-latency.ts",
+    "check:artifact-read-latency:self-test": "tsx scripts/check-artifact-read-latency.ts --self-test",
     "check:hr-punch-write-path": "tsx scripts/check-hr-punch-write-path.ts",
     "check:hr-punch-write-path:strict": "tsx scripts/check-hr-punch-write-path.ts --strict",
     "check:release-gates": "bash scripts/run-release-gates.sh",

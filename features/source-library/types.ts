@@ -166,8 +166,16 @@ export interface VideoRow {
     media_kind_signal: MediaKindSignal;
     live_broadcast_content: string | null;
     has_captions: boolean | null;
-    /** [] until a free-lane probe ran — never null. */
-    caption_languages: string[];
+    /**
+     * TWO DIFFERENT FACTS, AND THE SERVER MEANS BOTH (contract §4.2,
+     * `SourceRow.caption_languages`): `[]` is "we probed and there are no
+     * tracks"; `null` is "nobody has ever probed". The free-captions lane that
+     * would populate it is not built yet, so EVERY row on a live channel comes
+     * back `null` today — a client that types this as `string[]` and reads
+     * `.length` takes the whole page down, which is exactly what happened on
+     * the one catalogued Library on 2026-09-17. Never widen this to `string[]`.
+     */
+    caption_languages: string[] | null;
     transcript_status: TranscriptStatus;
     transcript_id: string | null;
     transcript_lane: TranscriptLane | null;

@@ -122,6 +122,8 @@ export interface ItemMenuSubmenu extends ItemMenuEntryBase {
   kind: "submenu";
   /** Submenu body. Sections render with separators between them. */
   sections: ItemMenuSection[];
+  /** Embed an existing canonical menu without duplicating its commands. */
+  renderContent?: (onClose: () => void) => ReactNode;
 }
 
 export type ItemMenuEntry =

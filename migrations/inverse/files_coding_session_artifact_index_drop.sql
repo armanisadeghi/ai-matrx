@@ -1,0 +1,51 @@
+-- chair-step: remove files_coding_session_artifact_idx, which POSTGRESQL CAN NEVER USE for the client read it was built for — a non-leakproof qual cannot be an index condition under RLS — so it is pure write-amplification on the platform's hottest table
+
+-- ============================================================================
+-- THE INVERSE OF `files_coding_session_artifact_lookup_index.sql` (CS-27)
+--
+-- That migration added, CONCURRENTLY, an expression index on
+--   (metadata->>'kind', metadata->>'cli_session_id', metadata->>'relative_path')
+--   WHERE deleted_at IS NULL
+-- to make the coding-session Files tab's read stop timing out. It did not, and
+-- it cannot, and the reason is a property of PostgreSQL rather than of the
+-- index: `files.files` has RLS enabled, and a qual whose operator is NOT
+-- LEAKPROOF may not be evaluated before the security quals — so it can never
+-- become an index condition. `jsonb_object_field_text` (`->>`) has
+-- `proleakproof = false`. Measured live, same statement, same identity:
+--   as `postgres` (no RLS)       Index Scan using files_coding_session_artifact_idx
+--                               Index Cond on both JSONB equalities · 2.4 ms
+--   as `authenticated` (RLS on)  Index Scan using idx_cld_files_owner — a FULL
+--                               walk — with both JSONB equalities demoted into
+--                               Filter · cost 3,986,650 · 29,147 ms
+-- The control proves it is leakproofness and not the planner's taste: the same
+-- read with a LEAKPROOF qual (`uuid_eq` on `created_by`, and a text RANGE on
+-- `file_path`) DOES get an Index Cond under identical RLS, and returns in 1.1 ms.
+--
+-- So the index serves exactly one kind of reader: one that bypasses RLS —
+-- `service_role`, or a SECURITY DEFINER body. No such reader queries
+-- `files.files` by `metadata->>'cli_session_id'` today: matrx-local's publisher
+-- (`app/services/coding_sessions/artifacts.py`) confirms its rows by
+-- `file_path`, never by that key. It therefore earns nothing and costs every
+-- INSERT and UPDATE on a 158k-row, 335 MB, constantly-written table — the
+-- publisher alone writes thousands of rows per session.
+--
+-- (Two older siblings, `idx_cld_files_derived_from` and
+-- `idx_cld_files_variant_key`, are the same shape and equally unusable by any
+-- client read; they are NOT dropped here because server-side variant/derivation
+-- code does read those keys as `service_role`, where they work. The class is
+-- recorded in FOUND_DEFECTS.md.)
+--
+-- Rehearse on the branch with the same bytes:
+--   pnpm db:apply migrations/inverse/files_coding_session_artifact_index_drop.sql --target branch
+-- Then, interactively, at production (the runner prints this reason and the
+-- whole body, refuses a non-TTY stdin and demands the filename typed back):
+--   uv run python db/apply_migrations.py --source matrx-frontend \
+--     --only inverse/files_coding_session_artifact_index_drop.sql --target production
+--
+-- CONCURRENTLY, because the table is hot and a plain DROP INDEX takes an ACCESS
+-- EXCLUSIVE lock on it: CLAUDE.md, index hot tables only with CONCURRENTLY.
+-- ============================================================================
+
+SET lock_timeout = '2s';
+
+DROP INDEX CONCURRENTLY IF EXISTS files.files_coding_session_artifact_idx;

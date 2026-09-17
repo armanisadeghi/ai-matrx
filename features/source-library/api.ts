@@ -157,7 +157,15 @@ export async function createLibrary(
                 name: input.name ?? null,
                 description: input.description ?? null,
                 visibility: input.visibility ?? "private",
-                organization_id: input.organizationId ?? null,
+                // THE ORGANIZATION IS THE TRANSPORT'S, NOT THIS SCREEN'S.
+                // `callApi` resolves the active organization once and binds it
+                // to the body and the `X-Organization-Id` header together, so a
+                // screen that names one here can only ever agree or conflict —
+                // never inform. The key is written ONLY when a caller
+                // deliberately overrides it; a bare `?? null` here is what made
+                // every new channel intake fail with "Request body
+                // organization_id must match the request context organization".
+                ...(input.organizationId ? { organization_id: input.organizationId } : {}),
                 settings: input.settings ?? null,
                 // Enumeration is its own streaming call — never hidden inside create.
                 sync_now: false,

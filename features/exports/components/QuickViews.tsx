@@ -15,11 +15,22 @@
 // address, and the sort it sets survives the recipient's stored preference
 // (lib/entity-list/urlQuery.ts § "Sort is the one STYLE axis the URL carries").
 
-import { useMemo } from "react";
-import { ArrowDownWideNarrow, Clock, Paperclip, Send } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowDownWideNarrow,
+  Clock,
+  FileClock,
+  MessageSquareWarning,
+  MoonStar,
+  Paperclip,
+  Repeat,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 import { cn } from "@/lib/utils";
 import type { EntityFilters } from "@/lib/entity-list/types";
+import { fetchExportPresets, type ExportPreset } from "../presets";
 
 interface QuickView {
   id: string;
@@ -102,17 +113,70 @@ function isActive(
   );
 }
 
+/**
+ * The server's named queries, turned into the same pill as the local ones.
+ *
+ * `count` is the load-bearing part. A preset that matches nothing in THIS export
+ * — there are no drafts in a Slack workspace export, no "pushed back" in a
+ * mailbox — is left out entirely rather than rendered as a control that returns
+ * an empty list. Absent or honest, never dead.
+ */
+function presetView(preset: ExportPreset): QuickView {
+  return {
+    id: `preset:${preset.id}`,
+    label: `${preset.label} (${preset.count.toLocaleString()})`,
+    icon: PRESET_ICONS[preset.id] ?? Sparkles,
+    title: preset.description,
+    filters: { preset: { kind: "select", values: [preset.id] } },
+    // The preset owns its sort: "my longest replies" is meaningless newest-first.
+    sort: preset.order,
+    dir: preset.direction,
+  };
+}
+
+const PRESET_ICONS: Record<string, typeof Send> = {
+  sent_by_me: Send,
+  my_longest_replies: ArrowDownWideNarrow,
+  attachments_i_authored: Paperclip,
+  after_hours: MoonStar,
+  drafts_and_abandoned: FileClock,
+  where_i_pushed_back: MessageSquareWarning,
+  replies_to_questions: MessageSquareWarning,
+  threads_i_replied_to_repeatedly: Repeat,
+};
+
 export function QuickViews({
+  libraryId,
   outboundBy,
   className,
 }: {
+  libraryId: string;
   outboundBy: string | null;
   className?: string;
 }) {
   const params = useUrlSearchParams();
+  const [presets, setPresets] = useState<ExportPreset[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setPresets([]);
+    fetchExportPresets(libraryId, controller.signal)
+      .then((list) => setPresets(list.presets.filter((p) => p.available)))
+      // A preset row that cannot load is simply not offered. The filter panel
+      // below it still does everything by hand, so this is a missing shortcut
+      // rather than a broken screen, and inventing a fallback list here would
+      // put names on queries the server did not agree to.
+      .catch(() => setPresets([]));
+    return () => controller.abort();
+  }, [libraryId]);
+
   const views = useMemo(
-    () => [sentByMeView(outboundBy), ...OTHER_VIEWS],
-    [outboundBy],
+    () => [
+      sentByMeView(outboundBy),
+      ...presets.map(presetView),
+      ...OTHER_VIEWS,
+    ],
+    [outboundBy, presets],
   );
 
   return (
