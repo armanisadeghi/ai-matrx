@@ -2,7 +2,13 @@
  * Canonical typed Google Picker loader.
  *
  * Two deliberate modes share this one implementation:
- * - Workspace mode selects one Doc/Sheet for live Google operations.
+ * - Workspace mode selects one file for live Google operations. WHICH file
+ *   types it offers, what its title says, and what it refuses after the fact
+ *   all derive from the ONE file-type record
+ *   (`features/google-workspace/resource-types.ts`) — never a list written out
+ *   here. The pair used to be hardcoded in this file, so when the buttons began
+ *   offering "Docs, Sheets or Slides decks" the Picker still filtered decks out
+ *   and a person following the label could not do what it promised.
  * - Drive-import mode selects one or more non-folder files whose bytes will be
  *   copied into Matrx Files.
  *
@@ -10,9 +16,15 @@
  * through our own API or broadens OAuth scope.
  */
 
+import {
+  GOOGLE_WORKSPACE_MIME_TYPES,
+  googleWorkspaceFileTypesPhrase,
+  googleWorkspacePickTitle,
+  googleWorkspaceTypeForMime,
+  type GoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
+
 const PICKER_SCRIPT = "https://apis.google.com/js/api.js";
-const DOCUMENT_MIME_TYPE = "application/vnd.google-apps.document";
-const SPREADSHEET_MIME_TYPE = "application/vnd.google-apps.spreadsheet";
 
 interface GooglePickerView {
   setIncludeFolders(value: boolean): GooglePickerView;
@@ -66,7 +78,8 @@ export interface PickedGoogleDriveFile {
 }
 
 export interface PickedGoogleFile extends PickedGoogleDriveFile {
-  mimeType: typeof DOCUMENT_MIME_TYPE | typeof SPREADSHEET_MIME_TYPE;
+  /** Which file type the person actually chose, resolved from its MIME type. */
+  resourceType: GoogleWorkspaceResourceType;
 }
 
 export interface GooglePickerOptions {
@@ -166,7 +179,7 @@ export async function pickGoogleWorkspaceFile(
     .setIncludeFolders(false)
     .setSelectFolderEnabled(false)
     .setMode(picker.DocsViewMode.LIST)
-    .setMimeTypes(`${DOCUMENT_MIME_TYPE},${SPREADSHEET_MIME_TYPE}`);
+    .setMimeTypes(GOOGLE_WORKSPACE_MIME_TYPES.join(","));
   const initialQuery = options.initialQuery?.trim();
   if (initialQuery) view.setQuery(initialQuery);
 
@@ -176,7 +189,7 @@ export async function pickGoogleWorkspaceFile(
       .setDeveloperKey(apiKey)
       .setOAuthToken(accessToken)
       .setOrigin(window.location.origin)
-      .setTitle("Choose one Google Doc or Sheet")
+      .setTitle(googleWorkspacePickTitle())
       .addView(view)
       .setCallback((data) => {
         try {
@@ -187,13 +200,13 @@ export async function pickGoogleWorkspaceFile(
           }
           const first = result?.[0];
           if (!first) return;
-          if (
-            first.mimeType !== DOCUMENT_MIME_TYPE &&
-            first.mimeType !== SPREADSHEET_MIME_TYPE
-          ) {
-            throw new Error("Choose a Google Doc or Google Sheet.");
+          const resourceType = googleWorkspaceTypeForMime(first.mimeType);
+          if (!resourceType) {
+            throw new Error(
+              `Choose one of your Google ${googleWorkspaceFileTypesPhrase()}.`,
+            );
           }
-          resolve({ ...first, mimeType: first.mimeType });
+          resolve({ ...first, resourceType });
         } catch (error: unknown) {
           reject(
             error instanceof Error

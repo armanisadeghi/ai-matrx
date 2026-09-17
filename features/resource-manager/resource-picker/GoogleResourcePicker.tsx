@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * GoogleResourcePicker — attach a Google Doc or Sheet to this message.
+ * GoogleResourcePicker — attach one of a person's connected Google Workspace
+ * files to this message. Which file types those are is the ONE record
+ * (`features/google-workspace/resource-types.ts`), never a list written here.
  *
  * Deliberately visible even when Google is NOT connected: a user cannot ask for
  * a capability they do not know exists, so the row is always offered and the

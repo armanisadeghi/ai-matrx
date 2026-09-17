@@ -21,6 +21,10 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { GoogleWorkspaceReviewWorkspace } from "@/features/google-workspace/GoogleWorkspaceReviewWorkspace";
+import {
+  GOOGLE_WORKSPACE_FILE_TYPES,
+  GOOGLE_WORKSPACE_RESOURCE_TYPES,
+} from "@/features/google-workspace/resource-types";
 import type {
   GoogleConnectionInventory,
   GoogleConnectionResource,
@@ -173,6 +177,17 @@ function deckDoor(): HTMLAnchorElement | null {
     ) ?? null
   );
 }
+
+it("names every file type it can pick, in the button and the sentence beside it", () => {
+  // The screen must not offer a type the Picker filters out, and must not stay
+  // silent about one it offers: both strings are derived from the ONE record, and
+  // a surface that regresses to a literal fails HERE (Bugbot round 21).
+  for (const type of GOOGLE_WORKSPACE_RESOURCE_TYPES) {
+    expect(container.textContent).toContain(
+      GOOGLE_WORKSPACE_FILE_TYPES[type].plural,
+    );
+  }
+});
 
 it("lists the deck by name, with its own kind", () => {
   expect(container.textContent).toContain("Q4 board narrative");

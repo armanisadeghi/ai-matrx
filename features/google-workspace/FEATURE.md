@@ -222,6 +222,24 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- `2026-09-17` — **The Picker now OFFERS every file type the buttons name (Bugbot
+  round 21 on PR 228).** Deriving the button copy from the record fixed the words
+  and left the door shut: `lib/googlePicker.ts` carried its own pair of MIME
+  types, its own title and its own post-pick refusal, so "Choose Docs, Sheets or
+  Slides decks" opened a Picker that filtered decks out — a screen promising what
+  it then refuses. Each record entry now carries Google's `mimeType`, and the
+  Picker's `setMimeTypes` filter, its title, its refusal sentence, the pick-button
+  label and the "Picker can access only …" sentence beside it are all built from
+  it; `PickedGoogleFile` carries the resolved `resourceType` instead of a narrowed
+  MIME union, and `googleWorkspaceTypeForMime` mirrors the server's
+  `_resource_type_for_mime`. Guard: `the-picker-offers-every-file-type-it-names.test.ts`
+  drives the real `pickGoogleWorkspaceFile` against a stubbed Google Picker and
+  reads back what it asked Google for (red against the old hardcoded pair), and
+  the deck render test asserts every type's plural appears in the rendered copy.
+  **The full pick round-trip completes once B-18 lands the server half** — today
+  `/files/register` still 500s on a deck because `aidream/api/routers/google_workspace.py`'s
+  `SelectedFileResponse.resource_type` is narrowed to Docs and Sheets while the
+  service's own `ResourceType` is the triple.
 - `2026-09-17` — **A Slides deck a person picks now has a row, a name, a door and
   an honest detail (V13-3, client half).** The file types moved into ONE record,
   `resource-types.ts`, and the six hand-typed `google_document |

@@ -41,6 +41,14 @@ import {
 } from "lucide-react";
 
 export interface GoogleWorkspaceFileType {
+  /**
+   * Google's own MIME type for this file. THE PICKER'S FILTER IS BUILT FROM
+   * THESE, so a type this record offers by name is a type the Picker actually
+   * lets a person choose — the pair used to be a third hand-written list in
+   * `lib/googlePicker.ts`, which is how the derived "Choose Docs, Sheets or
+   * Slides decks" button opened a Picker that filtered decks out.
+   */
+  readonly mimeType: string;
   /** What a person calls this file. Never the wire token (D6). */
   readonly label: string;
   /** Plural, for a prompt that offers several kinds at once. */
@@ -63,6 +71,7 @@ export interface GoogleWorkspaceFileType {
 
 export const GOOGLE_WORKSPACE_FILE_TYPES = {
   google_document: {
+    mimeType: "application/vnd.google-apps.document",
     label: "Google Doc",
     plural: "Docs",
     icon: FileText,
@@ -74,6 +83,7 @@ export const GOOGLE_WORKSPACE_FILE_TYPES = {
     readOnlyNote: null,
   },
   google_spreadsheet: {
+    mimeType: "application/vnd.google-apps.spreadsheet",
     label: "Google Sheet",
     plural: "Sheets",
     icon: FileSpreadsheet,
@@ -85,6 +95,7 @@ export const GOOGLE_WORKSPACE_FILE_TYPES = {
     readOnlyNote: null,
   },
   google_presentation: {
+    mimeType: "application/vnd.google-apps.presentation",
     label: "Google Slides deck",
     plural: "Slides decks",
     icon: Presentation,
@@ -126,11 +137,50 @@ export function googleWorkspaceFileType(
  * cannot leave three buttons saying "Choose a Doc or Sheet" behind.
  */
 export function googleWorkspacePickLabel(): string {
+  return `Choose ${googleWorkspaceFileTypesPhrase()}`;
+}
+
+/** Every MIME type the Picker must offer, derived from the record. */
+export const GOOGLE_WORKSPACE_MIME_TYPES: readonly string[] =
+  GOOGLE_WORKSPACE_RESOURCE_TYPES.map(
+    (type) => GOOGLE_WORKSPACE_FILE_TYPES[type].mimeType,
+  );
+
+/**
+ * The client half of the server's `_resource_type_for_mime`: what a Picker
+ * selection IS. `null` means the Picker returned something outside the record,
+ * which the caller refuses by name rather than registering blindly.
+ */
+export function googleWorkspaceTypeForMime(
+  mimeType: string,
+): GoogleWorkspaceResourceType | null {
+  return (
+    GOOGLE_WORKSPACE_RESOURCE_TYPES.find(
+      (type) => GOOGLE_WORKSPACE_FILE_TYPES[type].mimeType === mimeType,
+    ) ?? null
+  );
+}
+
+/** "Google Docs, Sheets or Slides decks" — the noun phrase, derived once. */
+export function googleWorkspaceFileTypesPhrase(): string {
   const plurals = GOOGLE_WORKSPACE_RESOURCE_TYPES.map(
     (type) => GOOGLE_WORKSPACE_FILE_TYPES[type].plural,
   );
   const last = plurals[plurals.length - 1]!;
   return plurals.length === 1
-    ? `Choose ${last}`
-    : `Choose ${plurals.slice(0, -1).join(", ")} or ${last}`;
+    ? last
+    : `${plurals.slice(0, -1).join(", ")} or ${last}`;
+}
+
+/**
+ * The Picker's own title, and the sentence a surface shows beside the button.
+ * Both derive from the record, so they can never promise or deny a file type
+ * the Picker's filter disagrees with.
+ */
+export function googleWorkspacePickTitle(): string {
+  return `Choose one of your Google ${googleWorkspaceFileTypesPhrase()}`;
+}
+
+export function googleWorkspacePickScopeSentence(): string {
+  return `Picker can access only the ${googleWorkspaceFileTypesPhrase()} you explicitly select.`;
 }

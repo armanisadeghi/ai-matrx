@@ -49,6 +49,7 @@ import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
 import {
   googleWorkspaceFileType,
   googleWorkspacePickLabel,
+  googleWorkspacePickScopeSentence,
   type GoogleWorkspaceResourceType,
 } from "@/features/google-workspace/resource-types";
 import {
@@ -669,8 +670,7 @@ export function GoogleWorkspaceReviewWorkspace({
               <CardContent className="space-y-4 border-t p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">
-                    Picker can access only Docs and Sheets you explicitly
-                    select.
+                    {googleWorkspacePickScopeSentence()}
                   </p>
                   <Button
                     type="button"
