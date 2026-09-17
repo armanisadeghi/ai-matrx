@@ -151,9 +151,15 @@ const MARKETING_GROUP = "marketing";
  * GOOGLE — the first provider config.
  *
  * Product rows follow PLAN §2 exactly: nine rows, two groups, one sentence
- * each. `drive_files`, `docs` and `sheets` are three server capabilities and
- * ONE row, because "Docs, Sheets & Drive files" is one decision for the person
- * and one `drive.file` grant at Google.
+ * each. `drive_files`, `docs`, `sheets` and `slides` are four server
+ * capabilities and ONE row, because "Docs, Sheets & Drive files" is one decision
+ * for the person and one `drive.file` grant at Google.
+ *
+ * 🚨 EVERY KEY THE SERVER DECLARES IS CLAIMED BY A ROW, and
+ * `__tests__/capability-keys-are-the-servers-keys.test.ts` re-reads
+ * `capabilities.py` and fails on any key or eligible resource type this config
+ * does not carry — the census the two server-code censuses already had and the
+ * key set, which decides what a person may switch on, did not (V13-3).
  */
 export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
   id: "google",
@@ -190,9 +196,22 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Open, create and edit only the files you pick. We never see the rest of your Drive.",
       group: WORKSPACE_GROUP,
       icon: FileSpreadsheet,
-      capabilityKeys: ["drive_files", "docs", "sheets"],
+      // 🚨 FOUR SERVER CAPABILITIES, ONE ROW. `slides` was missing until
+      // 2026-09-17 (VERIFY-U-P2-R4, V13-3): the catalog ships it as
+      // `available`, one live connection had already recorded a `slides.read`
+      // success and one `google_presentation` resource was registered, and the
+      // person could not see, grant or withdraw it anywhere. It belongs HERE
+      // rather than in a tenth row: PLAN §8/§9 put Slides under the same
+      // `drive.file` grant as a flips-on-later capability, never a product
+      // offered on its own, and §2's nine rows are final copy. So its health,
+      // its scope disclosure and its revoke consequence render on this row.
+      capabilityKeys: ["drive_files", "docs", "sheets", "slides"],
       scopes: GOOGLE_WORKSPACE_FILE_SCOPES,
-      attachableResourceTypes: ["google_document", "google_spreadsheet"],
+      attachableResourceTypes: [
+        "google_document",
+        "google_spreadsheet",
+        "google_presentation",
+      ],
       stopsOnRevoke: "the Docs and Sheets you picked from opening here",
       firstAction: {
         label: "Pick your first file",
