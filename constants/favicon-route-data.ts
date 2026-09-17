@@ -48,6 +48,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
     href: "/transcripts",
     favicon: { color: "#9333ea", letter: "TR" },
   },
+  // Media Source Catalog — a whole channel, catalogued (features/source-library)
+  { href: "/libraries", favicon: { color: "#dc2626", letter: "LB" } },
+  // Bring your export — a service's own data download, read (features/exports)
+  { href: "/exports", favicon: { color: "#0d9488", letter: "EX" } },
   { href: "/data", favicon: { color: "#0891b2", letter: "DA" } },
   { href: "/voice", favicon: { color: "#be185d", letter: "V" } },
   {

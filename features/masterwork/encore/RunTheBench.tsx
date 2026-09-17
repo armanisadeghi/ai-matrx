@@ -53,6 +53,9 @@ import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
 import { benchFacts, duration, money } from "./benchFacts";
 import {
   BENCH_RUN_PATH,
@@ -79,6 +82,23 @@ const ARM_WORDS: Record<string, string> = {
 };
 
 const ARM_ORDER = ["a0", "a1", "a2", "b", "c", "gt"];
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): this
+// one matters most — the job, the material, and the expert's own answer are
+// retyped immediately before a run that spends real money across six arms.
+interface BenchSitting extends SittingBase {
+  taskPrompt: string;
+  caseInput: string;
+  groundTruth: string;
+}
+
+const benchSittings = createSittingStore<BenchSitting>({
+  keyPrefix: "matrx.masterwork.bench.v1:",
+  isUsable: (sitting) =>
+    (sitting.taskPrompt ?? "").trim().length > 0 ||
+    (sitting.caseInput ?? "").trim().length > 0 ||
+    (sitting.groundTruth ?? "").trim().length > 0,
+});
 
 /** The consequence, named. Never a generic "Are you sure?". */
 const CONSEQUENCE =
@@ -222,6 +242,31 @@ export function RunTheBench({
   const [arms, setArms] = useState<BenchArmWire[]>([]);
   const [starting, setStarting] = useState(false);
   const [seenVerdict, setSeenVerdict] = useState<string | null>(null);
+
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  // This one matters most — retyping the job, the material and the expert's
+  // own answer stands between a reload and a real, paid six-arm trial.
+  const sitting = useDialogSitting<BenchSitting>({
+    store: benchSittings,
+    scopeId: rulebookId,
+    active: open,
+    snapshot: { taskPrompt, caseInput, groundTruth },
+    isWorthKeeping: (s) =>
+      (s.taskPrompt ?? "").trim().length > 0 ||
+      (s.caseInput ?? "").trim().length > 0 ||
+      (s.groundTruth ?? "").trim().length > 0,
+    apply: (kept) => {
+      setTaskPrompt(kept.taskPrompt ?? "");
+      setCaseInput(kept.caseInput ?? "");
+      setGroundTruth(kept.groundTruth ?? "");
+    },
+    clearScreen: () => {
+      setTaskPrompt("");
+      setCaseInput("");
+      setGroundTruth("");
+    },
+  });
 
   const onDomainEvent = useCallback(
     (name: string, data: Record<string, unknown>) => {
@@ -409,6 +454,13 @@ export function RunTheBench({
             </DialogHeader>
 
             <div className="space-y-3">
+              {sitting.resumed ? (
+                <SittingResumed
+                  what="the job, the material, and the expert's own answer you had typed"
+                  onDiscard={sitting.discard}
+                  onAcknowledge={sitting.acknowledge}
+                />
+              ) : null}
               <div className="space-y-1.5">
                 <Label htmlFor="bench-task">The job, in one brief</Label>
                 <ProTextarea
@@ -525,6 +577,7 @@ export function RunTheBench({
                   <DurableRunInterruption interruption={run.interruption} />
                 </div>
               ) : null}
+
 
               {orderedArms.length > 0 ? (
                 <div className="rounded-md border border-border p-2">

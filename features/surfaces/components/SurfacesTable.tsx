@@ -21,6 +21,10 @@ import {
   surfaceCheckState,
 } from "@/features/surfaces/utils/surface-check-ledger";
 import { cn } from "@/lib/utils";
+import {
+  SurfacesFilterBar,
+  type SurfacesFilterState,
+} from "@/features/surfaces/components/SurfacesFilterBar";
 
 const READINESS_SORT_WEIGHT: Record<string, number> = {
   verified: 0,
@@ -39,6 +43,13 @@ interface Props {
   onPeek: (row: SurfaceWithStats) => void;
   onDelete: (row: SurfaceWithStats) => void;
   navigatingName: string | null;
+  filters: SurfacesFilterState;
+  onFilterChange: (patch: Partial<SurfacesFilterState>) => void;
+  onClearFilters: () => void;
+  clientNames: string[];
+  parentNames: string[];
+  onRefresh: () => void | Promise<void>;
+  onAdd: () => void | Promise<void>;
 }
 
 function checkedBadge(row: SurfaceWithStats) {
@@ -245,14 +256,40 @@ export function SurfacesTable({
   onPeek,
   onDelete,
   navigatingName,
+  filters,
+  onFilterChange,
+  onClearFilters,
+  clientNames,
+  parentNames,
+  onRefresh,
+  onAdd,
 }: Props) {
+  const hasSpecializedFilters =
+    filters.client !== "__all__" ||
+    filters.status !== "all" ||
+    filters.manifest !== "all" ||
+    filters.parent !== "__all__" ||
+    filters.readiness !== "all" ||
+    filters.checked !== "all";
+
   return (
     <MatrxDataTable<SurfaceWithStats>
       data={rows}
       columns={surfaceColumns(manifestedSurfaceNames, navigatingName)}
       tableId="administration/ui/surfaces"
       getRowId={(row) => row.name}
-      searchText={(row) => `${row.label ?? ""} ${row.name}`}
+      searchText={(row) =>
+        [
+          row.name,
+          row.label,
+          row.description,
+          row.client_name,
+          row.executor_name,
+          row.parent_surface_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      }
       isLoading={isLoading}
       defaultSort={{ id: "sort_order", direction: "asc" }}
       selectedId={selectedName}
@@ -266,7 +303,28 @@ export function SurfacesTable({
       }
       toolbar={{
         search: true,
-        searchPlaceholder: "Search surfaces by label or name…",
+        searchPlaceholder: "Search surfaces…",
+        facets: [
+          {
+            type: "custom",
+            id: "surface-source-filters",
+            filter: {
+              active: hasSpecializedFilters,
+              onReset: onClearFilters,
+            },
+            render: () => null,
+          },
+        ],
+        leading: (
+          <SurfacesFilterBar
+            state={filters}
+            onChange={onFilterChange}
+            clientNames={clientNames}
+            parentNames={parentNames}
+          />
+        ),
+        refresh: { onRefresh },
+        add: { onAdd },
       }}
       rowActions={(row) => (
         <>

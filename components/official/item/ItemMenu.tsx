@@ -14,9 +14,11 @@
  * gesture for clipboard, sonner toast.promise), so semantics cannot drift.
  */
 
-import { Fragment, useCallback, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useScrollFade } from "@ai-matrx/design-system";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, createLucideIcon } from "lucide-react";
+import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/icon";
+import { useMatrxTableRowAlchemy } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -298,6 +300,11 @@ function makeShortcutHandler(
   };
 }
 
+const RowAlchemyIcon = createLucideIcon("Alchemy", ALCHEMY_GLYPH_PATHS.portal.map((d, index) => ["path", { d, key: String(index) }]));
+const containsDestructiveAction = (items: ItemMenuEntry[]): boolean => items.some((item) =>
+  (isCommand(item) && item.tone === "destructive") || (isSubmenu(item) && item.sections.some((section) => containsDestructiveAction(section.items))),
+);
+
 // ── ItemMenu (trigger-anchored dropdown / drawer) ───────────────────────────
 
 export function ItemMenu({
@@ -311,13 +318,41 @@ export function ItemMenu({
   contentMinWidth = "12rem",
   presentation = "auto",
 }: ItemMenuProps) {
+  const rowAlchemy = useMatrxTableRowAlchemy();
+  const restoreTargetRef = useRef<HTMLElement | null>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => { rowAlchemy?.activate(); }, [rowAlchemy]);
   const isMobile = useIsMobile();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : uncontrolledOpen;
   // Resolve while open so controlled open (whole-row click) and trigger open
   // share one path — no setState-during-render, no empty first frame.
-  const resolved = open ? resolveItemMenuConfig(config) : null;
+  const baseConfig = open ? resolveItemMenuConfig(config) : null;
+  const includeAlchemy = Boolean(rowAlchemy?.ready && !rowAlchemy.copy.hide?.includes("ai"))
+    && !baseConfig?.sections.some((section) => section.items.some((entry) => !entry.hidden && entry.id === "prepare-in-alchemy"));
+  const alchemyItem: ItemMenuCommand | null = rowAlchemy ? {
+        id: "prepare-in-alchemy",
+        label: "Prepare in Alchemy",
+        icon: RowAlchemyIcon,
+        disabled: rowAlchemy.copy.disabled,
+        disabledReason: rowAlchemy.copy.disabled ? "Copy is unavailable for this record" : undefined,
+        onSelect: () => rowAlchemy.prepare(() => (dropdownTriggerRef.current ?? restoreTargetRef.current)?.focus()),
+        toast: {
+          loading: "Opening Alchemy…",
+          success: "Alchemy is ready",
+          error: (error) => error instanceof Error ? error.message : "Could not open Alchemy",
+        },
+  } : null;
+  const normalSections = baseConfig?.sections.map((section, index) => ({ section, index }))
+    .filter(({ section }) => section.id !== "danger" && !containsDestructiveAction(section.items)) ?? [];
+  const targetSection = (normalSections.find(({ section }) => !section.label) ?? normalSections[0])?.index;
+  const resolved: ItemMenuConfig | null = baseConfig && alchemyItem && includeAlchemy ? {
+    ...baseConfig,
+    sections: targetSection !== undefined
+      ? baseConfig.sections.map((section, index) => index === targetSection ? { ...section, items: [...section.items, alchemyItem] } : section)
+      : [{ id: "actions", items: [alchemyItem] }, ...baseConfig.sections],
+  } : baseConfig;
   // ── A LONG MENU SAYS SO, IN WORDS ────────────────────────────────────────
   //
   // 🚨 Measured on production `/agents/all` at 1024x768 (one-resolution
@@ -362,6 +397,7 @@ export function ItemMenu({
         <Slot
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
+            if (e.currentTarget instanceof HTMLElement) restoreTargetRef.current = e.currentTarget;
             handleOpenChange(true);
           }}
         >
@@ -384,7 +420,7 @@ export function ItemMenu({
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange} modal={false}>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuTrigger ref={dropdownTriggerRef} asChild>{children}</DropdownMenuTrigger>
       {resolved && (
         <DropdownMenuContent
           align={align}

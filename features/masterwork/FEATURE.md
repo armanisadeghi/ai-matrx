@@ -18,6 +18,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Rules an agent editing this directory must obey
 
+0. **A run that added nothing NEVER wears the success box, and `run.stages` is never dropped**
+   (cold walk 8, 2026-09-17). Every lane's outcome goes through `components/RunStages.tsx`:
+   `<IngestOutcome>` heads a zero with "Nothing was added to your Rulebook" in its own tone and
+   prints the sentence from `describeIngest` — the ONE honest summary, never a second one — and
+   `<RunStages>` keeps the server's whole account on screen (the `nothing_found` step, the filter
+   census, the already-distilled note) instead of the latest line only. Seven dialogs rendered no
+   stages at all and the Daily Drip hand-rolled "0 new rules added. 0 quotes checked…"; both are
+   closed. Guards: `__tests__/a-run-that-found-nothing-never-reads-as-success.test.tsx`,
+   `__tests__/zero-is-never-a-clean-success.test.ts`.
+0b. **An error path calls `sitting.keepNow()` BEFORE it reports the error.** `useDialogSitting`
+   debounces its write by 400ms, so work entered and submitted inside that window was never
+   written — a refusal that also costs the person their paste is two failures, not one. A lane
+   whose step is part of the work (the Meeting Scavenger's three tabs) also keeps that step in its
+   sitting, or the work comes back onto a step that is no longer on screen and reads as discarded.
+   Guard: `__tests__/a-refused-paste-is-still-on-screen.test.tsx`.
+
 1. **Human-first.** Anything machine-generated lands as `draft: true` rules or a `status='draft'`
    Rulebook. Never auto-activate.
 2. **`saveRules` is the ONE write path**, and it is a CAS on `version` that ALWAYS carries the
@@ -149,6 +165,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     Guard: `__tests__/evidence-standing.test.ts`.
 
 ## Files
+
+- `kept-sources/` — **WHAT THE RULEBOOK KEPT: the Expert's own words, still readable.**
+  Until 2026-09-17 every capture lane parsed its source in memory, wrote draft rules and threw
+  the source away, so a rule could quote a sentence with nowhere on the platform to read the
+  paragraph it came from. The server now keeps one `platform.masterwork_source` row per captured
+  source (aidream `raw_material.py`), and this is its screen: the list
+  (`/masterwork/[id]/sources/kept`, `EntityListPage` + `listConfig.tsx`) and the reader
+  (`/masterwork/[id]/sources/kept/[sourceKey]`, `KeptSourcePanel` -> `KeptSourceReader`).
+  🚨 **It is NOT `components/detail/RulebookSourcesPanel.tsx`** — that panel is the dump lane's
+  capture desk (what is ABOUT to be read); this is the record of what WAS read. Keeping them
+  separate is why "12 sources" means one thing per screen.
+  **THE JOIN** is `source_ref.source` == `masterwork_source.source_key`, counted in exactly one
+  place (`sourceSections.ts::countRulesForSource`, which the capture panel now also calls, so the
+  two screens cannot disagree). **THE JUMP** is `RulePassageLink` on an expanded rule ->
+  `…/kept/<source_key>?rule=<rule_id>`, which lights the rule's own quotes with
+  `components/text/HighlightedText` (THE one matcher) — no new anchoring, because the server
+  verifies every quote verbatim against the stored material at ingestion. The link renders only
+  when the material was really kept; every rule older than this system points at discarded words,
+  and the reader says so in those words rather than showing an empty panel.
 
 - `capture-plan/` — **THE CAPTURE PLAN** (`capture_plan`, `?plan=1`, page
   `/masterwork/[id]/plan`). A PROGRAM over the other Approaches: the Expert says what they want
@@ -441,6 +476,64 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (the registry learns about doors) — **A LANE REGISTRY CANNOT SEE A
+  DOOR OUT OF ITSELF.** Cold walk 8 typed several paragraphs of real expert
+  material into the Rulebook's "New document" resource and found a blank page
+  after a reload; the document row it created has ZERO rows in
+  `udt_document_snapshots`, so not one save was ever attempted. The lane
+  registry (`sitting/lanePersistence.ts`) could never have caught it — that
+  door leaves masterwork entirely for the platform document editor at
+  `/documents/<id>`. So there is now a second registry keyed by FILE rather
+  than by lane: `sitting/textEntrySurfaces.ts`, whose guard
+  (`sitting/__tests__/every-text-entry-surface-keeps-its-work.test.ts`) walks
+  `features/masterwork/**` itself and fails on any `.tsx` that renders a text
+  field and has no answer — including a `door` answer, which must name the
+  module it opens and is checked against THAT module's source. The census it
+  forced found four more surfaces an Expert pastes real work into that kept
+  nothing at all: the Audition dialog, Compare Two, Run the Bench (three long
+  fields retyped immediately before a run that spends real money across six
+  arms) and the Build window. The document editor itself
+  (`features/data-tables/components/DocumentEditor.tsx`) now flushes its 2.5s
+  autosave debounce on `pagehide`/`visibilitychange` and on unmount, warns
+  before an unload that would outrun the flush, and — where it used to return
+  silently twice when the Univer facade was gone, swallowing every save while
+  the page still said "Editing" and took keystrokes — says so out loud with the
+  only remedy that saves the words.
+- 2026-09-17 (kept material) — **THE RAW MATERIAL IS READABLE.** New `kept-sources/` feature,
+  two routes under `/masterwork/[id]/sources/kept`, a door to them from the capture panel's
+  header, and `RulePassageLink` on every expanded rule whose source was kept. Three honest
+  states are stated on the reader's face rather than implied: a capped copy says so and names
+  where the rest is, an upload whose text was never extracted says so and opens the file, and a
+  rule whose source predates the Source system says the words are not recoverable — never an
+  empty panel and never a dead link. `RulebookSourcesPanel` changed in exactly one way: its
+  per-source rule count now calls the shared `countRulesForSource` instead of its own inline
+  filter. Read direct from `platform.masterwork_source` under RLS (viewer access on the parent
+  Rulebook via `iam.accessible_entity_ids`); adopted `@ai-matrx/associations` 0.9.23, which
+  carries the new `masterwork_source` entity token.
+- 2026-09-17 (sitting adoption) — the census's four remaining surfaces (the Audition
+  dialog, Compare Two, Run the Bench, and the Build window) now call the shared
+  `createSittingStore`/`useDialogSitting` primitive (`features/masterwork/sitting/`) and
+  render `SittingResumed`, closing the class the census in the entry above named.
+
+- 2026-09-17 (doors to Libraries) — **A WHOLE YOUTUBE CHANNEL IS NOW REACHABLE
+  FROM MASTERWORK.** The Media Source Catalog (`/libraries`) catalogues a whole
+  channel/playlist into a Library of Sources, and Masterwork had no door to it:
+  the Sources panel offered one link at a time, and step 2 of `/masterwork/new`
+  offered only registry Approaches. Two doors added, both plain navigation, no
+  new capture flow: `components/detail/RulebookSourcesPanel.tsx` gains a third
+  sibling in the capture toolbar's `extraActions` — "Bring a whole channel"
+  (`Library` icon), linking to `/libraries?from=rulebook&rulebook_id=<id>`,
+  deliberately WITHOUT `aria-expanded`/`aria-pressed` since nothing opens below
+  the row; and `intake/NewRulebookFlow.tsx` step 2 gains a dashed panel beside
+  the Approach cards ("Already have a YouTube channel in mind?") linking to
+  `/libraries?from=rulebook` — no id, because nothing is created until Start,
+  and the wizard draft restores the typed answers on return. It is NOT an
+  Approach card: the cards stay the registry's rows. The receiving end
+  (`features/source-library/components/LibrariesFrontDoor.tsx`) reads
+  `?from=rulebook` and says in one sentence that the channel is catalogued
+  first and its videos can then be sent to the Rulebook, with a "Back to the
+  Rulebook" door when a valid id came along.
+
 - 2026-09-17 (phone width, the class) — **EVERY MASTERWORK SURFACE AND LANE
   CARRIES THE 44px TOUCH FLOOR.** Measured at 390×844 as `admin@admin.com`:
   `/masterwork/<rulebook>` rendered 84 controls, 59 of them under the floor, and
@@ -525,6 +618,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   lane whose own doors expect many threads over time. `DurableRunAgain` is the
   shared affordance and every repeatable source lane now carries it. Guard:
   `__tests__/a-finished-lane-offers-another-go.test.tsx`.
+- 2026-09-17 (eighth cold walk) — **SHADOW-THE-INBOX ASKS WHICH VOICE IS YOU
+  INSTEAD OF REFUSING.** A walker pasted a thread the way Outlook hands it over
+  — a `From:/Sent:/To:/Subject:` block, then the reply labelled `My reply:` /
+  `From: me` — and the lane answered "you never replied in it", about a paste
+  whose second half was visibly her own answer. The parser half is fixed on the
+  server (`aidream/services/distillation/FEATURE.md`, same date). The screen
+  half was this: the only control the dialog offered was a free-text "Which
+  address is yours? (optional)", which cannot help at all when a mail client
+  copies your own message labelled "me" with no address on it anywhere. That
+  field is GONE. The preview now returns the VOICES in each thread and says when
+  it could not tell which is the Expert's (`needs_voice_pick`), and the dialog
+  asks with the Meeting Scavenger's own picker — lifted into
+  `components/detail/VoicePicker.tsx` so the two lanes ask one question one way
+  (the Meeting Scavenger's inline copy should be repointed at it by whoever next
+  touches that file). Answering re-reads the threads with `voice_keys`, so the
+  row that said "we can't tell which of these is you" becomes the row with your
+  reply in it — a control that changes nothing on screen is the refusal wearing a
+  checkbox. Guard: `__tests__/the-inbox-asks-which-voice-is-you.test.tsx`, which
+  drives the real dialog and was red against the pre-fix tree.
 - 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
   SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
   `/masterwork/new`, went to look at the catalog and came back; the textarea

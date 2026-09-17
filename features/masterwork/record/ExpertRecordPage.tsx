@@ -48,6 +48,7 @@ import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { DriveLinkButton } from "@/features/masterwork/drive/DriveLinkButton";
 import {
   contributionAgentPayload,
   contributionHuman,
@@ -344,6 +345,18 @@ export function ExpertRecordPage({
               title={`${name} — your words`}
               instanceKey={`masterwork-record-${rulebookId}`}
             />
+            {/* THE DRIVING DOOR. Everything else on this screen is the record
+                of what has already been said; this is the cheapest way to say
+                more — a hands-free interview on the way somewhere, at no cost
+                in time at all. The second control copies the same link so it
+                can be texted to the phone that will actually be in the car. */}
+            <Button asChild size="sm" variant="outline" className="h-9">
+              <Link href={`/masterwork/${rulebookId}/drive`}>
+                <Mic className="mr-1 h-3.5 w-3.5" />
+                Interview me while I drive
+              </Link>
+            </Button>
+            <DriveLinkButton rulebookId={rulebookId} />
             {variant === "page" ? (
               <Button asChild size="sm" variant="outline" className="h-9">
                 <Link href={`/masterwork/${rulebookId}`}>

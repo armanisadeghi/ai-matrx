@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2001",
+  "version": "0.4.2023",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -503,7 +503,8 @@
     "check:durable-run-dialog-close:self-test": "tsx scripts/check-durable-run-dialog-close.ts --self-test",
     "check:access-kernel-bounded": "tsx scripts/check-access-kernel-bounded.ts",
     "check:access-kernel-bounded:strict": "tsx scripts/check-access-kernel-bounded.ts --strict",
-    "check:access-kernel-bounded:self-test": "tsx scripts/check-access-kernel-bounded.ts --self-test"
+    "check:access-kernel-bounded:self-test": "tsx scripts/check-access-kernel-bounded.ts --self-test",
+    "check:entity-types:self-test": "tsx scripts/generate-entity-types.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

@@ -22,7 +22,8 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { TranscriptionOptions, TranscriptionResult } from "../types";
-import { AUDIO_LIMITS, AUDIO_API_ROUTES } from "../constants";
+import { AUDIO_CONSTANTS, AUDIO_API_ROUTES } from "../constants";
+import { AUDIO_LIMIT_KNOBS, resolveAudioLimit } from "../limits";
 import { getErrorSolution } from "../utils/microphone-diagnostics";
 import { audioSafetyStore } from "../services/audioSafetyStore";
 import {
@@ -124,7 +125,7 @@ export function useChunkedRecordAndTranscribe({
   onChunkComplete,
   onChunkError,
   onError,
-  chunkDurationMs = AUDIO_LIMITS.CHUNK_DURATION_MS,
+  chunkDurationMs,
   transcriptionOptions,
 }: UseChunkedRecordAndTranscribeProps = {}) {
   const [isRecording, setIsRecording] = useState(false);
@@ -165,6 +166,26 @@ export function useChunkedRecordAndTranscribe({
   const meterRef = useRef<StreamLevelMeter | null>(null);
   const safetyIdRef = useRef<string>("");
   const isPageHidingRef = useRef(false);
+  // Two knobs (`media.transcription.chunk_fetch_timeout_ms` and
+  // `recording_chunk_rotation_ms`) warmed once per mount into refs, because
+  // the rotation scheduler and the chunk fetch read them from inside callbacks
+  // that must stay synchronous. Until the read lands they hold the values
+  // production has always run, and a failed read is announced by
+  // `features/audio/limits.ts` rather than swallowed.
+  const chunkFetchTimeoutMsRef = useRef(30_000);
+  const chunkRotationMsRef = useRef(10_000);
+  useEffect(() => {
+    let cancelled = false;
+    void resolveAudioLimit(AUDIO_LIMIT_KNOBS.CHUNK_FETCH_TIMEOUT_MS).then((r) => {
+      if (!cancelled && r.resolved) chunkFetchTimeoutMsRef.current = r.value;
+    });
+    void resolveAudioLimit(AUDIO_LIMIT_KNOBS.RECORDING_CHUNK_ROTATION_MS).then((r) => {
+      if (!cancelled && r.resolved) chunkRotationMsRef.current = r.value;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const chunkIndexRef = useRef(0);
   const failedIndicesRef = useRef<number[]>([]);
   const allChunkBlobsRef = useRef<Blob[]>([]);
@@ -319,7 +340,7 @@ export function useChunkedRecordAndTranscribe({
       const fullBlob = new Blob(allChunkBlobsRef.current, {
         type: mimeTypeRef.current,
       });
-      if (fullBlob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES) return null;
+      if (fullBlob.size < AUDIO_CONSTANTS.MIN_CHUNK_BYTES) return null;
 
       try {
         const baseOpts = transcriptionOptionsRef.current;
@@ -535,7 +556,7 @@ export function useChunkedRecordAndTranscribe({
       // Skip transcription for tiny chunks (not enough audio) or when the page is
       // unloading — in that case we just want the save above to complete, not start
       // a network request that will be cancelled mid-flight.
-      if (blob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES || isPageHidingRef.current) {
+      if (blob.size < AUDIO_CONSTANTS.MIN_CHUNK_BYTES || isPageHidingRef.current) {
         maybeFireFinal();
         return;
       }
@@ -571,7 +592,7 @@ export function useChunkedRecordAndTranscribe({
           audioFile,
           { language: opts?.language },
           {
-            timeoutMs: AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
+            timeoutMs: chunkFetchTimeoutMsRef.current,
             // A missed live chunk is durable recovery state. The stop-time
             // full-recording fallback owns the final outcome and logs only if
             // that recovery also fails.
@@ -741,7 +762,10 @@ export function useChunkedRecordAndTranscribe({
   const scheduleNextRotation = useCallback(() => {
     if (isStoppingRef.current) return;
     const currentIdx = chunkIndexRef.current;
-    let delay = 10000;
+    // Steady-state cadence is the knob; a caller may impose its own. The first
+    // three rotations ramp fast on purpose so the first words appear quickly —
+    // a warm-up shape, not a ceiling anyone would turn.
+    let delay = chunkDurationMs ?? chunkRotationMsRef.current;
     if (currentIdx === 1) delay = 3000;
     else if (currentIdx === 2) delay = 3000;
     else if (currentIdx === 3) delay = 4000;
@@ -750,7 +774,7 @@ export function useChunkedRecordAndTranscribe({
       rotateChunk();
       scheduleNextRotationRef.current?.();
     }, delay);
-  }, [rotateChunk]);
+  }, [rotateChunk, chunkDurationMs]);
 
   useEffect(() => {
     scheduleNextRotationRef.current = scheduleNextRotation;

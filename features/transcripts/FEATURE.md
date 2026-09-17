@@ -12,6 +12,14 @@ The canonical store for finished transcripts (one row, one JSONB `segments` blob
 
 ## Change log
 
+- 2026-09-17 — **A door to Libraries in the list header.** `/transcripts` only
+  ever captured one recording at a time; someone who wants a creator's whole
+  back catalogue had no route to the Media Source Catalog. `components/TranscriptsListPage.tsx`
+  now renders a "Whole channel" outline button (`Library` icon) beside New in
+  `headerActions` — reaching `/libraries`. It is in the header, NOT in
+  `TranscriptsSurfaceGuide`, because that guide renders only in the empty state
+  and the person this door is for already has transcripts; the empty state
+  still shows it, since `emptyAction` reuses the same pair.
 - 2026-08-29 — Hub inline edits retain the row identity/kind across list
   reconciliation, so refresh or page movement cannot reject a valid save.
 - 2026-08-29 — Transcript cards keep the title door and row Actions control at 44px below the desktop breakpoint, preserving the shared entity-list touch contract.

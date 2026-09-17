@@ -151,10 +151,21 @@ function formatWhen(value: string | null): string {
 import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
+import { IngestOutcome, RunStages } from "../RunStages";
 
 interface MeetingSitting extends SittingBase {
   text: string;
   sourceNote: string;
+  /**
+   * 🚨 THE STEP IS PART OF THE WORK (cold walk 8, 2026-09-17). A four-turn
+   * paste was refused, the dialog came back on step 1 ("Meetings you had
+   * here"), and the Expert reported the paste as discarded. It was not: it was
+   * in storage and put straight back — onto the "Paste a transcript" step,
+   * which was no longer the step on screen. Work you cannot see is work you
+   * have lost, so the lane returns to where the person was, not to where it
+   * starts.
+   */
+  tab?: MeetingTab;
 }
 
 const meetingScavengerSittings = createSittingStore<MeetingSitting>({
@@ -193,11 +204,12 @@ export function MeetingScavengerDialog({
     store: meetingScavengerSittings,
     scopeId: rulebook.id,
     active: open,
-    snapshot: { text, sourceNote },
+    snapshot: { text, sourceNote, tab },
     isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0,
     apply: (kept) => {
       setText(kept.text ?? "");
       setSourceNote(kept.sourceNote ?? "");
+      if (kept.tab) setTab(kept.tab);
     },
     clearScreen: () => {
       setText("");
@@ -391,6 +403,11 @@ export function MeetingScavengerDialog({
       // words under their name.
       setMine(new Set(rows.filter((r) => r.isYou).map((r) => r.key)));
     } catch (err) {
+      // 🚨 THE PASTE SURVIVES THE REFUSAL. `useDialogSitting` debounces its
+      // write by 400ms, so a transcript pasted and submitted quickly was never
+      // written at all — and a refusal that also costs the person their paste
+      // is two failures, not one. `keepNow()` flushes before the toast.
+      sitting.keepNow();
       toast.error(
         err instanceof Error
           ? err.message
@@ -725,10 +742,17 @@ export function MeetingScavengerDialog({
           </div>
 
           {summary ? (
-            <div className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
-              {summary}
-            </div>
-          ) : null}
+            <IngestOutcome
+              summary={summary}
+              added={run.result?.added ?? 0}
+              run={run}
+            />
+          ) : (
+            /* What the server is saying while it works — including the
+               `nothing_found` step and the filter census, which used to be
+               streamed here and thrown away. */
+            <RunStages run={run} waitingMessage="Reading your meetings…" />
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="meeting-note">What are these meetings? (optional)</Label>

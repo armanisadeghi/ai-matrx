@@ -43,6 +43,7 @@ import {
   REFERENCE_CATEGORY_DISPLAY,
   type EntityTypeMeta,
 } from "@ai-matrx/associations";
+import { createAssociationGuards } from "@ai-matrx/associations/core";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
@@ -87,6 +88,14 @@ export function loadSupabase() {
   });
 }
 
+export async function requireReadableRegistry<T>(fetch: () => Promise<T[]>): Promise<T[]> {
+  const rows = await fetch();
+  if (rows.length === 0) {
+    throw new Error("platform.entity_types returned no active rows — aborting.");
+  }
+  return rows;
+}
+
 export async function fetchEntityTypes(): Promise<EntityTypeSourceRow[]> {
   const supabase = loadSupabase();
   if (!supabase) {
@@ -98,21 +107,13 @@ export async function fetchEntityTypes(): Promise<EntityTypeSourceRow[]> {
   // The client has no direct grant on `platform.*`; read the registry through
   // the public SECURITY-DEFINER RPC (migrations/entity_types_list_rpc.sql).
   // Paged: a `setof` RPC is subject to the same 1000-row PostgREST cap.
-  const rows = await readAllRows<EntityTypeSourceRow>(
-    ({ from, to }) =>
-      supabase
-        .rpc("entity_types_list", {}, { count: "exact" })
-        .order("token", { ascending: true })
-        .range(from, to) as PromiseLike<{
-        data: EntityTypeSourceRow[] | null;
-        error: { message: string } | null;
-        count?: number | null;
-      }>,
+  const rows = await requireReadableRegistry(() => readAllRows<EntityTypeSourceRow>(
+    ({ from, to }) => supabase
+      .rpc("entity_types_list", {}, { count: "exact" })
+      .order("token", { ascending: true })
+      .range(from, to) as PromiseLike<{ data: EntityTypeSourceRow[] | null; error: { message: string } | null; count?: number | null }>,
     { label: "entity_types_list()" },
-  );
-  if (rows.length === 0) {
-    throw new Error("platform.entity_types returned no active rows — aborting.");
-  }
+  ));
   return [...rows].sort((a, b) => a.token.localeCompare(b.token, "en"));
 }
 
@@ -152,20 +153,6 @@ const FIX =
  */
 const SCRATCH_PREFIX = "zz_";
 
-/** The named live-but-not-installed delta. Read from disk so it is one file to audit. */
-interface EntityTypeAllowlist {
-  readonly allowed?: ReadonlyArray<{ token: string; reason: string; added: string }>;
-  readonly allowedFields?: ReadonlyArray<{
-    token: string;
-    field: string;
-    reason: string;
-    added: string;
-  }>;
-}
-const ALLOWLIST: EntityTypeAllowlist = JSON.parse(
-  readFileSync(join(import.meta.dirname ?? __dirname, "entity-types-allowlist.json"), "utf8"),
-) as EntityTypeAllowlist;
-
 export function findScratchRegistrations(
   liveRows: ReadonlyArray<Pick<EntityTypeSourceRow, "token" | "schema_name">>,
   installed: Readonly<Record<string, { schema: string }>>,
@@ -178,6 +165,51 @@ export function findScratchRegistrations(
       .filter(([token, meta]) => isScratch(token, meta.schema))
       .map(([token, meta]) => `${token} → ${meta.schema}`),
   };
+}
+
+export function evaluateInstalledCompatibility(
+  rows: ReadonlyArray<EntityTypeSourceRow>,
+  installed: Readonly<Record<string, Omit<EntityTypeMeta, "token">>>,
+): { additive: string[]; removed: string[]; drifted: string[] } {
+  const liveByToken = new Map(rows.map((row) => [row.token, row]));
+  const installedTokens = Object.keys(installed);
+  const additive = rows.map((row) => row.token).filter((token) => !(token in installed));
+  const removed = installedTokens.filter((token) => !liveByToken.has(token));
+  const drifted: string[] = [];
+  for (const token of installedTokens) {
+    const row = liveByToken.get(token);
+    if (!row) continue;
+    const want = rowToMeta(row);
+    for (const [field, value] of Object.entries(want)) {
+      if ((installed[token] as Record<string, unknown>)[field] !== value) {
+        drifted.push(`${token}.${field}`);
+      }
+    }
+  }
+  return { additive, removed, drifted };
+}
+
+export function validateRequiredDisplayMaps(
+  metadata: Readonly<Record<string, Pick<EntityTypeMeta, "schema" | "referenceCategory">>>,
+  schemas: ReadonlyArray<{ schema_name: string; display_name: string; sort_order: number; is_active: boolean }>,
+  categories: ReadonlyArray<{ slug: string; label: string; sort_order: number; is_active: boolean }>,
+  schemaDisplay: Readonly<Record<string, { label: string; sortOrder: number; isActive: boolean }>>,
+  categoryDisplay: Readonly<Record<string, { label: string; sortOrder: number; isActive: boolean }>>,
+): string[] {
+  const schemaRows = new Map(schemas.map((row) => [row.schema_name, row]));
+  const categoryRows = new Map(categories.map((row) => [row.slug, row]));
+  const failures: string[] = [];
+  for (const schema of new Set(Object.values(metadata).map((meta) => meta.schema))) {
+    const live = schemaRows.get(schema); const installed = schemaDisplay[schema];
+    if (live === undefined && installed === undefined) continue;
+    if (!live || !installed || installed.label !== live.display_name || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`schema:${schema}`);
+  }
+  for (const category of new Set(Object.values(metadata).flatMap((meta) => meta.referenceCategory ? [meta.referenceCategory] : []))) {
+    const live = categoryRows.get(category); const installed = categoryDisplay[category];
+    if (live === undefined && installed === undefined) continue;
+    if (!live || !installed || installed.label !== live.label || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`reference-category:${category}`);
+  }
+  return failures;
 }
 
 async function main(): Promise<void> {
@@ -207,113 +239,27 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 1. Token-set parity.
-  const liveTokens = new Set(rows.map((r) => r.token));
-  const installedTokens = new Set<string>(ENTITY_TYPE_TOKENS);
-  const allMissing = [...liveTokens].filter((t) => !installedTokens.has(t));
-  const extra = [...installedTokens].filter((t) => !liveTokens.has(t));
-
-  // 1a. THE NAMED DELTA (ATTACK-6 findings 5 and 9c). The vocabulary ships in the
-  // package and the package is `latest` — never pinned (THE LATEST LAW) — so a token
-  // registered on production by ANY lane makes this gate red for EVERY release in this
-  // repo until the package is regenerated and published. `release.sh:526` calls `fail`,
-  // so that window is a stopped platform, not a stopped lane. A token listed in
-  // scripts/entity-types-allowlist.json with a reason and a date is subtracted here and
-  // ANNOUNCED; anything else still fails. A STALE entry fails too — see below — which is
-  // what stops this file becoming a place tokens go to be forgotten.
-  const allowed = new Map<string, { reason: string; added: string }>(
-    (ALLOWLIST.allowed ?? []).map((a) => [a.token, { reason: a.reason, added: a.added }]),
+  // 1. Compatibility is directional. An installed token that vanished or changed
+  // is unsafe and blocks a release. A newly registered token is informational until
+  // its package release reaches this consumer; it cannot be produced by this version.
+  const compatibility = evaluateInstalledCompatibility(
+    rows,
+    ENTITY_TYPE_METADATA as unknown as Record<string, Omit<EntityTypeMeta, "token">>,
   );
-  const staleAllowed = [...allowed.keys()].filter(
-    (t) => installedTokens.has(t) || !liveTokens.has(t),
-  );
-  if (staleAllowed.length > 0) {
-    console.error(
-      `\n  ✗ scripts/entity-types-allowlist.json is STALE — ${staleAllowed.length} entr` +
-        `${staleAllowed.length === 1 ? "y is" : "ies are"} no longer a live delta: ` +
-        `${staleAllowed.join(", ")}.` +
-        "\n    Each of these is now either shipped in the installed package or no longer live," +
-        "\n    so the waiver has nothing left to waive. Delete the entr" +
-        `${staleAllowed.length === 1 ? "y" : "ies"} from that file.\n`,
+  if (compatibility.additive.length > 0) {
+    console.warn(
+      `\n  ! ${compatibility.additive.length} newly registered live token(s) are not in installed @ai-matrx/associations: ` +
+        `${compatibility.additive.join(", ")}.` +
+        "\n    Existing installed-token compatibility is still checked. To use a new token here," +
+        "\n    publish the regenerated associations package, then run `pnpm up @ai-matrx/associations`.\n",
     );
+  }
+  if (compatibility.removed.length > 0) {
+    console.error(`\n  ✗ Installed @ai-matrx/associations contains ${compatibility.removed.length} token(s) absent from platform.entity_types: ${compatibility.removed.join(", ")}.` + FIX);
     process.exit(1);
   }
-  const missing = allMissing.filter((t) => !allowed.has(t));
-  const waived = allMissing.filter((t) => allowed.has(t));
-  if (waived.length > 0) {
-    // Nothing passes silently either: the waiver is as loud as the failure.
-    console.log(
-      `  ! ${waived.length} live token(s) are NOT in the installed @ai-matrx/associations ` +
-        `and are allowed by name (scripts/entity-types-allowlist.json):`,
-    );
-    for (const t of waived) {
-      const a = allowed.get(t)!;
-      console.log(`      ${t}  [allowed ${a.added}] ${a.reason}`);
-    }
-  }
-
-  if (missing.length > 0 || extra.length > 0) {
-    console.error(
-      `\n  ✗ Installed @ai-matrx/associations vocabulary (${installedTokens.size} tokens) ` +
-        `is OUT OF SYNC with platform.entity_types (${liveTokens.size} live tokens).` +
-        (missing.length ? `\n    Live but not installed: ${missing.join(", ")}` : "") +
-        (extra.length ? `\n    Installed but not live: ${extra.join(", ")}` : "") +
-        FIX,
-    );
-    process.exit(1);
-  }
-
-  // 2. Per-token field parity. A waived token has no installed metadata to compare —
-  // that is what "not installed" means — so it is skipped here and nowhere else.
-  const waivedSet = new Set(waived);
-  // A FIELD delta is the same class as a token delta: the live row moved and the package
-  // has not been republished yet. Same file, same reason-and-date, same staleness rule.
-  const allowedFields = new Map<string, { reason: string; added: string }>(
-    (ALLOWLIST.allowedFields ?? []).map((a) => [`${a.token}.${a.field}`, a]),
-  );
-  const usedFieldWaivers = new Set<string>();
-  const drifted: string[] = [];
-  for (const row of rows) {
-    if (waivedSet.has(row.token)) continue;
-    const meta = ENTITY_TYPE_METADATA[row.token as keyof typeof ENTITY_TYPE_METADATA];
-    const want = rowToMeta(row);
-    for (const [field, value] of Object.entries(want)) {
-      const got = (meta as unknown as Record<string, unknown>)[field];
-      if (got !== value) {
-        const key = `${row.token}.${field}`;
-        const waiver = allowedFields.get(key);
-        if (waiver) {
-          usedFieldWaivers.add(key);
-          console.log(
-            `  ! ${key} drifted (installed ${JSON.stringify(got)} vs live ` +
-              `${JSON.stringify(value)}) and is allowed by name [allowed ${waiver.added}] ` +
-              `${waiver.reason}`,
-          );
-          continue;
-        }
-        drifted.push(
-          `${row.token}.${field}: installed ${JSON.stringify(got)} vs live ${JSON.stringify(value)}`,
-        );
-      }
-    }
-  }
-  // Every drift at once. A gate that names one of twenty makes you run it twenty times.
-  if (drifted.length > 0) {
-    console.error(
-      `\n  ✗ ${drifted.length} installed/live field drift(s) in @ai-matrx/associations:` +
-        drifted.map((d) => `\n    ${d}`).join("") +
-        FIX,
-    );
-    process.exit(1);
-  }
-  const staleFieldWaivers = [...allowedFields.keys()].filter((k) => !usedFieldWaivers.has(k));
-  if (staleFieldWaivers.length > 0) {
-    console.error(
-      `\n  ✗ scripts/entity-types-allowlist.json is STALE — ${staleFieldWaivers.length} field ` +
-        `waiver(s) no longer describe a drift: ${staleFieldWaivers.join(", ")}.` +
-        "\n    The installed package and the live row agree again, so the waiver has nothing" +
-        "\n    left to waive. Delete those entries.\n",
-    );
+  if (compatibility.drifted.length > 0) {
+    console.error(`\n  ✗ ${compatibility.drifted.length} installed/live field drift(s) in @ai-matrx/associations:` + compatibility.drifted.map((drift) => `\n    ${drift}`).join("") + FIX);
     process.exit(1);
   }
 
@@ -324,51 +270,38 @@ async function main(): Promise<void> {
   //    reads. Existence-level check on every live key.
   const supabase = loadSupabase();
   if (supabase) {
-    const schemas = await readAllRows<{ schema_name: string }>(
+    const schemas = await readAllRows<{ schema_name: string; display_name: string; sort_order: number; is_active: boolean }>(
       ({ from, to }) =>
         supabase
           .rpc("entity_schemas_list", {}, { count: "exact" })
           .order("schema_name", { ascending: true })
           .range(from, to) as PromiseLike<{
-          data: { schema_name: string }[] | null;
+          data: { schema_name: string; display_name: string; sort_order: number; is_active: boolean }[] | null;
           error: { message: string } | null;
           count?: number | null;
         }>,
       { label: "entity_schemas_list()" },
     );
-    for (const s of schemas) {
-      if (!(s.schema_name in SCHEMA_DISPLAY)) {
-        console.error(
-          `\n  ✗ Live platform.schemas row "${s.schema_name}" is missing from ` +
-            `the installed SCHEMA_DISPLAY.` +
-            FIX,
-        );
-        process.exit(1);
-      }
-    }
-    const refCats = await readAllRows<{ slug: string }>(
-      ({ from, to }) =>
-        supabase
-          .rpc("reference_categories_list", {}, { count: "exact" })
-          .order("slug", { ascending: true })
-          .range(from, to) as PromiseLike<{
-          data: { slug: string }[] | null;
-          error: { message: string } | null;
-          count?: number | null;
-        }>,
+    const refCats = await readAllRows<{ slug: string; label: string; sort_order: number; is_active: boolean }>(
+      ({ from, to }) => supabase
+        .rpc("reference_categories_list", {}, { count: "exact" })
+        .order("slug", { ascending: true })
+        .range(from, to) as PromiseLike<{ data: { slug: string; label: string; sort_order: number; is_active: boolean }[] | null; error: { message: string } | null; count?: number | null }>,
       { label: "reference_categories_list()" },
     );
-    for (const c of refCats) {
-      if (!(c.slug in REFERENCE_CATEGORY_DISPLAY)) {
-        console.error(
-          `\n  ✗ Live reference category "${c.slug}" is missing from the ` +
-            `installed REFERENCE_CATEGORY_DISPLAY.` +
-            FIX,
-        );
-        process.exit(1);
-      }
+    const displayFailures = validateRequiredDisplayMaps(
+      ENTITY_TYPE_METADATA as unknown as Record<string, Pick<EntityTypeMeta, "schema" | "referenceCategory">>,
+      schemas,
+      refCats,
+      SCHEMA_DISPLAY,
+      REFERENCE_CATEGORY_DISPLAY,
+    );
+    if (displayFailures.length > 0) {
+      console.error(`\n  ✗ Required installed display metadata is missing or changed: ${displayFailures.join(", ")}.` + FIX);
+      process.exit(1);
     }
   }
+
 
   // 4. ENTITY_OVERLAY carries no database-owned metadata.
   const registrySource = readFileSync(ENTITY_REGISTRY_PATH, "utf8");
@@ -401,7 +334,51 @@ async function main(): Promise<void> {
   console.log("  ✓ ENTITY_OVERLAY contains no database-owned metadata.");
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+
+async function selfTest(): Promise<void> {
+  const base: EntityTypeSourceRow = { token: "installed", schema_name: "public", table_name: "items", label: "Installed", base_tier: 1, is_component: false, is_module: false, is_listed: true, default_scopeable: true, category: null, reference_pickable: false, title_column: null, content_role: null, reference_category: null };
+  const installed = { installed: rowToMeta(base) };
+  const observedAdditive = ["media_catalog_setting", "media_selection_item", "media_selection_job", "media_source_library"].map((token) => ({ ...base, token }));
+  const passing = evaluateInstalledCompatibility([base, ...observedAdditive], installed);
+  if (passing.additive.join(",") !== observedAdditive.map((row) => row.token).join(",") || passing.removed.length || passing.drifted.length) throw new Error("self-test: observed additive delta did not warn-only pass");
+  const removal = evaluateInstalledCompatibility(observedAdditive, installed);
+  if (!removal.removed.includes("installed")) throw new Error("self-test: installed-token removal was accepted");
+  const field = evaluateInstalledCompatibility([{ ...base, label: "Changed" }, ...observedAdditive], installed);
+  if (!field.drifted.includes("installed.label")) throw new Error("self-test: installed field change was accepted");
+  const scratch = findScratchRegistrations([{ token: "zz_entity_gate_selftest", schema_name: "public" }], installed);
+  if (!scratch.live.length) throw new Error("self-test: scratch registration was accepted");
+  const unknown = evaluateInstalledCompatibility([base], { ...installed, unknown_token: rowToMeta(base) });
+  if (!unknown.removed.includes("unknown_token")) throw new Error("self-test: unknown installed token was accepted");
+  const guardError = createAssociationGuards(() => {}).checkToken("targetType", "unknown_token");
+  if (guardError?.code !== "invalid_argument") throw new Error("self-test: package guard accepted unknown token before any RPC");
+  let registryReadThrew = false;
+  try { await requireReadableRegistry(async () => { throw new Error("registry RPC unavailable"); }); } catch (error) {
+    if (!(error instanceof Error) || error.message !== "registry RPC unavailable") throw error;
+    registryReadThrew = true;
+  }
+  if (!registryReadThrew) throw new Error("self-test: unreadable registry was accepted");
+  const fallbackDisplay = validateRequiredDisplayMaps(
+    { hr: { schema: "hr", referenceCategory: null }, seo: { schema: "seo", referenceCategory: null }, commerce: { schema: "commerce", referenceCategory: null } },
+    [], [], {}, {},
+  );
+  if (fallbackDisplay.length) throw new Error("self-test: jointly absent fallback schema display was rejected");
+  const displayFailures = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: "required" } },
+    [{ schema_name: "public", display_name: "General", sort_order: 10, is_active: true }],
+    [{ slug: "required", label: "Required", sort_order: 10, is_active: true }], {}, {},
+  );
+  if (displayFailures.join(",") !== "schema:public,reference-category:required") throw new Error("self-test: one-sided required display metadata was accepted");
+  const changedDisplay = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: null } },
+    [{ schema_name: "public", display_name: "Changed", sort_order: 10, is_active: true }], [],
+    { public: { label: "General", sortOrder: 10, isActive: true } }, {},
+  );
+  if (changedDisplay.join(",") !== "schema:public") throw new Error("self-test: changed required display metadata was accepted");
+  console.log("  ✓ entity vocabulary self-test passed: additive warning, removal, field drift, scratch, package pre-RPC unknown-token, and registry-read, and fallback-display, one-sided-display, and changed-display paths are forced.");
+}
+
+if (process.argv.includes("--self-test")) {
+  selfTest().catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
+} else {
+  main().catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
+}

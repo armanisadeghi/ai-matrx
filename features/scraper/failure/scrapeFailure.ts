@@ -31,6 +31,7 @@ export type ScrapeFailureKind =
   | "blocked" // bot wall, paywall, login wall, captcha
   | "timeout" // the read took too long
   | "empty" // we reached the page and it carried no readable text
+  | "wrong_page" // we fetched a document, but it was not the thing asked for
   | "bad_address" // the URL does not resolve / is not a page we can reach
   | "unknown"; // anything else — still plain words, never a stack
 
@@ -89,7 +90,12 @@ function classifyKind(message: string, httpStatus: number | null): ScrapeFailure
   if (httpStatus === 401 || httpStatus === 403 || httpStatus === 429) return "blocked";
   if (/enotfound|eai_again|dns|invalid url|could not resolve|name not resolved|econnrefused/.test(m))
     return "bad_address";
-  if (/no results|empty|no readable text|no content|0 characters/.test(m)) return "empty";
+  // `wrong_entity` and `empty_content` are backend `failure_reason` values
+  // (2026-09-17). They are checked before the generic buckets so the person
+  // gets the specific sentence rather than "we could not read that page".
+  if (/wrong_entity|wrong entity|wrong page/.test(m)) return "wrong_page";
+  if (/empty_content|no results|empty|no readable text|no content|0 characters/.test(m))
+    return "empty";
   if (/bad_status|bad status|http error|status \d{3}|\b[45]\d{2}\b/.test(m)) return "site_refused";
   if (httpStatus !== null && httpStatus >= 400) return "site_refused";
   return "unknown";
@@ -106,7 +112,9 @@ function plainWords(
   switch (kind) {
     case "site_refused":
       return {
-        title: `This site would not let us read the page (it answered with ${answered}).`,
+        // One set of parentheses, never nested — "…(it answered with an error
+        // (500))." read as a typo on the live page (2026-09-17).
+        title: `This site would not let us read the page — it answered with ${answered}.`,
         remedy: PASTE_REMEDY,
       };
     case "blocked":
@@ -114,7 +122,7 @@ function plainWords(
         title:
           httpStatus === null
             ? "This site blocks automated readers, so we could not open the page."
-            : `This site blocks automated readers, so we could not open the page (it answered with ${httpStatus}).`,
+            : `This site blocks automated readers, so we could not open the page — it answered with ${httpStatus}.`,
         remedy: PASTE_REMEDY,
       };
     case "timeout":
@@ -127,6 +135,12 @@ function plainWords(
         title: "We opened the page but found no readable text on it.",
         remedy:
           "Some pages build their text in the browser. Paste the text in instead, or try another link.",
+      };
+    case "wrong_page":
+      return {
+        title: "The page we opened was not the one you asked for.",
+        remedy:
+          "The site sent us somewhere else. Check the link, try it again, or paste the text in instead.",
       };
     case "bad_address":
       return {

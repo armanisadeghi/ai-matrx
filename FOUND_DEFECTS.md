@@ -3460,6 +3460,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
+
 - **D327 — the server read the merged payload where it meant the Expert's words, and the orchestrator's own notices were indistinguishable from her turns.** Both halves closed in aidream `23fa31d6b`. Reader: `masterwork_corpus/corpus.py` now selects `role` + `user_content` and projects through the platform's ONE rule (`matrx_ai.config.human_authored_text`), so the Scout's seeded cue is neither quoted nor counted, and a row with nothing human in it is not a turn. Writer: the four orchestrator gates build their injected turns through the new `host_authored_user_turn()` (empty `user_content` + `authored_by: host`), never NULL; `dynamic_drain` stamps both of its halves. Siblings moved onto the same projection: the chat-import distiller, the coding-session title, `vision_interview.transcript_message_text`. Guards proven failing then passing: `packages/matrx-ai/tests/test_host_authored_user_turns.py` (5) and `aidream/services/masterwork_corpus/tests/test_corpus_reads_the_humans_words.py` (4). Backfill after a read-only census — 89 provable historical gate notices stamped, 8 ambiguous rows deliberately untouched (`db/migrations/ai_085_host_authored_user_turns_are_stamped.sql`, applied and verified live). **Open remainder, filed not fixed:** matrx-rag's `sources.py` indexes `content` for every role, so RAG-retrieved text can still carry an agent-seeded template as the human's turn — matrx-rag sits below matrx-ai and cannot import the projection, so closing it needs its own injected seam. 2026-09-16.
 
 - **D325 — `live-ingest-lane.test.tsx`'s 7 red rejoin cases: every assertion was RIGHT, the FAKE was lying.** The suite's `useMasterworkRun` mock returned a hand-written subset of `MasterworkRunHandle` with no `runId` — a state the real hook cannot produce on a rejoin (`rejoinDurableRun` writes `runId: pointer.runId` in the same `setState` that sets `status: "rejoining"`). When `6d424b231d` made the close honest, the reopen latch started asking `shouldReopenForRun(run.runId, dismissed)`, which correctly refuses to reopen a run it cannot identify — so the seven cases failed against the fake's impossible state, not the product. **No product code was wrong and no assertion was rewritten.** The fake is now typed `MasterworkRunHandle<IngestSummary>`, so a forgotten field is a type error instead of a twelve-hour read (it immediately caught a second lie: the settled result was missing `alreadyDistilled`). Three guards added for the behaviour nothing asserted, each proven failing-then-passing against a mutation: a close during a live rejoined run really closes and survives a reconnect flicker; Stop is drawn only over a run in flight and reaches the real handle; and `useDurableRun.cancel.test.tsx` proves a stopped run clears its pointer so a reload rejoins nothing. Live on the preview as admin@admin.com: started a source ingest on a disposable Rulebook, reloaded mid-run, the dialog reopened itself on the right lane showing "Source split into 1 chunk(s). Distilling rules from each…" / "Picking this back up — it kept working while you were away." with a live Stop. 2026-09-15.
@@ -4354,3 +4356,37 @@ conversation key while the alias record is released → reload → empty box, no
 Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
 `ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
 cheap half of this job and would need its own design.
+
+---
+
+## `callApi` stops type-checking a request body the moment the path has a path parameter (2026-09-17, Claude Fable 5.1, found while building `features/source-library`)
+
+**Every `callApi` call whose `path` contains a `{param}` segment has an UNCHECKED request body.**
+`ApiCallConfig.body` is typed `OperationRequestBody<PathOperation<P, M>>`, and with `pathParams`
+present in the same object literal, `P` fails to infer from the `path` literal and falls back to its
+constraint `keyof paths`. `PathOperation<keyof paths, M>` then resolves to `never`, so `body?: never`
+— i.e. `undefined` — and TypeScript reports the perfectly correct body as
+`Type '…' is not assignable to type 'undefined'`.
+
+It is not a corner case: **about 100 of this repo's ~157 `tsc` errors are this one shape**, including
+nine inside `lib/api/call-api.ts`'s own convenience wrappers (`callAgentStart` line 1550,
+`callPromptStart` line 1769, and seven others). Because the slot collapses to `undefined`, no body
+passed on one of those paths is checked against the generated schema at all — a probe with
+explicit type arguments on `/ai/agents/{agent_id}` immediately surfaced a real one
+(`client_tools` is not a property of that request body, and the repo passes it).
+
+**The likely fix is one word:** make `pathParams` a non-inferring position, so `P` can only come
+from `path`:
+
+```ts
+pathParams?: NoInfer<ExtractPathParams<P & string>>;   // TS 5.4+, and this repo is on TS 6
+```
+
+**Why it was not done here.** Closing it un-hides ~100 previously-unchecked bodies at once, some of
+which are genuinely wrong (see `client_tools`), across features this lane does not own. That is a
+repo-wide repair with its own verification, not a side effect of a feature branch.
+
+**What this lane did instead:** `features/source-library/api.ts` passes explicit type arguments on
+its five path-parameterised calls (`callApi<"/media/libraries/{library_id}", "PATCH">({…})`), which
+restores real checking at those call sites — no cast, no suppression. Anyone writing a new
+`callApi` call with `pathParams` and a body should do the same until the primitive is fixed.

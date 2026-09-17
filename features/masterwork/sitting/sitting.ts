@@ -192,4 +192,12 @@ export interface DialogSitting {
   forget: () => void;
   /** False when this browser refuses storage: the lane must say drafts are off. */
   available: boolean;
+  /**
+   * Flush what is on screen to storage immediately, skipping the write
+   * debounce. Every error path calls this BEFORE it reports the error: a
+   * refusal that also costs the person their typing is two failures, not one
+   * (cold walk 8, 2026-09-17 — a pasted transcript was refused and the paste
+   * had never been written, because it was submitted inside the debounce).
+   */
+  keepNow: () => void;
 }

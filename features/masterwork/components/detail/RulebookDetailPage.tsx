@@ -184,6 +184,7 @@ import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddR
 import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildWindow";
 import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
+import { RulePassageLink } from "../../kept-sources/RulePassageLink";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -680,6 +681,11 @@ export function RuleRow({
           {rule.source_ref ? (
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
+          {/* THE JUMP: this rule's quote, lit up inside the material it was
+              drawn out of. Renders nothing when that material was not kept —
+              every rule older than the Source system points at words that were
+              read and discarded, and this must not promise them. */}
+          <RulePassageLink rule={rule} />
           <div className="text-xs text-muted-foreground">
             Rule id: <code className="font-mono">{rule.id}</code> — audits cite
             this id.

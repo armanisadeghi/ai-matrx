@@ -75,6 +75,7 @@ import {
 } from "./service";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
+import { RunStages } from "../components/RunStages";
 
 interface KnobState {
   rounds: number;
@@ -527,6 +528,12 @@ export function TeachBack({
         </p>
       ) : null}
 
+      {/* THE WHOLE ACCOUNT, NOT JUST THE CURRENT LINE (cold walk 8,
+          2026-09-17). This lane showed `run.stage` — the latest step only —
+          so every earlier step, including the server's own explanation of why
+          a run found nothing, was overwritten by the next one and gone the
+          moment the run ended. `run.stages` is the full list and it stays. */}
+      <RunStages run={run} />
       {/* ── THE WORKING STATE ────────────────────────────────────────────── */}
       {running ? (
         <p className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">

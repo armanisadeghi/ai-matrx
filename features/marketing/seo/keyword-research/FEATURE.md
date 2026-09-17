@@ -633,3 +633,16 @@ stage` / `Opportunity` / `Not tracked`, with hover explanations and one-line
   the live `seo.v_site_keyword_performance` read model.
 - 2026-07-22 — Initial build: research launcher + live explorer + relationship detail,
   wired to the new aidream keyword pipeline endpoints. Registered in agent.review_queue.
+
+## Archive is tenant-scoped (2026-09-17, aidream migrations 0840/0841 — AD248)
+
+`seo.keyword` is a shared catalogue (229,200 platform rows every signed-in account can
+read). "Archive from library" on a catalogue row no longer soft-deletes it for everybody:
+`seo.fn_archive_keywords` soft-deletes only a keyword the caller holds **editor** on (their
+own row) and, for every other id, writes one `(organization)-[archived]->(seo_keyword)` edge
+on `platform.associations` for the caller's organization (resolved inside: the single
+non-system org, else the personal org). `fn_restore_keywords` mirrors it. The list queries in
+`data/queries.ts` (`listKeywordsWithMarket`, `listKeywordsWithMarketByPhrases`) read those
+edges (`hiddenKeywordIds`, RLS-scoped) and exclude them — that read is what makes the row
+disappear; the RPC alone only records the choice. Platform admins hold editor on the
+catalogue, so the global archive is theirs alone.

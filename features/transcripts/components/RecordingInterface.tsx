@@ -15,8 +15,19 @@ import { motion } from "motion/react";
 import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
-import { RECORDING_LIMITS } from "../constants/recording";
+import { recordingLimits, type ResolvedLimit } from "@/features/audio/limits";
+import { ESTIMATED_BYTES_PER_SECOND } from "../constants/recording";
 
+/**
+ * The LIVE BROWSER RECORDING lane. Its ceilings are its own knobs
+ * (`media.transcription.recording_*`), deliberately smaller than the
+ * upload-a-file lane's (`upload_*`): a capture lives in this tab's memory until
+ * it is saved. They are resolved, never hardcoded — a bare constant here was
+ * the same defect that stopped a 9-hour audiobook, one size down.
+ *
+ * `maxDuration` / `maxSizeBytes` remain props so a host can impose something
+ * TIGHTER for its own surface; when a host says nothing, the knobs decide.
+ */
 interface RecordingInterfaceProps {
   onRecordingComplete: (audioBlob: Blob, duration: number) => void;
   onError: (error: string, code: string) => void;
@@ -25,17 +36,54 @@ interface RecordingInterfaceProps {
   maxSizeBytes?: number;
 }
 
+type ResolvedRecordingLimits = {
+  maxDurationSeconds: ResolvedLimit;
+  maxFileSizeBytes: ResolvedLimit;
+  warnDurationSeconds: ResolvedLimit;
+};
+
 export function RecordingInterface({
   onRecordingComplete,
   onError,
   onRunDeterministicCanary,
-  maxDuration = RECORDING_LIMITS.MAX_DURATION_SECONDS,
-  maxSizeBytes = RECORDING_LIMITS.MAX_FILE_SIZE_BYTES,
+  maxDuration: maxDurationProp,
+  maxSizeBytes: maxSizeBytesProp,
 }: RecordingInterfaceProps) {
   const [duration, setDuration] = useState(0);
   const [estimatedSize, setEstimatedSize] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [hasCompleted, setHasCompleted] = useState(false);
+  const [limits, setLimits] = useState<ResolvedRecordingLimits | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void recordingLimits().then((resolved) => {
+      if (!cancelled) setLimits(resolved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // `null` means "no ceiling is being applied", which the screen SAYS out loud
+  // below rather than quietly substituting a number nobody set.
+  const maxDuration: number | null =
+    maxDurationProp ??
+    (limits?.maxDurationSeconds.resolved ? limits.maxDurationSeconds.value : null);
+  const maxSizeBytes: number | null =
+    maxSizeBytesProp ??
+    (limits?.maxFileSizeBytes.resolved ? limits.maxFileSizeBytes.value : null);
+  const warnDuration: number | null = limits?.warnDurationSeconds.resolved
+    ? limits.warnDurationSeconds.value
+    : null;
+  const limitsUnavailable =
+    limits !== null &&
+    maxDurationProp === undefined &&
+    !limits.maxDurationSeconds.resolved;
+  const limitsUnavailableReason = limits?.maxDurationSeconds.resolved
+    ? null
+    : ((limits?.maxDurationSeconds as { reason?: string } | undefined)?.reason ??
+      null);
 
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const startTimeRef = useRef<number>(0);
@@ -61,7 +109,7 @@ export function RecordingInterface({
   });
 
   const calculateEstimatedSize = (durationSeconds: number) => {
-    return durationSeconds * RECORDING_LIMITS.ESTIMATED_BYTES_PER_SECOND;
+    return durationSeconds * ESTIMATED_BYTES_PER_SECOND;
   };
 
   function stopRecording() {
@@ -86,11 +134,11 @@ export function RecordingInterface({
       setDuration(elapsed);
       setEstimatedSize(calculateEstimatedSize(elapsed));
 
-      if (elapsed >= RECORDING_LIMITS.WARN_DURATION_SECONDS) {
+      if (warnDuration !== null && elapsed >= warnDuration) {
         setShowWarning(true);
       }
 
-      if (elapsed >= maxDuration) {
+      if (maxDuration !== null && elapsed >= maxDuration) {
         stopRecording();
       }
     }, 100);
@@ -104,8 +152,8 @@ export function RecordingInterface({
     };
   }, []);
 
-  const durationProgress = (duration / maxDuration) * 100;
-  const sizeProgress = (estimatedSize / maxSizeBytes) * 100;
+  const durationProgress = maxDuration !== null ? (duration / maxDuration) * 100 : 0;
+  const sizeProgress = maxSizeBytes !== null ? (estimatedSize / maxSizeBytes) * 100 : 0;
 
   return (
     <div className="flex flex-col items-center justify-center py-8 space-y-6">
@@ -121,13 +169,33 @@ export function RecordingInterface({
                   because this sits inside a sentence a person reads — which
                   also fixes the "1 minutes" the hand-rolled division printed
                   at a 60-second limit. */}
-              Click the button below to start recording. Maximum duration:{" "}
-              {formatDurationSeconds(maxDuration, { style: "long" })}.
+              {limits === null
+                ? "Checking your organization's recording limit…"
+                : maxDuration !== null
+                  ? `Click the button below to start recording. Maximum duration: ${formatDurationSeconds(maxDuration, { style: "long" })}.`
+                  : "Click the button below to start recording. No recording limit is being applied — see the note below."}
             </p>
           </div>
-          <Button onClick={startRecording} size="lg" className="min-w-[140px]">
+          {limitsUnavailable && (
+            <Alert className="text-left bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {limitsUnavailableReason ??
+                  "This organization's recording limits could not be read."}{" "}
+                Recording is still allowed, but nothing will stop it
+                automatically — stop it yourself before the tab runs out of
+                memory.
+              </AlertDescription>
+            </Alert>
+          )}
+          <Button
+            onClick={startRecording}
+            size="lg"
+            className="min-w-[140px]"
+            disabled={limits === null}
+          >
             <Mic className="h-4 w-4 mr-2" />
-            Start Recording
+            {limits === null ? "Checking limits…" : "Start Recording"}
           </Button>
           {onRunDeterministicCanary && (
             <div className="space-y-2 border-t border-border pt-4">
@@ -196,7 +264,10 @@ export function RecordingInterface({
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Duration</span>
                 <span>
-                  {formatDurationSeconds(duration, { style: "clock" })} / {formatDurationSeconds(maxDuration, { style: "clock" })}
+                  {formatDurationSeconds(duration, { style: "clock" })}
+                  {maxDuration !== null
+                    ? ` / ${formatDurationSeconds(maxDuration, { style: "clock" })}`
+                    : " / no limit applied"}
                 </span>
               </div>
               <Progress
@@ -212,7 +283,10 @@ export function RecordingInterface({
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Estimated Size</span>
                 <span>
-                  {formatFileSize(estimatedSize)} / {formatFileSize(maxSizeBytes)}
+                  {formatFileSize(estimatedSize)}
+                  {maxSizeBytes !== null
+                    ? ` / ${formatFileSize(maxSizeBytes)}`
+                    : " / no limit applied"}
                 </span>
               </div>
               <Progress
@@ -225,7 +299,7 @@ export function RecordingInterface({
             </div>
           </div>
 
-          {showWarning && isRecording && (
+          {showWarning && isRecording && maxDuration !== null && (
             <Alert className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
               <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               <AlertDescription className="text-orange-800 dark:text-orange-300 text-xs">

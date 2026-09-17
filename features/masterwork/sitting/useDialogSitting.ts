@@ -82,6 +82,29 @@ export function useDialogSitting<T extends SittingBase>(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, scopeId, serialized, worthKeeping, store]);
 
+  /**
+   * WRITE WHAT IS ON SCREEN RIGHT NOW, WITHOUT WAITING OUT THE DEBOUNCE.
+   *
+   * 🚨 Cold walk 8 (2026-09-17). The 400ms debounce exists so a person who
+   * deliberately clears a field is not fought by their own storage — but it
+   * also means work entered and submitted inside that window was never written
+   * at all. A lane that then fails takes the work down with it, and a refusal
+   * that also costs the person their paste is two failures, not one.
+   *
+   * So every error path calls this before it says anything: a lane declared
+   * `sitting` in `./lanePersistence.ts` is only telling the truth if that
+   * declaration holds through a FAILURE and not only through a tidy reload.
+   */
+  const keepNow = useCallback(() => {
+    if (!scopeId) return;
+    const now = latest.current;
+    try {
+      if (now.isWorthKeeping(now.snapshot)) store.write(scopeId, now.snapshot);
+    } catch {
+      setAvailable(false);
+    }
+  }, [scopeId, store]);
+
   const acknowledge = useCallback(() => setResumed(false), []);
 
   const discard = useCallback(() => {
@@ -95,5 +118,5 @@ export function useDialogSitting<T extends SittingBase>(opts: {
     setResumed(false);
   }, [scopeId, store]);
 
-  return { resumed, acknowledge, discard, forget, available };
+  return { resumed, acknowledge, discard, forget, available, keepNow };
 }

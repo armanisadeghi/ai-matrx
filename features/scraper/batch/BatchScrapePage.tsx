@@ -1,0 +1,454 @@
+"use client";
+
+// features/scraper/batch/BatchScrapePage.tsx
+//
+// THE BATCH SCRAPE SURFACE (2026-09-17) — the door a non-technical person was
+// missing. The scraper engine could already take many URLs at once
+// (`POST /api/scraper/quick-scrape` takes `urls: list[str]` and streams one
+// envelope per page); nothing on screen let a person reach that. `/scraper/quick`
+// takes one URL, `/scraper/search-and-scrape` is keyword search. This is the
+// third door: paste a pile of links, press one button, watch honest per-URL
+// results land in a table, retry a failure in place, select the good ones and
+// send them onward.
+//
+// REUSED, not re-invented:
+//   - `useScraperApi().scrapeUrlsBatch` — added to the shared hook alongside
+//     this surface. ONE request, the backend's own streaming shape; a bad row
+//     never aborts the batch (unlike `scrapeUrls`, which throws on the first
+//     failed row and loses every other result — wrong for a table that must
+//     show 200 honest outcomes).
+//   - `<ScrapeProvenance>` — which engine, whether it escalated, in words.
+//   - `<ScrapeFailureNotice>` machinery is NOT reused verbatim here (it is a
+//     single big alert for a single scrape); the per-row failure sentence
+//     comes from the same `classifyScrapeFailure` plain-words law via
+//     `BatchScrapeRow.failureMessage`, which is never a stack trace or JSON.
+//   - `MatrxDataTable` + its `selection` config — the canonical table +
+//     bulk-selection primitive (`lib/entity-list`'s bulk bar is built on this
+//     same contract). `EntityListPage` itself does not fit: every config it
+//     ships requires a server-side scoped-list RPC ("the service triple") for
+//     a persisted entity, and these rows are an ephemeral in-memory scrape
+//     run with no table behind them — forcing one would mean inventing a fake
+//     backing service for rows that are never stored.
+//   - `parseUrlList` (`features/scraper/batch/parseUrlList.ts`) — the paste
+//     reader, already written for this surface.
+//
+// LIBRARY HAND-OFF: there is no scraped-content "Library" write path in this
+// repo (`features/source-library` is the YouTube/video Media Source Catalog —
+// a different noun for a different kind of source). Inventing a Library
+// endpoint here would be exactly the kind of fake backend this platform
+// refuses to ship. The one real, already-existing persistence surface a
+// scraped page can go to is Notes (`features/notes/service/notesApi.ts`), so
+// the bulk action saves each selected successful row there and says so —
+// never a silent no-op, never a button that pretends to reach a Library that
+// does not exist.
+
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import { NotesAPI } from "@/features/notes/service/notesApi";
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import {
+  ClipboardList,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  RotateCw,
+  ExternalLink,
+  NotebookPen,
+} from "lucide-react";
+import {
+  useScraperApi,
+  type BatchScrapeRow,
+} from "@/features/scraper/hooks/useScraperApi";
+import { ScrapeProvenance } from "@/features/scraper/parts/ScrapeProvenance";
+import {
+  parseUrlList,
+  describeParsedUrlList,
+  BATCH_URL_CAP,
+} from "@/features/scraper/batch/parseUrlList";
+
+type RowStatus = "pending" | "success" | "failed";
+
+interface BatchRow {
+  url: string;
+  status: RowStatus;
+  result: BatchScrapeRow["result"];
+  failureMessage: string | null;
+}
+
+function toPending(url: string): BatchRow {
+  return { url, status: "pending", result: null, failureMessage: null };
+}
+
+function fromBatchRow(row: BatchScrapeRow): BatchRow {
+  return {
+    url: row.url,
+    status: row.success ? "success" : "failed",
+    result: row.result,
+    failureMessage: row.failureMessage,
+  };
+}
+
+function wordCount(chars: number | null | undefined): number | null {
+  if (!chars) return null;
+  return Math.round(chars / 5.5);
+}
+
+function StatusBadge({ status }: { status: RowStatus }) {
+  if (status === "pending") {
+    return (
+      <Badge variant="neutral" className="gap-1 text-[11px] font-normal">
+        <Clock className="h-3 w-3 animate-pulse" aria-hidden="true" />
+        Waiting
+      </Badge>
+    );
+  }
+  if (status === "success") {
+    return (
+      <Badge
+        variant="neutral"
+        className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[11px] font-normal text-emerald-700 dark:text-emerald-400"
+      >
+        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+        Read
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="neutral"
+      className="gap-1 border-destructive/30 bg-destructive/10 text-[11px] font-normal text-destructive"
+    >
+      <XCircle className="h-3 w-3" aria-hidden="true" />
+      Failed
+    </Badge>
+  );
+}
+
+export default function BatchScrapePage() {
+  const { scrapeUrlsBatch, isLoading } = useScraperApi();
+  const organizationId = useAppSelector(selectOrganizationId);
+
+  const [text, setText] = useState("");
+  const [rows, setRows] = useState<BatchRow[]>([]);
+  const [hasRun, setHasRun] = useState(false);
+  const [retrying, setRetrying] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Guards a retry's callback against landing after a NEW full run started —
+  // the row it would update may no longer exist in `rows` at all.
+  const runToken = useRef(0);
+
+  const parsed = useMemo(() => parseUrlList(text), [text]);
+  const summary = useMemo(
+    () => describeParsedUrlList(parsed, BATCH_URL_CAP),
+    [parsed],
+  );
+
+  const updateRow = useCallback((next: BatchRow) => {
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.url === next.url);
+      if (idx === -1) return prev;
+      const copy = prev.slice();
+      copy[idx] = next;
+      return copy;
+    });
+  }, []);
+
+  const handleRun = useCallback(async () => {
+    if (parsed.urls.length === 0) return;
+    const token = ++runToken.current;
+    setHasRun(true);
+    setSelectedIds([]);
+    setRows(parsed.urls.map(toPending));
+    await scrapeUrlsBatch(parsed.urls, (row) => {
+      if (runToken.current !== token) return;
+      updateRow(fromBatchRow(row));
+    });
+  }, [parsed.urls, scrapeUrlsBatch, updateRow]);
+
+  const handleRetry = useCallback(
+    async (url: string) => {
+      const token = runToken.current;
+      setRetrying((prev) => new Set(prev).add(url));
+      updateRow(toPending(url));
+      try {
+        await scrapeUrlsBatch(
+          [url],
+          (row) => {
+            if (runToken.current !== token) return;
+            updateRow(fromBatchRow(row));
+          },
+          { use_cache: false },
+        );
+      } finally {
+        setRetrying((prev) => {
+          const next = new Set(prev);
+          next.delete(url);
+          return next;
+        });
+      }
+    },
+    [scrapeUrlsBatch, updateRow],
+  );
+
+  const handleSaveSelectedToNotes = useCallback(
+    async (selectedRows: BatchRow[]) => {
+      const savable = selectedRows.filter(
+        (r) => r.status === "success" && r.result,
+      );
+      if (savable.length === 0) {
+        toast.error("Select at least one successfully read page first");
+        return;
+      }
+      setSaving(true);
+      try {
+        const capturedOrganizationId = await ensureOrganizationContext({
+          organizationId,
+        });
+        let ok = 0;
+        let failed = 0;
+        for (const row of savable) {
+          const result = row.result!;
+          try {
+            await NotesAPI.create({
+              label: result.overview.page_title || row.url,
+              content:
+                (result.markdownRenderable ?? result.textContent) +
+                `\n\nSource: ${row.url}`,
+              folder_name: "Batch Scrape",
+              tags: ["batch-scrape"],
+              organization_id: capturedOrganizationId,
+            });
+            ok += 1;
+          } catch {
+            failed += 1;
+          }
+        }
+        if (failed === 0) {
+          toast.success(
+            ok === 1
+              ? "Saved 1 page to Notes → Batch Scrape"
+              : `Saved ${ok} pages to Notes → Batch Scrape`,
+          );
+          setSelectedIds([]);
+        } else {
+          toast.error(
+            `Saved ${ok} of ${savable.length} to Notes — ${failed} failed to save`,
+          );
+        }
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
+        toast.error("Could not save to Notes");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [organizationId],
+  );
+
+  const columns: MatrxColumnDef<BatchRow>[] = [
+    {
+      accessorKey: "url",
+      header: "URL",
+      sortable: true,
+      cell: (row) => (
+        <a
+          href={row.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-w-0 items-center gap-1 text-sm text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="block max-w-[360px] truncate">{row.url}</span>
+          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+        </a>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (row) => row.status,
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      id: "size",
+      header: "Chars / Words",
+      accessorFn: (row) => row.result?.contentChars ?? row.result?.overview.char_count ?? null,
+      cell: (row) => {
+        const chars =
+          row.result?.contentChars ?? row.result?.overview.char_count ?? null;
+        if (chars == null) return <span className="text-muted-foreground">—</span>;
+        const words = wordCount(chars);
+        return (
+          <span className="text-sm text-muted-foreground">
+            {chars.toLocaleString()} chars
+            {words != null ? ` · ${words.toLocaleString()} words` : ""}
+          </span>
+        );
+      },
+    },
+    {
+      id: "notes",
+      header: "Engine & Notes",
+      filter: false,
+      cell: (row) => {
+        if (row.status === "pending") {
+          return (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Reading…
+            </span>
+          );
+        }
+        if (row.status === "failed") {
+          return (
+            <span className="text-xs text-destructive">
+              {row.failureMessage ?? "We could not read that page."}
+            </span>
+          );
+        }
+        return (
+          <ScrapeProvenance
+            engine={row.result?.engine}
+            escalated={row.result?.escalated}
+            escalationReason={row.result?.escalationReason}
+            escalationNote={row.result?.escalationNote}
+            contentWarning={row.result?.contentWarning}
+            proxyBypassed={row.result?.proxyBypassed}
+          />
+        );
+      },
+    },
+  ];
+
+  return (
+    <div
+      className="h-full flex flex-col overflow-hidden bg-textured"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
+      {/* Paste box + run control */}
+      <div className="flex-shrink-0 border-b border-border/50 px-3 py-3">
+        <div className="mx-auto flex max-w-5xl flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            Paste a list of pages to read
+          </div>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={
+              "Paste any number of links — one per line, separated by commas, or even copied out of a paragraph. Up to " +
+              BATCH_URL_CAP +
+              " at a time."
+            }
+            disabled={isLoading}
+            className="min-h-[100px] resize-y text-sm"
+            style={{ fontSize: "16px" }}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {summary ?? "Paste links above to see what we understood."}
+            </p>
+            <Button
+              onClick={handleRun}
+              disabled={isLoading || parsed.urls.length === 0}
+              size="sm"
+              className="gap-1.5 flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ClipboardList className="h-3.5 w-3.5" />
+              )}
+              {parsed.urls.length > 0
+                ? `Scrape ${parsed.urls.length} page${parsed.urls.length === 1 ? "" : "s"}`
+                : "Scrape"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="min-h-0 flex-1 overflow-hidden p-3">
+        <div className="mx-auto h-full max-w-5xl">
+          {!hasRun ? (
+            <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+              <ClipboardList className="mb-3 h-10 w-10 opacity-40" />
+              <p className="text-sm">
+                Paste links above and press Scrape to see per-page results here.
+              </p>
+            </div>
+          ) : (
+            <MatrxDataTable<BatchRow>
+              tableId="scraper-batch-results"
+              data={rows}
+              columns={columns}
+              getRowId={(row) => row.url}
+              isLoading={rows.length === 0 && isLoading}
+              isFetching={isLoading}
+              viewTabs={false}
+              hidePagination={rows.length <= 25}
+              density="condensed"
+              rowActions={(row) =>
+                row.status === "failed" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 text-xs"
+                    disabled={retrying.has(row.url) || isLoading}
+                    onClick={() => void handleRetry(row.url)}
+                  >
+                    {retrying.has(row.url) ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RotateCw className="h-3 w-3" />
+                    )}
+                    Retry
+                  </Button>
+                ) : null
+              }
+              selection={{
+                selectedIds,
+                onSelectedIdsChange: setSelectedIds,
+                isRowSelectable: (row) => row.status === "success",
+                noun: "page",
+                actions: (selected) => (
+                  <Button
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs"
+                    disabled={saving}
+                    onClick={() => void handleSaveSelectedToNotes(selected)}
+                  >
+                    {saving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <NotebookPen className="h-3.5 w-3.5" />
+                    )}
+                    Save selected to Notes
+                  </Button>
+                ),
+              }}
+              emptyState={{
+                title: "No pages yet",
+                description: "Paste links above and press Scrape.",
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

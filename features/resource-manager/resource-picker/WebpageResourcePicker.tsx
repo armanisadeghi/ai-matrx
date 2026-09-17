@@ -399,7 +399,7 @@ export function WebpageResourcePickerCore({
               )}
 
               {/* Failure — plain words, a remedy the person can press, and the
-                  engineer's report only behind "Details". Never a stage or a
+                  engineer's report only behind "Technical details". Never a stage or a
                   stack as the body (W44). */}
               {hasError && failure && (
                 <ScrapeFailureNotice

@@ -36,6 +36,7 @@ import {
   createVoiceRelayController,
   type VoiceRelayController,
 } from "./relayController";
+import { createUtteranceQueue } from "./utteranceQueue";
 import {
   COMMUNICATION_LEDGER_TOOL,
   COMMUNICATION_LEDGER_TOOL_NAME,
@@ -94,6 +95,13 @@ export interface VoiceRelaySessionApi extends VoiceSessionApi {
   brainBusy: boolean;
   /** Route a text turn to the primary agent (kickoff, typed input). */
   sendToPrimary: (text: string) => void;
+  /**
+   * How many spoken utterances are held because the brain has no address yet
+   * (see `utteranceQueue.ts`). Normally 0, and briefly non-zero at the very
+   * start of a hands-free session. A surface may read it to tell the speaker
+   * the truth; it is never a reason to hide a word.
+   */
+  pendingUtteranceCount: () => number;
 }
 
 export function useVoiceRelaySession(
@@ -164,15 +172,26 @@ export function useVoiceRelaySession(
   // the React Compiler ref rules); its callbacks read the conversation ref at
   // EVENT time. It exists before any human can tap the mic.
   const [controller, setController] = useState<VoiceRelayController | null>(null);
+  // Utterances captured before the brain had an address. Created inside the
+  // effect with the controller (never during render — React Compiler ref
+  // rules), and read back by the flush effect below.
+  const pendingUtterancesRef = useRef<ReturnType<
+    typeof createUtteranceQueue
+  > | null>(null);
   useEffect(() => {
+    const pendingUtterances = createUtteranceQueue();
+    pendingUtterancesRef.current = pendingUtterances;
     const created = createVoiceRelayController({
       onUserUtterance: (transcript) => {
         const targetConversationId = conversationIdRef.current;
         if (!targetConversationId) {
-          console.warn(
-            "[voice-relay] utterance captured before the primary conversation " +
-              "was ready — dropped (the brain has no address yet).",
-          );
+          // 🚨 NEVER LOSE A WORD (2026-09-17). This used to `console.warn` and
+          // return — the Expert had spoken, the microphone had heard her, the
+          // transcript existed, and the platform threw it away. The window is
+          // wide open on a hands-free surface where the human taps ONE control
+          // and starts talking. Hold it; the flush effect below delivers it
+          // the moment the brain has an address. See utteranceQueue.ts.
+          pendingUtterances.enqueue(transcript);
           return;
         }
         // The brain gets the user's VERBATIM words. The voice-layer exchange
@@ -223,8 +242,26 @@ export function useVoiceRelaySession(
     return () => {
       created.dispose();
       disposeLedger(instanceId);
+      pendingUtterances.clear();
+      if (pendingUtterancesRef.current === pendingUtterances) {
+        pendingUtterancesRef.current = null;
+      }
     };
   }, [dispatch, instanceId]);
+
+  // THE FLUSH. The moment the brain has an address, everything the Expert said
+  // while it did not goes to it, oldest first, as real turns — one send per
+  // utterance, exactly as if the conversation had existed all along.
+  useEffect(() => {
+    const queue = pendingUtterancesRef.current;
+    if (!controller || !conversationId || !queue || queue.size() === 0) return;
+    queue.flush((utterance) => {
+      dispatch(
+        setUserInputText({ conversationId, text: utterance.text }),
+      );
+      void dispatch(smartExecute({ conversationId }));
+    });
+  }, [controller, conversationId, dispatch]);
 
   // ── Ledger tool: merge into the session's resolved tool set ─────────────
   // `useRealtimeAgentConfig` is the sole writer of server-resolved tools; the
@@ -363,5 +400,6 @@ export function useVoiceRelaySession(
     primaryConversationId: conversationId ?? null,
     brainBusy,
     sendToPrimary,
+    pendingUtteranceCount: () => pendingUtterancesRef.current?.size() ?? 0,
   };
 }
