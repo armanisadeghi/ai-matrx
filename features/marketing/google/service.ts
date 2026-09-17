@@ -32,7 +32,14 @@ export type GoogleConnectionPurpose =
   | "google_ads_isolated"
   | "read_only_sweep"
   | "contacts_import"
-  | "google_capability";
+  | "google_capability"
+  // The multi-product consent behind the connector primitive's one button:
+  // `capability_keys` names every switched-on product, the hub creates the
+  // connection on a first connect and adds only those products' scopes to an
+  // existing one, refusing by name any scope outside the selection and any
+  // request that would drop a scope the connection already holds.
+  // Contract: common-docs/projects/google-native/PLAN.md §2 + §5.2.
+  | "google_products";
 
 export type GoogleCapabilityKey =
   "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
@@ -396,6 +403,8 @@ export async function connectGoogle(
     expectedUserId?: string;
     targetConnectionId?: string;
     capabilityKey?: GoogleCapabilityKey;
+    /** `google_products` only: every catalog key the person switched on. */
+    capabilityKeys?: readonly string[];
   },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -414,6 +423,9 @@ export async function connectGoogle(
       connection_purpose: connectionPurpose,
       target_connection_id: options?.targetConnectionId,
       capability_key: options?.capabilityKey,
+      capability_keys: options?.capabilityKeys
+        ? [...options.capabilityKeys]
+        : undefined,
     },
     "Unable to connect Google.",
     options?.organizationContextId,

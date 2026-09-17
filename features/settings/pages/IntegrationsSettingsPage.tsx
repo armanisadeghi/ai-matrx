@@ -75,7 +75,7 @@ import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnec
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
+import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { catalogConnectionPresentation } from "./integration-catalog-state";
@@ -190,7 +190,7 @@ export default function IntegrationsPage() {
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
   // The other two "your connections" contributors rendered in this same
-  // section (GitHubConnectionCard below, DirectoryConnectorCards for
+  // section (GitHubConnectionCard below, ConnectorsSettingsPanel for
   // Google) — their own loading state must gate the section summary too,
   // not just the MCP catalog's.
   const github = useGitHubConnection();
@@ -511,7 +511,11 @@ export default function IntegrationsPage() {
             </span>
           </div>
           <GitHubConnectionCard />
-          <DirectoryConnectorCards />
+          {/* Settings → Connectors: every connected Google account with its
+              per-capability health rows, and the same consent body the "Choose
+              what to connect" dialog uses. Replaced the three status-only
+              `DirectoryConnectorCards` on 2026-09-17. */}
+          <ConnectorsSettingsPanel />
         </section>
 
         <section className="space-y-4">
