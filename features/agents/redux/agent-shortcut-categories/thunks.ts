@@ -33,6 +33,7 @@ import { selectCategoryById } from "./selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -158,6 +159,10 @@ export const duplicateCategory = createAsyncThunk<
   ThunkApi
 >("agentShortcutCategory/duplicate", async (input, { dispatch }) => {
   const { id, label, placementType, parentCategoryId, sortOrder } = input;
+  // The route ADMITS the organization from the header and refuses without
+  // one, so the selection is required here — the same way `createCategory`
+  // carries `scopeFields.organizationId` — never a header with nothing in it.
+  const organizationId = requireSelectedOrgId();
 
   const body: Record<string, unknown> = {};
   if (typeof label === "string") body.label = label;
@@ -176,9 +181,10 @@ export const duplicateCategory = createAsyncThunk<
       // duplicating a platform-global category gets the copy in the
       // organization they are working in, so the header is required, not
       // decorative (app/api/agent-shortcut-categories/[id]/duplicate/route.ts).
-      headers: applyOrganizationContextHeader({
-        "Content-Type": "application/json",
-      }),
+      headers: applyOrganizationContextHeader(
+        { "Content-Type": "application/json" },
+        organizationId,
+      ),
       body: JSON.stringify(body),
     },
   );

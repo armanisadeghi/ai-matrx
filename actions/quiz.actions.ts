@@ -23,6 +23,12 @@ type QuizSessionUpdate = {
  */
 export async function findExistingQuizByHash(
   contentHash: string,
+  /**
+   * The organization the person is acting in, carried from the surface. A
+   * session lives in ONE organization, so the resumable duplicate is looked
+   * up there — never across every organization the person belongs to.
+   */
+  organizationId: string,
 ): Promise<{ success: boolean; data?: QuizSession; error?: string }> {
   try {
     const supabase = await createClient();
@@ -41,7 +47,7 @@ export async function findExistingQuizByHash(
       return {
         success: false,
         error:
-          "Select an organization before saving a quiz \u2014 every session is filed under one organization. Pick yours from the avatar menu.",
+          "Select an organization before resuming a quiz \u2014 every session is filed under one organization. Pick yours from the avatar menu.",
       };
     }
 
@@ -51,6 +57,7 @@ export async function findExistingQuizByHash(
       .select("*")
       .is("deleted_at", null)
       .eq("created_by", user.id)
+      .eq("organization_id", trimmedOrganizationId)
       .eq("quiz_content_hash", contentHash)
       .eq("is_completed", false)
       .order("created_at", { ascending: false })
@@ -107,6 +114,15 @@ export async function createQuizSession(
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
+    }
+
+    const trimmedOrganizationId = organizationId?.trim() ?? "";
+    if (trimmedOrganizationId.length === 0) {
+      return {
+        success: false,
+        error:
+          "Select an organization before saving a quiz \u2014 every session is filed under one organization. Pick yours from the avatar menu.",
+      };
     }
 
     const { data, error } = await supabase
