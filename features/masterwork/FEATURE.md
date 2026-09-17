@@ -441,6 +441,31 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 — **THE SORTING TABLE NEVER ERASES A SITTING EITHER, AND THE
+  MECHANISM IS NOW SHARED** (fifth cold walk, finding 2). A day after the Triad
+  game's sitting was made durable, the fifth cold walk found the identical
+  defect on the Sorting Table — the Triad game's own named sibling. Reproduced
+  live on 2026-09-17 against `origin/main`, on a brand-new Rulebook: twenty real
+  e-waste cases dealt into three named piles, five sorted on the keyboard
+  (1/2/1/3/2) to "Case 6 of 20", reload → back to "Sort the pile, then we'll
+  find the line" with the pile picker and "Start sorting", zero trace of the
+  five placements, no resume banner of any kind. The root cause was not the
+  Sorting Table: it was that the Triad fix had been written BY HAND inside
+  `TriadGamePage`, so there was no primitive for the sibling lane to inherit —
+  the instance was fixed and the class was left open. The sitting mechanism now
+  lives once, in [`sitting/sitting.ts`](./sitting/sitting.ts) (`createSittingStore`,
+  `describeResumedSitting`, `settleInFlightSaves`, `countInFlight`); the Triad
+  game was moved onto it with its sentence unchanged, and the Sorting Table now
+  restores the phase, the piles she named, the dealt cases, every placement, the
+  boundary questions and each answer's own status, and says so in one sentence.
+  An answer mid-save when the tab went away is reported as landed-with-nothing-
+  countable plus the true remedy, never as saved-with-a-count and never as lost.
+  Verified live on brand-new Rulebook `0d0befe0`: the same sequence now returns
+  to "You were on case 6 of 20, after sorting 5. Picked up where you left off."
+  over case 6 of the same pile. Guard:
+  `__tests__/a-sorted-case-survives-a-reload.test.tsx`, proven RED against the
+  pre-fix component (second mount rendered the setup screen) and green after.
+
 - 2026-09-16 (later) — **THE TRIAD GAME NEVER ERASES A SITTING, AND THE PROBE'S
   COUNTER NEVER GOES BACKWARDS** (fourth cold walk, findings 2 and 3).
   *Triad:* the whole sitting — deck, index, answered cards, what each answer

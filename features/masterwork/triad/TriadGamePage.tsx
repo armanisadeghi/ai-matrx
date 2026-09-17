@@ -61,6 +61,13 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/redux/hooks";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { AgentCredit } from "@/features/masterwork/components/AgentCredit";
+import {
+  countInFlight,
+  createSittingStore,
+  describeResumedSitting,
+  settleInFlightSaves,
+  type SittingBase,
+} from "../sitting/sitting";
 import { dealTriads, ingestTriadAnswer, TRIAD_GENERATOR_MANDATE } from "./service";
 import { MODE_COPY, type Triad, type TriadDeck, type TriadMode } from "./types";
 
@@ -79,16 +86,20 @@ const SWIPE_THRESHOLD_PX = 64;
 // One key per Rulebook, in this browser. It holds only what is already on the
 // Expert's screen — the dealt cards, where she is in them, and what each
 // answer came back with. Nothing here is a source of truth: the rules live on
-// the Rulebook and the answers live in their own durable runs. This exists so
-// that closing a tab, a phone sleeping, or a refresh mid-round does not erase
-// the evidence that the sitting happened.
-const SITTING_KEY_PREFIX = "matrx.masterwork.triad.sitting.v1:";
-/** A sitting older than this is not offered back — it is a stale board, not a
- *  session someone is still in. */
-const SITTING_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+// the Rulebook and the answers live in their own durable runs.
+//
+// 🚨 THE MECHANISM IS SHARED (cold walk 5, finding 2, 2026-09-16). It used to
+// live here, by hand, and the day after it shipped the Sorting Table — this
+// lane's own named sibling — was caught erasing five sorted cases on reload
+// with no banner at all, because nothing it could call existed. It now lives in
+// `../sitting/sitting.ts`, both lanes call it, and the next play surface
+// inherits it instead of rediscovering the bug.
+const triadSitting = createSittingStore<StoredSitting>({
+  keyPrefix: "matrx.masterwork.triad.sitting.v1:",
+  isUsable: (sitting) => Boolean(sitting.deck?.triads?.length),
+});
 
-interface StoredSitting {
-  savedAt: number;
+interface StoredSitting extends SittingBase {
   deck: TriadDeck;
   mode: TriadMode | null;
   index: number;
@@ -99,63 +110,23 @@ interface StoredSitting {
   seenPrompts: string[];
 }
 
-export function readSitting(rulebookId: string): StoredSitting | null {
-  try {
-    const raw = window.localStorage.getItem(SITTING_KEY_PREFIX + rulebookId);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredSitting;
-    if (!parsed?.deck?.triads?.length) return null;
-    if (!Number.isFinite(parsed.savedAt)) return null;
-    if (Date.now() - parsed.savedAt > SITTING_MAX_AGE_MS) return null;
-    return parsed;
-  } catch {
-    // A browser that refuses storage is allowed to; the game still plays, it
-    // just cannot be picked up again. It is never a reason to fail to deal.
-    return null;
-  }
-}
-
-export function writeSitting(rulebookId: string, sitting: StoredSitting): void {
-  try {
-    window.localStorage.setItem(
-      SITTING_KEY_PREFIX + rulebookId,
-      JSON.stringify(sitting),
-    );
-  } catch {
-    /* storage refused — see readSitting */
-  }
-}
-
-export function clearSitting(rulebookId: string): void {
-  try {
-    window.localStorage.removeItem(SITTING_KEY_PREFIX + rulebookId);
-  } catch {
-    /* storage refused — see readSitting */
-  }
-}
-
-/** What a picked-up sitting says for itself, in the Expert's own terms.
- *  Pure so the sentence can be tested without a browser. */
-export function describeResumedSitting(sitting: {
+/** What a picked-up Triad sitting says for itself. The sentence is the shared
+ *  one; only the nouns are this lane's. */
+export function describeResumedTriad(sitting: {
   index: number;
   deck: { triads: unknown[] };
   cardsAnswered: number;
   inFlight: number;
 }): string {
-  const total = sitting.deck.triads.length;
-  const where =
-    sitting.index >= total
-      ? "You had reached the end of the cards we dealt you"
-      : `You were on card ${sitting.index + 1} of ${total}`;
-  const answered =
-    sitting.cardsAnswered > 0
-      ? `, after answering ${sitting.cardsAnswered}`
-      : "";
-  const flight =
-    sitting.inFlight > 0
-      ? ` ${sitting.inFlight === 1 ? "One answer was" : `${sitting.inFlight} answers were`} still being turned into rules when you left — that work carried on without you, so check your Rulebook rather than playing those cards again.`
-      : "";
-  return `${where}${answered}. Picked up where you left off.${flight}`;
+  return describeResumedSitting({
+    index: sitting.index,
+    total: sitting.deck.triads.length,
+    answered: sitting.cardsAnswered,
+    inFlight: sitting.inFlight,
+    itemNoun: "card",
+    endedPhrase: "the cards we dealt you",
+    redoPhrase: "playing those cards again",
+  });
 }
 
 export function TriadGamePage({
@@ -173,9 +144,9 @@ export function TriadGamePage({
   // THE SITTING IS READ BACK BEFORE THE FIRST PAINT, so a reload never shows
   // "Deal me in" over a round that is still on the board. Lazy initialisers, so
   // storage is touched once and never during SSR.
-  const restored = useRef<ReturnType<typeof readSitting>>(null);
+  const restored = useRef<StoredSitting | null>(null);
   if (restored.current === null && typeof window !== "undefined") {
-    restored.current = readSitting(rulebookId);
+    restored.current = triadSitting.read(rulebookId);
   }
   const saved = restored.current;
 
@@ -191,19 +162,12 @@ export function TriadGamePage({
     // "saved" — this browser never heard the answer. It is reported as what it
     // is, with the true remedy: the work carried on server-side.
     () =>
-      Object.fromEntries(
-        Object.entries(saved?.saveStates ?? {}).map(([id, state]) => [
-          id,
-          state.kind === "saving"
-            ? ({
-                kind: "saved",
-                added: 0,
-                unverified: 0,
-                alreadyPlayed: false,
-              } as SaveState)
-            : state,
-        ]),
-      ),
+      settleInFlightSaves<SaveState>(saved?.saveStates ?? {}, () => ({
+        kind: "saved",
+        added: 0,
+        unverified: 0,
+        alreadyPlayed: false,
+      })),
   );
   const [rulesThisSitting, setRulesThisSitting] = useState(
     saved?.rulesThisSitting ?? 0,
@@ -213,13 +177,11 @@ export function TriadGamePage({
   /** The sentence a picked-up sitting says for itself. Null on a fresh one. */
   const [resumedNote] = useState<string | null>(() =>
     saved
-      ? describeResumedSitting({
+      ? describeResumedTriad({
           index: saved.index,
           deck: saved.deck,
           cardsAnswered: saved.cardsAnswered,
-          inFlight: Object.values(saved.saveStates).filter(
-            (state) => state.kind === "saving",
-          ).length,
+          inFlight: countInFlight(saved.saveStates),
         })
       : null,
   );
@@ -236,8 +198,7 @@ export function TriadGamePage({
   // box — the draft answer is not evidence, the answered card is.
   useEffect(() => {
     if (!deck) return;
-    writeSitting(rulebookId, {
-      savedAt: Date.now(),
+    triadSitting.write(rulebookId, {
       deck,
       mode,
       index,
