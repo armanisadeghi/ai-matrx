@@ -28,8 +28,18 @@ import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/ac
 import { countPendingProposals } from "./data";
 import { mountedApprovalKinds } from "./rendered";
 import { APPROVAL_KINDS } from "./registry";
+// 🚨 `PENDING_APPROVALS_QUERY_KEY` and `invalidateApprovals` now live in
+// `./queryKeys` — a LEAF module with no import of `./registry` or `./data` —
+// re-exported here for every existing caller of this module. A kind module
+// (downstream of `./registry`) must import them from `./queryKeys` directly,
+// never from here: importing THIS module from a kind closes a cycle back
+// through `./registry` → `./kinds/*` (see `./queryKeys` for the incident).
+import {
+  invalidateApprovals,
+  PENDING_APPROVALS_QUERY_KEY,
+} from "./queryKeys";
 
-export const PENDING_APPROVALS_QUERY_KEY = ["approvals", "pending-count"];
+export { PENDING_APPROVALS_QUERY_KEY, invalidateApprovals };
 
 export function usePendingApprovalCount(): {
   count: number;

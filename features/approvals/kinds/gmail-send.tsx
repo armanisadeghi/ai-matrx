@@ -53,6 +53,7 @@ import {
 } from "../data";
 import { receiptRowMarks } from "../receipt";
 import { unrenderableApprovalItems } from "../unshowable";
+import { invalidateApprovals } from "../queryKeys";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -556,7 +557,12 @@ function useSource(scope: ApprovalScope): ApprovalSource {
 
   const refetch = () => {
     void pending.refetch();
-    void client.invalidateQueries({ queryKey: QUERY_KEY });
+    // 🚨 THIS IS ALSO A DECISION PATH: the review card's Send/Reject calls
+    // `onDecided={refetch}` (below) after it has already recorded the
+    // decision — so the badge must settle here too, not only from
+    // `useDecisions`'s batch reject (Bugbot MEDIUM, frontend PR 228, comment
+    // 4041625792).
+    invalidateApprovals(client, QUERY_KEY);
   };
 
   // The callback's return is annotated because each branch returns a different
@@ -764,8 +770,11 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
   const viewerId = useAppSelector(selectUserId);
   const userId = scope.userId ?? viewerId;
   const client = useQueryClient();
+  // 🚨 THE BADGE SETTLES TOO (Bugbot MEDIUM, frontend PR 228, comment
+  // 4041625792) — `invalidateApprovals` is the one call every decision path
+  // makes (`../queryKeys.ts`).
   const invalidate = () =>
-    void client.invalidateQueries({ queryKey: [...QUERY_KEY, userId] });
+    invalidateApprovals(client, [...QUERY_KEY, userId]);
 
   return {
     /**

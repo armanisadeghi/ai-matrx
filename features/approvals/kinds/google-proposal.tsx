@@ -30,6 +30,7 @@ import type { Json } from "@/types/database.types";
 import { listPendingProposals, type ApprovalProposal } from "../data";
 import { unrenderableApprovalItems } from "../unshowable";
 import { applyGoogleApproval, rejectGoogleApproval } from "../google-door";
+import { invalidateApprovals } from "../queryKeys";
 import {
   readApprovalReceipt,
   readDecisionReply,
@@ -308,10 +309,13 @@ export function useGoogleApprovalDecisions(
   const viewerId = useAppSelector(selectUserId);
   const userId = scope.userId ?? viewerId;
   const client = useQueryClient();
+  // 🚨 THE BADGE SETTLES TOO — a hand-typed `invalidateQueries({ queryKey:
+  // [...googleQueryKey(kindId), userId] })` never reaches
+  // `PENDING_APPROVALS_QUERY_KEY` (Bugbot MEDIUM, frontend PR 228, comment
+  // 4041625792). `invalidateApprovals` is the one call every decision path
+  // makes (`../queryKeys.ts`).
   const invalidate = () =>
-    void client.invalidateQueries({
-      queryKey: [...googleQueryKey(kindId), userId],
-    });
+    invalidateApprovals(client, [...googleQueryKey(kindId), userId]);
 
   /**
    * 🚨 THE DOOR'S ANSWER IS READ, NOT ASSUMED (Bugbot MEDIUM, frontend PR 228).

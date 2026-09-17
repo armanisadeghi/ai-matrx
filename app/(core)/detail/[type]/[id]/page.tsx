@@ -20,12 +20,19 @@ interface Props {
 export const metadata: Metadata = { title: "Record" };
 
 export default async function DetailPage({ params, searchParams }: Props) {
+  // Next.js already decodes dynamic segment params before handing them to
+  // the page (App Router router-decoded contract) — decoding again here
+  // double-decodes a literal `%` (an id/type segment carrying `%25` came in
+  // as `%` and a second decodeURIComponent then threw a URIError, failing
+  // the whole route). `detailPageHref` is the one place that encodes these
+  // segments; nothing below this page may decode them a second time
+  // (Bugbot LOW, frontend PR 228, comment 4041625800).
   const { type, id } = await params;
   const { l, i, lt } = await searchParams;
   return (
     <DetailPageRoute
-      type={decodeURIComponent(type)}
-      id={decodeURIComponent(id)}
+      type={type}
+      id={id}
       list={l ?? null}
       index={i ?? null}
       listTotal={lt ?? null}
