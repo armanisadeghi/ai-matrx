@@ -30,6 +30,7 @@ import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import type { LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { podcastService } from "@/features/podcasts/service";
+import { chapterTimingAdjustmentNotice } from "@/features/podcasts/chapter-timing";
 import { parseChapters } from "@/features/podcasts/types";
 import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
@@ -108,9 +109,9 @@ export function useEpisodeChapters(
         onConversationCreated: (conversationId) => {
           windowRef.current?.update({ conversationId, pending: false });
         },
-        // parseChapters is the SAME reader the persistence side uses
-        // (mapPcEpisodeRow), so what the window streamed and what reloads
-        // off the episode row can never disagree.
+        // parseChapters is the reader for the raw agent result. The live window
+        // may show that raw list, while the shared save boundary can visibly
+        // adjust it to the actual audio duration before persistence.
         coerce: (value) => {
           const parsed = parseChapters(value);
           if (!parsed) {
@@ -122,8 +123,16 @@ export function useEpisodeChapters(
         },
       });
       const saved = await podcastService.saveEpisodeChapters(episode.id, list);
-      setGenerated({ episodeId: episode.id, chapters: saved.chapters ?? list });
-      toast.success(`Generated ${list.length} chapters.`);
+      const persisted = saved.chapters ?? list;
+      setGenerated({ episodeId: episode.id, chapters: persisted });
+      const adjustment = chapterTimingAdjustmentNotice(
+        list,
+        persisted,
+        saved.duration_seconds,
+      );
+      toast.success(
+        adjustment ?? `Generated ${persisted.length} chapters.`,
+      );
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);

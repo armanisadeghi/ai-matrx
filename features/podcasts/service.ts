@@ -18,6 +18,7 @@ import {
   mapPcShowRow,
 } from "./types";
 import {
+  durationSecondsForStorage,
   normalizeChapterTiming,
   resolveAudioMetadataDuration,
 } from "./chapter-timing";
@@ -305,9 +306,10 @@ export const podcastService = {
     // of truth, and saving it here makes the next agent duration_hint accurate.
     const durationSeconds = await resolveAudioMetadataDuration(episode.audio_url);
     const playableChapters = normalizeChapterTiming(chapters, durationSeconds);
+    const storedDurationSeconds = durationSecondsForStorage(durationSeconds);
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
-      .update({ chapters: playableChapters, duration_seconds: durationSeconds })
+      .update({ chapters: playableChapters, duration_seconds: storedDurationSeconds })
       .eq("id", id)
       .select()
       .single();

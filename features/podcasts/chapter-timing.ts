@@ -7,6 +7,15 @@ function maxPlayableSecond(durationSeconds: number): number {
   return Math.ceil(durationSeconds) - 1;
 }
 
+/** `pc_episodes.duration_seconds` is PostgreSQL int4; retain the closest
+ * truthful display/runtime hint without sending a fractional value to it. */
+export function durationSecondsForStorage(durationSeconds: number): number {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+    throw new Error("Audio metadata did not provide a positive duration; chapter markers were not saved.");
+  }
+  return Math.max(1, Math.round(durationSeconds));
+}
+
 function formatStartHint(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -82,6 +91,25 @@ export function normalizeChapterTiming(
     ...chapter,
     start_hint: formatStartHint(normalized[index]),
   }));
+}
+
+/**
+ * Copy for every caller that reports a successful chapter save. A normalizer
+ * that is not disclosed at this seam would silently change listener-facing
+ * seek targets.
+ */
+export function chapterTimingAdjustmentNotice(
+  requested: PcEpisodeChapter[],
+  saved: PcEpisodeChapter[],
+  durationSeconds: number | null,
+): string | null {
+  const adjusted = requested.reduce((count, chapter, index) => {
+    const before = chapterStartSeconds(chapter.start_hint ?? "");
+    const after = chapterStartSeconds(saved[index]?.start_hint ?? "");
+    return count + (before !== after ? 1 : 0);
+  }, 0);
+  if (adjusted === 0 || !durationSeconds || durationSeconds <= 0) return null;
+  return `Adjusted ${adjusted} chapter ${adjusted === 1 ? "timestamp" : "timestamps"} to fit the actual ${durationSeconds.toFixed(3)}-second audio. Review the chapter markers before publishing.`;
 }
 
 /** Resolve the duration from the same browser media metadata the player uses. */

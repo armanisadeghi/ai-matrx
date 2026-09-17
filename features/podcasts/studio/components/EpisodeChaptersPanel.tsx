@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import MediaChaptersBlock from "@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock";
 import { podcastService } from "@/features/podcasts/service";
+import { chapterTimingAdjustmentNotice } from "@/features/podcasts/chapter-timing";
 import { useEpisodeChapters } from "@/features/podcasts/generator/useEpisodeChapters";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -144,8 +145,16 @@ export function EpisodeChaptersPanel({
         );
       }
       const saved = await podcastService.saveEpisodeChapters(episode.id, next);
-      setWritten(saved.chapters ?? next);
-      toast.success(`Chapter markers updated (${next.length}).`);
+      const persisted = saved.chapters ?? next;
+      setWritten(persisted);
+      const adjustment = chapterTimingAdjustmentNotice(
+        next,
+        persisted,
+        saved.duration_seconds,
+      );
+      toast.success(
+        adjustment ?? `Chapter markers updated (${persisted.length}).`,
+      );
     },
     [episode, busy],
   );
