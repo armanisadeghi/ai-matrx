@@ -47,24 +47,36 @@ ROWS="${ROWS:-4000}"
 TMP="$(mktemp -d)"
 
 cleanup() {
-  "$PSQL" "$DSN" -q -c "
+  # THE CLEANUP IS AS LOAD-BEARING AS THE TEST. Two bugs measured 2026-09-17, both of which
+  # left the branch dirty while the script reported success:
+  #   · it dropped indexes by `relkind = 'i'`, and the PARENT of a partitioned index is `'I'`,
+  #     so 80 index objects survived every run;
+  #   · it read ONE table id with `SELECT INTO`, which raises the moment a previous run has
+  #     left a second row with the same slug — and `|| true` swallowed it, so run 2 and run 3
+  #     deleted nothing and said nothing. It now deletes EVERY matching Table and PRINTS what
+  #     it removed, and the knob goes back to false whatever else happened.
+  "$PSQL" "$DSN" -q -v ON_ERROR_STOP=1 -c "
+    set statement_timeout = '900s';
     do \$c\$
-    declare r record; t uuid;
+    declare r record; n bigint; ix integer := 0;
     begin
-      select id into t from custom.record
-       where organization_id='$ORG'::uuid and data->>'slug'='$SLUG';
-      for r in select n.nspname, c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace
-                where n.nspname='custom' and c.relkind='i'
+      for r in select n2.nspname, c.relname from pg_class c join pg_namespace n2 on n2.oid = c.relnamespace
+                where n2.nspname = 'custom' and c.relkind in ('i','I') and not c.relispartition
                   and (c.relname like 'cpi\\_%' or c.relname like 'cpu\\_%' or c.relname like 'zz\\_w1\\_index\\_%')
-      loop execute format('drop index if exists %I.%I cascade', r.nspname, r.relname); end loop;
-      if t is not null then
-        delete from custom.record r2
-         where r2.organization_id='$ORG'::uuid
-           and (r2.id = t or r2.table_id = t or (r2.data->>'entity_definition_id')::uuid = t);
-      end if;
-      update platform.feature_knob set value='false'::jsonb
-       where feature='custom' and key='field_index_guard';
-    end \$c\$;" >/dev/null 2>&1 || true
+      loop execute format('drop index if exists %I.%I cascade', r.nspname, r.relname); ix := ix + 1; end loop;
+      for r in select n2.nspname, c.relname from pg_class c join pg_namespace n2 on n2.oid = c.relnamespace
+                where n2.nspname = 'custom' and c.relkind in ('i','I')
+                  and (c.relname like 'cpi\\_%' or c.relname like 'cpu\\_%' or c.relname like 'zz\\_w1\\_index\\_%')
+      loop execute format('drop index if exists %I.%I cascade', r.nspname, r.relname); ix := ix + 1; end loop;
+      with t as (select id from custom.record where organization_id = '$ORG'::uuid and data->>'slug' = '$SLUG')
+      delete from custom.record r2 using t
+       where r2.organization_id = '$ORG'::uuid
+         and (r2.id = t.id or r2.table_id = t.id or (r2.data->>'entity_definition_id')::uuid = t.id);
+      get diagnostics n = row_count;
+      update platform.feature_knob set value = 'false'::jsonb
+       where feature = 'custom' and key = 'field_index_guard';
+      raise notice 'cleanup: % index drop(s), % record(s), custom/field_index_guard back to false', ix, n;
+    end \$c\$;" || echo "CLEANUP FAILED — the branch may still hold the Table this script declared, its indexes, or the guard switched ON. Run it again, or clear them by hand."
   rm -rf "$TMP"
 }
 trap cleanup EXIT
