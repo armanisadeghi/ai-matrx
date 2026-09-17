@@ -109,6 +109,7 @@ import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingBrandAssetsManifest } from "./marketing-brand-assets.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingSiteSettingsManifest } from "./marketing-site-settings.manifest";
+import { marketingTopicalMapManifest } from "./marketing-topical-map.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
 import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
@@ -331,6 +332,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingBrandAssetsManifest,
   marketingIntegrationsManifest,
   marketingSiteSettingsManifest,
+  // The brand's topical map — which pages should exist and where they live.
+  // The Content section's home; the content plan below is its production line.
+  marketingTopicalMapManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
   // One workspace, five surfaces: the ?view= param is a different page with
   // different agents (list front door, plan-editor base, setup, entities,

@@ -569,16 +569,23 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "SEO Changes",
     hrefFor: (id) => `/marketing/changes/${id}`,
   },
-  // Topical map: no hrefFor yet. The share registry's /marketing/topical-maps/{id}
-  // has no route in app/, and a link to nowhere is worse than no link.
+  // Topical map. The id door shipped 2026-09-17, so these two now link: the map
+  // door matches `platform.shareable_resource_registry.url_path_template`, and
+  // the topic door resolves the topic to its map and opens the workspace on it.
   seo_topical_map: {
     Icon: Network,
     labelPlural: "Topical maps",
+    hrefFor: (id) => `/marketing/topical-maps/${id}`,
   },
   seo_map_topic: {
     Icon: ListTree,
     labelPlural: "Topical map topics",
+    hrefFor: (id) => `/marketing/topical-maps/topics/${id}`,
   },
+  // Facets and facet values still have NO hrefFor, and that is deliberate: they
+  // are configuration read inside a topic's detail panel, and no screen
+  // addresses one on its own. A link to nowhere is worse than no link — give
+  // them one when the facet admin surface (U3/U4) ships.
   seo_map_facet: {
     Icon: SlidersHorizontal,
     labelPlural: "Topical map facets",

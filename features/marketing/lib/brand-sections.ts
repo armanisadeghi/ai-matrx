@@ -117,10 +117,16 @@ export const MARKETING_BRAND_SECTIONS = [
     name: "Content",
     titlePrefix: "Content",
     description:
-      "Plan every URL a site should have; produce what the plan calls for.",
-    letter: "Ce",
-    iconName: "ListTree",
+      "The topical map: which pages this brand should have and where they live. The content plan produces what it calls for.",
+    letter: "Tm",
+    iconName: "Network",
     group: "Marketing",
+    // ⚠️ `/marketing/<brand>/content` answered with `permanentRedirect` (HTTP
+    // 308) into the content plan until the map took that slot on 2026-09-16,
+    // and browsers cache a 308 indefinitely. Pointing this row at the
+    // `content/map` address means the sidebar never exercises anyone's cached
+    // redirect; `/content` itself still renders the same screen.
+    subPath: "map",
   },
   {
     slug: "email",
