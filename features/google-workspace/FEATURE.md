@@ -5,6 +5,10 @@
 > `/Users/armanisadeghi/code/common-docs/systems/integrations/provider-access/GOOGLE.md`.
 > Read it before adding any Google capability anywhere.
 
+> **The build plan for making Google native (three planes, primitives, build units):**
+> `/Users/armanisadeghi/code/common-docs/projects/google-native/PLAN.md` (2026-09-17). The screens in
+> this feature are rebuilt under it; the plumbing here is what it reuses.
+
 ## Purpose
 
 This is AI Matrx's focused, reviewer-visible Google Workspace product surface. It proves the exact user actions behind the first direct Google OAuth verification campaign without exposing unrelated product features.
