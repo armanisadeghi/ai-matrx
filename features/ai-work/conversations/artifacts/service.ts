@@ -14,6 +14,29 @@
 // column list is the ONE legal projection for `files.files` (`storage_uri` is
 // server-only and `select('*')` errors). Nothing here assembles a storage URL:
 // opening and downloading go through the app's file primitives.
+//
+// 🚨 THIS READ IS SLOW AND INTERMITTENTLY 500s, AND AN INDEX CANNOT FIX IT
+// (CS-27, 2026-09-17). `files.files` has RLS enabled, and PostgreSQL may not
+// evaluate a qual whose operator is not LEAKPROOF before the security quals —
+// so it can never become an index condition. `jsonb_object_field_text` (`->>`)
+// is not leakproof, so BOTH `metadata->>` equalities below are demoted into a
+// per-row Filter and the planner walks the whole table: 29,147 ms measured on
+// production as admin, against role `authenticated`'s 8 s statement_timeout.
+// Twenty identical reads returned 15 × 200 and 5 × 500 `57014`. The expression
+// index built for it (`files_coding_session_artifact_idx`) is provably ignored
+// under RLS and is queued for removal in
+// `migrations/inverse/files_coding_session_artifact_index_drop.sql`.
+// DO NOT add another JSONB index, and do not raise the timeout. The read needs a
+// LEAKPROOF indexed predicate — a real column, or an RLS-bypassing id lookup
+// whose ids feed an outer RLS-applied select. That is a platform read-path
+// decision and is escalated. The live measurement is
+// `pnpm check:artifact-read-latency`, which stays red until it lands.
+//
+// Also unfixed and load-bearing: this is a list the panel treats as COMPLETE (it
+// builds a file tree and counts files) read through a bare `.select()`, so
+// PostgREST silently caps it at 1000 rows — and the biggest live session holds
+// 5,984 artifacts. It needs `readAllRows` from `@ai-matrx/data/db`, which is only
+// affordable once the read above is fast.
 
 import type { QueryData } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";

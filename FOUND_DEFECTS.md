@@ -15,6 +15,65 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D330 — An expression index on an RLS table is UNUSABLE by every client read: `->>` is not leakproof (2026-09-17)
+
+**Status:** open · **Priority:** P1 for the one live victim (the coding-session Files tab 500s) · **Repo:** matrx-frontend + DB
+
+PostgreSQL will not evaluate a qual whose operator is not `LEAKPROOF` before a table's RLS
+security quals, so such a qual can **never become an index condition**.
+`jsonb_object_field_text` (`->>`) has `proleakproof = false`. Therefore **every expression
+index on a `metadata->>'…'` path on an RLS-enabled table is dead weight for any read that
+goes through RLS** — i.e. for every client read in this repo. It works only for a reader
+that bypasses RLS: `service_role`, or a `SECURITY DEFINER` body.
+
+Proven on the same statement and identity (`files.files`, `admin@admin.com`, production):
+as `postgres` with RLS off the expression index is chosen, both JSONB equalities become
+`Index Cond`, **2.4 ms**; as `authenticated` with RLS on the same index is ignored, the
+planner walks `idx_cld_files_owner` in full and the equalities are demoted into `Filter`,
+cost 3,986,650, **29,147 ms**. Control (so it is leakproofness, not the planner's taste):
+the identical read with `uuid_eq` on `created_by`, or a text range on `file_path`, DOES get
+an `Index Cond` under the same policy — **1.1 ms**.
+
+**Census of expression indexes on `files.files`** (`\di` on the table): `idx_cld_files_derived_from`
+(`metadata->>'derived_from'`), `idx_cld_files_variant_key` (`… 'derived_from', 'variant_key'`),
+and `files_coding_session_artifact_idx` (added by CS-27 before this was understood). The first
+two are read by server-side variant/derivation code as `service_role`, where they are genuine;
+the third serves nobody and is queued for removal in
+`migrations/inverse/files_coding_session_artifact_index_drop.sql` (a chair step — an interactive
+production apply). Frontend census: `features/ai-work/conversations/artifacts/service.ts` is the
+only client read that filters `files.files` by a JSONB path. The sibling
+`features/pdf/scanner/processing.ts` filters `docproc.processed_documents` by
+`metadata->>'via'` but is bounded by `owner_id` + `limit 12`, so it rides the owner index and is
+not a victim.
+
+**The live victim:** that artifacts read is the coding-session Files tab's only read. It walks
+the whole table under RLS and 500s `57014 canceling statement due to statement timeout` about
+one open in four (20 identical production GETs: 15 × 200 / 5 × 500 on 2026-09-17; the same
+guard measured 0/20 on a second session). Guard: `pnpm check:artifact-read-latency` (red).
+Feedback item `b7bc4af8-ea1c-40fd-9d24-b7146cbeb84d`.
+
+**The fix is a platform read-path decision, escalated, not a patch.** Three candidates, all
+measured against: (a) a real column — `ALTER TABLE files.files ADD COLUMN … GENERATED ALWAYS AS
+(metadata->>'cli_session_id') STORED` + btree; `texteq` is leakproof so the qual indexes
+cleanly and no writer changes, but a STORED generated column REWRITES a 335 MB table under
+`ACCESS EXCLUSIVE` while ~30 indexes rebuild, and the DB's own maintenance-DDL guard caps
+`lock_timeout` at 2 s precisely to stop that being taken casually; (b) a nullable plain column
++ batched backfill + a trigger — no rewrite, but a new trigger on the platform's hottest write
+path; (c) an RLS-bypassing `SECURITY DEFINER` id lookup feeding an outer **SECURITY INVOKER**
+select on `id = any(...)` (`uuid_eq`, leakproof, pkey) — no rewrite, no trigger, no writer
+change, the real policy still decides every row and the ids never reach the client, but it adds
+a client-callable door on `files.files` and needs a `platform.client_callable_door` row, and
+closing the helper's own PUBLIC `EXECUTE` needs a `REVOKE`, which both migration judges deny
+outside the `-- allows: revoke <schema>` header. A fourth, "make the generated RLS predicate
+cheap" (~185 µs/row over 158k rows, ~180 subplans, many for unrelated entity types), would fix
+the whole class of unindexed reads on this table but is a change to `iam.apply_rls`'s output
+and belongs to the access system's owner.
+
+**Also found, same function, not fixed:** the artifacts read is a list the panel treats as
+COMPLETE (it builds a file tree and counts files) through a bare `.select()`, so PostgREST
+silently caps it at 1000 rows — and the biggest live session holds 5,984 artifacts. It needs
+`readAllRows` from `@ai-matrx/data/db`, which is only affordable once the read is fast.
+
 ### D328 — `str(ctx.organization_id or …)` turns a missing org into the literal `"None"` at 13 aidream call sites (2026-09-17)
 
 **Status:** open · **Priority:** P3 (latent — near-unreachable today) · **Repo:** aidream (filed here because it was found during this repo's cold-walk-8 round; aidream should take it as an `AD<n>` remainder)
