@@ -30,6 +30,9 @@ import { useAppStore } from "@/lib/redux/hooks";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
@@ -151,6 +154,27 @@ const SHADOW_INBOX_DESCRIPTION =
   "have sent — without ever being shown yours. The difference between the two " +
   "is what becomes your rules. Everything lands as drafts you approve.";
 
+/**
+ * A PASTED THREAD IS REAL, IRREPLACEABLE WORK — it is the Expert's own
+ * correspondence, copied out of their mail client by hand. The cold-walk-6
+ * census (2026-09-17) pasted one in, reloaded, and it was gone with nothing
+ * said: the same class walk 4 found in the Triad, walk 5 in the Sorting Table
+ * and walk 6 in the Red-Pen lane and the Daily Drip.
+ */
+interface ShadowInboxSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  expertEmail: string;
+  door: InboxDoor;
+}
+
+const shadowInboxSittings = createSittingStore<ShadowInboxSitting>({
+  keyPrefix: "matrx.masterwork.shadow-inbox.v1:",
+  isUsable: (sitting) =>
+    (sitting.text ?? "").trim().length > 0 ||
+    (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function ShadowInboxDialog({
   open,
   onOpenChange,
@@ -184,6 +208,28 @@ export function ShadowInboxDialog({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState<string[]>([]);
   const [connection, setConnection] = useState<ConnectionState | null>(null);
+
+  const sitting = useDialogSitting<ShadowInboxSitting>({
+    store: shadowInboxSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { text, sourceNote, expertEmail, door },
+    isWorthKeeping: (s) =>
+      s.text.trim().length > 0 || s.sourceNote.trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+      setExpertEmail(kept.expertEmail ?? "");
+      // Put it back on the door it was written on — restoring a pasted thread
+      // onto the connected-mailbox door would hide it from its own owner.
+      if (kept.door) setDoor(kept.door);
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+      setExpertEmail("");
+    },
+  });
 
   const run = useMasterworkRun<IngestSummary>({
     surface: "shadow_inbox",
@@ -230,7 +276,11 @@ export function ShadowInboxDialog({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    // The lane finished for real — nothing is in progress to keep.
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -446,6 +496,16 @@ export function ShadowInboxDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE: this surface renders as a dialog AND
+          as its own page (/masterwork/[id]/inbox), and a restore that only the
+          dialog half announced would be a silent one on the page. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the thread you had pasted in, and what you called it"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
       {/* WHAT THIS SITTING HAS ALREADY DONE. A second thread starts on the same
           blank first step as the first one did, so without this the screen
           silently forgets the work the person just watched land. */}
