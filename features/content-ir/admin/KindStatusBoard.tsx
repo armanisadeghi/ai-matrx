@@ -327,7 +327,7 @@ export default function KindStatusBoard({
         </div>
       )}
 
-      <div className="border-t border-border px-4 py-2">
+      <div data-matrx-table-page className="border-t border-border py-2">
         <MatrxDataTable<KindBoardRow>
           tableId="admin-kind-registry-status-board"
           data={board.rows}
