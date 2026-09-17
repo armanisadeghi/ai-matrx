@@ -6,6 +6,8 @@
 
 ## Change log
 
+- `2026-09-17` — **`primary` sections: the clicked target comes first.** New optional `ContextMenuExtraSection.primary`; `liftPrimarySections` (classic) and `arrangeMenu` (tiered/command) put it at the top, inline, heading kept, with the pane's sibling sections directly under it. First adopter: the data-table grid (a header right-click opened on dead Cell and Row folds with the column's actions eleven rows down). Verified live on `/data/[id]`; `layout-parity.test.ts` pins order, no-fold, headings and losslessness in all three layouts.
+
 - `2026-09-17` — Native numeric inputs retain their browser editing contract. Selection capture treats inputs without a supported selection API as one whole value, routes edits through the controlled replacement callback, and skips unsupported range restoration; text inputs and textareas retain partial selections.
 
 `EditableContextMenu` / `NonEditableContextMenu` wrap children; the menu does everything automatically from `surfaceName` + a few value props. **The single most important contract is value mapping** (below) — the AI shortcuts and bound agents depend on it.
@@ -74,6 +76,20 @@ exception to the platform touch floor.
 with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
 ONE submenu named by its `label` with its optional `icon` (notes → "Note" with
 `StickyNote`). The surface never knows which layout is active.
+
+**THE PRIMARY SECTION — the thing the user right-clicked (Arman, 2026-09-17:
+"make it clear what section of actions are specific to the cell, the table or
+something else").** A pane with several targets (a grid's cell / row / column)
+marks the clicked target's section `primary: true` (`ContextMenuExtraSection`).
+Every layout then renders it FIRST — above the universal rows — INLINE, with
+its heading, never folded, however long; in tiered/command the pane's other
+sections follow it directly (inline ones keep their headings), so the pane's
+hierarchy reads as one block and the platform's rows as another. Lossless: it
+only MOVES rows (`layout-parity.test.ts` § primary section). The host decides
+which sections exist for a target — a column header has no cell and no row, so
+the grid offers neither there; that is not a layout hiding rows. A surface with
+one identity never needs `primary`. Reference: `UserTableViewer`
+(`gridMenuTargetKind`) + `features/data-tables/grid-context-menu.ts`.
 
 **Overflow law:** the desktop menus cap at the Radix available height and
 scroll (`max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto`) —

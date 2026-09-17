@@ -189,6 +189,8 @@ export interface MenuSection {
   icon?: LucideIcon;
   /** Classic rendering: no separator between this and the previous section. */
   joinPrevious?: boolean;
+  /** The clicked target's section — see `ContextMenuExtraSection.primary`. */
+  primary?: boolean;
   nodes: MenuNode[];
 }
 
@@ -328,10 +330,21 @@ function extrasByAnchor(
       group: "surface",
       label: s.label,
       icon: s.icon,
+      primary: s.primary === true ? true : undefined,
       nodes: s.items.map(fromExtraItem),
     });
   }
   return out;
+}
+
+/**
+ * Classic order, with the clicked target's section lifted to the very top.
+ * Stable: everything else keeps the anchor order it was assembled in.
+ */
+export function liftPrimarySections(sections: MenuSection[]): MenuSection[] {
+  const primary = sections.filter((s) => s.primary);
+  if (primary.length === 0) return sections;
+  return [...primary, ...sections.filter((s) => !s.primary)];
 }
 
 function richActionNode(
@@ -923,7 +936,7 @@ export function buildMenuModel(
 
   return {
     header,
-    sections,
+    sections: liftPrimarySections(sections),
     roles: {
       copy,
       speak,

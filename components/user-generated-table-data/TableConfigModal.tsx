@@ -7,6 +7,7 @@ import {
   changeFieldType,
   deleteField,
   getTableProfile,
+  rewriteFormulasForRename,
   setFieldFormat,
   setValidationMode,
 } from "@/features/data-tables/service";
@@ -647,6 +648,37 @@ export default function TableConfigModal({
           formatFailures.push(`${label}: ${res.error}`);
         }
       }
+      // A renamed header must not break the formulas that name it — the same
+      // rewrite the header's inline rename does, run AFTER the format saves
+      // above so it edits the expression as it now stands.
+      const brokenFormulas: string[] = [];
+      for (const field of fields) {
+        const before = initialFields.find((f) => f.id === field.id);
+        if (!before || before.display_name === field.display_name) continue;
+        const outcome = await rewriteFormulasForRename({
+          tableId,
+          fields: fields.map((f) => ({
+            id: f.id,
+            field_name: f.field_name,
+            display_name: f.display_name,
+            metadata: formatChanges[f.id]
+              ? { ...((f.metadata as object | null) ?? {}), format: formatChanges[f.id] }
+              : f.metadata,
+          })),
+          renamedFieldId: field.id,
+          from: before.display_name,
+          to: field.display_name,
+        });
+        brokenFormulas.push(...outcome.formulasFailed);
+      }
+      if (brokenFormulas.length > 0) {
+        toast({
+          title: "A formula still uses an old column name",
+          description: `Fix the formula in: ${brokenFormulas.join(", ")}. Until then it shows #ERROR.`,
+          variant: "destructive",
+        });
+      }
+
       if (formatFailures.length > 0) {
         toast({
           title: "Some formats could not be saved",

@@ -58,13 +58,19 @@ function tidy(nodes: MenuNode[]): MenuNode[] {
 }
 
 function surfaceSections(sections: MenuSection[]): MenuSection[] {
+  // A menu with a PRIMARY section has declared a target hierarchy (this cell ·
+  // its row · its column · the table). Its inline siblings then keep their
+  // headings so each group says what it acts on.
+  const hierarchical = sections.some((s) => s.primary);
   return sections
     .map((s): MenuSection | null => {
       const nodes = tidy(s.nodes);
       if (!hasActionable(nodes)) return null;
+      // The clicked target: inline, heading kept, NEVER folded — however long.
+      if (s.primary) return { ...s, nodes };
       const rows = nodes.filter((n) => n.kind !== "separator" && n.kind !== "label");
       if (rows.length <= INLINE_SURFACE_MAX) {
-        return { ...s, label: undefined, nodes };
+        return { ...s, label: hierarchical ? s.label : undefined, nodes };
       }
       const fold: MenuSubmenuNode = {
         kind: "submenu",
@@ -109,6 +115,24 @@ export function arrangeMenu(
 
   const sections: MenuSection[] = [];
 
+  const surface = surfaceSections([
+    ...r.extras["after-clipboard"],
+    ...r.extras["after-compare"],
+    ...r.extras["after-placements"],
+  ]);
+
+  // The thing the user right-clicked comes FIRST — above the universal rows —
+  // and the rest of its hierarchy (its row, its column, the table) follows it
+  // directly, so the pane's own groups read as one block and the platform's
+  // rows as another, instead of interleaving.
+  const hierarchical = surface.some((s) => s.primary);
+  if (hierarchical) {
+    sections.push(
+      ...surface.filter((s) => s.primary),
+      ...surface.filter((s) => !s.primary),
+    );
+  }
+
   // Clipboard tail — what the strip doesn't carry.
   sections.push({
     id: "clipboard",
@@ -123,13 +147,7 @@ export function arrangeMenu(
 
   // Surface — "minor local changes" (notes ops, file ops, …), one fold
   // per section named by the surface.
-  sections.push(
-    ...surfaceSections([
-      ...r.extras["after-clipboard"],
-      ...r.extras["after-compare"],
-      ...r.extras["after-placements"],
-    ]),
-  );
+  if (!hierarchical) sections.push(...surface);
 
   // History — the one approved grouping.
   const history: MenuSubmenuNode = {

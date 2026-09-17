@@ -25,6 +25,8 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
+import { rewriteFormulaReferences } from "./formulas";
+
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
 import { operationFailed } from "@/utils/errors";
@@ -483,6 +485,115 @@ export async function setFieldFormat(
     return { success: false, error: envelope?.error ?? "Failed to save format" };
   }
   return { success: true, data: { field_id: envelope.field_id ?? args.fieldId } };
+}
+
+// ─── rename a column (display name) ──────────────────────────────────────────
+
+/** The slice of a field row `renameColumn` needs. */
+export type RenameColumnField = {
+  id: string;
+  field_name: string;
+  display_name: string;
+  metadata?: unknown;
+};
+
+/**
+ * After a column's header changed from `from` to `to`, rewrite `{from}` →
+ * `{to}` in every OTHER formula column and save it. The ONE place this
+ * happens — the header's inline rename and Table Settings both call it, so a
+ * rename can never turn a working formula into #ERROR on one path only.
+ * `fields[].metadata.format` must be the format as it NOW stands (Table
+ * Settings passes its unsaved format edits merged in).
+ */
+export async function rewriteFormulasForRename(args: {
+  tableId: string;
+  fields: readonly RenameColumnField[];
+  renamedFieldId: string;
+  from: string;
+  to: string;
+}): Promise<{ formulasUpdated: string[]; formulasFailed: string[] }> {
+  const formulasUpdated: string[] = [];
+  const formulasFailed: string[] = [];
+  for (const other of args.fields) {
+    if (other.id === args.renamedFieldId) continue;
+    const format = (other.metadata as { format?: FieldFormatConfig } | null | undefined)?.format;
+    if (!format || format.id !== "formula") continue;
+    const expression = format.options?.formula?.expression ?? "";
+    const rewritten = rewriteFormulaReferences(expression, args.from, args.to);
+    if (rewritten === expression) continue;
+    const result = await setFieldFormat({
+      tableId: args.tableId,
+      fieldId: other.id,
+      format: {
+        ...format,
+        options: {
+          ...(format.options ?? {}),
+          formula: { ...(format.options?.formula ?? { expression }), expression: rewritten },
+        },
+      },
+    });
+    (result.success ? formulasUpdated : formulasFailed).push(other.display_name);
+  }
+  return { formulasUpdated, formulasFailed };
+}
+
+/**
+ * Rename ONE column's header (its `display_name`; the machine `field_name`
+ * never changes, so stored rows, filters, colors and saved views are
+ * untouched) and keep every FORMULA that referred to the old header working
+ * by rewriting `{Old name}` → `{New name}` in it.
+ *
+ * Same write path Table Settings uses (`update_user_table_config` for the
+ * name, `udt_set_field_format` for a formula's expression) — no new door. The
+ * name is written first; a formula that then fails to update is REPORTED in
+ * `formulasFailed` (it would show #ERROR naming the old header) rather than
+ * rolled into a generic failure, because the rename itself did happen.
+ */
+export async function renameColumn(args: {
+  tableId: string;
+  field: RenameColumnField;
+  newName: string;
+  /** Every column of the table, so dependent formulas can be found. */
+  fields: readonly RenameColumnField[];
+}): Promise<
+  ServiceResult<{ formulasUpdated: string[]; formulasFailed: string[] }>
+> {
+  const newName = args.newName.trim();
+  if (!newName) return { success: false, error: "A column needs a name." };
+  if (newName === args.field.display_name) {
+    return { success: true, data: { formulasUpdated: [], formulasFailed: [] } };
+  }
+  const clash = args.fields.find(
+    (f) =>
+      f.id !== args.field.id &&
+      (f.display_name.trim().toLowerCase() === newName.toLowerCase() ||
+        f.field_name.toLowerCase() === newName.toLowerCase()),
+  );
+  if (clash) {
+    return {
+      success: false,
+      error: `Another column is already called "${clash.display_name}". Column names must be different so formulas and agents can tell them apart.`,
+    };
+  }
+
+  const { data, error } = await supabase.rpc("update_user_table_config", {
+    p_table_id: args.tableId,
+    p_field_updates: [{ id: args.field.id, display_name: newName }] as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to rename the column" };
+  }
+
+  const { formulasUpdated, formulasFailed } = await rewriteFormulasForRename({
+    tableId: args.tableId,
+    fields: args.fields,
+    renamedFieldId: args.field.id,
+    from: args.field.display_name,
+    to: newName,
+  });
+  return { success: true, data: { formulasUpdated, formulasFailed } };
 }
 
 // ─── udt_set_table_style ─────────────────────────────────────────────────────

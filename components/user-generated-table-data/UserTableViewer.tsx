@@ -83,6 +83,7 @@ import {
   getCompleteTable,
   getTableMetadata,
   listUserTables,
+  renameColumn,
   renumberFields,
   setTableStyle,
   upsertCell,
@@ -484,6 +485,13 @@ const UserTableViewer = ({
 
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
+  // Inline column rename: the header label becomes an input, in place — the
+  // way Airtable, Notion and Sheets rename a column. `null` = not renaming.
+  const [renamingField, setRenamingField] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  /** When the rename input opened — see the blur guard on the input. */
+  const renameOpenedAtRef = React.useRef(0);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
   const [showColorsDialog, setShowColorsDialog] = useState(false);
   /**
@@ -1798,6 +1806,81 @@ const UserTableViewer = ({
    * one delete-column path, so the header shortcut and the settings dialog can
    * never diverge on what deletion means or what it warns about.
    */
+  /**
+   * Begin renaming a column in its header. Deferred a beat: this is called
+   * from a menu row, and the menu hands focus back to its trigger as it
+   * closes — an input mounted before that would be blurred (and cancelled)
+   * the instant it appeared.
+   */
+  const startColumnRename = (fieldName: string) => {
+    if (isReadOnly) {
+      showReadOnlyToast();
+      return;
+    }
+    const field = fields.find((f) => f.field_name === fieldName);
+    if (!field) return;
+    window.setTimeout(() => {
+      renameOpenedAtRef.current = Date.now();
+      setRenameDraft(field.display_name);
+      setRenamingField(fieldName);
+    }, 150);
+  };
+
+  const cancelColumnRename = () => {
+    setRenamingField(null);
+    setRenameDraft("");
+  };
+
+  const commitColumnRename = async () => {
+    if (renameSaving || renamingField === null) return;
+    const field = fields.find((f) => f.field_name === renamingField);
+    const nextName = renameDraft.trim();
+    if (!field || !nextName || nextName === field.display_name) {
+      cancelColumnRename();
+      return;
+    }
+    setRenameSaving(true);
+    const result = await renameColumn({
+      tableId,
+      field,
+      newName: nextName,
+      fields,
+    });
+    setRenameSaving(false);
+    if (isServiceFailure(result)) {
+      // Keep the input open with what was typed, so it can be fixed.
+      toast({
+        title: "Couldn't rename the column",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    cancelColumnRename();
+    const { formulasUpdated, formulasFailed } = result.data;
+    if (formulasFailed.length > 0) {
+      toast({
+        title: `Renamed to "${nextName}" — but a formula still uses the old name`,
+        description: `Open Table settings and fix the formula in: ${formulasFailed.join(", ")}. Until then it shows #ERROR.`,
+        variant: "destructive",
+      });
+    } else if (formulasUpdated.length > 0) {
+      toast({
+        title: `Renamed to "${nextName}"`,
+        description: `Updated the formula in ${formulasUpdated.join(", ")} to use the new name.`,
+        variant: "success",
+      });
+    }
+    await loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+      true,
+    );
+  };
+
   const handleDeleteColumn = async (field: TableField) => {
     const ok = await confirmDialog({
       title: `Remove "${field.display_name}"?`,
@@ -2903,8 +2986,21 @@ const UserTableViewer = ({
   const menuRow = menuTarget.rowId
     ? (displayRows.find((r) => r.id === menuTarget.rowId) ?? null)
     : null;
-  const gridMenuSections = [
-    buildGridCellMenuSection({
+  // WHAT WAS RIGHT-CLICKED decides the menu's shape (Arman, 2026-09-17: a
+  // header click buried the column's actions under dead Cell and Row groups).
+  // The clicked target's section is `primary` — first in the menu, inline,
+  // under its own heading — and a group with no target at all is not offered:
+  // a header has no cell and no row. A cell shows Cell → Row → Column → Table,
+  // most specific first.
+  const gridMenuTargetKind: "cell" | "row" | "column" | "table" = menuTarget.cell
+    ? "cell"
+    : menuTarget.rowId
+      ? "row"
+      : menuTarget.fieldName
+        ? "column"
+        : "table";
+  const gridCellSection = buildGridCellMenuSection({
+      primary: gridMenuTargetKind === "cell",
       cell:
         menuTarget.cell && menuField
           ? {
@@ -2953,8 +3049,9 @@ const UserTableViewer = ({
           }
         },
       },
-    }),
-    buildGridRowMenuSection({
+    });
+  const gridRowSection = buildGridRowMenuSection({
+      primary: gridMenuTargetKind === "row",
       row: menuRow
         ? {
             id: menuRow.id,
@@ -2988,8 +3085,9 @@ const UserTableViewer = ({
         },
         remove: (rowId) => handleDeleteRow(rowId),
       },
-    }),
-    buildGridColumnMenuSection({
+    });
+  const gridColumnSection = buildGridColumnMenuSection({
+      primary: gridMenuTargetKind === "column",
       column: menuField
         ? {
             fieldName: menuField.field_name,
@@ -3004,6 +3102,7 @@ const UserTableViewer = ({
       readOnlyReason: readOnlyReason,
       isOnlyColumn: fields.length <= 1,
       on: {
+        rename: (fieldName) => startColumnRename(fieldName),
         insert: (fieldName, side) => {
           const field = fields.find((f) => f.field_name === fieldName);
           if (!field) return;
@@ -3035,8 +3134,17 @@ const UserTableViewer = ({
           if (field) void handleDeleteColumn(field);
         },
       },
-    }),
+    });
+  const gridMenuSections = [
+    ...(gridMenuTargetKind === "cell"
+      ? [gridCellSection, gridRowSection, gridColumnSection]
+      : gridMenuTargetKind === "row"
+        ? [gridRowSection]
+        : gridMenuTargetKind === "column"
+          ? [gridColumnSection]
+          : []),
     buildDatasetTableMenuSection({
+      label: tableInfo.table_name ? `Table · ${tableInfo.table_name}` : "Table",
       getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
       unavailable: {
         // On the route itself the door leads to where the user already is.
@@ -3654,6 +3762,38 @@ const UserTableViewer = ({
                       data-surface-value="column_list"
                       className="flex items-center justify-between gap-1"
                     >
+                      {renamingField === field.field_name ? (
+                        <input
+                          autoFocus
+                          aria-label={`Rename the ${field.display_name} column`}
+                          value={renameDraft}
+                          disabled={renameSaving}
+                          onChange={(e) => setRenameDraft(e.target.value)}
+                          onFocus={(e) => e.currentTarget.select()}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            // The grid owns arrow keys / typing; none of it
+                            // may fire while a name is being typed.
+                            e.stopPropagation();
+                            if (e.key === "Enter") void commitColumnRename();
+                            if (e.key === "Escape") cancelColumnRename();
+                          }}
+                          onBlur={(e) => {
+                            // A closing menu / popover hands focus back to its
+                            // trigger a moment AFTER this input mounts. That
+                            // is not the user leaving the field — take focus
+                            // back instead of ending the rename they just
+                            // asked for (live-found 2026-09-17).
+                            if (Date.now() - renameOpenedAtRef.current < 700) {
+                              const input = e.currentTarget;
+                              window.setTimeout(() => input.focus(), 0);
+                              return;
+                            }
+                            void commitColumnRename();
+                          }}
+                          className="min-w-0 flex-1 rounded border border-primary bg-background px-1.5 py-0.5 text-sm font-semibold text-foreground outline-none ring-2 ring-primary/30"
+                        />
+                      ) : (
                       <button
                         type="button"
                         data-surface-value={
@@ -3672,6 +3812,7 @@ const UserTableViewer = ({
                           </span>
                         )}
                       </button>
+                      )}
                       <ColumnHeaderMenu
                         // A formula column has no stored value, so the server
                         // facet RPC would return nothing for it. Omitting the
@@ -3702,6 +3843,11 @@ const UserTableViewer = ({
                         onClearSort={clearSort}
                         onFilterChange={(value) =>
                           handleColumnFilterChange(field.field_name, value)
+                        }
+                        onRename={
+                          isReadOnly
+                            ? undefined
+                            : () => startColumnRename(field.field_name)
                         }
                         onConfigure={
                           isReadOnly

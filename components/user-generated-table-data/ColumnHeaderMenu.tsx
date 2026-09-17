@@ -11,6 +11,7 @@ import {
   Filter,
   ListX,
   Loader2,
+  Pencil,
   Settings2,
   Trash2,
   X,
@@ -77,6 +78,8 @@ interface ColumnHeaderMenuProps {
    * read-only mounts.
    */
   onConfigure?: () => void;
+  /** Rename this column in its header. Omitted on read-only mounts. */
+  onRename?: () => void;
   /**
    * Remove this column. Omitted on read-only mounts and on the last remaining
    * column. Goes through the same confirm + RPC as the settings dialog — there
@@ -122,6 +125,7 @@ const ColumnHeaderMenu = ({
   onClearSort,
   onFilterChange,
   onConfigure,
+  onRename,
   onDelete,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
@@ -550,10 +554,24 @@ const ColumnHeaderMenu = ({
           )}
         </div>
 
-        {(onConfigure || onDelete) && (
+        {(onConfigure || onDelete || onRename) && (
           <>
             <div className="my-2 h-px bg-border" />
             <div className="flex flex-col gap-1">
+              {onRename && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                  onClick={() => {
+                    setOpen(false);
+                    onRename();
+                  }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Rename column
+                </Button>
+              )}
               {onConfigure && (
                 <Button
                   variant="ghost"
