@@ -78,6 +78,12 @@ if $STRICT; then
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
+        # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
+        # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
+        # position in seven files. Parse-only, zero findings after the fix.
+        # `--fix` rewrites them as {/* … */}; `--self-test` proves it can fail.
+        "No // comment lines rendered as JSX text|pnpm check:jsx-text-comments"
         # EVERY GUARD BELOW IS READ THROUGH A PIPE by this very script, so this
         # runs second: a guard that abandons its own stdout makes every finding
         # below it unreliable. `process.exit(code)` tears Node down with whatever
@@ -593,6 +599,12 @@ else
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
+        # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
+        # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
+        # position in seven files. Parse-only, zero findings after the fix.
+        # `--fix` rewrites them as {/* … */}; `--self-test` proves it can fail.
+        "No // comment lines rendered as JSX text|pnpm check:jsx-text-comments"
         # Guards are read through a pipe by this script; one that abandons its
         # own stdout makes every finding below it unreliable. Full story and the
         # three measurements at the strict copy of this entry. (DD-232)

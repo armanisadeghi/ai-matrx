@@ -6,6 +6,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import type { PermissionLevel } from "@/utils/permissions/levels";
 
 type ChatSchema = Database["chat"];
 
@@ -261,7 +262,7 @@ export interface CxConversationSummary {
 
 /** A shared conversation summary for the sidebar "Shared with Me" section */
 export interface SharedCxConversationSummary extends CxConversationSummary {
-  permission_level: "viewer" | "editor" | "admin";
+  permission_level: PermissionLevel;
   owner_email: string | null;
 }
 

@@ -30,6 +30,8 @@ import { coerceCards } from "@/features/flashcards/data/coerce-card";
 import { readArtifactOrigin } from "@/features/education/convert/lineage";
 import { reopenSource } from "@/features/education/convert/reopenSource";
 import { CONVERT_MANDATES } from "@/features/education/convert/mandates";
+import { flashcardMandateRefs } from "@/features/flashcards/data/mandate-disclosure";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import {
   looseKey,
   segmentedGenerate,
@@ -46,6 +48,7 @@ export function AddMoreCardsButton({
   existingFronts: string[];
   onAdded?: () => void;
 }) {
+  useDeclaredSurfaceMandates(flashcardMandateRefs(["generateFromSource"]));
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const pdf = usePdfClient();

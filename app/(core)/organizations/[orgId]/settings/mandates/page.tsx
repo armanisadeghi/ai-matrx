@@ -22,7 +22,11 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import { mandateListConfig } from "@/features/mandates/browse/listConfig";
+import {
+  mandateCopyFor,
+  mandateListConfig,
+} from "@/features/mandates/browse/listConfig";
+import { mandateColumnsFor } from "@/features/mandates/browse/columns";
 import type { MandateListRow } from "@/features/mandates/browse/types";
 import { MandateCoverageProvider } from "@/features/mandates/browse/CoverageBadge";
 import { MandateHomeNamesProvider } from "@/features/mandates/browse/MandateHome";
@@ -149,6 +153,11 @@ export default function OrgMandatesPage() {
               // their personal override winning on an org-settings page.
               service,
               door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
+              columns: mandateColumnsFor((row) => orgMandateRoute(orgId, row)),
+              copy: mandateCopyFor(
+                (row) => orgMandateRoute(orgId, row),
+                `/organizations/${encodeURIComponent(orgId)}/settings/mandates`,
+              ),
               useRowActions: useOrgRowActions,
             }}
             notice={(list) => (

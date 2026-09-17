@@ -15,6 +15,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResourceType } from "./registry";
 import type { PermissionLevel } from "./types";
+import { toDbPermissionLevel } from "./levels";
 import { isJsonObject } from "@/types/json";
 import { operationFailed } from "@/utils/errors";
 
@@ -144,7 +145,10 @@ export async function createShareLink(
     const { data, error } = await supabase.rpc("create_share_link", {
       p_resource_type: options.resourceType,
       p_resource_id: options.resourceId,
-      p_permission_level: options.permissionLevel ?? "viewer",
+      // Narrowed at the write boundary — see service.ts.
+      p_permission_level: toDbPermissionLevel(
+        options.permissionLevel ?? "viewer",
+      ),
       p_expires_at: options.expiresAt ?? undefined,
       p_max_uses: options.maxUses ?? undefined,
       p_label: options.label ?? undefined,

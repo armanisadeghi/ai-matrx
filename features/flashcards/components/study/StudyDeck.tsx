@@ -57,10 +57,7 @@ import {
   gameService,
   type EngagementSnapshot,
 } from "@/features/education/engage/data/gameService";
-import {
-  BADGES,
-  isBadgeKey,
-} from "@/features/education/engage/engine/badges";
+import { BADGES, isBadgeKey } from "@/features/education/engage/engine/badges";
 import { coppaService } from "@/features/education/compliance/coppaService";
 import type { AgeBand } from "@/features/education/compliance/types";
 import type {
@@ -114,6 +111,7 @@ import { AskTutorButton } from "@/features/education/tutor/components/AskTutorBu
 import { MemoryAidButton } from "@/features/education/memory/components/MemoryAidButton";
 import { CardDetailLayers } from "./CardDetailLayers";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 // One-at-a-time on user action — the enhance dialog (its agents, preview flow,
 // entitlement chrome) loads only when the learner actually asks to improve a
@@ -228,6 +226,7 @@ function readGradeStyle(): GradeStyle {
 }
 
 export function StudyDeck(props: StudyDeckProps) {
+  useFlashcardMandates(["helpLive", "reviewBatch", "microCoach"]);
   const {
     loading,
     error,
@@ -353,7 +352,9 @@ export function StudyDeck(props: StudyDeckProps) {
   // headless on purpose: nothing waits on it, it has no loading state, and its
   // one-line tip arrives as a toast.)
   const helpWindow = useFloatingRunWindow({ instanceId: "fc-help-live" });
-  const reviewWindow = useFloatingRunWindow({ instanceId: "fc-session-review" });
+  const reviewWindow = useFloatingRunWindow({
+    instanceId: "fc-session-review",
+  });
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpAsked, setHelpAsked] = useState(false);
@@ -751,7 +752,8 @@ export function StudyDeck(props: StudyDeckProps) {
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
                   <Trophy className="h-3.5 w-3.5 text-primary" />
-                  {engagement.session_points.toLocaleString()} {isYoungerLearner ? "bright points!" : "learning points"}
+                  {engagement.session_points.toLocaleString()}{" "}
+                  {isYoungerLearner ? "bright points!" : "learning points"}
                 </div>
                 <p className="text-muted-foreground">
                   {isYoungerLearner
@@ -762,7 +764,8 @@ export function StudyDeck(props: StudyDeckProps) {
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
                   <Award className="h-3.5 w-3.5 text-primary" />
-                  {engagement.badges_earned} {isYoungerLearner ? "sticker" : "badge"}
+                  {engagement.badges_earned}{" "}
+                  {isYoungerLearner ? "sticker" : "badge"}
                   {engagement.badges_earned === 1 ? "" : "s"}
                 </div>
                 {isBadgeKey(engagement.next_badge_key) &&
@@ -770,8 +773,8 @@ export function StudyDeck(props: StudyDeckProps) {
                   <p className="text-muted-foreground">
                     {isYoungerLearner
                       ? "Next sticker"
-                      : BADGES[engagement.next_badge_key].label}:{" "}
-                    {engagement.next_badge_progress}/
+                      : BADGES[engagement.next_badge_key].label}
+                    : {engagement.next_badge_progress}/
                     {engagement.next_badge_target}
                   </p>
                 ) : (
@@ -783,8 +786,8 @@ export function StudyDeck(props: StudyDeckProps) {
               <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-3">
                 {engagement.league_opted_in && engagement.league_rank > 0 ? (
                   <p className="font-medium text-foreground">
-                    {isYoungerLearner ? "Your learning team" : "Private league"}: #{engagement.league_rank} of{" "}
-                    {engagement.league_size} · +
+                    {isYoungerLearner ? "Your learning team" : "Private league"}
+                    : #{engagement.league_rank} of {engagement.league_size} · +
                     {Number(engagement.league_mastery_gain).toFixed(1)} mastery
                   </p>
                 ) : (
@@ -892,7 +895,9 @@ export function StudyDeck(props: StudyDeckProps) {
               onClick={toggleGradeStyle}
               className="mt-1 w-full text-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
             >
-              {useConfidence ? "Use simple grading" : "Use 1–5 confidence rating"}
+              {useConfidence
+                ? "Use simple grading"
+                : "Use 1–5 confidence rating"}
             </button>
           )}
         </div>
@@ -1325,7 +1330,9 @@ export function StudyDeck(props: StudyDeckProps) {
             {/* VISION §11 — the memory aid surfaces itself: a stored aid renders
               on sight, and a struggling card gets a reasoned offer instead of a
               quiet button. Skipped for matching cards (no single answer). */}
-          {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
+            {enableMemoryAids &&
+              current &&
+              currentKind !== CARD_KIND.matching && (
                 <MemoryAidButton
                   key={`memory-${current.id}`}
                   cardId={current.id}

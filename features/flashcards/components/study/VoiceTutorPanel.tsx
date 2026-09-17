@@ -41,8 +41,10 @@ import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 
-export const EDUCATION_VOICE_TUTOR_MANDATE = MANDATE_KEYS.education__voice_tutor;
+export const EDUCATION_VOICE_TUTOR_MANDATE =
+  MANDATE_KEYS.education__voice_tutor;
 
 /** The DB surface tool-resolution runs against (the study deck's surface). */
 const FLASHCARDS_SURFACE = "matrx-user/education-flashcards";
@@ -56,10 +58,7 @@ export interface VoiceTutorCardContext {
 }
 
 /** The card as a labeled context block appended AFTER the agent's own prompt. */
-function withStudyContext(
-  base: string,
-  card: VoiceTutorCardContext,
-): string {
+function withStudyContext(base: string, card: VoiceTutorCardContext): string {
   const lines = [
     `The learner is on this flashcard:`,
     `Question (front): ${card.front}`,
@@ -81,6 +80,13 @@ export function VoiceTutorPanel({
   card: VoiceTutorCardContext;
   className?: string;
 }) {
+  useDeclaredSurfaceMandates([
+    {
+      mandateKey: EDUCATION_VOICE_TUTOR_MANDATE,
+      does: "Talks the learner through the current flashcard by voice.",
+      surfaceName: FLASHCARDS_SURFACE,
+    },
+  ]);
   const dispatch = useAppDispatch();
 
   // The agent — and its instructions — come from the mandate. `agentId` drives
@@ -141,18 +147,15 @@ export function VoiceTutorPanel({
 
   return (
     <div
-      className={
-        className ??
-        "rounded-lg border border-border bg-muted/30 p-3"
-      }
+      className={className ?? "rounded-lg border border-border bg-muted/30 p-3"}
     >
       <div className="flex items-center gap-3">
         <VoiceMicButton status={status} onToggle={toggle} size={48} />
         <div className="min-w-0 flex-1">
           <VoiceStatusPill status={status} micMuted={micMuted} />
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Talk this card through out loud — the tutor already knows which
-            card you&apos;re on.
+            Talk this card through out loud — the tutor already knows which card
+            you&apos;re on.
           </p>
         </div>
       </div>
@@ -165,7 +168,8 @@ export function VoiceTutorPanel({
       )}
       {liveError && !agentError && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {liveError.message ?? "The voice session hit a problem — tap the mic to try again."}
+          {liveError.message ??
+            "The voice session hit a problem — tap the mic to try again."}
         </p>
       )}
 

@@ -55198,6 +55198,12 @@ export interface components {
             /** Open Plan Count */
             open_plan_count: number;
             /**
+             * Apply Mode
+             * @description The organization's `workflow.conductor.apply_mode` knob: `auto` — the Conductor's writes land on the canvas as they are saved; `review` — the canvas holds still and the chat offers Apply / Take it back.
+             * @default auto
+             */
+            apply_mode?: string;
+            /**
              * Conversation Id
              * @description The ONE stored Conductor conversation for this person and this workflow (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
              */
@@ -172016,7 +172022,10 @@ export interface operations {
     };
     get_conductor_context_workflows__definition_id__conductor_context_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name. */
+                selected_node_id?: string | null;
+            };
             header?: never;
             path: {
                 definition_id: string;

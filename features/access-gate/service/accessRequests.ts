@@ -16,6 +16,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { sendDirectActionMessage } from "@/features/messaging/service/sendDirectActionMessage";
 import { isJsonObject, type JsonObject } from "@/types/json";
+import { parsePermissionLevel } from "@/utils/permissions/levels";
 import type {
   AccessRequestCreated,
   AccessRequestRecipient,
@@ -107,7 +108,12 @@ function parseResourceActionRequest(
 }
 
 function parseRequestedLevel(raw: unknown): RequestedLevel {
-  return raw === "admin" ? "admin" : raw === "editor" ? "editor" : "viewer";
+  // Drives off the ONE ladder (utils/permissions/levels.ts) rather than a
+  // hand-written chain: a chain silently collapsed every level it did not name
+  // — including `commenter` — into `viewer`, so the request that arrived was
+  // not the request that was filed. An unrecognised value announces itself
+  // inside `parsePermissionLevel` before we fall back.
+  return parsePermissionLevel(raw, "accessRequests.requested_level") ?? "viewer";
 }
 
 /**

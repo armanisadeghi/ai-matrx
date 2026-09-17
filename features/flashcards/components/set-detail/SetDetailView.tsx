@@ -90,6 +90,7 @@ import {
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 // BUNDLE-LEAK GUARD (F9): these two float as draggable WindowPanels, and a
 // STATIC import of either would drag features/window-panels/WindowPanel.tsx —
 // and its 100+ registry lazy chunks — into the flashcards route bundle
@@ -393,6 +394,7 @@ function CardPeek({
 }
 
 export function SetDetailView({ setId }: { setId: string }) {
+  useFlashcardMandates(["enrichCard"]);
   const router = useRouter();
   const [data, setData] = useState<SetWithCards | null>(null);
   const [error, setError] = useState<string | null>(null);

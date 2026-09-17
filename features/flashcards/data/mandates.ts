@@ -32,6 +32,10 @@ export const FC_MANDATES = {
   makeQuizItems: MANDATE_KEYS.flashcards__make_quiz_items,
   /** front, back, source_excerpt → { status, explanation, suggested_fix } ("Verify against source") */
   verifyAgainstSource: MANDATE_KEYS.flashcards__verify_against_source,
+  /** text, voice settings → durable spoken question audio */
+  spokenFrontTts: MANDATE_KEYS.flashcards__spoken_front_tts,
+  /** explanation text, voice settings → durable instant-help audio */
+  helperTts: MANDATE_KEYS.flashcards__helper_tts,
 } as const;
 
 export type FcMandateKey = keyof typeof FC_MANDATES;

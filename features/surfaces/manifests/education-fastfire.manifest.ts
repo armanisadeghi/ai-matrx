@@ -333,9 +333,12 @@ Read drill_phase first — it decides what is true. In "setup" the learner is ch
 Grades stream in asynchronously, so absence of a grade means "not resolved yet", never "incorrect". The deck values name the set; per-card records live in card_grades (bindable-only).
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(
+    pickBaseline("selection", "context"),
+    surfaceSpecific,
+  ),
   writeTargets,
-  // These are the three fixed mandate jobs FastFire launches. Registration is
+  // These are the fixed mandate jobs FastFire launches. Registration is
   // menu-only disclosure; it must not add page chrome or alter the drill.
   agentRoles: [
     {
@@ -370,6 +373,28 @@ Grades stream in asynchronously, so absence of a grade means "not resolved yet",
       defaultAgentId: null,
       autoRun: "never",
       sortOrder: 120,
+    },
+    {
+      name: "instant_help",
+      label: "Instant card help",
+      description:
+        "Explains the current card when the learner asks for help during a FastFire drill.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__help_live,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 130,
+    },
+    {
+      name: "instant_help_writer",
+      label: "Instant-help writer",
+      description:
+        "Writes the short explanation that FastFire turns into prepared instant-help audio.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__enrich_card,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 140,
     },
   ],
 };

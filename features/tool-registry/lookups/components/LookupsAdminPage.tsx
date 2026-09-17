@@ -5,24 +5,13 @@ import AppLink from "@/components/navigation/AppLink";
 import { Plus, Loader2, AlertCircle, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -99,45 +88,45 @@ function LookupsAdminPageInner() {
       getWriteHandlers={getWriteHandlers}
       isEditable
     >
-    <div className="min-h-dvh flex flex-col">
-      <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
-        <DbIcon className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Tool Registry · Lookups</h1>
-        <span className="text-xs text-muted-foreground">
-          ui.ui_client · ui.ui_surface · tool.executor
-        </span>
+      <div className="min-h-dvh flex flex-col">
+        <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
+          <DbIcon className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium">Tool Registry · Lookups</h1>
+          <span className="text-xs text-muted-foreground">
+            ui.ui_client · ui.ui_surface · tool.executor
+          </span>
+        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as TabKey)}
+          className="flex-1 flex flex-col"
+        >
+          <div className="flex-shrink-0 px-6 pt-2 border-b border-border bg-background">
+            <TabsList className="h-9">
+              <TabsTrigger value="clients" className="text-xs">
+                UI Clients
+              </TabsTrigger>
+              <TabsTrigger value="surfaces" className="text-xs">
+                UI Surfaces
+              </TabsTrigger>
+              <TabsTrigger value="executors" className="text-xs">
+                Tool Executors
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="flex-1 p-6">
+            <TabsContent value="clients" className="m-0">
+              <UiClientCrud />
+            </TabsContent>
+            <TabsContent value="surfaces" className="m-0">
+              <UiSurfaceCrud />
+            </TabsContent>
+            <TabsContent value="executors" className="m-0">
+              <ToolExecutorCrud />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as TabKey)}
-        className="flex-1 flex flex-col"
-      >
-        <div className="flex-shrink-0 px-6 pt-2 border-b border-border bg-background">
-          <TabsList className="h-9">
-            <TabsTrigger value="clients" className="text-xs">
-              UI Clients
-            </TabsTrigger>
-            <TabsTrigger value="surfaces" className="text-xs">
-              UI Surfaces
-            </TabsTrigger>
-            <TabsTrigger value="executors" className="text-xs">
-              Tool Executors
-            </TabsTrigger>
-          </TabsList>
-        </div>
-        <div className="flex-1 p-6">
-          <TabsContent value="clients" className="m-0">
-            <UiClientCrud />
-          </TabsContent>
-          <TabsContent value="surfaces" className="m-0">
-            <UiSurfaceCrud />
-          </TabsContent>
-          <TabsContent value="executors" className="m-0">
-            <ToolExecutorCrud />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
@@ -155,49 +144,11 @@ function LookupsAdminPageInner() {
  */
 const keepOpenOnOutsideInteraction = (event: Event) => event.preventDefault();
 
-function ToolbarCard({
-  title,
-  count,
-  loading,
-  error,
-  onCreate,
-  children,
-}: {
-  title: string;
-  count: number;
-  loading: boolean;
-  error: string | null;
-  onCreate?: () => void;
-  children: React.ReactNode;
-}) {
+function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium">{title}</h2>
-          <Badge variant="outline" className="text-[10px]">
-            {count}
-          </Badge>
-          {loading && (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        {onCreate && (
-          <Button size="sm" onClick={onCreate} className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            New
-          </Button>
-        )}
-      </div>
-      {error && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
-          <AlertCircle className="h-3.5 w-3.5" />
-          {error}
-        </div>
-      )}
-      <div className="rounded-md border border-border bg-card overflow-hidden">
-        {children}
-      </div>
+    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+      <AlertCircle className="h-3.5 w-3.5" />
+      {message}
     </div>
   );
 }
@@ -219,6 +170,135 @@ function ActiveToggle({
       aria-label={active ? "Deactivate row" : "Activate row"}
     />
   );
+}
+
+function clientColumns(
+  onToggleActive: (row: UiClientRow, next: boolean) => Promise<void>,
+): MatrxColumnDef<UiClientRow>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Name (PK)",
+      width: 200,
+      cell: (row) => <span className="font-mono text-xs">{row.name}</span>,
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: (row) =>
+        row.description ?? (
+          <span className="text-muted-foreground italic">—</span>
+        ),
+    },
+    { accessorKey: "sort_order", header: "Sort", align: "right", width: 80 },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 100,
+      cell: (row) => (
+        <ActiveToggle
+          active={row.is_active ?? true}
+          onToggle={(next) => void onToggleActive(row, next)}
+        />
+      ),
+    },
+  ];
+}
+
+function surfaceColumns(
+  onToggleActive: (row: UiSurfaceRow, next: boolean) => Promise<void>,
+): MatrxColumnDef<UiSurfaceRow>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Name (PK)",
+      width: 280,
+      cell: (row) => <span className="font-mono text-xs">{row.name}</span>,
+    },
+    {
+      accessorKey: "client_name",
+      header: "Client",
+      width: 160,
+      cell: (row) => (
+        <Badge variant="secondary" className="font-mono">
+          {row.client_name}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: (row) =>
+        row.description ?? (
+          <span className="text-muted-foreground italic">—</span>
+        ),
+    },
+    { accessorKey: "sort_order", header: "Sort", align: "right", width: 80 },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 100,
+      cell: (row) => (
+        <ActiveToggle
+          active={row.is_active ?? true}
+          onToggle={(next) => void onToggleActive(row, next)}
+        />
+      ),
+    },
+  ];
+}
+
+function executorColumns(
+  onToggleActive: (row: ToolExecutorRow, next: boolean) => Promise<void>,
+): MatrxColumnDef<ToolExecutorRow>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Name (PK)",
+      width: 260,
+      cell: (row) => <span className="font-mono text-xs">{row.name}</span>,
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: (row) =>
+        row.description ?? (
+          <span className="text-muted-foreground italic">—</span>
+        ),
+    },
+    {
+      accessorKey: "parent_executor_name",
+      header: "Parent",
+      width: 180,
+      cell: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.parent_executor_name ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "mcp_server",
+      header: "MCP server",
+      width: 120,
+      accessorFn: (row) => row.mcp_server_id ?? "",
+      cell: (row) =>
+        row.mcp_server_id ? <Badge variant="outline">MCP</Badge> : "—",
+    },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 100,
+      cell: (row) => (
+        <ActiveToggle
+          active={row.is_active}
+          onToggle={(next) => void onToggleActive(row, next)}
+        />
+      ),
+    },
+  ];
 }
 
 // ─── UI Clients ──────────────────────────────────────────────────────────────
@@ -276,57 +356,28 @@ function UiClientCrud() {
 
   return (
     <>
-      <ToolbarCard
-        title="UI Clients"
-        count={rows.length}
-        loading={loading}
-        error={error}
-        onCreate={() => setCreating(true)}
-      >
-        <Table wrapperClassName="phone-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Name (PK)</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-[80px] text-right">Sort</TableHead>
-              <TableHead className="w-[100px]">Active</TableHead>
-              <TableHead className="w-[120px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 && !loading && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-6 text-xs">
-                  No clients yet — click "New" to add one.
-                </TableCell>
-              </TableRow>
-            )}
-            {rows.map((row) => (
-              <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
-                <TableCell data-label="Description" data-phone="inline" className="text-xs">{row.description ?? <span className="text-muted-foreground italic">—</span>}</TableCell>
-                <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
-                <TableCell data-label="Active" data-phone="inline">
-                  <ActiveToggle
-                    active={row.is_active ?? true}
-                    onToggle={(next) => void onToggleActive(row, next)}
-                  />
-                </TableCell>
-                <TableCell data-phone="actions">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditing(row)}
-                    className="text-xs h-7"
-                  >
-                    Edit
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </ToolbarCard>
+      {error && <ErrorBox message={error} />}
+      <MatrxDataTable<UiClientRow>
+        data={rows}
+        columns={clientColumns(onToggleActive)}
+        getRowId={(row) => row.name}
+        isLoading={loading}
+        rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
+        toolbar={{
+          title: "UI Clients",
+          refresh: { onRefresh: load },
+          add: { onAdd: () => setCreating(true) },
+        }}
+        rowActions={(row) => (
+          <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
+            Edit
+          </Button>
+        )}
+        emptyState={{
+          title: "No clients yet",
+          description: "Create a UI client to add one.",
+        }}
+      />
       {(editing || creating) && (
         <UiClientDialog
           row={editing}
@@ -377,7 +428,9 @@ function UiClientDialog({
 
   const submit = async () => {
     if (!nameValid) {
-      toast.error("Name must be lowercase letters, digits, and hyphens (start with a letter).");
+      toast.error(
+        "Name must be lowercase letters, digits, and hyphens (start with a letter).",
+      );
       return;
     }
     setBusy(true);
@@ -407,7 +460,9 @@ function UiClientDialog({
         onInteractOutside={keepOpenOnOutsideInteraction}
       >
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${row.name}` : "New UI Client"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? `Edit ${row.name}` : "New UI Client"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -427,7 +482,8 @@ function UiClientDialog({
             )}
             {isEdit && (
               <p className="text-[11px] text-muted-foreground">
-                Name is the primary key — to rename, deactivate this row and create a new one.
+                Name is the primary key — to rename, deactivate this row and
+                create a new one.
               </p>
             )}
           </div>
@@ -502,7 +558,9 @@ function UiSurfaceCrud() {
   }, []);
 
   const visible =
-    filterClient === "__all__" ? rows : rows.filter((r) => r.client_name === filterClient);
+    filterClient === "__all__"
+      ? rows
+      : rows.filter((r) => r.client_name === filterClient);
   usePublishUiSurfaces(rows, visible.length, filterClient);
   usePublishOpenCreate("surfaces", () => setCreating(true));
 
@@ -528,16 +586,20 @@ function UiSurfaceCrud() {
             >
               /administration/ui/surfaces
             </AppLink>{" "}
-            page — it groups by client &amp; tier, shows tool/agent usage counts,
-            supports bulk activate/deactivate, and is built for the 100+ surface
-            scale our system needs.
+            page — it groups by client &amp; tier, shows tool/agent usage
+            counts, supports bulk activate/deactivate, and is built for the 100+
+            surface scale our system needs.
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-medium">UI Surfaces</h2>
-            <Badge variant="outline" className="text-[10px]">{visible.length}</Badge>
-            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            <Badge variant="outline" className="text-[10px]">
+              {visible.length}
+            </Badge>
+            {loading && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Select value={filterClient} onValueChange={setFilterClient}>
@@ -553,7 +615,11 @@ function UiSurfaceCrud() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setCreating(true)} className="gap-1.5">
+            <Button
+              size="sm"
+              onClick={() => setCreating(true)}
+              className="gap-1.5"
+            >
               <Plus className="h-3.5 w-3.5" />
               New
             </Button>
@@ -565,52 +631,26 @@ function UiSurfaceCrud() {
             {error}
           </div>
         )}
-        <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[280px]">Name (PK)</TableHead>
-                <TableHead className="w-[160px]">Client</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-[80px] text-right">Sort</TableHead>
-                <TableHead className="w-[100px]">Active</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.length === 0 && !loading && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6 text-xs">
-                    No surfaces match this filter.
-                  </TableCell>
-                </TableRow>
-              )}
-              {visible.map((row) => (
-                <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                  <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
-                  <TableCell data-phone="inline" className="text-xs">
-                    <Badge variant="secondary" className="text-[10px] font-mono">{row.client_name}</Badge>
-                  </TableCell>
-                  <TableCell data-label="Description" data-phone="inline" className="text-xs">
-                    {row.description ?? <span className="text-muted-foreground italic">—</span>}
-                  </TableCell>
-                  <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
-                  <TableCell data-label="Active" data-phone="inline">
-                    <ActiveToggle
-                      active={row.is_active ?? true}
-                      onToggle={(next) => void onToggleActive(row, next)}
-                    />
-                  </TableCell>
-                  <TableCell data-phone="actions">
-                    <Button variant="ghost" size="sm" onClick={() => setEditing(row)} className="text-xs h-7">
-                      Edit
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <MatrxDataTable<UiSurfaceRow>
+          data={visible}
+          columns={surfaceColumns(onToggleActive)}
+          getRowId={(row) => row.name}
+          isLoading={loading}
+          rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search UI surfaces…",
+            refresh: { onRefresh: load },
+            add: { onAdd: () => setCreating(true) },
+            leading: <Badge variant="outline">{visible.length}</Badge>,
+          }}
+          rowActions={(row) => (
+            <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
+              Edit
+            </Button>
+          )}
+          emptyState={{ title: "No surfaces match this filter" }}
+        />
       </div>
       {(editing || creating) && (
         <UiSurfaceDialog
@@ -643,7 +683,9 @@ function UiSurfaceDialog({
   onSaved: () => void;
 }) {
   const isEdit = !!row;
-  const [clientName, setClientName] = useState(row?.client_name ?? clients[0]?.name ?? "");
+  const [clientName, setClientName] = useState(
+    row?.client_name ?? clients[0]?.name ?? "",
+  );
   const [localPart, setLocalPart] = useState(
     row ? row.name.replace(`${row.client_name}/`, "") : "",
   );
@@ -670,7 +712,9 @@ function UiSurfaceDialog({
 
   const submit = async () => {
     if (!clientName || !localValid) {
-      toast.error("Client and local name (lowercase, digits, hyphens) are required.");
+      toast.error(
+        "Client and local name (lowercase, digits, hyphens) are required.",
+      );
       return;
     }
     setBusy(true);
@@ -701,12 +745,18 @@ function UiSurfaceDialog({
         onInteractOutside={keepOpenOnOutsideInteraction}
       >
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${row.name}` : "New UI Surface"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? `Edit ${row.name}` : "New UI Surface"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Client</Label>
-            <Select value={clientName} onValueChange={setClientName} disabled={isEdit}>
+            <Select
+              value={clientName}
+              onValueChange={setClientName}
+              disabled={isEdit}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Pick a client" />
               </SelectTrigger>
@@ -732,7 +782,9 @@ function UiSurfaceDialog({
             <p className="text-[11px] text-muted-foreground">
               Full name will be{" "}
               <code className="font-mono bg-muted px-1 py-0.5 rounded">
-                {clientName ? `${clientName}/${localPart || "<local>"}` : "<client>/<local>"}
+                {clientName
+                  ? `${clientName}/${localPart || "<local>"}`
+                  : "<client>/<local>"}
               </code>
             </p>
           </div>
@@ -767,7 +819,10 @@ function UiSurfaceDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy || !clientName || !localValid}>
+          <Button
+            onClick={submit}
+            disabled={busy || !clientName || !localValid}
+          >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
           </Button>
         </DialogFooter>
@@ -799,7 +854,9 @@ function ToolExecutorCrud() {
     try {
       setRows(await listToolExecutors());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load tool executors");
+      setError(
+        e instanceof Error ? e.message : "Failed to load tool executors",
+      );
     } finally {
       setLoading(false);
     }
@@ -821,66 +878,25 @@ function ToolExecutorCrud() {
 
   return (
     <>
-      <ToolbarCard
-        title="Tool Executors"
-        count={rows.length}
-        loading={loading}
-        error={error}
-        onCreate={() => setCreating(true)}
-      >
-        <Table wrapperClassName="phone-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[260px]">Name (PK)</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-[180px]">Parent</TableHead>
-              <TableHead className="w-[120px]">MCP server</TableHead>
-              <TableHead className="w-[100px]">Active</TableHead>
-              <TableHead className="w-[100px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 && !loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-6 text-xs">
-                  No tool executors.
-                </TableCell>
-              </TableRow>
-            )}
-            {rows.map((row) => (
-              <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
-                <TableCell data-label="Description" data-phone="inline" className="text-xs">
-                  {row.description ?? <span className="text-muted-foreground italic">—</span>}
-                </TableCell>
-                <TableCell data-label="Parent" data-phone="inline" className="font-mono text-xs text-muted-foreground">
-                  {row.parent_executor_name ?? "—"}
-                </TableCell>
-                <TableCell data-label="MCP server" data-phone="inline">
-                  {row.mcp_server_id ? (
-                    <Badge variant="outline" className="text-[10px] gap-0.5">
-                      MCP
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </TableCell>
-                <TableCell data-label="Active" data-phone="inline">
-                  <ActiveToggle
-                    active={row.is_active}
-                    onToggle={(next) => void onToggleActive(row, next)}
-                  />
-                </TableCell>
-                <TableCell data-phone="actions">
-                  <Button variant="ghost" size="sm" onClick={() => setEditing(row)} className="text-xs h-7">
-                    Edit
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </ToolbarCard>
+      {error && <ErrorBox message={error} />}
+      <MatrxDataTable<ToolExecutorRow>
+        data={rows}
+        columns={executorColumns(onToggleActive)}
+        getRowId={(row) => row.name}
+        isLoading={loading}
+        rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
+        toolbar={{
+          title: "Tool Executors",
+          refresh: { onRefresh: load },
+          add: { onAdd: () => setCreating(true) },
+        }}
+        rowActions={(row) => (
+          <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
+            Edit
+          </Button>
+        )}
+        emptyState={{ title: "No tool executors" }}
+      />
       {(editing || creating) && (
         <ToolExecutorDialog
           row={editing}
@@ -940,7 +956,9 @@ function ToolExecutorDialog({
 
   const submit = async () => {
     if (!nameValid) {
-      toast.error("Name must be lowercase letters/digits/`._-`, starting with a letter.");
+      toast.error(
+        "Name must be lowercase letters/digits/`._-`, starting with a letter.",
+      );
       return;
     }
     let configParsed: unknown;
@@ -980,7 +998,9 @@ function ToolExecutorDialog({
         onInteractOutside={keepOpenOnOutsideInteraction}
       >
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${row.name}` : "New Tool Executor"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? `Edit ${row.name}` : "New Tool Executor"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 max-h-[70dvh] overflow-y-auto">
           <div className="space-y-1.5">
@@ -994,8 +1014,8 @@ function ToolExecutorDialog({
               style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground">
-              Convention: <code className="font-mono">mcp.&lt;slug&gt;</code> for
-              MCP-backed executors;{" "}
+              Convention: <code className="font-mono">mcp.&lt;slug&gt;</code>{" "}
+              for MCP-backed executors;{" "}
               <code className="font-mono">aidream</code>,{" "}
               <code className="font-mono">matrx-ai-core</code>,{" "}
               <code className="font-mono">matrx-local</code>,{" "}
@@ -1052,14 +1072,12 @@ function ToolExecutorDialog({
           {row?.mcp_server_id && (
             <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
               This executor is linked to MCP server{" "}
-              <code className="font-mono">{row.mcp_server_id}</code>. The link is
-              managed by the MCP provisioning flow — edit the server, not this
-              row.
+              <code className="font-mono">{row.mcp_server_id}</code>. The link
+              is managed by the MCP provisioning flow — edit the server, not
+              this row.
             </div>
           )}
-          {jsonErr && (
-            <p className="text-[11px] text-destructive">{jsonErr}</p>
-          )}
+          {jsonErr && <p className="text-[11px] text-destructive">{jsonErr}</p>}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>

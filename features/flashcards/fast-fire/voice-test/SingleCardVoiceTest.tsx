@@ -44,6 +44,7 @@ import {
   getErrorSolution,
   isMicrophonePermissionDenial,
 } from "@/features/audio/utils/microphone-diagnostics";
+import { useFlashcardMandates } from "@/features/flashcards/data/mandate-disclosure";
 
 type Phase =
   "setup" | "preparing" | "asking" | "answering" | "grading" | "result";
@@ -69,6 +70,7 @@ export function SingleCardVoiceTest({
   record = true,
   onClose,
 }: SingleCardVoiceTestProps) {
+  useFlashcardMandates(["gradeSpoken"]);
   const dispatch = useAppDispatch();
   const {
     speak: cartesiaSpeak,

@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { selectCardDetailLayers } from "../../data/cardDetailLayers";
 import { enrichAndSaveCard } from "../../data/enrichCardLane";
 import type { CardWithDetails, FcDetailRow } from "../../data/types";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 export function CardDetailLayers({
   card,
@@ -61,6 +62,7 @@ export function CardDetailLayers({
   onEnriched?: () => void;
   className?: string;
 }) {
+  useFlashcardMandates(canEnrich ? ["enrichCard"] : []);
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const enrichGuard = useEntitlementGuard("education.card_enrichment");
