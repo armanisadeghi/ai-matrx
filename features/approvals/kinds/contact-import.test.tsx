@@ -20,6 +20,13 @@
  * named identity with no door is a dead end (`no-dead-ends` skill). Both now
  * render through `EntityRef` (`token: "party"`), the same door the contacts
  * import panel already uses for the same plan's Person — never a second one.
+ *
+ * Bugbot round 20 (PR 228, comment 4042104821): this card also mounts inside
+ * a window panel, where a same-tab click loses the queue underneath it —
+ * both doors now pass `openInNewTab`, the in-place mode `EntityRef` actually
+ * offers for `party` (no peek is registered for it). The mock below renders
+ * `target`/`rel` only when that prop is set, so a call site that dropped it
+ * fails these assertions too.
  */
 
 import * as React from "react";
@@ -85,10 +92,30 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 // Same stub `google-kinds.test.tsx` uses for the ONE entity door — a real
 // `EntityRef` pulls in the peek registry and the route registry, which this
 // suite has no business exercising; it only needs to prove the door is
-// rendered, carrying the Person's id.
+// rendered, carrying the Person's id, AND — Bugbot round 20 (PR 228, comment
+// 4042104821) — that it does not navigate the current tab away from a card
+// that may be inside a window panel. `target`/`rel` are set only when
+// `openInNewTab` is true, exactly as the real `EntityRef` renders them, so
+// a call site that dropped the prop would fail this mock's assertions too.
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
-  EntityRef: ({ token, id, name }: { token: string; id: string; name?: string }) => (
-    <a data-testid="entity-ref" data-token={token} data-id={id}>
+  EntityRef: ({
+    token,
+    id,
+    name,
+    openInNewTab,
+  }: {
+    token: string;
+    id: string;
+    name?: string;
+    openInNewTab?: boolean;
+  }) => (
+    <a
+      data-testid="entity-ref"
+      data-token={token}
+      data-id={id}
+      target={openInNewTab ? "_blank" : undefined}
+      rel={openInNewTab ? "noopener noreferrer" : undefined}
+    >
       {name ?? id}
     </a>
   ),
@@ -252,6 +279,12 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     expect(matchedDoor).not.toBeNull();
     expect(matchedDoor?.getAttribute("data-token")).toBe("party");
     expect(matchedDoor?.textContent).toBe("Dana Chen");
+    // Bugbot round 20 (PR 228, comment 4042104821): this card can mount
+    // inside a window panel, so the door must not navigate the CURRENT tab
+    // away from the queue underneath it — the in-place attribute (new tab)
+    // is present, never a bare same-tab `href` click.
+    expect(matchedDoor?.getAttribute("target")).toBe("_blank");
+    expect(matchedDoor?.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("an empty field_map with would_write.writes=0 says 'already here or kept', never 'the agent needs fixing'", async () => {
@@ -402,6 +435,10 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     expect(doorA?.textContent).toBe("Dana Chen");
     expect(doorB?.getAttribute("data-token")).toBe("party");
     expect(doorB?.textContent).toBe("D. Chen");
+    // Bugbot round 20: a refusal that names Persons with no in-place door is
+    // still a dead end, panel or not.
+    expect(doorA?.getAttribute("target")).toBe("_blank");
+    expect(doorB?.getAttribute("target")).toBe("_blank");
   });
 
   it("a proposal with no would_write (no such row exists live — the pre-B-15 shape is dead, not a fallback) gets the honest unrenderable row, never a client-derived count", async () => {

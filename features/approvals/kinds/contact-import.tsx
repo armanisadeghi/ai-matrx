@@ -35,6 +35,19 @@
  * this organization's `google.contacts.reimport_policy` setting says
  * otherwise. A contact that reaches more than one Person is a REFUSAL, never a
  * guess — this card shows the candidates and offers no Approve.
+ *
+ * Both named People (the matched one, and every ambiguous candidate) render
+ * through `EntityRef` (`token: "party"`) — the door the contacts import
+ * panel already opens the same plan's Person through. This card also mounts
+ * inside a window panel (`ApprovalsWorkspace`), where a plain click that
+ * navigates the CURRENT tab loses the queue underneath it (PLAN §4: nothing
+ * inside a panel navigates away). `party` has no registered peek
+ * (`hasPeek("party")` is false) and no window opener for an EXISTING Person
+ * (`CrmCreatePartyWindow` creates a new one), so `openInNewTab` — a real
+ * `EntityRef` prop, never a hand-rolled `target` — is the in-place door it
+ * genuinely offers here (Bugbot round 20, PR 228, comment 4042104821). A
+ * peek for `party` is a SHAPE gap for a future task, not one this file
+ * invents a second door to paper over.
  */
 
 import type { Json } from "@/types/database.types";
@@ -208,10 +221,26 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
           <ul className="list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
             {ambiguous.map((candidate) => (
               <li key={candidate.personId}>
-                {/* Bugbot round 19, PR 228, comment 4042012328: naming a
+                {/* Bugbot round 19 (PR 228, comment 4042012328): naming a
                  * Person without a way to open them is a dead end — reuse
-                 * the platform's ONE entity door, never a second one. */}
-                <EntityRef token="party" id={candidate.personId} name={candidate.personName} />
+                 * the platform's ONE entity door, never a second one.
+                 * Bugbot round 20 (comment 4042104821): this card also
+                 * mounts inside a window panel, where a plain click that
+                 * navigates the current tab loses the queue underneath it.
+                 * `party` has no registered peek and no existing-Person
+                 * window opener (`hasPeek("party")` is false; the only
+                 * party window opener, `CrmCreatePartyWindow`, creates a
+                 * NEW record, not this one) — `openInNewTab` is the
+                 * in-place door `EntityRef` genuinely offers for this
+                 * token, and its own doc names exactly this surface class
+                 * ("a side panel, a workspace rail, a sheet"). Never a
+                 * hand-rolled `target`. */}
+                <EntityRef
+                  token="party"
+                  id={candidate.personId}
+                  name={candidate.personName}
+                  openInNewTab
+                />
                 {candidate.matchedBy
                   ? ` — matched by ${importMatchKeyWords(candidate.matchedBy)}`
                   : ""}
@@ -265,12 +294,21 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
       {(personId || personName || matchedBy) && (
         <p className="text-[11px] text-muted-foreground">
           Matches{" "}
-          {/* Bugbot round 19, PR 228, comment 4042012328: the matched Person
-           * is a real record — open it through the same door the contacts
-           * import panel already uses (`token: "party"`, `/crm/{id}`),
-           * never a name with nowhere to go. */}
+          {/* Bugbot round 19 (PR 228, comment 4042012328): the matched
+           * Person is a real record — open it through the same door the
+           * contacts import panel already uses (`token: "party"`,
+           * `/crm/{id}`), never a name with nowhere to go. Bugbot round 20
+           * (comment 4042104821): `openInNewTab` — see the ambiguous list
+           * above for why: no peek is registered for `party` and no
+           * window opener names an EXISTING Person, so this is the
+           * in-place door `EntityRef` actually offers here. */}
           {personId ? (
-            <EntityRef token="party" id={personId} name={personName ?? "this Person"} />
+            <EntityRef
+              token="party"
+              id={personId}
+              name={personName ?? "this Person"}
+              openInNewTab
+            />
           ) : (
             personName ?? "an existing Person"
           )}
