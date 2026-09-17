@@ -1,6 +1,11 @@
 /** Live Cloud Browser data and control-plane client. */
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
+import {
+  peekSelectedOrganizationId,
+  waitForOrganizationAdmission,
+} from "@/lib/api/organization-admission";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canViewAccess } from "@/utils/permissions/access-core";
@@ -849,9 +854,16 @@ export async function mintStreamTicket(
   mode: StreamMode,
   takeover = false,
 ): Promise<StreamTicketEnvelope> {
+  // A stream ticket and its lease must stay in the organization that admitted
+  // the initiating request even if the person changes organization mid-connect.
+  await waitForOrganizationAdmission();
+  const organizationId = requireOrganizationContext(
+    peekSelectedOrganizationId(),
+  );
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/stream-ticket`,
     { mode, takeover },
+    { organizationId },
   );
   const value = record(data);
   const control = value.control === null ? null : record(value.control);
@@ -859,6 +871,7 @@ export async function mintStreamTicket(
   const viewport = record(value.viewport);
   const envelope = {
     ticket: requiredText(value.ticket, "stream ticket"),
+    organizationId,
     expiresAt: requiredNumber(value.expires_at, "ticket expiry"),
     endpoint: requiredText(value.endpoint, "stream endpoint"),
     protocol: "selkies_webrtc",
@@ -906,20 +919,27 @@ async function streamRequest(
       "The Cloud Browser server returned an invalid stream address.",
     );
   }
-  const { data, error } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
-  if (error || !accessToken)
-    throw error ?? new Error("Sign in to use Cloud Browser.");
-  const response = await fetch(endpoint, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const response = await requestRaw(
+    `${endpoint.pathname}${endpoint.search}`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body:
+        operation === "claim" ? JSON.stringify({ ticket: ticket.ticket }) : "{}",
     },
-    body:
-      operation === "claim" ? JSON.stringify({ ticket: ticket.ticket }) : "{}",
-  });
+    {
+      // Validation above makes this foreign-origin override safe; the shared
+      // client then supplies the authenticated organization context, request
+      // id, and diagnostic capture used by every other backend request.
+      baseUrlOverride: endpoint.origin,
+      organizationId: ticket.organizationId,
+      allowHttpError: true,
+      // A claimed view is an expected domain outcome handled below, not an
+      // Error Inspector incident. Other stream refusals stay captured there.
+      expectedErrorStatuses: [409],
+    },
+  );
   if (!response.ok) throw await streamConnectError(response);
 }
 

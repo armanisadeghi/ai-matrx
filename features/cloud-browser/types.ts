@@ -220,6 +220,8 @@ export type StreamMode = "control" | "view";
 export interface StreamTicketEnvelope {
   /** Masked in UI, memory-only — never rendered raw (S4 §3.3). */
   ticket: string;
+  /** Active organization admitted when the ticket was minted; stream lease calls retain it. */
+  organizationId: string;
   expiresAt: number;
   /** DATA — the client never constructs it (S4 §2.1). */
   endpoint: string;

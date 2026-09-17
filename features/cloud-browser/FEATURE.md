@@ -2,7 +2,7 @@
 
 **Status:** `in-progress` (core production lifecycle accepted; provider-account acceptance remains)
 **Tier:** `1`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-17`
 
 > Frontend for the **Persistent Cloud Browser** program (WS-8). A real browser that
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
@@ -31,6 +31,10 @@
 3. **Takeover stream (D-8 tier 3).** The interactive canvas appears ONLY while a person
    is driving. It claims the server-minted one-use ticket and embeds the authenticated
    WebRTC client from `stream.aimatrx.com`; control renews on the server cadence.
+   Claim and renewal keep the organization admitted when the ticket was minted; neither
+   adopts a later active-organization selection. The validated stream origin is the only
+   permitted `requestRaw` override, so the shared transport supplies auth, organization,
+   request-id, and diagnostic behavior.
    - **One opener.** `CloudBrowserBody` opens the live view from a single effect whenever
      THIS person drives and none is open (once per control revision) — a fresh take, a
      page reload and a second tab all take that path. It opens **normally**, never as a
@@ -245,6 +249,16 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-09-17 — stream control keeps its organization context.** The claim and
+  renewal transport had bypassed `requestRaw`, omitting `X-Organization-Id` and
+  causing the stream server's mandatory organization gate to refuse both routes.
+  Ticket mint snapshots the admitted selected organization and carries it through the
+  in-memory envelope, while the validated `stream.aimatrx.com` origin is passed only as
+  `requestRaw`'s base override. The shared client now adds auth/context/request ids and
+  captures unexpected stream failures; `stream_already_connected` remains a handled 409.
+  Guard: `service.streamConnect.test.ts` exercises mint, claim, renewal, origin refusal,
+  missing-context refusal, and the production conflict envelope.
 
 - **2026-09-13 — outage recovery verified and the panel made honest.** Every start had
   been refused `already_bootstrapped` (a slow start reaped mid-bootstrap orphaned the
