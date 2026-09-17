@@ -211,6 +211,107 @@ describe("organization-context header lanes", () => {
     expect(findings).toEqual([]);
   });
 
+  it("resolves an internal var loop endpoint after its loop", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string) {
+        for (var endpoint = "https://stream.aimatrx.com"; endpoint; endpoint = "") { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("keeps a vendor var loop endpoint shadowing a module stream endpoint", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        for (var endpoint = "https://vendor.example"; endpoint; endpoint = "") { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("resolves a function-scoped var declared inside a sibling block", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string, enabled: boolean) {
+        if (enabled) { var endpoint = "https://stream.aimatrx.com"; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("keeps a sibling-block var shadowing a module stream endpoint", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string, enabled: boolean) {
+        if (enabled) { var endpoint = "https://vendor.example"; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("treats a later var as a hoisted neutral shadow", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        const result = fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        var endpoint = "https://vendor.example";
+        return result;
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it.each(["let", "const"])("keeps %s loop declarations scoped to the loop", (kind) => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string) {
+        for (${kind} endpoint = "https://stream.aimatrx.com"; endpoint; endpoint = "") { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("derives an internal endpoint from a direct for-of iterable", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        for (const endpoint of ["https://stream.aimatrx.com"]) {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("does not derive a backend endpoint from a vendor for-of iterable", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        for (const endpoint of ["https://vendor.example"]) {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("does not derive endpoint status from for-in object values", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        for (const endpoint in { item: "https://stream.aimatrx.com" }) {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
   it("keeps a switch binding inside the switch", () => {
     const findings = findOrganizationHeaderViolations(`
       const endpoint = "https://vendor.example";

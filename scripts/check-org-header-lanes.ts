@@ -152,6 +152,108 @@ function isLexicalContainer(node: ts.Node): boolean {
     ts.isCaseBlock(node);
 }
 
+function isLoop(node: ts.Node): node is ts.ForStatement | ts.ForInStatement | ts.ForOfStatement {
+  return ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node);
+}
+
+function isVarDeclaration(declaration: ts.VariableDeclaration): boolean {
+  const list = declaration.parent;
+  return ts.isVariableDeclarationList(list) &&
+    !(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const));
+}
+
+function resolveVariableDeclaration(
+  declaration: ts.VariableDeclaration,
+  name: string,
+): BindingResolution | null {
+  let resolved = bindingResolution(declaration, name);
+  if (
+    resolved &&
+    ts.isObjectBindingPattern(declaration.name) &&
+    declaration.initializer &&
+    isProcessEnvObject(declaration.initializer, declaration.initializer)
+  ) resolved = bindingResolution(declaration, name, true);
+  return resolved;
+}
+
+function loopHeaderBinding(
+  loop: ts.ForStatement | ts.ForInStatement | ts.ForOfStatement,
+  name: string,
+): BindingResolution | null {
+  const declarations = ts.isForStatement(loop)
+    ? loop.initializer
+    : loop.initializer;
+  if (!declarations || !ts.isVariableDeclarationList(declarations)) return null;
+  for (const declaration of declarations.declarations) {
+    const resolved = resolveVariableDeclaration(declaration, name);
+    if (!resolved) continue;
+    if (ts.isForOfStatement(loop)) {
+      return {
+        initializer: null,
+        // `for...of` yields iterable values; `for...in` yields keys and must
+        // never infer a backend endpoint from its object expression.
+        backendIdentifier: expressionTargetsInternalHost(loop.expression, loop.expression),
+      };
+    }
+    return resolved;
+  }
+  return null;
+}
+
+function hoistedVarBindingInLoop(
+  loop: ts.ForStatement | ts.ForInStatement | ts.ForOfStatement,
+  name: string,
+  usePosition: number,
+): BindingResolution | null {
+  const header = loopHeaderBinding(loop, name);
+  if (header) {
+    const declarations = ts.isForStatement(loop) ? loop.initializer : loop.initializer;
+    if (declarations && ts.isVariableDeclarationList(declarations) &&
+      declarations.declarations.some((declaration) => isVarDeclaration(declaration))) return header;
+  }
+  let found: BindingResolution | null = null;
+  const visit = (node: ts.Node) => {
+    if (found || (node !== loop && ts.isFunctionLike(node))) return;
+    if (
+      ts.isVariableDeclaration(node) &&
+      isVarDeclaration(node) &&
+      node.getStart() < usePosition
+    ) found = resolveVariableDeclaration(node, name);
+    ts.forEachChild(node, visit);
+  };
+  visit(loop.statement);
+  return found;
+}
+
+function hoistedVarBindingInScope(
+  scope: ts.SourceFile | ts.FunctionLikeDeclaration,
+  name: string,
+  usePosition: number,
+): BindingResolution | null {
+  let lastBeforeUse: BindingResolution | null = null;
+  let declared = false;
+  const visit = (node: ts.Node) => {
+    if (node !== scope && ts.isFunctionLike(node)) return;
+    if (ts.isVariableDeclaration(node) && isVarDeclaration(node)) {
+      const parentLoop = node.parent.parent;
+      const resolved = isLoop(parentLoop)
+        ? loopHeaderBinding(parentLoop, name)
+        : resolveVariableDeclaration(node, name);
+      if (resolved) {
+        declared = true;
+        if (node.getStart() < usePosition) lastBeforeUse = resolved;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(scope);
+  // A later `var` still hoists its binding and shadows an outer declaration,
+  // but its initializer has not run at this use site.
+  return lastBeforeUse ?? (declared
+    ? { initializer: null, backendIdentifier: false }
+    : null);
+}
+
 function bindingInContainer(
   name: string,
   container: ts.Node,
@@ -162,7 +264,7 @@ function bindingInContainer(
       const resolved = bindingResolution(parameter, name);
       if (resolved) return resolved;
     }
-    return null;
+    return hoistedVarBindingInScope(container, name, usePosition);
   }
 
   if (ts.isCatchClause(container) && container.variableDeclaration) {
@@ -170,23 +272,30 @@ function bindingInContainer(
     if (resolved) return resolved;
   }
 
+  if (isLoop(container)) {
+    const resolved = loopHeaderBinding(container, name);
+    if (resolved) return resolved;
+  }
+
   let found: BindingResolution | null = null;
   const visit = (node: ts.Node) => {
-    if (found || (node !== container && isLexicalContainer(node))) return;
+    if (found) return;
+    if (node !== container && isLoop(node) && node.getStart() < usePosition) {
+      found = hoistedVarBindingInLoop(node, name, usePosition);
+      if (found) return;
+    }
+    if (node !== container && isLexicalContainer(node)) return;
     if (ts.isVariableDeclaration(node) && node.getStart() < usePosition) {
-      found = bindingResolution(node, name);
-      if (
-        found &&
-        ts.isObjectBindingPattern(node.name) &&
-        node.initializer &&
-        isProcessEnvObject(node.initializer, node.initializer)
-      ) found = bindingResolution(node, name, true);
+      found = resolveVariableDeclaration(node, name);
       if (found) return;
     }
     ts.forEachChild(node, visit);
   };
   visit(container);
   if (found || !ts.isSourceFile(container)) return found;
+
+  const hoisted = hoistedVarBindingInScope(container, name, usePosition);
+  if (hoisted) return hoisted;
 
   for (const statement of container.statements) {
     if (statement.getStart() >= usePosition) break;
