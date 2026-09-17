@@ -34,6 +34,7 @@ import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { DataFreshnessLine } from "@/features/marketing/components/shared/DataFreshnessLine";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { listSites } from "@/features/marketing/data/service";
@@ -455,6 +456,10 @@ export function SearchConsolePortfolio({
           dataThrough={site.gsc_latest_date?.slice(0, 10) ?? null}
           pulledAt={site.gsc_synced_at}
         />
+        {/* A refusal shows on every dependent record (PLAN §5.3). A property
+            bound to a different site looks exactly like a quiet site from
+            here, so it is named here too — not only inside the editor. */}
+        <GscBindingRefusalLine site={site} variant="short" className="mt-1.5" />
       </div>
     );
   };

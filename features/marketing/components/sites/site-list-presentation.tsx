@@ -7,6 +7,7 @@ import {
   SiteConnectionChips,
   SiteIdentityMark,
 } from "@/features/marketing/components/shared/SiteConnectionChips";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
 import { StatusBadge } from "@/features/marketing/components/shared/MarketingUi";
 import {
   formatMetric,
@@ -327,6 +328,10 @@ export function renderSiteListMobileCard(
           </div>
         </div>
       </dl>
+
+      {/* The refusal, on the record that depends on it (PLAN §5.3) — from the
+          list, not only from the editor. */}
+      <GscBindingRefusalLine site={row} variant="short" className="mt-3" />
 
       <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <StatusBadge value={row.status} />
