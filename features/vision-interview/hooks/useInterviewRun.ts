@@ -562,5 +562,9 @@ export function useInterviewRun(sessionId: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `resume` is a render-scoped helper over stable refs; the arm ref, not the dependency list, is what makes this fire exactly once
   }, [runPhase, pendingInterrupt?.checkpointId]);
 
-  return { runPhase, runId, pendingInterrupt, start, resume, finish };
+  // `start` is deliberately NOT returned. It is machinery `finish` owns: a
+  // caller that can start the run on its own is a second door back to the
+  // defect this file's `finish` comment describes — a Finish press that runs a
+  // conversation round. Closing a class means removing the door.
+  return { runPhase, runId, pendingInterrupt, resume, finish };
 }
