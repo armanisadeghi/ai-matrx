@@ -103,7 +103,10 @@ export function ConversationPageMenu({
             id: `send-email-${person.partyId}`,
             label: `Send email to ${person.partyLabel}`,
             icon: Send,
-            onSelect: () => openGmailCompose(person),
+            onSelect: () => {
+              // The opener returns a handle; the menu wants nothing back.
+              openGmailCompose(person);
+            },
           })),
         }
       : null;
