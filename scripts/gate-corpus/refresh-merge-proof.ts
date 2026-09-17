@@ -285,7 +285,7 @@ async function zzHalf(branch: pg.Client, schema: string): Promise<void> {
         `where origin is distinct from 'campaign'`,
     );
     const allKeys = keyRows.rows.map((r) =>
-      pk.map((c) => String((r as Record<string, unknown>)[c])).join(" "),
+      pk.map((c) => String((r as Record<string, unknown>)[c])).join("\\0"),
     );
     const dropped = allKeys.slice(0, 5);
     const snapshot = new Set(allKeys.slice(5));

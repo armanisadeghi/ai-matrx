@@ -238,7 +238,7 @@ export async function withSnapshotKeys(
     tuples = [];
   };
   for (const k of keys) {
-    const parts = k.split(" ");
+    const parts = k.split("\\0");
     const ph = pk.map((_, i) => {
       buf.push(parts[i] === "null" ? null : parts[i]);
       return `$${buf.length}::${pkTypes[i]}`;
