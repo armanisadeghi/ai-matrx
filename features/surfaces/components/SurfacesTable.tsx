@@ -1,8 +1,12 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { AppWindow, Eye, Loader2, Pencil, Trash2 } from "lucide-react";
+import {
+  PencilTapButton,
+  TrashTapButton,
+  ViewTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import { AppWindow, Loader2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
@@ -246,12 +250,14 @@ export function SurfacesTable({
     <MatrxDataTable<SurfaceWithStats>
       data={rows}
       columns={surfaceColumns(manifestedSurfaceNames, navigatingName)}
+      tableId="administration/ui/surfaces"
       getRowId={(row) => row.name}
       searchText={(row) => `${row.label ?? ""} ${row.name}`}
       isLoading={isLoading}
       defaultSort={{ id: "sort_order", direction: "asc" }}
       selectedId={selectedName}
       onRowOpen={onSelect}
+      detail={{ enabled: false }}
       rowClassName={(row) =>
         cn(
           row.is_active ? undefined : "opacity-60",
@@ -264,37 +270,24 @@ export function SurfacesTable({
       }}
       rowActions={(row) => (
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
+          <ViewTapButton
+            variant="transparent"
             onClick={() => onPeek(row)}
-            aria-label={`Peek ${row.name}`}
-            title="Peek (side panel)"
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
+            ariaLabel={`Peek ${row.name}`}
+            tooltip="Peek (side panel)"
+          />
+          <PencilTapButton
+            variant="transparent"
             disabled={row.name === navigatingName}
             onClick={() => onEdit(row)}
-            aria-label={`Open editor for ${row.name}`}
-            title="Open editor"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            ariaLabel={`Open editor for ${row.name}`}
+            tooltip="Open editor"
+          />
+          <TrashTapButton
+            variant="transparent"
             onClick={() => onDelete(row)}
-            aria-label={`Delete ${row.name}`}
-            title="Delete"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+            ariaLabel={`Delete ${row.name}`}
+          />
         </>
       )}
       emptyState={{ title: "No surfaces match these filters" }}
