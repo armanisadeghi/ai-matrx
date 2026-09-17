@@ -35,6 +35,17 @@ import {
   importGoogleContacts,
   searchGoogleContacts,
 } from "./service";
+import {
+  IMPORT_PROVENANCE_UNRECORDED,
+  importDateText,
+  importFieldLabel,
+  importProvenanceSentence,
+} from "./field-labels";
+import {
+  UNKNOWN_ACTION_SENTENCE,
+  decideContactField,
+  narrowContactMatchState,
+} from "./contract";
 import type {
   ContactCandidatePending,
   ContactFieldActionPending,
@@ -60,21 +71,33 @@ interface FieldEdit {
 /** Per contact, per field key. */
 type EditMap = Record<string, Record<string, FieldEdit>>;
 
-const ACTION_COPY: Record<ContactFieldActionPending, string> = {
+/**
+ * One label per action the server can emit — EXHAUSTIVE by type (a `Record` over
+ * the union) and checked against the server's own literal by
+ * `./field-labels.test.ts`, plus an honest word for an action a newer server
+ * invents. A missing key rendered `undefined` at a person.
+ */
+const ACTION_COPY: Record<ContactFieldActionPending | "unknown", string> = {
+  unknown: "outcome not recognised",
   create: "will be written",
   fill: "fills an empty field",
   unchanged: "already the same",
-  kept_manual: "edited here — kept",
+  kept_manual: "kept — yours wins",
+  unrecorded: "kept — source unknown",
+  choice_required: "waiting on you",
   added: "linked to the Person",
   present: "already linked",
   excluded: "not imported",
 };
 
-const ACTION_TONE: Record<ContactFieldActionPending, string> = {
+const ACTION_TONE: Record<ContactFieldActionPending | "unknown", string> = {
+  unknown: "text-amber-600 dark:text-amber-400",
   create: "text-foreground",
   fill: "text-foreground",
   unchanged: "text-muted-foreground",
   kept_manual: "text-amber-600 dark:text-amber-400",
+  unrecorded: "text-amber-600 dark:text-amber-400",
+  choice_required: "text-amber-600 dark:text-amber-400",
   added: "text-foreground",
   present: "text-muted-foreground",
   excluded: "text-muted-foreground",
@@ -216,7 +239,11 @@ export function GoogleContactsImportPanel({
   const editFor = (externalId: string, plan: ContactFieldPlanPending): FieldEdit => {
     const stored = edits[externalId]?.[plan.key];
     if (stored) return stored;
-    return { include: plan.action !== "excluded", value: null };
+    // LOCAL WINS BY DEFAULT, decided in ONE place (`./contract.ts`): a value
+    // somebody edited here starts unticked, so doing nothing keeps it, and the
+    // person can tick it to take Google's instead. That is the difference
+    // between a default and the lock this panel used to be.
+    return { include: decideContactField(plan).includeByDefault, value: null };
   };
 
   const setEdit = (externalId: string, key: string, patch: Partial<FieldEdit>) => {
@@ -337,9 +364,39 @@ export function GoogleContactsImportPanel({
                   <span className="text-sm font-medium text-foreground">
                     {plan.display_name}
                   </span>
+                  {/* THE DOOR LAW: the Person this plan would write to opens
+                      before anything is written, not only afterwards. */}
                   {plan.person_id ? (
+                    <Link
+                      href={`/crm/${plan.person_id}`}
+                      target="_blank"
+                      className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                    >
+                      Open the Person
+                    </Link>
+                  ) : null}
+                  {plan.choice_required ? (
+                    /* 🚨 SEVERAL PEOPLE MATCH, SO NOTHING IS WRITTEN — in the
+                       preview AND in the apply. There is deliberately no pick
+                       control: the one governed create/enrich path is the
+                       server's resolver, and a panel that pinned a chosen Person
+                       would be a second write path. The remedy is on the
+                       records: merge the duplicate, or take the shared address
+                       off the wrong one. */
+                    <Badge
+                      variant="outline"
+                      className="text-[11px] text-amber-600 dark:text-amber-400"
+                    >
+                      More than one Person matches — nothing will be written
+                    </Badge>
+                  ) : plan.person_id ? (
                     <Badge variant="secondary" className="text-[11px]">
-                      Already here — this is the update
+                      {/* NEVER "New Person" when the server says it will merge —
+                          the preview names the Person it enriches, and how it
+                          recognised them (D4). */}
+                      Will update{" "}
+                      {plan.person_name ?? "the Person already here"}
+                      {plan.matched_by ? ` (matched by ${plan.matched_by})` : ""}
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-[11px]">
@@ -350,7 +407,13 @@ export function GoogleContactsImportPanel({
                 <ul className="flex flex-col divide-y divide-border">
                   {plan.fields.map((field) => {
                     const edit = editFor(plan.external_id, field);
-                    const locked = field.action === "kept_manual";
+                    const decision = decideContactField(field);
+                    const localWins = decision.localWins;
+                    const provenance = importProvenanceSentence({
+                      sourceRef: field.source_ref,
+                      importedAt: field.imported_at,
+                      source: "Google Contacts",
+                    });
                     return (
                       <li
                         key={field.key}
@@ -358,21 +421,25 @@ export function GoogleContactsImportPanel({
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                           <Checkbox
-                            checked={edit.include && !locked}
-                            disabled={locked}
+                            checked={edit.include}
+                            disabled={!decision.choosable}
                             onCheckedChange={(checked) =>
                               setEdit(plan.external_id, field.key, {
                                 include: checked === true,
                               })
                             }
-                            aria-label={`Import ${field.label}`}
+                            aria-label={
+                              localWins
+                                ? `Take Google's ${importFieldLabel(field.key)} instead of the value here`
+                                : `Import ${field.label}`
+                            }
                           />
                           <span className="w-24 shrink-0 text-xs text-muted-foreground">
                             {field.label}
                           </span>
                           <Input
                             value={edit.value ?? valueText(field.value)}
-                            disabled={locked || !edit.include}
+                            disabled={!edit.include || !decision.choosable}
                             onChange={(event) =>
                               setEdit(plan.external_id, field.key, {
                                 value: event.target.value,
@@ -387,23 +454,77 @@ export function GoogleContactsImportPanel({
                             {field.person_label}
                           </span>
                           <span
-                            className={`ml-auto shrink-0 text-[11px] ${ACTION_TONE[field.action]}`}
+                            className={`ml-auto shrink-0 text-[11px] ${ACTION_TONE[decision.action]}`}
                           >
-                            {edit.include || locked
-                              ? ACTION_COPY[field.action]
-                              : ACTION_COPY.excluded}
+                            {edit.include
+                              ? localWins
+                                ? "will replace yours"
+                                : ACTION_COPY[decision.action]
+                              : localWins
+                                ? ACTION_COPY.kept_manual
+                                : ACTION_COPY.excluded}
                           </span>
                         </div>
-                        {locked ? (
+                        {/* THE SENTENCE IS THE SERVER'S when it sent one — the
+                            same rule the Tasks count line runs on, so the panel,
+                            the agent tool and any future client all say the same
+                            true thing. The client adds only the ACTION the
+                            person can take, which is local knowledge. */}
+                        {decision.explanation ? (
+                          <p className="text-[11px] text-muted-foreground sm:basis-full">
+                            {decision.explanation}
+                            {localWins
+                              ? " Tick the box to take Google's value instead."
+                              : ""}
+                            {decision.action === "unknown"
+                              ? ` ${UNKNOWN_ACTION_SENTENCE}`
+                              : ""}
+                          </p>
+                        ) : localWins ? (
                           <p className="text-[11px] text-amber-600 dark:text-amber-400 sm:basis-full">
-                            This Person already says “{valueText(field.current_value)}”
-                            and it was edited here, so the import leaves it alone.
+                            This Person already says &ldquo;
+                            {valueText(field.current_value)}&rdquo; and it was
+                            edited here, so the import leaves it alone. Tick the
+                            box to take Google&apos;s value instead.
+                          </p>
+                        ) : decision.action === "unknown" ? (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 sm:basis-full">
+                            {UNKNOWN_ACTION_SENTENCE}
                           </p>
                         ) : null}
+                        {/* WHERE THE VALUE ON THE RECORD CAME FROM — the
+                            sentence this import exists to be able to say. When
+                            the server recorded no provenance it says exactly
+                            that; it never invents a source or a date. */}
+                        <p className="text-[11px] text-muted-foreground sm:basis-full">
+                          {provenance
+                            ? `This Person's ${importFieldLabel(field.key)} is ${provenance}.`
+                            : IMPORT_PROVENANCE_UNRECORDED}
+                        </p>
                       </li>
                     );
                   })}
                 </ul>
+                {plan.candidates && plan.candidates.length > 0 ? (
+                  <p className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[11px] text-muted-foreground">
+                    <span>
+                      This Google contact could be either of these People, so
+                      nothing is written. Merge the duplicate, or take the shared
+                      address off the wrong one, and import again. It could be
+                    </span>
+                    {/* THE DOOR LAW: every Person named here opens. */}
+                    {plan.candidates.map((candidate) => (
+                      <Link
+                        key={candidate.person_id}
+                        href={`/crm/${candidate.person_id}`}
+                        target="_blank"
+                        className="text-foreground underline-offset-2 hover:underline"
+                      >
+                        {candidate.person_name} ({candidate.matched_by})
+                      </Link>
+                    ))}
+                  </p>
+                ) : null}
                 <p className="px-3 py-2 text-[11px] text-muted-foreground">
                   {plan.note}
                 </p>
@@ -492,9 +613,33 @@ export function GoogleContactsImportPanel({
                   <span className="truncate text-sm text-foreground">
                     {contact.display_name}
                   </span>
+                  {/* WHAT THE IMPORT WOULD DO, as the ONE resolver answered it
+                      — never "new" for a contact the apply would merge into an
+                      existing Person (VERIFY-B1-B2 D4), and never a silent pick
+                      between two People (D5). */}
                   {contact.already_imported ? (
                     <Badge variant="secondary" className="text-[11px]">
-                      Imported
+                      {/* The badge NAMES the date when the server sent one, and
+                          says nothing more than it knows when it did not (B3). */}
+                      {importDateText(contact.imported_at)
+                        ? `Imported ${importDateText(contact.imported_at)}`
+                        : "Imported (date not recorded)"}
+                    </Badge>
+                  ) : narrowContactMatchState(contact.match_state) ===
+                    "choice_required" ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[11px] text-amber-600 dark:text-amber-400"
+                    >
+                      More than one Person matches — nothing will be written
+                    </Badge>
+                  ) : narrowContactMatchState(contact.match_state) ===
+                    "matched" ? (
+                    <Badge variant="secondary" className="text-[11px]">
+                      Will update {contact.person_name ?? "an existing Person"}
+                      {contact.matched_by
+                        ? ` (matched by ${contact.matched_by})`
+                        : ""}
                     </Badge>
                   ) : null}
                 </div>
@@ -503,6 +648,23 @@ export function GoogleContactsImportPanel({
                     .filter(Boolean)
                     .join(" · ") || "No details in Google"}
                 </p>
+                {/* THE DOOR LAW: when the resolver named several People, each one
+                    opens, and the remedy is said. */}
+                {contact.candidates && contact.candidates.length > 0 ? (
+                  <p className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>Merge or separate these first:</span>
+                    {contact.candidates.map((candidate) => (
+                      <Link
+                        key={candidate.person_id}
+                        href={`/crm/${candidate.person_id}`}
+                        target="_blank"
+                        className="text-foreground underline-offset-2 hover:underline"
+                      >
+                        {candidate.person_name} ({candidate.matched_by})
+                      </Link>
+                    ))}
+                  </p>
+                ) : null}
               </div>
               {contact.already_imported && contact.person_id ? (
                 <Button

@@ -29,11 +29,27 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
 import { importGoogleTasks, listGoogleTasks } from "./service";
+import {
+  importDateText,
+  importFieldList,
+  importProvenanceSentence,
+} from "./field-labels";
 import type {
   TaskImportResultPending,
   TaskListViewPending,
   TaskListingResultPending,
 } from "./types";
+
+/** What an outcome action means, in words a person reads (Law 10). */
+const TASK_ACTION_COPY: Record<string, string> = {
+  created: "created here",
+  updated: "updated from Google",
+  unchanged: "nothing to change",
+  kept_local: "yours kept",
+  unrecorded: "kept — source unknown",
+  would_create: "would be created",
+  would_update: "would be updated",
+};
 
 export interface GoogleTasksImportPanelProps {
   organizationId: string | null;
@@ -200,10 +216,31 @@ export function GoogleTasksImportPanel({
                   </span>
                 )}
                 <Badge variant="secondary" className="text-[11px]">
-                  {outcome.action.replace("_", " ")}
+                  {TASK_ACTION_COPY[outcome.action] ??
+                    outcome.action.replace(/_/g, " ")}
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{outcome.note}</p>
+              {/* The SERVER's note is the sentence; these two name the FIELDS in
+                  words, never as column keys (D9). */}
+              {outcome.changed_fields.length > 0 ? (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Updated {importFieldList(outcome.changed_fields).text}.
+                </p>
+              ) : null}
+              {outcome.kept_local_fields.length > 0 ? (
+                <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
+                  Kept your {importFieldList(outcome.kept_local_fields).text}.
+                </p>
+              ) : null}
+              {outcome.unrecorded_fields && outcome.unrecorded_fields.length > 0 ? (
+                <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
+                  {importFieldList(outcome.unrecorded_fields).text}{" "}
+                  {importFieldList(outcome.unrecorded_fields).verb} left as{" "}
+                  {outcome.unrecorded_fields.length === 1 ? "it is" : "they are"} —
+                  there is no record of what the import last wrote.
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -299,12 +336,19 @@ export function GoogleTasksImportPanel({
                   </span>
                   {task.already_imported ? (
                     <Badge variant="secondary" className="text-[11px]">
-                      Already here
+                      {/* The badge NAMES the import date when the server sent
+                          one, and admits it when it did not (B3). */}
+                      {importDateText(task.imported_at)
+                        ? `Imported ${importDateText(task.imported_at)}`
+                        : "Already here (import date not recorded)"}
                     </Badge>
                   ) : null}
                   {task.changes.length > 0 ? (
                     <Badge variant="outline" className="text-[11px]">
-                      Google changed {task.changes.join(", ")}
+                      {/* Field KEYS become words through the one label map
+                          shared with the Contacts panel — a person never reads
+                          "due_date" (VERIFY-B1-B2 D9). */}
+                      Google changed {importFieldList(task.changes).text}
                     </Badge>
                   ) : null}
                 </div>
@@ -317,8 +361,39 @@ export function GoogleTasksImportPanel({
                 ) : null}
                 {task.kept_local.length > 0 ? (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                    {task.kept_local.join(", ")} was edited here since the import —
-                    a re-import leaves it alone.
+                    {importFieldList(task.kept_local).text}{" "}
+                    {importFieldList(task.kept_local).verb} edited here since the
+                    import — a re-import leaves {task.kept_local.length === 1 ? "it" : "them"} alone.
+                  </p>
+                ) : null}
+                {/* Differs with NO record of what the import wrote. It is NOT a
+                    local edit and is never reported as one — the honest version
+                    of the sentence the panel used to print about every field. */}
+                {task.unrecorded && task.unrecorded.length > 0 ? (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    {importFieldList(task.unrecorded).text}{" "}
+                    {importFieldList(task.unrecorded).verb} different here, and
+                    there is no record of what the import last wrote, so a
+                    re-import leaves {task.unrecorded.length === 1 ? "it" : "them"} alone.
+                  </p>
+                ) : null}
+                {/* Where this task came from, when the server recorded it.
+                    🚨 The task's `source_url` is the Google Tasks API RESOURCE,
+                    a durable identity — Google publishes no web deep link to a
+                    single task, so nothing here is rendered as "open in Google
+                    Tasks". The link on this row is the AI MATRX task. */}
+                {task.already_imported ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Linked to Google Tasks.{" "}
+                    {importProvenanceSentence({
+                      importedAt: task.imported_at,
+                      source: "Google Tasks",
+                    })
+                      ? `This task is ${importProvenanceSentence({
+                          importedAt: task.imported_at,
+                          source: "Google Tasks",
+                        })}.`
+                      : "The import date was never recorded, so nothing here can say when."}
                   </p>
                 ) : null}
               </div>

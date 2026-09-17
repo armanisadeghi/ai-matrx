@@ -252,12 +252,14 @@ describe("preflightGmailRecipients", () => {
     const stopMedium = options.find(
       (option) => option.address === "stop@example.com",
     )!.mediumId;
-    const refusal = await preflightGmailRecipients(
-      "stop@example.com",
-      [],
+    const refusal = await preflightGmailRecipients({
+      to: "stop@example.com",
+      cc: [],
       options,
-      async (mediumId) => verdict(mediumId !== stopMedium),
-    );
+      organizationId: "org-1",
+      check: async (mediumId) => verdict(mediumId !== stopMedium),
+      lookup: async () => null,
+    });
     expect(refusal).toContain("stop@example.com");
     expect(refusal).toContain("asked us to stop");
   });
@@ -270,25 +272,29 @@ describe("preflightGmailRecipients", () => {
     const stopMedium = options.find(
       (option) => option.address === "stop@example.com",
     )!.mediumId;
-    const refusal = await preflightGmailRecipients(
-      "ok@example.com",
-      ["stop@example.com"],
+    const refusal = await preflightGmailRecipients({
+      to: "ok@example.com",
+      cc: ["stop@example.com"],
       options,
-      async (mediumId) => verdict(mediumId !== stopMedium),
-    );
+      organizationId: "org-1",
+      check: async (mediumId) => verdict(mediumId !== stopMedium),
+      lookup: async () => null,
+    });
     expect(refusal).toContain("stop@example.com");
   });
 
   it("fails CLOSED when the gate cannot be read", async () => {
     const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
-    const refusal = await preflightGmailRecipients(
-      "ok@example.com",
-      [],
+    const refusal = await preflightGmailRecipients({
+      to: "ok@example.com",
+      cc: [],
       options,
-      async () => {
+      organizationId: "org-1",
+      check: async () => {
         throw new Error("network down");
       },
-    );
+      lookup: async () => null,
+    });
     expect(refusal).toContain("could not be read");
     expect(refusal).toContain("network down");
   });
@@ -296,26 +302,78 @@ describe("preflightGmailRecipients", () => {
   it("sends when every recipient the record holds is allowed", async () => {
     const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
     expect(
-      await preflightGmailRecipients("ok@example.com", [], options, async () =>
-        verdict(true),
-      ),
+      await preflightGmailRecipients({
+        to: "ok@example.com",
+        cc: [],
+        options,
+        organizationId: "org-1",
+        check: async () => verdict(true),
+        lookup: async () => null,
+      }),
     ).toBeNull();
   });
 
-  it("does not invent a verdict for an address the record does not hold", async () => {
-    const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
-    let asked = 0;
-    const refusal = await preflightGmailRecipients(
-      "stranger@example.com",
-      [],
-      options,
-      async () => {
-        asked += 1;
-        return verdict(false);
-      },
-    );
-    // Nothing to look up — the compose step has already said so in words.
-    expect(asked).toBe(0);
-    expect(refusal).toBeNull();
+  /**
+   * D2 (VERIFY-B1-B2). The old preflight `continue`d past any address the RECORD
+   * did not hold, so the one send authority was never asked about exactly the
+   * addresses nobody had vetted: a person unsubscribed on ANOTHER record could
+   * be emailed by opening compose anywhere and typing her address. These three
+   * fail on the pre-fix bytes (the first because nothing looked the address up,
+   * the second because a refusal for an unheld address was impossible).
+   */
+  describe("every recipient is checked, held or not", () => {
+    it("resolves an unheld address against the organization and REFUSES it", async () => {
+      const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
+      const asked: string[] = [];
+      const refusal = await preflightGmailRecipients({
+        to: "unsubscribed@elsewhere.com",
+        cc: [],
+        options,
+        organizationId: "org-1",
+        check: async (mediumId) => {
+          asked.push(mediumId);
+          return verdict(false);
+        },
+        lookup: async (address) =>
+          address === "unsubscribed@elsewhere.com" ? "medium-elsewhere" : null,
+      });
+      expect(asked).toEqual(["medium-elsewhere"]);
+      expect(refusal).toContain("unsubscribed@elsewhere.com");
+    });
+
+    it("passes an address this organization holds no row for at all", async () => {
+      const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
+      let asked = 0;
+      const refusal = await preflightGmailRecipients({
+        to: "brand.new@elsewhere.com",
+        cc: [],
+        options,
+        organizationId: "org-1",
+        check: async () => {
+          asked += 1;
+          return verdict(false);
+        },
+        lookup: async () => null,
+      });
+      // No medium row means no suppression can exist — nothing to ask.
+      expect(asked).toBe(0);
+      expect(refusal).toBeNull();
+    });
+
+    it("fails CLOSED when the address lookup itself cannot be read", async () => {
+      const options = gmailRecipientOptions([emailPoint("ok@example.com")]);
+      const refusal = await preflightGmailRecipients({
+        to: "stranger@elsewhere.com",
+        cc: [],
+        options,
+        organizationId: "org-1",
+        check: async () => verdict(true),
+        lookup: async () => {
+          throw new Error("PostgREST 503");
+        },
+      });
+      expect(refusal).toContain("could not be read");
+      expect(refusal).toContain("PostgREST 503");
+    });
   });
 });

@@ -1,6 +1,7 @@
 // features/crm/gmail/preflight.ts
 //
-// 🚨 THE GATE RUNS AGAINST THE RECIPIENTS THAT ARE ABOUT TO BE SENT TO.
+// 🚨 THE GATE RUNS AGAINST THE RECIPIENTS THAT ARE ABOUT TO BE SENT TO, AND
+// AGAINST EVERY ONE OF THEM.
 //
 // The compose step checks the address in ITS To field. The review card then
 // lets every field change — including To and Cc — and posts Send itself. So a
@@ -10,16 +11,26 @@
 //
 // The fix is one seam, not two: the card calls `preflight` immediately before
 // it posts, with the addresses on its own screen. This module is that preflight
-// for CRM sends — it maps each address back to the contact point the record
-// holds and asks `crm.check_send_eligibility`, the ONE send authority, about
-// every one of them.
+// for every Gmail send from a record — the compose panel AND the approval
+// queue's `gmail_send` kind — so there is one answer to "may this message go?".
+//
+// EVERY ADDRESS IS ASKED ABOUT, HELD OR NOT. An address the open record does
+// not hold is not an unknown address: the ORGANIZATION usually already holds a
+// `crm.contact_medium` row for it, on another Person, and a legal opt-out lives
+// on that row. Skipping it — which is what this file did until 2026-09-17 —
+// meant the one send authority was never asked about precisely the addresses
+// nobody had vetted (VERIFY-B1-B2 D2). The cost of asking is one extra read per
+// stray address.
 //
 // FAILING CLOSED IS THE POINT. A check that cannot be read refuses; a verdict
-// that has not answered is not permission. An address the record does not hold
-// has nothing to look up and is allowed through with the surface having already
-// said so in words — that is a known, stated gap, not a silent pass.
+// that has not answered is not permission; a lookup that errors refuses too.
+// Only an address this organization holds NO medium row for passes without a
+// verdict, and it passes because no suppression can exist without that row.
 
-import { checkSendEligibility } from "@/features/crm/compliance/service";
+import {
+  checkSendEligibility,
+  findMediumIdForAddress,
+} from "@/features/crm/compliance/service";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
 import type { GmailRecipientOption } from "./recipients";
 
@@ -69,24 +80,75 @@ export function refusalSentence(
   return `${address} cannot be contacted right now. ${reasons}`.trim();
 }
 
+/** What one send's preflight needs to ask about every address on the card. */
+export interface GmailPreflightInput {
+  to: string;
+  cc: string[];
+  /** The addresses the open record holds, when a record is open. */
+  options: GmailRecipientOption[];
+  /**
+   * The organization whose contact mediums an unheld address is resolved
+   * against. Null means there is none to resolve against (and the refusal says
+   * so is not needed: nothing can be looked up, so nothing is claimed).
+   */
+  organizationId: string | null;
+  listId?: string | null;
+  identityId?: string | null;
+  /** Injected in tests; production asks the one authority. */
+  check?: (mediumId: string) => Promise<EligibilityVerdict>;
+  /** Injected in tests; production reads `crm.contact_medium`. */
+  lookup?: (address: string) => Promise<string | null>;
+}
+
 /**
  * Ask the one authority about every recipient of THIS send.
  *
- * `check` is injected so the pure decision logic is testable without a
- * database; production passes `checkSendEligibility`.
+ * `check` and `lookup` are injected so the decision logic is testable without a
+ * database; production passes `checkSendEligibility` and
+ * `findMediumIdForAddress`.
  */
 export async function preflightGmailRecipients(
-  to: string,
-  cc: string[],
-  options: GmailRecipientOption[],
-  check: (mediumId: string) => Promise<EligibilityVerdict> = (mediumId) =>
-    checkSendEligibility({ mediumId }),
+  input: GmailPreflightInput,
 ): Promise<GmailPreflightRefusal> {
+  const {
+    to,
+    cc,
+    options,
+    organizationId,
+    listId = null,
+    identityId = null,
+  } = input;
+  const check =
+    input.check ??
+    ((mediumId: string) =>
+      checkSendEligibility({ mediumId, listId, identityId }));
+  const lookup =
+    input.lookup ??
+    ((address: string) =>
+      organizationId
+        ? findMediumIdForAddress({ organizationId, address })
+        : Promise.resolve(null));
+
   for (const address of recipientsOfSend(to, cc)) {
-    const mediumId = mediumIdForAddress(address, options);
-    // Not a contact point we hold: nothing to look up. The compose step has
-    // already said out loud that this address is being sent on the person's
-    // own judgement.
+    let mediumId = mediumIdForAddress(address, options);
+    if (!mediumId) {
+      // Not on this record — ask the organization, because the opt-out lives on
+      // the org's medium row whichever Person happens to hold it.
+      try {
+        mediumId = await lookup(address);
+      } catch (error) {
+        // 🚨 FAIL CLOSED. A lookup that failed is not a lookup that found
+        // nothing.
+        return (
+          `The outbound checks for ${address} could not be read. ` +
+          (error instanceof Error ? error.message : String(error))
+        );
+      }
+    }
+    // No medium row in this organization at all: there is no suppression,
+    // complaint or blocklist entry that could exist without one, so there is
+    // genuinely nothing to ask. The compose surface has already said out loud
+    // that this address is not one the record holds.
     if (!mediumId) continue;
     let verdict: EligibilityVerdict;
     try {

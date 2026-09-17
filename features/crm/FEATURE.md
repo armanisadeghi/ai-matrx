@@ -830,10 +830,14 @@ is the part neither of them has. Plan: `common-docs/projects/google-native/PLAN.
 
 **The parts.** `GmailComposePanel` is the surface (compose → review); it is
 mounted by `GmailComposeWindow` (overlay `gmailComposeWindow`, opened with
-`useOpenGmailComposeWindow`) and nowhere else yet. `recipients.ts` decides which
-addresses the record offers; `service.ts` holds the ONE writer of a
-Gmail-sent interaction row; `types.ts` holds the shapes and the `*Pending`
-stand-in for the audit columns.
+`useOpenGmailComposeWindow`) from the Person header, the deal header and the
+Activity card. `recipients.ts` decides which addresses the record offers;
+`recipient-integrity.ts` decides whose timeline a send may land on;
+`preflight.ts` is the ONE Send-time gate for both send paths; `service.ts` holds
+the ONE writer of a Gmail-sent interaction row; `associations.ts` writes its
+"Associated with" edges; `sent-record-facts.ts` is the ONE reader of a sent row's
+facts and `GmailSentRecordDetails.tsx` renders them on the timeline; `types.ts`
+holds the shapes.
 
 **The rules this corner runs on**
 
@@ -847,9 +851,27 @@ stand-in for the audit columns.
   `features/crm/compliance/service.ts` — the ONE send authority. A verdict that
   has not answered yet is NOT permission: Review stays disabled while the checks
   are in flight, because the card's Send posts straight to the reviewed-send
-  endpoint and cannot be gated from outside it. An address that is not a contact
-  point we hold has nothing to check, and the panel says exactly that instead of
-  implying it was cleared.
+  endpoint and cannot be gated from outside it.
+- 🚨 **EVERY recipient is asked about, held or not.** An address the open record
+  does not hold is not an unknown address: the ORGANIZATION usually already holds
+  the `crm.contact_medium` row it is suppressed on, under another Person.
+  `preflight.ts` resolves it with `findMediumIdForAddress`
+  (`crm/compliance/service.ts`, read-only, never creates the row) and asks the
+  gate; only an address this organization holds no row for at all passes without
+  a verdict, because no suppression can exist without one. A lookup that cannot
+  be read REFUSES. Before 2026-09-17 both paths `continue`d past exactly those
+  addresses, so an unsubscribed person could be emailed by typing her address
+  into any record's compose window (VERIFY-B1-B2 D2).
+- 🚨 **A CHANGED RECIPIENT IS A DIFFERENT PERSON — one primitive, both paths.**
+  `recipient-integrity.ts::assessGmailRecipientIntegrity` decides whether a send
+  may be recorded on the record (the address must be one the RECORD holds, or —
+  for an agent proposal — the address the draft proposed) and words the refusal.
+  A send it refuses is recorded on NO Person and the surface says so with the
+  address. The compose panel had no such guard until 2026-09-17: a message to a
+  stranger landed on the open Person's timeline under the toast "Sent, and
+  recorded on Ada's timeline" (VERIFY-B1-B2 D1). Guard:
+  `recipient-integrity.test.ts` scans BOTH consumers for the shared import and
+  for the absence of a private copy.
 - **`channel = gmail` is `channel_code = 'email'` + `provider = 'gmail'`.**
   `channel_code`'s CHECK is a closed list of eight and `provider` is already how
   the table names the carrier (live rows say `twilio`, `apollo`). The external
@@ -876,28 +898,63 @@ stand-in for the audit columns.
   is the last gate and covers To *and* Cc, failing CLOSED when the checks cannot
   be read (`preflight.ts`). An address the record does not hold has nothing to
   look up, and the surface says so in words.
-- **The audit trail is stored TODAY, in `metadata.audit_trail`.**
-  `migrations/crm_interaction_gmail_audit_trail.sql` promotes those six keys to
-  real columns and BACKFILLS every row written before it was applied, so nothing
-  is lost in between. The typed Supabase client cannot name a column
-  `types/database.types.ts` does not carry, and a generated file is never
-  hand-edited — that is why the jsonb step exists, not a preference for jsonb.
-  After it is applied: `pnpm db-types`, then move the six keys onto the insert.
-- **No `project_id`.** A CRM table may not depend on a project FK (db-rules
-  §6d); a message composed from a project associates through
-  `platform.associations`. The panel carries the project id and the metadata
-  payload records which surface composed it — that wiring is NOT built yet.
+- **The audit trail is stored TODAY in `metadata.audit_trail`, and READ through
+  one accessor.** `migrations/crm_interaction_gmail_audit_trail.sql` is APPLIED —
+  all six columns, both FKs, the "a person AND a time, or neither" CHECK, the
+  same-org trigger and the four indexes are live (verified 2026-09-17). What lags
+  is `types/database.types.ts`: `pnpm db-types` needs DB env, so the typed client
+  still cannot NAME those columns on an insert. The facts therefore ride the row's
+  jsonb under the COLUMN names, and every reader goes through
+  `sent-record-facts.ts::gmailSentRecordFacts`, which prefers the column the
+  moment a row carries one. **Moving to columns is a one-line change in
+  `service.ts` after `pnpm db-types`** — no reader changes, and no backfill is
+  needed for rows written in between (the migration's own backfill ran once, at
+  apply time, and does not promote later rows; the accessor is what makes that
+  harmless).
+- **The timeline RENDERS the sent record.** `GmailSentRecordDetails` shows the
+  provider, the address it actually went to, the account it went out through,
+  Gmail's message id, "Associated with" (Person, deal, project — each an
+  `EntityRef` door), drafted-by (the agent as a door, its run as a copyable id —
+  there is no run viewer to route to) and approved-by (the person resolved through
+  `useOrgMembers`, plus the time). Until 2026-09-17 the timeline rendered a
+  subject and a date and none of it (VERIFY-B1-B2 A4/D6).
+- 🚨 **"Associated with" is a real edge.** `associations.ts` writes
+  `crm_interaction → party | crm_deal | project` with role `gmail_send` through
+  `associationsService` (`assoc_add`), the one registered chokepoint — never a
+  direct insert into `platform.associations`, which the browser holds no grant on.
+  A refused edge never unwinds the row: it comes back as `associationFailures`
+  and the surface says the message is recorded but not linked. The project id is
+  still not a column (a CRM table may not depend on a project FK, db-rules §6d)
+  and stays in `metadata.composed_from_project_id` as the breadcrumb. Before this,
+  the service CLAIMED this write and no such code existed (A5/D7).
+- 🚨 **The organization on the row is the PARTY's, and two live triggers agree.**
+  `trg_inherit_org` (`platform.inherit_org_from_parent`) fills a NULL org from the
+  party; `crm._inherit_parent_org` RAISES when an explicit org differs from the
+  party's. The deal record page therefore passes the PARTY's
+  `organization_id` (`InteractionTimeline`'s `partyOrganizationId`), not the
+  deal's — and every database refusal becomes a sentence with the "log it by hand"
+  remedy via `gmailWriteRefusalSentence`, with the raw refusal going to the Error
+  Inspector through `captureError`. Raw Postgres text used to reach the toast
+  (VERIFY-B1-B2 D8), and `service.ts` used to assert that no trigger picks an org.
+- **Compose is a first-class action.** "Send email" sits on the Person header, on
+  the deal header and on the Activity card. It used to appear ONLY after clicking
+  the "Email" chip in the log-a-past-activity strip, so arriving on a Person
+  showed no way to write to them (VERIFY-B1-B2 A1). The chat entrance is the
+  existing `google_email_send` client tool: an agent's `prepare_email` draft is
+  reviewed in `GmailReviewCard` through `PendingAsksZone` — that hand-off is
+  reachable, and it records nothing on a timeline because nothing in a chat says
+  which Person the message is about.
 
 ## Not built yet
 
-- Resolving a typed-by-hand address to a contact medium ANYWHERE in the
-  organization, so the send gate covers an address this particular record does
-  not hold. Today `preflight.ts` resolves only the addresses on the record, and
-  both the compose panel and the approval queue say out loud when an address
-  had nothing to check. Needs a reader in `features/crm/compliance/` that
-  returns medium ids (`findExistingMediumOwners` returns parties).
-- Associating a Gmail send with a **project** through `platform.associations`
-  (the id is carried and recorded in `metadata`, never dropped silently).
+- Promoting the six audit keys from `metadata.audit_trail` onto their live
+  columns: `pnpm db-types` in a session with DB env, then name them on the insert
+  in `service.ts`. Every reader already goes through `sent-record-facts.ts`.
+- A caller that passes `projectId` from a PROJECT surface. The compose window,
+  the panel, the association writer and the edge all take it; no project surface
+  opens compose yet, so the project edge is exercised only by its unit test.
+- A door to an agent RUN. `GmailSentRecordDetails` shows the drafted-by run as a
+  copyable id because no run route exists to send a reader to.
 - A `crm.sending_event` row for a Gmail send: that table's `identity_id` is NOT
   NULL and points at a verified CRM sending identity, which a personal Gmail
   mailbox is not. The eligibility gate runs either way; the ledger row does not.
@@ -908,6 +965,28 @@ stand-in for the audit columns.
 ---
 
 ## Change log
+
+- 2026-09-17 — **The first hostile verification's Gmail findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2.md` A1/A4/A5/D1/D2/D6/D7/D8/D9).
+  ONE recipient-integrity primitive (`gmail/recipient-integrity.ts`) now decides
+  whose timeline a send may land on, consumed by BOTH the compose panel and the
+  approvals `gmail_send` kind (the kind's private copy is deleted; a test scans
+  both consumers for the shared import) — a message to an address the record does
+  not hold is recorded on NO Person and the toast says so with the address. The
+  Send-time gate asks about EVERY recipient, resolving an unheld address against
+  the organization's own contact mediums (`findMediumIdForAddress`) and failing
+  closed. The sent row's facts are rendered on the timeline —
+  provider, recipient, "Associated with" doors, drafted-by, approved-by — through
+  the ONE accessor `gmail/sent-record-facts.ts`, which reads the live audit COLUMN
+  when a row carries one and the jsonb copy until `pnpm db-types` runs. The
+  "Associated with" EDGES are actually written now (`gmail/associations.ts` →
+  `assoc_add`, role `gmail_send`, Person + deal + project). "Send email" is a
+  first-class action on the Person and deal headers instead of hiding behind the
+  Email chip. The deal page passes the PARTY's organization, and every database
+  refusal is a sentence with the "log it by hand" remedy (raw text goes to the
+  Error Inspector). Three false claims in `gmail/service.ts` and `gmail/types.ts`
+  corrected: the migration IS applied, two triggers DO have an opinion about the
+  organization, and the association write now exists.
 
 - 2026-09-17 — **Import from Google Contacts, on the People list.** The CRM
   header opens `googleContactsImportWindow` in place

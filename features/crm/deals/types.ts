@@ -28,8 +28,14 @@ export type DealStageEventRow =
 
 // ── Joined shapes ───────────────────────────────────────────────────────────
 
+/**
+ * The embedded party, plus its OWN organization — a write about the party
+ * (a Gmail send) must carry the party's org, never the deal's (D8).
+ */
+export type DealParty = PartyRef & { organization_id: string };
+
 /** One list/board row: the deal plus its resolved primary party. */
-export type DealListRow = DealRow & { party: PartyRef | null };
+export type DealListRow = DealRow & { party: DealParty | null };
 
 /** Everything the deal record page loads in one parallel batch. */
 export interface DealDetail {

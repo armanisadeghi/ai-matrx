@@ -6,9 +6,12 @@
 // the six audit columns `migrations/crm_interaction_gmail_audit_trail.sql`
 // adds, so the writer could name them on a typed insert. It could not: the
 // typed Supabase client refuses a column `types/database.types.ts` does not
-// carry, and a generated file is never hand-edited. The audit trail is stored
-// in the row's own `metadata` instead, in the shape that migration's backfill
-// reads - see `./service.ts` and its `sendMetadata`.
+// carry, and a generated file is never hand-edited. Those columns ARE live in the
+// database; the generated types are what lag (`pnpm db-types` is owed to a
+// session with DB env). Until then the audit trail is stored in the row's own
+// `metadata` under the column names - written by `./service.ts` (`sendMetadata`)
+// and read by `./sent-record-facts.ts`, the ONE accessor, so the move to columns
+// is a one-line change.
 
 /**
  * `channel = gmail` (PLAN §4.4) as this table actually spells it.
@@ -21,6 +24,14 @@
  */
 export const GMAIL_INTERACTION_CHANNEL = "email" as const;
 export const GMAIL_INTERACTION_PROVIDER = "gmail" as const;
+
+/**
+ * Everything about a Gmail send that is not a column rides `metadata`, marked
+ * with this `__kind` (THE KIND-MARKER LAW — the marker travels with the data).
+ * It lives here, not beside the writer, so a pure READER can recognise the row
+ * without importing the Supabase client.
+ */
+export const GMAIL_SEND_METADATA_KIND = "crm_gmail_send_record";
 
 /** Who wrote the draft, when it was not the person sending it. */
 export interface GmailDraftedBy {
@@ -69,10 +80,16 @@ export interface GmailSendReceipt {
 export interface GmailInteractionWriteResult {
   interactionId: string | null;
   /**
-   * Set when the message went out but the record did not. The send is NOT
-   * reversible, so this is never swallowed and never retried silently.
+   * Set when the message went out but the record did not — already a SENTENCE
+   * with the remedy, never raw database text. The send is NOT reversible, so
+   * this is never swallowed and never retried silently.
    */
   failure: string | null;
+  /**
+   * The row landed but one of its "Associated with" edges did not. Separate from
+   * `failure` because the history IS true — only a link is missing.
+   */
+  associationFailures: string[];
 }
 
 /** What a compose window is opened with. */

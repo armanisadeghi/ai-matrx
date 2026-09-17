@@ -61,7 +61,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **Routes**
 
 - `features/overlays/openers/connectorConsentDialog.tsx` — the ONE door to "Choose what to connect" (`useOpenConnectorConsentDialog`).
-- `features/connectors/import/` — **the two Google import panels** (Google-native PLAN §4.5, §4.7). `GoogleContactsImportPanel.tsx` (search → the field map → save through the governed party resolver) and `GoogleTasksImportPanel.tsx` (task lists, checkboxes, already-imported badges, the server's honest count line). `service.ts` is the client half of `/google-import/*`; `types.ts` holds its `*Pending` stand-in contracts and the remedy that removes them. Openers: `features/overlays/openers/googleImportWindows.tsx` (`useOpenGoogleContactsImport`, `useOpenGoogleTasksImport`); window entries `features/window-panels/windows/google-import/*`.
+- `features/connectors/import/` — **the two Google import panels** (Google-native PLAN §4.5, §4.7). `GoogleContactsImportPanel.tsx` (search → the field map → save through the governed party resolver) and `GoogleTasksImportPanel.tsx` (task lists, checkboxes, already-imported badges, the server's honest count line). `service.ts` is the client half of `/google-import/*`; `types.ts` holds its `*Pending` stand-in contracts and the remedy that removes them; `contract.ts` is the ONE adapter that narrows what steers copy (the field-action set, the match state) with a runtime check, so a state a newer server sends can never render blank; `field-labels.ts` turns a column key into words and writes the provenance sentence, shared by both panels. Openers: `features/overlays/openers/googleImportWindows.tsx` (`useOpenGoogleContactsImport`, `useOpenGoogleTasksImport`); window entries `features/window-panels/windows/google-import/*`.
 - `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
 - `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
@@ -145,21 +145,47 @@ place from the People list and the Tasks header — never a route, which would
 lose the list behind it.
 
 **Contacts.** Search the person's Google contacts (already-imported ones wear a
-badge and offer "Update from Google") → pick one or several → the server's dry
-run returns the FIELD MAP: every Google value, the Person field it lands in, and
-what the write will actually do (`create` / `fills an empty field` / `already the
-same` / `edited here — kept`). Every row is droppable and its value editable
-before saving. The save goes through the existing dedupe resolver
-(`resolve_party`), so a match enriches instead of duplicating, and a value
-somebody edited here is reported and LEFT ALONE — the same call is both the
-import and the "Update from Google" diff.
+badge WITH the import date and offer "Update from Google") → pick one or several
+→ the server's dry run returns the FIELD MAP: every Google value, the Person
+field it lands in, and what the write will actually do. **The sentence on each
+row is the SERVER's** (`ContactFieldPlan.explanation`) — the same rule the count
+line runs on — and the client adds only the action the person can take. Every row
+is droppable and its value editable before saving. The save goes through the
+existing dedupe resolver, so a match enriches instead of duplicating.
 
-**Tasks.** Task lists as chips, tasks with checkboxes and already-imported
-badges, and the count line the SERVER composes ("12 tasks in My Tasks, 4 already
-here, import the other 8") — two places computing that is two answers to it.
-"Select the changed ones" picks exactly the tasks Google moved since the import.
-A re-import rewrites title, notes, due date and status only where Google changed
-them AND nobody changed them here.
+- **A local edit wins by DEFAULT, not by force.** A `kept_manual` field starts
+  unticked, so doing nothing keeps the value somebody edited here; ticking it
+  takes Google's instead. It used to be rendered `disabled` with the checkbox
+  forced off, so a person who WANTED Google's value could not have it
+  (VERIFY-B1-B2 B2). An `unrecorded` value — one nothing ever stamped — is
+  offered ticked and is never called a local edit.
+- **Per-field provenance** ("This Person's job title is from Google Contacts,
+  imported 12 Sep 2026") renders from `source_ref` / `imported_at`, and when the
+  server recorded nothing it says exactly that. It NEVER invents a date: the
+  server's provenance columns are live but its generated models do not carry them
+  yet (aidream `services/google_import/FEATURE.md` § THE REGENERATION DEPENDENCY),
+  so today every field honestly reads "where this value came from was never
+  recorded".
+- **An ambiguous contact is a refusal, not a guess.** When one address matches two
+  People the server writes nothing, in the preview AND the apply; the panel names
+  each candidate WITH a door and the remedy (merge the duplicate, or take the
+  shared address off the wrong one). There is deliberately no pick control — the
+  governed create/enrich path is the server's resolver, and pinning a chosen
+  Person here would be a second write path.
+- **It never says "New Person" for a contact the apply would merge.** The preview
+  names the Person it will update and how it was recognised (`matched_by`).
+
+**Tasks.** Task lists as chips, tasks with checkboxes, already-imported badges
+carrying the import date, and the count line the SERVER composes ("12 tasks in My
+Tasks, 4 already here, import the other 8") — two places computing that is two
+answers to it. "Select the changed ones" picks exactly the tasks Google moved
+since the import. A re-import rewrites title, notes, due date and status only
+where Google changed them AND nobody changed them here; a field with no snapshot
+to compare against is reported as "no record of what the import last wrote", never
+as "edited here". Field names are rendered through the shared label map — a person
+never reads `due_date` (VERIFY-B1-B2 D9). An imported task says "Linked to Google
+Tasks": the row's `source_url` is the Google Tasks API resource and a durable
+identity, not a page, so nothing offers to open it.
 
 Both are mirror-in only: nothing on either panel can change anything in the
 person's Google account.
@@ -226,6 +252,23 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — **The import panels tell the truth about where a value came
+  from** (lane F-13, from `common-docs/projects/google-native/VERIFY-B1-B2.md`
+  B2/B3/B4/D9, plus the contract lane B-7 shipped the same day). One shared
+  `field-labels.ts` turns every field key into words with a verb that agrees, so
+  the Tasks panel no longer prints "due_date, description was edited here", and
+  writes the provenance sentence ("from Google Contacts, imported 12 Sep 2026")
+  with an honest absence when the server recorded none — it never invents a date.
+  Both already-imported badges name the import date. A `kept_manual` field is
+  enabled and merely unticked, so local wins by DEFAULT and Google's value is one
+  click away. New `contract.ts` narrows the server's field actions and match
+  states at the seam: `unrecorded` and `choice_required` render real copy, a state
+  a newer server sends renders the server's own sentence plus "this screen does
+  not know that outcome yet" instead of a blank, and `field-labels.test.ts`
+  compares the action list against aidream's own `FieldAction` literal. An
+  ambiguous contact now refuses with both People named as doors and the remedy;
+  the preview names the Person it will merge into instead of saying "New Person".
 
 - `2026-09-17` — **A dead credential is a renewal of everything the account
   holds, and the press always answers with the truth** (lane F-12, from

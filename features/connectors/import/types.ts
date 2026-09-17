@@ -17,7 +17,15 @@
  * so the swap is one file plus this one.
  *
  * Source of truth while they are stand-ins: `aidream/api/routers/google_import.py`
- * and the Pydantic models in `aidream/services/google_import/`.
+ * and the Pydantic models in `aidream/services/google_import/`. Re-synced
+ * 2026-09-17 against that checkout, which had grown `explanation`, the
+ * `unrecorded` state, and multi-match resolution (`match_state`,
+ * `choice_required`, `candidates`) since these types were written — a stand-in
+ * that lags the server renders labels for actions the server no longer sends.
+ *
+ * 🚨 EVERY FIELD THE SERVER ADDED IS OPTIONAL HERE ON PURPOSE: the DEPLOYED
+ * image can be older than the checkout, so a panel that required `explanation`
+ * would render empty sentences against the live server.
  */
 
 /** One row of the declared Google field → Person field map. */
@@ -27,6 +35,20 @@ export interface ContactFieldSpecPending {
   person_field: string;
   person_label: string;
   multi: boolean;
+}
+
+/** What the resolver says this Google contact would do here. */
+export type ContactMatchStatePending =
+  | "new"
+  | "imported"
+  | "matched"
+  | "choice_required";
+
+/** One existing Person a Google contact resolves to — enough to open it. */
+export interface PersonCandidatePending {
+  person_id: string;
+  person_name: string;
+  matched_by: string;
 }
 
 export interface ContactCandidatePending {
@@ -43,6 +65,9 @@ export interface ContactCandidatePending {
   person_id: string | null;
   person_name: string | null;
   imported_at: string | null;
+  match_state?: ContactMatchStatePending;
+  matched_by?: string | null;
+  candidates?: PersonCandidatePending[];
 }
 
 export interface ContactSearchResultPending {
@@ -62,6 +87,10 @@ export type ContactFieldActionPending =
   | "fill"
   | "unchanged"
   | "kept_manual"
+  /** Differs, with NO record of what the import wrote — kept, NOT called an edit. */
+  | "unrecorded"
+  /** Nothing is decided until the person says which Person this is. */
+  | "choice_required"
   | "added"
   | "present"
   | "excluded";
@@ -75,6 +104,8 @@ export interface ContactFieldPlanPending {
   current_value: string | string[] | null;
   action: ContactFieldActionPending;
   current_state: string;
+  /** The SERVER's sentence for this row — true in every branch. */
+  explanation?: string;
   source_ref: string | null;
   imported_at: string | null;
 }
@@ -89,7 +120,12 @@ export interface ContactImportOutcomePending {
   fields: ContactFieldPlanPending[];
   written_fields: string[];
   kept_manual_fields: string[];
+  /** Values with no provenance stamp: kept as they are, and NOT called edits. */
+  unrecorded_fields?: string[];
   contact_points_added: number;
+  /** True when this contact matched more than one Person — nothing was written. */
+  choice_required?: boolean;
+  candidates?: PersonCandidatePending[];
   note: string;
 }
 
@@ -98,6 +134,8 @@ export interface ContactImportResultPending {
   google_account: string | null;
   dry_run: boolean;
   results: ContactImportOutcomePending[];
+  /** How many contacts were refused because they matched several People. */
+  choice_required?: number;
   warnings: string[];
 }
 
@@ -120,6 +158,8 @@ export interface TaskCandidatePending {
   imported_at: string | null;
   changes: string[];
   kept_local: string[];
+  /** Differs with no record of what the import wrote — kept, NOT called an edit. */
+  unrecorded?: string[];
 }
 
 export interface TaskListViewPending {
@@ -147,6 +187,7 @@ export type TaskOutcomeActionPending =
   | "updated"
   | "unchanged"
   | "kept_local"
+  | "unrecorded"
   | "would_create"
   | "would_update";
 
@@ -157,6 +198,7 @@ export interface TaskImportOutcomePending {
   matrx_task_id: string | null;
   changed_fields: string[];
   kept_local_fields: string[];
+  unrecorded_fields?: string[];
   note: string;
 }
 

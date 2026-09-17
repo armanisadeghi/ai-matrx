@@ -13,6 +13,7 @@
 
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
+import { normalizeMediumValue } from "../normalize";
 import { parseEligibilityVerdict } from "./parse";
 import {
   OUTREACH_POLICY_VERSION,
@@ -47,6 +48,52 @@ export async function checkSendEligibility(params: {
   // Narrowed at runtime, not cast: a verdict whose shape we merely asserted
   // would fail open the day the DB function changes.
   return parseEligibilityVerdict(data);
+}
+
+/**
+ * 🚨 THE MEDIUM BEHIND AN ADDRESS THE RECORD DOES NOT HOLD.
+ *
+ * Unsubscribes, complaints and blocklist entries are recorded against a
+ * `crm.contact_medium` row — the ORGANIZATION's row for that value, not a
+ * per-record one. So an address typed into a review card is not "unknown": the
+ * organization very often already holds it, on another Person, with a legal
+ * opt-out on it. Until 2026-09-17 the Gmail preflight skipped any address the
+ * open record did not hold, which meant the one send authority was never asked
+ * about exactly the addresses nobody had vetted (VERIFY-B1-B2 D2).
+ *
+ * Read-only by design: it never creates the medium row (`findOrCreateMedium`
+ * does that, on a path a person asked for). `null` means this organization
+ * holds no row for the value — and since a suppression cannot exist without
+ * one, there is genuinely nothing recorded to ask about.
+ */
+export async function findMediumIdForAddress(params: {
+  organizationId: string;
+  address: string;
+}): Promise<string | null> {
+  let valueKey: string;
+  try {
+    valueKey = normalizeMediumValue("email", params.address).valueKey;
+  } catch {
+    // Not an address we could normalize; there is no row to find.
+    return null;
+  }
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("contact_medium")
+    .select("id")
+    .eq("organization_id", params.organizationId)
+    .eq("channel", "email")
+    .eq("value_key", valueKey)
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    // 🚨 The caller FAILS CLOSED on a throw — a lookup that cannot be read is
+    // not a lookup that said "nothing here".
+    throw new Error(`Recipient lookup failed: ${error.message}`);
+  }
+  return data?.id ?? null;
 }
 
 /**

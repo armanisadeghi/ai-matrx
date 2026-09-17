@@ -20,11 +20,14 @@
 // message was recorded when it was not will send it again.
 
 import { supabase } from "@/utils/supabase/client";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { recordGmailSendAssociations } from "./associations";
 import type { Json } from "@/types/database.types";
 import type { InteractionInsert } from "@/features/crm/types";
 import {
   GMAIL_INTERACTION_CHANNEL,
   GMAIL_INTERACTION_PROVIDER,
+  GMAIL_SEND_METADATA_KIND,
   type GmailDraftedBy,
   type GmailInteractionWriteResult,
   type GmailSendAssociation,
@@ -75,12 +78,52 @@ export function narrowGmailSendReceipt(
 export const GMAIL_AUDIT_MIGRATION =
   "migrations/crm_interaction_gmail_audit_trail.sql";
 
-function describe(error: { message?: string; code?: string }): string {
-  const message = error.message?.trim();
-  if (!message) {
-    return "Supabase refused the write and returned no message.";
+/**
+ * 🚨 A DATABASE REFUSAL BECOMES A SENTENCE, NEVER RAW POSTGRES TEXT.
+ *
+ * The message has already left when this runs, so the person needs to know two
+ * things and neither of them is a SQLSTATE: what did not happen, and what to do
+ * about it. Raw text reached the toast until 2026-09-17 — including
+ * `crm._inherit_parent_org`'s own raise, which reads as a bug report rather than
+ * "log it by hand" (VERIFY-B1-B2 D8). The technical detail is not lost: it goes
+ * to the Error Inspector through `captureError`, where an agent or an admin can
+ * read it.
+ */
+export function gmailWriteRefusalSentence(error: {
+  message?: string;
+  code?: string;
+}): string {
+  const raw = `${error.message ?? ""} ${error.code ?? ""}`.toLowerCase();
+  if (raw.includes("organization") || error.code === "P0001") {
+    // `platform.inherit_org_from_parent` fills a NULL org from the party;
+    // `crm._inherit_parent_org` RAISES when an explicit org disagrees with the
+    // party's. That is the right behaviour — the row belongs to the Person's
+    // timeline, so the Person's organization is the only true one.
+    return (
+      "The message was sent, but it could not be recorded: this record belongs " +
+      "to a different organization than the one the message was filed under. " +
+      "Log it on the record by hand so the history is true, and tell an admin " +
+      "the record and the deal disagree about their organization."
+    );
   }
-  return error.code ? `${message} (${error.code})` : message;
+  if (error.code === "42501" || raw.includes("permission denied") || raw.includes("policy")) {
+    return (
+      "The message was sent, but you do not have permission to add activity to " +
+      "this record, so nothing was recorded. Log it by hand or ask whoever owns " +
+      "the record to add it."
+    );
+  }
+  if (error.code === "23505") {
+    return (
+      "The message was sent, and it looks like it was already recorded on this " +
+      "record — check the timeline before logging it again."
+    );
+  }
+  return (
+    "The message was sent, but the database refused to record it on the " +
+    "timeline. Log it by hand so the history is true; the technical detail is " +
+    "in the admin error inspector."
+  );
 }
 
 /** The subject a timeline row shows. The body is always stored verbatim. */
@@ -88,27 +131,28 @@ function interactionSubject(receipt: GmailSendReceipt): string {
   return receipt.subject.trim() || "(no subject)";
 }
 
-/**
- * Everything about the send that is not a column, marked with its `__kind`
- * (THE KIND-MARKER LAW — the marker travels with the data).
- */
-export const GMAIL_SEND_METADATA_KIND = "crm_gmail_send_record";
+/** Re-exported from `./types` so existing importers are unchanged. */
+export { GMAIL_SEND_METADATA_KIND } from "./types";
 
 /**
  * WHY THE AUDIT TRAIL RIDES `metadata` TODAY.
  *
- * `migrations/crm_interaction_gmail_audit_trail.sql` gives drafted-by and
- * approved-by their own columns, and it is written but NOT applied — the chair
- * applies DB files. The typed Supabase client refuses an insert naming a column
- * `types/database.types.ts` does not carry, a generated file is never
- * hand-edited, and this container cannot regenerate it; so those columns cannot
- * be written from here until the migration lands.
+ * `migrations/crm_interaction_gmail_audit_trail.sql` IS APPLIED — the six
+ * columns, both FKs, the "a person AND a time, or neither" CHECK, the same-org
+ * trigger and all four indexes are live (verified 2026-09-17). What is missing is
+ * narrower: `types/database.types.ts` does not carry them yet, because
+ * regenerating it (`pnpm db-types`) needs DB env this session did not have. The
+ * typed Supabase client refuses an insert naming a column the generated file does
+ * not carry, and a generated file is never hand-edited — so the facts go into the
+ * row's own jsonb, under the COLUMN names (not camelCase), which is exactly the
+ * shape the migration's backfill read.
  *
- * The answer is NOT to drop the trail and warn about it. NOTHING IS LOST: the
- * facts are stored now, in the row's own jsonb, in exactly the shape the
- * migration's backfill reads — column names, not camelCase, so the promotion is
- * a straight copy that cannot mis-map a field. When the migration is applied it
- * promotes every row written in the meantime; nobody has to go and find them.
+ * NOTHING IS LOST AND NOTHING IS BLIND: every reader goes through
+ * `./sent-record-facts.ts`, which reads the column when the row carries one and
+ * this jsonb when it does not. Regenerating the types therefore moves the write
+ * (here) and changes nothing else. The backfill itself ran once, at apply time,
+ * and does NOT promote rows written afterwards — the accessor is what makes that
+ * harmless.
  */
 function sendMetadata(
   receipt: GmailSendReceipt,
@@ -136,9 +180,11 @@ function sendMetadata(
       approved_at: approvedByUserId ? approvedAt : null,
     },
     // Carried, not a column: a CRM table may not depend on a project FK
-    // (db-rules §6d). The association proper is written through
-    // `platform.associations`; this is the breadcrumb naming the surface the
-    // message was composed from.
+    // (db-rules §6d). The association proper IS written, through
+    // `platform.associations` — see `./associations.ts`, called by
+    // `recordGmailSendInteraction` right after the row lands. This key stays as
+    // the breadcrumb naming the surface the message was composed from, readable
+    // without a second query.
     composed_from_project_id: association.projectId ?? null,
   } satisfies Json;
 }
@@ -165,8 +211,15 @@ export function gmailInteractionRow(
   return {
     id: interactionId,
     party_id: association.partyId,
-    // 🚨 Explicit, always. No resolver and no trigger picks an organization
-    // (CLAUDE.md § every write carries an explicit organization_id).
+    // 🚨 Explicit, always (CLAUDE.md § every write carries an explicit
+    // organization_id) — AND IT IS THE PARTY'S ORGANIZATION. Two live triggers
+    // on `crm.interaction` have an opinion: `trg_inherit_org`
+    // (`platform.inherit_org_from_parent`) fills a NULL org from the party, and
+    // `crm._inherit_parent_org` RAISES when the explicit org differs from the
+    // party's. So passing anything but the Person's organization — a deal's, say
+    // — fails the insert AFTER the message has left (VERIFY-B1-B2 D8). An
+    // earlier version of this comment claimed no trigger picks an org; it does
+    // not, but one refuses.
     organization_id: association.organizationId,
     deal_id: association.dealId ?? null,
     contact_point_id: association.contactPointId ?? null,
@@ -220,7 +273,46 @@ export async function recordGmailSendInteraction(
     .insert(row);
 
   if (error) {
-    return { interactionId: null, failure: describe(error) };
+    // Nothing fails silently: the person gets a sentence, the Error Inspector
+    // gets the refusal itself.
+    captureError({
+      source: "supabase-postgrest",
+      operation: "insert",
+      schema: "crm",
+      relation: "interaction",
+      code: error.code,
+      message: `Gmail sent record refused: ${error.message ?? "(no message)"}`,
+      userMessage: "A sent Gmail message could not be recorded on the timeline.",
+      raw: error,
+    });
+    return {
+      interactionId: null,
+      failure: gmailWriteRefusalSentence(error),
+      associationFailures: [],
+    };
   }
-  return { interactionId, failure: null };
+
+  // 🚨 "Associated with" is an EDGE, and the row exists now, so it is written
+  // now — through the registered RPC path only (`./associations.ts`). A failure
+  // here never unwinds the row and never throws: it is reported.
+  const associations = await recordGmailSendAssociations({
+    interactionId,
+    association: input.association,
+  });
+  for (const failure of associations.failures) {
+    captureError({
+      source: "supabase-postgrest",
+      operation: "insert",
+      schema: "platform",
+      relation: "associations",
+      message: `Gmail sent record association refused: ${failure}`,
+      userMessage: failure,
+      raw: failure,
+    });
+  }
+  return {
+    interactionId,
+    failure: null,
+    associationFailures: associations.failures,
+  };
 }

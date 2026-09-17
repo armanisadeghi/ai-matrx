@@ -65,6 +65,7 @@ import {
   recordGmailSendInteraction,
 } from "./service";
 import { preflightGmailRecipients } from "./preflight";
+import { assessGmailRecipientIntegrity } from "./recipient-integrity";
 import type { GmailDraftedBy } from "./types";
 
 export interface GmailComposePanelProps {
@@ -286,13 +287,28 @@ export function GmailComposePanel({
         onClose();
         return;
       }
-      // And the contact point is the one for the address that ACTUALLY
-      // received it, resolved from the same receipt.
-      const sentTo = optionsRef.current.find(
-        (option) =>
-          option.address.toLocaleLowerCase() ===
-          receipt.to.trim().toLocaleLowerCase(),
-      );
+      /**
+       * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
+       * OTHERWISE — decided by the ONE primitive both send paths consume
+       * (`./recipient-integrity.ts`; the approval queue's `gmail_send` kind
+       * calls the same function). Until 2026-09-17 this panel resolved the
+       * contact point, found none, and recorded the row on the open record
+       * anyway with the toast "Sent, and recorded on Ada's timeline" — a row on
+       * a customer's history saying we emailed her a message she never received
+       * (VERIFY-B1-B2 D1).
+       */
+      const integrity = assessGmailRecipientIntegrity({
+        sentTo: receipt.to,
+        source: { kind: "record", heldAddresses: optionsRef.current },
+      });
+      if (!integrity.recordOnRecord) {
+        // Recorded on NO Person, and the toast says so with the address, so it
+        // can be logged on the right record by hand.
+        toast.warning(integrity.refusal);
+        onSent?.(null);
+        onClose();
+        return;
+      }
       setRecording(true);
       void (async () => {
         const result = await recordGmailSendInteraction({
@@ -302,8 +318,8 @@ export function GmailComposePanel({
             organizationId,
             dealId: dealId ?? null,
             projectId: projectId ?? null,
-            contactPointId: sentTo?.contactPointId ?? null,
-            mediumId: sentTo?.mediumId ?? null,
+            contactPointId: integrity.contactPointId,
+            mediumId: integrity.mediumId,
           },
           approvedByUserId: viewerId ?? null,
           draftedBy: draftedBy ?? null,
@@ -316,16 +332,19 @@ export function GmailComposePanel({
         if (result.failure) {
           // The message HAS LEFT. Never a silent failure and never a retry the
           // person did not ask for — a second attempt could send it twice.
-          recordToast.error(
-            ref,
-            `The message was sent, but it could not be recorded on ${partyLabel}'s timeline. Log it by hand so the history is true.`,
-            { description: result.failure },
-          );
+          // The writer already turned the database's refusal into a sentence
+          // with its remedy — raw Postgres text never reaches a person here.
+          recordToast.error(ref, result.failure);
         } else {
           recordToast.success(
             ref,
             `Sent, and recorded on ${partyLabel}'s timeline.`,
           );
+          // The row is true even when a link is missing, so this is its own,
+          // quieter sentence rather than a failure.
+          for (const missing of result.associationFailures) {
+            toast.warning(missing);
+          }
         }
         onSent?.(result.interactionId);
         onClose();
@@ -402,7 +421,15 @@ export function GmailComposePanel({
              compose step's check was about the address that was in ITS To
              field; this one is about whoever is about to receive it. */
           preflight={(draft) =>
-            preflightGmailRecipients(draft.to, draft.cc, optionsRef.current)
+            preflightGmailRecipients({
+              to: draft.to,
+              cc: draft.cc,
+              options: optionsRef.current,
+              // Every address is asked about, held or not: an address this
+              // record does not hold is resolved against the organization's own
+              // contact mediums, where the unsubscribes live (D2).
+              organizationId,
+            })
           }
         />
       </div>
@@ -470,9 +497,10 @@ export function GmailComposePanel({
         ) : null}
         {!gated && to.trim().includes("@") ? (
           <p className="text-[11px] text-warning">
-            This address is not a contact point on this record, so the
-            unsubscribe and blocklist checks have nothing to check. You are
-            sending it on your own judgement.
+            This address is not one this record holds. It is still checked
+            against your organization&apos;s unsubscribes and blocklist before it
+            sends — but the message will be recorded on no record&apos;s
+            timeline, because we cannot tell whose address it is.
           </p>
         ) : null}
       </div>
