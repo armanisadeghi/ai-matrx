@@ -49,6 +49,7 @@ const site: SiteListRow = {
   gsc_position_28d: 4.25,
   gsc_clicks_prev_28d: 80,
   gsc_impressions_prev_28d: 1_600,
+  gsc_cur_days: 28,
   gsc_prev_days: 28,
   gsc_latest_date: "2026-08-28",
 };

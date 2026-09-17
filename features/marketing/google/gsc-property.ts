@@ -61,15 +61,22 @@ export function isSiteDomainProperty(
 
 /**
  * The property this site should bind by default, in preference order:
- * the domain property → a property THE JUDGE ACCEPTS → a single discovered
- * property (nothing to choose between, and the judge still refuses it
- * downstream if it is wrong).
+ * the domain property → a property THE JUDGE ACCEPTS → nothing.
  *
  * THE ASYMMETRY THIS REMOVED (round-2 verdict NEW-B1, same class): the second
  * rank used to be its own host comparison that accepted `www.<domain>` for a
  * non-www site — a third place where `www` was equated by hand. There is now
  * one rule for "does this property cover this site", `preflightGscProperty`,
  * and the auto-pick asks it instead of re-deciding.
+ *
+ * AND IT ASKS IT ON EVERY RANK (round-3 verdict B-N2). A third rank used to
+ * return `candidates[0]` whenever exactly one property was discovered, asking
+ * nothing at all — so an inventory holding only `sc-domain:www.example.com`,
+ * only a foreign domain, only a wrong URL prefix, or only a subdomain property
+ * handed back a pick this file's own judge refuses, under a header that claimed
+ * it could not. Nothing to bind is an honest answer; a refused pick pre-selected
+ * for the user is not, and the caller's loud re-judgement is a second chance,
+ * not the rule.
  */
 export function preferredGscProperty(
   resources: GoogleConnectionResource[],
@@ -89,7 +96,7 @@ export function preferredGscProperty(
       (resource) =>
         preflightGscProperty(resource.resource_ref, site).verdict !== "mismatch",
     ) ??
-    (candidates.length === 1 ? candidates[0] : null)
+    null
   );
 }
 
@@ -197,12 +204,67 @@ export interface GscPropertyPreflight {
   suggestedRef: string | null;
 }
 
+/** True when a site's stored address parses — the pre-flight's own test. */
+function parsesAsUrl(value: string | null | undefined): boolean {
+  try {
+    new URL((value ?? "").trim());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function normalizeHost(host: string): string {
   return host.trim().toLowerCase().replace(/\.$/, "");
 }
 
 function bareDomain(host: string): string {
   return normalizeHost(host).replace(/^www\./, "");
+}
+
+/**
+ * THE URL-PREFIX NORMALIZER — the second half of the ONE normalizer rule
+ * (round-3 verdict B-N4). `gscDomainPropertyRef` normalizes a domain ref; this
+ * normalizes a URL-prefix ref, and every branch of the URL path recommends its
+ * output rather than echoing what was typed.
+ *
+ * Google's URL-prefix properties are a scheme, a lowercase host and a path —
+ * nothing else. The `ok` branch used to return `suggestedRef: ref` verbatim, so
+ * `https://user:pw@example.com/` was recommended WITH the password,
+ * `https://EXAMPLE.com/` with the uppercase host and `https://example.com/?x=1`
+ * with the query string. Google holds none of those three, and one of them
+ * would have carried a credential into a stored binding and every screen that
+ * prints it.
+ */
+function gscUrlPropertyRef(url: URL): string {
+  const path = url.pathname === "/" ? "/" : url.pathname.replace(/\/+$/, "/");
+  return `${url.protocol}//${normalizeHost(url.hostname)}${path}`;
+}
+
+/** What the normalizer changed, each named out loud — never a silent rewrite. */
+function gscUrlRefChanges(ref: string, url: URL): string[] {
+  const changes: string[] = [];
+  if (url.username || url.password) {
+    changes.push(
+      "a Search Console property carries no sign-in credentials, so the user name and password are dropped",
+    );
+  }
+  if (url.hostname !== url.hostname.toLowerCase()) {
+    changes.push("Search Console's property refs are lowercase");
+  }
+  if (url.search) changes.push("a property has no query string");
+  if (url.hash) changes.push("a property has no #fragment");
+  if (url.hostname.endsWith(".")) {
+    changes.push("Google stores this host without the trailing dot");
+  }
+  return changes;
+}
+
+/** The sentence that names every normalization, or "" when there was none. */
+function gscUrlRefNote(ref: string, url: URL, normalized: string): string {
+  const changes = gscUrlRefChanges(ref, url);
+  if (!changes.length || normalized === ref.trim()) return "";
+  return ` ${changes.join(", and ")}, so this binds as ${normalized} — “${ref}” exactly as typed is not a ref Google accepts.`;
 }
 
 /** The site's canonical origin, from `root_url` when it parses, else `domain`. */
@@ -255,6 +317,28 @@ export function preflightGscProperty(
 
   if (isGscDomainProperty(ref)) {
     const tail = ref.slice("sc-domain:".length);
+    // A REFUSAL NAMES WHAT IT REFUSED (round-3 verdict B-N5). `sc-domain:` and
+    // `sc-domain:"   "` used to refuse with "you picked the domain property ,
+    // which is a different domain" — an empty hole where the name belongs —
+    // and `sc-domain:example.com:443` / `sc-domain:https://example.com` were
+    // called "a different domain" when what is wrong with them is that they
+    // are not domain names at all.
+    if (!tail.trim()) {
+      return {
+        verdict: "mismatch",
+        headline: `“${ref}” has no domain after “sc-domain:”, so it names no Search Console property.`,
+        detail: `A domain property is written ${domainRef} — the prefix plus the domain itself. Pick ${domainRef} if you own ${siteBare} in Search Console, or the URL-prefix property ${canonical.display}.`,
+        suggestedRef: domainRef,
+      };
+    }
+    if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?$/i.test(tail.trim())) {
+      return {
+        verdict: "mismatch",
+        headline: `“${tail.trim()}” is not a domain name, so “${ref}” names no Search Console property.`,
+        detail: `A domain property holds a bare host and nothing else — no scheme, no port, no path — so it reads ${domainRef}. Pick that if you own ${siteBare} in Search Console, or the URL-prefix property ${canonical.display}.`,
+        suggestedRef: domainRef,
+      };
+    }
     // A DOMAIN PROPERTY COVERS ITS SUBDOMAINS, NEVER ITS PARENT (round-2
     // verdict NEW-B1). The picked host is compared UNSTRIPPED: `bareDomain()`
     // used to strip `www.` from both sides, so `sc-domain:www.example.com`
@@ -344,7 +428,7 @@ export function preflightGscProperty(
   // and `https://example.com:8443/` as two properties; binding the port version
   // answers 200 with zero rows exactly like a www swap does.
   if (picked.port) {
-    const withoutPort = `${picked.protocol}//${normalizeHost(rawPickedHost)}${pickedPathRaw}`;
+    const withoutPort = gscUrlPropertyRef(picked);
     return {
       verdict: "mismatch",
       headline: `This site is ${canonical.display}; you picked ${ref}, and Search Console treats a property with a port as a separate property.`,
@@ -355,7 +439,7 @@ export function preflightGscProperty(
   // A TRAILING-DOT HOST IS A DIFFERENT PROPERTY, for the same reason: Google
   // stores `example.com`, never `example.com.`.
   if (rawPickedHost.endsWith(".")) {
-    const withoutDot = `${picked.protocol}//${normalizeHost(rawPickedHost)}${pickedPathRaw}`;
+    const withoutDot = gscUrlPropertyRef(picked);
     return {
       verdict: "mismatch",
       headline: `This site is ${canonical.display}; you picked ${ref}, and the trailing dot in “${rawPickedHost}” makes it a different property.`,
@@ -397,12 +481,14 @@ export function preflightGscProperty(
       suggestedRef: domainRef,
     };
   }
+  const normalizedUrlRef = gscUrlPropertyRef(picked);
   return {
     verdict: "ok",
-    headline: `${ref} matches ${canonical.display}.`,
+    headline: `${normalizedUrlRef} matches ${canonical.display}.`,
     detail:
-      "A URL-prefix property reports only on this exact scheme and host. If Google also offers you the domain property, that one covers every version of the domain.",
-    suggestedRef: ref,
+      "A URL-prefix property reports only on this exact scheme and host. If Google also offers you the domain property, that one covers every version of the domain." +
+      gscUrlRefNote(ref, picked, normalizedUrlRef),
+    suggestedRef: normalizedUrlRef,
   };
 }
 
@@ -435,8 +521,9 @@ export function preflightGscProperty(
  *     `integrationsWriteRefusal` in `components/integrations/integration-issues.ts`,
  *     which composes this same judge.
  *
- * And `preferredGscProperty` above asks the pre-flight rather than re-deciding
- * host equality, so the auto-pick cannot select a property this judge refuses.
+ * And `preferredGscProperty` above asks the pre-flight on EVERY rank, so the
+ * auto-pick cannot select a property this judge refuses (round-3 verdict B-N2:
+ * the single-candidate rank used to ask nothing).
  *
  * `enabled` is deliberately NOT part of the test: saving a binding that is
  * known to point at a different site is refused even when it is switched off,
@@ -461,10 +548,35 @@ export function judgeGscBindingWrite(
   site: { root_url?: string | null; domain: string },
 ): GscBindingJudgement {
   const ref = (binding.resourceRef ?? "").trim();
-  // Nothing picked, or a site row with no domain to judge against: there is no
-  // judgement to make, and inventing one would be a refusal nobody can fix.
-  if (!ref || !site.domain) {
+  // Nothing picked: there is no judgement to make, and inventing one would be a
+  // refusal nobody can fix. (`validateSiteIntegrations` owns "enabled with no
+  // property".)
+  if (!ref) {
     return { allowed: true, refusal: null, sentence: null };
+  }
+  // ONE JUDGE, ONE ANSWER (round-3 verdict B-N3). An empty `site.domain` used
+  // to return `allowed: true` early — "there is no judgement to make" — while
+  // `preflightGscProperty`, which judges off `root_url`, answered MISMATCH on
+  // the very same pair and the backfill gate therefore said start. The judge
+  // now always asks the pre-flight; only a row with NEITHER a domain nor a
+  // parseable address is unjudgeable, and that is refused by name rather than
+  // waved through into a ~16-month import against an unknown property.
+  if (!site.domain.trim() && !parsesAsUrl(site.root_url)) {
+    const refusal: GscPropertyPreflight = {
+      verdict: "mismatch",
+      headline:
+        "This site has no domain and no web address recorded, so no Search Console property can be judged against it.",
+      detail:
+        "Add the site's address first: until then a binding could point at any property in the account and nothing here could tell. The property picked was “" +
+        ref +
+        "”.",
+      suggestedRef: null,
+    };
+    return {
+      allowed: false,
+      refusal,
+      sentence: `${refusal.headline} ${refusal.detail}`,
+    };
   }
   const preflight = preflightGscProperty(ref, site);
   if (preflight.verdict !== "mismatch") {

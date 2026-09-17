@@ -13,6 +13,7 @@
 import {
   gscDomainPropertyRef,
   judgeGscBindingWrite,
+  preferredGscProperty,
   preflightGscProperty,
   shouldStartGscFirstImport,
   siteCanonicalUrl,
@@ -277,5 +278,135 @@ describe("preflightGscProperty — a domain property covers subdomains, never it
     expect(preflightGscProperty("sc-domain:OTHER.COM.", bareSite).suggestedRef).toBe(
       "sc-domain:example.com",
     );
+  });
+});
+
+/*
+  ROUND-3 VERDICT (google-native VERIFY-U-P4-U-M1-R3, findings B-N2…B-N5). Four
+  residues of the round-2 sweep, each a place where the file's own documented
+  rule was not yet true of the code.
+*/
+describe("B-N2 — the auto-pick can never return a property the judge refuses", () => {
+  function property(ref: string) {
+    return {
+      id: `res-${ref}`,
+      connection_id: "conn-1",
+      resource_type: "search_console_property" as const,
+      resource_ref: ref,
+      display_name: ref,
+      permission_level: "siteOwner",
+      discovered_at: "2026-09-17T00:00:00Z",
+      metadata: {},
+    };
+  }
+
+  /* The header claims "the auto-pick cannot select a property this judge
+     refuses". Rank 3 — a single discovered candidate — asked nothing, so four
+     of these six inventories handed back a refused pick. */
+  const inventories: Array<{ name: string; refs: string[]; pick: string | null }> = [
+    { name: "only a www domain property", refs: ["sc-domain:www.example.com"], pick: null },
+    { name: "only a foreign property", refs: ["sc-domain:other.com"], pick: null },
+    { name: "one wrong URL property", refs: ["https://www.example.com/"], pick: null },
+    { name: "subdomain property only", refs: ["sc-domain:sub.example.com"], pick: null },
+    {
+      name: "wrong and right together",
+      refs: ["sc-domain:other.com", "sc-domain:example.com"],
+      pick: "sc-domain:example.com",
+    },
+    {
+      name: "the site's own URL prefix alone",
+      refs: ["https://example.com/"],
+      pick: "https://example.com/",
+    },
+  ];
+
+  it.each(inventories)("$name", ({ refs, pick }) => {
+    const chosen = preferredGscProperty(
+      refs.map((ref) => property(ref)),
+      "conn-1",
+      bareSite,
+    );
+    expect(chosen?.resource_ref ?? null).toBe(pick);
+    if (chosen) {
+      expect(
+        judgeGscBindingWrite({ resourceRef: chosen.resource_ref }, bareSite).allowed,
+      ).toBe(true);
+    }
+  });
+});
+
+describe("B-N3 — one judge, one answer, when a site row carries no domain", () => {
+  const noDomain = { root_url: "https://example.com/", domain: "" };
+
+  it("refuses the pair the pre-flight already refuses", () => {
+    expect(preflightGscProperty(LIVE_MISMATCHED_PROPERTY, noDomain).verdict).toBe(
+      "mismatch",
+    );
+    const judgement = judgeGscBindingWrite(
+      { resourceRef: LIVE_MISMATCHED_PROPERTY },
+      noDomain,
+    );
+    expect(judgement.allowed).toBe(false);
+    expect(
+      shouldStartGscFirstImport(
+        { enabled: true, credentialRef: "conn-1", resourceRef: LIVE_MISMATCHED_PROPERTY },
+        noDomain,
+        { alreadySynced: false },
+      ),
+    ).toBe(false);
+  });
+
+  it("still allows a property that matches the site's address", () => {
+    expect(
+      judgeGscBindingWrite({ resourceRef: "https://example.com/" }, noDomain).allowed,
+    ).toBe(true);
+  });
+
+  it("refuses BY NAME when the row has neither a domain nor an address to judge", () => {
+    const blank = { root_url: "", domain: "" };
+    const judgement = judgeGscBindingWrite({ resourceRef: "sc-domain:example.com" }, blank);
+    expect(judgement.allowed).toBe(false);
+    expect(judgement.sentence).toContain("no domain");
+  });
+});
+
+describe("B-N4 — the URL-prefix branch normalizes on EVERY branch", () => {
+  it("never recommends a ref carrying credentials", () => {
+    const result = preflightGscProperty("https://user:pw@example.com/", bareSite);
+    expect(result.suggestedRef).toBe("https://example.com/");
+    expect(result.suggestedRef).not.toContain("pw@");
+    expect(result.detail).toContain("sign-in");
+  });
+
+  it("lowercases the host it recommends", () => {
+    const result = preflightGscProperty("https://EXAMPLE.com/", bareSite);
+    expect(result.verdict).toBe("ok");
+    expect(result.suggestedRef).toBe("https://example.com/");
+  });
+
+  it("drops a query string and a fragment, and says it did", () => {
+    const result = preflightGscProperty("https://example.com/?x=1#top", bareSite);
+    expect(result.suggestedRef).toBe("https://example.com/");
+    expect(result.detail).toContain("query");
+  });
+});
+
+describe("B-N5 — a refusal names what it refused", () => {
+  it("names an empty domain ref instead of leaving a hole in the sentence", () => {
+    for (const ref of ["sc-domain:", "sc-domain:   "]) {
+      const result = preflightGscProperty(ref, bareSite);
+      expect(result.verdict).toBe("mismatch");
+      expect(result.headline).toContain("no domain after");
+      expect(result.headline).not.toContain("property , which");
+      expect(result.suggestedRef).toBe("sc-domain:example.com");
+    }
+  });
+
+  it("says a domain ref that is not a host is not a ref at all", () => {
+    for (const ref of ["sc-domain:example.com:443", "sc-domain:https://example.com"]) {
+      const result = preflightGscProperty(ref, bareSite);
+      expect(result.verdict).toBe("mismatch");
+      expect(result.headline).toContain("is not a domain name");
+    }
   });
 });

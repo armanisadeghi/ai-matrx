@@ -11,6 +11,7 @@
 
 import {
   aggregateAnalyticsRows,
+  judgeAnalyticsComparison,
   perCollectedDay,
   type RawRow,
 } from "@/features/marketing/analytics/window";
@@ -385,5 +386,68 @@ describe("rule 3 — an uncollected previous window refuses the comparison", () 
     const result = aggregateAnalyticsRows(rows, liveBounds);
     expect(result.comparison.state).toBe("refused");
     expect(result.comparison.previousDaysWithData).toBe(0);
+  });
+});
+
+/*
+  THE JUDGE ANSWERS NONSENSE HONESTLY (round-3 verdict B-N6). `previous = 31`
+  against a 28-day window passed as comparable with NO caveat — share > 1 and a
+  gap of 3 inside the tolerance — and `windowDays: 0` produced the sentence
+  "the previous 0 days have only 28 of 0 days collected". A window cannot hold
+  more collected days than it has days, and a zero-length window is not a
+  comparison; both are refused by name so a caller cannot draw a percentage
+  over them.
+*/
+describe("judgeAnalyticsComparison — impossible coverage", () => {
+  it("refuses a previous window with more collected days than the window is long", () => {
+    const verdict = judgeAnalyticsComparison({
+      currentDaysWithData: 28,
+      previousDaysWithData: 31,
+      windowDays: 28,
+    });
+    expect(verdict.state).toBe("refused");
+    expect(verdict.caveat).toContain("31");
+    expect(verdict.caveat).toContain("28");
+  });
+
+  it("refuses a current window with more collected days than the window is long", () => {
+    expect(
+      judgeAnalyticsComparison({
+        currentDaysWithData: 31,
+        previousDaysWithData: 28,
+        windowDays: 28,
+      }).state,
+    ).toBe("refused");
+  });
+
+  it("refuses a zero-length window instead of describing 28 of 0 days", () => {
+    const verdict = judgeAnalyticsComparison({
+      currentDaysWithData: 28,
+      previousDaysWithData: 28,
+      windowDays: 0,
+    });
+    expect(verdict.state).toBe("refused");
+    expect(verdict.caveat).not.toContain("of 0 days collected");
+    expect(verdict.caveat).toContain("0");
+  });
+
+  it("refuses a negative day count", () => {
+    expect(
+      judgeAnalyticsComparison({
+        currentDaysWithData: -1,
+        previousDaysWithData: 28,
+        windowDays: 28,
+      }).state,
+    ).toBe("refused");
+  });
+
+  it("still accepts the pair it is meant to accept", () => {
+    expect(
+      judgeAnalyticsComparison({
+        currentDaysWithData: 28,
+        previousDaysWithData: 28,
+        windowDays: 28,
+      }).state,
+    ).toBe("comparable");
   });
 });

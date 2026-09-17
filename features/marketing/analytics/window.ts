@@ -128,10 +128,15 @@ export interface SiteAnalyticsWindowData {
  *
  * "Collected alike" is deliberately not "identical": a window may legitimately
  * miss a day. The tolerance is `COMPARISON_COVERAGE_TOLERANCE_DAYS`, matching
- * the existing Search Console rule (`SiteKpiPeeks.trendPercent` suppresses a
- * delta below 21 of 28 prior days — 75%); here the two windows must also be
- * within that tolerance OF EACH OTHER, because the direction of the error is
- * the gap between them.
+ * the Search Console rule that used to live in `SiteKpiPeeks.trendPercent` (it
+ * suppressed a delta below 21 of 28 prior days — 75%, which is exactly
+ * `COMPARISON_COVERAGE_MIN_SHARE`); here BOTH windows must clear that share and
+ * be within the tolerance OF EACH OTHER, because the direction of the error is
+ * the gap between them. Since 2026-09-17 (round-3 verdict B-N1) the Search
+ * Console surfaces ask this same judge through `analytics/gsc-delta.ts`: the old
+ * rule judged the previous window only, so five live sites at 8 of 28 current
+ * days against 23 of 28 previous ones were painted as a ~70% collapse while
+ * their traffic per collected day was flat or UP.
  */
 export type AnalyticsComparisonState = "comparable" | "refused";
 
@@ -169,12 +174,39 @@ export function judgeAnalyticsComparison(input: {
     previousDaysWithData,
     windowDays,
   };
-  const previousShare =
-    windowDays > 0 ? previousDaysWithData / windowDays : 0;
+  // A WINDOW THAT CANNOT EXIST IS REFUSED BY NAME (round-3 verdict B-N6). A
+  // zero-length window is not a comparison, and a window cannot hold more
+  // collected days than it has days — both used to pass: `previous = 31`
+  // against a 28-day window read as "comparable" with no caveat at all
+  // (share > 1, gap 3 inside the tolerance), and `windowDays: 0` produced the
+  // sentence "the previous 0 days have only 28 of 0 days collected".
+  if (windowDays <= 0) {
+    return {
+      ...base,
+      state: "refused",
+      caveat: `No comparison: the window is ${windowDays} days long, so there is nothing to compare. This is a bug in whatever asked for it, not a gap in the data.`,
+    };
+  }
+  if (
+    currentDaysWithData < 0 ||
+    previousDaysWithData < 0 ||
+    currentDaysWithData > windowDays ||
+    previousDaysWithData > windowDays
+  ) {
+    return {
+      ...base,
+      state: "refused",
+      caveat: `No comparison: this ${windowDays}-day window reports ${currentDaysWithData} collected days now and ${previousDaysWithData} before, and a ${windowDays}-day window cannot hold more than ${windowDays} or fewer than 0. The coverage counts are wrong, so no percentage over them can be trusted.`,
+    };
+  }
+  const previousShare = previousDaysWithData / windowDays;
   const gap = Math.abs(currentDaysWithData - previousDaysWithData);
+  const currentShare = currentDaysWithData / windowDays;
   const refused =
     previousDaysWithData === 0 ||
+    currentDaysWithData === 0 ||
     previousShare < COMPARISON_COVERAGE_MIN_SHARE ||
+    currentShare < COMPARISON_COVERAGE_MIN_SHARE ||
     gap > COMPARISON_COVERAGE_TOLERANCE_DAYS;
   if (refused) {
     return {

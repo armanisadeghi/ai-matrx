@@ -312,6 +312,10 @@ function mergeSiteListRow(
     gsc_position_28d: kpis?.gsc_position_28d ?? null,
     gsc_clicks_prev_28d: kpis?.gsc_clicks_prev_28d ?? null,
     gsc_impressions_prev_28d: kpis?.gsc_impressions_prev_28d ?? null,
+    // BOTH windows' coverage travels with the row: the delta is judged on the
+    // pair (`analytics/gsc-delta.ts`), and `gsc_cur_days` used to be selected
+    // here and silently dropped — round-3 verdict B-N1.
+    gsc_cur_days: Number(kpis?.gsc_cur_days ?? 0),
     gsc_prev_days: Number(kpis?.gsc_prev_days ?? 0),
     gsc_latest_date: kpis?.gsc_latest_date ?? null,
   };
