@@ -68,6 +68,16 @@
 -- block keeps the two apart, and `custom.record_values()` is the ONE reader that merges them,
 -- so no consumer has to know.
 --
+-- AND A WORKED-OUT ANSWER THAT NO RULE WORKS OUT IS NEITHER KEPT NOR DROPPED IN SILENCE.
+-- The two ways one can appear are told apart, because treating them alike breaks T8: an
+-- answer that was ALREADY there and whose Rule has stopped applying — a square retyped to a
+-- circle — is RETIRED into `data -> '_retired'` with its reason, its Rule and the version
+-- that produced it, which is where `W1-FIELD` already moves a Value that stopped applying;
+-- an answer that ARRIVED IN THIS WRITE is a forged provenance, a value wearing a Rule's name
+-- and version that `custom.record_values()` would then serve as the system's own, and it is
+-- REFUSED BY NAME. Refusing both would make the retype impossible; accepting both would let
+-- anybody sign a value with a Rule's name.
+--
 -- WHAT EACH LAW BECOMES
 -- ---------------------
 --   REC-15  one object, four uses — `custom.rule.uses` is a non-empty subset of the closed
@@ -818,6 +828,8 @@ declare
   v_truth      boolean;
   v_key        text;
   v_computed   jsonb := '{}'::jsonb;
+  v_prior      jsonb;
+  v_retired    jsonb;
   v_stale      text;
 begin
   -- The kernel is defined in code; the Tables, the Fields, the merge fields and the Rules
@@ -867,19 +879,43 @@ begin
       'at',           to_jsonb(now())));
   end loop;
 
-  -- A computed Value that no Rule produces is REFUSED, never quietly dropped and never
-  -- quietly kept: it would otherwise sit in the document looking authoritative after its
-  -- Rule stopped applying, which is the one way this whole block can lie.
+  -- A WORKED-OUT ANSWER THAT NO RULE WORKS OUT IS NEVER QUIETLY KEPT AND NEVER QUIETLY
+  -- DROPPED, and the two ways one can appear are told apart rather than lumped together.
+  --
+  --   IT WAS ALREADY THERE, and its Rule has stopped applying — T8's retype, exactly: a
+  --   square becomes a circle and `sides_equal` stops being a thing about this record. That
+  --   is not an error and refusing it would make the retype impossible. The answer is
+  --   RETIRED into `data -> '_retired'` with its reason, the same place and the same shape
+  --   W1-FIELD moves a Value that stopped applying — a STAND-IN for History, announced with
+  --   W3-HIST as the remedy.
+  --
+  --   IT ARRIVED IN THIS WRITE — a hand-written `_computed` block. That is a forged
+  --   provenance: a value wearing a Rule's name and a version, which `custom.record_values`
+  --   would then serve as if the system had worked it out. REFUSED by name.
   if jsonb_typeof(new.data -> '_computed') = 'object' then
-    select k into v_stale
-      from jsonb_object_keys(new.data -> '_computed') k
-     where not (v_computed ? k)
-     limit 1;
-    if v_stale is not null then
-      raise exception 'this record carries a worked-out answer for % that no rule works out', v_stale
-        using errcode = '23514',
-              hint = 'REC-15 / FLD-9: a computed Value belongs to the Rule that computes it. If the Rule was removed or stopped applying, the stored answer goes with it — it is not a value anybody typed and it cannot be kept by hand.';
-    end if;
+    v_prior := case when tg_op = 'UPDATE' then coalesce(old.data -> '_computed', '{}'::jsonb)
+                    else '{}'::jsonb end;
+    for v_stale in
+      select k from jsonb_object_keys(new.data -> '_computed') k where not (v_computed ? k)
+    loop
+      if (v_prior -> v_stale) is distinct from (new.data -> '_computed' -> v_stale) then
+        raise exception 'this record carries a worked-out answer for % that no rule works out', v_stale
+          using errcode = '23514',
+                hint = 'REC-15 / FLD-9: a worked-out answer belongs to the Rule that works it out, and it carries that Rule''s id and version. A value written here by hand would be served as if the system had worked it out.';
+      end if;
+      v_retired := coalesce(new.data -> '_retired', '[]'::jsonb) || jsonb_build_object(
+        'key',    v_stale,
+        'label',  coalesce(custom.rule_field_label(new.organization_id,
+                             (v_prior -> v_stale ->> 'field_id')::uuid), v_stale),
+        'value',  v_prior -> v_stale -> 'value',
+        'reason', format('this record changed, and nothing works out %s for it any more',
+                         coalesce(custom.rule_field_label(new.organization_id,
+                                    (v_prior -> v_stale ->> 'field_id')::uuid), v_stale)),
+        'rule_id',      v_prior -> v_stale -> 'rule_id',
+        'rule_version', v_prior -> v_stale -> 'rule_version',
+        'at',     to_jsonb(now()));
+      new.data := jsonb_set(new.data, '{_retired}', v_retired);
+    end loop;
   end if;
 
   if v_computed = '{}'::jsonb then

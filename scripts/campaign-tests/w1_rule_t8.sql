@@ -201,6 +201,30 @@ begin
     end if;
   end;
 
+  -- T8's RETYPE, which is the one thing a refusal here would make impossible. A square
+  -- becomes a circle: `sides_equal` stops being a thing about this record, and its worked-out
+  -- answer is RETIRED with its reason, its Rule and the version that produced it — not
+  -- refused, and not silently dropped. (`_retired` is a stand-in for History: W3-HIST.)
+  insert into custom.record (organization_id, table_id, data)
+  values (v_org, v_tbl, '{"title":"S8","kind":"square","width":5,"height":5}')
+  returning id into v_r2;
+  update custom.record set data = data || '{"kind":"circle"}'::jsonb
+   where organization_id = v_org and id = v_r2;
+  select data into v_j from custom.record where organization_id = v_org and id = v_r2;
+  if v_j ? '_computed' then
+    raise exception 'T8 retype: the retyped record still carries a worked-out answer - %', v_j -> '_computed';
+  end if;
+  select count(*) into v_n from jsonb_array_elements(coalesce(v_j -> '_retired', '[]'::jsonb) ) e
+   where e ->> 'key' = 'sides_equal'
+     and (e -> 'value') = to_jsonb(true)
+     and (e ->> 'rule_id')::uuid = v_rule
+     and (e ->> 'rule_version')::integer = 1
+     and e ->> 'reason' is not null;
+  if v_n <> 1 then
+    raise exception 'T8 retype: the worked-out answer was not retired with its reason, its Rule and its version - %',
+                    v_j -> '_retired';
+  end if;
+
   -- ══════════════════════════════════════════════════════════════════════════
   -- D. REC-17 — BY ID, NEVER BY NAME, proven by RENAMING the field underneath
   -- ══════════════════════════════════════════════════════════════════════════
