@@ -21,7 +21,11 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { GoogleWorkspaceReviewWorkspace } from "@/features/google-workspace/GoogleWorkspaceReviewWorkspace";
-import type { GoogleConnectionInventory } from "@/features/marketing/google/types";
+import type {
+  GoogleConnectionInventory,
+  GoogleConnectionResource,
+  GoogleConnectionSummary,
+} from "@/features/marketing/google/types";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -80,29 +84,37 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
   NonEditableContextMenu: ({ children }: { children: ReactNode }) => children,
 }));
 
-const connection = {
+const connection: GoogleConnectionSummary = {
   id: "connection-one",
-  owner_type: "user" as const,
+  owner_type: "user",
   owner_user_id: "user-1",
   organization_id: null,
-  provider: "google" as const,
+  provider: "google",
   provider_subject: "subject-one",
   account_email: "expert@example.com",
   account_name: "The Expert",
   scopes: ["https://www.googleapis.com/auth/drive.file"],
-  status: "connected" as const,
+  status: "connected",
+  last_verified_at: "2026-09-17T20:48:03.195512Z",
+  last_error: null,
+  created_at: "2026-09-10T09:00:00.000Z",
+  updated_at: "2026-09-17T20:48:03.195512Z",
   metadata: {},
   credential_present: true,
   credential_stable: true,
-  health: "connected" as const,
+  health: "connected",
   capability_health: null,
 };
 
-/** The row shape `register_selected_file` writes for a picked deck. */
-const deck = {
+/**
+ * The row `register_selected_file` writes for a picked deck — a COMPLETE
+ * `GoogleConnectionResource`, declared by annotation rather than a cast, so the
+ * fixture cannot drift from the type the surfaces narrow on.
+ */
+const deck: GoogleConnectionResource = {
   id: "resource-deck",
   connection_id: "connection-one",
-  resource_type: "google_presentation" as const,
+  resource_type: "google_presentation",
   resource_ref: "1DeckFileId",
   display_name: "Q4 board narrative",
   permission_level: "selected_by_user",
