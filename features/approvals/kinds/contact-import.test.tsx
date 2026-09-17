@@ -7,8 +7,13 @@
  * card's numbers, `preview.would_write.plan` is the full review (kept,
  * refused and unchanged rows included, each with the server's own sentence),
  * and an empty `field_map` means "already here or kept", never "the agent
- * needs fixing". This drives the REAL `contactImportKind`; only the store
- * seam (`listPendingProposals`) and the network door are mocked.
+ * needs fixing". `would_write` is now REQUIRED — no live proposal has ever
+ * lacked it (`platform.assists` has held zero `contact_import` rows across
+ * four rounds of hostile verification), so a payload without it is not "the
+ * old shape" but a shape this build cannot read, and gets the same honest,
+ * Approve-less row every other unreadable Google payload gets. This drives
+ * the REAL `contactImportKind`; only the store seam
+ * (`listPendingProposals`) and the network door are mocked.
  */
 
 import * as React from "react";
@@ -343,6 +348,13 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
           { person_id: "party-b", person_name: "D. Chen", matched_by: "external_id:google_people" },
         ],
         field_map: [],
+        would_write: {
+          choice_required: true,
+          candidates: [
+            { person_id: "party-a", person_name: "Dana Chen", matched_by: "email" },
+            { person_id: "party-b", person_name: "D. Chen", matched_by: "external_id:google_people" },
+          ],
+        },
         dry_run: true,
         imported: false,
       },
@@ -359,7 +371,7 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     expect(text(node, "accept-effect")).toContain("Nothing");
   });
 
-  it("a payload written before B-15 (no would_write) still renders honestly, with no false promise", async () => {
+  it("a proposal with no would_write (no such row exists live — the pre-B-15 shape is dead, not a fallback) gets the honest unrenderable row, never a client-derived count", async () => {
     mockPayload = {
       __kind: "contact_import_dry_run",
       preview: {
@@ -379,16 +391,16 @@ describe("contact_import renders B-15's plan, not a client-derived count", () =>
     } as unknown as Json;
 
     const node = await mount();
+    // The headline still names the contact (read off `contacts`, independent
+    // of the plan) — but nothing here promises a count it cannot back.
     expect(text(node, "headline")).toContain("Dana Reed");
-    const body = text(node, "body");
-    expect(body).toContain("Name");
-    expect(body).toContain("Dana Reed");
-    expect(body).toContain("Email");
-    expect(body).toContain("dana@example.com");
-    // No `would_write` on this payload: the accept effect is the old-style
-    // count this screen can actually verify from the rows it can read — never
-    // a sentence lifted from a plan the payload does not carry.
-    expect(text(node, "accept-effect")).toContain("Writes 2 fields onto a Person");
-    expect(text(node, "blocked-reason")).toBe("");
+    expect(text(node, "accept-effect")).toBe("Nothing — this proposal cannot be read.");
+    expect(text(node, "blocked-reason")).toBe(
+      "This proposal does not carry the import's plan, so this screen cannot say how many fields it writes or what happens to each one.",
+    );
+    expect(text(node, "blocked-who")).toContain("ask for the import again");
+    // No client-derived count anywhere in the body — the old "Writes 2 fields"
+    // read off `field_map` must never appear again.
+    expect(text(node, "body")).not.toMatch(/Writes \d+ fields?/);
   });
 });

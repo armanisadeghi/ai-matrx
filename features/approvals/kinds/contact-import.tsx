@@ -5,24 +5,29 @@
  *
  * 🚨 aidream lane B-15 (commit `90e10777a`): the agent's contact import now
  * runs through the ONE plan/apply in `aidream/services/google_import/
- * contacts.py`, and `proposal_view` is what a queue renders — never a second
- * opinion computed here. Until then this component re-derived "Writes N
- * fields" by counting `preview.field_map`, which the resolver's own NULL-only
- * enrichment did not actually write; the count is now `preview.would_write`'s
- * own number, and the sentence (`.promise`) is the server's, not ours
+ * contacts.py`, and `preview.would_write` is that plan, verbatim — never a
+ * second opinion computed here. Until B-15 this component re-derived
+ * "Writes N fields" by counting `preview.field_map`, which the resolver's own
+ * NULL-only enrichment did not actually write
  * (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md` V2).
  *
- * `preview.field_map` still holds only the rows that LAND (`create` / `fill` /
- * `added`) — that is what the accept-effect count and this card's headline
- * count. `preview.would_write.plan` is the FULL review: every row, including
- * the ones kept, refused, unchanged or excluded, each carrying the sentence
- * the panel shows — so this screen renders that sentence rather than
- * re-deriving its own copy from raw values.
+ * `would_write` IS REQUIRED. There is no pre-B-15 payload to fall back to: the
+ * approval queue's `platform.assists` table has held zero `contact_import`
+ * rows across four rounds of hostile verification, so a fallback for the old
+ * shape would be a second renderer kept alive for data that has never
+ * existed — the exact class the no-legacy law names. A payload some future
+ * producer writes without a plan is not "the old shape returning"; it is a
+ * shape this build cannot read, and it gets the SAME honest, Approve-less row
+ * every other unreadable Google payload gets (`../google-proposal.tsx`'s own
+ * fallback for a payload that fails to narrow at all) — never a client-side
+ * count invented to fill the gap.
  *
- * A payload written before B-15 carries no `would_write` at all. It is read
- * exactly as before (the field map, filtered to rows with a real value) and
- * offers no promise it cannot back — this file never invents the plan a
- * payload does not carry.
+ * `preview.field_map` still holds only the rows that LAND (`create` / `fill` /
+ * `added`) — that is what the accept-effect count uses when `would_write`
+ * omits it, though today it never does. `preview.would_write.plan` is the
+ * FULL review: every row, including the ones kept, refused, unchanged or
+ * excluded, each carrying the sentence the panel shows — so this screen
+ * renders that sentence rather than re-deriving its own copy from raw values.
  *
  * The match is made by the CRM's one create path (`resolve_party`) when the
  * change is applied, which enriches an existing Person rather than
@@ -46,27 +51,12 @@ import {
   useGoogleApprovalDecisions,
   useGoogleProposalSource,
   type GoogleKindContract,
+  type GoogleProposalCopy,
   type GoogleProposalPayload,
 } from "./google-proposal";
 
 const KIND_ID = "contact_import";
 const PAYLOAD_KIND = "contact_import_dry_run";
-
-/**
- * Fallback labels for a payload written before B-15, which carried no
- * `label`/`person_label` of its own. A field not named here is shown by its
- * own key rather than hidden — a new field appearing on the server must never
- * vanish from the review.
- */
-const FIELD_LABEL: Record<string, string> = {
-  display_name: "Name",
-  first_name: "First name",
-  last_name: "Last name",
-  job_title: "Job title",
-  company: "Company",
-  emails: "Email",
-  phones: "Phone",
-};
 
 /** One value, one list, or nothing — read, never coerced into a shape. */
 function values(value: Json | undefined): string[] {
@@ -82,7 +72,7 @@ function readBool(record: Record<string, Json> | null | undefined, key: string):
   return record?.[key] === true;
 }
 
-/** One row of the review, whichever server shape produced it. */
+/** One row of the plan, read from either `field_map` or `would_write.plan`. */
 interface FieldRow {
   key: string;
   label: string;
@@ -96,55 +86,33 @@ function fieldRow(row: Record<string, Json>): FieldRow | null {
   if (!key) return null;
   return {
     key,
-    label:
-      readString(row, "person_label") ?? readString(row, "label") ?? FIELD_LABEL[key] ?? key,
+    label: readString(row, "person_label") ?? readString(row, "label") ?? key,
     values: values(row.value),
     currentValues: values(row.current_value),
     explanation: readString(row, "explanation"),
   };
 }
 
-/** `preview.field_map` — the rows that LAND. Pre-B-15 this was every field the
- * agent proposed, unfiltered by the server, so a row with no real value is
- * dropped here exactly as it always was. */
-function landingRows(payload: GoogleProposalPayload): FieldRow[] {
-  return readArray(payload.preview, "field_map")
-    .filter(isJsonRecord)
-    .map(fieldRow)
-    .filter((row): row is FieldRow => row !== null && row.values.length > 0);
-}
-
-/** `preview.would_write` — the plan, absent on a payload written before B-15. */
+/** `preview.would_write` — THE plan. A payload without it cannot be reviewed
+ * here; see the module doc for why there is no fallback for its absence. */
 function wouldWrite(payload: GoogleProposalPayload): Record<string, Json> | null {
   return readRecord(payload.preview, "would_write");
 }
 
-/**
- * The FULL review this card's table shows: every row the plan carries, kept
+/** The FULL review this card's table shows: every row the plan carries, kept
  * ones and refused ones included, each with the sentence the server wrote
- * for it. A pre-B-15 payload carries no fuller plan than the field map, so
- * that is what is shown instead — never a plan this file invents.
- */
-function fullPlanRows(payload: GoogleProposalPayload): FieldRow[] {
-  const plan = wouldWrite(payload);
-  if (plan) {
-    return readArray(plan, "plan")
-      .filter(isJsonRecord)
-      .map(fieldRow)
-      .filter((row): row is FieldRow => row !== null);
-  }
-  return landingRows(payload);
+ * for it. */
+function fullPlanRows(plan: Record<string, Json>): FieldRow[] {
+  return readArray(plan, "plan")
+    .filter(isJsonRecord)
+    .map(fieldRow)
+    .filter((row): row is FieldRow => row !== null);
 }
 
 /** The plan's own write count — `writes` (columns) plus `contact_points`
- * (email/phone rows). Falls back to counting the rows shown for a pre-B-15
- * payload, which never separated the two. */
-function landingCount(payload: GoogleProposalPayload): number {
-  const plan = wouldWrite(payload);
-  if (plan) {
-    return (readNumber(plan, "writes") ?? 0) + (readNumber(plan, "contact_points") ?? 0);
-  }
-  return landingRows(payload).length;
+ * (email/phone rows). Never re-derived from the rows this screen renders. */
+function planCount(plan: Record<string, Json>): number {
+  return (readNumber(plan, "writes") ?? 0) + (readNumber(plan, "contact_points") ?? 0);
 }
 
 function contactName(payload: GoogleProposalPayload): string {
@@ -163,25 +131,25 @@ interface AmbiguousCandidate {
 }
 
 /**
- * This contact reaching more than one Person, when a payload carries that
+ * This contact reaching more than one Person, when the plan carries that
  * refusal. The live server tool refuses `import_contact` outright before a
  * proposal is ever queued (`_import_contact` returns `error_type ==
- * "contact_ambiguous"`, and `google_workspace_http_action_gate`'s propose path
- * hands that refusal straight back without calling `write_proposal`) — so
- * this branch does not fire from today's producer. It stays defensive rather
- * than assumed away: a producer that ever DID queue this refusal, or an older
- * payload shaped differently, must never show a live Approve over it, per
- * `_ambiguity_note` on the server (`aidream/services/google_import/
+ * "contact_ambiguous"`, and the propose path hands that refusal straight back
+ * without calling `write_proposal`) — so this branch does not fire from
+ * today's producer. It stays defensive rather than assumed away: a producer
+ * that ever DID queue this refusal must never show a live Approve over it,
+ * per `_ambiguity_note` on the server (`aidream/services/google_import/
  * contacts.py`) and `PersonCandidate`.
  */
-function ambiguousRefusal(payload: GoogleProposalPayload): AmbiguousCandidate[] | null {
-  const preview = payload.preview;
-  const plan = wouldWrite(payload);
+function ambiguousRefusal(
+  preview: Record<string, Json>,
+  plan: Record<string, Json>,
+): AmbiguousCandidate[] | null {
   const isAmbiguous =
     readString(preview, "error_type") === "contact_ambiguous" || readBool(plan, "choice_required");
   if (!isAmbiguous) return null;
   const raw = readArray(preview, "candidates");
-  const rows = (raw.length > 0 ? raw : plan ? readArray(plan, "candidates") : [])
+  const rows = (raw.length > 0 ? raw : readArray(plan, "candidates"))
     .filter(isJsonRecord)
     .map((row) => {
       const personId = readString(row, "person_id");
@@ -193,20 +161,36 @@ function ambiguousRefusal(payload: GoogleProposalPayload): AmbiguousCandidate[] 
   return rows;
 }
 
+/** The queue's own words for a shape it cannot review — the same honest,
+ * Approve-less row `google-proposal.tsx` gives a payload that fails to
+ * narrow at all, worded for this specific gap. */
+function unreadablePlanNotice(): { reason: string; whoCan: string } {
+  return {
+    reason:
+      "This proposal does not carry the import's plan, so this screen cannot say how many fields it writes or what happens to each one.",
+    whoCan: "Reject it and ask for the import again — the new proposal will carry the plan.",
+  };
+}
+
 /** THE ONE COMPONENT for this kind: the full plan, in the server's own words. */
 function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
-  const ambiguous = ambiguousRefusal(payload);
-  const account = readString(payload.preview, "google_account");
   const plan = wouldWrite(payload);
-  const rows = fullPlanRows(payload);
-  const kept = plan ? readArray(plan, "kept_fields") : [];
-  const refused = plan ? readArray(plan, "refused_fields") : [];
-  const reimportPolicy = plan ? readString(plan, "reimport_policy") : null;
-  const personName = plan ? readString(plan, "person_name") : null;
-  const matchedBy = plan ? readString(plan, "matched_by") : null;
+  if (!plan) {
+    return (
+      <p className="text-xs text-muted-foreground">{unreadablePlanNotice().reason}</p>
+    );
+  }
+  const ambiguous = ambiguousRefusal(payload.preview, plan);
+  const account = readString(payload.preview, "google_account");
+  const rows = fullPlanRows(plan);
+  const kept = readArray(plan, "kept_fields");
+  const refused = readArray(plan, "refused_fields");
+  const reimportPolicy = readString(plan, "reimport_policy");
+  const personName = readString(plan, "person_name");
+  const matchedBy = readString(plan, "matched_by");
   // Law 4 (nothing fails silently): a warning the server carries — a missing
   // knob, a policy it could not read — is shown, never swallowed.
-  const warnings = [...(plan ? readArray(plan, "warnings") : [])].filter(
+  const warnings = readArray(plan, "warnings").filter(
     (value): value is string => typeof value === "string" && value.length > 0,
   );
 
@@ -317,8 +301,20 @@ const contract: GoogleKindContract = {
   payloadKind: PAYLOAD_KIND,
   describe: (payload) => {
     const who = contactName(payload);
-    const ambiguous = ambiguousRefusal(payload);
+    const plan = wouldWrite(payload);
 
+    if (!plan) {
+      return {
+        headline: `Import ${who} from Google Contacts`,
+        acceptEffect: "Nothing — this proposal cannot be read.",
+        rejectEffect:
+          "Records it as rejected so it stops waiting on you. Nothing in Google or your records changes.",
+        body: <ContactFieldMap payload={payload} />,
+        blocked: unreadablePlanNotice(),
+      } satisfies GoogleProposalCopy;
+    }
+
+    const ambiguous = ambiguousRefusal(payload.preview, plan);
     if (ambiguous) {
       return {
         headline: `Import ${who} from Google Contacts`,
@@ -332,17 +328,15 @@ const contract: GoogleKindContract = {
           whoCan:
             "Open the People named in the review, merge the duplicate or move the identity that is on the wrong one, then ask for the import again.",
         },
-      };
+      } satisfies GoogleProposalCopy;
     }
 
-    const plan = wouldWrite(payload);
-    const promise = plan ? readString(plan, "promise") : null;
-    const count = landingCount(payload);
+    const promise = readString(plan, "promise");
+    const count = planCount(plan);
     return {
       headline: `Import ${who} from Google Contacts`,
-      // 🚨 THE PLAN'S OWN SENTENCE, when the payload carries one — never a
-      // count re-derived from the rows this screen happens to be able to
-      // read (VERIFY-B1-B2-R4.md V2).
+      // 🚨 THE PLAN'S OWN SENTENCE — never a count re-derived from the rows
+      // this screen happens to be able to read (VERIFY-B1-B2-R4.md V2).
       acceptEffect:
         promise ??
         `Writes ${count} field${count === 1 ? "" : "s"} onto a Person in your organization — enriching the one that already matches this contact, or creating one if none does. Google Contacts is not changed.`,
@@ -362,7 +356,7 @@ const contract: GoogleKindContract = {
       // No door: which Person this becomes is decided by the resolver when the
       // import runs, so there is no record to open yet. Naming one now would be
       // a guess, and linking to a guess is worse than a missing link.
-    };
+    } satisfies GoogleProposalCopy;
   },
 };
 
