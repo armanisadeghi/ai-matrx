@@ -17,6 +17,10 @@ import {
   mapPcEpisodeWithShowRow,
   mapPcShowRow,
 } from "./types";
+import {
+  normalizeChapterTiming,
+  resolveAudioMetadataDuration,
+} from "./chapter-timing";
 
 /** The `pc_shows.metadata` key holding the show's generated topic-idea bank. */
 export const TOPIC_IDEA_BANK_KEY = "topic_ideas";
@@ -293,9 +297,17 @@ export const podcastService = {
     id: string,
     chapters: PcEpisodeChapter[],
   ): Promise<PcEpisode> {
+    const episode = await this.fetchEpisodeById(id);
+    if (!episode) {
+      throw new Error("Episode not found; chapter markers were not saved.");
+    }
+    // Stored duration may be absent or stale. Playback metadata is the source
+    // of truth, and saving it here makes the next agent duration_hint accurate.
+    const durationSeconds = await resolveAudioMetadataDuration(episode.audio_url);
+    const playableChapters = normalizeChapterTiming(chapters, durationSeconds);
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
-      .update({ chapters })
+      .update({ chapters: playableChapters, duration_seconds: durationSeconds })
       .eq("id", id)
       .select()
       .single();
