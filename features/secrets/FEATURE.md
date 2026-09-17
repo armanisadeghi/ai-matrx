@@ -350,6 +350,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- `2026-09-17` — **The Vault's Organization tab switches to the organization the person SELECTED.** All three "Organization" controls fell back to `availableOrganizations[0]?.id`, so from "My credentials" the tab opened the first organization the person happened to belong to — another tenant's credentials, chosen by nobody. They now use the selected organization (`selectOrganizationId`), and when nothing is selected the click changes nothing and says why in a toast. The organization Select beside the tab stays the explicit picker. Guard: `pnpm check:organization-context`.
+
 - **2026-09-16** — Added Mine-only selected login CSV export with explicit loaded-item selection, value-free revision preview, loss accounting, plaintext acknowledgement, current-password reauthentication, actor/request-organization cancellation, and private Blob cleanup.
 
 - **2026-09-12** — Unified existing Bitwarden JSON and 1Password 1PUX worker envelopes around required request IDs and matching cancellation. Bitwarden file decoding now stays inside its worker, and worker exceptions project to a fixed source-free import error.

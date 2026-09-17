@@ -71,10 +71,8 @@ export async function POST(request: NextRequest) {
         // writes nothing.
         // common-docs/policies/context-is-carried-never-rebuilt.md
         const artifactOrganizationId =
-          typeof organizationId === "string" && organizationId.trim().length > 0
-            ? organizationId.trim()
-            : null;
-        if (!artifactOrganizationId) {
+          typeof organizationId === "string" ? organizationId.trim() : "";
+        if (artifactOrganizationId.length === 0) {
           return NextResponse.json(
             {
               error:

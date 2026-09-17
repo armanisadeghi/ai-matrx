@@ -32,6 +32,9 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 import {
   Select,
   SelectContent,
@@ -101,6 +104,25 @@ export function VaultWorkspace({
 }: VaultWorkspaceProps) {
   const { organizations } = useUserOrganizations();
   const availableOrganizations = organizations.filter((org) => !org.isPersonal);
+  // Switching to the Organization tab acts in the organization the person
+  // SELECTED — never the first one they happen to belong to. A
+  // first-membership pick showed (and let them write) another tenant's
+  // credentials without anyone choosing it. With no selection the tab says so
+  // and changes nothing; the Select beside it stays the explicit picker.
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const scopeSwitchOrganizationId =
+    availableOrganizations.find((org) => org.id === selectedOrganizationId)
+      ?.id ?? null;
+  const switchToOrganizationScope = (): string | null => {
+    if (!scopeSwitchOrganizationId) {
+      toast.error(
+        "No organization is selected, so there are no organization credentials to show. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return null;
+    }
+    return scopeSwitchOrganizationId;
+  };
   const [uncontrolledScope, setUncontrolledScope] = useState<VaultScope>({
     kind: "mine",
   });
@@ -290,9 +312,7 @@ export function VaultWorkspace({
                             : null
                         }
                         onClick={() => {
-                          const organizationId =
-                            activeOrganization?.id ??
-                            availableOrganizations[0]?.id;
+                          const organizationId = switchToOrganizationScope();
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -421,9 +441,7 @@ export function VaultWorkspace({
                         role="tab"
                         aria-selected={scope.kind === "organization"}
                         onClick={() => {
-                          const organizationId =
-                            activeOrganization?.id ??
-                            availableOrganizations[0]?.id;
+                          const organizationId = switchToOrganizationScope();
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -780,8 +798,7 @@ export function VaultWorkspace({
                 role="tab"
                 aria-selected={scope.kind === "organization"}
                 onClick={() => {
-                  const organizationId =
-                    activeOrganization?.id ?? availableOrganizations[0]?.id;
+                  const organizationId = switchToOrganizationScope();
                   if (!organizationId) return;
                   setUserScope({ kind: "organization", organizationId });
                   setSelectedId(null);

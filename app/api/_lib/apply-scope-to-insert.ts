@@ -113,6 +113,7 @@ export async function applyScopeToInsertPayload(args: {
         { status: 403 },
       );
     }
+    // org-fallback-deliberate: global tier is super-admin gated above (checkIsSuperAdmin, 403 otherwise) and publishes into the system org by design
     payload.organization_id = await resolveSystemOrgId(client);
     return payload;
   }

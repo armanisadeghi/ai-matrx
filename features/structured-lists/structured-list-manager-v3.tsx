@@ -550,8 +550,8 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     // selected right now — a list opened from another organization must not
     // gain rows filed somewhere else.
     const listOrganizationId =
-      lists.find((l) => l.id === activeId)?.organization_id ?? null;
-    if (!listOrganizationId) {
+      lists.find((l) => l.id === activeId)?.organization_id ?? "";
+    if (listOrganizationId.length === 0) {
       toast.error(
         "This picklist isn't filed in an organization, so a new item has nowhere to live. Reopen it from an organization workspace.",
       );

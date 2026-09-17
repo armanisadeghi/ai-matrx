@@ -37,12 +37,13 @@ const EDU = () => supabase.schema("education");
  * `organizationId` is required on INSERT (the write must carry a tenant) and
  * omitted on UPDATE (a re-plan never moves a plan between organizations).
  */
-function planPayload(
-  draft: PlanDraft,
-  organizationId?: string,
-): Record<string, unknown> {
+// The plan's own columns, WITHOUT the organization: an insert names the
+// organization at its call site (`{ ...planPayload(draft), organization_id }`)
+// so the row never depends on `public._stamp_org_default` to pick a tenant,
+// and a re-plan UPDATE leaves the plan filed where it already is.
+// common-docs/policies/context-is-carried-never-rebuilt.md
+function planPayload(draft: PlanDraft): Record<string, unknown> {
   return {
-    ...(organizationId ? { organization_id: organizationId } : {}),
     title: draft.title,
     start_date: draft.startDate,
     end_date: draft.endDate,
@@ -235,7 +236,10 @@ export const planService = {
       const organizationId = await ensureOrgId(undefined);
       const { data: plan, error } = await EDU()
         .from("study_plan")
-        .insert(planPayload(draft, organizationId) as never)
+        .insert({
+          ...planPayload(draft),
+          organization_id: organizationId,
+        } as never)
         .select("id")
         .single();
       if (error) return fail("savePlan", error);

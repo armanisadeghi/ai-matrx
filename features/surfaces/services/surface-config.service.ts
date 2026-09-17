@@ -28,8 +28,10 @@ import {
   getNamespaceHandler,
   listRegisteredNamespaces,
 } from "@/features/surfaces/config/namespace-registry";
-import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import {
+  peekSystemOrgId,
+  resolveSystemOrgId,
+} from "@/lib/organizations/systemOrg";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const sb = () => createClient();
@@ -115,7 +117,16 @@ export interface SurfaceConfigRow {
  * ORDER IS LOAD-BEARING. `organizationId` is now non-null on every row, so
  * testing it before `scopeId` would classify every scope-tier row as "org" and
  * silently move it down the precedence ladder.
+ *
+ * "Which organization is the platform's own" is answered by `iam.system_orgs`
+ * through `lib/organizations/systemOrg.ts` — never a UUID pasted into this
+ * file. This classifier is synchronous, so it PEEKS at the id the resolver
+ * memoized; `fetchSurfaceConfigBundle` primes it in the same call that loads
+ * the rows, and an unprimed peek says so out loud rather than quietly
+ * demoting a platform row to the org tier.
  */
+let warnedUnprimedSystemOrg = false;
+
 export function tierOf(row: {
   userId: string | null;
   organizationId: string | null;
@@ -123,7 +134,18 @@ export function tierOf(row: {
 }): PrefTier {
   if (row.userId) return "user";
   if (row.scopeId) return "scope";
-  return row.organizationId === SYSTEM_ORGANIZATION_ID ? "global" : "org";
+  const systemOrganizationId = peekSystemOrgId();
+  if (!systemOrganizationId) {
+    if (!warnedUnprimedSystemOrg) {
+      warnedUnprimedSystemOrg = true;
+      console.error(
+        "[surface-config] the system organization id has not been resolved yet, so platform-owned rows are being read as ordinary organization rows. " +
+          "Remedy: await resolveSystemOrgId() (fetchSurfaceConfigBundle does) before classifying rows.",
+      );
+    }
+    return "org";
+  }
+  return row.organizationId === systemOrganizationId ? "global" : "org";
 }
 
 /** Layer order for merge: global < org < scope(reserved) < user. */
@@ -173,6 +195,11 @@ export async function fetchSurfaceConfigBundle(
   // as anon and reporting a permission failure.
   const { data: auth, error: authError } = await client.auth.getUser();
   const uid = authError ? null : (auth.user?.id ?? null);
+  // Prime the memoized system organization id alongside the rows, so the
+  // synchronous `tierOf` above can tell a platform-owned row from an ordinary
+  // organization's without a hardcoded UUID. It is awaited with them (never
+  // fire-and-forget) so the classifier is never asked before the answer is in,
+  // and a failure screams instead of silently demoting platform rows.
   const [rolesRes, prefsRes, configRes] = await Promise.all([
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
@@ -206,6 +233,13 @@ export async function fetchSurfaceConfigBundle(
       )
       .is("deleted_at", null)
       .eq("surface_name", surfaceName),
+    resolveSystemOrgId(client).catch((e: unknown) => {
+      console.error(
+        "[surface-config] could not resolve the system organization — platform-owned rows will read as ordinary organization rows:",
+        e,
+      );
+      return null;
+    }),
   ]);
   if (rolesRes.error) throw rolesRes.error;
   if (prefsRes.error) throw prefsRes.error;

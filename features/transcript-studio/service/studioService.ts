@@ -1630,35 +1630,35 @@ export interface UpsertSessionSettingsInput {
 export async function upsertSessionSettings(
   input: UpsertSessionSettingsInput,
 ): Promise<import("../types").SessionSettings & { showPriorModules: boolean }> {
-  const update: Record<string, unknown> = {
+  const settingsRow: Record<string, unknown> = {
     session_id: input.sessionId,
     organization_id: await sessionOrganizationId(input.sessionId),
   };
   if (input.cleaningShortcutId !== undefined)
-    update.cleaning_shortcut_id = input.cleaningShortcutId;
+    settingsRow.cleaning_shortcut_id = input.cleaningShortcutId;
   if (input.cleaningIntervalMs !== undefined)
-    update.cleaning_interval_ms = input.cleaningIntervalMs;
+    settingsRow.cleaning_interval_ms = input.cleaningIntervalMs;
   if (input.conceptShortcutId !== undefined)
-    update.concept_shortcut_id = input.conceptShortcutId;
+    settingsRow.concept_shortcut_id = input.conceptShortcutId;
   if (input.conceptIntervalMs !== undefined)
-    update.concept_interval_ms = input.conceptIntervalMs;
-  if (input.moduleId !== undefined) update.module_id = input.moduleId;
+    settingsRow.concept_interval_ms = input.conceptIntervalMs;
+  if (input.moduleId !== undefined) settingsRow.module_id = input.moduleId;
   if (input.moduleShortcutId !== undefined)
-    update.module_shortcut_id = input.moduleShortcutId;
+    settingsRow.module_shortcut_id = input.moduleShortcutId;
   if (input.moduleIntervalMs !== undefined)
-    update.module_interval_ms = input.moduleIntervalMs;
+    settingsRow.module_interval_ms = input.moduleIntervalMs;
   if (input.columnWidths !== undefined)
-    update.column_widths = input.columnWidths;
+    settingsRow.column_widths = input.columnWidths;
   if (input.showPriorModules !== undefined)
-    update.show_prior_modules = input.showPriorModules;
+    settingsRow.show_prior_modules = input.showPriorModules;
   if (input.contextItems !== undefined)
-    update.context_items = input.contextItems;
-  if (input.customSlots !== undefined) update.custom_slots = input.customSlots;
+    settingsRow.context_items = input.contextItems;
+  if (input.customSlots !== undefined) settingsRow.custom_slots = input.customSlots;
 
   const { data, error } = await db
     .schema("transcripts")
     .from("studio_session_settings")
-    .upsert(update, { onConflict: "session_id" })
+    .upsert(settingsRow, { onConflict: "session_id" })
     .select("*")
     .single();
   if (error || !data) {

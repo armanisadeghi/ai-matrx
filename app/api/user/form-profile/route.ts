@@ -261,8 +261,8 @@ export async function PATCH(request: NextRequest) {
     const organizationId =
       existing?.organization_id ??
       request.headers.get("X-Organization-Id")?.trim() ??
-      null;
-    if (!organizationId) {
+      "";
+    if (organizationId.length === 0) {
       return NextResponse.json(
         {
           success: false,

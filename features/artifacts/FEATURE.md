@@ -43,6 +43,8 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-17` — **The artifacts route's upsert carries the validated organization, not `?? null`.** `app/api/artifacts/route.ts` already refused a create with no `organizationId`, but the value it put in the payload was typed `string | null`, so the write still read as a possible NULL — and `chat.artifact` carries `public._stamp_org_default`, which files a NULL in the WRITER'S personal workspace. The validated id is now a plain non-empty string and the refusal is unchanged (400 `organization_context_required`, with the sentence that tells the person to choose an organization). Guard: `pnpm check:organization-context`.
+
 - 2026-09-17 — An artifact is filed in the organization the person selected, or it is not saved.
   `POST /api/artifacts` (`action: "create"`) wrote `organization_id: organizationId ?? null` into
   `chat.artifact`, which carries `public._stamp_org_default` — so "no organization" was silently a

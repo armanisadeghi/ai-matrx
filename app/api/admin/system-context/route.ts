@@ -219,6 +219,7 @@ export async function GET(request: NextRequest) {
 
   let organization_id: string;
   try {
+    // org-fallback-deliberate: System Context Items ARE the platform's own rows; this route is super-admin gated by requireSuperAdmin() above
     organization_id = await resolveSystemOrgId(admin);
   } catch (e) {
     return NextResponse.json(
