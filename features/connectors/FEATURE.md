@@ -275,6 +275,34 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — F-27, fixing Cursor Bugbot round 13 on PR 228 (commit
+  `8855439f`, comment id 4041550778): F-23's `share_required` disposition
+  reused F-19's "ours to repair" copy in two consumers that had been written
+  before `share_required` existed. `buildConsentPlan` (`consent-plan.ts`)
+  appended "This one is ours to repair — approving it again would not help,
+  and we are on it." to EVERY blocked refused-without-renewal row, whatever
+  its disposition, so a `resource_permission_denied` refusal (a DIFFERENT
+  Google identity must share the item — nothing here is ours) got that claim.
+  `ProductRow` (`ConnectorConsentDialog.tsx`) had the sibling defect: it
+  appended "Approving Google again renews it — nothing new is asked for." to
+  every selected `refused` row, which is false for anything a fresh approval
+  cannot clear. Class fix: `blockedRefusalReason` (new, `consent-plan.ts`)
+  switches on `row.lastRefusal?.disposition` — `ours` keeps the existing
+  sentence, `share_required` states the server's own sentence with nothing
+  added, and `reconnect`/`self_healing`/`retry`/`null` are named explicitly so
+  a disposition this switch has never seen fails TYPE-CHECK via the exhaustive
+  `default`, never a silent default. `ProductRow`'s "renews it" line is now
+  gated on `health.remedy` being non-null — true only when the disposition is
+  `reconnect` (`health.ts`'s own rule for when it fills that field). Census:
+  only `health.ts` and `consent-plan.ts` read `REFUSAL_DISPOSITION` /
+  `refusalDisposition`; no card component branches on a disposition string
+  directly, so `ConnectedAccountHealth.tsx` and the settings row needed no
+  change. Guard, red-then-green:
+  `__tests__/a-share-required-refusal-is-not-ours-to-repair.test.tsx` — the
+  plan, the dialog's rendered row and CTA press, and a contract test over
+  every `CONNECTOR_REFUSAL_CODES` entry asserting the copy WE add never claims
+  another disposition's actor.
+
 - `2026-09-17` — F-25, adopting aidream lane B-10's Contacts-import contract
   (`/projects/google-native/VERIFY-B1-B2-R2.md` N1 + BREAK K). (1) A ticked
   `kept_manual` row now reaches the server as an explicit `override_manual: true`

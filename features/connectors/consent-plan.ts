@@ -49,8 +49,55 @@ import {
   type ConnectorAccount,
   type ConnectorCapabilityRollout,
   type ConnectorProductHealth,
+  type ConnectorRefusalDisposition,
 } from "./health";
 import { requiredScopesFor } from "./health";
+
+/**
+ * THE PERSON-FACING CONSEQUENCE FOR A BLOCKED REFUSED ROW (missing.length === 0,
+ * not a renewal) — keyed on DISPOSITION, never assumed. `health.ts`'s
+ * `standingRefusal.message` is already the server's sentence; this is only
+ * what WE add on top of it, and it must never borrow another disposition's
+ * actor.
+ *
+ * THE BUG THIS CLASS-FIXES (Cursor Bugbot round 13, PR 228, comment
+ * 4041550778): a single hard-coded "This one is ours to repair — approving it
+ * again would not help, and we are on it." was appended to EVERY blocked
+ * refused row, so a `share_required` refusal (a DIFFERENT Google identity
+ * must share the item — nothing here is ours to fix) got the same "we are on
+ * it" claim as a genuine `platform_configuration` mistake.
+ *
+ * `reconnect`, `self_healing` and `retry` never reach this function: a
+ * `reconnect` disposition with no missing scope is a RENEWAL (handled above,
+ * never blocked), and `self_healing`/`retry` never produce `state: "refused"`
+ * in `health.ts`'s census. They are still named here, explicitly, so a future
+ * change to that census fails a real assertion instead of silently reusing
+ * this copy — and so a disposition this switch has never seen fails
+ * TYPE-CHECK via the exhaustive `default`, never a silent fallthrough.
+ */
+function blockedRefusalReason(
+  serverSentence: string,
+  disposition: ConnectorRefusalDisposition | null,
+): string {
+  switch (disposition) {
+    case "ours":
+      return `${serverSentence} This one is ours to repair — approving it again would not help, and we are on it.`;
+    case "share_required":
+      // The server's own sentence already names who must act — a different
+      // Google identity sharing the item — so it speaks for itself; adding an
+      // ownership claim here would contradict it.
+      return serverSentence;
+    case "reconnect":
+    case "self_healing":
+    case "retry":
+    case null:
+      return serverSentence;
+    default: {
+      const exhaustive: never = disposition;
+      return exhaustive;
+    }
+  }
+}
 
 export interface ConsentRequest {
   /** Catalog keys the hub validates the scope set against. */
@@ -147,7 +194,10 @@ export function buildConsentPlan({
         blocked.push({
           productKey: product.key,
           productName: product.name,
-          reason: `${row.reason} This one is ours to repair — approving it again would not help, and we are on it.`,
+          reason: blockedRefusalReason(
+            row.reason,
+            row.lastRefusal?.disposition ?? null,
+          ),
         });
         continue;
       }

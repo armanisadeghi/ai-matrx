@@ -249,11 +249,18 @@ function ProductRow({
             said "Not working" and nothing on the screen said what was wrong or
             what the press would do about it. The server's own sentence goes
             here, and a switched-on row says plainly that approving again renews
-            the grant — never that it is already connected. */}
+            the grant — never that it is already connected.
+            🚨 That "renews it" line is true ONLY when the disposition is
+            `reconnect` (a fresh approval is what clears it) — `health.remedy`
+            is non-null exactly then (`productHealth` in health.ts). A
+            `share_required` refusal (a different Google identity must share
+            the item) or an `ours` refusal (our own configuration mistake) is
+            not fixed by approving again, so this row must not promise that
+            (Cursor Bugbot round 13, PR 228, comment 4041550778). */}
         {health.state === "refused" ? (
           <p className="mt-1 text-xs leading-snug text-warning">
             {health.reason}
-            {selected
+            {selected && health.remedy
               ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
               : ""}
           </p>
