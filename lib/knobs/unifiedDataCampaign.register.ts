@@ -165,6 +165,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Jest proof of the copy's freshness ceiling — the 12 h boundary age W7-GATE breaches at H+49 (ATTACK-7 finding 6/14). No database, no credential.",
     },
     {
+        id: "check-branch-schema-drift",
+        file: "scripts/check-branch-schema-drift.ts",
+        kind: "tooling",
+        why: "pnpm check:branch-schema-drift — W0-SYNC's gate that production holds no event trigger, function, trigger, policy or table the rehearsal branch lacks. Both connections run inside a read-only transaction and it has no write path; a human or the chair's pre-dispatch gate runs it, and it serves nothing.",
+    },
+    {
         id: "db-objects-diff",
         file: "scripts/db-objects-diff.ts",
         kind: "tooling",

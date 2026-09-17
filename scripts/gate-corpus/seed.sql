@@ -207,6 +207,11 @@ create table corpus.corpus_private  (id uuid primary key, title text not null, v
 create table corpus.corpus_public   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
 create table corpus.corpus_scope    (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
 create table corpus.corpus_detail   (id uuid primary key, title text not null, home_id uuid not null references corpus.corpus_home_a(id), created_by uuid, organization_id uuid);
+-- Every foreign key needs an index whose LEADING columns are the constraint columns.
+-- `provision_shape_guard` — production's event trigger, live on the rehearsal branch
+-- since 2026-09-17 — refuses a FK that reaches COMMIT with no covering index, so a
+-- fixture without these two indexes is a fixture production would not accept.
+create index if not exists corpus_detail_home_id_idx on corpus.corpus_detail (home_id);
 
 -- Registry rows. `data_class` decides which lanes exist at all (DD-137b), so it
 -- is the knob the arm-6/14/15 stories are built on.
@@ -430,6 +435,7 @@ create table corpus.corpus_manifest (
   why            text not null,
   primary key (principal, record_type, record_id, required, include_public)
 );
+create index if not exists corpus_manifest_principal_idx on corpus.corpus_manifest (principal);
 
 insert into corpus.corpus_manifest
  (arm, arm_name, shape, principal, principal_name, record_type, record_id, required, include_public, expected, expected_level, why) values
