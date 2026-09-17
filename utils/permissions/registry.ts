@@ -981,9 +981,11 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Topical map",
-    // Empty in the live registry: a topical map has no route of its own yet, and
-    // a template pointing at a route that does not exist hands callers a dead link.
-    urlPathTemplate: "",
+    // The id door shipped 2026-09-17 at app/(core)/marketing/topical-maps/[mapId]:
+    // it redirects a caller who can read the brand into the nested workspace and
+    // renders the map standalone for a record-only grantee — the two lanes
+    // sharing exactly matter.
+    urlPathTemplate: "/marketing/topical-maps/{id}",
     rlsUsesHasPermission: true,
   },
   seo_keyword: {

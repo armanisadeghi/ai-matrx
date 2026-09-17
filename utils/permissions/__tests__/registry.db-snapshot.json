@@ -836,6 +836,17 @@
     "is_active": true
   },
   {
+    "resource_type": "processed_document",
+    "table_name": "processed_documents",
+    "id_column": "id",
+    "owner_column": "owner_id",
+    "is_public_column": null,
+    "display_label": "Processed document",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "project",
     "table_name": "projects",
     "id_column": "id",
@@ -1029,7 +1040,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Topical map",
-    "url_path_template": "",
+    "url_path_template": "/marketing/topical-maps/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1152,6 +1163,17 @@
     "display_label": "Analysis Preferences",
     "url_path_template": "",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_feedback",
+    "table_name": "user_feedback",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Feedback item",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -1282,6 +1304,17 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Plan",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_recovery_audit",
+    "table_name": "recovery_audit",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow recovery audit",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true

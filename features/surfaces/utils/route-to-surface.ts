@@ -62,6 +62,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/assists", surface: "matrx-user/assists" },
   { prefix: "/camera", surface: "matrx-user/camera" },
   { prefix: "/reports", surface: "matrx-user/reports" },
+  { prefix: "/print/barcodes", surface: "matrx-user/barcode-preview" },
+  { prefix: "/print/documents", surface: "matrx-user/markdown-pdf" },
   { prefix: "/vault", surface: "matrx-user/vault" },
   {
     prefix: "/masterwork/vision-interview",
@@ -290,6 +292,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/administration/ui/official-components",
     surface: "matrx-admin/official-components",
   },
+  { prefix: "/administration/applications/sync", surface: "matrx-admin/sync-fleet" },
+  { prefix: "/administration/compute/proof-runs", surface: "matrx-admin/proof-runs" },
   {
     prefix: "/administration/applications",
     surface: "matrx-admin/applications",
@@ -400,6 +404,11 @@ const MARKETING_AGENCY_SEGMENTS: ReadonlySet<string> = new Set([
   "snapshots",
   "social",
   "tools",
+  // The topical map's ID DOOR (`/marketing/topical-maps/{id}`), the value of
+  // `platform.shareable_resource_registry.url_path_template` for
+  // `seo_topical_map`. Without this entry the id in that position is read as a
+  // brand key and resolves to nothing.
+  "topical-maps",
 ]);
 
 /** Brand-level sections that carry their own surface. */
@@ -411,6 +420,12 @@ function resolveMarketingBrandSection(
   // Identity section's media room since 2026-08-28.
   if (section === "identity" && sub[0] === "media") {
     return "matrx-user/marketing-brand-assets";
+  }
+  // The topical map is the Content section's home (placement 2026-09-16):
+  // `/content` and `/content/map[/…]` are the map, `/content/plan/…` stays the
+  // content plan and resolves through its own surfaces above.
+  if (section === "content" && (sub.length === 0 || sub[0] === "map")) {
+    return "matrx-user/marketing-topical-map";
   }
   // The discovery review desk became the brand inbox.
   if (section === "inbox") return "matrx-user/marketing-discovery";
@@ -444,6 +459,10 @@ function resolveMarketingSurface(stripped: string): string | null {
   }
   // /marketing/ranks — the CROSS-SITE hub (per-site ranks resolve via the
   // site-vertical map below).
+  // The topical map's id door. It either redirects into the brand-scoped
+  // workspace (same surface) or renders the map standalone for a record-only
+  // grantee — one surface either way.
+  if (segments[1] === "topical-maps") return "matrx-user/marketing-topical-map";
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";
   if (segments[1] === "initiatives") return "matrx-user/marketing-initiatives";
   if (segments[1] === "reports") return "matrx-user/marketing-reports";

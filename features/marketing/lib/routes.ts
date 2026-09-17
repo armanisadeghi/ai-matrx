@@ -347,6 +347,48 @@ export const marketingRoutes = {
   brandContentPlanSite: (brandId: string, siteId: string, view?: string) =>
     `/marketing/${brandId}/content/plan/${siteId}${view && view !== "tree" ? `/${view}` : ""}`,
 
+  // ── Topical map ───────────────────────────────────────────────────────
+  // The map is the Content section's HOME (placement decision 2026-09-16);
+  // the content plan above stays exactly where it is and becomes the map's
+  // production line.
+  /**
+   * The Content section's front door: this brand's maps.
+   *
+   * ⚠️ `/marketing/<brand>/content` was a `permanentRedirect` (HTTP 308) into
+   * the content plan until this screen shipped, and browsers cache a 308
+   * forever. Link the sidebar and every in-app entry point at
+   * {@link brandTopicalMapHome}'s `/content/map` form below so a stale cached
+   * redirect is never exercised.
+   */
+  brandContent: (brandId: string) => `/marketing/${brandId}/content`,
+  /** The same screen at an address no browser ever cached a 308 for. */
+  brandTopicalMapHome: (brandId: string) => `/marketing/${brandId}/content/map`,
+  /** One map's workspace — the outline view, which is the index. */
+  brandTopicalMap: (brandId: string, mapId: string) =>
+    `/marketing/${brandId}/content/map/${mapId}`,
+  /**
+   * One view of one map. Views are ROUTES, not tabs — the same shape the
+   * content plan uses — so selection and expansion must live in the topical-map
+   * Redux slice, never in component state.
+   */
+  brandTopicalMapView: (
+    brandId: string,
+    mapId: string,
+    view: "outline" | "table" | "graph" | "text" | "pages" | "history",
+    site?: string,
+  ) => {
+    const base = `/marketing/${brandId}/content/map/${mapId}`;
+    const path = view === "outline" ? base : `${base}/${view}`;
+    return site ? `${path}?site=${encodeURIComponent(site)}` : path;
+  },
+  /**
+   * The id door. Resolves the brand and redirects into the workspace; renders
+   * standalone read-only when the viewer can read the map but not its brand.
+   * This is the value of `platform.shareable_resource_registry.url_path_template`
+   * for `seo_topical_map`.
+   */
+  topicalMapDoor: (mapId: string) => `/marketing/topical-maps/${mapId}`,
+
   // ── Legacy shim addresses (resolve + redirect; builders keep them only
   //    where the call site lacks the context for a canonical address) ─────
   sites: () => "/marketing/sites",

@@ -109,6 +109,7 @@ import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingBrandAssetsManifest } from "./marketing-brand-assets.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingSiteSettingsManifest } from "./marketing-site-settings.manifest";
+import { marketingTopicalMapManifest } from "./marketing-topical-map.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
 import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
@@ -139,6 +140,7 @@ import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { barcodePreviewManifest } from "./barcode-preview.manifest";
+import { markdownPdfManifest } from "./markdown-pdf.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
@@ -243,6 +245,7 @@ import { quickDataManifest } from "./quick-data.manifest";
  */
 export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   barcodePreviewManifest,
+  markdownPdfManifest,
   agentShortcutsManifest,
   aiWorkManifest,
   aiWorkComposerManifest,
@@ -329,6 +332,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingBrandAssetsManifest,
   marketingIntegrationsManifest,
   marketingSiteSettingsManifest,
+  // The brand's topical map — which pages should exist and where they live.
+  // The Content section's home; the content plan below is its production line.
+  marketingTopicalMapManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
   // One workspace, five surfaces: the ?view= param is a different page with
   // different agents (list front door, plan-editor base, setup, entities,
