@@ -130,12 +130,13 @@
  * failed — it denies reads production allows, which wastes a lane's time but never
  * manufactures a green.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
 import type pg from "pg";
 
+import { renderSyncPlan } from "./lib/branch-sync-plan";
 import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
 import {
   assertServerMatchesTarget,
@@ -538,6 +539,8 @@ async function grants(client: pg.Client): Promise<GrantRow[]> {
 interface GrantVerdict {
   /** Branch-only client EXECUTE that actually widens the answer. */
   readonly looser: readonly string[];
+  /** The same rows, unformatted, for `--sync-plan`. */
+  readonly looserRows: readonly GrantRow[];
   /** Branch-only, but production already grants PUBLIC — redundant, not looser. */
   readonly redundant: number;
   /** Skipped because the function is not on both databases. */
@@ -562,10 +565,17 @@ function judgeGrants(
   const prodSet = new Set(prod.map(key));
   const prodPublic = new Set(prod.filter((g) => g.grantee === "PUBLIC").map((g) => g.identity));
   const looser: string[] = [];
+  const looserRows: GrantRow[] = [];
   let redundant = 0;
   let notShared = 0;
   for (const g of branch) {
-    if (!(CLIENT_ROLES as readonly string[]).includes(g.grantee)) continue;
+    // `PUBLIC` IS A CLIENT ROLE HERE, AND LEAVING IT OUT MADE THIS CLAUSE MISS THE
+    // BIGGER HALF (lane W0-SYNC, second run, 2026-09-17). `anon` and `authenticated`
+    // both INHERIT the PUBLIC grant, so a branch that revokes `anon` and keeps `PUBLIC`
+    // still answers the call production refuses — the clause would go green on a surface
+    // that had not moved at all. Measured the day it was added: 118 `anon` rows against
+    // 306 `PUBLIC` rows, 106 of them on the very same functions.
+    if (!(CLIENT_ROLES as readonly string[]).includes(g.grantee) && g.grantee !== "PUBLIC") continue;
     if (prodSet.has(key(g))) continue;
     if (CAMPAIGN_SCHEMAS.has(g.schema) || g.schema.startsWith("zz_")) continue;
     if (SUPABASE_SCHEMAS.has(g.schema)) continue;
@@ -573,14 +583,15 @@ function judgeGrants(
       notShared += 1;
       continue;
     }
-    if (prodPublic.has(g.identity)) {
+    if (g.grantee !== "PUBLIC" && prodPublic.has(g.identity)) {
       redundant += 1;
       continue;
     }
     looser.push(`${g.identity} → ${g.grantee}`);
+    looserRows.push(g);
   }
   looser.sort();
-  return { looser, redundant, notShared };
+  return { looser, looserRows, redundant, notShared };
 }
 
 function printGrantVerdict(v: GrantVerdict): void {
@@ -796,6 +807,78 @@ function selfTest(
   return ok;
 }
 
+/**
+ * `--sync-plan` — PRINT THE REMEDY, DO NOT APPLY IT.
+ *
+ * Opens ONE read-only connection to production, asks its catalog for the definition of
+ * every object this run just failed on, and writes a `-- target: branch` migration that
+ * carries them across plus the grant levelling. It never connects to the branch and never
+ * leaves a read-only transaction. `--out <path>` saves it; without one it goes to stdout.
+ */
+async function emitSyncPlan(
+  missing: readonly Obj[],
+  looserGrants: readonly GrantRow[],
+  prodGrants: readonly GrantRow[],
+  branchGrants: readonly GrantRow[],
+): Promise<void> {
+  const argv = process.argv;
+  const laneAt = argv.indexOf("--lane");
+  const lane = laneAt >= 0 ? argv[laneAt + 1] : "W0-SYNC";
+  const outAt = argv.indexOf("--out");
+  const out = outAt >= 0 ? argv[outAt + 1] : undefined;
+  const fileName = out ? out.split("/").pop()! : `w0_sync_branch_level_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.sql`;
+
+  const byFn = (rows: readonly GrantRow[]) => {
+    const m = new Map<string, string[]>();
+    for (const g of rows) {
+      if (!m.has(g.identity)) m.set(g.identity, []);
+      m.get(g.identity)!.push(g.grantee);
+    }
+    return m;
+  };
+
+  const prodEnv = loadDbEnv();
+  if ("missing" in prodEnv) throw new TargetRefusal(`--sync-plan needs production's connection variables.`);
+  const ref = loadBranchRef(ROOT);
+  const client = await connectDirect(prodEnv, APPLICATION_NAME);
+  let text: string;
+  try {
+    await assertServerMatchesTarget(
+      (sql: string) => client.query(sql),
+      "production",
+      ref,
+      "check:branch-schema-drift --sync-plan",
+    );
+    await client.query("begin transaction read only");
+    try {
+      text = await renderSyncPlan(client, {
+        missing,
+        looserGrants,
+        prodGrantsByFn: byFn(prodGrants),
+        branchGrantsByFn: byFn(branchGrants),
+        lane,
+        fileName,
+      });
+    } finally {
+      await client.query("rollback");
+    }
+  } finally {
+    await client.end().catch(() => {});
+  }
+  if (out) {
+    writeFileSync(out, text);
+    console.log(
+      `\n${C.cyan}--sync-plan wrote ${text.split("\n").length} line(s) to ${out}${C.reset}\n` +
+        `  READ IT, then apply through the runner:\n` +
+        `    uv run python db/apply_migrations.py --source campaign --only ${fileName} \\\n` +
+        `      --target branch --lane ${lane} --no-generate`,
+    );
+  } else {
+    console.log(`\n${C.cyan}== --sync-plan (nothing applied; production read SELECT-only) ==${C.reset}\n`);
+    console.log(text);
+  }
+}
+
 async function main(): Promise<number> {
   const runSelfTest = process.argv.includes("--self-test");
   const strict = process.argv.includes("--strict");
@@ -823,6 +906,10 @@ async function main(): Promise<number> {
 
   if (runSelfTest && !selfTest(prod, branch, exceptions)) {
     return 1;
+  }
+
+  if (process.argv.includes("--sync-plan")) {
+    await emitSyncPlan(real.missing, grantVerdict.looserRows, prodGrants, branchGrants);
   }
 
   printVerdict(
