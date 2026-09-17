@@ -1,4 +1,4 @@
--- expect: branch=accept production=accept
+-- expect: branch=accept production=accept autocommit=yes
 -- chair-step: §11.0b, the campaign's one deliberately irreversible act; the chair is awake
 --
 -- ATTACK-7 finding 1's own probe: header-less + `-- chair-step:` + ALTER TYPE ... ADD VALUE.

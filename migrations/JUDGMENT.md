@@ -40,6 +40,21 @@ corpus for the whole runner.
 **Every glob in both runners is non-recursive**, so none of `rehearsal/`, `inverse/`,
 `campaign/` or `judgment-corpus/` is ever swept by a release, a CI job or a cron.
 
+### 1a. The statement detectors read SQL, never prose
+
+Layer 2 asks three questions of the bytes: does the file write the ledger itself, does it carry
+its own transaction control, does it need an autocommit session. **Every one of those questions
+is asked of the file with its comments, its single-quoted literals and its dollar-quoted bodies
+removed** — one stripper per runner, used by all three. Words in a comment, in a string, in a
+function body or in a `$tag$ … $tag$` body are prose: they are not statements the migration
+executes, and a detector that refuses a file over them is wrong. A real top-level statement is
+still seen, and that is what the refusal is for.
+
+On 2026-09-17 this was measured the other way round: `CREATE INDEX CONCURRENTLY` inside a
+function's own HINT text made `pnpm db:apply` refuse a file that needed no autocommit at all.
+Both runners now print `autocommit`, `txn_control` and `self_ledger` on every `--judge-only`
+line, so the corpus holds them to the same reading.
+
 ## 2. The headers
 
 | header | meaning | notes |
@@ -249,8 +264,12 @@ The corpus compares codes; the prose is for the human at 3 a.m. and may differ.
 `migrations/judgment-corpus/*.sql`. Every fixture's first line is
 
 ```
--- expect: branch=<accept|refuse:<code>> production=<accept|refuse:<code>>
+-- expect: branch=<accept|refuse:<code>> production=<accept|refuse:<code>> [autocommit=yes] [txn_control=BEGIN] [self_ledger=yes]
 ```
+
+The two target words are required. The three statement-detector words (§1a) are optional and
+default to the quiet answer — `autocommit=no`, `txn_control=-`, `self_ledger=no` — so a fixture
+states one only when the file really carries that statement.
 
 A fixture with no `-- expect:` line fails the check — a fixture with no expectation is a fixture
 nobody reviewed. The corpus covers every shape ATTACK-6 ran through the old blacklist, every
