@@ -438,9 +438,9 @@ export interface Assist {
    * `expiresAt`: expiring hides a chip, this one makes the change, and the
    * approval queue prints it before it can fire (HITL policy rule 4).
    *
-   * Optional until `migrations/platform_approval_queue.sql` is applied and
-   * `pnpm db-types` regenerated; `readAutoApplyAt` reads it without depending
-   * on the generated column, and never invents a clock.
+   * The column is live and generated (`types/database.types.ts` carries it as
+   * of the 2026-09-17 regeneration); `readAutoApplyAt` is still the one funnel,
+   * because a malformed value must never read as a clock.
    */
   autoApplyAt?: string | null;
 }
@@ -747,13 +747,13 @@ export function toAssist(row: AssistRow): Assist | null {
 }
 
 /**
- * `platform.assists.auto_apply_at`, read without depending on the generated
- * column type — the column ships in `migrations/platform_approval_queue.sql`,
- * and `types/database.types.ts` only learns of it once that is applied and
- * regenerated. Anything that is not a non-empty string is NO CLOCK: a
- * malformed value must never read as "this applies itself at some point".
+ * `platform.assists.auto_apply_at` — the generated column, read through ONE
+ * funnel. The stand-in that read it off an untyped row is gone (the column has
+ * been in `types/database.types.ts` since the 2026-09-17 regeneration).
+ * Anything that is not a non-empty string is NO CLOCK: an empty or malformed
+ * value must never read as "this applies itself at some point".
  */
 export function readAutoApplyAt(row: AssistRow): string | null {
-  const value: unknown = (row as Record<string, unknown>)["auto_apply_at"];
+  const value = row.auto_apply_at;
   return typeof value === "string" && value.length > 0 ? value : null;
 }
