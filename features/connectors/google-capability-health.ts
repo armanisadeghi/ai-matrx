@@ -67,7 +67,12 @@ export interface GoogleCapabilityRefusal {
   /** Null when the server wrote something that is not a timestamp (N14). */
   at: string | null;
   action: string;
-  code: ConnectorRefusalCode;
+  /**
+   * The classified reason, or null when the deployed server sent a code this
+   * build has not shipped. Null is NOT "no refusal": the sentence still stands
+   * and the row still refuses (V13-4).
+   */
+  code: ConnectorRefusalCode | null;
   /** One sentence a non-technical person can act on. The server's words. */
   sentence: string;
   httpStatus: number | null;
@@ -144,15 +149,23 @@ function parseGrant(raw: unknown): GoogleCapabilityGrant | null {
   return { at: timestampField(raw, "at"), action };
 }
 
+/**
+ * 🚨 AN UNRECOGNISED CODE NEVER DISCARDS THE REFUSAL (VERIFY-U-P2-R4, V13-4).
+ * This returned null whenever `isConnectorRefusalCode` said no, so a server
+ * release that classifies a refusal with a code this build has not shipped made
+ * the row read "Connected" and threw away the server's own sentence — written for
+ * this person — on the way. The sentence and the timestamp are what a person
+ * needs; the code only decides which BUTTON is owed, and "we cannot say" is a
+ * lawful answer to that (`disposition: null` → the row refuses with a generic
+ * remedy and no press). A refusal with no sentence is still dropped: there is
+ * nothing anyone could act on.
+ */
 function parseRefusal(raw: unknown): GoogleCapabilityRefusal | null {
   if (!isJsonObject(raw)) return null;
   const at = stringField(raw, "at");
   const sentence = stringField(raw, "sentence");
   const code = stringField(raw, "code");
-  // A refusal with no sentence is a refusal nobody can act on, and a code this
-  // client does not know is a server that moved ahead of it. Either way the row
-  // says "nothing recorded" rather than rendering half a fact.
-  if (!at || !sentence || !isConnectorRefusalCode(code)) return null;
+  if (!at || !sentence) return null;
   const status = raw.http_status;
   return {
     // Asymmetric on purpose (N14): an unreadable success is discarded, an
@@ -160,7 +173,7 @@ function parseRefusal(raw: unknown): GoogleCapabilityRefusal | null {
     // proves a call answered after it.
     at: timestampField(raw, "at"),
     action: stringField(raw, "action") ?? "",
-    code,
+    code: isConnectorRefusalCode(code) ? code : null,
     sentence,
     httpStatus: typeof status === "number" ? status : null,
   };

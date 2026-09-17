@@ -50,19 +50,11 @@ const DOCS = "https://www.googleapis.com/auth/documents";
 const SHEETS = "https://www.googleapis.com/auth/spreadsheets";
 const GMAIL_SEND = "https://www.googleapis.com/auth/gmail.send";
 
+// DERIVED from the provider config, never a hand-kept list: a capability added
+// to a product (`slides`, 2026-09-17) would otherwise leave this fixture one key
+// short, which silently makes the whole row ineligible and un-togglable.
 const LIVE: ConnectorCapabilityRollout[] = [
-  "drive_files",
-  "docs",
-  "sheets",
-  "gmail_send",
-  "calendar",
-  "contacts",
-  "tasks",
-  "search_console",
-  "analytics",
-  "tag_manager",
-  "youtube",
-  "youtube_analytics",
+  ...new Set(provider.products.flatMap((product) => product.capabilityKeys)),
 ].map((capabilityKey) => ({
   capabilityKey,
   phase: "available" as const,
@@ -121,12 +113,25 @@ describe("reading the column", () => {
     }
   });
 
-  it("drops half a refusal instead of rendering it", () => {
+  it("drops a refusal nobody could act on", () => {
     const read = parseGoogleCapabilityHealth({
       ...LIVE_DEFAULT,
       // No sentence: nothing a person could act on.
       docs: { last_refusal: { at: "2026-09-17T09:00:00Z", code: "call_failed" } },
-      // A code this client does not know — the server moved ahead of it.
+    });
+    expect(read.capabilities).toEqual({});
+  });
+
+  /**
+   * The code this client has not shipped used to drop the refusal with it, and
+   * the row then said "Connected" over a refused call and threw the server's
+   * sentence away (VERIFY-U-P2-R4, V13-4). The sentence is the part a person
+   * needs; the code only decides which button is owed, and null means "we cannot
+   * say", which the row renders as a refusal with a generic remedy.
+   */
+  it("keeps a refusal whose code this build has never heard of", () => {
+    const read = parseGoogleCapabilityHealth({
+      ...LIVE_DEFAULT,
       sheets: {
         last_refusal: {
           at: "2026-09-17T09:00:00Z",
@@ -135,7 +140,10 @@ describe("reading the column", () => {
         },
       },
     });
-    expect(read.capabilities).toEqual({});
+    expect(read.capabilities.sheets?.lastRefusal?.sentence).toBe(
+      "Something new happened.",
+    );
+    expect(read.capabilities.sheets?.lastRefusal?.code).toBeNull();
   });
 });
 

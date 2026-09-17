@@ -83,19 +83,11 @@ import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
 
+// DERIVED from the provider config: a hand-kept list one key short (`slides`,
+// added to the files row on 2026-09-17) makes that whole row read "Almost
+// ready" here and quietly changes what the dialog is being asked.
 const LIVE: ConnectorCapabilityRollout[] = [
-  "drive_files",
-  "docs",
-  "sheets",
-  "gmail_send",
-  "calendar",
-  "contacts",
-  "tasks",
-  "search_console",
-  "analytics",
-  "tag_manager",
-  "youtube",
-  "youtube_analytics",
+  ...new Set(provider.products.flatMap((product) => product.capabilityKeys)),
 ].map((capabilityKey) => ({
   capabilityKey,
   phase: "available" as const,

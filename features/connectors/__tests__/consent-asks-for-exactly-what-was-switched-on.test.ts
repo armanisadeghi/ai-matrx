@@ -79,11 +79,14 @@ describe("buildConsentPlan", () => {
     // Nothing the person did not switch on.
     expect(plan.request?.scopes).not.toContain(GSC);
     expect(plan.request?.scopes).not.toContain(CALENDAR);
+    // Four capabilities behind the files row since `slides` was given its home
+    // there (V13-3), plus Gmail's one.
     expect(plan.request?.capabilityKeys.sort()).toEqual([
       "docs",
       "drive_files",
       "gmail_send",
       "sheets",
+      "slides",
     ]);
   });
 

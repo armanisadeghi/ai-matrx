@@ -274,10 +274,19 @@ const REFUSAL_DISPOSITION: Record<
   call_failed: "retry",
 };
 
+/**
+ * 🚨 NULL MEANS "WE CANNOT SAY", AND IT IS A REAL ANSWER (VERIFY-U-P2-R4, V13-4).
+ * This took the client's own union and did `REFUSAL_DISPOSITION[code]`, so a code
+ * the deployed server has and this build does not returned **`undefined`** while
+ * every reader below tested `=== null` — the branch for "unknown, not fine" could
+ * never fire. It now takes any string and answers null for anything it does not
+ * know, which is what the readers act on.
+ */
 export function refusalDisposition(
-  code: ConnectorRefusalCode | null,
+  code: string | null | undefined,
 ): ConnectorRefusalDisposition | null {
-  return code ? REFUSAL_DISPOSITION[code] : null;
+  if (!isConnectorRefusalCode(code)) return null;
+  return REFUSAL_DISPOSITION[code];
 }
 
 /** Per-product activity keyed by `ConnectorProduct.key`. */
@@ -508,11 +517,17 @@ export function productHealth({
    * the action is the ACCOUNT (N2).
    */
   const credentialIsDead = Boolean(account && !account.usable && held);
+  /**
+   * The extra line for a refusal that leaves the row WORKING — a quota or an
+   * outage that clears by itself, or one call that failed. `disposition === null`
+   * used to live here too, which is how an unrecognised code became a note under
+   * a green "Connected" badge (V13-4). It is not a note any more: it is a
+   * refusal we cannot classify, and it owns the row below.
+   */
   const activityNote =
     standingRefusal &&
     (standingRefusal.disposition === "self_healing" ||
-      standingRefusal.disposition === "retry" ||
-      standingRefusal.disposition === null)
+      standingRefusal.disposition === "retry")
       ? standingRefusal.message
       : null;
 
@@ -624,7 +639,13 @@ export function productHealth({
     standingRefusal &&
     (standingRefusal.disposition === "reconnect" ||
       standingRefusal.disposition === "ours" ||
-      standingRefusal.disposition === "share_required")
+      standingRefusal.disposition === "share_required" ||
+      // 🚨 A CODE WE CANNOT CLASSIFY IS NOT A GREEN BADGE (V13-4). The deployed
+      // server may classify a refusal with a code this build has never heard of
+      // — the two halves ship independently — and the honest reading of "the
+      // provider refused and we cannot say what it means" is the provider's own
+      // sentence with no press, never "Connected".
+      standingRefusal.disposition === null)
   ) {
     return row({
       state: "refused",
@@ -636,7 +657,12 @@ export function productHealth({
       remedy:
         standingRefusal.disposition === "reconnect"
           ? `Reconnect ${account.label} and approve ${product.name} — nothing you already granted is asked for again.`
-          : null,
+          : standingRefusal.disposition === null
+            ? // Generic on purpose: promising that a reconnect, a wait or a
+              // share would clear it would be a guess about a refusal we have
+              // not classified.
+              `Try ${product.name} again in a few minutes. If it keeps refusing, tell us and we will look at it — we have what the provider sent.`
+            : null,
       togglable: eligible,
     });
   }
