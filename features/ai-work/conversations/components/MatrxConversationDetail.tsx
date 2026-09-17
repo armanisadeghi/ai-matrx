@@ -13,8 +13,15 @@
 // perfectly.
 
 import Link from "next/link";
-import { ArrowRight, MessagesSquare } from "lucide-react";
+import {
+  ArrowRight,
+  BrainCircuit,
+  Info,
+  MessagesSquare,
+  Network,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { ConversationAnalyzePanel } from "@/features/ai-work/analysis/ConversationAnalyzePanel";
@@ -34,8 +41,8 @@ export function MatrxConversationDetail({
   const title = conversation.title?.trim() || "Untitled conversation";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-5">
-      <section className="rounded-xl border border-border bg-card p-4">
+    <div className="mx-auto max-w-6xl p-4 sm:p-5">
+      <section className="border-b border-border pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
@@ -73,16 +80,43 @@ export function MatrxConversationDetail({
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
-        <ConversationProvenancePanel conversation={conversation} />
-      </section>
-
-      <ConversationAnalyzePanel
-        conversationId={conversation.id}
-        conversationTitle={title}
-      />
-
-      <ConversationOrganizationPanel conversationId={conversation.id} />
+      <Tabs defaultValue="source" className="mt-3">
+        <TabsList className="scrollbar-none h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
+          <TabsTrigger
+            value="source"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Info className="h-3.5 w-3.5" />
+            Source
+          </TabsTrigger>
+          <TabsTrigger
+            value="analyze"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <BrainCircuit className="h-3.5 w-3.5" />
+            Analyze
+          </TabsTrigger>
+          <TabsTrigger
+            value="organize"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Network className="h-3.5 w-3.5" />
+            Organize
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="source" className="mt-4">
+          <ConversationProvenancePanel conversation={conversation} />
+        </TabsContent>
+        <TabsContent value="analyze" className="mt-4">
+          <ConversationAnalyzePanel
+            conversationId={conversation.id}
+            conversationTitle={title}
+          />
+        </TabsContent>
+        <TabsContent value="organize" className="mt-4">
+          <ConversationOrganizationPanel conversationId={conversation.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

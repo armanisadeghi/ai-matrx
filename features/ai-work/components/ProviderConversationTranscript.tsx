@@ -4,17 +4,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  BrainCircuit,
   ChevronUp,
   CircleAlert,
   CircleDot,
+  FileText,
+  Info,
   Loader2,
   MessageSquareText,
   MoreHorizontal,
+  Network,
   RefreshCw,
 } from "lucide-react";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import MarkdownStream from "@/components/MarkdownStream";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -56,6 +61,7 @@ import {
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 import { AiMatrxReplyComposer } from "../conversations/components/AiMatrxReplyComposer";
 import { transcriptAuthorship } from "../lib/providerTranscriptAuthorship";
+import { AgentUserMessageContent } from "@/features/agents/components/messages-display/user/AgentUserMessage";
 import {
   useLiveProviderTranscript,
   type LiveTranscriptArrival,
@@ -320,7 +326,9 @@ export function ProviderConversationTranscript({
   const shownToolCalls = activity.records.length - timeline.hiddenToolCalls;
   const totalMessages = visibleMessageCount + liveMessagesAdded;
   const totalToolCalls =
-    activity.totalCount === null ? null : activity.totalCount + liveToolCallsAdded;
+    activity.totalCount === null
+      ? null
+      : activity.totalCount + liveToolCallsAdded;
   const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
 
   const artifacts = useCodingSessionArtifacts(sessions);
@@ -336,8 +344,8 @@ export function ProviderConversationTranscript({
           : "counting artifacts…";
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6">
-      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+    <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
+      <section className="border-b border-border pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -356,11 +364,8 @@ export function ProviderConversationTranscript({
               <span aria-hidden>·</span>
               <span>{formatText(conversation.status)}</span>
             </div>
-            <h1 className="mt-2 text-xl font-semibold text-foreground">
-              {title}
-            </h1>
             {conversation.description ? (
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
                 {conversation.description}
               </p>
             ) : null}
@@ -397,150 +402,178 @@ export function ProviderConversationTranscript({
           </div>
         </div>
       </section>
-
-      <section className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-500/5 px-4 py-3">
-        <CircleDot className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
-        {/* Two different truths, and the old single sentence told only one.
-            The PROVIDER side is still a mirror we cannot write back into. The
-            AI MATRX side is now writable — a reply at the bottom of this page
-            is answered here, and stays here. Saying "read-only" flat would be
-            a lie about the composer below; saying "you can reply" without the
-            boundary would be a lie about Claude Code. */}
-        <p className="min-w-0 flex-1 text-sm text-foreground">
-          The {provider} half of this conversation is a mirror — AI Matrx can
-          read it but cannot write back into the {provider} session. You can
-          still reply at the bottom of this page: an AI Matrx agent answers,
-          and both your reply and its answer stay in AI Matrx. Starting a
-          separate AI Matrx chat is still an option and creates its own
-          conversation.
-        </p>
-        <Button asChild size="sm" variant="outline" className="gap-1.5">
-          <Link href="/chat/new">
-            Start AI Matrx chat
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </Button>
-      </section>
-
-      {/* Every field this page shows, grouped by the system that produced it.
-          Without it a title AI Matrx derived reads exactly like the label
-          Claude Code shows, and no gap analysis is possible. */}
-      <section className="rounded-xl border border-border bg-card p-4">
-        <ConversationProvenancePanel conversation={conversation} />
-      </section>
-
-      {/* Every file EVERY tool on this conversation wrote, mirrored into AI
-          Matrx files by the desktop publisher. Keyed on the provider session
-          ids, never on the conversation, because that is what the publisher
-          stamps — and a handed-off conversation has more than one. */}
-      <section className="rounded-xl border border-border bg-card p-4">
-        <ConversationArtifactsPanel
-          artifacts={artifacts}
-          hasSession={!bindingRead || sessions.length > 0}
-        />
-      </section>
-
-      <ConversationAnalyzePanel
-        conversationId={conversation.id}
-        conversationTitle={title}
-      />
-
-      <ConversationOrganizationPanel conversationId={conversation.id} />
-
-      {hasEarlierAnything ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={loadEarlier}
-            disabled={loadingEarlier}
+      <Tabs defaultValue="conversation" className="mt-3">
+        <TabsList className="scrollbar-none h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
+          <TabsTrigger
+            value="conversation"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
-            {loadingEarlier ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ChevronUp className="h-3.5 w-3.5" />
-            )}
-            Load earlier
-          </Button>
-          <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-            Showing {timeline.items.length > 0 ? "the most recent" : ""}{" "}
-            {messages.length - timeline.hiddenMessages} of{" "}
-            {totalMessages} messages
-            {totalToolCalls !== null
-              ? ` and ${shownToolCalls} of ${totalToolCalls} tool actions`
-              : null}
-            . Earlier history stays stored and loads in order.
-          </p>
-        </div>
-      ) : null}
-      {earlierError ? (
-        <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          <CircleAlert className="h-3.5 w-3.5 shrink-0" />
-          {earlierError}
-        </p>
-      ) : null}
-      {activity.state === "error" ? (
-        <p className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-foreground">
-          <CircleAlert className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-          Tool activity could not be loaded: {activity.error}
-        </p>
-      ) : null}
+            <MessageSquareText className="h-3.5 w-3.5" />
+            Conversation
+          </TabsTrigger>
+          <TabsTrigger
+            value="source"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Info className="h-3.5 w-3.5" />
+            Source
+          </TabsTrigger>
+          <TabsTrigger
+            value="files"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Files
+          </TabsTrigger>
+          <TabsTrigger
+            value="analyze"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <BrainCircuit className="h-3.5 w-3.5" />
+            Analyze
+          </TabsTrigger>
+          <TabsTrigger
+            value="organize"
+            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Network className="h-3.5 w-3.5" />
+            Organize
+          </TabsTrigger>
+        </TabsList>
 
-      {timeline.items.length === 0 && activity.state !== "loading" ? (
-        <section className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
-          <MessageSquareText className="mx-auto h-7 w-7 text-muted-foreground/60" />
-          <h2 className="mt-2 text-sm font-medium text-foreground">
-            No visible messages yet
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            The provider session is known, but it has not projected a visible
-            prompt or response into this conversation.
-          </p>
-        </section>
-      ) : (
-        <ol
-          className="space-y-4"
-          aria-label={`${provider} conversation transcript`}
-        >
-          {activity.state === "loading" ? (
-            <li className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading tool activity…
-            </li>
+        <TabsContent value="conversation" className="mt-4 space-y-4">
+          <section className="flex flex-col items-stretch gap-3 border-l-2 border-sky-500 bg-sky-500/5 px-3 py-2.5 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+              <CircleDot className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 sm:mt-0 dark:text-sky-400" />
+              <p className="min-w-0 text-sm text-foreground">
+                {provider} is mirrored here and cannot be changed from AI Matrx.
+                Replies below stay in AI Matrx and are answered by an AI Matrx
+                agent.
+              </p>
+            </div>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="gap-1.5 sm:shrink-0"
+            >
+              <Link href="/chat/new">
+                New AI Matrx chat
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </section>
+
+          {hasEarlierAnything ? (
+            <div className="flex flex-wrap items-center gap-3 border-b border-border pb-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={loadEarlier}
+                disabled={loadingEarlier}
+              >
+                {loadingEarlier ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                )}
+                Load earlier
+              </Button>
+              <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                Showing {timeline.items.length > 0 ? "the most recent" : ""}{" "}
+                {messages.length - timeline.hiddenMessages} of {totalMessages}{" "}
+                messages
+                {totalToolCalls !== null
+                  ? ` and ${shownToolCalls} of ${totalToolCalls} tool actions`
+                  : null}
+                . Earlier history stays stored and loads in order.
+              </p>
+            </div>
           ) : null}
-          {timeline.items.map((item) =>
-            item.kind === "message" ? (
-              <ProviderTranscriptMessage
-                key={item.message.id}
-                message={item.message}
-                provider={provider}
-              />
-            ) : (
-              <ProviderActivityGroup
-                key={item.records[0].id}
-                records={item.records}
-                conversationId={conversation.id}
-              />
-            ),
-          )}
-        </ol>
-      )}
+          {earlierError ? (
+            <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+              {earlierError}
+            </p>
+          ) : null}
+          {activity.state === "error" ? (
+            <p className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-foreground">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              Tool activity could not be loaded: {activity.error}
+            </p>
+          ) : null}
 
-      {/* The reply door, at the BOTTOM of the transcript where a reader ends
-          up. `refreshNow` is the live hook's forced one-shot read: it applies
-          the durable, attributed rows the server just wrote, including on a
-          conversation whose provider session settled long ago (plain
-          `checkNow` would return before reading anything there).
-          The composer's own sentence is the SERVER's — it reads who answers
-          from `GET /coding-sessions/conversations/{id}/responder`, so this
-          page passes no provider label and no agent. */}
-      <AiMatrxReplyComposer
-        conversationId={conversation.id}
-        conversationOrganizationId={conversation.organization_id}
-        onAnswered={live.refreshNow}
-      />
+          {timeline.items.length === 0 && activity.state !== "loading" ? (
+            <section className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
+              <MessageSquareText className="mx-auto h-7 w-7 text-muted-foreground/60" />
+              <h2 className="mt-2 text-sm font-medium text-foreground">
+                No visible messages yet
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The provider session is known, but it has not projected a
+                visible prompt or response into this conversation.
+              </p>
+            </section>
+          ) : (
+            <ol
+              className="space-y-4"
+              aria-label={`${provider} conversation transcript`}
+            >
+              {activity.state === "loading" ? (
+                <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading tool activity…
+                </li>
+              ) : null}
+              {timeline.items.map((item) =>
+                item.kind === "message" ? (
+                  <ProviderTranscriptMessage
+                    key={item.message.id}
+                    message={item.message}
+                    provider={provider}
+                  />
+                ) : (
+                  <ProviderActivityGroup
+                    key={item.records[0].id}
+                    records={item.records}
+                    conversationId={conversation.id}
+                  />
+                ),
+              )}
+            </ol>
+          )}
+
+          <AiMatrxReplyComposer
+            conversationId={conversation.id}
+            conversationOrganizationId={conversation.organization_id}
+            onAnswered={live.refreshNow}
+          />
+        </TabsContent>
+
+        <TabsContent value="source" className="mt-4">
+          <ConversationProvenancePanel conversation={conversation} />
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-4">
+          <ConversationArtifactsPanel
+            artifacts={artifacts}
+            hasSession={!bindingRead || sessions.length > 0}
+          />
+        </TabsContent>
+
+        <TabsContent value="analyze" className="mt-4">
+          <ConversationAnalyzePanel
+            conversationId={conversation.id}
+            conversationTitle={title}
+          />
+        </TabsContent>
+
+        <TabsContent value="organize" className="mt-4">
+          <ConversationOrganizationPanel conversationId={conversation.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -590,9 +623,7 @@ function LiveTranscriptIndicator({ status }: { status: LiveTranscriptStatus }) {
         disabled={status.busy}
         className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
       >
-        <RefreshCw
-          className={cn("h-3 w-3", status.busy && "animate-spin")}
-        />
+        <RefreshCw className={cn("h-3 w-3", status.busy && "animate-spin")} />
         Check now
       </button>
       {status.error ? (
@@ -655,7 +686,10 @@ function TranscriptConversationMenu({
   }, [conversation.id]);
 
   useEffect(() => {
-    void readCanonicalState();
+    const timer = window.setTimeout(() => {
+      void readCanonicalState();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [readCanonicalState]);
 
   const onMutationSuccess = useCallback(() => {
@@ -758,17 +792,20 @@ function ProviderTranscriptMessage({
     <li className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <article
         className={cn(
-          "w-full max-w-3xl rounded-xl px-4 py-3 shadow-sm",
+          "w-full px-3 py-2.5",
           // A Matrx-authored turn on a bound conversation is VISIBLY marked:
           // a solid accent edge, not a subtle tint, so nobody reads our words
           // as the coding tool's.
-          authorship.fromMatrx
-            ? "border-2 border-violet-500/50 bg-violet-500/5"
+          isUser
+            ? cn(
+                "max-w-3xl rounded-lg border bg-muted",
+                authorship.fromMatrx ? "border-violet-500/60" : "border-border",
+              )
             : cn(
-                "border",
-                isUser
-                  ? "border-primary/20 bg-primary/5"
-                  : "border-border bg-card",
+                "max-w-4xl border-l-2 bg-transparent pl-4",
+                authorship.fromMatrx
+                  ? "border-violet-500"
+                  : "border-sky-500/70",
               ),
         )}
       >
@@ -789,14 +826,20 @@ function ProviderTranscriptMessage({
           </time>
         </header>
         {message.display.text ? (
-          <RichDocument
-            content={message.display.text}
-            source={{ type: "raw" }}
-            actionsVariant="icon-only"
-            actionsPosition="top-right"
-            actionsBehavior="hover-only"
-            contentClassName="text-sm"
-          />
+          isUser ? (
+            <AgentUserMessageContent
+              conversationId={message.conversation_id}
+              text={message.display.text}
+              attachmentParts={[]}
+            />
+          ) : (
+            <MarkdownStream
+              content={message.display.text}
+              className="text-sm text-foreground"
+              hideCopyButton={false}
+              allowFullScreenEditor={false}
+            />
+          )
         ) : (
           <p className="text-sm text-muted-foreground">
             {message.contentValid

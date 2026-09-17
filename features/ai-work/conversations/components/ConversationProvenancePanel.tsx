@@ -92,19 +92,19 @@ const SOURCE_META: Record<
     title: "From the coding provider",
     blurb:
       "Facts the provider itself reported through the plugin. If it is absent here, the provider never sent it — AI Matrx does not invent these.",
-    accent: "border-l-sky-500/60",
+    accent: "border-sky-500/60",
   },
   matrx: {
     title: "From AI Matrx",
     blurb:
       "What this platform decided, derived, or stored about the conversation. None of this comes from the provider.",
-    accent: "border-l-current/60",
+    accent: "border-foreground/30",
   },
   sync: {
     title: "From the sync layer",
     blurb:
       "How this record arrived and how faithful the copy is. This describes the delivery, never the content.",
-    accent: "border-l-amber-500/60",
+    accent: "border-amber-500/60",
   },
 };
 
@@ -124,12 +124,7 @@ function Group({
 }) {
   const meta = SOURCE_META[source];
   return (
-    <section
-      className={cn(
-        "rounded-lg border border-l-4 border-border bg-background p-3",
-        meta.accent,
-      )}
-    >
+    <section className={cn("border-t-2 pt-4", meta.accent)}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">
@@ -144,7 +139,9 @@ function Group({
         </div>
         {headerRight}
       </div>
-      <dl className="mt-2.5 grid gap-2 text-xs sm:grid-cols-2">{children}</dl>
+      <dl className="mt-3 grid border-t border-border text-xs sm:grid-cols-2 sm:[&>*:nth-child(odd)]:border-r">
+        {children}
+      </dl>
     </section>
   );
 }
@@ -159,7 +156,7 @@ function Fact({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-md bg-muted/30 px-2.5 py-2" title={hint}>
+    <div className="min-w-0 border-b border-border px-3 py-2.5" title={hint}>
       <dt className="font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 break-words text-foreground">{children}</dd>
     </div>
@@ -186,9 +183,11 @@ function DeliveryValue({ binding }: { binding: CodingSessionBinding }) {
 }
 
 const FIDELITY_TONE: Record<string, string> = {
-  native: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300",
+  native:
+    "bg-emerald-500/10 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300",
   mirror: "bg-sky-500/10 text-sky-700 ring-sky-500/30 dark:text-sky-300",
-  seeded: "bg-violet-500/10 text-violet-700 ring-violet-500/30 dark:text-violet-300",
+  seeded:
+    "bg-violet-500/10 text-violet-700 ring-violet-500/30 dark:text-violet-300",
   unknown: "bg-muted text-muted-foreground ring-border",
 };
 
@@ -221,7 +220,7 @@ function BindingCard({
   const unclaimed = isUnclaimedOffer(binding.provider_session_id);
   const workspace = workspaceName(binding.metadata);
   return (
-    <li className="rounded-lg border border-border bg-background p-3">
+    <li className="py-4 first:pt-3 last:pb-0">
       <div className="flex flex-wrap items-center gap-2">
         <TerminalSquare className="h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" />
         <span className="text-sm font-semibold text-foreground">
@@ -250,7 +249,7 @@ function BindingCard({
       </p>
 
       {handoff ? (
-        <div className="mt-2 flex items-start gap-2 rounded-md bg-violet-500/5 px-2.5 py-2 text-xs ring-1 ring-violet-500/20">
+        <div className="mt-2 flex items-start gap-2 border-l-2 border-violet-500 bg-violet-500/5 px-2.5 py-2 text-xs">
           <ArrowRightLeft className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
           <span className="min-w-0 text-foreground">
             {handoff.fromProvider ? (
@@ -322,7 +321,7 @@ function BindingCard({
         </div>
       ) : null}
 
-      <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+      <dl className="mt-3 grid border-t border-border text-xs sm:grid-cols-2 sm:[&>*:nth-child(odd)]:border-r">
         <Fact label="Provider session id">
           {unclaimed ? (
             <Absent>
@@ -364,22 +363,25 @@ export function ConversationProvenancePanel({
 
   useEffect(() => {
     let cancelled = false;
-    setState("loading");
-    void fetchCodingSessionBindings(conversation.id)
-      .then((next) => {
-        if (cancelled) return;
-        setBindings(next);
-        setState("ready");
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setBindings([]);
-        setError(err instanceof Error ? err.message : "Binding read failed");
-        setState("error");
-      });
+    const timer = window.setTimeout(() => {
+      setState("loading");
+      void fetchCodingSessionBindings(conversation.id)
+        .then((next) => {
+          if (cancelled) return;
+          setBindings(next);
+          setState("ready");
+          setError(null);
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setBindings([]);
+          setError(err instanceof Error ? err.message : "Binding read failed");
+          setState("error");
+        });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [conversation.id, reloadToken]);
 
@@ -405,7 +407,7 @@ export function ConversationProvenancePanel({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground">
@@ -428,10 +430,10 @@ export function ConversationProvenancePanel({
       {/* ── Title provenance, stated first and unmissably ───────────────── */}
       <div
         className={cn(
-          "rounded-lg border p-3",
+          "border-l-2 px-3 py-2",
           provenance.fromProvider
-            ? "border-sky-500/40 bg-sky-500/5"
-            : "border-border bg-muted/20",
+            ? "border-sky-500 bg-sky-500/5"
+            : "border-foreground/30 bg-muted/20",
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -454,7 +456,7 @@ export function ConversationProvenancePanel({
 
       {/* ── Every tool on this conversation ─────────────────────────────── */}
       {bindings.length > 0 ? (
-        <section className="rounded-lg border border-border bg-muted/20 p-3">
+        <section className="border-t border-border pt-4">
           <h3 className="text-sm font-semibold text-foreground">
             {bindings.length === 1
               ? "The coding tool on this conversation"
@@ -465,7 +467,7 @@ export function ConversationProvenancePanel({
               ? "One provider session is bound to this conversation. A handoff would add a second, and both would be named here."
               : "This conversation moved between tools. Each binding below is a different provider session with its own history, account and fidelity — none of them is a copy of another."}
           </p>
-          <ul className="mt-2.5 space-y-2">
+          <ul className="mt-1 divide-y divide-border">
             {bindings.map((binding, index) => (
               <BindingCard
                 key={binding.id}
@@ -529,8 +531,9 @@ export function ConversationProvenancePanel({
           )}
         </Fact>
         <Fact label="Workspace identity">
-          {current?.workspace_fingerprint ??
-            current?.provider_project_key ?? <Absent />}
+          {current?.workspace_fingerprint ?? current?.provider_project_key ?? (
+            <Absent />
+          )}
         </Fact>
       </Group>
 
@@ -551,16 +554,20 @@ export function ConversationProvenancePanel({
       <Group source="matrx">
         <Fact label="Title we derived" hint={provenance.detail}>
           {provenance.fromProvider ? (
-            <Absent>The provider supplied the title — we did not derive it</Absent>
+            <Absent>
+              The provider supplied the title — we did not derive it
+            </Absent>
           ) : (
-            (conversation.title?.trim() || <Absent>No title derived</Absent>)
+            conversation.title?.trim() || <Absent>No title derived</Absent>
           )}
         </Fact>
         <Fact label="Title source">{provenance.chip}</Fact>
         <Fact label="Conversation type">
           {conversationTypeLabel(conversation.conversation_type)}
         </Fact>
-        <Fact label="Origin">{originClassLabel(conversation.origin_class)}</Fact>
+        <Fact label="Origin">
+          {originClassLabel(conversation.origin_class)}
+        </Fact>
         <Fact label="Recorded by">
           {conversation.source_app ? (
             `${appLabel(conversation.source_app)}${conversation.source_feature ? ` · ${conversation.source_feature}` : ""}`
@@ -568,15 +575,11 @@ export function ConversationProvenancePanel({
             <Absent />
           )}
         </Fact>
-        <Fact label="Favorite">
-          {conversation.is_favorite ? "Yes" : "No"}
-        </Fact>
+        <Fact label="Favorite">{conversation.is_favorite ? "Yes" : "No"}</Fact>
         <Fact label="Visibility">{formatText(conversation.visibility)}</Fact>
         <Fact label="Messages stored">{conversation.message_count}</Fact>
         <Fact label="Knowledge graph">
-          {conversation.exclude_from_kg
-            ? "Excluded by you"
-            : "Included"}
+          {conversation.exclude_from_kg ? "Excluded by you" : "Included"}
         </Fact>
         <Fact label="Task">
           {conversation.task_id ? (

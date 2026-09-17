@@ -96,7 +96,7 @@ export function ConversationAnalyzePanel({
   };
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
+    <section>
       <div className="flex items-start gap-3">
         <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
@@ -110,14 +110,11 @@ export function ConversationAnalyzePanel({
           </p>
         </div>
       </div>
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-3 divide-y divide-border border-y border-border">
         {CONVERSATION_ANALYSIS_KINDS.map((kind) => {
           const state = runs[kind.key] ?? { phase: "idle" };
           return (
-            <li
-              key={kind.key}
-              className="rounded-lg border border-border bg-background p-3"
-            >
+            <li key={kind.key} className="py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-medium text-foreground">
