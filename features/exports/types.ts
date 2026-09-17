@@ -208,6 +208,17 @@ export interface ExportItem {
 
 /** Every narrowing axis the items endpoint understands. */
 export interface ExportItemFilter {
+  /**
+   * A named preset id from `/media/libraries/{id}/presets`.
+   *
+   * A preset REPLACES the rest of this filter rather than combining with it —
+   * the server ignores the other keys when it is set. That is deliberate: two
+   * of the presets ("my longest replies", "threads I replied to more than
+   * twice") cannot be expressed as column comparisons at all, and letting a
+   * preset half-merge with whatever was already ticked would mean the sentence
+   * the person confirms no longer describes the rows they are looking at.
+   */
+  preset?: string;
   direction?: string;
   kind?: string;
   labels?: string;
