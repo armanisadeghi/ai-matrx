@@ -119,6 +119,81 @@ export function EntityBulkActions<TRow>({
   );
 }
 
+/**
+ * THE CARD LIST'S SELECT-ALL — the phone's answer to the table's header
+ * checkbox.
+ *
+ * 🚨 WHY IT IS A SEPARATE CONTROL. Below `sm` the canonical table swaps its
+ * grid for stacked cards, and the header row — with the select-all checkbox in
+ * it — goes with it. So on a phone the only way to select a page was to tap
+ * every card in turn, and the "all N matching this filter" escalation (which
+ * only appears once every row on screen is ticked) was unreachable in practice:
+ * on a library of hundreds of videos, nobody taps 25 boxes to find out an
+ * option exists. This is the same verb (`toggleLoaded`) the table header uses,
+ * so the two widths can never come to mean different things.
+ *
+ * It renders ONLY where the cards do (`sm:hidden`, matching the table's
+ * `mobileCardsBreakpoint`), so the wide layout is untouched and there is never
+ * a moment with two select-alls on screen.
+ */
+export function EntityCardsSelectAll<TRow>({
+  selection,
+  noun,
+}: {
+  selection: EntityListSelection<TRow>;
+  noun: string;
+}) {
+  if (!selection.enabled || selection.loadedSelectableCount === 0) return null;
+  const { allLoadedSelected, selectedLoadedCount, loadedSelectableCount } =
+    selection;
+  const some = selectedLoadedCount > 0 && !allLoadedSelected;
+
+  return (
+    <div
+      data-entity-cards-select-all
+      className="flex items-center gap-2 px-1 py-1 sm:hidden"
+    >
+      {/*
+        `.matrx-tap-area` on the LABEL: the 44px ring for a control whose size
+        IS the control (app/globals.css). The label also carries the words, so
+        the whole row is the target, not just the box.
+      */}
+      <label className="matrx-tap-area flex min-h-11 flex-1 cursor-pointer items-center gap-2 text-xs text-foreground">
+        <input
+          type="checkbox"
+          className="h-4 w-4 cursor-pointer accent-primary"
+          checked={allLoadedSelected}
+          ref={(el) => {
+            // Indeterminate is a PROPERTY, not an attribute: a half-ticked page
+            // that renders as empty tells the person nothing is selected.
+            if (el) el.indeterminate = some;
+          }}
+          aria-label={
+            allLoadedSelected
+              ? `Clear the ${bulkCountLabel(loadedSelectableCount, noun)} selected on this page`
+              : `Select all ${bulkCountLabel(loadedSelectableCount, noun)} on this page`
+          }
+          onChange={selection.toggleLoaded}
+        />
+        {/*
+          The label is a VERB, never a restatement. A fully-ticked page is
+          already described by the banner directly above and counted by the bulk
+          bar directly below; a third sentence saying the same thing is what
+          turns three honest strips into noise. Same reason there is no Clear
+          here — the bar below carries the one.
+        */}
+        <span>
+          {allLoadedSelected
+            ? `Deselect all ${loadedSelectableCount} on this page`
+            : some
+              ? `${selectedLoadedCount} of ${loadedSelectableCount} on this page — select all`
+              : `Select all ${loadedSelectableCount} on this page`}
+        </span>
+      </label>
+    </div>
+  );
+}
+
 function BannerShell({
   children,
   tone = "info",

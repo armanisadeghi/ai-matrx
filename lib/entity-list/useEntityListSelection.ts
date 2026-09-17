@@ -66,8 +66,19 @@ export interface EntityListSelection<TRow> {
   toggleId: (id: string) => void;
   /** cmd/ctrl-A: every selectable row currently on screen. */
   selectLoaded: () => void;
+  /**
+   * The page checkbox's verb — tick every selectable row on screen, or untick
+   * them when they are already all ticked. The SAME function behind the table's
+   * header checkbox and the card list's select-all, so the two can never mean
+   * different things at two widths.
+   */
+  toggleLoaded: () => void;
   /** Every selectable loaded row is ticked (the header checkbox's "all"). */
   allLoadedSelected: boolean;
+  /** How many rows on screen may be ticked at all. */
+  loadedSelectableCount: number;
+  /** How many of THOSE are ticked — the indeterminate state's numerator. */
+  selectedLoadedCount: number;
   /** How many rows the query matches in total, loaded or not. */
   matchingTotal: number;
   /** The banner may offer the escalation: declared, complete page, more rows. */
@@ -148,6 +159,18 @@ export function useEntityListSelection<TRow>({
     const merged = [...ids];
     for (const id of loadedIds) if (!selectedSet.has(id)) merged.push(id);
     setIdsState(merged);
+    setMatched(null);
+  };
+
+  const toggleLoaded = () => {
+    if (!allLoadedSelected) {
+      selectLoaded();
+      return;
+    }
+    // Untick THIS PAGE only — ids ticked on other pages are the user's and
+    // survive, exactly as the table's own header checkbox behaves.
+    const loadedIds = new Set(selectableLoaded.map(getRowId));
+    setIdsState(ids.filter((id) => !loadedIds.has(id)));
     setMatched(null);
   };
 
@@ -248,7 +271,12 @@ export function useEntityListSelection<TRow>({
     clear,
     toggleId,
     selectLoaded,
+    toggleLoaded,
     allLoadedSelected,
+    loadedSelectableCount: selectableLoaded.length,
+    selectedLoadedCount: selectableLoaded.filter((row) =>
+      selectedSet.has(getRowId(row)),
+    ).length,
     matchingTotal: total,
     canOfferSelectAllMatching,
     resolving,

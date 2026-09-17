@@ -202,6 +202,18 @@ copy-of-selection — a second bar beside it would be a fork whose count would
 eventually disagree. The cards and dense-rows views have no bar, so there the
 banner carries the buttons instead (a selection you cannot act on is a dead end).
 
+**The phone has its own select-all.** Below `sm` the canonical table swaps its
+grid for stacked cards and the header row — with the select-all in it — goes
+with it, so `<EntityCardsSelectAll>` renders there instead (`sm:hidden`, one
+control at any width). It is the SAME verb (`toggleLoaded`) the table header
+uses, so the two widths cannot come to mean different things, it shows a
+half-ticked page as indeterminate, and it is what makes the "all N matching this
+filter" offer reachable on a phone at all — that offer only appears once every
+row on screen is ticked, and nobody taps 25 boxes to discover an option exists.
+Its label is a verb ("Select all 25 on this page" / "Deselect all 25 on this
+page"), never a restatement of the banner above it, and it carries no Clear
+because the bar directly below has one.
+
 **Touch, keyboard, phone.** The table's checkbox column gets its 44px hit area
 from `@ai-matrx/design-system/tap-target.css` under `pointer: coarse`; the phone
 card's checkbox is this primitive's and carries `.matrx-tap-area` on its
@@ -216,7 +228,8 @@ the query, not in Redux: it belongs to this mount of this page, and restoring on
 would arm a bulk action against rows nobody has in mind any more.
 
 **Left behind, deliberately:** `EntityAltViewProps` carries no selection, so a
-feature-owned cards/rows view renders no checkboxes of its own — a selection made
+feature-owned cards/rows VIEW (the `views.cards` render prop — not the table's
+own phone cards, which are fully wired) renders no checkboxes of its own — a selection made
 in the table stays actionable there through the banner, but cannot be STARTED
 there. Wire it the day a surface needs it.
 
@@ -427,6 +440,16 @@ how that savior page gets built.
   and whose banner block goes RED (4 failures) without the banner; 21 GREEN.
   First consumer: `/transcripts` bulk **Export**. Full contract above under
   § Bulk selection.
+
+- `2026-09-17` — **The card list got its own select-all**
+  (`<EntityCardsSelectAll>`). Below `sm` the table's header row is replaced by
+  cards, so a phone could only select a page one tap at a time and never reached
+  the "all N matching this filter" offer, which needs every row on screen ticked
+  — the gap that mattered for a channel library of hundreds of videos. Same
+  `toggleLoaded` verb as the table header, indeterminate on a half-ticked page,
+  44px row with the `.matrx-tap-area` ring. RED 5 without it. Verified live at
+  390 on `/transcripts`: one tap → 25 selected → the 524-matching offer →
+  "Every item matching this filter is selected — 524 in total", light and dark.
 
 - `2026-09-11` — Facets now carry their own request-keyed loading and failure
   state on `EntityListController`. `EMPTY_FACETS` remains a safe payload shape,

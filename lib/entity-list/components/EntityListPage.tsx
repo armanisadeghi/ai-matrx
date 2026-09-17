@@ -39,7 +39,11 @@ import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
-import { EntityBulkActions, EntityBulkSelectAllBanner } from "./EntityBulkBar";
+import {
+  EntityBulkActions,
+  EntityBulkSelectAllBanner,
+  EntityCardsSelectAll,
+} from "./EntityBulkBar";
 import { useEntityListSelection } from "../useEntityListSelection";
 import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
 
@@ -664,6 +668,17 @@ export function EntityListPage<TRow>({
           // The table has its own bar for these; the cards/rows views do not.
           {...(view === "table" ? {} : { actions: bulkButtons })}
         />
+
+        {/*
+          THE PHONE'S SELECT-ALL. Below `sm` the table's header row — and the
+          select-all checkbox in it — is replaced by stacked cards, so without
+          this a phone could only select a page one tap at a time and never
+          reached the "all N matching" offer at all. Hidden at every width where
+          the real header exists. Only the table view renders cards.
+        */}
+        {view === "table" ? (
+          <EntityCardsSelectAll selection={selection} noun={bulkNoun} />
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">

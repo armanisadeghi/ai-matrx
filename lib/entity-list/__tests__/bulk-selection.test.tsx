@@ -391,6 +391,85 @@ describe("a surface that declares bulk actions", () => {
   });
 });
 
+describe("the card list's select-all (the phone, where there is no header row)", () => {
+  // 🚨 RED: delete <EntityCardsSelectAll> from EntityListPage.tsx and every
+  // test here fails. Below `sm` the table's header row — and the select-all in
+  // it — is swapped for stacked cards, so without this control a phone can only
+  // select a page one tap at a time and NEVER reaches the "all N matching this
+  // filter" offer, which only appears once every row on screen is ticked.
+  function cardsSelectAll(): HTMLElement | null {
+    return document.querySelector("[data-entity-cards-select-all]");
+  }
+  function cardsBox(): HTMLInputElement | null {
+    return document.querySelector(
+      "[data-entity-cards-select-all] input[type='checkbox']",
+    );
+  }
+
+  it("is absent for a surface that declared no bulk actions", async () => {
+    await render(config());
+    expect(cardsSelectAll()).toBeNull();
+  });
+
+  it("selects every row on screen in one tap, and says so", async () => {
+    await render(bulkConfig());
+    expect(cardsSelectAll()).not.toBeNull();
+    expect(cardsSelectAll()!.textContent).toContain("Select all 3 on this page");
+    await act(async () => {
+      cardsBox()!.click();
+    });
+    await settle();
+    expect(document.body.textContent).toContain("3 records selected");
+    expect(cardsSelectAll()!.textContent).toContain(
+      "Deselect all 3 on this page",
+    );
+  });
+
+  it("reaches the same 'all N matching this filter' offer the table header does", async () => {
+    await render(bulkConfig());
+    await act(async () => {
+      cardsBox()!.click();
+    });
+    await settle();
+    const offer = document.querySelector(
+      "[data-entity-bulk-select-all-matching]",
+    );
+    expect(offer).not.toBeNull();
+    await click(offer!);
+    expect(document.body.textContent).toContain("7 records selected");
+  });
+
+  it("shows a half-ticked page as half-ticked, never as empty", async () => {
+    await render(bulkConfig());
+    await click(rowCheckboxes()[0]);
+    expect(cardsBox()!.indeterminate).toBe(true);
+    expect(cardsBox()!.checked).toBe(false);
+    expect(cardsSelectAll()!.textContent).toContain("1 of 3 on this page");
+  });
+
+  it("unticks only this page, leaving ids ticked elsewhere alone", async () => {
+    await render(bulkConfig());
+    await act(async () => {
+      cardsBox()!.click();
+    });
+    await settle();
+    await act(async () => {
+      cardsBox()!.click();
+    });
+    await settle();
+    expect(bulkButton("archive")).toBeNull();
+  });
+
+  it("carries the 44px ring and a 44px row, for a finger", async () => {
+    await render(bulkConfig());
+    const label = cardsSelectAll()!.querySelector("label")!;
+    expect(label.className).toContain("matrx-tap-area");
+    expect(label.className).toContain("min-h-11");
+    // Hidden at every width where the real header checkbox exists.
+    expect(cardsSelectAll()!.className).toContain("sm:hidden");
+  });
+});
+
 describe("the header select-all, and the sentence under it", () => {
   it("says what it did — these three — and offers the seven it did not", async () => {
     await render(bulkConfig());
