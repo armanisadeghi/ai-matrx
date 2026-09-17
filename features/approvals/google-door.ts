@@ -53,7 +53,12 @@ function decision(body: unknown): GoogleApprovalDecisionPending {
       "The approval service returned something this screen could not read, so it cannot say whether the change was made. Reload the queue to see where this proposal stands.",
     );
   }
-  const { approval_id: approvalId, status, applied_now: appliedNow } = body;
+  const {
+    approval_id: approvalId,
+    status,
+    applied_now: appliedNow,
+    sentence,
+  } = body;
   if (
     typeof approvalId !== "string" ||
     typeof status !== "string" ||
@@ -68,6 +73,19 @@ function decision(body: unknown): GoogleApprovalDecisionPending {
     status,
     applied_now: appliedNow,
     receipt: isRecord(body.receipt) ? body.receipt : {},
+    /**
+     * 🚨 THE SERVER'S OWN SENTENCE, CARRIED THROUGH (round-3 verification
+     * § A-N3). This narrowing used to stop at the three fields above, so the
+     * one field aidream writes to prevent a screen inferring "what happened"
+     * from a status enum was thrown away here — and the client's own inference
+     * then disagreed with it about the same row. An absent or blank one is
+     * `null`, never `""`: the adapter derives only when nothing was sent, and
+     * an empty string is nothing sent.
+     */
+    sentence:
+      typeof sentence === "string" && sentence.trim().length > 0
+        ? sentence
+        : null,
   };
 }
 

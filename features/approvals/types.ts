@@ -439,4 +439,19 @@ export interface GoogleApprovalDecisionPending {
   applied_now: boolean;
   /** `google_workspace_approval_receipt` — what actually happened. */
   receipt: Record<string, unknown>;
+  /**
+   * 🚨 THE SENTENCE THE SERVER WROTE ABOUT THIS CALL — the field the frontend
+   * ignored entirely until 2026-09-17 (round-3 verification § A-N3). aidream
+   * sets it on every reply, documented as *"Always set, so no caller has to
+   * infer 'what happened' from a status enum — the wrong inference is exactly
+   * how a failed apply came to read as 'the change was made'"*; the client
+   * derived its own instead, and the two had already drifted on the reject path
+   * (§ A-N2: the server said "do not assume the change was made", the screen
+   * said it was made).
+   *
+   * `null` means the reply carried none — an older server, or an empty string.
+   * The one adapter (`./receipt.ts` → `readDecisionReply`) then derives, and
+   * only then.
+   */
+  sentence: string | null;
 }

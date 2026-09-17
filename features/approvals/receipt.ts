@@ -126,6 +126,15 @@ export function applyingSentence(what?: string): string {
  * asking for. The receipt outranks the status on both: `failed` and `applying`
  * are the same answer whichever button was pressed, because they describe the
  * row, not the click.
+ *
+ * 🚨 AND THE SENTENCE IS THE SERVER'S WHENEVER THE SERVER SENT ONE (round-3
+ * verification § A-N3). aidream sets `ApprovalDecisionResponse.sentence` on
+ * every reply precisely so no screen has to infer what happened from a status
+ * enum; this module derived its own regardless, which made TWO producers of one
+ * event — and they had already drifted (§ A-N2). The BUCKET stays this build's
+ * own reading, because the queue must know whether the click performed anything
+ * to count it and a sentence cannot be counted; the WORDS are the server's. A
+ * derived sentence is what a reply carrying none gets, and nothing else.
  */
 export type DecisionBucket =
   /** The door did what this click asked. */
@@ -141,13 +150,7 @@ export interface DecisionReading {
   message: string | null;
 }
 
-export function readDecisionReply({
-  status,
-  appliedNow,
-  receipt,
-  decision,
-  what,
-}: {
+export function readDecisionReply(question: {
   /** `ApprovalDecisionResponse.status` — `accepted`, `dismissed`, `pending`, … */
   status: string;
   /** `ApprovalDecisionResponse.applied_now`. */
@@ -157,6 +160,43 @@ export function readDecisionReply({
   /** Which button the person pressed. */
   decision: "accept" | "reject";
   /** The row's headline, for a sentence that names the thing. */
+  what?: string;
+  /**
+   * `ApprovalDecisionResponse.sentence`, verbatim — the server's one sentence
+   * about THIS call. Absent or blank means the reply carried none, and only
+   * then is one derived below.
+   */
+  serverSentence?: string | null;
+}): DecisionReading {
+  const derived = deriveDecisionReply(question);
+  if (derived.bucket === "performed") return derived;
+  const server = question.serverSentence?.trim();
+  if (!server) return derived;
+  // The server's words, with the row named in front of them so a batch of five
+  // replies stays attributable. The sentence itself is never rewritten.
+  return {
+    bucket: derived.bucket,
+    message: question.what ? `"${question.what}": ${server}` : server,
+  };
+}
+
+/**
+ * THE BUCKET, and the sentence for a reply that carried none. Split out from
+ * `readDecisionReply` so the server's sentence can replace the words WITHOUT
+ * touching the reading of what happened — the queue counts the bucket, and a
+ * sentence must never be able to turn a failed receipt into a success.
+ */
+function deriveDecisionReply({
+  status,
+  appliedNow,
+  receipt,
+  decision,
+  what,
+}: {
+  status: string;
+  appliedNow: boolean;
+  receipt: ApprovalReceipt;
+  decision: "accept" | "reject";
   what?: string;
 }): DecisionReading {
   // THE RECEIPT OUTRANKS THE STATUS, and says the same thing on both paths.
@@ -206,8 +246,10 @@ export function readDecisionReply({
     };
   }
 
-  // REJECT. `applied_now` is never true on this path — gating on it reported
-  // every successful reject as a no-op.
+  // REJECT, judged on `status` — never on `applied_now`, which answers "did
+  // THIS CALL change the row's state" and not "did it do what you asked": it is
+  // true for a fresh reject (aidream lane B-8) and false for an apply whose
+  // write failed, so neither door can read success off it.
   if (status === "dismissed") return { bucket: "performed", message: null };
   if (status === "accepted") {
     return receipt.state === "applied"

@@ -313,15 +313,18 @@ export function useGoogleApprovalDecisions(
    * | approve | `accepted`, `applied_now: true`      | this click made the change  |
    * | approve | `accepted`, `applied_now: false`     | already approved; no-op now |
    * | approve | `dismissed`                          | already REJECTED; not made  |
-   * | reject  | `dismissed`                          | it is rejected              |
+   * | reject  | `dismissed`, `applied_now: true`     | this click rejected it      |
    * | reject  | `accepted`                           | already approved AND MADE   |
    *
-   * ⚠️ `applied_now` is NOT a success flag on the reject path: the producer
-   * returns `applied_now: false` for a fresh reject too
-   * (`reject_google_approval` in `aidream/services/google_workspace/approvals.py`),
-   * because nothing was applied. Gating reject on it would report every
-   * successful reject as a no-op. `status` is the only signal that carries both
-   * cases, which is why both paths are judged on it.
+   * ⚠️ `applied_now` IS NOT A SUCCESS FLAG AT EITHER DOOR — it answers "did
+   * THIS CALL change the row's state". A fresh reject answers `true` (aidream
+   * lane B-8 set it so, by name, in `reject_google_approval`: that call did
+   * change the row), a second reject answers `false`, and an apply whose write
+   * FAILED answers `false` while its status may read `accepted` or `pending`.
+   * So neither path can read "it worked" off it, and both are judged on
+   * `status` plus the receipt. (Until 2026-09-17 this block told the next agent
+   * that a fresh reject answers `false`, which B-8 had already changed —
+   * round-3 verification § A-N4.)
    *
    * 🚨 AND THE RECEIPT DECIDES WHAT "already approved" MEANS (round-2
    * verification § A-iii — the worst finding on this unit). The reply's
@@ -368,6 +371,12 @@ export function useGoogleApprovalDecisions(
           receipt: readApprovalReceipt(reply.receipt),
           decision,
           what,
+          // 🚨 THE SERVER'S SENTENCE, when it sent one (round-3 verification
+          // § A-N3). The reply already carries the one sentence aidream wrote
+          // about this call; deriving a second one here is what let the reject
+          // path tell a person the change was made over a row whose own record
+          // refused to say (§ A-N2).
+          serverSentence: reply.sentence,
         });
         if (reading.bucket === "performed") {
           applied += 1;
