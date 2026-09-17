@@ -226,6 +226,21 @@ export interface ApprovalDecisions {
 }
 
 /**
+ * What became of the row a deep link named (`/approvals?item=<id>`).
+ *
+ * 🚨 `decided` IS A CLAIM AND NEEDS EVIDENCE. Each kind reads one page, so a
+ * row's absence from the list proves nothing — it may be row 51. The queue
+ * reads the named id directly and reports `pending_elsewhere` when the store
+ * still holds it, `decided` only when the store says it was decided, and
+ * `unconfirmed` when nothing could answer (Bugbot MEDIUM #2, 2026-09-17).
+ */
+export type ApprovalFocusResolution =
+  | "shown"
+  | "decided"
+  | "pending_elsewhere"
+  | "unconfirmed";
+
+/**
  * A dimension a kind cannot work without, plus where its proposals CAN be seen.
  * The engine renders the sentence and the door on any mount that lacks the
  * field — never an empty section and never a silent omission.

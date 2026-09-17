@@ -34,7 +34,7 @@
  * `__tests__/ApprovalQueue.decision-lifecycle.test.tsx`).
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useState, type ReactNode } from "react";
 import {
   BrainCircuit,
   Check,
@@ -53,10 +53,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { ApprovalLoadError } from "./ApprovalLoadError";
+import { readProposalStatus } from "./data";
 import { APPROVAL_KINDS } from "./registry";
 import {
   AUTONOMY_MODE_LABEL,
   type ApprovalDecisions,
+  type ApprovalFocusResolution,
   type ApprovalItem,
   type ApprovalKind,
   type ApprovalScope,
@@ -77,6 +79,44 @@ export interface ApprovalQueueSummary {
 }
 
 /**
+ * EVERYTHING THE QUEUE RENDERS FROM ONE SLOT, as one comparable string.
+ *
+ * 🚨 IT IS DERIVED, NEVER A HAND-LISTED FIELD SET. Until 2026-09-17 the slot
+ * reported upward only when the item KEYS changed, so a row that changed STATE
+ * under an unchanged key never reached the screen: a Gmail draft still being
+ * checked against the unsubscribes published a blocked row under
+ * `gmail_send:<id>`, and when the outbound spine allowed the send the queue
+ * kept the "checking this recipient" row forever (Bugbot HIGH #1). A
+ * per-kind distinct key for the pending state would have fixed that one kind
+ * and left the next kind to rediscover it; serialising the whole rendered
+ * value cannot recur, because a field a future kind adds is in the signature
+ * the moment it exists.
+ *
+ * React nodes and functions are compared by presence only — they change
+ * identity on every render, so comparing them would report on every render and
+ * loop through the parent's state. A kind whose ONLY change lives inside a node
+ * therefore states that change as data too (`blocked`, `badge`, `headline`), as
+ * every registered kind does.
+ */
+function renderedSignature(source: ApprovalSource): string {
+  return JSON.stringify(
+    {
+      loading: source.loading,
+      error: source.error ? String(source.error) : "",
+      total: source.total,
+      moreHref: source.moreHref ?? null,
+      moreLabel: source.moreLabel ?? null,
+      items: source.items,
+    },
+    (_key, value: unknown) => {
+      if (isValidElement(value)) return "<node>";
+      if (typeof value === "function") return "<fn>";
+      return value;
+    },
+  );
+}
+
+/**
  * Calls one kind's hooks in its own fixed slot and reports upward. A kind's
  * reader may use react-query, Redux or a runner hook; the queue never has to.
  */
@@ -91,13 +131,7 @@ function KindSlot({
 }) {
   const source = kind.useSource(scope);
   const decisions = kind.useDecisions(scope);
-  const signature = [
-    scope.key,
-    source.loading,
-    source.error ? String(source.error) : "",
-    source.total,
-    source.items.map((item) => item.key).join(","),
-  ].join("|");
+  const signature = `${scope.key}|${renderedSignature(source)}`;
   useEffect(() => {
     onReport(kind.id, { source, decisions });
     // Report when what the queue renders changes — not on every render, which
@@ -191,11 +225,12 @@ export function ApprovalQueue({
    */
   focusItemId?: string | null;
   /**
-   * Told once the read has settled: did that row turn up? A host that asked for
-   * one must SAY when it is gone rather than showing a list and letting the
-   * person hunt for a row that was already decided.
+   * Told what became of that row once it is known — shown, decided, still
+   * pending but outside this page, or unconfirmed. A host that asked for one
+   * must SAY which of those it is rather than showing a list and letting the
+   * person hunt, and must never call a row decided on its absence alone.
    */
-  onFocusResolved?: (found: boolean) => void;
+  onFocusResolved?: (resolution: ApprovalFocusResolution) => void;
   className?: string;
 }) {
   const all = registry ?? APPROVAL_KINDS;
@@ -365,16 +400,52 @@ export function ApprovalQueue({
     ? (allItems.find((item) => item.key.endsWith(`:${focusItemId}`))?.key ??
       null)
     : null;
+  // A deep link into a collapsed list expands it FIRST. Rows exist in the DOM
+  // only once `expanded` is true, so the scroll cannot ride in this same turn
+  // (Bugbot LOW #3, 2026-09-17).
+  useEffect(() => {
+    if (focusedKey && !expanded) setExpanded(true);
+  }, [focusedKey]);
+
+  // … and scrolls in the turn AFTER the rows rendered.
+  useEffect(() => {
+    if (!focusedKey || !expanded) return;
+    document
+      .getElementById(rowDomId(focusedKey))
+      ?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focusedKey, expanded]);
+
+  /**
+   * WHAT HAPPENED TO THE ROW THE LINK NAMED — answered by evidence, never by
+   * absence. Each kind reads ONE page (`APPROVAL_PAGE_SIZE`), so a row that is
+   * not on screen may simply be row 51 and still waiting; saying "already
+   * decided" there is the screen lying (Bugbot MEDIUM #2, 2026-09-17). The
+   * queue therefore reads that id directly and reports what the store says.
+   */
   useEffect(() => {
     if (!focusItemId) return;
     if (focusedKey) {
-      if (!expanded) setExpanded(true);
-      const element = document.getElementById(rowDomId(focusedKey));
-      element?.scrollIntoView({ block: "center", behavior: "smooth" });
+      onFocusResolved?.("shown");
+      return;
     }
-    // Only once the read has settled is "not here" an answer rather than "not yet".
-    if (!loading) onFocusResolved?.(Boolean(focusedKey));
-  }, [focusItemId, focusedKey, loading]);
+    // Only once the read has settled is "not here" a question worth asking.
+    if (loading) return;
+    let cancelled = false;
+    void (async () => {
+      const status = await readProposalStatus(scope.userId, focusItemId);
+      if (cancelled) return;
+      const resolution: ApprovalFocusResolution =
+        status === "pending"
+          ? "pending_elsewhere"
+          : status === "decided"
+            ? "decided"
+            : "unconfirmed";
+      onFocusResolved?.(resolution);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [focusItemId, focusedKey, loading, scope.userId]);
 
   const hidden =
     hideWhenEmpty &&

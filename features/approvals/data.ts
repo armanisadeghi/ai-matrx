@@ -24,6 +24,7 @@
 import {
   decideAssist,
   emitAssist,
+  getAssistById,
   queryAssists,
 } from "@/features/assists/service";
 import type { Assist, AssistAction } from "@/features/assists/types";
@@ -135,6 +136,39 @@ export async function listPendingProposals(
     // Belt and braces: the source key says what it is, the action proves it.
     .filter((proposal) => proposal.proposalKind === proposalKind);
   return { proposals, total: page.total };
+}
+
+/**
+ * WHAT THE STORE SAYS ABOUT ONE PROPOSAL, by id — the read behind a deep link
+ * that landed on a row the queue is not showing.
+ *
+ * `listPendingProposals` reads ONE page per kind, so a row's absence from the
+ * list is not evidence it was decided: it may be row 51, or it may belong to a
+ * kind whose rows are keyed on the record rather than on an assist (the SEO
+ * kinds). This read answers only what it can prove — `unknown` is a real
+ * answer here, and the surface says so rather than inventing a verdict
+ * (Bugbot MEDIUM #2, 2026-09-17).
+ */
+export type ApprovalProposalStatus = "pending" | "decided" | "unknown";
+
+export async function readProposalStatus(
+  userId: string | null | undefined,
+  proposalId: string,
+): Promise<ApprovalProposalStatus> {
+  if (!userId || !proposalId) return "unknown";
+  try {
+    const assist = await getAssistById(userId, proposalId);
+    if (!assist) return "unknown";
+    return assist.status === "pending" ? "pending" : "decided";
+  } catch (error) {
+    // Loud for developers, honest on screen: the caller reports "unconfirmed".
+    console.warn(
+      `[approvals] could not read proposal ${proposalId}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return "unknown";
+  }
 }
 
 /**

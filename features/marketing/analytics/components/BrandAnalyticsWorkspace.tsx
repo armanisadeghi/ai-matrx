@@ -11,7 +11,8 @@
  * never a side drawer and never a route change.
  */
 
-import { BarChart3 } from "lucide-react";
+import { BarChart3, RefreshCw } from "lucide-react";
+import Link from "next/link";
 
 
 import { useQuery } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ import {
 import { SiteAnalyticsPanel } from "@/features/marketing/analytics/components/SiteAnalyticsPanel";
 import { STAGE_LINE } from "@/lib/coming-soon/announce";
 import { getComingSoon } from "@/lib/coming-soon/registry";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
 
 /**
@@ -65,13 +67,24 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
     ] as const,
     queryFn: ({ signal }) =>
       readSiteAnalyticsWindow(site.id, DEFAULT_ANALYTICS_RANGE, signal),
-    // A site with no Analytics property has nothing to total, and this list
-    // can hold many sites: reading the raw grain for each of them to print
-    // four zeros would cost the reader seconds for no answer.
-    enabled: binding.enabled,
+    // 🚨 READ FOR EVERY SITE, BOUND OR NOT. The binding says whether these
+    // numbers can still REFRESH; it says nothing about whether they exist. A
+    // site disconnected after months of syncs keeps every row it already has
+    // (`seo.web_analytics_daily`), and skipping the read for it rendered it as
+    // a site with no Analytics history at all (Bugbot MEDIUM #4, 2026-09-17;
+    // the rule is google-native PLAN §4.9 + §5.6 — last-synced data stays
+    // visible with an honest health line). The cost this `enabled` was
+    // avoiding falls on sites that HAVE rows, which are exactly the ones that
+    // must be shown; a never-connected site's read finds nothing and is cheap.
   });
   const ga4 = binding;
   const data = window.data ?? null;
+  const history = data?.dataThrough ?? null;
+  const integrationsHref = marketingRoutes.siteSettings(
+    site.brand_id,
+    site.id,
+    "integrations",
+  );
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
@@ -99,13 +112,13 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
           error={window.error}
           onRetry={() => void window.refetch()}
         />
-      ) : !ga4.enabled ? (
-        <p className="text-xs text-muted-foreground">
-          No Google Analytics property is bound to this site yet — open
-          Analytics to bind one.
-        </p>
       ) : window.isLoading ? (
         <div className="h-10 animate-pulse rounded-md border border-border bg-muted/40" />
+      ) : !ga4.enabled && !history ? (
+        <p className="text-xs text-muted-foreground">
+          No Google Analytics property is bound to this site yet, and nothing
+          was ever synced for it — open Analytics to bind a property.
+        </p>
       ) : (
         <>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -129,6 +142,23 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
             pulledAt={data?.pulledAt ?? null}
             timezone={data?.propertyTimezone ?? null}
           />
+          {/* Disconnected but not erased: the numbers above are real and
+              STOP — said plainly, with the door that makes them move again
+              (PLAN §4.9 + §5.6). No disconnect DATE is printed because none is
+              stored; inventing one would be the freshness line lying. */}
+          {!ga4.enabled ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="min-w-0 flex-1 text-[11px] leading-4 text-warning">
+                {`No Google Analytics property is bound to this site right now, so these numbers cannot refresh — they are the last data we synced, through ${history}.`}
+              </p>
+              <Button asChild size="sm" variant="outline" className="h-6 gap-1 px-2 text-[11px]">
+                <Link href={integrationsHref}>
+                  <RefreshCw className="h-3 w-3" aria-hidden />
+                  Reconnect to refresh
+                </Link>
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
     </div>

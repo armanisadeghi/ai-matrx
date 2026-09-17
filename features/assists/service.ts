@@ -341,6 +341,35 @@ export async function queryAssists(
 }
 
 /**
+ * ONE assist of mine, by id — the row a deep link names.
+ *
+ * Mine-scoped like every read here (THE VIEW LAW), and `null` when there is no
+ * such live row of mine. Every status is in range on purpose: the caller asks
+ * precisely because it needs to know whether the row was already decided.
+ */
+export async function getAssistById(
+  userId: string,
+  id: string,
+): Promise<Assist | null> {
+  if (!userId) throw new Error("[assists] read requires a user id");
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    if (isMissingSessionError(error)) throw new SessionUnavailableError();
+    throw new Error(`[assists] read failed: ${error.message}`);
+  }
+  if (!data) return null;
+  return toAssist(data as AssistRow);
+}
+
+/**
  * Per-status counts for the manager's summary strip. One head-only count per
  * status — honest about totals beyond the current page, and no rows on the
  * wire to get them.

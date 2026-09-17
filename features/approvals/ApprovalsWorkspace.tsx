@@ -19,6 +19,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
+import { APPROVAL_PAGE_SIZE } from "./data";
+import { APPROVALS_EMPTY_BODY, APPROVALS_EMPTY_TITLE } from "./empty-state";
+import type { ApprovalFocusResolution } from "./types";
 import { useState } from "react";
 
 export function ApprovalsWorkspace({
@@ -36,8 +39,10 @@ export function ApprovalsWorkspace({
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   const [summary, setSummary] = useState<ApprovalQueueSummary | null>(null);
-  // `null` = not answered yet. `false` = the read settled and that row is gone.
-  const [focusFound, setFocusFound] = useState<boolean | null>(null);
+  // `null` = not answered yet; the rest are the queue's evidence-backed
+  // verdicts on the row a link named.
+  const [focusResolution, setFocusResolution] =
+    useState<ApprovalFocusResolution | null>(null);
 
   if (!userId) {
     return (
@@ -53,6 +58,15 @@ export function ApprovalsWorkspace({
     );
   }
 
+  const focusMessage =
+    focusResolution === "decided"
+      ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
+      : focusResolution === "pending_elsewhere"
+        ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
+        : focusResolution === "unconfirmed"
+          ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
+          : null;
+
   const settled = summary !== null && !summary.loading;
   const empty = settled && summary.count === 0 && summary.errors === 0;
 
@@ -67,27 +81,29 @@ export function ApprovalsWorkspace({
         hideWhenEmpty={false}
         onSummary={(_scopeKey, next) => setSummary(next)}
         focusItemId={focusItemId}
-        onFocusResolved={setFocusFound}
+        onFocusResolved={setFocusResolution}
       />
       {/* A link that points at a row nobody can find gets an ANSWER, not a
-          silent list the person has to search (THE NO-SILENT-FAILURE LAW). */}
-      {focusItemId && focusFound === false ? (
+          silent list the person has to search (THE NO-SILENT-FAILURE LAW) —
+          and the answer says exactly as much as the queue could prove. Saying
+          "already decided" because a row was not on page one is the screen
+          lying (Bugbot MEDIUM #2, 2026-09-17). */}
+      {focusItemId && focusMessage ? (
         <p className="mt-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground">
-          The item that link points to is not waiting any more — it was most
-          likely already approved or rejected. Everything still waiting on you is
-          above.
+          {focusMessage}
         </p>
       ) : null}
       {empty ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-8 text-center">
           <CheckCircle2 className="size-8 text-success" />
           <p className="text-sm font-medium text-foreground">
-            Nothing is waiting on you
+            {APPROVALS_EMPTY_TITLE}
           </p>
+          {/* The copy lives in `./empty-state.ts` so the lane that ships the
+              first producer changes it in one place, in the commit that makes
+              it true. */}
           <p className="max-w-md text-xs text-muted-foreground">
-            When an agent drafts an email, proposes a change to one of your
-            spreadsheets, or suggests anything else that needs a person, it
-            appears here — and nothing takes effect until you decide.
+            {APPROVALS_EMPTY_BODY}
           </p>
         </div>
       ) : null}
