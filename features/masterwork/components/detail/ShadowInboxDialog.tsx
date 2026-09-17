@@ -51,6 +51,34 @@ import {
 } from "@/lib/durable-run/durableRunDialogClose";
 
 /**
+ * 🚨 THE BOX'S OWN INSTRUCTION HAS TO BE TRUE (cold walk 5, finding 4,
+ * 2026-09-16). It used to read "your reply on top and the message you were
+ * answering underneath, exactly as your mail app shows it" — and a thread in
+ * exactly that shape, the two halves separated by nothing but a blank line, is
+ * unsplittable by construction: two paragraphs of prose are indistinguishable
+ * from one message of two paragraphs. A first-timer who did exactly what the
+ * box said was told "Nothing to shadow — you never replied in it", with nothing
+ * naming what to change.
+ *
+ * The box now teaches the one thing the parser keys on, and shows it. The same
+ * example is a constant beside the parser in aidream
+ * (`mail_parsers.PASTE_DOOR_EXAMPLE`) and is run through the REAL parser by
+ * `test_the_paste_door_example_parses.py` on every test run, so these words and
+ * the code behind them cannot drift apart again.
+ */
+export const SHADOW_PASTE_MARKER_LINE = "My reply:";
+
+export const SHADOW_PASTE_PLACEHOLDER = `Paste the message you got, then a line reading "${SHADOW_PASTE_MARKER_LINE}" on its own, then what you sent. Like this:
+
+Hi — we have a pallet of "assorted IT equipment" from a county courthouse IT closet ready for pickup tomorrow. Can we route it straight to the shredder line to save a day on turnaround?
+
+${SHADOW_PASTE_MARKER_LINE}
+No — anything from a government building goes to our manual teardown line no matter what the manifest calls it, because government hardware routinely has drives with case records on them.
+
+A copy straight out of your mail app works too, as long as it kept its "On … wrote:" line, its "-----Original Message-----" block, or the original quoted with ">".`;
+
+
+/**
  * "Shadow your inbox" — the `shadow_inbox` Distillation Approach.
  *
  * Arman's own catalog words for it: "Your Understudy drafts replies to your
@@ -693,7 +721,7 @@ export function ShadowInboxDialog({
                 id="shadow-inbox-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Paste the whole thread — your reply on top and the message you were answering underneath, exactly as your mail app shows it."
+                placeholder={SHADOW_PASTE_PLACEHOLDER}
                 rows={10}
                 enableTextStats
               />

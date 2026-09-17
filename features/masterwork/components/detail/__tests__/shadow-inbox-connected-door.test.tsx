@@ -76,6 +76,7 @@ const launch = jest.fn();
 jest.mock("../../../durable-run/useMasterworkRun", () => ({
   useMasterworkRun: () => ({
     running: false,
+    restoring: false,
     cancelling: false,
     stages: [],
     result: null,

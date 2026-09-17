@@ -35,6 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ComposerChip } from "@/features/agents/components/inputs/smart-input/ComposerChip";
 import { AgentCredit } from "../components/AgentCredit";
 import {
   BookOpen,
@@ -397,16 +398,17 @@ function ConductorColumn({
         }}
         afterMessages={
           <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-1.5 px-4 pt-2">
+            {/* 🚨 A CHIP THAT FILLS THE BOX MUST LEAVE YOU ABLE TO SEND
+                (cold walk 5, finding 6b). The plain <button> took the caret out
+                of the composer, so Enter afterwards went to the chip and only
+                the mouse could send. `ComposerChip` refuses the focus and puts
+                it back — one component, so no surface re-types the bug. */}
             {CONDUCTOR_CHIPS.map((chip) => (
-              <button
+              <ComposerChip
                 key={chip.label}
-                type="button"
-                onClick={() => stageChip(chip.message)}
-                className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                title="Puts the request in the message box — you can edit it before sending."
-              >
-                {chip.label}
-              </button>
+                label={chip.label}
+                onStage={() => stageChip(chip.message)}
+              />
             ))}
           </div>
         }

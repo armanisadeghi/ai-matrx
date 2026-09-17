@@ -322,7 +322,16 @@ export function BadExampleProbe({
       </section>
 
       {/* ── THE START ────────────────────────────────────────────────────── */}
-      {!started ? (
+      {/* 🚨 NEVER THE SETUP SCREEN OVER A LIVE ROUND (cold walk 5, finding 3).
+          A reload mid-round-2 painted this block — a spinning, disabled "Write
+          the first one" over "Up to 5 rounds…" — at the same time as the
+          in-progress row below reading "Writing round 2…" with a Stop button,
+          for about nine seconds, because `started` is answered by the restored
+          CONTENT (which arrives with the rejoin) while `running` is true from
+          the first paint. `run.restoring` is the third answer both of them were
+          missing: there IS a round here and this mount cannot describe it yet,
+          so nothing offers to start one. */}
+      {!started && !run.restoring ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <GatedActionButton
             onClick={() => void send(false)}

@@ -1102,6 +1102,7 @@ export function CrmListPage({
                 scope={list.query.scope}
                 scopes={CRM_LIST_SCOPES}
                 counts={list.counts}
+                countsLoading={list.countsLoading}
                 onChange={(scope) => list.setQuery({ scope })}
               />
             </div>

@@ -901,6 +901,48 @@ export async function listMasterworksForRulebook(
 }
 
 /**
+ * The same list, but it does not return until the Masterwork a Build just
+ * announced is actually IN it.
+ *
+ * 🚨 A READ THAT RACES ITS OWN WRITE REPORTS A NUMBER NOBODY MEASURED
+ * (Masterwork cold walk 5, finding 6). The Build's terminal stream event fires
+ * the moment the run completes; the `workflow.definition` row it wrote is not
+ * necessarily visible to the next PostgREST read yet. The Rulebook reloaded on
+ * that event, once, with no retry — so ~15 seconds after a Quick Build finished
+ * its own page said "0 Built" about a Masterwork it had just watched being
+ * built, and only a fresh navigation corrected it.
+ *
+ * Bounded, and honest either way: `confirmed: false` means the row still had
+ * not appeared, which is a fact the caller must SAY rather than paint over.
+ */
+export async function listMasterworksAfterBuild(
+  rulebookId: string,
+  workflowId: string,
+  {
+    attempts = 6,
+    firstWaitMs = 300,
+    /** The read itself — injectable so the RACE, not the query, is guarded. */
+    read = (id: string) => listMasterworksForRulebook(id, { includeArchived: true }),
+  }: {
+    attempts?: number;
+    firstWaitMs?: number;
+    read?: (rulebookId: string) => Promise<Masterwork[]>;
+  } = {},
+): Promise<{ masterworks: Masterwork[]; confirmed: boolean }> {
+  let latest: Masterwork[] = [];
+  let wait = firstWaitMs;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    latest = await read(rulebookId);
+    if (latest.some((entry) => entry.id === workflowId)) {
+      return { masterworks: latest, confirmed: true };
+    }
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    wait = Math.min(wait * 2, 3000);
+  }
+  return { masterworks: latest, confirmed: false };
+}
+
+/**
  * Masterworks for MANY Rulebooks in one read — the list surface needs every
  * visible Rulebook's built systems without N round trips. Understudies are
  * excluded: they are the always-there crude twin, shown on the Rulebook page,

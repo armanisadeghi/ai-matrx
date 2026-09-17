@@ -158,6 +158,7 @@ function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
     // Stop is offered exactly while something is actually in flight — the same
     // rule the real handle applies (`cancelPath && running && state.runId`).
     cancel: running ? cancelSpy : null,
+    restoring: false,
     cancelling: false,
     launch: jest.fn(),
     reset: jest.fn(),

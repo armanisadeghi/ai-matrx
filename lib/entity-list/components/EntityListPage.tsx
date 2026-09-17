@@ -420,6 +420,7 @@ export function EntityListPage<TRow>({
               scope={list.query.scope}
               scopes={visibleScopes}
               counts={list.counts}
+              countsLoading={list.countsLoading}
               onChange={list.setScope}
             />
           </div>

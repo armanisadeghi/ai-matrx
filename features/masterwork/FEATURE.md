@@ -441,6 +441,37 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (later) — **FOUR SCREENS THAT CONTRADICTED THEMSELVES** (fifth cold
+  walk, findings 3, 4, 6 and 6b), each fixed at the layer that owns the class.
+  *The probe's two states at once:* a reload mid-round painted the SETUP screen
+  ("Write the first one", "Up to 5 rounds…") over a live "Writing round 2…" row
+  for ~9s, because `started` is answered by restored CONTENT while `running` is
+  true from the first paint. The missing third answer — "there is a run here and
+  this mount cannot describe it yet" — is now `restoring` on the shared
+  `useDurableRun` handle, so every durable surface has it; the probe and the
+  Teach-Back (the same shape, one grep away) both use it. Verified live on a
+  brand-new Rulebook: the reload now shows only "Reading what you said about
+  round 1 and turning it into rules…" with its Stop. Guard:
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`.
+  *The paste box's untrue instruction:* see the aidream half — the placeholder
+  now teaches the shape the parser can honour, and
+  `__tests__/the-paste-box-teaches-a-shape-that-parses.test.ts` keeps the copy
+  from drifting back.
+  *"0 Built" about a Masterwork it just watched being built:* the Build's
+  terminal event fires before the `workflow.definition` row is readable;
+  `listMasterworksAfterBuild` waits for the id the Build announced and SAYS so
+  when it never appears. Guard:
+  `__tests__/a-built-masterwork-is-counted-not-guessed.test.ts`.
+  *A chip that filled a box you then could not send from:* a native button takes
+  the caret, so Enter went to the chip. `ComposerChip` (in `features/agents`)
+  refuses the focus and puts it back; verified live — chip click leaves the
+  caret in the composer and Enter sends. Guard:
+  `features/agents/__tests__/a-chip-that-fills-the-box-leaves-you-able-to-send.test.tsx`.
+  *And a scope badge reading `0` over a populated list:* `EntityScopeTabs` could
+  not tell "not counted yet" from "counted, and zero" — an unmeasured count now
+  renders nothing at all. Guard:
+  `lib/entity-list/__tests__/a-scope-badge-never-says-zero-before-it-counted.test.tsx`.
+
 - 2026-09-17 — **THE SORTING TABLE NEVER ERASES A SITTING EITHER, AND THE
   MECHANISM IS NOW SHARED** (fifth cold walk, finding 2). A day after the Triad
   game's sitting was made durable, the fifth cold walk found the identical

@@ -64,6 +64,7 @@ import {
 import { fetchAssistLaunch, MASTERWORK_RULEBOOK_SURFACE } from "../../assists";
 import {
   getRulebook,
+  listMasterworksAfterBuild,
   listMasterworksForRulebook,
   saveRules,
   splitMasterworksByArchive,
@@ -1411,6 +1412,31 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
       .catch(() => undefined);
   }, [rulebookId]);
 
+  /**
+   * 🚨 THE COUNT AFTER A BUILD IS CONFIRMED, NEVER GUESSED (cold walk 5,
+   * finding 6). The Build's terminal event fires the moment the run completes,
+   * and the plain reload above read `workflow.definition` before the new row
+   * was visible — so this page said "0 Built" about a Masterwork it had just
+   * watched being built, and only a fresh navigation corrected it. The read now
+   * waits for the id the Build announced, and if it still never appears it SAYS
+   * so with the remedy instead of leaving a wrong number on screen.
+   */
+  const reloadMasterworksAfterBuild = useCallback(
+    (workflowId: string) => {
+      void listMasterworksAfterBuild(rulebookId, workflowId)
+        .then(({ masterworks: next, confirmed }) => {
+          setMasterworks(next);
+          if (!confirmed) {
+            toast.warning(
+              "Your new Masterwork was built, but it has not shown up on this page yet — reload in a moment and it will be here.",
+            );
+          }
+        })
+        .catch(() => reloadMasterworks());
+    },
+    [reloadMasterworks, rulebookId],
+  );
+
   // Every human "Add rule" entry point opens the WindowPanel (With AI default
   // + Manually) — the Rulebook stays visible behind it. The old blocking
   // dialog path is gone; RuleEditorDialog keeps only edit + staged drafts.
@@ -1433,10 +1459,10 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     setBuildOpen(true);
     openBuild({
       rulebookId,
-      onBuilt: () => reloadMasterworks(),
+      onBuilt: (e) => reloadMasterworksAfterBuild(e.workflowId),
       onWindowClose: () => setBuildOpen(false),
     });
-  }, [openBuild, rulebookId, reloadMasterworks]);
+  }, [openBuild, rulebookId, reloadMasterworksAfterBuild]);
 
   useEffect(() => {
     let cancelled = false;
