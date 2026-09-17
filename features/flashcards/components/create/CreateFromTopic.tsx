@@ -49,6 +49,10 @@ import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ASSISTANT_MESSAGE_COLUMN_CLASS,
+  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+} from "@/features/agents/components/shared/assistant-message-layout";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -195,7 +199,13 @@ export function CreateFromTopic() {
 
   return (
     <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+      <div
+        className={cn(
+          ASSISTANT_MESSAGE_COLUMN_CLASS,
+          ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+          "py-6 sm:py-8",
+        )}
+      >
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button
@@ -242,7 +252,7 @@ export function CreateFromTopic() {
               </div>
               {/* Live card-by-card preview — the hoisted content-ir session
                   renders each card the moment its front arrives. */}
-              <LiveGenerationPreview envelope={envelope} />
+              <LiveGenerationPreview requestId={activeRequestId} />
             </div>
           ) : (
             <form

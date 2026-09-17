@@ -168,6 +168,11 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-16` — Flashcard generation previews now use the same `MarkdownStream`
+  path and the same shared `max-w-3xl` reading column as an assistant message.
+  Both topic and source generation inherit the repair; the old direct
+  `FlashcardsBlock` mount and narrower `max-w-2xl` page constraint are gone.
+
 - `2026-09-14` — **FastFire discloses every fixed mandate job in the shared
   Agents menu.** The spoken answer grader, spoken-question TTS, and cached
   instant-help TTS are registered as surface roles only; the drill page gains
