@@ -129,7 +129,10 @@ function BrandAssetEditorDialogBody({
       if (stagedFile) {
         const uploaded = await upload(
           { kind: "file", file: stagedFile },
-          { folderPath: "Images/Brand Library" },
+          {
+            folderPath: "Images/Brand Library",
+            organizationId,
+          },
         );
         uploadedFileId = uploaded.fileId;
       }

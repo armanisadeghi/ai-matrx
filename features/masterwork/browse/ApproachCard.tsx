@@ -195,8 +195,36 @@ export function ApproachCard({
   // predicate's answer AND a real handler — a card with neither an `href` nor
   // an `onSelect` used to render as a <button> that did nothing when clicked.
   const state = approachState(approach);
+  /**
+   * 🚨 A CARD THAT CANNOT BE *PICKED HERE* IS NOT A DISABLED CARD — IT IS A
+   * LINK, AND THE WHOLE CARD IS THAT LINK (cold walk 7, finding 4, 2026-09-17).
+   *
+   * `inert` means one thing only: "this Approach cannot be the lane THIS
+   * surface starts with". It was being read as "this Approach has no door",
+   * and the two are different: the Vision Interview and the Oracle tap are
+   * fully built lanes whose door is their own PAGE (`launch_href`), not a
+   * `/masterwork/[id]` query param. They rendered as
+   * `<div aria-disabled="true">` on the guided start with a live door sitting
+   * one line lower, inside a ~150px inline link at the bottom of the card.
+   *
+   * On screen that is 21 cards that respond to a click anywhere and 2 that
+   * respond almost nowhere, in the same clothes. Walk 7 clicked the title, the
+   * blurb and the "You bring:" line of the Vision Interview card, got nothing
+   * from any of them, pressed Start and was given the default interview — and
+   * concluded the product was broken. A control is absent or honest, never
+   * dead (law 4).
+   *
+   * So: inert + a door of its own = a reachable card that navigates, and says
+   * in words that it opens its own page. Only a genuinely door-less card
+   * (`coming_soon`, or a row the registry gave nowhere to go) stays inert, and
+   * it says so in the same place.
+   */
+  const ownDoor =
+    inert && state.status !== "coming_soon" && state.href ? state.href : null;
   const reachable =
-    state.reachable && !inert && Boolean(href ?? onSelect);
+    state.reachable &&
+    (!inert || Boolean(ownDoor)) &&
+    Boolean(href ?? onSelect ?? ownDoor);
 
   const body = (
     <>
@@ -264,17 +292,14 @@ export function ApproachCard({
           broken. Now a card that cannot be chosen here names its own door. */}
       {inert && state.status !== "coming_soon" ? (
         <p className="border-t border-dashed border-border pt-2 text-xs text-muted-foreground">
-          {state.href ? (
-            <>
-              This one is not a way to begin — it has its own page.{" "}
-              <Link
-                href={state.href}
-                className="font-medium text-primary underline-offset-2 hover:underline"
-                onClick={(event) => event.stopPropagation()}
-              >
-                Open {approach.label}
-              </Link>
-            </>
+          {ownDoor ? (
+            // No nested <a>: the whole card IS the link to `ownDoor` now, so
+            // this line describes where the click goes rather than being the
+            // only thing that goes there.
+            <span className="font-medium text-primary">
+              This one is not a way to begin — it has its own page. Opens{" "}
+              {approach.label} →
+            </span>
           ) : (
             "This one cannot start a Rulebook — pick another way to begin, and you can use this one afterwards."
           )}
@@ -299,9 +324,10 @@ export function ApproachCard({
       </div>
     );
   }
-  if (href) {
+  const linkHref = href ?? ownDoor;
+  if (linkHref) {
     return (
-      <Link href={href} className={shell}>
+      <Link href={linkHref} className={shell}>
         {body}
       </Link>
     );
