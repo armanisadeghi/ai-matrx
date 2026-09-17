@@ -91,6 +91,13 @@ function isProcessEnvBackend(expression: ts.Expression): boolean {
   return name !== null && isBackendIdentifier(name);
 }
 
+function isDirectProcessEnvObject(expression: ts.Expression): boolean {
+  return ts.isPropertyAccessExpression(expression) &&
+    ts.isIdentifier(expression.expression) &&
+    expression.expression.text === "process" &&
+    expression.name.text === "env";
+}
+
 interface BindingResolution {
   initializer: ts.Expression | null;
   backendIdentifier: boolean;
@@ -99,6 +106,7 @@ interface BindingResolution {
 function bindingResolution(
   declaration: ts.VariableDeclaration | ts.ParameterDeclaration,
   name: string,
+  initializerIsProcessEnv = false,
 ): BindingResolution | null {
   if (ts.isIdentifier(declaration.name)) {
     return declaration.name.text === name
@@ -114,11 +122,7 @@ function bindingResolution(
       backendIdentifier:
         propertyName !== null &&
         isBackendIdentifier(propertyName) &&
-        !!declaration.initializer &&
-        ts.isPropertyAccessExpression(declaration.initializer) &&
-        ts.isIdentifier(declaration.initializer.expression) &&
-        declaration.initializer.expression.text === "process" &&
-        declaration.initializer.name.text === "env",
+        initializerIsProcessEnv,
     };
   }
   return null;
@@ -138,7 +142,14 @@ function functionBoundary(node: ts.Node): ts.Node {
 }
 
 function isLexicalContainer(node: ts.Node): boolean {
-  return ts.isBlock(node) || ts.isSourceFile(node) || ts.isFunctionLike(node);
+  return ts.isBlock(node) ||
+    ts.isSourceFile(node) ||
+    ts.isFunctionLike(node) ||
+    ts.isCatchClause(node) ||
+    ts.isForStatement(node) ||
+    ts.isForInStatement(node) ||
+    ts.isForOfStatement(node) ||
+    ts.isCaseBlock(node);
 }
 
 function bindingInContainer(
@@ -154,11 +165,22 @@ function bindingInContainer(
     return null;
   }
 
+  if (ts.isCatchClause(container) && container.variableDeclaration) {
+    const resolved = bindingResolution(container.variableDeclaration, name);
+    if (resolved) return resolved;
+  }
+
   let found: BindingResolution | null = null;
   const visit = (node: ts.Node) => {
     if (found || (node !== container && isLexicalContainer(node))) return;
     if (ts.isVariableDeclaration(node) && node.getStart() < usePosition) {
       found = bindingResolution(node, name);
+      if (
+        found &&
+        ts.isObjectBindingPattern(node.name) &&
+        node.initializer &&
+        isProcessEnvObject(node.initializer, node.initializer)
+      ) found = bindingResolution(node, name, true);
       if (found) return;
     }
     ts.forEachChild(node, visit);
@@ -177,6 +199,21 @@ function bindingInContainer(
     }
   }
   return null;
+}
+
+/** Recognize only direct `process.env` and lexically resolved aliases of it. */
+function isProcessEnvObject(
+  expression: ts.Expression,
+  useSite: ts.Node,
+  seen = new Set<string>(),
+): boolean {
+  if (isDirectProcessEnvObject(expression)) return true;
+  if (ts.isParenthesizedExpression(expression))
+    return isProcessEnvObject(expression.expression, expression.expression, seen);
+  if (!ts.isIdentifier(expression) || seen.has(expression.text)) return false;
+  seen.add(expression.text);
+  const initializer = variableInitializer(expression.text, useSite);
+  return initializer ? isProcessEnvObject(initializer, initializer, seen) : false;
 }
 
 /** Resolve from the identifier's exact use site, walking its lexical ancestry. */

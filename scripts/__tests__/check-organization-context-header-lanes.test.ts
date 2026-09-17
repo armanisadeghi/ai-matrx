@@ -68,6 +68,28 @@ describe("organization-context header lanes", () => {
     expect(findings).toHaveLength(1);
   });
 
+  it("fires for a destructured backend key through a process.env alias", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const env = process.env;
+      const { NEXT_PUBLIC_BACKEND_URL_CANARY: endpoint } = env;
+      async function request(token: string) {
+        return fetch(\`\${endpoint}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("does not treat an arbitrary object alias as process.env", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const env = { NEXT_PUBLIC_BACKEND_URL_CANARY: "https://vendor.example" };
+      const { NEXT_PUBLIC_BACKEND_URL_CANARY: endpoint } = env;
+      async function request(token: string) {
+        return fetch(\`\${endpoint}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
   it("fires for an imported alias of a backend URL symbol", () => {
     const findings = findOrganizationHeaderViolations(`
       import { NEXT_PUBLIC_BACKEND_URL as canaryBase } from "@/config";
@@ -130,6 +152,86 @@ describe("organization-context header lanes", () => {
       }
     `);
     expect(findings).toEqual([]);
+  });
+
+  it("does not let a sibling catch binding hide a module stream endpoint", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        try { throw new Error("unused"); } catch (endpoint) { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("does not let a sibling loop endpoint mark a later vendor request internal", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string) {
+        for (let endpoint = "https://stream.aimatrx.com"; endpoint; endpoint = "") { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("does not let a sibling loop vendor endpoint hide a later module stream request", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        for (let endpoint = "https://vendor.example"; endpoint; endpoint = "") { void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("resolves an internal endpoint declared in the enclosing loop", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string) {
+        for (let endpoint = "https://stream.aimatrx.com"; endpoint; endpoint = "") {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("keeps a catch parameter scoped to its own handler", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string) {
+        try { throw new Error("unused"); } catch (endpoint) {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("keeps a switch binding inside the switch", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string, value: string) {
+        switch (value) { case "internal": { const endpoint = "https://stream.aimatrx.com"; void endpoint; } }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("resolves a switch binding across case clauses", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string, value: string) {
+        switch (value) {
+          case "setup": const endpoint = "https://stream.aimatrx.com";
+          case "request": return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+      }
+    `);
+    expect(findings).toHaveLength(1);
   });
 
   it("does not resolve a module endpoint through a shadowing local binding", () => {
