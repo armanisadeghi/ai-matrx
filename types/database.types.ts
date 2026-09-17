@@ -71457,6 +71457,10 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      cvx_provider_account_display: {
+        Args: { p_metadata: Json }
+        Returns: string
+      }
       cvx_search_score: {
         Args: {
           p_deep_hit?: boolean
