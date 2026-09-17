@@ -22,6 +22,15 @@ Org-scoped project management. Projects group work within an organization; tasks
 - `app/(core)/projects/[projectId]/page.tsx` — **ProjectWorkspace** (resolves by slug or UUID): hero + nested task list + associated resources + scopes + advanced references.
 - `app/(core)/projects/[projectId]/settings/page.tsx` — **ProjectManage** (single-page sectioned, no tabs): General / Scopes / Members / Invitations / Danger.
 - `app/(core)/tasks/page.tsx` — `TasksDesktopShell` (3-pane); `app/(core)/tasks/[id]/page.tsx` — `TaskEditor`.
+- **Import from Google Tasks** — `TasksHeaderControls` opens the
+  `googleTasksImportWindow` in place (`features/connectors/import/GoogleTasksImportPanel`,
+  Google-native PLAN §4.7). Imported tasks are ordinary `workspace.tasks` rows
+  carrying the origin spine (`origin='import'`, `source_type='google_tasks'`,
+  `source_id`, `source_label`, `dedupe_key`) plus `source_list_id`,
+  `source_imported_at` and `source_snapshot` (aidream migration 0772). A
+  re-import rewrites a field ONLY where Google changed it and the Matrx value
+  still equals that snapshot — a task edited here is never overwritten. Nothing
+  is ever written back to Google.
 - **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `(transitional)/settings/projects` → `/projects`. `(transitional)/projects/**` removed.
 
 **Feature code — `features/projects/`**
@@ -152,6 +161,11 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-17` — **Google Tasks import.** The header carries "Import from Google
+  Tasks", which opens the shared import window: task lists, checkboxes,
+  already-imported badges, the server's honest count line, and a re-import that
+  only takes what Google changed. No second task store and no new task columns
+  beyond the three origin stamps in aidream migration 0772.
 - `2026-09-13` — **The initial `/tasks` hierarchy read has a terminal path.**
   `get_user_full_context` now aborts after 20 seconds and dispatches the
   existing retryable error state instead of leaving task workspaces in an

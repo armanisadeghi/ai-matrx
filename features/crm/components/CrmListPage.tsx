@@ -29,6 +29,7 @@ import {
   AlertCircle,
   ArchiveRestore,
   FileUp,
+  Contact,
   Inbox,
   ListChecks,
   Megaphone,
@@ -36,6 +37,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useOpenGoogleContactsImport } from "@/features/overlays/openers/googleImportWindows";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
@@ -543,6 +545,7 @@ export function CrmListPage({
   // New records land in the active org (falls back to the personal org while
   // none is explicitly selected). Access never depends on it — only stamping.
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const openGoogleContactsImport = useOpenGoogleContactsImport();
   const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
 
   // Duplicates indicator — a true pending-pair count behind the header door.
@@ -1036,6 +1039,26 @@ export function CrmListPage({
           <FileUp className="h-3.5 w-3.5" />
           <span className="max-sm:sr-only">Import</span>
         </Link>
+      </Button>
+      {/* Google-native PLAN §4.5: the contact import opens IN PLACE as a
+          window — a route would lose the list behind it, and the panel is the
+          window presentation of the same body on every surface. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        onClick={() =>
+          openGoogleContactsImport({
+            organizationId:
+              list.query.scope.kind === "orgs" &&
+              list.query.scope.organizationId
+                ? list.query.scope.organizationId
+                : effectiveOrgId,
+          })
+        }
+      >
+        <Contact className="h-3.5 w-3.5" />
+        <span className="max-sm:sr-only">Import from Google Contacts</span>
       </Button>
       <Button
         size="sm"

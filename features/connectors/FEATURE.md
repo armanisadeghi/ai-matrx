@@ -58,12 +58,13 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **Routes**
 
 - `features/overlays/openers/connectorConsentDialog.tsx` — the ONE door to "Choose what to connect" (`useOpenConnectorConsentDialog`).
+- `features/connectors/import/` — **the two Google import panels** (Google-native PLAN §4.5, §4.7). `GoogleContactsImportPanel.tsx` (search → the field map → save through the governed party resolver) and `GoogleTasksImportPanel.tsx` (task lists, checkboxes, already-imported badges, the server's honest count line). `service.ts` is the client half of `/google-import/*`; `types.ts` holds its `*Pending` stand-in contracts and the remedy that removes them. Openers: `features/overlays/openers/googleImportWindows.tsx` (`useOpenGoogleContactsImport`, `useOpenGoogleTasksImport`); window entries `features/window-panels/windows/google-import/*`.
 - `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
 - `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
 **Redux slice(s)** — `conversationAttachments` (`redux/attachments.slice.ts`). The connector catalogue itself still holds no state; what a person CHOSE out of a connection does, keyed by conversation.
 
-**API endpoints** — none owned.
+**API endpoints** — `/google-import/contacts/fields`, `/google-import/contacts/search`, `/google-import/contacts/import`, `/google-import/tasks/list`, `/google-import/tasks/import` (aidream `services/google_import`). Nothing else here owns an endpoint.
 
 ---
 
@@ -131,6 +132,34 @@ where every item opens at the provider.
 ### (e) A connector we do not support yet
 
 `comingSoonId` set → status is `unavailable` regardless of the connected-set, the chip is dashed + `soon`, and clicking calls `announceComingSoon(id)` against `lib/coming-soon/registry.ts`. **Never a bare "coming soon" string.** Notion no longer uses this path: it is an active MCP-backed connector.
+
+### (g) Bringing a Google contact or task IN
+
+Both panels are the WINDOW presentation (Arman, 2026-09-17: "The default is the
+window"), registered in `windowRegistryMetadata` with
+`mobilePresentation: "drawer"` so a phone gets the bottom sheet, and opened in
+place from the People list and the Tasks header — never a route, which would
+lose the list behind it.
+
+**Contacts.** Search the person's Google contacts (already-imported ones wear a
+badge and offer "Update from Google") → pick one or several → the server's dry
+run returns the FIELD MAP: every Google value, the Person field it lands in, and
+what the write will actually do (`create` / `fills an empty field` / `already the
+same` / `edited here — kept`). Every row is droppable and its value editable
+before saving. The save goes through the existing dedupe resolver
+(`resolve_party`), so a match enriches instead of duplicating, and a value
+somebody edited here is reported and LEFT ALONE — the same call is both the
+import and the "Update from Google" diff.
+
+**Tasks.** Task lists as chips, tasks with checkboxes and already-imported
+badges, and the count line the SERVER composes ("12 tasks in My Tasks, 4 already
+here, import the other 8") — two places computing that is two answers to it.
+"Select the changed ones" picks exactly the tasks Google moved since the import.
+A re-import rewrites title, notes, due date and status only where Google changed
+them AND nobody changed them here.
+
+Both are mirror-in only: nothing on either panel can change anything in the
+person's Google account.
 
 ### (f) Adding a provider
 
@@ -273,6 +302,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   a bearer token, not merely a session object, before constructing the
   authenticated-only PostgREST read.
 - `2026-09-01` — Added a live-session guard at the shared Google inventory service boundary, preventing logout/session-expiry races from issuing anonymous reads against authenticated-only integration tables.
+- `2026-09-17` — Added the two Google import panels (`import/`): "Import from Google Contacts" on People (search, the per-field map with its actions, the mapping editable before saving, the save through the governed party resolver, an already-imported badge with "Update from Google" and a diff that never overwrites a locally edited value) and "Import from Google Tasks" on Tasks (lists, checkboxes, already-imported badges, the server's count line, "select the changed ones", and a re-import that only takes what Google changed). Both are the window presentation with `mobilePresentation: "drawer"`. Server half: aidream `services/google_import` + `/google-import/*`; its contracts ride `*Pending` stand-ins until `pnpm sync-types` can run.
 - `2026-08-31` — The Settings directory's Google connector cards now retain 44pt action targets on phones and render contextual loading plus an explicit retryable failure state instead of disappearing while account status is unavailable.
 - `2026-08-30` — Made chat connector visibility fail closed on the catalog's sanitized `connection_ready` proof and stopped generic OAuth from inventing a CIMD client id unless provider metadata explicitly supports it; Figma now remains hidden while its MCP client admission is pending.
 - `2026-08-30` — Completed dynamic-provider artwork fallback: each entry now tries its website favicon, known brand glyph, catalogue art, and cached 128px favicon before any branded initial, eliminating anonymous letter tiles whenever provider identity is available.

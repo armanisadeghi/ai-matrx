@@ -462,6 +462,28 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
     urlSync: { key: "detail" },
   },
+  // ── Google import (PLAN §4.5 Contacts, §4.7 Tasks) ────────────────────────
+  // Two panels that bring a Google contact or task INTO AI Matrx. Mirror-in
+  // only. Tied to the organization the person is working in, so ephemeral —
+  // nothing to restore across reloads.
+  {
+    slug: "google-contacts-import-window",
+    overlayId: "googleContactsImportWindow",
+    kind: "window",
+    label: "Import from Google Contacts",
+    defaultData: { organizationId: null, initialExternalId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+  {
+    slug: "google-tasks-import-window",
+    overlayId: "googleTasksImportWindow",
+    kind: "window",
+    label: "Import from Google Tasks",
+    defaultData: { organizationId: null, projectId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
   {
     slug: "detail-docked",
     overlayId: "detailDocked",

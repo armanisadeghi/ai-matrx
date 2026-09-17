@@ -617,6 +617,20 @@ const DetailWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/detail/DetailWindow"),
   { ssr: false },
 );
+const GoogleContactsImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleContactsImportWindow"
+    ),
+  { ssr: false },
+);
+const GoogleTasksImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleTasksImportWindow"
+    ),
+  { ssr: false },
+);
 const DetailDocked = lazyOverlay(
   () => import("@/features/window-panels/windows/detail/DetailDocked"),
   { ssr: false },
@@ -1402,6 +1416,12 @@ export default function OverlayController() {
     detailWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "detailWindow"),
     ),
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleContactsImportWindow"),
+    ),
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleTasksImportWindow"),
+    ),
     detailDocked: useAppSelector((s) =>
       selectIsOverlayOpen(s, "detailDocked"),
     ),
@@ -1815,6 +1835,12 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     detailWindow: useAppSelector((s) =>
       selectOverlayData(s, "detailWindow"),
+    ) as Record<string, unknown> | null,
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleContactsImportWindow"),
+    ) as Record<string, unknown> | null,
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleTasksImportWindow"),
     ) as Record<string, unknown> | null,
     detailDocked: useAppSelector((s) =>
       selectOverlayData(s, "detailDocked"),
@@ -4593,6 +4619,46 @@ export default function OverlayController() {
             seedAbout={data.seedAbout}
             listItems={data.listItems}
             listIndex={data.listIndex}
+          />
+        );
+      })()}
+
+      {/* googleContactsImportWindow — "Import from Google Contacts" (PLAN §4.5) */}
+      {(() => {
+        if (!isOpenById.googleContactsImportWindow) return null;
+        const data = dataById.googleContactsImportWindow;
+        return (
+          <GoogleContactsImportWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "googleContactsImportWindow" }))
+            }
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
+            }
+            initialExternalId={
+              typeof data?.initialExternalId === "string"
+                ? data.initialExternalId
+                : null
+            }
+          />
+        );
+      })()}
+
+      {/* googleTasksImportWindow — "Import from Google Tasks" (PLAN §4.7) */}
+      {(() => {
+        if (!isOpenById.googleTasksImportWindow) return null;
+        const data = dataById.googleTasksImportWindow;
+        return (
+          <GoogleTasksImportWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "googleTasksImportWindow" }))
+            }
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
+            }
+            projectId={typeof data?.projectId === "string" ? data.projectId : null}
           />
         );
       })()}

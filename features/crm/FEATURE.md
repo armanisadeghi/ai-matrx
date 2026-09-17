@@ -891,6 +891,20 @@ stand-in for the audit columns.
 
 ## Change log
 
+- 2026-09-17 — **Import from Google Contacts, on the People list.** The CRM
+  header opens `googleContactsImportWindow` in place
+  (`features/connectors/import/GoogleContactsImportPanel`; Google-native PLAN
+  §4.5): a searchable list of the person's Google contacts with
+  already-imported badges, the field map showing which Google value lands in
+  which Person field and what the write will do, the mapping editable before
+  saving, and the save through the SAME governed resolver
+  (`resolve_party`) — no second contact-creation rule. A Person value that no
+  longer equals what the last import wrote is reported as edited here and is
+  never overwritten; "Update from Google" is the same call with the diff shown.
+  Per-value provenance lands in `crm.party.field_provenance` (aidream migration
+  0772); until it is applied the write is skipped WITH its remedy, never
+  silently. Nothing is ever written back to Google.
+
 - 2026-09-13 — **A customer row says who made it, and the grid has ONE chip for
   it** (DD-131 slice 3). `crm.party` gained `created_by_tier` /
   `created_by_system` and the `updated_by_*` pair (aidream `wf_056`), filled by

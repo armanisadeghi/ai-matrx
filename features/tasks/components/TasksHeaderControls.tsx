@@ -10,6 +10,10 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOpenGoogleTasksImport } from "@/features/overlays/openers/googleImportWindows";
+import { Button } from "@/components/ui/button";
+import { CalendarCheck } from "lucide-react";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -25,6 +29,8 @@ import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const openGoogleTasksImport = useOpenGoogleTasksImport();
   const sidebarCollapsed = isCollapsed("sidebar");
   const listCollapsed = isCollapsed("list");
 
@@ -66,6 +72,17 @@ export function TasksHeaderControls() {
       <span className="ml-1 shrink-0">
         <HrTasksDoor />
       </span>
+      {/* Google-native PLAN §4.7 — the import opens IN PLACE as a window, so
+          the list stays where it was. Read-only toward Google. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="ml-1 h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
+        onClick={() => openGoogleTasksImport({ organizationId })}
+      >
+        <CalendarCheck className="h-3.5 w-3.5" />
+        <span className="max-sm:sr-only">Import from Google Tasks</span>
+      </Button>
       <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
     </div>
   );
