@@ -127,10 +127,15 @@ export function BadExampleProbe({
   // settles from the durable row lands exactly once.
   const result = run.result;
   const [adopted, setAdopted] = useState<number>(-1);
+  /** The last round index the SERVER reported — survives `launch` wiping
+   *  `run.result`, so the counter never falls back to a mount-local count
+   *  while the next round is being written. See `roundNumber`. */
+  const [serverRound, setServerRound] = useState(0);
   useEffect(() => {
     if (!result) return;
     if (result.roundIndex === adopted) return;
     setAdopted(result.roundIndex);
+    setServerRound(result.roundIndex);
     setLastCatch(describeCatch(result));
     if (result.rulesAdded > 0) onChanged?.();
     if (result.done) {
@@ -177,8 +182,23 @@ export function BadExampleProbe({
    * survives the restore; it is the only number allowed on screen. The length
    * is the fallback for the first round of a fresh mount, before any result
    * has landed.
+   *
+   * 🚨 AND IT MUST NOT COME BACK THE MOMENT A ROUND IS IN FLIGHT (cold walk 4,
+   * finding 3, 2026-09-16). `run.launch` wipes `run.result` to null
+   * SYNCHRONOUSLY, before the network call — so from the press of "Send this
+   * and show me the next one" until the next result lands, `result?.roundIndex`
+   * is gone and the expression fell straight back to `rounds.length`, the
+   * mount-local count the sentence above exists to forbid. On a restored mount
+   * that count is 1 no matter what round the server is on, so the walk's second
+   * round showed "Round 1 of 5" over round 2's own memo with the answer still
+   * in the box: the counter and the case on screen disagreed, in the same
+   * component, in the same paint.
+   *
+   * `serverRound` is the last index the SERVER reported, remembered across
+   * launches. The number on screen can now only move forward, and it never
+   * again describes a different round from the case beside it.
    */
-  const roundNumber = result?.roundIndex || rounds.length;
+  const roundNumber = result?.roundIndex || serverRound || rounds.length;
   /** What is still missing before a probe can start, in plain words. */
   const caseBriefProblem = validateCaseBrief(caseBrief);
   /**

@@ -77,7 +77,10 @@ describe("interpretInlineEvent — the inline start/resume wire", () => {
 
 describe("a start stream that says nothing terminal", () => {
   it("has an honest sentence that names the remedy and reassures", () => {
-    expect(SILENT_START_MESSAGE).toMatch(/never started/i);
+    // The sentence covers the FINISH stream too since 2026-09-16 (finishing is
+    // its own request, not a run start), so it names the silence rather than a
+    // run that "never started" — the reassurance and the remedy are unchanged.
+    expect(SILENT_START_MESSAGE).toMatch(/never said what happened/i);
     expect(SILENT_START_MESSAGE).toMatch(/try Finish again/i);
     expect(SILENT_START_MESSAGE).toMatch(/nothing you have said is lost/i);
   });

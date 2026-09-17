@@ -43,7 +43,6 @@ import {
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { isTransportFailure } from "@ai-matrx/data/net";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
-import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";
 import {
   nodeCompleted,
@@ -93,9 +92,10 @@ export interface ResumeInput {
 export const RUN_ENDED_MESSAGE =
   "The room's run ended on the server before it finished. Nothing you have said is lost — the interview, its questions and its document are saved; press Finish again to start a fresh run over the same interview.";
 
-/** The honest sentence for a start stream that ended having said nothing. */
+/** The honest sentence for a start/finish stream that ended having said
+ *  nothing terminal. */
 export const SILENT_START_MESSAGE =
-  "The room never started — the server took the request but no run came back. Nothing you have said is lost; try Finish again.";
+  "The server took the request but never said what happened. Nothing you have said is lost — the interview, its questions and its document are saved; try Finish again.";
 
 /** What the inline start/resume NDJSON stream just told us, or null.
  *
@@ -103,6 +103,9 @@ export const SILENT_START_MESSAGE =
  * room's whole "is it working or is it dead" answer hangs off it. */
 export type InlineVerdict =
   | { kind: "run_started"; runId: string }
+  /** The finish landed: the interview is closed and the documents are written
+   *  (`failed` names any deliverable that did not land — never silence). */
+  | { kind: "finished"; written: string[]; failed: Record<string, string> }
   | { kind: "failed"; message: string };
 
 export function interpretInlineEvent(event: unknown): InlineVerdict | null {
@@ -113,6 +116,8 @@ export function interpretInlineEvent(event: unknown): InlineVerdict | null {
       run_id?: string;
       message?: string;
       user_message?: string;
+      written?: unknown;
+      failed?: unknown;
     };
   } | null;
   if (!wire || typeof wire !== "object") return null;
@@ -125,6 +130,16 @@ export function interpretInlineEvent(event: unknown): InlineVerdict | null {
       inner.run_id
     ) {
       return { kind: "run_started", runId: inner.run_id };
+    }
+    if (inner?.event === "interview_finished") {
+      return {
+        kind: "finished",
+        written: Array.isArray(inner.written) ? inner.written.map(String) : [],
+        failed:
+          inner.failed && typeof inner.failed === "object"
+            ? (inner.failed as Record<string, string>)
+            : {},
+      };
     }
     return null;
   }
@@ -328,6 +343,23 @@ export function useInterviewRun(sessionId: string) {
       toastErrorAlreadyCaptured(verdict.message);
       return;
     }
+    if (verdict.kind === "finished") {
+      // The interview is closed and safe. A deliverable that did not land is
+      // NAMED here — the room's own dialog offers "Write them again", and a
+      // silent "not written yet" with no reason is the thing four cold walks
+      // kept meeting.
+      sawTerminalRef.current = true;
+      dispatch(runCompleted());
+      const missing = Object.keys(verdict.failed);
+      if (missing.length > 0) {
+        toast.error(
+          `Your interview is closed and nothing is lost, but ${missing.length === 1 ? "one document" : `${missing.length} documents`} could not be written (${missing.join(", ")}). Open Finish again and choose "Write them again".`,
+        );
+      } else {
+        toast.success("Your interview is closed — the documents are written.");
+      }
+      return;
+    }
     sawTerminalRef.current = true;
     dispatch(runStarted({ runId: verdict.runId }));
     startFollowing(verdict.runId);
@@ -409,63 +441,6 @@ export function useInterviewRun(sessionId: string) {
     }
   };
 
-  /**
-   * Start (or restart — the tables are truth, a new run re-hydrates) the
-   * session's workflow run.
-   *
-   * `openingMessage` is the pre-start composer draft: it is appended to the
-   * session's vision statement BEFORE the run starts (the backend seeds
-   * turn 0 from it on a fresh session, and it stays on the session as
-   * durable context for restarts). Returns true when the draft was CONSUMED
-   * — false means keep it in the composer.
-   *
-   * Consumption == the append landing, NOT the run starting. Once the
-   * statement is durably on the session row, the composer must clear even if
-   * the run then fails to start — otherwise "Try again" re-appends the same
-   * text and corrupts the vision statement (Bugbot, PR #146). A run-start
-   * failure after a successful append surfaces via `runFailed` as usual.
-   */
-  const start = async (openingMessage?: string): Promise<boolean> => {
-    if (inFlightRef.current) return false;
-    const message = openingMessage?.trim();
-    let draftConsumed = false;
-    if (message) {
-      try {
-        const saved = await appendVisionStatement(sessionId, message);
-        // Merge the fresh row now; the realtime echo is dropped by the
-        // slice's monotonic guard.
-        dispatch(sessionMerged(saved));
-        draftConsumed = true;
-      } catch (err) {
-        toast.error(
-          isTransportFailure(err)
-            ? "Could not reach the database — check your connection and try again. Your draft is still here."
-            : err instanceof Error
-              ? err.message
-              : "Could not save your statement — nothing was started.",
-        );
-        return false; // Draft stays in the composer; Start stays armed.
-      }
-    }
-    const consume = adopt();
-    const started = await runStream(() =>
-      callApi({
-        path: "/vision-interview/sessions/{session_id}/start" as never,
-        method: "POST",
-        pathParams: { session_id: sessionId } as never,
-        body: {} as never,
-        stream: true,
-        consumeStream: consume,
-      }),
-    );
-    if (draftConsumed && !started) {
-      toast.info(
-        "Your statement is saved on the session — starting the room failed; try Start again.",
-      );
-    }
-    return draftConsumed || started;
-  };
-
   /** Answer the pending human-input interrupt (and/or send controls).
    *  Returns true when the answer was accepted (draft may clear). */
   const resume = async (input: ResumeInput): Promise<boolean> => {
@@ -511,60 +486,57 @@ export function useInterviewRun(sessionId: string) {
   };
 
   /**
-   * 🚨 A FINISH IS ONE PRESS, AND IT NEVER ASKS ANOTHER QUESTION.
+   * 🚨 A FINISH FINISHES — ONE PRESS, ONE REQUEST, AND NEVER A ROUND.
    *
-   * Three cold walks of this room reported the same thing: the control
-   * labelled Finish did not finish. The reason was that finishing was really
-   * TWO server journeys wearing one button — start a run, then tell the
-   * waiting run it is done — and the dialog made the person perform both,
-   * under two different labels ("Finish the interview", then "Write the
-   * documents"), with a live interview round running between them. The
-   * third walk pressed it twice, watched the round counter climb and the
-   * open-question count go from five to eight, and never received a document.
+   * FOUR cold walks of this room reported the same thing: the control
+   * labelled Finish did not finish. The walk-3 fix round put both halves of
+   * the old journey behind one press — arm the intent, START a run, spend the
+   * arm when the run hands back — and proved it against a session that was
+   * already parked on a human turn, where `finish` sends `done` into the
+   * waiting run and the gate converges with no round at all. That proof could
+   * not fail, and that is exactly why it missed the defect.
    *
-   * Both halves of that journey belong behind one press. The intent is armed
-   * here and spent the instant the run hands back, so the machinery stays
-   * machinery: the person says finish once, and the next thing they see is
-   * their documents.
+   * A BRAND-NEW room has no run. In v3 the person's whole interview happens
+   * in the per-role chat tabs (`POST /observe`), and the orchestrated
+   * workflow is never started — so `finish` fell through to `start()`, and a
+   * run's first act, by construction, is a complete interview round: six
+   * voices speak, the Scribe opens new questions, the round counter climbs.
+   * The fourth walk pressed Finish on a fresh session and watched Round 1
+   * become Round 2 become Round 3, open questions go 9 → 15, and the
+   * Requirements document never arrive.
    *
-   * Returns true when the finish is under way (not when it has completed —
-   * the documents arrive through the session row's realtime subscription).
+   * A terminal action may not depend on a machine being in one particular
+   * state. Finishing is now ONE server operation that works from every phase
+   * — idle, starting, running, waiting, complete, error, run or no run
+   * (`POST /vision-interview/sessions/{id}/finish`, aidream
+   * `services/vision_interview/finalize.py`). It cancels whatever run the
+   * session is bound to, closes the interview, and writes the three
+   * documents. There is no arm, no second journey, and no branch on phase —
+   * the branch WAS the bug.
+   *
+   * Returns true when the finish landed. The documents arrive both in this
+   * response and through the session row's realtime subscription.
    */
-  const finishArmedRef = useRef(false);
   const finish = async (): Promise<boolean> => {
-    if (runPhase === "waiting_human" && pendingInterrupt?.checkpointId) {
-      finishArmedRef.current = false;
-      return resume({ message: "", done: true });
-    }
-    // Nothing is waiting, so the finish run does not exist yet. Arm the
-    // intent and start it; the effect below spends the arm the moment the
-    // run interrupts.
-    finishArmedRef.current = true;
-    const started = await start();
-    if (!started) finishArmedRef.current = false;
-    return started;
+    if (inFlightRef.current) return false;
+    const consume = adopt();
+    return runStream(() =>
+      callApi({
+        path: "/vision-interview/sessions/{session_id}/finish" as never,
+        method: "POST",
+        pathParams: { session_id: sessionId } as never,
+        body: {} as never,
+        stream: true,
+        consumeStream: consume,
+      }),
+    );
   };
 
-  useEffect(() => {
-    if (!finishArmedRef.current) return;
-    // A run that died on the way never gets a done sent into the void — the
-    // arm is dropped and the dialog's error state is what the person sees.
-    if (runPhase === "error" || runPhase === "complete") {
-      finishArmedRef.current = false;
-      return;
-    }
-    if (runPhase !== "waiting_human") return;
-    if (!pendingInterrupt?.checkpointId) return;
-    // Spent BEFORE the await: this effect can re-run while the resume is in
-    // flight, and a second done would be a second finish.
-    finishArmedRef.current = false;
-    void resume({ message: "", done: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `resume` is a render-scoped helper over stable refs; the arm ref, not the dependency list, is what makes this fire exactly once
-  }, [runPhase, pendingInterrupt?.checkpointId]);
-
-  // `start` is deliberately NOT returned. It is machinery `finish` owns: a
-  // caller that can start the run on its own is a second door back to the
-  // defect this file's `finish` comment describes — a Finish press that runs a
-  // conversation round. Closing a class means removing the door.
+  // There is NO `start` any more, returned or private. Starting a run was the
+  // only road the room had to `interview.finalize`, and a run's first act is a
+  // full interview round — so the terminal control ran a round every time it
+  // was pressed on a fresh session. Finishing has its own server operation
+  // now, and the road that ran a round is gone rather than hidden. Closing a
+  // class means removing the door.
   return { runPhase, runId, pendingInterrupt, resume, finish };
 }

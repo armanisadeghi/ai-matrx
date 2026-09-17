@@ -22,8 +22,25 @@
 // * It never traps. Skip is always there, because a card an Expert cannot
 //   answer is a card she must be able to leave without inventing a reason —
 //   and an invented reason is a bad rule with her name on it.
+// * 🚨 IT NEVER ERASES A SITTING (cold walk 4, finding 2, 2026-09-16). Every
+//   piece of this game used to live in React state and nowhere else: the deck,
+//   which card you were on, which cards you had answered, and what each answer
+//   produced. A first-time Expert answered two cards, watched "Save and next"
+//   succeed both times, reloaded the page — and landed back on "Three at a
+//   time / Deal me in" with no card state, no banner, and nothing on screen
+//   saying two answers were still being distilled. Reproduced here on
+//   2026-09-16: two cards answered, reload, "Deal me in", `Card N of M` gone,
+//   no resume text at all. Her rules DID land about a minute later (the server
+//   detaches the work on disconnect), which is worse than a visible failure:
+//   the only honest conclusion from the screen was that nothing was saved, so
+//   the natural next move is to play the same cards again.
+//   The sitting is now written to this browser as it is played and picked up
+//   on the next load, and the server half gives each answer a durable run row
+//   (aidream `/masterworks/ingest-triad` runs under the Masterwork run ledger,
+//   which is also what restores the source claim that refuses a double
+//   submit).
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -57,6 +74,90 @@ type SaveState =
 /** How far a thumb must travel before a drag counts as "skip this one". */
 const SWIPE_THRESHOLD_PX = 64;
 
+// ── THE SITTING, WRITTEN DOWN ───────────────────────────────────────────────
+//
+// One key per Rulebook, in this browser. It holds only what is already on the
+// Expert's screen — the dealt cards, where she is in them, and what each
+// answer came back with. Nothing here is a source of truth: the rules live on
+// the Rulebook and the answers live in their own durable runs. This exists so
+// that closing a tab, a phone sleeping, or a refresh mid-round does not erase
+// the evidence that the sitting happened.
+const SITTING_KEY_PREFIX = "matrx.masterwork.triad.sitting.v1:";
+/** A sitting older than this is not offered back — it is a stale board, not a
+ *  session someone is still in. */
+const SITTING_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+interface StoredSitting {
+  savedAt: number;
+  deck: TriadDeck;
+  mode: TriadMode | null;
+  index: number;
+  saveStates: Record<string, SaveState>;
+  cardsAnswered: number;
+  skipped: number;
+  rulesThisSitting: number;
+  seenPrompts: string[];
+}
+
+export function readSitting(rulebookId: string): StoredSitting | null {
+  try {
+    const raw = window.localStorage.getItem(SITTING_KEY_PREFIX + rulebookId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredSitting;
+    if (!parsed?.deck?.triads?.length) return null;
+    if (!Number.isFinite(parsed.savedAt)) return null;
+    if (Date.now() - parsed.savedAt > SITTING_MAX_AGE_MS) return null;
+    return parsed;
+  } catch {
+    // A browser that refuses storage is allowed to; the game still plays, it
+    // just cannot be picked up again. It is never a reason to fail to deal.
+    return null;
+  }
+}
+
+export function writeSitting(rulebookId: string, sitting: StoredSitting): void {
+  try {
+    window.localStorage.setItem(
+      SITTING_KEY_PREFIX + rulebookId,
+      JSON.stringify(sitting),
+    );
+  } catch {
+    /* storage refused — see readSitting */
+  }
+}
+
+export function clearSitting(rulebookId: string): void {
+  try {
+    window.localStorage.removeItem(SITTING_KEY_PREFIX + rulebookId);
+  } catch {
+    /* storage refused — see readSitting */
+  }
+}
+
+/** What a picked-up sitting says for itself, in the Expert's own terms.
+ *  Pure so the sentence can be tested without a browser. */
+export function describeResumedSitting(sitting: {
+  index: number;
+  deck: { triads: unknown[] };
+  cardsAnswered: number;
+  inFlight: number;
+}): string {
+  const total = sitting.deck.triads.length;
+  const where =
+    sitting.index >= total
+      ? "You had reached the end of the cards we dealt you"
+      : `You were on card ${sitting.index + 1} of ${total}`;
+  const answered =
+    sitting.cardsAnswered > 0
+      ? `, after answering ${sitting.cardsAnswered}`
+      : "";
+  const flight =
+    sitting.inFlight > 0
+      ? ` ${sitting.inFlight === 1 ? "One answer was" : `${sitting.inFlight} answers were`} still being turned into rules when you left — that work carried on without you, so check your Rulebook rather than playing those cards again.`
+      : "";
+  return `${where}${answered}. Picked up where you left off.${flight}`;
+}
+
 export function TriadGamePage({
   rulebookId,
   rulebookName,
@@ -69,25 +170,93 @@ export function TriadGamePage({
 }) {
   const store = useAppStore();
 
-  const [deck, setDeck] = useState<TriadDeck | null>(null);
+  // THE SITTING IS READ BACK BEFORE THE FIRST PAINT, so a reload never shows
+  // "Deal me in" over a round that is still on the board. Lazy initialisers, so
+  // storage is touched once and never during SSR.
+  const restored = useRef<ReturnType<typeof readSitting>>(null);
+  if (restored.current === null && typeof window !== "undefined") {
+    restored.current = readSitting(rulebookId);
+  }
+  const saved = restored.current;
+
+  const [deck, setDeck] = useState<TriadDeck | null>(saved?.deck ?? null);
   const [dealing, setDealing] = useState(false);
   const [dealError, setDealError] = useState<string | null>(null);
-  const [mode, setMode] = useState<TriadMode | null>(null);
-  const [index, setIndex] = useState(0);
+  const [mode, setMode] = useState<TriadMode | null>(saved?.mode ?? null);
+  const [index, setIndex] = useState(saved?.index ?? 0);
   const [pick, setPick] = useState<Triad["items"][number]["key"] | null>(null);
   const [reason, setReason] = useState("");
-  const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
-  const [rulesThisSitting, setRulesThisSitting] = useState(0);
-  const [cardsAnswered, setCardsAnswered] = useState(0);
-  const [skipped, setSkipped] = useState(0);
+  const [saveStates, setSaveStates] = useState<Record<string, SaveState>>(
+    // A card that was mid-save when the page went away cannot be reported as
+    // "saved" — this browser never heard the answer. It is reported as what it
+    // is, with the true remedy: the work carried on server-side.
+    () =>
+      Object.fromEntries(
+        Object.entries(saved?.saveStates ?? {}).map(([id, state]) => [
+          id,
+          state.kind === "saving"
+            ? ({
+                kind: "saved",
+                added: 0,
+                unverified: 0,
+                alreadyPlayed: false,
+              } as SaveState)
+            : state,
+        ]),
+      ),
+  );
+  const [rulesThisSitting, setRulesThisSitting] = useState(
+    saved?.rulesThisSitting ?? 0,
+  );
+  const [cardsAnswered, setCardsAnswered] = useState(saved?.cardsAnswered ?? 0);
+  const [skipped, setSkipped] = useState(saved?.skipped ?? 0);
+  /** The sentence a picked-up sitting says for itself. Null on a fresh one. */
+  const [resumedNote] = useState<string | null>(() =>
+    saved
+      ? describeResumedSitting({
+          index: saved.index,
+          deck: saved.deck,
+          cardsAnswered: saved.cardsAnswered,
+          inFlight: Object.values(saved.saveStates).filter(
+            (state) => state.kind === "saving",
+          ).length,
+        })
+      : null,
+  );
   /** Every prompt shown this sitting — what stops the game repeating itself. */
-  const seenPrompts = useRef<string[]>([]);
+  const seenPrompts = useRef<string[]>(saved?.seenPrompts ?? []);
   const dragStart = useRef<number | null>(null);
   const [dragX, setDragX] = useState(0);
 
   const card: Triad | null = deck?.triads[index] ?? null;
   const copy = MODE_COPY[card?.mode ?? deck?.mode ?? "best_one"];
   const remaining = deck ? deck.triads.length - index : 0;
+
+  // Written on every change that matters, never on keystrokes in the reason
+  // box — the draft answer is not evidence, the answered card is.
+  useEffect(() => {
+    if (!deck) return;
+    writeSitting(rulebookId, {
+      savedAt: Date.now(),
+      deck,
+      mode,
+      index,
+      saveStates,
+      cardsAnswered,
+      skipped,
+      rulesThisSitting,
+      seenPrompts: seenPrompts.current,
+    });
+  }, [
+    rulebookId,
+    deck,
+    mode,
+    index,
+    saveStates,
+    cardsAnswered,
+    skipped,
+    rulesThisSitting,
+  ]);
 
   const deal = useCallback(
     async (nextMode?: TriadMode) => {
@@ -373,6 +542,14 @@ export function TriadGamePage({
           fold with NO way to reach them — a forced choice you cannot answer.
           The card body scrolls; the progress line and the footer do not. */}
       <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-4 sm:px-6">
+        {/* A PICKED-UP SITTING SAYS SO. Restoring the board silently would be
+            its own lie — the Expert has to know this is the round she was on,
+            and whether an answer she gave was still in the air when she left. */}
+        {resumedNote ? (
+          <p className="mb-3 shrink-0 rounded-lg border border-violet-500/40 bg-violet-500/5 p-3 text-sm text-violet-700 dark:text-violet-300">
+            {resumedNote}
+          </p>
+        ) : null}
         {/* Where you are, and what the last card did. Both are facts, so both
             are on screen — a progress bar that hides the save state is the
             screen telling half the truth. */}

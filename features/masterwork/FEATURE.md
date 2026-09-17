@@ -441,6 +441,34 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-16 (later) — **THE TRIAD GAME NEVER ERASES A SITTING, AND THE PROBE'S
+  COUNTER NEVER GOES BACKWARDS** (fourth cold walk, findings 2 and 3).
+  *Triad:* the whole sitting — deck, index, answered cards, what each answer
+  returned — lived in React state and nowhere else. Reproduced live: two cards
+  answered, "Save and next" succeeded both times, a reload landed back on "Deal
+  me in" with no card state and no banner; the rules DID land about a minute
+  later (the server detaches on disconnect), so the only conclusion the screen
+  supported was "nothing saved" and the natural next move was to replay the same
+  cards. The sitting is now written to this browser as it is played and picked
+  up on the next load, saying so — including that an answer still in flight when
+  you left carried on without you. The server half gives each answer a durable
+  run row before the paid call (aidream `/masterworks/ingest-triad` and
+  `/masterworks/ingest-sort`, the only two rule-writing lanes that had none),
+  which is also what restores the source claim that refuses a double submit.
+  Verified live on brand-new Rulebook `5d8f9b4f`: reload → "Card 3 of 10" with
+  the resume sentence, 2 `triad` runs `completed`, 2 triad-sourced rules, both
+  carrying a `run_id`. Guard:
+  `__tests__/an-answered-triad-card-survives-a-reload.test.tsx`.
+  *Probe:* rule 3 ("never invent the count") came back one press later.
+  `run.launch` wipes `run.result` synchronously before the network call, so from
+  the press of Send until the next result lands the counter fell back to
+  `rounds.length` — 1 on any restored mount. Reproduced live: a probe restored
+  at "Round 2 of 5" read "Round 1 of 5" over round 2's own memo the instant Send
+  was pressed. `serverRound` remembers the last index the server reported, so
+  the number can only move forward. Verified live on brand-new Rulebook
+  `c60885c6`: same sequence, the label stays "Round 2 of 5". Guard: the new case
+  in `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx`.
+
 - `2026-09-17` — 🚨 **The probe stopped inventing the round number.** Found on the live
   surface while verifying the restore fix below: the counter read `rounds.length`, which is
   the number of rounds THIS MOUNT has seen, so a person who came back to round 3 of their

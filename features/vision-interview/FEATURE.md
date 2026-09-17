@@ -225,6 +225,25 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- 2026-09-16 (later) — **A FINISH IS ONE REQUEST, AND `start` IS GONE** (fourth
+  cold walk, finding 4: the same defect a third time, on a brand-new session,
+  against the commits the entry below certified). `useInterviewRun.finish`
+  branched on the run phase — send `done` to a parked run, otherwise START one
+  and send `done` when it hands back — and a run's first act is a complete
+  interview round. The walk-3 fix was verified against a session already parked
+  on a human turn, the ONE branch that never runs a round; every fresh v3 room
+  has no run at all, because the interview happens in the per-role chat tabs.
+  `finish` now POSTs `/vision-interview/sessions/{id}/finish` (aidream
+  `services/vision_interview/finalize.py`) from every phase, `start` is removed
+  from the hook rather than hidden, and a deliverable that did not land is named
+  in a toast with the remedy instead of showing "not written yet" forever.
+  Verified live on brand-new session `2c4bbf69`: pressed once, finalized five
+  seconds later, all three documents written. Guard:
+  `__tests__/a-finish-needs-no-run.test.tsx` — it asserts what `finish` SENDS
+  in every phase, which is what `a-finish-click-finishes.test.tsx` structurally
+  could not (it mounts the dialog with a mocked `onFinish`, so it can only ever
+  prove the dialog presses the button it was handed).
+
 - **2026-09-16** — **The room is usable on a phone (jobs-bar-2026-09-16, item
   19).** At 390px the centre panel opened with six expert tabs wrapped over
   three rows — a third of the screen before one word of the conversation — the
