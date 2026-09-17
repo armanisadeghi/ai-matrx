@@ -104,11 +104,22 @@ export function CloudBrowserBody({
   // Before there is a browser, the Live area says what is happening instead
   // of showing empty faces. `startFailed` wins over `starting` because a failed
   // load is finished (the slice clears `loading` when it records an error).
-  const startFailed = !cb.run && !!cb.error;
-  const starting = !cb.run && !cb.error;
+  const runFailed = cb.run?.state === "failed" || cb.run?.state === "failed_persistence";
+  const startError = cb.error ?? (runFailed ? {
+    message: cb.run?.errorDetailSafe || "Your cloud browser could not finish starting.",
+    retryable: true,
+    requestId: null,
+  } : null);
+  const startFailed = !!startError || runFailed;
+  const starting = cb.run?.state === "provisioning" || (!cb.run && !startError);
+  const runReady = !!cb.run
+    && cb.run.state !== "provisioning"
+    && cb.run.state !== "stopping"
+    && !runFailed
+    && cb.run.state !== "stopped";
 
   // The media face the primary pane shows.
-  const face: FaceTab = isMeDriving
+  const face: FaceTab = isMeDriving && runReady
     ? "takeover"
     : shots.active
       ? "screenshots"
@@ -156,7 +167,7 @@ export function CloudBrowserBody({
   // rather than silently disconnecting that tab.
   const autoOpenedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!isMeDriving || !cb.run || ticket || connecting) return;
+    if (!isMeDriving || !runReady || !cb.run || ticket || connecting) return;
     const key = `${cb.run.id}:${controller?.controlRevision ?? 0}`;
     if (autoOpenedFor.current === key) return;
     autoOpenedFor.current = key;
@@ -168,6 +179,7 @@ export function CloudBrowserBody({
     connecting,
     controller?.controlRevision,
     openStream,
+    runReady,
   ]);
 
   /** The claim itself — control plane + control stream. WHEN it runs is the
@@ -317,7 +329,7 @@ export function CloudBrowserBody({
           // A person may always take the wheel of a LIVE browser — the server
           // raises the `user_requested` handoff itself. Never gated on the
           // agent having asked for a person.
-          canTake={!!cb.run}
+          canTake={runReady}
           waitingForAgent={takeover.waiting}
           onTakeImmediately={takeover.takeOverImmediately}
           busy={busy || takeover.phase === "claiming"}
@@ -372,9 +384,9 @@ export function CloudBrowserBody({
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-              {startFailed && cb.error ? (
+              {startFailed && startError ? (
                 <CloudBrowserStartFailed
-                  error={cb.error}
+                  error={startError}
                   retrying={cb.loading}
                   onRetry={() => void cb.retry()}
                 />

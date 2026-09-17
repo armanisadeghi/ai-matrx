@@ -194,6 +194,12 @@ had one browser forever.
 - **Try again is `retry`, never `reload`.** `reload` needs an `activeProfileId`, which a
   first load that failed never set — wired to it, the button silently does nothing
   (`useCloudBrowser.startFailure.test.tsx` pins that `reload` is inert there).
+- **A provisioning run is the durable start receipt.** `useCloudBrowser` polls only its
+  exact `(profileId, runId)` through `loadSnapshot`, never starts a replacement. Polls
+  pause while hidden, resume on visibility, ignore a prior selection's completion, and
+  stop at a terminal state. A definitive 403/404 is shown immediately; other failures
+  remain retryable for the 25-minute placement and activation budget. Takeover and live
+  streaming are unavailable until the run is ready.
 - A user may hold any number of browsers; exactly one of them is the default. Never
   render a stored-profile ceiling — there isn't one (D-28).
 - Default face is written progress; a live-run block never sits at the top of a page.
@@ -249,6 +255,13 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-09-17 — queued fleet starts stay attached to their durable run.** A
+  `provisioning` response no longer looked idle while written-progress waited for events.
+  The hook rehydrates its named run without overlapping or stale-selection reads, and the
+  panel keeps its honest starting or terminal-failure face until the worker is ready.
+  Guard: `useCloudBrowser.startFailure.test.tsx` covers exact-run polling, hidden-tab
+  resumption, and a changed selected browser while the prior request is in flight.
 
 - **2026-09-17 — stream control keeps its organization context.** The claim and
   renewal transport had bypassed `requestRaw`, omitting `X-Organization-Id` and

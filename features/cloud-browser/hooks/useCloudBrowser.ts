@@ -113,6 +113,82 @@ export function useCloudBrowser(
   // Stops on unmount, on a terminal run, and while the tab is hidden.
   const { refreshProgress } = useWrittenProgress(run?.id ?? null, run?.state ?? null);
 
+  // A fleet-backed start now returns its durable run while the worker is still
+  // provisioning. Written-progress only reads action events, so it cannot
+  // discover this transition. Rehydrate the *named* run instead: that path is
+  // RLS-bound, cannot auto-start a profile, and carries its final failure back
+  // to the visible panel. The in-flight flag belongs to this exact run's
+  // effect: an old request must never hold up the browser selected after it.
+  useEffect(() => {
+    if (run?.state !== "provisioning" || !activeProfileId || run.profileId !== activeProfileId) return;
+    const runId = run.id;
+    const profileId = activeProfileId;
+    let disposed = false;
+    let inFlight = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const deadline = Date.now() + 25 * 60_000;
+
+    const expire = (message: string) => {
+      dispatch(setError({ message, retryable: true, requestId: null }));
+    };
+
+    const schedule = () => {
+      if (!disposed && timer === null) {
+        timer = setTimeout(() => {
+          // A visibility change can now immediately resume the exact poll.
+          timer = null;
+          void poll();
+        }, 2000);
+      }
+    };
+    const poll = async () => {
+      if (disposed || inFlight) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      inFlight = true;
+      try {
+        const snapshot = await service.loadSnapshot(profileId, runId);
+        if (disposed || snapshot.activeProfileId !== profileId || snapshot.run?.id !== runId)
+          return;
+        dispatch(hydrateSnapshot(snapshot));
+        if (snapshot.run.state === "provisioning") {
+          if (Date.now() >= deadline) {
+            expire("Your cloud browser did not finish starting. Please try again.");
+          } else {
+            schedule();
+          }
+        }
+      } catch (error) {
+        if (disposed) return;
+        // Fleet placement can outlast an HTTP request. Keep the durable run
+        // visible and retry its exact RLS read until it reaches a terminal state.
+        if (error instanceof BackendApiError && (error.status === 403 || error.status === 404)) {
+          dispatch(setError(toLoadError(error)));
+        } else if (Date.now() >= deadline) {
+          expire("Your cloud browser could no longer be checked while it was starting. Please try again.");
+        } else {
+          schedule();
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+    const onVisibility = () => {
+      if (disposed || typeof document === "undefined" || document.hidden) return;
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      void poll();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
+    void poll();
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [activeProfileId, dispatch, run?.id, run?.state]);
+
   const selectProfile = useCallback(
     (profileId: string) => {
       dispatch(setActiveProfile(profileId));

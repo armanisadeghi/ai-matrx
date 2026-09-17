@@ -73,6 +73,17 @@ const liveSnapshot = {
   notificationAcknowledgedAt: null,
 };
 
+const provisioningSnapshot = {
+  ...liveSnapshot,
+  run: { ...liveSnapshot.run, state: "provisioning" },
+};
+
+const secondLiveSnapshot = {
+  ...liveSnapshot,
+  activeProfileId: "prof-2",
+  run: { id: "run-2", profileId: "prof-2", state: "agent_control" },
+};
+
 describe("useCloudBrowser — a failed start", () => {
   beforeEach(() => {
     mockLoadSnapshot.mockReset();
@@ -132,6 +143,72 @@ describe("useCloudBrowser — a failed start", () => {
     expect(mockLoadSnapshot).toHaveBeenCalledTimes(2);
     expect(h.current.error).toBeNull();
     expect(h.current.run?.id).toBe("run-1");
+    await h.unmount();
+  });
+
+  it("rehydrates the exact provisioning run until it is ready without starting another", async () => {
+    let finishPoll: ((value: typeof liveSnapshot) => void) | null = null;
+    mockLoadSnapshot
+      .mockResolvedValueOnce(provisioningSnapshot)
+      .mockImplementationOnce(() => new Promise((resolve) => { finishPoll = resolve; }));
+    const h = await renderHook(() => useCloudBrowser());
+    await settle(h, (v) => v.run?.state === "provisioning", "the durable queued run");
+    await settle(h, () => mockLoadSnapshot.mock.calls.length === 2, "the exact-run poll");
+
+    expect(mockLoadSnapshot.mock.calls[1]).toEqual(["prof-1", "run-1"]);
+    await h.act(() => finishPoll?.(liveSnapshot));
+    await settle(h, (v) => v.run?.state === "agent_control", "the ready run");
+    expect(mockLoadSnapshot).toHaveBeenCalledTimes(2);
+    await h.unmount();
+  });
+
+  it("resumes an exact queued-run poll when a hidden panel becomes visible", async () => {
+    const originalHidden = Object.getOwnPropertyDescriptor(document, "hidden");
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    let finishPoll: ((value: typeof liveSnapshot) => void) | null = null;
+    mockLoadSnapshot
+      .mockResolvedValueOnce(provisioningSnapshot)
+      .mockImplementationOnce(() => new Promise((resolve) => { finishPoll = resolve; }));
+    const h = await renderHook(() => useCloudBrowser());
+    try {
+      await settle(h, (v) => v.run?.state === "provisioning", "the queued run while hidden");
+      expect(mockLoadSnapshot).toHaveBeenCalledTimes(1);
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      await h.act(() => document.dispatchEvent(new Event("visibilitychange")));
+      await settle(h, () => mockLoadSnapshot.mock.calls.length === 2, "the resumed exact-run poll");
+      expect(mockLoadSnapshot.mock.calls[1]).toEqual(["prof-1", "run-1"]);
+
+      await h.act(() => finishPoll?.(liveSnapshot));
+      await settle(h, (v) => v.run?.state === "agent_control", "the resumed ready run");
+    } finally {
+      if (originalHidden) Object.defineProperty(document, "hidden", originalHidden);
+      else delete (document as { hidden?: boolean }).hidden;
+      await h.unmount();
+    }
+  });
+
+  it("ignores an old in-flight poll after selecting another browser", async () => {
+    let finishOldPoll: ((value: typeof liveSnapshot) => void) | null = null;
+    mockLoadSnapshot
+      .mockResolvedValueOnce(provisioningSnapshot)
+      .mockImplementationOnce(() => new Promise((resolve) => { finishOldPoll = resolve; }))
+      .mockResolvedValueOnce(secondLiveSnapshot);
+    const h = await renderHook(() => useCloudBrowser());
+    await settle(h, (v) => v.run?.state === "provisioning", "the first queued run");
+    await settle(h, () => mockLoadSnapshot.mock.calls.length === 2, "the first poll in flight");
+
+    await h.act(() => h.current.selectProfile("prof-2"));
+    await settle(h, (v) => v.run?.id === "run-2", "the newly selected run");
+    await h.act(() => finishOldPoll?.(liveSnapshot));
+
+    expect(h.current.activeProfileId).toBe("prof-2");
+    expect(h.current.run?.id).toBe("run-2");
+    expect(mockLoadSnapshot.mock.calls).toEqual([
+      ["", undefined],
+      ["prof-1", "run-1"],
+      ["prof-2", undefined],
+    ]);
     await h.unmount();
   });
 });

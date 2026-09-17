@@ -533,6 +533,14 @@ async function displayNameFor(userId: string): Promise<string> {
  * here instead, by sharing the promise.
  */
 const startRunInFlight = new Map<string, Promise<string>>();
+// Keep the initiating admitted organization and activation key together until
+// the server acknowledges the start. A dropped POST is ambiguous: retrying it
+// under a newly selected organization or a fresh key would no longer be the
+// same durable activation.
+const startRunAttempts = new Map<string, {
+  activationKey: string;
+  organizationId: string;
+}>();
 
 async function startRun(profileId?: string): Promise<string> {
   const key = profileId || "__personal_default__";
@@ -540,12 +548,24 @@ async function startRun(profileId?: string): Promise<string> {
   if (existing) return existing;
 
   const attempt = (async () => {
+    let start = startRunAttempts.get(key);
+    if (!start) {
+      await waitForOrganizationAdmission();
+      start = {
+        activationKey: crypto.randomUUID(),
+        organizationId: requireOrganizationContext(peekSelectedOrganizationId()),
+      };
+      startRunAttempts.set(key, start);
+    }
     const { data } = await postJson<unknown>("/browser-manager/runs", {
       profile_id: profileId || null,
       mode: "handoff_capable",
       execution_target: "browser_fleet",
-      activation_key: crypto.randomUUID(),
-    });
+      activation_key: start.activationKey,
+    }, { organizationId: start.organizationId });
+    // A response is the durable receipt. Only now is a future start allowed to
+    // mint a new activation key and snapshot a newly admitted organization.
+    startRunAttempts.delete(key);
     return requiredText(record(record(data).run).run_id, "run id");
   })();
 
@@ -661,6 +681,11 @@ export async function loadSnapshot(
     : { data: null, error: null };
   if (pinnedRunResult.error) throw pinnedRunResult.error;
   const pinnedRun = pinnedRunResult.data;
+  // A caller that names a run is reconnecting to that exact durable activation.
+  // Never fall through to default-profile creation when it is no longer visible:
+  // a stale queued-start poll must not conjure a different browser.
+  if (requestedRunId && !pinnedRun)
+    throw new Error("That Cloud Browser run is no longer available.");
   let profiles = await listProfiles();
   let selected =
     profiles.find((item) => item.id === pinnedRun?.profile_id) ??
@@ -671,18 +696,17 @@ export async function loadSnapshot(
   // id — re-deriving it below would start a SECOND browser and 503 against the
   // one we just made (the fleet admits exactly one).
   let openedRunId: string | null = null;
-  if (!selected) {
+  if (!selected && !requestedRunId) {
     openedRunId = await startRun();
     profiles = await listProfiles();
     selected = profiles.find((item) => item.isPersonalDefault) ?? profiles[0];
   }
   if (!selected)
     throw new Error("Cloud Browser could not create your browser profile.");
-  const pinnedRunIsLive =
-    pinnedRun !== null &&
-    LIVE_STATES.some((state) => state === pinnedRun.state);
   const runQuery = requestedRunId
-    ? { data: pinnedRunIsLive ? [pinnedRun] : [], error: null }
+    // The queued-start poll must observe its own terminal result too. The
+    // handoff-only loader above deliberately remains live-only.
+    ? { data: pinnedRun ? [pinnedRun] : [], error: null }
     : await supabase
         .schema("browser")
         .from("run")
