@@ -15,6 +15,36 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D332 — `EntityRef` and `EntityDoorControls` disagree about the peek door, and two peek keys point at nothing (2026-09-17)
+
+**Status:** open · **Priority:** P2 · **Repo:** matrx-frontend
+
+`EntityRef.tsx`'s own header says both door components call `resolveEntityDoors`, "so a registry
+edit lights up both at once and neither can drift". For the PEEK they do not:
+`EntityDoorControls` asks `resolveEntityDoors(...).canPeek`, which is
+`hasPeek(peekKind) || hasRegistryPeek(info)`; `EntityRef` asks only
+`hasPeek(canonicalToken)`. So every token that has NO bespoke peek but does have a
+`titleColumn` — `seo_keyword`, `crm_deal`, `folder`, `working_document`, ~40 of them — gets the
+generic `RegistryPeek` door from one component and nothing from the other, which is the
+component almost every surface actually renders. (Measured with
+`ENTITY_TYPE_METADATA`: `seo_keyword` → `seo.keyword`, `titleColumn: "phrase"`.)
+
+Second half, in the same file: `doors.ts`'s `PEEK_KEY_BY_TOKEN` still maps `app` → `agent_app`
+and `structured_list` → `picklist`, but `PEEK_REGISTRY` was re-keyed to the canonical tokens
+(`app`, `structured_list`) and `agent_app` is not a registered entity token at all. So
+`EntityDoorControls` for an `app` offers "Quick look" (via `hasRegistryPeek`), hands
+`ResourcePeekHost` the kind `agent_app`, finds no component and no entity info, and renders
+NOTHING — a door that opens on nothing, which the doctrine ranks worse than no door.
+
+**Fix:** delete both `PEEK_KEY_BY_TOKEN` entries (the map's own comment says the real fix is
+aligning the keys, and they are aligned now), then make `EntityRef` read `canPeek`/`peekKind`
+from `resolveEntityDoors` like its sibling. **Why not done here (F-40):** flipping `EntityRef`
+turns the peek control on for ~40 tokens on every surface in the app at once — a change whose
+value is per-kind (is `RegistryPeek` a useful answer for a keyword?) and which no test in this
+tree can see; `entity-ref-doors.test.tsx` currently ASSERTS the opposite for `seo_keyword`
+("no route and no peek"). It wants one owner, a browser, and a pass over what the generic peek
+shows per kind.
+
 ### D330 — An expression index on an RLS table is UNUSABLE by every client read: `->>` is not leakproof (2026-09-17)
 
 **Status:** open · **Priority:** P1 for the one live victim (the coding-session Files tab 500s) · **Repo:** matrx-frontend + DB

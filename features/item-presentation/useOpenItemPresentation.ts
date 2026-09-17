@@ -126,6 +126,10 @@ export function useOpenItemPresentation() {
         case "document":
         case "message":
         case "email":
+        // An EXISTING Person: the Detail primitive IS its in-place presentation
+        // (F-40). The only party window, `CrmCreatePartyWindow`, creates a NEW
+        // record — never route an existing one there.
+        case "party":
           return openGenericDetail();
         default:
           return openGenericDetail();

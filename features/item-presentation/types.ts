@@ -40,7 +40,11 @@ export type KnownItemType =
   | "document"
   | "conversation"
   | "message"
-  | "email";
+  | "email"
+  // An existing Person (or company) in the CRM — `crm.party`. The CREATE form is
+  // a different window; this is the record that already exists, which had no
+  // in-place presentation of any kind before F-40.
+  | "party";
 
 export type ItemType = KnownItemType | (string & {});
 

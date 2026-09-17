@@ -31,6 +31,7 @@ import QuizPeek from "./kinds/QuizPeek";
 import SandboxPeek from "./kinds/SandboxPeek";
 import ProjectPeek from "./kinds/ProjectPeek";
 import OrganizationPeek from "./kinds/OrganizationPeek";
+import PartyPeek from "./kinds/PartyPeek";
 import type { PeekProps } from "./types";
 import { PEEK_KINDS } from "./kinds-list";
 
@@ -58,6 +59,9 @@ export const PEEK_REGISTRY: Record<
   sandbox_instance: SandboxPeek,
   project: ProjectPeek,
   organization: OrganizationPeek,
+  // crm.party — an EXISTING Person (or company). F-40: the token had no peek,
+  // so every surface naming a Person could only send the reader away.
+  party: PartyPeek,
   // Add new kinds here as their peek components land.
 };
 

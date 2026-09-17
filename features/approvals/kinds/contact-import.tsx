@@ -226,15 +226,16 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
                  * the platform's ONE entity door, never a second one.
                  * Bugbot round 20 (comment 4042104821): this card also
                  * mounts inside a window panel, where a plain click that
-                 * navigates the current tab loses the queue underneath it.
-                 * `party` has no registered peek and no existing-Person
-                 * window opener (`hasPeek("party")` is false; the only
-                 * party window opener, `CrmCreatePartyWindow`, creates a
-                 * NEW record, not this one) — `openInNewTab` is the
-                 * in-place door `EntityRef` genuinely offers for this
-                 * token, and its own doc names exactly this surface class
-                 * ("a side panel, a workspace rail, a sheet"). Never a
-                 * hand-rolled `target`. */}
+                 * navigates the current tab loses the queue underneath it,
+                 * so the NAME opens in a new tab — `EntityRef`'s own doc
+                 * names exactly this surface class ("a side panel, a
+                 * workspace rail, a sheet"). Never a hand-rolled `target`.
+                 * F-40: the Person now also has an IN-PLACE door with
+                 * nothing to add here — `party` carries a peek and the ONE
+                 * Detail primitive registration, so the Quick look beside
+                 * each name answers "which Dana is this?" without leaving
+                 * the queue at all. The window/docked dossier and
+                 * `/detail/party/<id>` come from that same registration. */}
                 <EntityRef
                   token="party"
                   id={candidate.personId}
@@ -299,9 +300,9 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
            * contacts import panel already uses (`token: "party"`,
            * `/crm/{id}`), never a name with nowhere to go. Bugbot round 20
            * (comment 4042104821): `openInNewTab` — see the ambiguous list
-           * above for why: no peek is registered for `party` and no
-           * window opener names an EXISTING Person, so this is the
-           * in-place door `EntityRef` actually offers here. */}
+           * above for why the NAME must not navigate this tab. F-40 added
+           * the in-place door beside it (the `party` peek + the Detail
+           * primitive registration), which needs nothing from this card. */}
           {personId ? (
             <EntityRef
               token="party"

@@ -1047,6 +1047,26 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- 2026-09-17 — **F-40: an existing Person opens IN PLACE.** `crm.party` had no
+  in-place presentation at all: `hasPeek("party")` was false and the only party
+  window (`CrmCreatePartyWindow`) creates a NEW record, so every surface that
+  names a Person — the approvals queue's contact-import card, the outreach
+  dialogs, the PR/backlink prospect tables, the CRM inbox — could only send the
+  reader to `/crm/<id>` (lane F-36 under Bugbot round 20, PR 228: a reviewer had
+  to leave the queue to find out who a proposal was about). Two registrations,
+  no new Person renderer: `features/organizations/peek/kinds/PartyPeek.tsx`
+  (registered in `peek/registry.ts` + `kinds-list.ts`) reads the canonical
+  `fetchPartyDetail` and answers "which Dana is this?" with the employer line,
+  the contact values and their reachability, inside the shared `PeekDialog`; and
+  a `party` entry in `features/item-presentation/registry.tsx` — THE Detail
+  primitive type map — so the Person also shows as a window (the default), a
+  docked panel or `/detail/party/<id>`. The 360° workspace stays
+  `PartyRecordPage` at `/crm/<id>` and the detail's own doors reach it.
+  ~23 hand-built `/crm/<id>` links (dedup cards, `EmploymentCard`,
+  `GoogleContactsImportPanel`, `TopicExperts`, the inbox/chasebox dialogs) still
+  name a Person with a plain `Link` and therefore have no peek — they are
+  EntityRef-adoption debt, not registry debt.
+
 - 2026-09-17 — **F-37: the client adopted the reviewed-send spine and STOPPED
   writing the sent record.** The server now gates every recipient, sends, and
   writes the `crm.interaction` row, its association edges and the

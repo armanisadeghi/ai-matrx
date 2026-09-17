@@ -34,6 +34,7 @@ import {
   MessageSquare,
   Mail,
   BrainCircuit,
+  Contact,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -127,7 +128,8 @@ export type ItemOpenKind =
   | { kind: "document" }
   | { kind: "conversation" }
   | { kind: "message" }
-  | { kind: "email" };
+  | { kind: "email" }
+  | { kind: "party" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers
@@ -686,6 +688,61 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
           ].filter(Boolean) as EnrichedItem["details"],
         }),
         "communication",
+      ),
+  },
+  // 🚨 F-40 — AN EXISTING PERSON OPENS IN PLACE. `crm.party` is THE record for
+  // an external person (and, by `party_kind`, a company). Every surface that
+  // names one — the approvals queue's contact-import card, the outreach dialogs,
+  // the PR/backlink prospect tables, the CRM inbox — draws it as an `EntityRef`
+  // on the `party` token, and the token had NO in-place presentation: no peek was
+  // registered, and the only party window CREATES a record. So the reviewer of a
+  // contact-import proposal had to leave the queue to find out who it was about
+  // (lane F-36, Bugbot round 20 on PR 228).
+  //
+  // This entry is the whole fix: it is THE type map the Detail primitive reads,
+  // so the Person now shows as a window (the default), a docked panel or
+  // `/detail/party/<id>` from ONE registration, with no bespoke Person panel
+  // anywhere. The full 360° workspace stays at `/crm/<id>` and the detail's own
+  // doors reach it.
+  //
+  // LABEL CAVEAT: `crm.party` holds companies too, and a registration's label is
+  // per TYPE, not per row, so a company record's type chip also reads "Person".
+  // Its `Kind` field says otherwise on the card and the detail's own `Party Kind`
+  // field says it in the dossier. A per-row label would need `label(row)` in
+  // `lib/detail`'s `DetailRecordType`, which is the package's contract, not ours.
+  party: {
+    type: "party",
+    label: "Person",
+    icon: Contact,
+    accent: {
+      text: "text-teal-600 dark:text-teal-400",
+      bg: "bg-teal-500/10",
+      ring: "ring-teal-500/20",
+    },
+    open: { kind: "party" },
+    detailSource: { table: "party", schemaName: "crm", titleField: "display_name" },
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "party",
+        id,
+        "display_name, party_kind, job_title, headline, primary_domain",
+        (r) => ({
+          name: clip(r.display_name, 80),
+          about: clip(r.job_title, 120) ?? clip(r.headline),
+          details: [
+            r.party_kind
+              ? {
+                  label: "Kind",
+                  value: r.party_kind === "person" ? "Person" : "Company",
+                }
+              : null,
+            r.primary_domain
+              ? { label: "Domain", value: String(r.primary_domain) }
+              : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "crm",
       ),
   },
 };

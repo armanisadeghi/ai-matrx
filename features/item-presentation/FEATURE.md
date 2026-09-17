@@ -63,6 +63,16 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 - **`canOpen` does NOT gate on `notFound`** (`ItemPresentationBlock.tsx`) — deliberate; see flow 3.
 - **Reconstruct as a ```json fence** on DB round-trip — the XML-wrapper default would corrupt the block.
 - **Every recognized type is now clickable.** Bespoke windows: `agent` (run window — now seeded with the known name so the title shows instantly), `note`, `file`/`image`/`video`/`audio`, `picklist`. All others open the Detail primitive. To upgrade a type to a bespoke window later, add a branch above the generic cases in `useOpenItemPresentation` — nothing else changes.
+- **An existing Person (`party`) is a registered type (F-40).** `crm.party` is the
+  ONE record for an external person or company, and it had no in-place
+  presentation of any kind: no peek, and the only party window CREATES a record.
+  The entry here is the whole fix — window / docked / `/detail/party/<id>` from
+  this one registration, never a bespoke Person panel. The 360° workspace stays
+  `/crm/<id>`. Its label is "Person" for the whole type, so a COMPANY party's type
+  chip also reads "Person" (its `Kind` field and the dossier's `Party Kind` say
+  otherwise); a per-row label would need `label(row)` in `lib/detail`'s
+  `DetailRecordType`. The peek that goes with it lives in
+  `features/organizations/peek/kinds/PartyPeek.tsx`.
 - **`detailSource` is the only thing the Detail primitive needs.** A type with `detailSource: { table, titleField }` gets a full-record view in all three presentations; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See FOUND_DEFECTS D8. The file kinds carry `FILE_DETAIL_SOURCE` (`files.files`) even though their click-through stays the preview window, so a file opened AS A RECORD shows its row.
 - **This registry IS the Detail primitive's type map** (chair ruling 2026-09-17) — never a second registry; `detail.tsx` adapts entries, it does not list them.
 - **Dynamic-table Supabase queries must use `string` variables, never literals.** `supabase.from("literal")` / `.select("*")` resolve the entire schema union and blow TS instantiation depth. `detail.tsx`'s loader and `registry.fetchRow` both pass `string` variables to stay generic.
@@ -91,6 +101,22 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 ---
 
 ## Change log
+
+- 2026-09-17 — **`party` — an existing Person — is registered, so the queue keeps
+  its reader.** The approvals contact-import card names the matched Person and
+  every ambiguous candidate through `EntityRef token="party"`, and the token had
+  no in-place door (lane F-36 under Bugbot round 20, PR 228): `hasPeek("party")`
+  was false, no window opener names an EXISTING Person, so
+  `resolveItemDetailType("party")` resolved the neutral fallback (`load === null`)
+  and every presentation showed the honest absent state for a record that is
+  fully stored. Added: the `party` registry entry (label "Person", `Contact` icon,
+  `crm.party` / `display_name` detailSource, an `enrich` giving the card the job
+  title + kind + domain) and the `party` branch in `useOpenItemPresentation`
+  (generic detail — never the CREATE window). Red-then-green:
+  `__tests__/a-person-opens-in-place.test.tsx` (registration, the loader, the
+  title from `display_name`, the record in all three presentations) and
+  `components/official/entity-ref/__tests__/person-door.test.tsx` (the Quick look
+  beside a Person's name, including the `openInNewTab` shape the card uses).
 
 - 2026-09-17 — **`ItemDetailWindow` → the Detail primitive.** The generic window and its opener are deleted; `detail.tsx` (`resolveItemDetailType`) + `ItemDetailFrame.tsx` carry the identical body behind `lib/detail`'s contract, so every non-bespoke type opens as a window (default), a docked side panel or a page per `ui.detail.default_presentation`, with `[`/`]` list navigation, deep links (`?panels=detail:<type>.<id>:as-…`) and the associations + history sections. `file`/`image`/`video`/`audio` gained `FILE_DETAIL_SOURCE`.
 - 2026-09-11 — **`conversation` is a first-class item type.** The reference chip's "Open conversation" silently no-oped (no registry entry → fallback config with no `open`). New entry (Chat label, `chat.conversation` detailSource) + `ItemOpenKind` `conversation` branch: resolves `initial_agent_id` then opens the floating Chat window on that conversation; lookup failure is a loud toast.
