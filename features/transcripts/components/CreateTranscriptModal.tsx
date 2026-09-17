@@ -53,6 +53,11 @@ import {
   TRANSCRIPT_RECORDING_CANARY,
 } from "../qa/deterministicRecordingCanary";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  confirmTranscriptionSpend,
+  probeAudioDurationSeconds,
+} from "@/features/audio/transcriptionSpendGate";
+import { overDurationMessage, uploadLimits } from "@/features/audio/limits";
 
 interface CreateTranscriptModalProps {
   isOpen: boolean;
@@ -212,6 +217,36 @@ export function CreateTranscriptModal({
       // Download the audio we just uploaded to send to Groq
       const audioData = await downloadAudioBlob(uploadResult.fileId);
 
+      // The same expensive-click gate as the upload lane: a long recording
+      // costs real money to transcribe, and the person sees length, estimated
+      // cost and estimated time before a cent is spent. The audio is already
+      // saved, so declining loses nothing — it stays a draft-able recording.
+      const { proceed } = await confirmTranscriptionSpend({
+        durationSeconds: duration > 0 ? duration : null,
+        filename: recordingTitle,
+      });
+      if (!proceed) {
+        // Declining must never cost the recording. Save it as a draft with no
+        // transcript; the audio is already in cloud files and the person can
+        // transcribe it later from the transcript itself.
+        const draft = await saveDraftTranscript({
+          title: recordingTitle,
+          description,
+          segments: [],
+          folder_name: folder,
+          source_type: "audio",
+          tags: [],
+          metadata: { duration },
+          audio_file_path: uploadResult.fileId,
+        });
+        setTranscriptSegments([]);
+        setDraftTranscriptId(draft.id);
+        await refreshTranscripts();
+        setStep("preview");
+        toast.success("Recording saved. Transcription was not started.");
+        return;
+      }
+
       const result = await transcribe(audioData);
 
       if (!result.success || !result.text) {
@@ -365,14 +400,39 @@ export function CreateTranscriptModal({
         throw new Error("No fileId or URL available");
       }
 
-      // 2. Transcribe
+      // 2. THE EXPENSIVE-CLICK GATE. Transcription bills by the hour of audio,
+      //    so a 9-hour audiobook that starts the moment it finishes uploading
+      //    is a silent spend. Measure it, check it against the uploaded-audio
+      //    length ceiling (a knob), then show length + estimated cost +
+      //    estimated time and let the person decide.
+      const durationSeconds = await probeAudioDurationSeconds(audioBlob);
+      const { maxDurationSeconds } = await uploadLimits();
+      if (
+        durationSeconds !== null &&
+        maxDurationSeconds.resolved &&
+        durationSeconds > maxDurationSeconds.value
+      ) {
+        throw new Error(
+          overDurationMessage(durationSeconds, maxDurationSeconds.value, "upload"),
+        );
+      }
+      const { proceed } = await confirmTranscriptionSpend({
+        durationSeconds,
+        filename: uploadedFile.details?.filename,
+      });
+      if (!proceed) {
+        setStep("details");
+        return;
+      }
+
+      // 3. Transcribe
       const result = await transcribe(audioBlob);
 
       if (!result.success || !result.text) {
         throw new Error(result.error || "Transcription failed to produce text");
       }
 
-      // 3. Save to DB
+      // 4. Save to DB
       await createTranscript({
         title: title.trim() || "Untitled Transcript",
         description: description.trim(),

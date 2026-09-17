@@ -40,6 +40,21 @@ describe("saveAudioToStorage retry capture boundary", () => {
     expect(warn).toHaveBeenCalledWith(
       "Upload attempt 1 failed; retrying: Upload failed — check your connection.",
     );
-    expect(error).not.toHaveBeenCalled();
+    // The point of this test is that the RETRY path does not re-emit the
+    // transport failure as a console.error (the universal file transport
+    // already captures it as a structured failure; a second emission would
+    // double-count it as a system_error).
+    //
+    // Narrowed 2026-09-17: the size ceiling now resolves through the settings
+    // ladder (`features/audio/limits.ts`), and in a unit test with no signed-in
+    // organization that read legitimately announces itself on console.error —
+    // "the ceiling is NOT being applied" is exactly the scream the knob system
+    // owes us, and silencing it would be the silent-failure this whole change
+    // exists to end. Those announcements are excluded by name; any OTHER
+    // console.error still fails the test.
+    const unexpected = error.mock.calls.filter(
+      (call) => !String(call[0]).startsWith("[audio/limits]"),
+    );
+    expect(unexpected).toEqual([]);
   });
 });

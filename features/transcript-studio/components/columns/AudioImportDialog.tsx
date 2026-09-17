@@ -42,6 +42,11 @@ import {
   transcribeAudioUrl,
   transcribeCloudFile,
 } from "@/features/audio/services/speechApi";
+import {
+  confirmTranscriptionSpend,
+  probeAudioDurationSeconds,
+} from "@/features/audio/transcriptionSpendGate";
+import { overDurationMessage, uploadLimits } from "@/features/audio/limits";
 import { rawSegmentsAppended } from "../../redux/slice";
 import { insertRawSegment } from "../../service/studioService";
 import type { RawSegment } from "../../types";
@@ -175,6 +180,31 @@ export function AudioImportDialog({
     if (!file || !userId) return;
     try {
       setBusy(true);
+      // THE EXPENSIVE-CLICK GATE, before a byte is uploaded: measure the file,
+      // refuse it honestly if it is past the uploaded-audio length ceiling
+      // (a knob, `media.transcription.upload_max_duration_seconds`), then show
+      // length + estimated cost + estimated time and let the person decide.
+      setProgressLabel("Checking this file…");
+      const durationSeconds = await probeAudioDurationSeconds(file);
+      const { maxDurationSeconds } = await uploadLimits();
+      if (
+        durationSeconds !== null &&
+        maxDurationSeconds.resolved &&
+        durationSeconds > maxDurationSeconds.value
+      ) {
+        throw new Error(
+          overDurationMessage(durationSeconds, maxDurationSeconds.value, "upload"),
+        );
+      }
+      const { proceed } = await confirmTranscriptionSpend({
+        durationSeconds,
+        filename: file.name,
+      });
+      if (!proceed) {
+        setBusy(false);
+        setProgressLabel(null);
+        return;
+      }
       setProgressLabel("Uploading audio…");
       // Imported audio is a file the user deliberately chose, so it stays a
       // visible user file (no `origin: "transcripts"` tag, not relocated/hidden)
@@ -210,6 +240,18 @@ export function AudioImportDialog({
     if (!trimmed) return;
     try {
       setBusy(true);
+      // A remote URL cannot be measured from here, so the gate always asks and
+      // says plainly that the length could not be measured — never a silent
+      // spend on a file of unknown size.
+      const { proceed } = await confirmTranscriptionSpend({
+        durationSeconds: null,
+        filename: trimmed,
+      });
+      if (!proceed) {
+        setBusy(false);
+        setProgressLabel(null);
+        return;
+      }
       setProgressLabel("Transcribing…");
       const data = await transcribeAudioUrl(trimmed);
       const count = await ingestSegments(data.segments ?? [], data.text ?? "");
