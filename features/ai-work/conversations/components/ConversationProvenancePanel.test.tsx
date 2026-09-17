@@ -27,6 +27,14 @@ const fetchBindings = jest.fn();
 jest.mock("@/features/agent-connections/coding-sessions/service", () => ({
   fetchCodingSessionBindings: (...args: unknown[]) => fetchBindings(...args),
 }));
+// Stubbed for the same reason as ContinueOnMyMacPanel below: it reaches the
+// aidream bridge and the user's own Mac, neither of which is this suite's
+// subject. Its own forcing tests live in `__tests__/CloudSyncTruthPanel.test.tsx`.
+jest.mock("./CloudSyncTruthPanel", () => ({
+  CloudSyncTruthPanel: ({ providerSessionId }: { providerSessionId: string }) => (
+    <div data-testid="cloud-sync-truth">{providerSessionId}</div>
+  ),
+}));
 jest.mock("./ContinueOnMyMacPanel", () => ({
   ContinueOnMyMacPanel: ({ providerSessionId }: { providerSessionId: string }) => (
     <div data-testid="continue-on-mac">{providerSessionId}</div>
@@ -148,6 +156,14 @@ async function render(bindings: CodingSessionBinding[]) {
     root.render(
       <ConversationProvenancePanel conversation={conversation()} />,
     );
+  });
+  // The panel DEFERS its binding read by one macrotask (`window.setTimeout(…,
+  // 0)` in its effect), so a microtask-only flush leaves every assertion here
+  // reading "Reading provider bindings…". That is how all 15 tests in this file
+  // were RED on `main` (14 of 15 failing, 2026-09-17) — every assertion ran
+  // against a loading state. Flush the timer as well.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
   return container.textContent ?? "";
 }
