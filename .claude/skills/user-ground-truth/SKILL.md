@@ -104,6 +104,29 @@ Cheap per run (a `quick` lane on the raw file is minutes); the judge that actual
 product costs more and is the one worth paying for. It is not a substitute for the working agent
 asking itself the three questions in the policy.
 
+## 4. Auditing something already in flight
+
+A project that has run for weeks across many sessions has the same disease in more places:
+his words paraphrased into a register, work built beside what existed, "done" reported as
+counts. The audit is the same three steps at project scale, and the concept is the same — the
+audit finds what its briefer does not know, or it is not an audit:
+
+1. One ground truth for the whole project: every session under the project's folder in
+   `~/.claude/projects/`, merged and filtered — `--since` for the period, `--grep "<a phrase only
+   he would have typed about it>"` to pick the sessions without reading any. Read the result
+   yourself once; it is short and it is his.
+2. A fresh summary beneath it (§2, his instruction verbatim).
+3. A fresh judge (§3) with his words, the summary, and the project's own claims (register,
+   handoff, status messages) — briefed with the situation and the result wanted, never a list of
+   suspected defects. It goes to the live product as him and to the live data, and reports in
+   his terms: what he asked for and where he would look for it; what is there; what was built
+   somewhere else, beside something that already existed, or not at all; what was reported done
+   that he cannot see. What the briefer already suspects is withheld and used as the test of the
+   report.
+
+The output for him is a page he can act on — what he will see, doing what he described — not
+the judge's transcript.
+
 ## Changelog
 - 2026-09-16 — Created after the Agent Change Impact failure: the owner's dictated vision was
   paraphrased at the first hop and four days of work landed where he does not look. Script,
