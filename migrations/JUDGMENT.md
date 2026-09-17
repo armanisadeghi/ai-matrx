@@ -88,6 +88,7 @@ direction a safety scan may fail in.
   `platform.knob_rung_lock`, `platform.entity_types` *(branch only, §3.3)*,
   `platform.entity_relationships`, `platform.client_callable_door`,
   `campaign_watch.build_lock`, `campaign_watch.go_signal_capture`
+- `INSERT INTO custom.<table>` — a data row in schema `custom`, under the four bounds in §4c
 - `ALTER DEFAULT PRIVILEGES … REVOKE`
 - `REVOKE`, only under a proven `-- allows: revoke <schema>`
 - `COMMENT ON`
@@ -125,6 +126,42 @@ SECURITY`, `NO FORCE ROW LEVEL SECURITY`, `ALTER TABLE … DISABLE TRIGGER`, `AL
 `ALTER DEFAULT PRIVILEGES … GRANT`, `ALTER FUNCTION … SECURITY DEFINER`. `GRANT` is
 deliberately **not** on it. `-- additive: yes` and `-- guard:` are **not** required here: they
 are the campaign's contract, and demanding them of every repo migration buys nothing.
+
+### 4c. The CUSTOM-DATA INSERT
+
+`INSERT INTO custom.<table>` is an enumerated additive shape at **both** targets, and is
+accepted only when **all four** of these hold. Any one of them missing is `not-additive`,
+with the statement quoted.
+
+1. **The schema is exactly `custom`, written plainly.** No quoting anywhere in the
+   reference, so `"custom.record"` (one identifier, in whatever schema `search_path`
+   picks) and `"Custom".record` (a different schema — quoting keeps the capital) are
+   refused; `customx.<table>` is refused; `custom` as a TABLE name in another schema
+   (`platform.custom`) is refused. Never `platform`, `iam`, `public`, or any of the
+   eighteen protected schemas.
+2. **The file's guard is a `custom/…` knob** — `-- guard: custom/system_enabled` or
+   another key of that feature — plus `-- additive: yes`, which any header naming
+   production already requires. The claim that the row is unreachable IS that switch.
+3. **The row's source is `VALUES`, constants, or a `SELECT` that reads only `custom.*`.**
+   An `INSERT … SELECT` naming any relation outside `custom` is refused: it copies
+   customer data into the table whose entire safety argument is that it holds nothing yet.
+4. **`ON CONFLICT` may only be `DO NOTHING`.** `DO UPDATE` rewrites rows that are already
+   there, which is an `UPDATE`.
+
+`UPDATE` and `DELETE` on `custom.*` are **not** on the allow-list and stay refused at
+production; an inverse is a chair step. Nothing else about `custom` is loosened —
+`select platform.create_entity_table(…)` and `INSERT INTO platform.entity_types` at
+production are refused exactly as before.
+
+Why this shape is additive in the judgement's own sense: schema `custom` is created by
+this campaign, revoked from `PUBLIC`, `anon`, `authenticated` and `service_role` (default
+privileges included), absent from `pgrst.db_schemas`, and guarded by
+`custom/system_enabled` — so a row written there is reachable by no client, and the file's
+stored inverse removes it.
+
+**It announces itself.** Both runners print the accepted statements, exactly as a used
+`-- allows: revoke` exemption is printed, and `--judge-only` carries their count
+(`custom_inserts`) so the two runners must agree on it too.
 
 ## 5. `-- chair-step:` — the header-less route, and the only unattended-proof escape
 
@@ -217,8 +254,11 @@ The corpus compares codes; the prose is for the human at 3 a.m. and may differ.
 
 A fixture with no `-- expect:` line fails the check — a fixture with no expectation is a fixture
 nobody reviewed. The corpus covers every shape ATTACK-6 ran through the old blacklist, every
-ATTACK-7 case, both positive controls (an ordinary migration, and a full campaign file using
-every enumerated additive shape), and the command rules of §6 as flag cases the checkers invoke
+ATTACK-7 case, the custom-data INSERT's accepted forms and every near miss §4c names
+(`customx`, a quoted `"custom.record"`, `"Custom".record`, `platform.custom`, a SELECT out of a
+live schema, an upsert, and `UPDATE`/`DELETE` on `custom.*`), both positive controls (an
+ordinary migration, and a full campaign file using every enumerated additive shape), and the
+command rules of §6 as flag cases the checkers invoke
 for real. **These files are never applied to anything**: LOCATION refuses the directory at every
 target in both runners.
 

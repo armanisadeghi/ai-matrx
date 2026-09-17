@@ -75,6 +75,7 @@ interface Verdict {
   chair_step?: boolean;
   excused?: number;
   revoke_exemption?: string | null;
+  custom_inserts?: number;
   detail?: string;
 }
 
@@ -83,7 +84,8 @@ function shape(v: Verdict): string {
   if (v.verdict === "refuse") return `refuse:${v.code}`;
   return (
     `accept guard=${v.guard ?? "-"} chair_step=${v.chair_step ? "yes" : "no"} ` +
-    `excused=${v.excused ?? 0} revoke=${v.revoke_exemption ?? "-"}`
+    `excused=${v.excused ?? 0} revoke=${v.revoke_exemption ?? "-"} ` +
+    `custom_inserts=${v.custom_inserts ?? 0}`
   );
 }
 
