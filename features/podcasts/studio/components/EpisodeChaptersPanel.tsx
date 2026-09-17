@@ -150,7 +150,7 @@ export function EpisodeChaptersPanel({
       const adjustment = chapterTimingAdjustmentNotice(
         next,
         persisted,
-        saved.duration_seconds,
+        saved.audioMetadataDurationSeconds,
       );
       toast.success(
         adjustment ?? `Chapter markers updated (${persisted.length}).`,
@@ -158,6 +158,12 @@ export function EpisodeChaptersPanel({
     },
     [episode, busy],
   );
+
+  // Keep a surface-written list visible through an unsuccessful regeneration.
+  // Only a newly persisted canonical list may replace the READ twin.
+  const regenerate = useCallback(async () => {
+    if (await generate()) setWritten(null);
+  }, [generate]);
 
   useSurfaceWriteHandlers(PODCAST_RUN_SURFACE_NAME, {
     episode_chapters: applyChapters,
@@ -178,7 +184,7 @@ export function EpisodeChaptersPanel({
           variant={hasChapters ? "ghost" : "default"}
           className="gap-1.5"
           disabled={busy || !episode || noScript}
-          onClick={() => void generate()}
+          onClick={() => void regenerate()}
         >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

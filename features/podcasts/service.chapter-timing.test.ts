@@ -56,7 +56,9 @@ describe("podcastService.saveEpisodeChapters timing boundary", () => {
   });
 
   it("persists playable markers and an int4-safe duration from exact audio metadata", async () => {
-    jest.spyOn(podcastService, "fetchEpisodeById").mockResolvedValue(episode);
+    const fetchEpisode = jest
+      .spyOn(podcastService, "fetchEpisodeById")
+      .mockResolvedValue(episode);
     jest
       .spyOn(chapterTiming, "resolveAudioMetadataDuration")
       .mockResolvedValue(10.410958);
@@ -73,7 +75,7 @@ describe("podcastService.saveEpisodeChapters timing boundary", () => {
       error: null,
     });
 
-    await podcastService.saveEpisodeChapters(episode.id, requested);
+    const saved = await podcastService.saveEpisodeChapters(episode.id, requested);
 
     expect(mockUpdate).toHaveBeenCalledWith({
       chapters: [
@@ -83,5 +85,17 @@ describe("podcastService.saveEpisodeChapters timing boundary", () => {
       ],
       duration_seconds: 10,
     });
+    expect(saved.audioMetadataDurationSeconds).toBe(10.410958);
+    expect(fetchEpisode).toHaveBeenCalledWith(episode.id, { throwOnError: true });
+  });
+
+  it("preserves a chapter-read failure instead of misreporting the episode as absent", async () => {
+    jest
+      .spyOn(podcastService, "fetchEpisodeById")
+      .mockRejectedValue(new Error("RLS denied chapter read"));
+
+    await expect(
+      podcastService.saveEpisodeChapters(episode.id, requested),
+    ).rejects.toThrow("RLS denied chapter read");
   });
 });

@@ -52,8 +52,9 @@ export interface UseEpisodeChapters {
   chapters: PcEpisodeChapter[] | null;
   busy: boolean;
   error: string | null;
-  /** Run the chapter agent against the episode script and save the result. */
-  generate: () => Promise<void>;
+  /** Run the chapter agent against the episode script and save the result.
+   * Resolves true only after the new canonical list is persisted. */
+  generate: () => Promise<boolean>;
 }
 
 export function useEpisodeChapters(
@@ -84,7 +85,7 @@ export function useEpisodeChapters(
   const generate = useCallback(async () => {
     if (!episode || !episode.script?.trim()) {
       toast.error("This episode has no script to segment.");
-      return;
+      return false;
     }
     setBusy(true);
     setError(null);
@@ -128,11 +129,12 @@ export function useEpisodeChapters(
       const adjustment = chapterTimingAdjustmentNotice(
         list,
         persisted,
-        saved.duration_seconds,
+        saved.audioMetadataDurationSeconds,
       );
       toast.success(
         adjustment ?? `Generated ${persisted.length} chapters.`,
       );
+      return true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
@@ -140,6 +142,7 @@ export function useEpisodeChapters(
       // The window deliberately STAYS OPEN on failure: it holds the partial
       // stream and the error, which is the only place the user can see what
       // actually went wrong.
+      return false;
     } finally {
       setBusy(false);
     }

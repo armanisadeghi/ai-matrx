@@ -28,6 +28,12 @@ export const TOPIC_IDEA_BANK_KEY = "topic_ideas";
 /** How many past batches a show keeps. */
 const TOPIC_IDEA_BANK_CAP = 20;
 
+/** Chapter-save response keeps the exact measured media duration out of the
+ * integer database column while making user-facing disclosure truthful. */
+export type SavedEpisodeChapters = PcEpisode & {
+  audioMetadataDurationSeconds: number;
+};
+
 /** One banked batch, exactly as the generator produced it. */
 export interface TopicIdeaBatch {
   batch: Json;
@@ -222,14 +228,20 @@ export const podcastService = {
     return mapPcShowRow(data);
   },
 
-  async fetchEpisodeById(id: string): Promise<PcEpisodeWithShow | null> {
+  async fetchEpisodeById(
+    id: string,
+    options?: { throwOnError?: boolean },
+  ): Promise<PcEpisodeWithShow | null> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .is("deleted_at", null)
       .eq("id", id)
       .single();
-    if (error) return null;
+    if (error) {
+      if (options?.throwOnError && error.code !== "PGRST116") throw error;
+      return null;
+    }
     return mapPcEpisodeWithShowRow(data);
   },
 
@@ -297,8 +309,8 @@ export const podcastService = {
   async saveEpisodeChapters(
     id: string,
     chapters: PcEpisodeChapter[],
-  ): Promise<PcEpisode> {
-    const episode = await this.fetchEpisodeById(id);
+  ): Promise<SavedEpisodeChapters> {
+    const episode = await this.fetchEpisodeById(id, { throwOnError: true });
     if (!episode) {
       throw new Error("Episode not found; chapter markers were not saved.");
     }
@@ -314,7 +326,10 @@ export const podcastService = {
       .select()
       .single();
     if (error) throw error;
-    return mapPcEpisodeRow(data);
+    return {
+      ...mapPcEpisodeRow(data),
+      audioMetadataDurationSeconds: durationSeconds,
+    };
   },
 
   async removeEpisode(id: string): Promise<void> {
