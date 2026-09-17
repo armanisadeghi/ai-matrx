@@ -10,7 +10,16 @@
 
 export type MediaAdapter = "youtube" | "podcast_rss" | "drive_folder";
 export type LibraryKind = "channel" | "playlist";
-export type LibraryVisibility = "private" | "internal" | "shared" | "public";
+/**
+ * THE PLATFORM'S OWN ENUM SPELLING, and it is not the one that reads naturally.
+ * API-CONTRACT §3 (corrected in 0.2.0): `personal` (mine) · `internal` (my org)
+ * · `link` (anyone with the link) · `public` (world). This file said
+ * `private`/`shared` until 2026-09-17, so every create sent
+ * `visibility: "private"` and the server refused the whole request —
+ * "Input should be 'personal', 'internal', 'link' or 'public'" — which nobody
+ * saw because an organization error fired one call earlier.
+ */
+export type LibraryVisibility = "personal" | "internal" | "link" | "public";
 export type LibrarySyncStatus = "never_synced" | "syncing" | "idle" | "failed";
 
 export type MediaKind = "long" | "short" | "live" | "unknown";

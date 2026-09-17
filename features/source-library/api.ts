@@ -112,6 +112,45 @@ function unwrap<T>(result: { data?: unknown; error?: ApiCallError }): T {
     return result.data as T;
 }
 
+/**
+ * 🚨 THE SERVER WRAPS A SINGLE LIBRARY AND THE CONTRACT SAYS IT DOES NOT.
+ *
+ * `API-CONTRACT.md` §3 publishes "200 → Library row" for both
+ * `POST /media/libraries` and `GET /media/libraries/{id}`. The running server
+ * (build e09d986, 2026-09-17) returns `{"library": {…}, "resolved": {…}}` and
+ * `{"library": {…}}` instead. Reading the envelope as the row is silent and
+ * total: `library.id` is `undefined`, so the paste box navigates to
+ * `/libraries/undefined`; `library.name` is `undefined`, so the header sits in
+ * a skeleton forever and the failed-catalogue sentence on the row is never
+ * rendered because the row never arrives. Reality is the referee, so this
+ * accepts what the server actually sends AND the shape the contract promises —
+ * whichever lands, the caller gets a row. The discrepancy is reported to the
+ * server lane; this function is what stops it mattering.
+ */
+function asLibraryRow(payload: unknown): LibraryRow {
+    if (payload && typeof payload === "object" && "library" in payload) {
+        const inner = (payload as { library: unknown }).library;
+        if (inner && typeof inner === "object") return normalizeVisibility(inner as LibraryRow);
+    }
+    return normalizeVisibility(payload as LibraryRow);
+}
+
+/**
+ * The server sends a PYTHON REPR for this field: `"Visibility.INTERNAL"`, not
+ * `"internal"` — `str()` on an enum member rather than its `.value` (aidream
+ * `api/routers/media_catalog.py`, `_library_row`). Every lane tab therefore
+ * counts zero while rows sit in the table. Reported to the server lane; until
+ * the wire is fixed this reads either spelling, because a Library that renders
+ * in the wrong lane is better than one that renders in none.
+ */
+export function normalizeVisibility<T extends { visibility?: unknown }>(row: T): T {
+    const raw = row?.visibility;
+    if (typeof raw !== "string") return row;
+    const tail = raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw;
+    const normalized = tail.toLowerCase();
+    return normalized === raw ? row : { ...row, visibility: normalized };
+}
+
 // ───────────────────────────────────────────────────────────── §2 resolve ──
 
 export async function resolveMediaInput(
@@ -156,7 +195,7 @@ export async function createLibrary(
                 adapter: input.adapter ?? null,
                 name: input.name ?? null,
                 description: input.description ?? null,
-                visibility: input.visibility ?? "private",
+                visibility: input.visibility ?? "personal",
                 // THE ORGANIZATION IS THE TRANSPORT'S, NOT THIS SCREEN'S.
                 // `callApi` resolves the active organization once and binds it
                 // to the body and the `X-Organization-Id` header together, so a
@@ -174,7 +213,7 @@ export async function createLibrary(
             connectTimeoutMs: 30_000,
         }),
     );
-    return unwrap<LibraryRow>(result);
+    return asLibraryRow(unwrap<unknown>(result));
 }
 
 export interface LibraryListQuery {
@@ -203,7 +242,11 @@ export async function listLibraries(
             queryParams: params,
         }),
     );
-    return unwrap<LibraryListResponse>(result);
+    const response = unwrap<LibraryListResponse>(result);
+    return {
+        ...response,
+        libraries: (response.libraries ?? []).map(normalizeVisibility),
+    };
 }
 
 export async function getLibrary(
@@ -218,7 +261,7 @@ export async function getLibrary(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<LibraryRow>(result);
+    return asLibraryRow(unwrap<unknown>(result));
 }
 
 export async function updateLibrary(
@@ -240,7 +283,7 @@ export async function updateLibrary(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<LibraryRow>(result);
+    return asLibraryRow(unwrap<unknown>(result));
 }
 
 export async function deleteLibrary(

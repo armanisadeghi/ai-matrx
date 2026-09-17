@@ -166,20 +166,20 @@ export function createCatalogService(
                 });
                 return {
                     byKind: {
-                        media_kind: Object.entries(metrics.counts_by_kind)
+                        media_kind: Object.entries(metrics.counts_by_kind ?? {})
                             .filter(([, count]) => count > 0)
                             .map(([value, count]) => ({ value, count })),
                         has_captions: [
                             {
                                 value: "true",
-                                count: metrics.caption_coverage.with_captions,
+                                count: metrics.caption_coverage?.with_captions ?? 0,
                             },
                             {
                                 value: "false",
-                                count: metrics.caption_coverage.without_captions,
+                                count: metrics.caption_coverage?.without_captions ?? 0,
                             },
                         ].filter((option) => option.count > 0),
-                        transcript_status: Object.entries(metrics.transcripts)
+                        transcript_status: Object.entries(metrics.transcripts ?? {})
                             .filter(([, count]) => count > 0)
                             .map(([value, count]) => ({ value, count })),
                     },
