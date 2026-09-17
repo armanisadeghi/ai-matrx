@@ -2,13 +2,16 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-15`
+**Last updated:** `2026-09-17`
 
 ---
 
 ## Purpose
 
-The user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated, proven-connectable integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; unproven, local-only, and coming-soon Settings placeholders are deliberately excluded.
+**The connector primitive** — the generic card, consent dialog, per-capability
+health rows and settings panel that every provider is offered through, with
+Google as the first provider config (`common-docs/projects/google-native/PLAN.md`
+§2, §5.2, §5.3). Plus the user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated, proven-connectable integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; unproven, local-only, and coming-soon Settings placeholders are deliberately excluded.
 
 ---
 
@@ -18,8 +21,18 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 - `features/connectors/ConnectorStrip.tsx` — `<ConnectorStrip />`. Client, presentational, props-driven.
 - `features/connectors/ConnectorMark.tsx` — the ONE provider-artwork renderer. First-party connectors use local SVG marks; dynamic MCP connectors walk a provider-specific artwork chain (website favicon → known brand glyph → catalogue art → cached 128px favicon), with the catalogue brand color as the final failure fallback.
-- `features/connectors/DirectoryConnectorCards.tsx` — the directory presence for the first-party Google connectors, mounted on `/user-settings/integrations` (features/settings `IntegrationsSettingsPage`) between the GitHub card and the MCP catalog grid. Status from the Google connection inventory via `google-status.ts`; Docs/Sheets and Gmail connect through the floating Google connect window, Search Console doors to `/marketing/connections/google` (its OAuth lives there — never a wrong-scope popup).
-- `features/connectors/google-status.ts` — the ONE Google scope→connector mapping (`GOOGLE_CONNECTOR_SCOPES`, `googleConnectedIds`, `googleConnectionFor`). Both containers resolve through it; a scope mapping anywhere else is a fork.
+- `features/connectors/google-status.ts` — the ONE Google scope→product mapping, DERIVED from `provider-config.ts` since 2026-09-17 (`GOOGLE_PRODUCT_SCOPES`, plus the legacy `GOOGLE_CONNECTOR_SCOPES` projection for the registry ids). A scope mapping anywhere else is a fork.
+
+**The connector primitive** (generic; the provider is a config, never a component)
+
+- `features/connectors/provider-config.ts` — `ConnectorProviderConfig` + `GOOGLE_CONNECTOR_PROVIDER`. Nine Google product rows, two groups, one FINAL user-facing sentence each, each row's grant bundle, its server capability keys, and its attachable resource types. **Rollout state is not here** — it comes from the server catalog at request time (PLAN §2: it flips with no rebuild).
+- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`. Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` shapes every provider adapter reports in.
+- `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for, what is blocked and why) and `consentOutcomes` (per-row truth read back from the account after the exchange).
+- `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes) and `useGoogleConsentRunner` (one GIS window, one `/exchange`).
+- `features/connectors/ConnectorPromptCard.tsx` — the dismissible offer card, plus `shouldShowConnectorPrompt` (pure). `ConnectorPromptHost.tsx` is its wired form.
+- `features/connectors/ConnectorConsentDialog.tsx` — `ConnectorConsentBody` (the rows, toggles, scope disclosure, org switch, result view) and the `connectorConsentDialog` overlay around it.
+- `features/connectors/ConnectedAccountHealth.tsx` — the per-account, per-product health rows with Reconnect and Disconnect.
+- `features/connectors/ConnectorsSettingsPanel.tsx` — Settings → Connectors: the health cards plus the same consent body, and the only file in the panel path that names Google.
 - `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
 - `features/connectors/LiveIntegrationsList.tsx` — searchable, live-only provider list shared by the floating window. Every named provider has a real Connect, Configure, or Manage door.
 - `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
@@ -44,6 +57,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 **Routes**
 
+- `features/overlays/openers/connectorConsentDialog.tsx` — the ONE door to "Choose what to connect" (`useOpenConnectorConsentDialog`).
 - `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
 - `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
@@ -140,13 +154,19 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - **No provider list decides attachability.** `attachable` comes from the server, labels included, so a new attachable provider is a server change and no frontend change. The one provider-specific branch in the picker is GitHub's access door in the empty state, because GitHub is the only provider whose empty result has a fix the user can perform.
 - **Three states are never collapsed:** a read that FAILED is not "nothing attached"; a held pick is not "attached"; a pick that could not be carried over stays on screen with the server's own sentence.
 - **The read is gated on the capability existing.** No connection declaring `attachable` → nothing is fetched and nothing renders. This is what makes the frontend half safe to ship before the server half: an ungated read would put an amber warning in the header of every conversation on the platform about a feature nobody has. Guard: `__tests__/nothing-is-read-when-nothing-is-attachable.test.tsx`.
+- 🚨 **"CONNECTED" IS NEVER A BOOLEAN THAT LIES.** A product row may say Connected only when three things are true at once: the account can authorize a call, every scope that product needs is granted, and the SERVER says the capability is live for this caller. Each one is a separate state with its own sentence and its own single remedy. The failure this exists to beat is the one every surveyed connector product ships (PLAN §1, last row) and has a recorded instance here: on 2026-07-25 a Search Console sync failed while the row said `status = 'connected'` and the credential reference was gone. Guard: `__tests__/connected-is-never-a-boolean-that-lies.test.ts`.
+- 🚨 **ROLLOUT STATE IS THE SERVER'S, NEVER A CLIENT CONSTANT.** A row still behind our gate shows its sentence, no toggle, and "Turns on automatically when ready for your account", from `/api/google-integrations/capabilities` (`rollout_phase` + `eligible` + `admission_error`). `admission_error` is a CODE and is never shown — `google-adapter.ts` maps it to a sentence. A super admin sees `phase: "pending"` with `eligible: true` and CAN switch the row on; that combination is the internal-test lane and must keep working.
+- 🚨 **THE REQUEST ASKS FOR EXACTLY WHAT WAS SWITCHED ON, PLUS WHAT THE ACCOUNT ALREADY HOLDS.** Asking for more is how a production Google authorization was rejected outright (`lib/googleScopes.ts`, the `GOOGLE_OUTREACH_INBOX_SCOPES` header); asking for less is what the hub refuses as "this authorization would remove existing Google access" — and if it ever stopped refusing, a grant would be dropped and every picked file stranded. Guard: `__tests__/consent-asks-for-exactly-what-was-switched-on.test.ts`.
+- **The prompt card is a normal block ABOVE `ConnectorStrip`, never inside it.** The strip is one 16px line under a composer and its geometry is load-bearing; a card inside it would double the composer footprint on every surface that mounts it. The card is mounted by `NewChatGreeting` (the `/chat/new` screen) and by the settings panel — NOT by `SmartAgentInput`, because an account-wide offer under every composer on the platform is the exact defect `ChatConnectionsStrip` was built to end (2026-09-15).
+- **A per-product "last successful call" does not exist yet, and is not faked.** `users.integration_connections` carries ONE `last_verified_at` and ONE `last_error` for the whole account and no per-capability call log (verified live 2026-09-17). `health.ts` returns `lastSuccessAt: null` and the UI labels the two timestamps it does have as account-level.
+- **Which organizations an account serves is NOT a setting.** A personal connection has `organization_id` NULL and is reachable by its owner wherever they work; an organization-owned one is reachable by that organization's members, and the two resolve identically for the same provider login. The whole mechanism is the dialog's "Connect for <org>" switch (chair ruling, 2026-09-17) — never a served-organizations editor, which would be a second, weaker copy of the access rule.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
 ---
 
 ## Related features
 
-- Depends on: `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `features/window-panels`, `features/overlays`, `lib/coming-soon`, `components/ui/tooltip`.
+- Depends on: `features/marketing/google` (the inventory query, the capability catalog, the exchange, `diagnoseGoogleConnection`), `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `features/window-panels`, `features/overlays`, `lib/coming-soon`, `components/ui/tooltip`.
 - Depended on by: `ChatConnectorStrip` → `AgentConversationColumn` (the real chat composer); Settings also consumes the seeded first-party directory definitions.
 - Cross-links: `features/google-workspace/FEATURE.md`, `lib/coming-soon/FEATURE.md`, `features/agent-connections/FEATURE.md` (the agent-facing "what can this agent reach" hub — a different question from "what has this human attached").
 
@@ -170,6 +190,36 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **THE CONNECTOR PRIMITIVE, with Google as the first provider
+  config.** Google's ten approved products existed end to end — the OAuth hub,
+  the vault, the Picker, incremental per-product consent, a typed capability
+  catalog — and a person met none of it: Settings showed three status-only cards
+  and chat showed a rotating "you could connect these" line. This is the first
+  moment and the machinery under it, built generic because ~80 connectors follow
+  (`common-docs/projects/google-native/PLAN.md` §2, §5.2, §5.3): a provider
+  declares its products, sentences, grant bundles, capability keys and attachable
+  types in `provider-config.ts`, and the card, the "Choose what to connect"
+  dialog, the per-capability health rows and the settings panel render whatever
+  provider they are handed. `google-adapter.ts` is the only file in the primitive
+  that names Google. Beats the champion (the ChatGPT/Codex card and dialog) on
+  the thing it gets wrong — "connected" while returning nothing: a row says
+  Connected only when the credential works, every scope is granted and the server
+  says the capability is live, and every other combination has its own sentence
+  and its own Reconnect that asks for only the missing scope. `google-status.ts`
+  is now derived from the provider config, so the scope→product map exists once.
+  Retired `DirectoryConnectorCards.tsx`; its surface-scope contribution moved to
+  the panel under the same key. Settings reads "Connectors" in both navs (the id
+  and the route are untouched). Knobs seeded in
+  `migrations/connectors_knobs.sql`. Guards, each proven failing-then-passing:
+  `consent-asks-for-exactly-what-was-switched-on.test.ts`,
+  `connected-is-never-a-boolean-that-lies.test.ts`. **Pending server half:** the
+  one-button consent posts `connection_purpose: "google_products"` with
+  `capability_keys` to `/api/google-integrations/exchange`, which the deployed hub
+  does not accept yet (aidream lane U-P8). Until it does, pressing the button
+  reaches Google's consent screen and the exchange answers 422; the dialog says so
+  in its own words ("needs the newest AI Matrx server, which is still rolling
+  out. Nothing was changed") instead of showing a validation dump, and reads the
+  account back so a partial grant can never be invisible.
 - `2026-09-15` — **A connection you can choose things out of is not a
   connection you can only connect to.** Every chip in the composer rail and the
   Tools picker wore the same name-plus-state treatment, which is the whole

@@ -166,6 +166,26 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- `2026-09-17` — **Google is now the first PROVIDER CONFIG of the connector
+  primitive, not a set of Google-only surfaces.** The nine approved products, each
+  with its final one-sentence promise, its grant bundle and the server capability
+  keys it covers, are declared once in
+  [`features/connectors/provider-config.ts`](../connectors/provider-config.ts);
+  the card, the "Choose what to connect" dialog, the per-capability health rows
+  and Settings → Connectors are generic components that render whatever provider
+  they are handed, and `features/connectors/google-adapter.ts` is the only file in
+  that path allowed to name Google. It consumes what already existed here and in
+  `features/marketing/google` rather than duplicating it: the auth-gated inventory
+  query, `diagnoseGoogleConnection`, the typed capability catalog, the GIS code
+  client and `useConnectGoogle`. `connectGoogle` gained the `google_products`
+  connection purpose and a `capability_keys` option so one button can turn on
+  several products in one exchange (the aidream half is lane U-P8; until it is
+  deployed the dialog says so in plain words and changes nothing). Local mechanics
+  and the invariants: [`features/connectors/FEATURE.md`](../connectors/FEATURE.md).
+  The three status-only Google cards in Settings
+  (`features/connectors/DirectoryConnectorCards.tsx`) are deleted — the health
+  rows replace them. `GoogleWorkspaceConnectBody` is untouched and remains the
+  Docs/Sheets picker flow.
 - 2026-09-15: Added the shared Google overview and typed capability catalog to
   Settings and the singleton connect window. The inspector preserves exact
   account selection, keeps unavailable requested accounts explicit, and routes
