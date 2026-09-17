@@ -58237,6 +58237,45 @@ export type Database = {
         }
         Relationships: []
       }
+      _work_claim: {
+        Row: {
+          claim_key: string
+          created_at: string
+          detail: Json
+          expires_at: string
+          id: string
+          owner_task: string
+          result_ref: string | null
+          scope: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          claim_key: string
+          created_at?: string
+          detail?: Json
+          expires_at: string
+          id?: string
+          owner_task: string
+          result_ref?: string | null
+          scope: string
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          claim_key?: string
+          created_at?: string
+          detail?: Json
+          expires_at?: string
+          id?: string
+          owner_task?: string
+          result_ref?: string | null
+          scope?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           action: string
@@ -80974,6 +81013,8 @@ export type Database = {
           analysis_text: string | null
           availability_status: string
           canonical_url: string
+          caption_checked_at: string | null
+          caption_languages: string[] | null
           channel_id: string | null
           channel_subscriber_count: number | null
           channel_title: string | null
@@ -80989,9 +81030,14 @@ export type Database = {
           duration_seconds: number | null
           enrichment_state: Json
           first_discovered_at: string
+          has_captions: boolean | null
           id: string
           last_seen_at: string
           like_count: number | null
+          live_broadcast_content: string | null
+          media_kind: string | null
+          media_kind_checked_at: string | null
+          media_kind_signal: string | null
           metadata: Json
           metadata_fetched_at: string | null
           organization_id: string
@@ -81021,6 +81067,8 @@ export type Database = {
           analysis_text?: string | null
           availability_status?: string
           canonical_url: string
+          caption_checked_at?: string | null
+          caption_languages?: string[] | null
           channel_id?: string | null
           channel_subscriber_count?: number | null
           channel_title?: string | null
@@ -81036,9 +81084,14 @@ export type Database = {
           duration_seconds?: number | null
           enrichment_state?: Json
           first_discovered_at?: string
+          has_captions?: boolean | null
           id?: string
           last_seen_at?: string
           like_count?: number | null
+          live_broadcast_content?: string | null
+          media_kind?: string | null
+          media_kind_checked_at?: string | null
+          media_kind_signal?: string | null
           metadata?: Json
           metadata_fetched_at?: string | null
           organization_id: string
@@ -81068,6 +81121,8 @@ export type Database = {
           analysis_text?: string | null
           availability_status?: string
           canonical_url?: string
+          caption_checked_at?: string | null
+          caption_languages?: string[] | null
           channel_id?: string | null
           channel_subscriber_count?: number | null
           channel_title?: string | null
@@ -81083,9 +81138,14 @@ export type Database = {
           duration_seconds?: number | null
           enrichment_state?: Json
           first_discovered_at?: string
+          has_captions?: boolean | null
           id?: string
           last_seen_at?: string
           like_count?: number | null
+          live_broadcast_content?: string | null
+          media_kind?: string | null
+          media_kind_checked_at?: string | null
+          media_kind_signal?: string | null
           metadata?: Json
           metadata_fetched_at?: string | null
           organization_id?: string
@@ -89842,6 +89902,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _tm_rendition_of: {
+        Args: { p_site_id: string; p_url: string }
+        Returns: Json
+      }
       _tm_site: {
         Args: {
           p_denied: string
@@ -90422,6 +90486,13 @@ export type Database = {
         }[]
       }
       fn_page_intent_lock: { Args: { p_page_id: string }; Returns: string }
+      fn_page_intent_locks: {
+        Args: { p_page_ids: string[]; p_site_id: string }
+        Returns: {
+          held_by: string
+          page_id: string
+        }[]
+      }
       fn_page_intent_settled_since: {
         Args: { p_since: string; p_site_id: string }
         Returns: {
@@ -90459,6 +90530,15 @@ export type Database = {
         Args: { p_since: string; p_site_id: string }
         Returns: {
           mapped: number
+        }[]
+      }
+      fn_page_renditions: {
+        Args: { p_page_ids: string[]; p_site_id: string }
+        Returns: {
+          canonical_page_id: string
+          canonical_url: string
+          page_id: string
+          rendition_kind: string
         }[]
       }
       fn_reconcile_site_offering_facts: {
@@ -92616,6 +92696,7 @@ export type Database = {
           p_facet_key: string
           p_map_id: string
           p_slug: string
+          p_source: string
           p_value_slug: string
         }
         Returns: Json
@@ -92625,7 +92706,12 @@ export type Database = {
         Returns: Json
       }
       set_page_map_facet: {
-        Args: { p_facet_key: string; p_page_id: string; p_value_slug: string }
+        Args: {
+          p_facet_key: string
+          p_page_id: string
+          p_source: string
+          p_value_slug: string
+        }
         Returns: Json
       }
       set_page_map_topics: {
@@ -93239,6 +93325,10 @@ export type Database = {
           name: string
           slug: string
         }[]
+      }
+      withdraw_page_intents: {
+        Args: { p_page_ids: string[]; p_site_id: string; p_source: string }
+        Returns: Json
       }
       write_site_keyword_offering: {
         Args: {
