@@ -183,7 +183,7 @@ describe("the quiet window says what was and was not checked", () => {
       (caveat) => caveat.id === "flags-not-affirmed",
     );
     expect(note?.headline).toContain("Nothing was flagged");
-    expect(note?.detail).toContain("FIRST page");
+    expect(note?.detail).toContain("2026-09-17");
     // And it reaches the numbers it qualifies.
     expect(ids(disclosuresForTile(quiet, "sessions"))).toContain(
       "flags-not-affirmed",
@@ -198,6 +198,120 @@ describe("the quiet window says what was and was not checked", () => {
     // No collected day: the window has no numbers either, so a note about what
     // Google reported would be about nothing.
     expect(ga4Caveats({ days: [], usersAreSummed: false })).toEqual([]);
+  });
+});
+
+/**
+ * THE B-19 UPGRADE (2026-09-17): `subjectToThresholding`, `dataLossFromOtherRow`
+ * and `samplingMetadatas` are now ALWAYS present on a new row — `false`/`[]`
+ * means Google affirmed the window clean, an absent key means the row predates
+ * this change and was never captured. `report_date_range` + `captured_at` name
+ * the window a flag actually describes, replacing the per-day-row count.
+ */
+describe("the GA4 collection honesty upgrade (B-19)", () => {
+  /** A day whose report affirmed clean, explicitly. */
+  const affirmedCleanDay = {
+    date: "2026-09-17",
+    metadata: {
+      timeZone: "America/Los_Angeles",
+      currencyCode: "USD",
+      schemaRestrictionResponse: {},
+      subjectToThresholding: false,
+      dataLossFromOtherRow: false,
+      samplingMetadatas: [],
+      report_date_range: { start: "2026-08-21", end: "2026-09-17" },
+      captured_at: "2026-09-18T07:15:00Z",
+    },
+    hasOtherRow: false,
+  };
+
+  it("an explicit false/[]/false affirms the window clean — NO caveat on the totals", () => {
+    const caveats = ga4Caveats({
+      days: [affirmedCleanDay],
+      usersAreSummed: false,
+    });
+    expect(caveats).toEqual([]);
+  });
+
+  it("a day missing the keys entirely is honestly not-captured, never read as clean", () => {
+    const neverCapturedDay = {
+      date: "2026-09-10",
+      metadata: {
+        timeZone: "America/Los_Angeles",
+        currencyCode: "USD",
+        schemaRestrictionResponse: {},
+      },
+      hasOtherRow: false,
+    };
+    const caveats = ga4Caveats({
+      days: [neverCapturedDay],
+      usersAreSummed: false,
+    });
+    expect(ids(caveats)).toEqual(["flags-not-affirmed"]);
+  });
+
+  it("subjectToThresholding: true still raises the thresholding mark, even though the keys are all present", () => {
+    const flaggedDay = {
+      ...affirmedCleanDay,
+      metadata: { ...affirmedCleanDay.metadata, subjectToThresholding: true },
+    };
+    const caveats = ga4Caveats({ days: [flaggedDay], usersAreSummed: false });
+    expect(ids(caveats)).toEqual(["thresholding"]);
+    expect(caveats.find((c) => c.id === "thresholding")?.headline).not.toContain(
+      "flags-not-affirmed",
+    );
+  });
+
+  it(
+    "🚨 a window straddling the cutover is NOT fully affirmed just because ONE day was " +
+      "(the `.some()` bug: RED at HEAD before the fix, GREEN after)",
+    () => {
+      const neverCapturedDay = {
+        date: "2026-09-10",
+        metadata: {
+          timeZone: "America/Los_Angeles",
+          currencyCode: "USD",
+          schemaRestrictionResponse: {},
+        },
+        hasOtherRow: false,
+      };
+      const caveats = ga4Caveats({
+        days: [neverCapturedDay, affirmedCleanDay],
+        usersAreSummed: false,
+      });
+      // The old `.some()` gate saw ANY day (affirmedCleanDay) carrying the keys
+      // and suppressed this note for the WHOLE window — including the day that
+      // truly was never captured. Full-coverage is required now.
+      expect(ids(caveats)).toEqual(["flags-not-affirmed"]);
+    },
+  );
+
+  it("the thresholding headline names the REPORT window and capture instant, not a per-day count", () => {
+    const flaggedDay = {
+      ...affirmedCleanDay,
+      metadata: { ...affirmedCleanDay.metadata, subjectToThresholding: true },
+    };
+    const caveats = ga4Caveats({ days: [flaggedDay], usersAreSummed: false });
+    const headline = caveats.find((c) => c.id === "thresholding")?.headline ?? "";
+    expect(headline).toContain("Aug 21");
+    expect(headline).toContain("Sep 17");
+    expect(headline).toContain("captured Sep 18");
+    expect(headline).not.toContain("collected day");
+  });
+
+  it("falls back to the per-day count, named as a gap, when a flagged day carries no report window", () => {
+    const legacyFlaggedDay = {
+      date: "2026-09-05",
+      metadata: { subjectToThresholding: true },
+      hasOtherRow: false,
+    };
+    const caveats = ga4Caveats({
+      days: [legacyFlaggedDay],
+      usersAreSummed: false,
+    });
+    const headline = caveats.find((c) => c.id === "thresholding")?.headline ?? "";
+    expect(headline).toContain("the one collected day");
+    expect(headline).toContain("report window not recorded");
   });
 });
 

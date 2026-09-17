@@ -59,12 +59,66 @@ interface Ga4ReportMetadata {
   samplingMetadatas?: unknown;
   schemaRestrictionResponse?: unknown;
   emptyReason?: unknown;
+  /** NEW 2026-09-17 — the report window these flags actually describe. */
+  report_date_range?: unknown;
+  /** NEW 2026-09-17 — the RFC3339 UTC instant the report was captured. */
+  captured_at?: unknown;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+interface Ga4ReportWindow {
+  start: string;
+  end: string;
+}
+
+/** `{start, end}` as ISO date strings, or null when absent/malformed. */
+function asReportDateRange(value: unknown): Ga4ReportWindow | null {
+  const record = asRecord(value);
+  const start = record?.start;
+  const end = record?.end;
+  return typeof start === "string" && typeof end === "string"
+    ? { start, end }
+    : null;
+}
+
+/** "Sep 1–28" (same month) or "Sep 1 – Oct 3" (spans months), in UTC. */
+function formatMonthDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map((part) => Number(part));
+  return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1)).toLocaleDateString(
+    "en-US",
+    { month: "short", day: "numeric", timeZone: "UTC" },
+  );
+}
+
+function formatReportWindow(range: Ga4ReportWindow): string {
+  const startLabel = formatMonthDay(range.start);
+  if (range.start.slice(0, 7) === range.end.slice(0, 7)) {
+    return `${startLabel}–${Number(range.end.slice(8, 10))}`;
+  }
+  return `${startLabel} – ${formatMonthDay(range.end)}`;
+}
+
+/** "Sep 29 07:15 UTC" from an RFC3339 instant; the raw string if unparsable. */
+function formatCapturedAt(iso: string): string {
+  const instant = new Date(iso);
+  if (Number.isNaN(instant.getTime())) return iso;
+  const datePart = instant.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  const timePart = instant.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+    hourCycle: "h23",
+  });
+  return `${datePart} ${timePart} UTC`;
 }
 
 /** The persisted `extras.ga4_collection_metadata`, or null when absent. */
@@ -115,6 +169,46 @@ function dayCount(hits: number, total: number): string {
 }
 
 /**
+ * WHAT WINDOW A FLAG COVERS (2026-09-17, GA4 collection honesty metadata).
+ *
+ * The flags describe the whole REPORT, not one day, so "all N collected days"
+ * was never the true fact — it was the count of day-ROWS the flag happened to
+ * ride, not the window Google actually reported on. `report_date_range` +
+ * `captured_at` are the true fact when a matched day carries them; a day
+ * collected before 2026-09-17 never does, so the per-day count remains the
+ * honest fallback for it, named as such rather than silently reused as if it
+ * were the report window.
+ */
+function describeFlagWindow(
+  matchedDays: readonly Ga4DayMetadata[],
+  totalDays: number,
+): string {
+  const ranges = matchedDays
+    .map((day) => asReportDateRange(day.metadata?.report_date_range))
+    .filter((range): range is Ga4ReportWindow => range !== null);
+  if (ranges.length === 0) {
+    return `on ${dayCount(matchedDays.length, totalDays)} (report window not recorded)`;
+  }
+  const start = [...ranges].sort((a, b) => (a.start < b.start ? -1 : 1))[0]!
+    .start;
+  const end = [...ranges].sort((a, b) => (a.end > b.end ? -1 : 1))[0]!.end;
+  const capturedAts = matchedDays
+    .map((day) => day.metadata?.captured_at)
+    .filter((value): value is string => typeof value === "string")
+    .sort();
+  const capturedPhrase =
+    capturedAts.length > 0
+      ? `, captured ${formatCapturedAt(capturedAts[capturedAts.length - 1]!)}`
+      : "";
+  const unrecorded = matchedDays.length - ranges.length;
+  const gapPhrase =
+    unrecorded > 0
+      ? ` (window unknown for ${unrecorded} other day${unrecorded === 1 ? "" : "s"})`
+      : "";
+  return `for ${formatReportWindow({ start, end })}${capturedPhrase}${gapPhrase}`;
+}
+
+/**
  * Every caveat that is TRUE for this window, in the order a reader should meet
  * them. Never a placeholder: an absent flag produces no caveat — and every
  * caveat names HOW MANY days in the window carry it, because "some rows were
@@ -142,33 +236,49 @@ export function ga4Caveats(input: Ga4CaveatInput): AnalyticsCaveat[] {
     return Array.isArray(active) && active.length > 0;
   });
   if (thresholded > 0) {
+    const matched = input.days.filter(
+      (day) => day.metadata?.subjectToThresholding === true,
+    );
     caveats.push({
       id: "thresholding",
-      headline: `Google withheld some rows on ${dayCount(thresholded, total)} (thresholding)`,
+      headline: `Google withheld some rows ${describeFlagWindow(matched, total)} (thresholding)`,
       detail:
         "Google hides rows that could identify an individual — usually when Google Signals is on and the audience is small. Totals here are lower than reality by the amount Google withheld, and Google does not say how much that is.",
     });
   }
   if (otherDays > 0) {
+    const matched = input.days.filter(
+      (day) => day.hasOtherRow || day.metadata?.dataLossFromOtherRow === true,
+    );
     caveats.push({
       id: "other-row",
-      headline: `Some traffic is bundled into “(other)” on ${dayCount(otherDays, total)}`,
+      headline: `Some traffic is bundled into “(other)” ${describeFlagWindow(matched, total)}`,
       detail:
         "The report hit Google's cardinality limit, so the least-common landing pages were collapsed into one “(other)” row. Site totals are still right; the per-page list is missing those pages by name.",
     });
   }
   if (sampled > 0) {
+    const matched = input.days.filter(
+      (day) =>
+        Array.isArray(day.metadata?.samplingMetadatas) &&
+        day.metadata.samplingMetadatas.length > 0,
+    );
     caveats.push({
       id: "sampling",
-      headline: `Google sampled ${dayCount(sampled, total)}`,
+      headline: `Google sampled ${describeFlagWindow(matched, total)}`,
       detail:
         "Google answered from a sample of sessions rather than all of them, so every number here is an estimate. A shorter date range usually returns unsampled data.",
     });
   }
   if (restricted > 0) {
+    const matched = input.days.filter((day) => {
+      const restriction = asRecord(day.metadata?.schemaRestrictionResponse);
+      const active = restriction?.activeMetricRestrictions;
+      return Array.isArray(active) && active.length > 0;
+    });
     caveats.push({
       id: "schema-restriction",
-      headline: `Your Google role hid some metrics on ${dayCount(restricted, total)}`,
+      headline: `Your Google role hid some metrics ${describeFlagWindow(matched, total)}`,
       detail:
         "Google restricted at least one metric for the account this data was pulled with, so it is missing rather than zero. A property Analyst or Administrator sees the full set.",
     });
@@ -176,22 +286,33 @@ export function ga4Caveats(input: Ga4CaveatInput): AnalyticsCaveat[] {
   // 🚨 WHAT WAS NOT MEASURED IS SAID TOO (§ V14-4, B side). Only when Google
   // flagged NOTHING: a window with a real flag has a real caveat and needs no
   // note about the ones it did not carry.
-  const affirmed = input.days.some((day) => {
+  //
+  // 🚨 THE CENSUS BUG (2026-09-17, B-19 adoption): this used to be `.some()` —
+  // ANY one day in the window carrying any of the three keys silently affirmed
+  // the WHOLE window, so a window straddling the 2026-09-17 cutover (some days
+  // captured under the new explicit-false contract, earlier days genuinely
+  // never captured) read as fully affirmed and lost this note for the days
+  // that truly were never captured. The three keys always arrive TOGETHER now
+  // (`Ga4CollectionMetadata` requires all three), so checking one is checking
+  // all three per day; the fix is requiring EVERY day in the window to carry
+  // them, not just one.
+  const capturedDays = count((day) => {
     const metadata = asRecord(day.metadata);
     return (
       metadata !== null &&
-      ("subjectToThresholding" in metadata ||
-        "dataLossFromOtherRow" in metadata ||
-        "samplingMetadatas" in metadata)
+      "subjectToThresholding" in metadata &&
+      "dataLossFromOtherRow" in metadata &&
+      "samplingMetadatas" in metadata
     );
   });
-  if (total > 0 && caveats.length === 0 && !affirmed) {
+  const fullyAffirmed = total > 0 && capturedDays === total;
+  if (total > 0 && caveats.length === 0 && !fullyAffirmed) {
     caveats.push({
       id: "flags-not-affirmed",
       headline:
         "Nothing was flagged for this window — which is not the same as a clean bill of health",
       detail:
-        "Google only mentions withheld rows, sampling and “(other)” bundling when they apply, and AI Matrx stores its answer word for word rather than inventing a “no”. So these numbers carry no known distortion — and no positive all-clear either. Two known limits: the report's metadata is kept from the FIRST page of each day's report, so a flag Google raised on a later page is not stored; and it describes the whole report rather than one day inside it.",
+        "Google only mentions withheld rows, sampling and “(other)” bundling when they apply, and AI Matrx stores its answer word for word rather than inventing a “no”. So these numbers carry no known distortion — and no positive all-clear either. At least one collected day in this window predates 2026-09-17, when AI Matrx began persisting that answer explicitly (and the window it describes, and when it was captured) — for that day it truly was never captured, and it cannot be back-filled from the original response.",
     });
   }
   if (input.usersAreSummed) {

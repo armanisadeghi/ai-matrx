@@ -777,6 +777,40 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-17 — Claude Fable 5.1 (lane F-39, adopting aidream B-19 `bf037695fd`):
+  **the GA4 honesty caveats now read the true false/absent distinction and name
+  the report window instead of a per-day-row count.** `Ga4CollectionMetadata`
+  changed under the panel (`packages/matrx-seo/matrx_seo/providers/ga4.py`
+  §"GA4 collection honesty metadata"): `subjectToThresholding`,
+  `dataLossFromOtherRow` and `samplingMetadatas` are now ALWAYS present on a
+  new row (`false`/`[]` = Google affirmed clean, absent = never captured —
+  pre-2026-09-17 rows only), plus new `report_date_range` and `captured_at`.
+  **Census: the single read site is `analytics/caveats.ts`.** The per-flag
+  detectors (`=== true`, `Array.isArray(...) && .length > 0`) already used
+  strict checks, never a truthiness bug on `false`. The real defect was in the
+  catch-all gate: `affirmed` used `.some()` over the window's days, so ONE day
+  carrying the keys (even a day genuinely affirmed clean) silently suppressed
+  the "nothing was flagged" note for the WHOLE window — including any other
+  day in the same window that predates 2026-09-17 and truly was never
+  captured. Fixed to require EVERY day to carry the keys before treating the
+  window as affirmed (`fullyAffirmed`), proven RED-then-GREEN with a
+  cutover-straddling window test. `ga4Caveats` now prints the flagged window as
+  `report_date_range` + `captured_at` when a matched day carries them ("Google
+  withheld some rows for Aug 21 – Sep 17, captured Sep 18 07:15 UTC
+  (thresholding)"), falling back to the old per-day count named as a gap
+  ("… report window not recorded") for pre-cutover rows. `analytics/window.ts`'s
+  freshness `pulledAt` already comes from the exact `created_at` instant of the
+  winning row — an equally precise source to `captured_at` — so it is
+  unchanged; `captured_at` is read only inside the caveat window sentence.
+  Evidence: `caveats-on-the-numbers.test.tsx` § "the GA4 collection honesty
+  upgrade (B-19)" (6 new cases) + `npx jest features/marketing/analytics` (92
+  passed) + `pnpm check:parse` + `pnpm check:kind-marker-law`, both green;
+  scoped `tsc --noEmit` over `features/marketing/analytics/**` clean (full
+  `type-check` OOMs in this environment, per this file's own note). No live
+  row carries the new shape yet — 0 rows collected since 2026-09-17's GA4
+  provider change as of this commit, so the new window-sentence branch is
+  unverified against a real report until the next GA4 collection run.
+
 - 2026-09-17 — Claude (google-native lane F-33; round-4 hostile re-verification,
   common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R4.md` — **verdict U-M1:
   REOPEN** — findings V14-4 (B side), V14-8 and V14-9): **the GA4 caveats moved
