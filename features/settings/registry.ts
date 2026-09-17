@@ -79,6 +79,7 @@ import ProfileEmergencyTab from "./tabs/ProfileEmergencyTab";
 import OrganizationsTab from "./tabs/OrganizationsTab";
 import IntegrationsTab from "./tabs/IntegrationsTab";
 import GoogleWorkspaceTab from "./tabs/GoogleWorkspaceTab";
+import MicrosoftTab from "./tabs/MicrosoftTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
@@ -723,6 +724,26 @@ export const settingsRegistry: SettingsTabDef[] = [
       "linear",
     ],
     component: IntegrationsTab,
+    persistence: "synced",
+  },
+  {
+    id: "integrations.microsoft",
+    label: "Microsoft",
+    icon: Plug,
+    parentId: "integrations",
+    description:
+      "Connect a Microsoft work account to read OneDrive, Outlook, and Teams.",
+    searchKeywords: [
+      "microsoft",
+      "onedrive",
+      "outlook",
+      "teams",
+      "sharepoint",
+      "entra",
+      "office 365",
+      "oauth",
+    ],
+    component: MicrosoftTab,
     persistence: "synced",
   },
   {
