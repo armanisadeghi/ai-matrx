@@ -69,7 +69,7 @@ begin
   if v_fields is null then
     return;
   end if;
-  perform custom.validate_values(p_organization_id, v_fields, coalesce(p_values, '{}'::jsonb));
+  perform custom.validate_values(p_organization_id, v_fields, coalesce(p_values, '{}'::jsonb), null);
 end;
 $fn_vcf$;
 

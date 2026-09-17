@@ -582,7 +582,7 @@ create trigger custom_record_merge_field_shape_guard
 -- and the `custom_fields` half (§8) are the SAME validator rather than two that drift.
 
 create function custom.validate_values(p_organization_id uuid, p_fields custom.record[],
-                                       p_values jsonb)
+                                       p_values jsonb, p_record_type text default null)
   returns void
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -670,7 +670,14 @@ begin
             using errcode = '23514',
                   hint = 'FLD-5 / FLD-6: a list field stores the id of the option RECORD, because every pick-list is already a Table.';
         end if;
-        -- OPTION MEMBERSHIP. The value is an option RECORD of the options Table.
+        -- OPTION MEMBERSHIP. The value is an option RECORD of the options Table. The id
+        -- SHAPE is checked first: a cast failure would refuse the write with Postgres's own
+        -- 22P02 and never name the field, which is a refusal nobody can act on.
+        if (v_one #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+          raise exception '% was given a choice that is not one of its choices', v_label
+            using errcode = '23514',
+                  hint = format('REC-51: option membership. %s stores the id of an option record, and what it was given is not an id at all.', v_label);
+        end if;
         if not exists (
           select 1 from custom.record o
            where o.organization_id = p_organization_id
@@ -687,6 +694,12 @@ begin
             using errcode = '23514', hint = 'FLD-1: relation.';
         end if;
         -- RELATION RULES. The target exists, in this organization, in the declared table.
+        -- The id SHAPE first, for the same reason as the list branch above.
+        if (v_one #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+          raise exception '% points at something that is not there', v_label
+            using errcode = '23514',
+                  hint = format('REC-51: %s stores the id of a record, and what it was given is not an id at all.', v_label);
+        end if;
         if not exists (
           select 1 from custom.record t
            where t.organization_id = p_organization_id
@@ -700,7 +713,15 @@ begin
       end if;
 
       -- FLD-3: the attached validation Rules, read through the ONE seam.
+      -- FLD-10 says the type field selects which Fields AND RULES apply, so a Rule carries
+      -- its own applies_to_types: T8's Width applies to a rectangle and to a square, and the
+      -- "the sides are equal" Rule attached to it applies to the SQUARE alone. A Rule with an
+      -- empty list applies wherever its Field does.
       for v_rule in select r from jsonb_array_elements(coalesce(d -> 'rules', '[]'::jsonb)) r loop
+        if jsonb_array_length(coalesce(v_rule -> 'applies_to_types', '[]'::jsonb)) > 0
+           and not (p_record_type is not null and (v_rule -> 'applies_to_types') ? p_record_type) then
+          continue;
+        end if;
         v_kind := v_rule ->> 'kind';
         if v_kind = 'min' and jsonb_typeof(v_one) = 'number'
            and (v_one #>> '{}')::numeric < (v_rule ->> 'value')::numeric then
@@ -748,7 +769,7 @@ begin
 end;
 $fn_validate$;
 
-comment on function custom.validate_values(uuid, custom.record[], jsonb) is
+comment on function custom.validate_values(uuid, custom.record[], jsonb, text) is
   'REC-51: ONE validator for type, required, relation rules and option membership. It is shared by the store half (custom_record_field_validation) and the custom_fields half (custom.validate_custom_fields), so the two can never drift apart, and every refusal names the FIELD, in the words a person reading the screen would use.';
 
 create function custom._record_field_validation() returns trigger
@@ -787,7 +808,7 @@ begin
   -- WITH ITS REASON, and the field is then hidden by custom.applicable_fields. This is a
   -- STAND-IN for History and says so: W3-HIST (HIS-*) owns the real store, and when it
   -- lands this block writes there instead. Until then the value is in the document, not gone.
-  if tg_op = 'update' and v_type_field is not null
+  if tg_op = 'UPDATE' and v_type_field is not null
      and (old.data ->> v_type_field) is distinct from v_rtype then
     select array_agg(f) into v_gone
       from custom.applicable_fields(new.organization_id, new.table_id,
@@ -817,7 +838,7 @@ begin
     end if;
   end if;
 
-  perform custom.validate_values(new.organization_id, v_fields, new.data);
+  perform custom.validate_values(new.organization_id, v_fields, new.data, v_rtype);
   return new;
 end;
 $fn_rfv$;
@@ -882,7 +903,7 @@ declare
   v_data jsonb;
   v_id   uuid;
 begin
-  if tg_op = 'delete' then
+  if tg_op = 'DELETE' then
     update custom.record
        set deleted_at = now()
      where organization_id = old.organization_id and id = old.id
@@ -923,7 +944,7 @@ begin
     v_data := jsonb_set(v_data, '{default}', new."default");
   end if;
 
-  if tg_op = 'insert' then
+  if tg_op = 'INSERT' then
     insert into custom.record (id, organization_id, table_id, data_class, data)
     values (coalesce(new.id, gen_random_uuid()), new.organization_id,
             custom.field_kernel_id(), 'field', v_data)

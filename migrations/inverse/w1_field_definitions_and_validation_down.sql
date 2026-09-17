@@ -30,6 +30,13 @@ drop view if exists custom.field;                 -- takes custom_field_definiti
 
 drop function if exists custom._field_definition_write();
 drop function if exists custom._record_field_validation();
+-- BOTH signatures, named rather than assumed. The validator gained its fourth argument
+-- (the record type, so FLD-10's per-Rule applicability could be honoured) after the file
+-- had been applied once on the branch, and an inverse that names only the current shape
+-- leaves the older overload behind as a live function nothing calls. Measured on the
+-- branch 2026-09-17: the three-argument form survived the first inverse run. An inverse
+-- restores the prior state for EVERY version of its up-file or it is not an inverse.
+drop function if exists custom.validate_values(uuid, custom.record[], jsonb, text);
 drop function if exists custom.validate_values(uuid, custom.record[], jsonb);
 drop function if exists custom._merge_field_shape_guard();
 drop function if exists custom._field_shape_guard();
