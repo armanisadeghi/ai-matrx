@@ -14,7 +14,11 @@
 // WHERE THE WORDS COME FROM. Every verdict sentence on this screen is the
 // server's `cloud_sentence`, rendered verbatim. The aidream bridge's typed
 // `diagnose` action is the ONE door (CS-25 contract §4) and therefore the ONE
-// wording source: the desktop app's own sync-truth view embeds the same
+// wording source — with ONE narrow exception, below: the server deliberately
+// leaves `{transcript_entries}` as a literal placeholder because it cannot see
+// this Mac's transcript, and this module replaces that phrase with count-free
+// English (`WEB_OWNED_PLACEHOLDER_PHRASES`) rather than showing a curly brace
+// to a person. The desktop app's own sync-truth view embeds the same
 // `BridgeDiagnosis` block, so web and desktop cannot drift into two different
 // English answers about the same session. This module composes exactly ONE
 // sentence itself — the §2 `unknown` sentence — because that is the only one
@@ -73,11 +77,51 @@ export function unknownVerdictSentence(
 export const UNKNOWN_VERDICT_REMEDY =
   "Try again in a moment; if it keeps failing, check that AI Matrx is reachable and you are signed in.";
 
+/**
+ * THE WEB-OWNED SUBSTITUTIONS for placeholders the server deliberately leaves
+ * in its rendered sentence.
+ *
+ * The server's `CLOUD_VERDICT_SENTENCES` (aidream
+ * `packages/matrx-ai/matrx_ai/coding_sessions/models.py`) leaves
+ * `{transcript_entries}` as a LITERAL placeholder, because the server cannot
+ * see this Mac's transcript and refuses to fabricate a count — its docstring
+ * says the engine, which holds the transcript, substitutes it. THIS APP CANNOT
+ * EITHER: the web half reads only AI Matrx's own rows. So the phrase carrying
+ * the count is replaced with count-free English that says the same true thing,
+ * here, in the one module that already owns web-side wording (the §2 `unknown`
+ * sentence above). Three of the six cloud verdicts need this, and on Arman's
+ * Mac they are 1802 of his 2033 conversations — the common case, not an edge.
+ *
+ * This is NOT a re-wording of the server's sentence: every other word stays the
+ * server's. Each key is the exact phrase the template produces, so the result
+ * reads as a sentence and not as a patched string.
+ */
+export const WEB_OWNED_PLACEHOLDER_PHRASES: Readonly<Record<string, string>> = {
+  "the {transcript_entries}-entry transcript": "the full transcript",
+  "none of the {transcript_entries} entries in your local transcript":
+    "none of the entries in your local transcript",
+  "Its {transcript_entries} local entries": "Its local entries",
+};
+
+/** The server's sentence with every web-fillable placeholder phrase replaced. */
+export function substituteWebOwnedPlaceholders(sentence: string): string {
+  let rendered = sentence;
+  for (const [phrase, replacement] of Object.entries(
+    WEB_OWNED_PLACEHOLDER_PHRASES,
+  )) {
+    rendered = rendered.split(phrase).join(replacement);
+  }
+  return rendered;
+}
+
 /** Contract §4: what the server admits it cannot see, in its own words. */
 const THIS_MACS_TRANSCRIPT = "this Mac's transcript";
 const NOT_VISIBLE_FROM_THE_SERVER = "not visible from the server";
 /** The layer named when the server's own answer is missing or unusable. */
 const AI_MATRX_RECORD = "AI Matrx's record of this session";
+/** The reason given when a sentence still carries a placeholder this app cannot fill. */
+const SENTENCE_THIS_APP_COULD_NOT_COMPLETE =
+  "the server sent a sentence this app could not complete";
 
 export interface CloudProjectionErrorGroup {
   code: string;
@@ -222,14 +266,17 @@ export function unknownVerdict(
 /**
  * The verdict this screen may render for a diagnosis the server answered with.
  *
- * The server's sentence is used VERBATIM — this function never re-words it. It
- * only refuses three things, each of which would put an unearned claim on the
- * screen:
+ * The server's sentence is used VERBATIM except for the placeholders the server
+ * deliberately left unfilled (`WEB_OWNED_PLACEHOLDER_PHRASES`) — this function
+ * never re-words anything else. It refuses four things, each of which would put
+ * an unearned claim, or a broken sentence, on the screen:
  *
  *  1. `in_sync` — forbidden for the cloud half (contract §4): the server never
  *     read the transcript, the delivery queue, or this Mac's mirror.
  *  2. a code outside the §1 closed set — a verdict this app cannot honour.
  *  3. a known code with no sentence — nothing to say, so it says that.
+ *  4. a sentence that STILL carries a `{` after substitution — an unfinished
+ *     sentence is never shown to a person; it becomes `unknown`.
  */
 export function cloudVerdictOf(diagnosis: CloudDiagnosis): SyncVerdict {
   if (diagnosis.cloud_verdict === "in_sync") {
@@ -247,9 +294,17 @@ export function cloudVerdictOf(diagnosis: CloudDiagnosis): SyncVerdict {
       `the server sent the verdict "${diagnosis.cloud_verdict}" with no sentence`,
     );
   }
+  const sentence = substituteWebOwnedPlaceholders(diagnosis.cloud_sentence);
+  if (sentence.includes("{")) {
+    // THE SAFETY NET. A curly brace on the screen is a broken sentence, and a
+    // placeholder the server adds tomorrow must degrade to an honest "cannot
+    // tell" rather than to gibberish. The reason deliberately carries no token:
+    // quoting the leftover placeholder would put the brace back on the screen.
+    return unknownVerdict(AI_MATRX_RECORD, SENTENCE_THIS_APP_COULD_NOT_COMPLETE);
+  }
   return {
     code: diagnosis.cloud_verdict,
-    sentence: diagnosis.cloud_sentence,
+    sentence,
     remedy: diagnosis.cloud_remedy,
   };
 }

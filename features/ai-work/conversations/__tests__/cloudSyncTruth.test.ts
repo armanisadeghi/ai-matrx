@@ -16,6 +16,7 @@
 import {
   SYNC_VERDICT_CODES,
   UNKNOWN_VERDICT_REMEDY,
+  WEB_OWNED_PLACEHOLDER_PHRASES,
   cloudVerdictOf,
   readCloudSyncTruth,
   readDiagnosis,
@@ -238,6 +239,135 @@ describe("an unreadable answer is never a count", () => {
     expect(truth.verdict.sentence).toBe(
       "Cannot tell whether this conversation is in sync: AI Matrx's record of this session could not be read (AI Matrx answered without a diagnosis).",
     );
+  });
+});
+
+describe("no curly brace ever reaches the screen", () => {
+  // The server leaves `{transcript_entries}` LITERAL in three of its six cloud
+  // sentences (aidream `CLOUD_VERDICT_SENTENCES`) because it cannot see this
+  // Mac's transcript and will not fabricate a count. The web cannot see it
+  // either, so the phrase carrying that count is replaced with count-free
+  // English. Every expected sentence below is TYPED BY HAND.
+
+  // RED WHEN: the `the {transcript_entries}-entry transcript` substitution is
+  // removed or reworded — the hook-lane sentence then renders a literal
+  // placeholder token, which is 655 of Arman's conversations.
+  it("renders the hook-lane sentence with no placeholder in it", () => {
+    const verdict = cloudVerdictOf(
+      diagnosis({
+        cloud_verdict: "partial_by_design",
+        cloud_sentence:
+          "AI Matrx has the shape of this conversation — the 12 prompts and tool calls its hooks recorded, projected into 12 messages — not the {transcript_entries}-entry transcript. Hook capture is a summary by design.",
+        cloud_remedy: "Reconcile to import the full transcript file into AI Matrx.",
+      }),
+    );
+    expect(verdict.code).toBe("partial_by_design");
+    expect(verdict.sentence).toBe(
+      "AI Matrx has the shape of this conversation — the 12 prompts and tool calls its hooks recorded, projected into 12 messages — not the full transcript. Hook capture is a summary by design.",
+    );
+    expect(verdict.sentence).not.toContain("{");
+    expect(verdict.remedy).toBe(
+      "Reconcile to import the full transcript file into AI Matrx.",
+    );
+  });
+
+  // RED WHEN: the `none of the {transcript_entries} entries in your local
+  // transcript` substitution is removed or reworded — 741 of Arman's
+  // conversations are this verdict.
+  it("renders the empty-delivery-ledger sentence with no placeholder in it", () => {
+    const verdict = cloudVerdictOf(
+      diagnosis({
+        cloud_verdict: "behind_local",
+        cloud_sentence:
+          "AI Matrx has a conversation for this session but no record of a single delivered entry, so none of the {transcript_entries} entries in your local transcript are in it. The 2 messages you see there came from the run itself, not from this transcript.",
+        cloud_remedy: "Reconcile to deliver the transcript.",
+        entries: 0,
+        messages: 2,
+      }),
+    );
+    expect(verdict.code).toBe("behind_local");
+    expect(verdict.sentence).toBe(
+      "AI Matrx has a conversation for this session but no record of a single delivered entry, so none of the entries in your local transcript are in it. The 2 messages you see there came from the run itself, not from this transcript.",
+    );
+    expect(verdict.sentence).not.toContain("{");
+    expect(verdict.remedy).toBe("Reconcile to deliver the transcript.");
+  });
+
+  // RED WHEN: the `Its {transcript_entries} local entries` substitution is
+  // removed or reworded — 406 of Arman's conversations are this verdict.
+  it("renders the not-in-cloud sentence with no placeholder in it", () => {
+    const verdict = cloudVerdictOf(
+      diagnosis({
+        cloud_verdict: "not_in_cloud",
+        cloud_sentence:
+          "This conversation is not in AI Matrx at all — no session, no messages. Its {transcript_entries} local entries have never been delivered.",
+        cloud_remedy: "Reconcile to send it.",
+        session_present: false,
+        conversation_id: null,
+        entries: 0,
+        messages: 0,
+      }),
+    );
+    expect(verdict.code).toBe("not_in_cloud");
+    expect(verdict.sentence).toBe(
+      "This conversation is not in AI Matrx at all — no session, no messages. Its local entries have never been delivered.",
+    );
+    expect(verdict.sentence).not.toContain("{");
+    expect(verdict.remedy).toBe("Reconcile to send it.");
+  });
+
+  // RED WHEN: the final brace check is removed. A placeholder the server adds
+  // LATER must degrade to an honest "cannot tell", never to gibberish on the
+  // screen — the substitution map cannot know a token that does not exist yet.
+  it("downgrades a sentence carrying an unknown future placeholder to `unknown`", () => {
+    const verdict = cloudVerdictOf(
+      diagnosis({
+        cloud_verdict: "behind_cloud",
+        cloud_sentence:
+          "AI Matrx received all 40 entries but {delivered_entries} never became messages.",
+        cloud_remedy: "Reconcile to ask the server to project them again.",
+      }),
+    );
+    expect(verdict.code).toBe("unknown");
+    expect(verdict.sentence).toBe(
+      "Cannot tell whether this conversation is in sync: AI Matrx's record of this session could not be read (the server sent a sentence this app could not complete).",
+    );
+    expect(verdict.sentence).not.toContain("{");
+    expect(verdict.remedy).toBe(
+      "Try again in a moment; if it keeps failing, check that AI Matrx is reachable and you are signed in.",
+    );
+  });
+
+  // RED WHEN: the substitution starts mangling healthy sentences — a sentence
+  // with no placeholder must come through character-for-character, because the
+  // server is still the only wording source for everything else.
+  it("passes a sentence with no placeholder through completely unchanged", () => {
+    const sentence =
+      "AI Matrx received all 40 entries but 3 are still waiting to become messages.";
+    const verdict = cloudVerdictOf(
+      diagnosis({
+        cloud_verdict: "behind_cloud",
+        cloud_sentence: sentence,
+        cloud_remedy: "Reconcile to ask the server to project them now.",
+      }),
+    );
+    expect(verdict).toEqual({
+      code: "behind_cloud",
+      sentence,
+      remedy: "Reconcile to ask the server to project them now.",
+    });
+  });
+
+  // RED WHEN: a fourth phrase is added to the web-owned map without the
+  // contract changing, or one of the three is edited. This map is the ONLY
+  // wording this app is allowed to put over the server's.
+  it("owns exactly the three phrases the server cannot fill", () => {
+    expect(WEB_OWNED_PLACEHOLDER_PHRASES).toEqual({
+      "the {transcript_entries}-entry transcript": "the full transcript",
+      "none of the {transcript_entries} entries in your local transcript":
+        "none of the entries in your local transcript",
+      "Its {transcript_entries} local entries": "Its local entries",
+    });
   });
 });
 
