@@ -94,23 +94,28 @@ export function ApprovalsWorkspace({
       ? `You approved that item and THE CHANGE WAS NOT MADE.${
           detail.error ? ` ${detail.error}` : ""
         } Nothing was retried automatically — approve it again to retry, or reject it.`
-      : focusResolution === "applying"
-        ? "That item is being applied right now. Reload in a moment to see whether the change was made."
-        : focusResolution === "decided"
-          ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
-          : focusResolution === "not_in_this_list"
-            ? `That item is still waiting on you, but not in this list: ${
-                detail.explain ?? "it belongs to a queue this page does not show."
-              }`
-            : focusResolution === "no_screen"
-              ? "That item is still waiting on you and this version of the app has no screen for it — it was filed by a newer part of the system. Nothing was decided; tell us and it will be shown here."
-              : focusResolution === "pending_elsewhere"
-                ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
-                : focusResolution === "not_an_approval"
-                  ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
-                  : focusResolution === "unconfirmed"
-                    ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
-                    : null;
+      : focusResolution === "applied_unconfirmed"
+        ? `You approved that item, AI Matrx sent the change to Google, and the answer was lost — so it MAY have been made.${
+            detail.error ? ` ${detail.error}` : ""
+          } Nothing was retried, and nothing will retry itself: doing it twice would append or create a second copy. Open the file, see what is there, and ask for the change again only if it is missing.`
+        : focusResolution === "applying"
+          ? "That item is being applied right now. Reload in a moment to see whether the change was made."
+          : focusResolution === "decided"
+            ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
+            : focusResolution === "not_in_this_list"
+              ? `That item is still waiting on you, but not in this list: ${
+                  detail.explain ??
+                  "it belongs to a queue this page does not show."
+                }`
+              : focusResolution === "no_screen"
+                ? "That item is still waiting on you and this version of the app has no screen for it — it was filed by a newer part of the system. Nothing was decided; tell us and it will be shown here."
+                : focusResolution === "pending_elsewhere"
+                  ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
+                  : focusResolution === "not_an_approval"
+                    ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
+                    : focusResolution === "unconfirmed"
+                      ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
+                      : null;
 
   /** True while the person is holding a link to a row that IS still waiting. */
   const waitingElsewhere =

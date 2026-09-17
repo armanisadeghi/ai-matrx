@@ -44,11 +44,7 @@ import {
   willRenderAction,
   willRenderRow,
 } from "./rendered";
-import type {
-  ApprovalKind,
-  ApprovalScope,
-  AutonomyMode,
-} from "./types";
+import type { ApprovalKind, ApprovalScope, AutonomyMode } from "./types";
 
 /**
  * The surface every platform approval proposal is addressed to. It is the
@@ -329,6 +325,13 @@ export type ApprovalProposalStatus =
   | "apply_failed"
   /** An approve is in flight right now (`receipt.state` is `applying`). */
   | "applying"
+  /**
+   * 🚨 The write REACHED GOOGLE and the answer was lost (`receipt.state` is
+   * `applied_unconfirmed`, aidream lane B-10 § A-N1). Never `decided` — nobody
+   * can say the change was made — and never `apply_failed`, which offers a retry
+   * that would append or create a second copy.
+   */
+  | "applied_unconfirmed"
   /** The id names an assist, but not one any approval kind reads. */
   | "not_a_proposal"
   | "unknown";
@@ -386,6 +389,11 @@ export async function readProposalStatus({
     const receipt = readApprovalReceipt(assist.result);
     if (receipt.state === "failed") {
       return { status: "apply_failed", error: receipt.error };
+    }
+    // 🚨 AND "WE DO NOT KNOW" IS ITS OWN ANSWER (lane B-10 § A-N1): the row is
+    // claimed, the change may have landed, and no reader may call that decided.
+    if (receipt.state === "applied_unconfirmed") {
+      return { status: "applied_unconfirmed", error: receipt.error };
     }
     if (receipt.state === "applying") return { status: "applying" };
     if (assist.status !== "pending") return { status: "decided" };

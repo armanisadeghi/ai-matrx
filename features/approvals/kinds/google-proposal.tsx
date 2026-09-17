@@ -27,17 +27,13 @@ import type { ReactNode } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
-import {
-  listPendingProposals,
-  type ApprovalProposal,
-} from "../data";
+import { listPendingProposals, type ApprovalProposal } from "../data";
 import { unrenderableApprovalItems } from "../unshowable";
 import { applyGoogleApproval, rejectGoogleApproval } from "../google-door";
 import {
-  applyingSentence,
-  failedApplySentence,
   readApprovalReceipt,
   readDecisionReply,
+  receiptRowMarks,
 } from "../receipt";
 import type {
   ApprovalDecisions,
@@ -223,7 +219,6 @@ export function useGoogleProposalSource(
        * 2026-09-17 the screen showed both as an ordinary waiting row with a live
        * Approve button (round-2 verification § A-iii).
        */
-      const receipt = readApprovalReceipt(proposal.assist.result);
       const base = {
         key: `${contract.kindId}:${proposal.assist.id}`,
         kindId: contract.kindId,
@@ -234,20 +229,13 @@ export function useGoogleProposalSource(
         proposedBy: proposal.proposerLabel,
         proposedAt: proposal.assist.createdAt,
         blocked: proposal.blocked,
-      // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
-      // door refuses such a row with 403; the queue stops offering Approve.
-      expired: proposal.expired,
-        ...(receipt.state === "applying"
-          ? { inFlight: { sentence: applyingSentence() } }
-          : {}),
-        ...(receipt.state === "failed"
-          ? {
-              lastAttempt: {
-                state: "failed" as const,
-                sentence: failedApplySentence(receipt),
-              },
-            }
-          : {}),
+        // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
+        // door refuses such a row with 403; the queue stops offering Approve.
+        expired: proposal.expired,
+        // ONE reader of the row's own receipt, for every Google kind
+        // (`../receipt.ts` → `receiptRowMarks`): an apply still running, one that
+        // failed, or one that reached Google with the answer lost.
+        ...receiptRowMarks(proposal.assist.result),
       };
       if (!payload) {
         return {
@@ -276,7 +264,11 @@ export function useGoogleProposalSource(
         ...(copy.doors ? { doors: copy.doors } : {}),
         // The producer's own `blocked` (this is not yours to approve) outranks
         // the kind's (this would do nothing): the first is about authority.
-        ...(proposal.blocked ? {} : copy.blocked ? { blocked: copy.blocked } : {}),
+        ...(proposal.blocked
+          ? {}
+          : copy.blocked
+            ? { blocked: copy.blocked }
+            : {}),
       } satisfies GoogleProposalItem;
     },
   );
@@ -382,6 +374,12 @@ export function useGoogleApprovalDecisions(
   ) => {
     const failures: { key: string; message: string }[] = [];
     const alreadyDecided: { key: string; message: string }[] = [];
+    /**
+     * 🚨 OUTCOMES NOBODY KNOWS (aidream lane B-10 § A-N1): the write reached
+     * Google and the answer was lost. Neither a success to count nor a failure to
+     * retry — their own list, reported in the server's own words.
+     */
+    const unconfirmed: { key: string; message: string }[] = [];
     let applied = 0;
     for (const item of items) {
       const row = item as GoogleProposalItem;
@@ -409,8 +407,13 @@ export function useGoogleApprovalDecisions(
           applied += 1;
         } else if (reading.bucket === "failed") {
           failures.push({ key: item.key, message: reading.message ?? "" });
+        } else if (reading.bucket === "unconfirmed") {
+          unconfirmed.push({ key: item.key, message: reading.message ?? "" });
         } else {
-          alreadyDecided.push({ key: item.key, message: reading.message ?? "" });
+          alreadyDecided.push({
+            key: item.key,
+            message: reading.message ?? "",
+          });
         }
       } catch (error) {
         failures.push({
@@ -420,7 +423,7 @@ export function useGoogleApprovalDecisions(
       }
     }
     invalidate();
-    return { applied, failures, alreadyDecided };
+    return { applied, failures, alreadyDecided, unconfirmed };
   };
 
   return {

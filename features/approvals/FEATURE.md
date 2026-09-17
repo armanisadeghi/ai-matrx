@@ -22,7 +22,7 @@ The SEO value-system queue (register KI-045) was already the generic mechanism: 
 | Failure strip | `ApprovalLoadError.tsx` | A kind that cannot be read is named and retryable; the missing-store case names the migration |
 | Store seam | `data.ts` | The ONLY module that names `platform.assists`: read and record a decision. It PRODUCES nothing — the server is the one producer |
 | Will-render predicate | `rendered.ts` | THE one question "would this row be on screen here?", asked by the badge, the section header, the list and every deep link |
-| Receipt adapter | `receipt.ts` | THE one reader of `receipt.state` (`applying` / `failed` / `applied` / `rejected`) — a claimed apply that failed is never reported as done, and THE one reading of a decision reply (`readDecisionReply`), which renders the SERVER's sentence whenever the reply carried one |
+| Receipt adapter | `receipt.ts` | THE one reader of `receipt.state` (`applying` / `failed` / `applied` / `applied_unconfirmed` / `rejected`) — a claimed apply that failed is never reported as done, an outcome that reached Google with the answer lost is never reported as either, and THE one reading of a decision reply (`readDecisionReply`), which renders the SERVER's sentence whenever the reply carried one. `receiptRowMarks` is the one derivation of a row's `inFlight` / `lastAttempt` marks, shared by every kind |
 | Unshowable rows | `unshowable.ts` | THE one honest row for a pending proposal this build cannot show — named kind, record id, remedy, no decision controls |
 | Review window | `review-window.ts` | THE one reader of `hitl.google.review_timeout_hours` in this repo — same boundary (`age > hours`), same safe direction, the server's own expiry sentence |
 | Decision door | `google-door.ts` | THE ONE apply/reject call for every Google kind — `POST /google-workspace/approvals/{id}/apply` and `/reject` |
@@ -129,10 +129,26 @@ For `gmail_send` the operator must additionally be able to send from that accoun
   `failed` = the change was NOT made → the row says so in destructive colour, its
   Approve becomes "Try again", and a decision reply lands in `failures`.
   `applying` = an apply is in flight → the row shows the sentence and offers NO
-  decision controls. `applied` = the change was made. A receipt this build cannot
-  read says "the record does not say", never "the change was made". ACCEPT AND
-  REJECT READ IT THROUGH THE SAME ADAPTER (`readDecisionReply`): one reply can
-  never produce two different sets of facts about one row.
+  decision controls. `applied` = the change was made. **`applied_unconfirmed` = the
+  write REACHED GOOGLE and the answer was lost** (aidream lane B-10): the row
+  prints the server's own sentence, offers NO control at all — not Approve, not
+  "Try again", not Reject, because the server's own doors change nothing over such
+  a row — and a decision reply lands in its own `unconfirmed` list, never in
+  `applied` and never in `failures`. A receipt this build cannot read says "the
+  record does not say", never "the change was made". THE LADDER IS A SWITCH WITH A
+  `never` DEFAULT, so the next state aidream adds fails `pnpm type-check` instead
+  of reading as applied or failed. ACCEPT AND REJECT READ IT THROUGH THE SAME
+  ADAPTER (`readDecisionReply`): one reply can never produce two different sets of
+  facts about one row.
+- 🚨 **A ROW NOBODY MAY ACT ON MOUNTS NO KIND'S ACTION EITHER** —
+  `noLiveAction(item)` in `ApprovalQueue.tsx`, asked once for the checkbox, the
+  decision buttons and `individualReview`. Four states answer yes: `expired`,
+  `inFlight`, `unreadable`, and a `lastAttempt` of `applied_unconfirmed`. The gate
+  is the QUEUE's, not each kind's, because `individualReview` is where a kind
+  brings its own live control — Gmail's card Sends straight to
+  `/gmail/send-reviewed` — so dropping only the generic Approve left an expired
+  draft sendable until the door answered 403 (Bugbot round 11). A state added to
+  that predicate reaches every registered kind at once.
 - 🚨 **THERE IS NO CLIENT PRODUCER AND NO CLIENT MODE LADDER.** `proposeApproval`
   and `mode.ts` are deleted. The server produces every row and resolves every
   mode; the four direct Google write routes answer HTTP 202
@@ -166,6 +182,16 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 8. **CLOSED 2026-09-17 (lane F-21) — `hitl.google.review_timeout_hours` decides something on screen.** aidream reads it lazily at both doors (an expired apply is refused with 403 carrying the whole expiry sentence; a reject still works, by design), and this repo now reads the same knob the same way in `review-window.ts`, so an expired row is marked with the server's sentence and offers no Approve instead of a live button whose 403 arrives after the click (round-3 verification § A-N7). The mode-3 applier is still gap 2, and it is a different clock: this window only stops an OLD proposal being applied, it never applies one.
 
 ## Change Log
+
+- 2026-09-17 — Claude (lane F-25; adopting aidream lane B-10's contracts + Cursor Bugbot round 11 on frontend PR 228): **"we do not know" is its own answer, and a row nobody may act on carries no control at all.**
+
+  (1) **aidream lane B-10 § A-N1 — `receipt.state === "applied_unconfirmed"`** (`receipt.ts`, `types.ts`, `data.ts`, `ApprovalQueue.tsx`, `ApprovalsWorkspace.tsx`, `kinds/google-proposal.tsx`, `kinds/sheet-write.tsx`, `kinds/gmail-send.tsx`). Every one of the six Google actions can raise AFTER Google accepted the write, so the server now MEASURES the phase and records that case as its own state: the row stays claimed, the receipt carries `phase: "after_provider_write"` and `may_have_landed`, and the sentence says *"the change may have been made; check the document before retrying"*. This build narrowed four states and called everything else `unknown`, so the honest new state would have read as a shape the screen cannot understand — and, worse, a `failed`-shaped reading would have offered the "Try again" that appends the same block twice. Now: the state is narrowed (with `phase`, `may_have_landed` and the receipt's own `sentence`), the row prints the SERVER's words verbatim and offers no Approve, no "Try again" and no Reject (the server's reject door changes nothing over such a row), the queue toasts *"may have been made — check it before asking for it again"* from a new `ApprovalOutcome.unconfirmed` list, a deep link resolves to `applied_unconfirmed` rather than `decided` or `apply_failed`, and the receipt ladder is a SWITCH with a `never` default so the next state aidream adds fails the type-check here. `receiptRowMarks` is now the ONE derivation of a row's receipt marks — `sheet_write` read the receipt nowhere at all before this, so a claimed or failed sheet row would have rendered as an ordinary waiting row.
+
+  (2) **Bugbot round 11 (Medium, review comment 4041427572) — an expired row mounted a live Send.** The review-window work dropped the generic Approve on an `expired` row, but Gmail never uses that button: its Send lives inside `individualReview`, and that card kept mounting, so an expired draft stayed sendable until the door answered 403. Fixed by CLASS, not by teaching one kind: `noLiveAction(item)` is asked once in the queue for the checkbox, the decision buttons and `individualReview`, so no kind — present or future — can mount an action on a row nobody may act on. Census of kinds defining `individualReview`: `gmail_send` (covered) and `keyword_meaning` (never sets `expired`; the review window is a `hitl.google` knob).
+
+  Guards, both proven red against the pre-fix bytes and green after: `__tests__/an-unconfirmed-apply-is-never-retried.test.tsx` (8 cases — the narrowing, an unknown state still `unknown`, type-level exhaustiveness, the server sentence verbatim on accept AND reject with no "Try again" and no "NOT made", the derived fallback, the deep-link read, and the real queue printing the sentence with no decision control) and `__tests__/an-expired-row-mounts-no-live-action.test.tsx` (7 cases — the REAL `gmail_send` kind through the real queue with no Send on an expired row and Send restored when it is not expired, plus the contract over all four states and the predicate itself). All 15 approvals suites, 119 tests, green.
+
+  **Not done in this lane and still owed:** `pnpm sync-types` could not run in this container, so the generated API types do not yet carry B-10's `to`/`cc`, `refused_fields`, `override_manual` or the `applied_unconfirmed` receipt fields. Nothing here depends on them — every field above is narrowed at the boundary from `Json` — but the regeneration is still owed once an aidream checkout containing the pinned contract floor is available. See the lane's hand-back.
 
 - 2026-09-17 — Claude (lane F-21; round-3 hostile verification of U-P4, common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R3.md`, client items A-N2…A-N7): **the server's sentence is the only sentence, the seam asks the real kind, a row this build cannot show is a row, and the review window reaches the screen.**
 

@@ -51,6 +51,7 @@ import {
   recordApprovalDecision,
   type ApprovalProposal,
 } from "../data";
+import { receiptRowMarks } from "../receipt";
 import { unrenderableApprovalItems } from "../unshowable";
 import type {
   ApprovalDecisions,
@@ -577,6 +578,11 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
       // door refuses such a row with 403; the queue stops offering Approve.
       expired: proposal.expired,
+      // 🚨 AND WHAT THE LAST APPROVE DID, from the row's own receipt — the ONE
+      // reader every kind shares (`../receipt.ts` → `receiptRowMarks`): an apply
+      // still running, one that failed, or one that reached Google with the
+      // answer lost (no retry over that one, ever — aidream lane B-10 § A-N1).
+      ...receiptRowMarks(proposal.assist.result),
       rejectEffect:
         "Nothing is sent, and the draft is recorded as rejected by you with your reason.",
       doors: proposal.subject ? (

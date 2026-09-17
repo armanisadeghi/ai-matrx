@@ -154,6 +154,41 @@ function matches(filter: readonly string[] | undefined, item: ApprovalItem) {
   });
 }
 
+/**
+ * 🚨 THE ONE ANSWER TO "MAY ANY CONTROL ON THIS ROW STILL DO SOMETHING?"
+ *
+ * Four row states mean no: the apply is IN FLIGHT on the server, this build
+ * cannot read the row at all, the proposal is past the organization's review
+ * window (the door answers 403), and the change already reached Google with the
+ * answer lost (no retry, ever — an append is not idempotent).
+ *
+ * It lives here, once, because the queue's generic Approve was not the only live
+ * control: a kind's `individualReview` can carry its OWN action, and Gmail's does
+ * — its Send posts straight to the reviewed-send endpoint. `expired` dropped the
+ * Approve button and left that card mounted, so an expired draft stayed sendable
+ * until the server refused it (Bugbot round 11, frontend PR 228). Asking one
+ * predicate at every gate means a kind cannot forget, and a state added to this
+ * list reaches every kind at once.
+ */
+export function noLiveAction(item: ApprovalItem): boolean {
+  return noDecisionControls(item) || Boolean(item.expired);
+}
+
+/**
+ * The three states in which the row offers NEITHER decision: the apply is in
+ * flight, the row is unreadable, or the outcome is unconfirmed (approving again
+ * could duplicate the change and rejecting cannot call back a write Google may
+ * already have taken). `expired` is deliberately NOT here — the server still
+ * allows a reject, which is exactly what its sentence asks for.
+ */
+function noDecisionControls(item: ApprovalItem): boolean {
+  return (
+    Boolean(item.inFlight) ||
+    Boolean(item.unreadable) ||
+    item.lastAttempt?.state === "applied_unconfirmed"
+  );
+}
+
 /** A stable DOM id per row, so a deep link can scroll to one. */
 function rowDomId(key: string): string {
   return `approval-row-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -365,6 +400,15 @@ export function ApprovalQueue({
      * reported as having done the thing (Bugbot MEDIUM, frontend PR 228).
      */
     const alreadyDecided: string[] = [];
+    /**
+     * 🚨 ITEMS WHOSE OUTCOME NOBODY KNOWS — the change reached Google and the
+     * answer was lost (aidream lane B-10, `receipt.state ===
+     * "applied_unconfirmed"`). Their own list, because both other sentences
+     * would be false: "Approved n" claims the change landed, and "could not be
+     * saved and is still waiting for you" claims it did not and invites the
+     * retry that appends the same block twice.
+     */
+    const unconfirmed: string[] = [];
     // Kind by kind, in queue order; each kind's writer runs its items itself.
     for (const section of sections) {
       const items = decision.items.filter(
@@ -389,6 +433,9 @@ export function ApprovalQueue({
         alreadyDecided.push(
           ...(outcome.alreadyDecided ?? []).map((entry) => entry.message),
         );
+        unconfirmed.push(
+          ...(outcome.unconfirmed ?? []).map((entry) => entry.message),
+        );
       } catch (error) {
         failures.push(error instanceof Error ? error.message : String(error));
       }
@@ -410,6 +457,20 @@ export function ApprovalQueue({
           ? "One of those was already decided, so this did not change it."
           : `${alreadyDecided.length} of those were already decided, so this did not change them.`,
         { description: alreadyDecided[0] },
+      );
+    }
+    /**
+     * 🚨 NEVER "could not be saved", and never a count of successes: the change
+     * MAY have been made, and the only honest instruction is to go and look. The
+     * words are the server's own (`unconfirmed_sentence`), carried through the
+     * one adapter.
+     */
+    if (unconfirmed.length > 0) {
+      toast.warning(
+        unconfirmed.length === 1
+          ? "One of those may have been made — check it before asking for it again."
+          : `${unconfirmed.length} of those may have been made — check them before asking for them again.`,
+        { description: unconfirmed[0] },
       );
     }
     if (failures.length > 0) {
@@ -517,13 +578,17 @@ export function ApprovalQueue({
               ? "no_screen"
               : read.status === "apply_failed"
                 ? "apply_failed"
-                : read.status === "applying"
-                  ? "applying"
-                  : read.status === "decided"
-                    ? "decided"
-                    : read.status === "not_a_proposal"
-                      ? "not_an_approval"
-                      : "unconfirmed";
+                : // 🚨 The write reached Google and the answer was lost: its own
+                  // verdict, because "decided" and "failed" are both false here.
+                  read.status === "applied_unconfirmed"
+                  ? "applied_unconfirmed"
+                  : read.status === "applying"
+                    ? "applying"
+                    : read.status === "decided"
+                      ? "decided"
+                      : read.status === "not_a_proposal"
+                        ? "not_an_approval"
+                        : "unconfirmed";
       onFocusResolved?.(focusItemId, resolution, {
         ...(read.explain ? { explain: read.explain } : {}),
         ...(read.where ? { where: read.where } : {}),
@@ -701,9 +766,9 @@ export function ApprovalQueue({
                                   busy ||
                                   Boolean(item.individualReview) ||
                                   Boolean(item.blocked) ||
-                                  Boolean(item.inFlight) ||
-                                  Boolean(item.unreadable) ||
-                                  Boolean(item.expired)
+                                  // ONE predicate for every state in which no
+                                  // control on this row may still do something.
+                                  noLiveAction(item)
                                 }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">
@@ -762,6 +827,19 @@ export function ApprovalQueue({
                                     {item.lastAttempt.sentence}
                                   </p>
                                 ) : null}
+                                {/* 🚨 THE WRITE REACHED GOOGLE AND THE ANSWER
+                                    WAS LOST (`receipt.state ===
+                                    "applied_unconfirmed"`, aidream lane B-10
+                                    § A-N1). The server's own sentence, verbatim,
+                                    and no retry anywhere on the row: an append
+                                    is not idempotent, so "Try again" here is a
+                                    second block in the person's document. */}
+                                {item.lastAttempt?.state ===
+                                "applied_unconfirmed" ? (
+                                  <p className="break-words text-[11px] font-medium text-warning">
+                                    {item.lastAttempt.sentence}
+                                  </p>
+                                ) : null}
                                 {/* 🚨 SOMETHING IS WAITING AND THIS BUILD CANNOT
                                     SHOW IT. The page read used to subtract this
                                     row from its own total, so the screen said
@@ -787,7 +865,7 @@ export function ApprovalQueue({
                                   row of 40px targets under the text, instead of a
                                   squeezed 24px column beside it. */}
                               <div className="flex shrink-0 items-center gap-1 max-md:w-full max-md:justify-end max-md:pl-6">
-                                {item.inFlight || item.unreadable ? null : (
+                                {noDecisionControls(item) ? null : (
                                   <>
                                     {item.individualReview ||
                                     item.blocked ||
@@ -826,7 +904,19 @@ export function ApprovalQueue({
                                 {item.body}
                               </div>
                             ) : null}
-                            {item.individualReview ? (
+                            {/* 🚨 A ROW THAT CANNOT BE ACTED ON MOUNTS NO KIND'S
+                                ACTION EITHER (Bugbot round 11, frontend PR 228).
+                                `expired` dropped the generic Approve — but Gmail
+                                never uses that button: its Send lives inside
+                                `individualReview`, which kept mounting, so an
+                                expired draft stayed sendable until the door
+                                returned 403. The gate belongs HERE, once, for
+                                every kind: the queue already knows the four
+                                states in which no control may be live, and a new
+                                kind inherits the rule instead of remembering it.
+                                Each state prints its own sentence above, so the
+                                row still says why. */}
+                            {item.individualReview && !noLiveAction(item) ? (
                               <div className="mt-1 pl-6 max-md:pl-0">
                                 {item.individualReview}
                               </div>

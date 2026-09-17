@@ -35,10 +35,8 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
-import {
-  listPendingProposals,
-  type ApprovalProposal,
-} from "../data";
+import { listPendingProposals, type ApprovalProposal } from "../data";
+import { receiptRowMarks } from "../receipt";
 import { unrenderableApprovalItems } from "../unshowable";
 import {
   GOOGLE_REJECT_COPY,
@@ -81,7 +79,9 @@ function grid(value: Json | undefined): string[][] | null {
   const rows: string[][] = [];
   for (const row of value) {
     if (!Array.isArray(row)) return null;
-    rows.push(row.map((cell) => (typeof cell === "string" ? cell : String(cell ?? ""))));
+    rows.push(
+      row.map((cell) => (typeof cell === "string" ? cell : String(cell ?? ""))),
+    );
   }
   return rows;
 }
@@ -225,6 +225,11 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       // 🚨 PAST THE REVIEW WINDOW, in the server's own words (§ A-N7). The apply
       // door refuses such a row with 403; the queue stops offering Approve.
       expired: proposal.expired,
+      // 🚨 AND WHAT THE LAST APPROVE DID, from the row's own receipt — the ONE
+      // reader every kind shares (`../receipt.ts` → `receiptRowMarks`): an apply
+      // still running, one that failed, or one that reached Google with the
+      // answer lost (no retry over that one, ever — aidream lane B-10 § A-N1).
+      ...receiptRowMarks(proposal.assist.result),
       doors: proposal.subject ? (
         <EntityRef
           token={proposal.subject.token}

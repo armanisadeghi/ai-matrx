@@ -13,6 +13,7 @@
  * | `failed`   | the row was claimed and the change was NOT made (`error`)  |
  * | `applied`  | the change was made (`output`)                             |
  * | `rejected` | nothing was written anywhere                              |
+ * | `applied_unconfirmed` | the write reached Google and the answer was LOST |
  *
  * Reading only `status` + `applied_now`, the queue said, verbatim, *"had already
  * been approved, so nothing was done again — the change was made by that first
@@ -25,11 +26,21 @@
  * assumed: a shape this build cannot read is `unknown`, which every caller
  * reports as "the record does not say", never as success.
  *
- * SERVER CONTRACT (aidream lane B-8, in flight): a failed apply RETURNS THE ROW
- * TO `pending` carrying this same `failed` receipt, so the person can retry from
- * the queue. This module is written for that contract and for the pre-B-8 rows
- * that stayed `accepted` — the state decides either way, which is why the state
- * is what this reads.
+ * SERVER CONTRACT (aidream lane B-8): a failed apply RETURNS THE ROW TO
+ * `pending` carrying this same `failed` receipt, so the person can retry from the
+ * queue. This module is written for that contract and for the pre-B-8 rows that
+ * stayed `accepted` — the state decides either way, which is why the state is
+ * what this reads.
+ *
+ * 🚨 AND THE FIFTH STATE IS THE ONE THAT MUST NEVER BE GUESSED AT (lane B-10,
+ * § A-N1). `applied_unconfirmed` is a failure that happened AFTER Google accepted
+ * the write, measured by `services/provider_write_phase.py` — so the row STAYS
+ * claimed, no door offers a retry, and the screen prints the server's own
+ * sentence. Reading it as `unknown` would have put it in the bucket for shapes
+ * this build cannot read; reading it as `failed` would have offered the "Try
+ * again" that appends the same block twice. So the ladder below is a SWITCH with
+ * a `never` default: the next state aidream adds fails `pnpm type-check` here
+ * instead of quietly reading as applied or as failed.
  */
 
 import type { Json } from "@/types/database.types";
@@ -40,16 +51,40 @@ export type ApprovalReceiptState =
   | "applying"
   | "failed"
   | "applied"
+  /**
+   * 🚨 THE OUTCOME IS UNKNOWN AND THE CHANGE MAY HAVE LANDED (aidream lane
+   * B-10, `/projects/google-native/VERIFY-U-P4-U-M1-R3.md` § A-N1). Every one of
+   * the six Google actions can raise AFTER Google accepted the write — a sheet
+   * write PUTs then reads back, an append inserts then reads back, both creates
+   * create the file then register it — so the server MEASURES the phase and
+   * records this state when the failure came after commitment. The row stays
+   * claimed, `phase` is `after_provider_write`, `mayHaveLanded` names what
+   * already happened, and NO DOOR OFFERS A RETRY: an append is not idempotent,
+   * so a second press is a second block in the person's document.
+   */
+  | "applied_unconfirmed"
   | "rejected"
   /** No receipt, or one written in a shape this build does not recognise. */
   | "unknown";
 
-const STATES: readonly ApprovalReceiptState[] = [
-  "applying",
-  "failed",
-  "applied",
-  "rejected",
-];
+/**
+ * Every state the server writes, as a RECORD — so adding one to the union
+ * without listing it here fails `pnpm type-check` instead of quietly widening
+ * what this narrowing calls `unknown`.
+ */
+const SERVER_STATES: Record<Exclude<ApprovalReceiptState, "unknown">, true> = {
+  applying: true,
+  failed: true,
+  applied: true,
+  applied_unconfirmed: true,
+  rejected: true,
+};
+
+const STATES: readonly string[] = Object.keys(SERVER_STATES);
+
+/** The two phases a replayable write has, as aidream names them. */
+export type ApprovalWritePhase =
+  "before_provider_write" | "after_provider_write";
 
 export interface ApprovalReceipt {
   state: ApprovalReceiptState;
@@ -57,6 +92,20 @@ export interface ApprovalReceipt {
   error: string | null;
   /** The action the door re-ran, when the receipt names it. */
   action: string | null;
+  /**
+   * Which side of the provider write the failure fell on, when the receipt says
+   * (`before_provider_write` touched nothing; `after_provider_write` may have
+   * changed the person's document). Never inferred from the state.
+   */
+  phase: ApprovalWritePhase | null;
+  /** What the server says had already happened, on an unconfirmed outcome. */
+  mayHaveLanded: string | null;
+  /**
+   * 🚨 THE SERVER'S OWN SENTENCE, stored ON THE RECEIPT. A row read back from
+   * the queue carries no door reply, so this is where its words live — and they
+   * are printed, never re-written (F-21's rule; round-3 verification § A-N3).
+   */
+  sentence: string | null;
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -75,17 +124,33 @@ export function readApprovalReceipt(
   value: Json | Record<string, unknown> | null | undefined,
 ): ApprovalReceipt {
   const row = record(value);
-  if (!row) return { state: "unknown", error: null, action: null };
+  if (!row) return EMPTY_RECEIPT;
   const state = row.state;
+  const phase = text(row, "phase");
   return {
     state:
-      typeof state === "string" && STATES.includes(state as ApprovalReceiptState)
+      typeof state === "string" && STATES.includes(state)
         ? (state as ApprovalReceiptState)
         : "unknown",
     error: text(row, "error"),
     action: text(row, "action"),
+    phase:
+      phase === "before_provider_write" || phase === "after_provider_write"
+        ? phase
+        : null,
+    mayHaveLanded: text(row, "may_have_landed"),
+    sentence: text(row, "sentence"),
   };
 }
+
+const EMPTY_RECEIPT: ApprovalReceipt = {
+  state: "unknown",
+  error: null,
+  action: null,
+  phase: null,
+  mayHaveLanded: null,
+  sentence: null,
+};
 
 /**
  * THE SENTENCE A PERSON READS when a claimed apply failed. It says the change
@@ -104,10 +169,93 @@ export function failedApplySentence(
   return `${subject}The change was NOT made.${because} Try again, or reject it — nothing was retried automatically.`;
 }
 
+/**
+ * THE SENTENCE FOR AN OUTCOME NOBODY CAN CONFIRM — and it never offers a retry.
+ *
+ * Used ONLY when the reply or the row carried none of its own: aidream writes the
+ * whole sentence onto the receipt (`unconfirmed_sentence`) precisely so one
+ * producer says this, and printing that is the rule (§ A-N3). This is the honest
+ * fallback for an older server, and it says the same three things: the change may
+ * have landed, here is what had already happened, go look before asking again.
+ */
+export function unconfirmedApplySentence(
+  receipt: ApprovalReceipt,
+  what?: string,
+): string {
+  if (receipt.sentence) {
+    return what ? `"${what}": ${receipt.sentence}` : receipt.sentence;
+  }
+  const subject = what ? `"${what}": ` : "";
+  const landed = receipt.mayHaveLanded
+    ? ` What had already happened: ${receipt.mayHaveLanded}.`
+    : "";
+  const because = receipt.error
+    ? ` (${receipt.error.replace(/\s+$/, "")})`
+    : "";
+  return (
+    `${subject}AI Matrx sent this change to Google and then lost the answer${because}.` +
+    `${landed} So the change may have been made; check the document before ` +
+    "retrying. Nothing here has been retried, and nothing will retry itself — " +
+    "doing the same thing twice would append or create a second copy. Open the " +
+    "file, see what is there, and if the change is missing ask for it again."
+  );
+}
+
 /** The sentence for a row whose apply is still running. No decision controls. */
 export function applyingSentence(what?: string): string {
   const subject = what ? `"${what}" is` : "This is";
   return `${subject} being applied now — an approval already in progress is making the change. Nothing new was done by this click; reload in a moment to see what happened.`;
+}
+
+/**
+ * WHAT A ROW'S OWN STORED RECEIPT PUTS ON ITS QUEUE ROW — one place, every kind.
+ *
+ * A pending page can carry a row whose last approve is still running, failed, or
+ * reached Google with the answer lost, and each of those must be SAID on the row
+ * and must change what it offers. Every Google kind read this out of the same
+ * `assist.result`, so the marks are derived here once: a kind that spreads this
+ * into its item cannot forget one of the three states, and a fourth reaches every
+ * kind at the same moment.
+ */
+export function receiptRowMarks(
+  value: Json | Record<string, unknown> | null | undefined,
+): {
+  inFlight?: { sentence: string };
+  lastAttempt?: {
+    state: "failed" | "applied_unconfirmed";
+    sentence: string;
+  };
+} {
+  const receipt = readApprovalReceipt(value);
+  switch (receipt.state) {
+    case "applying":
+      return { inFlight: { sentence: applyingSentence() } };
+    case "failed":
+      return {
+        lastAttempt: {
+          state: "failed",
+          sentence: failedApplySentence(receipt),
+        },
+      };
+    case "applied_unconfirmed":
+      return {
+        lastAttempt: {
+          state: "applied_unconfirmed",
+          sentence: unconfirmedApplySentence(receipt),
+        },
+      };
+    case "applied":
+    case "rejected":
+    case "unknown":
+      return {};
+    default: {
+      const unanswered: never = receipt.state;
+      throw new Error(
+        `[approvals] no row mark for receipt state ${String(unanswered)} — add ` +
+          "it here before a queue can render such a row.",
+      );
+    }
+  }
 }
 
 /**
@@ -142,7 +290,15 @@ export type DecisionBucket =
   /** Nothing was performed: the row was already decided. */
   | "already"
   /** The change was NOT made, or the reply cannot be read as success. */
-  | "failed";
+  | "failed"
+  /**
+   * 🚨 NOBODY KNOWS. The write reached Google and the answer was lost
+   * (`receipt.state === "applied_unconfirmed"`), so this is neither a success to
+   * count nor a failure to retry — and it gets its OWN bucket because the two
+   * existing ones both end in a sentence that would be false: "approved" claims
+   * the change landed, "still waiting for you" claims it did not.
+   */
+  | "unconfirmed";
 
 export interface DecisionReading {
   bucket: DecisionBucket;
@@ -200,11 +356,35 @@ function deriveDecisionReply({
   what?: string;
 }): DecisionReading {
   // THE RECEIPT OUTRANKS THE STATUS, and says the same thing on both paths.
-  if (receipt.state === "failed") {
-    return { bucket: "failed", message: failedApplySentence(receipt, what) };
-  }
-  if (receipt.state === "applying") {
-    return { bucket: "already", message: applyingSentence(what) };
+  //
+  // 🚨 A SWITCH, NOT A LADDER OF `if`s: every state is answered for by name and
+  // the default proves it, so a state aidream adds tomorrow fails the type-check
+  // here instead of falling through to the status branches below — where an
+  // unknown outcome would read as "already approved, the change was made".
+  switch (receipt.state) {
+    case "failed":
+      return { bucket: "failed", message: failedApplySentence(receipt, what) };
+    case "applying":
+      return { bucket: "already", message: applyingSentence(what) };
+    case "applied_unconfirmed":
+      return {
+        bucket: "unconfirmed",
+        message: unconfirmedApplySentence(receipt, what),
+      };
+    // These three say nothing on their own about what THIS call did: `applied`
+    // and `rejected` are read together with the status below, and `unknown` is
+    // the shape this build cannot read, which the status branches answer honestly.
+    case "applied":
+    case "rejected":
+    case "unknown":
+      break;
+    default: {
+      const unanswered: never = receipt.state;
+      throw new Error(
+        `[approvals] no reading for receipt state ${String(unanswered)} — add it ` +
+          "to this switch before the queue can report what happened.",
+      );
+    }
   }
 
   const subject = what ? `"${what}"` : "That proposal";

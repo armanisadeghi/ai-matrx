@@ -49,12 +49,7 @@ export type ApprovalRowFamily = "approval_proposal" | "keyword_meaning";
  * common-docs `/policies/human-in-the-loop-autonomy-modes.md`. The list is
  * CLOSED until amended there (rule 7) — never add a sixth value here.
  */
-export type AutonomyMode =
-  | "mode_1"
-  | "mode_2"
-  | "mode_3"
-  | "mode_4"
-  | "mode_5";
+export type AutonomyMode = "mode_1" | "mode_2" | "mode_3" | "mode_4" | "mode_5";
 
 export const AUTONOMY_MODES: readonly AutonomyMode[] = [
   "mode_1",
@@ -184,12 +179,23 @@ export interface ApprovalItem {
    */
   inFlight?: { sentence: string } | null;
   /**
-   * THE LAST APPROVE FAILED AFTER THE CLAIM (`receipt.state === "failed"`). The
-   * change was NOT made. The sentence names the refusal, the row's Approve
-   * becomes an explicit RETRY, and Reject stays available — because the person's
-   * two real options are to try again or to give up on it.
+   * WHAT THE LAST APPROVE DID, when it did not simply work.
+   *
+   * `failed` — it was claimed and the change was NOT made. The sentence names the
+   * refusal, the row's Approve becomes an explicit RETRY, and Reject stays
+   * available: the person's two real options are to try again or to give up.
+   *
+   * 🚨 `applied_unconfirmed` — the write REACHED GOOGLE and the answer was lost
+   * (aidream lane B-10, `/projects/google-native/VERIFY-U-P4-U-M1-R3.md` § A-N1).
+   * The change may have been made, so the row offers NO RETRY at all: an append
+   * is not idempotent and a second press is a second block in the person's
+   * document. The sentence is the server's own, and it sends them to look at the
+   * file rather than at a button.
    */
-  lastAttempt?: { state: "failed"; sentence: string } | null;
+  lastAttempt?: {
+    state: "failed" | "applied_unconfirmed";
+    sentence: string;
+  } | null;
   /**
    * 🚨 THIS PROPOSAL HAS OUTLIVED THE ORGANIZATION'S REVIEW WINDOW
    * (`hitl.google.review_timeout_hours`). The apply door refuses it with 403
@@ -255,6 +261,15 @@ export interface ApprovalOutcome {
    * frontend PR 228). The queue reports these separately, in their own words.
    */
   alreadyDecided?: { key: string; message: string }[];
+  /**
+   * 🚨 ITEMS WHOSE OUTCOME NOBODY KNOWS — the write reached Google and the
+   * answer was lost (`receipt.state === "applied_unconfirmed"`). Neither applied
+   * nor refused nor already decided: counting one as applied claims a change
+   * landed, and counting it as a failure claims it did not and invites the retry
+   * the server refuses to offer (aidream lane B-10, § A-N1). Reported in the
+   * server's own words, with no retry anywhere near them.
+   */
+  unconfirmed?: { key: string; message: string }[];
 }
 
 /**
@@ -329,6 +344,13 @@ export type ApprovalFocusResolution =
    * it was never in (Bugbot MEDIUM, frontend PR 228).
    */
   | "not_an_approval"
+  /**
+   * 🚨 APPROVED, THE WRITE REACHED GOOGLE, AND THE ANSWER WAS LOST
+   * (`receipt.state === "applied_unconfirmed"`). Never `decided` — nobody can
+   * say whether the change was made — and never `apply_failed`, which would
+   * offer a retry that duplicates it.
+   */
+  | "applied_unconfirmed"
   | "unconfirmed";
 
 /**
