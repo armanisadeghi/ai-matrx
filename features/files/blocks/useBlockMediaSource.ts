@@ -36,6 +36,7 @@ import {
   useMediaResolution,
 } from "@ai-matrx/media/core";
 import { classifyMediaUrl } from "@/lib/media/durability";
+import { fileIdFromFileEndpointUrl } from "@/lib/media/our-file-sources";
 import type { ImageBlock, VideoBlock } from "./types";
 
 export type MediaSourceBlock = ImageBlock | VideoBlock;
@@ -45,9 +46,22 @@ export type MediaSourceBlock = ImageBlock | VideoBlock;
  * Old stored rows can carry an expiring signed URL in the `cdnUrl` slot;
  * treating that as permanent skips durable resolution and the media dies on
  * expiry — so we re-check here before shortcutting past the client.
+ *
+ * It is also never OUR OWN authenticated `/files/{id}/download` endpoint.
+ * Adapters file the block's durable `url` into this slot when no real CDN
+ * URL exists; binding that endpoint to an `<img>` as if it were public
+ * skips the client's bearer-authenticated blob lane and rides the
+ * third-party-cookie lane instead — "Image unavailable" forever in any
+ * browser that blocks third-party cookies (2026-09-16). The package client
+ * (`permanentPublicUrl`) already refuses exactly this; the shortcut here must
+ * refuse it too, or the guard only covers the door the client remembered.
  */
 function isPermanentCdn(cdnUrl: string | null | undefined): cdnUrl is string {
-  return !!cdnUrl && classifyMediaUrl(cdnUrl) !== "expiring";
+  return (
+    !!cdnUrl &&
+    classifyMediaUrl(cdnUrl) !== "expiring" &&
+    fileIdFromFileEndpointUrl(cdnUrl) === null
+  );
 }
 
 export interface BlockMediaSourceResult {
