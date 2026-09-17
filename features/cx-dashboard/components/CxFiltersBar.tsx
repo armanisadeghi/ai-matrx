@@ -16,7 +16,7 @@ import {
   clearCxTableFilters,
   hasActiveCxSourceFilters,
   filtersFromSearchParams,
-  filtersToSearchParams,
+  updateCxSourceFilter,
 } from "../utils/filters";
 import type { CxFilters } from "../types/cxDashboardTypes";
 
@@ -49,13 +49,12 @@ export function CxFiltersBar({
 
   const updateFilter = useCallback(
     (key: keyof CxFilters, value: string | undefined) => {
-      const newFilters = { ...filters, [key]: value, page: undefined };
-      const params = filtersToSearchParams(newFilters);
+      const params = updateCxSourceFilter(new URLSearchParams(window.location.search), key, value);
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
     },
-    [filters, pathname, router],
+    [pathname, router],
   );
 
   const clearFilters = useCallback(() => {

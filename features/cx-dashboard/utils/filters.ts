@@ -105,3 +105,16 @@ export function clearCxTableFilters(params: URLSearchParams, tableId?: string): 
   }
   return next;
 }
+
+/** Patch one source filter without discarding table or sibling URL state. */
+export function updateCxSourceFilter(
+  params: URLSearchParams,
+  key: keyof CxFilters,
+  value: string | undefined,
+): URLSearchParams {
+  const next = new URLSearchParams(params);
+  if (value) next.set(key, value);
+  else next.delete(key);
+  next.delete("page");
+  return next;
+}
