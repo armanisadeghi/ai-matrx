@@ -100,7 +100,7 @@ export interface SiteAnalyticsWindowData {
   caveats: AnalyticsCaveat[];
 }
 
-interface RawRow {
+export interface RawRow {
   id: string;
   date: string;
   run_id: string;
@@ -245,6 +245,46 @@ export async function readSiteAnalyticsWindow(
     },
   );
 
+  const aggregated = aggregateAnalyticsRows(rows, {
+    start,
+    end,
+    previousStart,
+    previousEnd,
+    days,
+    metadata,
+  });
+
+  return {
+    dataThrough: end,
+    pulledAt: freshest.pulledAt,
+    propertyTimezone: freshest.propertyTimezone,
+    current: { start, end, days },
+    previous: { start: previousStart, end: previousEnd, days },
+    ...aggregated,
+  };
+}
+
+export interface AggregateBounds {
+  start: string;
+  end: string;
+  previousStart: string;
+  previousEnd: string;
+  days: number;
+  metadata: ReturnType<typeof readGa4Metadata>;
+}
+
+/**
+ * The accuracy rules, as a pure function so they can be proven with rows a test
+ * writes by hand: winning-run dedup per date, current/previous split, landing
+ * pages for the current window, and the caveats that are TRUE for it.
+ */
+export function aggregateAnalyticsRows(
+  rows: readonly RawRow[],
+  bounds: AggregateBounds,
+): Omit<
+  SiteAnalyticsWindowData,
+  "dataThrough" | "pulledAt" | "propertyTimezone" | "current" | "previous"
+> {
   // Rule 1 — the winning run per day (newest write wins).
   const winningRun = new Map<string, { runId: string; at: string }>();
   for (const row of rows) {
@@ -267,7 +307,7 @@ export async function readSiteAnalyticsWindow(
       rowsSuperseded += 1;
       continue;
     }
-    const inCurrent = row.date >= start;
+    const inCurrent = row.date >= bounds.start;
     const dayMap = inCurrent ? byDay : previousByDay;
     const point = dayMap.get(row.date) ?? {
       date: row.date,
@@ -307,11 +347,6 @@ export async function readSiteAnalyticsWindow(
   );
 
   return {
-    dataThrough: end,
-    pulledAt: freshest.pulledAt,
-    propertyTimezone: freshest.propertyTimezone,
-    current: { start, end, days },
-    previous: { start: previousStart, end: previousEnd, days },
     totals,
     previousTotals,
     series,
@@ -323,7 +358,7 @@ export async function readSiteAnalyticsWindow(
     rowsRead: rows.length,
     rowsSuperseded,
     caveats: ga4Caveats({
-      metadata,
+      metadata: bounds.metadata,
       hasOtherRow,
       usersAreSummed: totals.users > 0,
     }),

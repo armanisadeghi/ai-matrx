@@ -56,6 +56,7 @@ function integer(value: number): string {
 
 function SiteHeadline({ site }: { site: MarketingSite }) {
   const openPanel = useOpenSiteAnalyticsWindow();
+  const binding = parseSiteIntegrations(site.integrations).googleAnalytics4;
   const window = useQuery({
     queryKey: [
       ...marketingKeys.site(site.id),
@@ -64,8 +65,12 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
     ] as const,
     queryFn: ({ signal }) =>
       readSiteAnalyticsWindow(site.id, DEFAULT_ANALYTICS_RANGE, signal),
+    // A site with no Analytics property has nothing to total, and this list
+    // can hold many sites: reading the raw grain for each of them to print
+    // four zeros would cost the reader seconds for no answer.
+    enabled: binding.enabled,
   });
-  const ga4 = parseSiteIntegrations(site.integrations).googleAnalytics4;
+  const ga4 = binding;
   const data = window.data ?? null;
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
@@ -94,13 +99,13 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
           error={window.error}
           onRetry={() => void window.refetch()}
         />
+      ) : !ga4.enabled ? (
+        <p className="text-xs text-muted-foreground">
+          No Google Analytics property is bound to this site yet — open
+          Analytics to bind one.
+        </p>
       ) : window.isLoading ? (
         <div className="h-10 animate-pulse rounded-md border border-border bg-muted/40" />
-      ) : !ga4.enabled && !data?.dataThrough ? (
-        <p className="text-xs text-muted-foreground">
-          No Google Analytics property is bound to this site yet — open Analytics
-          to bind one.
-        </p>
       ) : (
         <>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
