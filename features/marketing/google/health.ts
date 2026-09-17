@@ -157,6 +157,19 @@ export const GOOGLE_ACCOUNT_FAULT_CODES = [
   "provider_unavailable",
   /** Connected, and some of what Google found could not be saved. */
   "resources_not_saved",
+  /**
+   * The approval itself is gone at Google's end — withdrawn there, or revoked
+   * here. Declared as a fault like any other so the account line speaks from
+   * this one vocabulary instead of writing its own sentence (VERIFY-U-P2-R4,
+   * V13-1 / V13-5).
+   */
+  "access_revoked",
+  /**
+   * Nothing is wrong: the account works, and the permission is still held the
+   * older way. It reaches a person only as "you will be asked once more some
+   * time" — which product stops, and when, is never this sentence's business.
+   */
+  "credential_storage_outdated",
   /** Something we cannot classify. One honest sentence, never the raw text. */
   "unknown",
 ] as const;
@@ -305,6 +318,18 @@ export function googleAccountFaultLanguage(
         reason: `Google connected ${account}, and some of what it found could not be saved, so part of this account may be missing here.`,
         remedy: `Reconnect ${account} to try again.`,
       };
+    case "access_revoked":
+      return {
+        label: "Revoked",
+        reason: `The permission AI Matrx had for ${account} was withdrawn, so it cannot do anything with that account until you connect it again.`,
+        remedy: `Connect ${account} again to restore access.`,
+      };
+    case "credential_storage_outdated":
+      return {
+        label: "Connected",
+        reason: `${account} is connected and working. AI Matrx will ask you to approve it once more at some point, to move it onto how it keeps permissions now.`,
+        remedy: `Reconnect ${account} whenever it suits you — nothing stops working until then.`,
+      };
     case "unknown":
       return {
         label: "Needs attention",
@@ -376,22 +401,23 @@ export function diagnoseGoogleConnection(
     connection.account_name ||
     "this Google account";
 
+  // 🚨 EVERY BRANCH SPEAKS FROM THE VOCABULARY ABOVE (VERIFY-U-P2-R4, V13-1).
+  // Until 2026-09-17 the three branches below wrote their own sentences, in the
+  // register the vocabulary exists to keep off a screen: a revoked account said
+  // "Nothing can read Search Console or Analytics with it" (false on seven of
+  // the nine products it was printed on — V13-5), a missing credential said
+  // "no vault credential on file (no credential item and no legacy vault key),
+  // so the server cannot mint a Google access token", and the older storage path
+  // said "resolves through the legacy vault key … a deprecated path scheduled
+  // for removal". `last_error` was not involved in any of them, which is why
+  // N9's fix — and N9's test — went straight past all three.
   if (connection.health === "revoked") {
-    return {
-      label: "Revoked",
-      reason: `Access for ${account} was revoked. Nothing can read Search Console or Analytics with it.`,
-      remedy: "Connect Google again to restore access.",
-      blocking: true,
-    };
+    return { ...googleAccountFaultLanguage("access_revoked", account), blocking: true };
   }
 
   if (!connection.credential_present) {
     return {
-      label: "Needs re-authentication",
-      reason:
-        `${account} has no vault credential on file (no credential item and no legacy vault key), ` +
-        "so the server cannot mint a Google access token. Every sync and collection using it fails.",
-      remedy: `Reconnect ${account} to mint a new refresh-token credential.`,
+      ...googleAccountFaultLanguage("credential_missing", account),
       blocking: true,
     };
   }
@@ -415,18 +441,14 @@ export function diagnoseGoogleConnection(
 
   if (!connection.credential_stable) {
     return {
-      label: "Legacy credential",
-      reason:
-        `${account} still resolves through the legacy vault key rather than a stable ` +
-        "credential item, which is a deprecated path scheduled for removal.",
-      remedy: `Reconnect ${account} to mint a stable credential reference.`,
+      ...googleAccountFaultLanguage("credential_storage_outdated", account),
       blocking: false,
     };
   }
 
   return {
     label: "Connected",
-    reason: `${account} has a stable vault credential and can authorize Google requests.`,
+    reason: `${account} is connected and working.`,
     remedy: null,
     blocking: false,
   };
