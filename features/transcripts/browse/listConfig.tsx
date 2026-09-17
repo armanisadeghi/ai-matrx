@@ -7,7 +7,12 @@
 // collapsed to one row type with a `kind` column, five source queries
 // collapsed to the trx_* RPC set.
 
+import { Download } from "lucide-react";
 import type { EntityListConfig } from "@/lib/entity-list/config";
+import {
+  confirmTranscriptExport,
+  exportTranscriptSelection,
+} from "./bulkExport";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import { transcriptRowSummary } from "@/features/transcripts/format";
 import { TRANSCRIPT_COLUMNS } from "./columns";
@@ -99,6 +104,25 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
     save: (row, edit) => saveTranscriptRowEdit(row, edit as TranscriptRowEdit),
   },
   deepSearch: { label: "Also search inside transcript text" },
+  /**
+   * BULK SELECTION — the first surface to opt in (lib/entity-list/selection.ts).
+   *
+   * Export only, for now: it is the action whose blast radius is a file, so the
+   * shell's selection mechanics could be proven live before any surface points
+   * a bulk verb at rows. `selectAllMatching` is on because this hub's own
+   * `trx_list_scoped` is what resolves it — the same RPC, the same filters, no
+   * page — so "every item matching this filter" is a promise it can keep.
+   */
+  bulkActions: [
+    {
+      id: "export",
+      label: "Export",
+      icon: Download,
+      confirm: confirmTranscriptExport,
+      run: exportTranscriptSelection,
+    },
+  ],
+  bulkSelection: { noun: "item", selectAllMatching: true },
   facetSections: [
     {
       facet: "kind",

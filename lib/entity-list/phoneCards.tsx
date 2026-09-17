@@ -199,6 +199,35 @@ export function EntityPhoneCard<TRow>({
       className="matrx-touch-targets shrink-0 rounded-lg border border-border bg-card px-3 py-2.5"
     >
       <div className="flex min-w-0 items-start gap-1">
+        {/*
+          THE CARD'S SELECTION CHECKBOX — present only where the surface opted
+          into bulk actions. `controls.selectable` is false for every surface
+          that passed no `selection` to the table, and false for a row the
+          surface refuses to act on in bulk, so an unselectable row renders NO
+          control rather than a greyed one.
+
+          It carries `.matrx-tap-area` ON THE LABEL, which is the one documented
+          way to give a control whose SIZE IS THE CONTROL a 44px hit area (see
+          app/globals.css). The subtree floor `.matrx-touch-targets` above
+          deliberately excludes checkboxes — it would blow a 16px tick box up
+          into an empty bordered square — and the ring goes on the <label>
+          because an <input> is a replaced element and paints no ::before.
+        */}
+        {controls.selectable ? (
+          <label
+            className="matrx-tap-area -ml-0.5 mr-0.5 mt-1 flex shrink-0 items-center"
+            data-entity-phone-card-select
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer accent-primary"
+              checked={controls.selected}
+              aria-label={`Select ${rowName}`}
+              onChange={(event) => controls.onSelectedChange(event.target.checked)}
+            />
+          </label>
+        ) : null}
         {layout.favorite ? (
           <div className="-ml-1.5 shrink-0">
             {controls.renderCell(layout.favorite.id)}

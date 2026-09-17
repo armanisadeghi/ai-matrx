@@ -22,6 +22,7 @@ import type {
   ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableMobileCardControls,
+  MatrxDataTableSelectionConfig,
 } from "@ai-matrx/design-system/data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,17 @@ interface Props<TRow> {
   showSharedColumns: boolean;
   hiddenColumns: string[];
   onSaveEdits: (edits: Record<string, Partial<TRow>>) => Promise<void>;
+  /**
+   * BULK SELECTION, or nothing at all.
+   *
+   * 🚨 `undefined` IS THE CONTRACT FOR EVERY SURFACE THAT DID NOT OPT IN. The
+   * prop is spread conditionally below, so the table receives no `selection`
+   * key whatsoever and renders exactly what it rendered before this capability
+   * existed — no leading column, no bulk bar, no `data-matrx-table-selection-*`
+   * node. Passing a zero-state selection object instead would add a checkbox
+   * column to eighteen list surfaces on the strength of a default.
+   */
+  selection?: MatrxDataTableSelectionConfig<TRow>;
   onQueryChange: (next: {
     page: number;
     pageSize: number;
@@ -125,6 +137,7 @@ export function EntityListTable<TRow>({
   onQueryChange,
   emptyAction,
   emptyState,
+  selection,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -293,6 +306,9 @@ export function EntityListTable<TRow>({
       // declared, so every list route inherits a phone layout instead of a
       // 3,000px table in a 364px box. See ../phoneCards.tsx.
       mobileCards={config.mobileCards ?? defaultMobileCards}
+      // Spread, never `selection={selection}`: a surface that declared no
+      // `bulkActions` must reach the table with the key absent (see Props).
+      {...(selection ? { selection } : {})}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
     />
   );
