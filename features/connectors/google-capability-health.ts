@@ -36,9 +36,37 @@ import {
   type ConnectorRefusalCode,
 } from "./health";
 
-/** The `__kind` the server stamps on this column. Never stripped, never faked. */
+/** The `__kind` the server stamps on this column today. Never stripped, never faked. */
 export const GOOGLE_CAPABILITY_HEALTH_KIND =
   "google_connection_capability_health";
+
+/**
+ * 🚨 THE COLUMN IS SHARED, SO ITS MARKER IS BECOMING PROVIDER-NEUTRAL
+ * (VERIFY-U-P2-R4, V13-6). `users.integration_connections.capability_health`
+ * defaults to `{"__kind":"google_connection_capability_health"}` on a table that
+ * already holds Google, GitHub and Bing rows, so every non-Google row declares
+ * itself a Google kind. Lane B-17 renames the server's kind to
+ * `connection_capability_health` and keeps the schema declaring it; this reader
+ * accepts BOTH spellings now, so that landing needs no client change and no row
+ * is unreadable in either direction during the rollout.
+ *
+ * Accept-and-ignore, never strip: the marker that was READ is carried on the
+ * parsed value (`kind`), whichever one it was (kind-marker law,
+ * `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §4.2a).
+ */
+export const CONNECTION_CAPABILITY_HEALTH_KIND = "connection_capability_health";
+
+export const CAPABILITY_HEALTH_KINDS = [
+  CONNECTION_CAPABILITY_HEALTH_KIND,
+  GOOGLE_CAPABILITY_HEALTH_KIND,
+] as const;
+
+export function isCapabilityHealthKind(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    (CAPABILITY_HEALTH_KINDS as readonly string[]).includes(value)
+  );
+}
 
 /** One capability's last answered call. */
 export interface GoogleCapabilitySuccess {
@@ -85,7 +113,10 @@ export interface GoogleCapabilityRecord {
 }
 
 export interface GoogleConnectionCapabilityHealth {
-  /** The marker, carried through — never dropped from the parsed value. */
+  /**
+   * The marker AS READ, carried through — never dropped, never rewritten to the
+   * one this build prefers (V13-6: the server's spelling is changing under us).
+   */
   kind: string;
   /** Keyed by SERVER capability key (`drive_files`, `youtube_analytics`). */
   capabilities: Record<string, GoogleCapabilityRecord>;
@@ -187,7 +218,8 @@ export function parseGoogleCapabilityHealth(
   raw: unknown,
 ): GoogleConnectionCapabilityHealth {
   if (!isJsonObject(raw)) return EMPTY;
-  if (raw.__kind !== GOOGLE_CAPABILITY_HEALTH_KIND) return EMPTY;
+  if (!isCapabilityHealthKind(raw.__kind)) return EMPTY;
+  const kind = raw.__kind as string;
   const capabilities: Record<string, GoogleCapabilityRecord> = {};
   for (const [key, value] of Object.entries(raw)) {
     // The marker is data, and it is not a capability: accept and ignore.
@@ -202,7 +234,8 @@ export function parseGoogleCapabilityHealth(
       capabilities[key] = record;
     }
   }
-  return { kind: GOOGLE_CAPABILITY_HEALTH_KIND, capabilities, recognized: true };
+  // The marker that was on the value, not the one this build would have written.
+  return { kind, capabilities, recognized: true };
 }
 
 function newer(a: string | null, b: string | null): boolean {
