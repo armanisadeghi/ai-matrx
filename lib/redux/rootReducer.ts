@@ -41,6 +41,7 @@ import canvasReducer from "@/features/canvas/redux/canvasSlice";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
 import notesReducer from "@/features/notes/redux/slice";
+import topicalMapReducer from "@/features/marketing/seo/topical-map/redux/slice";
 import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
 import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
@@ -218,6 +219,10 @@ export const slimReducerMap = {
   textDiff: textDiffReducer,
   noteVersions: noteVersionsReducer,
   notes: notesReducer,
+  // Topical map workspace — selection, expansion, view, filters and optimistic
+  // edits per open map. Views are ROUTES, so this slice is what makes selection
+  // and expansion survive switching between outline/table/graph/text.
+  topicalMap: topicalMapReducer,
   transcriptStudio: transcriptStudioReducer,
   // Vision Interview — multi-agent interview room (features/vision-interview)
   visionInterview: visionInterviewReducer,

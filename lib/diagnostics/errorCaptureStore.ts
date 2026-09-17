@@ -146,6 +146,13 @@ export type CapturedErrorSource =
    */
   | "org-resolution"
   /**
+   * A `seo.*` topical-map RPC or table call refused or failed. These functions
+   * raise sentences written FOR the caller (22023 argument rules, 23514
+   * attachment policies, 42501 `<fn>_denied`, P0002 unknown slug), so the
+   * capture carries the message verbatim alongside the SQLSTATE.
+   */
+  | "topical-map-rpc"
+  /**
    * A user-facing `toast.error(...)`. Showing a failure to the user describes
    * handling, not severity; these stay red unless a specific downgrade rule
    * proves that exact toast is expected noise.
