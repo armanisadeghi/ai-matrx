@@ -65722,6 +65722,22 @@ export type Database = {
       declared_actor_agent: { Args: never; Returns: string }
       declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
+      definer_access_decision_regex: { Args: never; Returns: string }
+      definer_body_decides_access: {
+        Args: { p_depth?: number; p_oid: unknown }
+        Returns: boolean
+      }
+      definer_body_lint_findings: {
+        Args: never
+        Returns: {
+          function_name: string
+          grandfathered: boolean
+          id_arguments: string[]
+          identity_args: string
+          object_ref: string
+          schema_name: string
+        }[]
+      }
       definer_guard_anon_revoke_notice: {
         Args: {
           p_identity_args: string
@@ -90256,62 +90272,34 @@ export type Database = {
           priority_impressions: number
         }[]
       }
-      fn_claim_page_intent_batch:
-        | {
-            Args: {
-              p_limit: number
-              p_max_attempts: number
-              p_site_id: string
-              p_stale_claim_minutes: number
-            }
-            Returns: {
-              backlinks: number
-              crawled: boolean
-              current_topics: Json
-              headings: Json
-              http_status: number
-              inbound_internal_links: number
-              meta_description: string
-              page_id: string
-              path: string
-              priority_clicks: number
-              priority_impressions: number
-              title: string
-              topic_id: string
-              topic_name: string
-              topic_slug: string
-              url: string
-              word_count: number
-            }[]
-          }
-        | {
-            Args: {
-              p_limit: number
-              p_max_attempts: number
-              p_site_id: string
-              p_stale_claim_minutes: number
-              p_topic_slugs: string[]
-            }
-            Returns: {
-              backlinks: number
-              crawled: boolean
-              current_topics: Json
-              headings: Json
-              http_status: number
-              inbound_internal_links: number
-              meta_description: string
-              page_id: string
-              path: string
-              priority_clicks: number
-              priority_impressions: number
-              title: string
-              topic_id: string
-              topic_name: string
-              topic_slug: string
-              url: string
-              word_count: number
-            }[]
-          }
+      fn_claim_page_intent_batch: {
+        Args: {
+          p_limit: number
+          p_max_attempts: number
+          p_site_id: string
+          p_stale_claim_minutes: number
+          p_topic_slugs: string[]
+        }
+        Returns: {
+          backlinks: number
+          crawled: boolean
+          current_topics: Json
+          headings: Json
+          http_status: number
+          inbound_internal_links: number
+          meta_description: string
+          page_id: string
+          path: string
+          priority_clicks: number
+          priority_impressions: number
+          title: string
+          topic_id: string
+          topic_name: string
+          topic_slug: string
+          url: string
+          word_count: number
+        }[]
+      }
       fn_claim_page_mapping_batch: {
         Args: {
           p_limit: number
