@@ -453,6 +453,13 @@ provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edi
   live deck: both face images render in the print document, a cloze card prints occluded
   front / revealed back, and the one file_id-only image is skipped with a toast.
 
+- **2026-09-17 — Flashcards jobs are disclosed in the existing header Agents menu.**
+  Every action-bearing Flashcards surface now registers only the mandates it can actually
+  launch: topic/source generation, set enrichment/expansion/top-up, study help/coaching/
+  review, quiz fallback, typed semantic grading, and the lazy voice tutor. FastFire's
+  static manifest also declares its missing instant-help job. The registration is UI-free;
+  the shell remains the one visible disclosure and mandate-opening surface.
+
 - **2026-08-18 — "Illustrate this set" (the per-SET image lane).** Set detail can now run
   the whole deck through the web-sourcing agent in one action, entitlement-guarded with the
   meter shown before the click. aidream's `source_set_images` was extended to stream typed

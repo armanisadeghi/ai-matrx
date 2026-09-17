@@ -163,6 +163,10 @@ import {
 import { useImpactAdvance } from "./impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
+  filterMandateConsoleRows,
+  mandateConsoleSearchText,
+} from "./mandate-console-discovery";
+import {
   AdvanceResultsCard,
   ImpactBlockerCell,
   ImpactGradeCell,
@@ -357,6 +361,8 @@ export function MandatesConsole() {
   // link lands on the same UI as a new one rather than on a highlighted row.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");
+  const tableSearchQuery =
+    searchParams.get(`table.${MANDATES_TABLE_ID}.q`) ?? "";
   const deepLinkedRef = useRef<string | null>(null);
 
   // Canonical agent listing: the Redux agent-definition slice, filtered to
@@ -547,7 +553,9 @@ export function MandatesConsole() {
       const holder = holderOfMandate(mandate);
       const agentId =
         holder.holderId ??
-        (holder.versionId ? data.versionsById[holder.versionId]?.agentId : null);
+        (holder.versionId
+          ? data.versionsById[holder.versionId]?.agentId
+          : null);
       if (agentId) ids.add(agentId);
       for (const binding of data.bindingsByMandateId[mandate.id] ?? []) {
         const bindingHolder = agentHolderOfBinding(binding);
@@ -625,7 +633,8 @@ export function MandatesConsole() {
         // pin says it drifts or the read failed — an unknown row is never
         // hidden as current.
         const behindLatest = defaultVerdict
-          ? isBehindLatest(defaultVerdict) || bindingVerdicts.some(isBehindLatest)
+          ? isBehindLatest(defaultVerdict) ||
+            bindingVerdicts.some(isBehindLatest)
           : base.agentId != null &&
             (base.drift != null ||
               ungraded === "read_failed" ||
@@ -708,12 +717,12 @@ export function MandatesConsole() {
   );
   const rows = useMemo(
     () =>
-      allRows.filter(
-        (row) =>
-          (coverageFilter === null || row.coverage === coverageFilter) &&
-          (!behindOnly || row.behindLatest),
-      ),
-    [allRows, behindOnly, coverageFilter],
+      filterMandateConsoleRows(allRows, {
+        coverageFilter,
+        behindOnly,
+        searchQuery: tableSearchQuery,
+      }),
+    [allRows, behindOnly, coverageFilter, tableSearchQuery],
   );
 
   // The success measure and the grade counts, over EVERY row (not the view).
@@ -1207,7 +1216,13 @@ export function MandatesConsole() {
           </div>
         ),
       },
-      { id: "label", accessorKey: "label", header: "Label", width: 180 },
+      {
+        id: "label",
+        accessorKey: "label",
+        header: "Label",
+        width: 180,
+        href: (r) => adminMandateHref(r.mandateKey),
+      },
       {
         // THE GOAL — what this Mandate is FOR, in the words the declaration
         // uses. It is code, not a row: absent means the catalogue could not be
@@ -1345,9 +1360,9 @@ export function MandatesConsole() {
         header: "Blocker",
         filter: "select",
         filterOptions: [
-          ...(
-            Object.keys(BLOCKER_META) as Array<ImpactBlocker | "none">
-          ).map((key) => ({ value: key, label: BLOCKER_META[key].label })),
+          ...(Object.keys(BLOCKER_META) as Array<ImpactBlocker | "none">).map(
+            (key) => ({ value: key, label: BLOCKER_META[key].label }),
+          ),
           { value: "ungraded", label: "Not graded" },
         ],
         width: 210,
@@ -1661,7 +1676,7 @@ export function MandatesConsole() {
               data={rows}
               columns={columns}
               getRowId={(r) => r.id}
-              searchText={(r) => r.mandateKey}
+              searchText={mandateConsoleSearchText}
               isLoading={loading}
               isFetching={fetching}
               pageSize={50}
@@ -1739,6 +1754,9 @@ export function MandatesConsole() {
               detail={{ enabled: false }}
               window={{
                 enabled: true,
+                // The inspection window remains available as an explicit row
+                // action; the ordinary row click opens the management page.
+                openOnRowClick: false,
                 title: (r) => `Inspect ${r.label || r.mandateKey}`,
                 onOpen: () => {},
               }}

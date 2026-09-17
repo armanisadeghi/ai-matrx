@@ -66,6 +66,7 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
 import { useGenerateCards } from "../../data/useGenerateCards";
@@ -97,6 +98,7 @@ const FIELD_INPUT_CLASS = "text-base";
 type Step = "pick-doc" | "curate";
 
 export function CreateFromSource() {
+  useFlashcardMandates(["generateFromSource"]);
   const router = useRouter();
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
 
@@ -432,8 +434,9 @@ function DocPickerStep({
             No processed documents yet
           </p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Upload and process a PDF or document in your Knowledge library first —
-            once it finishes chunking, it'll show up here to build a deck from.
+            Upload and process a PDF or document in your Knowledge library first
+            — once it finishes chunking, it'll show up here to build a deck
+            from.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-1">
             <a href="/knowledge/library">Open Knowledge library</a>

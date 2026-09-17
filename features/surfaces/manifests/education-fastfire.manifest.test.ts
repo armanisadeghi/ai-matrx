@@ -10,8 +10,10 @@ describe("FastFire fixed mandate disclosure", () => {
       MANDATE_KEYS.flashcards__grade_spoken,
       MANDATE_KEYS.flashcards__spoken_front_tts,
       MANDATE_KEYS.flashcards__helper_tts,
+      MANDATE_KEYS.flashcards__help_live,
+      MANDATE_KEYS.flashcards__enrich_card,
     ]);
-    expect(new Set(disclosedMandates).size).toBe(3);
+    expect(new Set(disclosedMandates).size).toBe(5);
     expect(roles.every((role) => role.defaultAgentId === null)).toBe(true);
   });
 });
