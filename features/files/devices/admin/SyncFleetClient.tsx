@@ -15,6 +15,8 @@
 
 import { AlertTriangle, CircleSlash, HardDrive, Wifi } from "lucide-react";
 import { Badge } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
@@ -92,6 +94,102 @@ function Table({
   empty: string;
   now: number;
 }) {
+  const columns: MatrxColumnDef<SyncAdminRow>[] = [
+    {
+      id: "account",
+      header: "Account",
+      accessorFn: (row) => shortId(row.user_id),
+      cell: (row) => (
+        <span className="font-mono text-[11px]">{shortId(row.user_id)}</span>
+      ),
+    },
+    {
+      id: "organization",
+      header: "Organization",
+      accessorFn: (row) => shortId(row.organization_id),
+      cell: (row) => (
+        <span className="font-mono text-[11px]">
+          {shortId(row.organization_id)}
+        </span>
+      ),
+      mobileHidden: true,
+    },
+    {
+      id: "device",
+      header: "Device",
+      accessorFn: (row) => shortId(row.device_id),
+      cell: (row) => (
+        <span className="font-mono text-[11px]">{shortId(row.device_id)}</span>
+      ),
+      mobileHidden: true,
+    },
+    {
+      id: "state",
+      header: "State",
+      accessorFn: (row) => describeMappingState(row.state).title,
+      cell: (row) => {
+        const state = describeMappingState(row.state);
+        return (
+          <>
+            <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
+              {state.title}
+            </Badge>
+            {row.desired_state !== "active" ? (
+              <span className="ml-1 text-[11px] text-muted-foreground">
+                (user wants: {row.desired_state})
+              </span>
+            ) : null}
+          </>
+        );
+      },
+    },
+    {
+      id: "since",
+      header: "Since",
+      accessorFn: (row) => row.state_changed_at ?? "",
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {ago(row.state_changed_at, now)}
+        </span>
+      ),
+      mobileHidden: true,
+    },
+    {
+      id: "items",
+      header: "Items",
+      accessorFn: (row) => row.items_total ?? -1,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.items_total?.toLocaleString() ?? "—"}
+        </span>
+      ),
+      align: "right",
+      mobileHidden: true,
+    },
+    {
+      id: "size",
+      header: "Size",
+      accessorFn: (row) => row.bytes_total ?? -1,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.bytes_total !== null ? formatFileSize(row.bytes_total) : "—"}
+        </span>
+      ),
+      align: "right",
+      mobileHidden: true,
+    },
+    {
+      id: "last_synced",
+      header: "Last synced",
+      accessorFn: (row) => row.last_synced_at ?? "",
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {ago(row.last_synced_at, now)}
+        </span>
+      ),
+      mobileHidden: true,
+    },
+  ];
   return (
     <section className="rounded-md border border-border bg-card">
       <header className="flex items-center justify-between border-b border-border px-3 py-1.5">
@@ -100,66 +198,19 @@ function Table({
           {rows.length}
         </span>
       </header>
-      {rows.length === 0 ? (
-        <p className="px-3 py-3 text-xs text-muted-foreground">{empty}</p>
-      ) : (
-        <table className="w-full text-left text-xs">
-          <thead className="text-[11px] text-muted-foreground">
-            <tr className="border-b border-border">
-              <th className="px-3 py-1 font-normal">Account</th>
-              <th className="px-3 py-1 font-normal">Organization</th>
-              <th className="px-3 py-1 font-normal">Device</th>
-              <th className="px-3 py-1 font-normal">State</th>
-              <th className="px-3 py-1 font-normal">Since</th>
-              <th className="px-3 py-1 text-right font-normal">Items</th>
-              <th className="px-3 py-1 text-right font-normal">Size</th>
-              <th className="px-3 py-1 font-normal">Last synced</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const state = describeMappingState(row.state);
-              return (
-                <tr key={row.id} className="border-b border-border/60">
-                  <td className="px-3 py-1 font-mono text-[11px]">
-                    {shortId(row.user_id)}
-                  </td>
-                  <td className="px-3 py-1 font-mono text-[11px]">
-                    {shortId(row.organization_id)}
-                  </td>
-                  <td className="px-3 py-1 font-mono text-[11px]">
-                    {shortId(row.device_id)}
-                  </td>
-                  <td className="px-3 py-1">
-                    <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
-                      {state.title}
-                    </Badge>
-                    {row.desired_state !== "active" ? (
-                      <span className="ml-1 text-[11px] text-muted-foreground">
-                        (user wants: {row.desired_state})
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-1 text-muted-foreground">
-                    {ago(row.state_changed_at, now)}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {row.items_total?.toLocaleString() ?? "—"}
-                  </td>
-                  <td className="px-3 py-1 text-right tabular-nums">
-                    {row.bytes_total !== null
-                      ? formatFileSize(row.bytes_total)
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-1 text-muted-foreground">
-                    {ago(row.last_synced_at, now)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+      <MatrxDataTable
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        density="condensed"
+        pageSize={0}
+        hidePagination
+        emptyState={{ title: empty }}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search this fleet segment…",
+        }}
+      />
     </section>
   );
 }
@@ -253,8 +304,8 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
         </p>
         <p className="mt-1 text-muted-foreground">
           &ldquo;Failed or absent ledger rows&rdquo; cannot be shown from the
-          browser: <code>files.user_storage_usage</code> is owner-only
-          (<code>personal</code> RLS) and <code>get_usage_status</code> refuses
+          browser: <code>files.user_storage_usage</code> is owner-only (
+          <code>personal</code> RLS) and <code>get_usage_status</code> refuses
           any caller but the account itself, so no admin read path exists. The
           over-quota column above is the part that IS visible — it comes from
           the sync engine&rsquo;s own <code>over_quota</code> state. Rebuilding
