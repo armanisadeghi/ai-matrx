@@ -47,10 +47,9 @@ import {
 import {
   getSessionKnob,
   resolveSessionKnob,
-  sessionKnobPrincipals,
   useSessionKnob,
 } from "@/lib/scoped-config/sessionKnob";
-import { setKnobOverride } from "@/lib/scoped-config/service";
+import { savePresentation } from "./savePresentation";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   isUuidValue,
@@ -183,65 +182,6 @@ async function resolvePresentation(type: string): Promise<DetailPresentation> {
 function warmPresentation(_type: string): void {
   void getSessionKnob(DETAIL_PRESENTATION_KNOB);
   void getSessionKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB);
-}
-
-function refusalSentence(result: { reason?: string | null; detail?: string | null }): string {
-  return (
-    [result.reason, result.detail].filter(Boolean).join(" — ") ||
-    "The setting was refused and the door gave no reason."
-  );
-}
-
-/**
- * THE ONE WRITE of the presentation setting, at the person's own rung.
- * `forType` writes the per-record-type map instead of the default. A refusal
- * from the settings ladder comes back as a sentence the pane renders; nothing
- * here re-states a gate the door already owns.
- */
-async function savePresentation(args: {
-  presentation: DetailPresentation;
-  forType: string | null;
-}): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const { organizationId, userId } = sessionKnobPrincipals();
-  if (!organizationId || !userId) {
-    return {
-      ok: false,
-      reason:
-        "This setting is saved against your account in the organization you are working in, and " +
-        "this session has not resolved both yet. Reload the page and try again.",
-    };
-  }
-  try {
-    if (args.forType) {
-      const current = await resolveSessionKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB).catch(
-        noteByTypeUnavailable,
-      );
-      const base =
-        current && typeof current === "object" && !Array.isArray(current)
-          ? (current as Record<string, unknown>)
-          : {};
-      const result = await setKnobOverride({
-        feature: "ui.detail",
-        key: "presentation_by_type",
-        scopeKind: "user",
-        scopeId: userId,
-        organizationId,
-        value: { ...base, [args.forType]: args.presentation },
-      });
-      return result.ok ? { ok: true } : { ok: false, reason: refusalSentence(result) };
-    }
-    const result = await setKnobOverride({
-      feature: "ui.detail",
-      key: "default_presentation",
-      scopeKind: "user",
-      scopeId: userId,
-      organizationId,
-      value: args.presentation,
-    });
-    return result.ok ? { ok: true } : { ok: false, reason: refusalSentence(result) };
-  } catch (error: unknown) {
-    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
-  }
 }
 
 // ─── The remaining ports ────────────────────────────────────────────────────
