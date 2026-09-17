@@ -289,6 +289,12 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "ai.assistants",
+    "label": "Put unsent drafts back",
+    "description": "If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back.",
+    "controlId": "settings-control-composing-put-unsent-drafts-back"
+  },
+  {
+    "tabId": "ai.assistants",
     "label": "Memory level",
     "description": "How much conversation history the assistant retains between sessions.",
     "controlId": "settings-control-memory-memory-level"

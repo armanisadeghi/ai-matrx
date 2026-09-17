@@ -4198,7 +4198,7 @@ now kept as well.
 
 ---
 
-## A typed-but-unsent chat message does not survive a reload (2026-09-17)
+## ~~A typed-but-unsent chat message does not survive a reload~~ **FIXED 2026-09-17**
 
 Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now
 keeps its in-progress work through `features/masterwork/sitting/`, and the census that proves it
@@ -4219,3 +4219,46 @@ surface in the product, and getting it wrong re-opens exactly the class that fil
 session, with the composer's owners, and a forcing-function test that a restore can never
 re-submit. `features/masterwork/sitting/lanePersistence.ts` declares the two rooms `server-write`,
 which is true of the TURNS and is not a claim about the composer.
+
+**FIXED as the platform primitive it is, 2026-09-17.** The durable half of the composer draft is
+`features/agents/redux/execution-system/instance-user-input/composer-draft-store.ts` (storage,
+submit generations, tombstones) driven by `composer-draft.middleware.ts`, the ONE writer, in the
+store's middleware chain. It watches the actions every composer already dispatches — so the
+guarantee is a property of conversation state, not of one component, and `/chat`, the interview
+room, the Conductor, agent run and every embedded conversation inherit it. The restore is a
+two-step compare-and-apply (`peekComposerDraft` → `applyComposerDraft`), and `AgentTextarea`
+mounts it through `useComposerDraftRestore` + `ComposerDraftNotice` — a restore is never silent
+("We put your unsent draft back (N characters)"), and a browser that refuses storage says so
+instead of pretending.
+
+The resurrection hazard the entry names is closed by CLEAR-BEFORE-SEND: `markInputSubmitted` bumps
+a per-conversation submit generation and lays a `{sent:true}` tombstone BEFORE the request leaves,
+every write carries its generation and is refused when storage holds a newer one, and a peeked
+token is re-validated at apply time against both the record and the live generation. Clears follow
+the SLICE, not the action's intent, so a next-message draft `clearUserInput` preserved (and a
+failed send's kept text) stays restorable.
+
+TWO KEYS, found live while verifying: a room the person has not spoken in yet mints a client-only
+conversation id and mints a DIFFERENT one after a reload (the Conductor), so a surface may
+register an alias — `AgentTextarea` passes its `surfaceKey`, e.g.
+`masterwork-conduct:<rulebookId>` — that every write, tombstone and clear is mirrored to and that
+a restore falls back to. Knob: `userPreferences.prompts.restoreUnsentDrafts`, default ON, in
+Settings → AI → Assistants → Composing; a preferences blob written before the key existed reads
+as ON.
+
+Guards (proven failing-then-passing):
+`features/agents/redux/execution-system/instance-user-input/__tests__/an-unsent-draft-survives-a-reload.test.ts`
+— ten cases over the real middleware, slice, storage and thunk, with a reload modelled as
+"discard the store and every in-memory generation, keep sessionStorage". Removing the write from
+the middleware and the generation check from the thunk fails 4 of 8; removing the surface alias
+fails the Conductor case.
+
+Verified live on the preview as `admin@admin.com`: `/chat/b69c1397-…` (221 characters typed →
+reload → back, with the notice; send → tombstone `{"v":"","gen":1,"sent":true}` → record cleared →
+reload → empty box, no notice), `/masterwork/2bd1f094-…/interview` (197 characters back after a
+reload and Continue), `/masterwork/2bd1f094-…/conduct` (199 characters back through the surface
+alias, on a re-minted conversation id).
+
+Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
+`ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
+cheap half of this job and would need its own design.
