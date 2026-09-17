@@ -88,6 +88,30 @@ describe("callApi organization context", () => {
     ).toThrow("must match the request context organization");
   });
 
+  // GUARD — the Libraries paste box, 2026-09-17. `createLibrary` wrote
+  // `organization_id: input.organizationId ?? null`, which is the ordinary way
+  // a caller says "I am naming no organization here". This threw
+  // "Request body organization_id must match the request context organization"
+  // and blocked every new channel intake. A null names no organization, so it
+  // can never disagree with one.
+  it("treats a null body organization as absence and injects the context one", () => {
+    expect(
+      buildRequestBody({ organization_id: null, input: "@mkbhd" }, scope),
+    ).toEqual({ organization_id: ORGANIZATION_ID, input: "@mkbhd" });
+  });
+
+  it("treats a blank body organization as absence too", () => {
+    expect(
+      buildRequestBody({ organization_id: "   ", input: "@mkbhd" }, scope),
+    ).toEqual({ organization_id: ORGANIZATION_ID, input: "@mkbhd" });
+  });
+
+  it("still refuses a body organization that names a different organization", () => {
+    expect(() =>
+      buildRequestBody({ organization_id: OTHER_ORGANIZATION_ID }, scope),
+    ).toThrow("must match the request context organization");
+  });
+
   it("sends the same organization in the canonical middleware header", () => {
     expect(
       applyOrganizationContextHeader(
