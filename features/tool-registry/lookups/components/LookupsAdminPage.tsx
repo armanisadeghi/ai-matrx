@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { Plus, Loader2, AlertCircle, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PencilTapButton } from "@ai-matrx/tap-target/buttons";
 import { Input } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -360,6 +361,7 @@ function UiClientCrud() {
       <MatrxDataTable<UiClientRow>
         data={rows}
         columns={clientColumns(onToggleActive)}
+        tableId="tool-registry/lookups/clients"
         getRowId={(row) => row.name}
         isLoading={loading}
         rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
@@ -369,9 +371,11 @@ function UiClientCrud() {
           add: { onAdd: () => setCreating(true) },
         }}
         rowActions={(row) => (
-          <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
-            Edit
-          </Button>
+          <PencilTapButton
+            variant="transparent"
+            ariaLabel={`Edit ${row.name}`}
+            onClick={() => setEditing(row)}
+          />
         )}
         emptyState={{
           title: "No clients yet",
@@ -634,6 +638,7 @@ function UiSurfaceCrud() {
         <MatrxDataTable<UiSurfaceRow>
           data={visible}
           columns={surfaceColumns(onToggleActive)}
+          tableId="tool-registry/lookups/surfaces"
           getRowId={(row) => row.name}
           isLoading={loading}
           rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
@@ -645,9 +650,11 @@ function UiSurfaceCrud() {
             leading: <Badge variant="outline">{visible.length}</Badge>,
           }}
           rowActions={(row) => (
-            <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
-              Edit
-            </Button>
+            <PencilTapButton
+              variant="transparent"
+              ariaLabel={`Edit ${row.name}`}
+              onClick={() => setEditing(row)}
+            />
           )}
           emptyState={{ title: "No surfaces match this filter" }}
         />
@@ -882,6 +889,7 @@ function ToolExecutorCrud() {
       <MatrxDataTable<ToolExecutorRow>
         data={rows}
         columns={executorColumns(onToggleActive)}
+        tableId="tool-registry/lookups/executors"
         getRowId={(row) => row.name}
         isLoading={loading}
         rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
@@ -891,9 +899,11 @@ function ToolExecutorCrud() {
           add: { onAdd: () => setCreating(true) },
         }}
         rowActions={(row) => (
-          <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
-            Edit
-          </Button>
+          <PencilTapButton
+            variant="transparent"
+            ariaLabel={`Edit ${row.name}`}
+            onClick={() => setEditing(row)}
+          />
         )}
         emptyState={{ title: "No tool executors" }}
       />

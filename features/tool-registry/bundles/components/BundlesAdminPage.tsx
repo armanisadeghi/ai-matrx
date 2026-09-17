@@ -722,6 +722,7 @@ function BundleDetail({
           <MatrxDataTable<BundleMemberWithTool>
             data={members}
             columns={memberColumns(onSaveAlias)}
+            tableId={`tool-registry/bundles/${bundle.id}/members`}
             getRowId={(row) => row.member.tool_id}
             rowClassName={(row) =>
               row.tool?.is_active === false ? "opacity-60" : undefined
