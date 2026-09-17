@@ -1,19 +1,17 @@
-# The one approval queue — Keyword Intelligence (KI-045)
+# The keyword approval kinds (KI-045)
 
 **Status:** live · **Register:** `common-docs/systems/marketing/seo/seo-keywords/REGISTER.md` KI-045 · **Product SoR:** `common-docs/systems/marketing/seo/seo-keywords/value-system.md` § SUGGESTIONS
 
-Every AI proposal in the keyword system lands in ONE queue a person works through — never a separate review screen per kind. A proposal kind is a registration.
+🚨 **THE QUEUE ITSELF NO LONGER LIVES HERE.** On 2026-09-17 the engine, the contract, the registry, the three keyword kinds, `doors.tsx` and the decision-lifecycle guard were LIFTED into **[`features/approvals/`](../../../../approvals/FEATURE.md)** — the platform approval queue (human-in-the-loop policy rule 5: one approval surface, not many). Read that doc first; this one keeps only what is keyword-specific, and the census below is mirrored there.
+
+Every AI proposal in the keyword system lands in that ONE queue — never a separate review screen per kind. A proposal kind is a registration.
 
 ## Parts
 
 | Part | File | Role |
 |---|---|---|
-| Contract | `types.ts` | `ApprovalKind`, `ApprovalItem`, `ApprovalSource`, `ApprovalDecisions`, `ApprovalScope` |
-| Registry | `registry.ts` | `APPROVAL_KINDS` — the one ordered list of kinds |
-| Queue | `ApprovalQueue.tsx` | One site's queue: one list, per-item + select-all, consequences re-listed in the confirm, reason captured where kept, `kinds` narrowing |
-| Console | `ApprovalsConsole.tsx` | `/marketing/operations/approvals` — the queue for every site the reader can see (RLS site read) |
-| Doors | `doors.tsx` | `KeywordDoor` — a keyword opens the Keyword Intelligence window bound to the site |
-| Kinds | `kinds/*.tsx` | One module per proposal kind |
+| Contract · Registry · Queue | `features/approvals/{types.ts,registry.ts,ApprovalQueue.tsx}` | The platform engine, mounted here with `kinds` narrowing. The three keyword kinds now live at `features/approvals/kinds/seo/` and declare `scopeRequirement: { field: "siteId" }`, so a person-scoped queue names them and links this console instead of omitting them |
+| Console | `ApprovalsConsole.tsx` | `/marketing/operations/approvals` — the queue for every site the reader can see (RLS site read). The only part still in this folder |
 
 Mounted on: the approvals console (all kinds, all sites) · the value workbench (all kinds, one site) · the business guidelines panel (`keyword_meaning:guideline_edit`) · the offering tree (`placement_drift`).
 
@@ -59,6 +57,8 @@ The offering tree's **proposals table** (`topics/ProposedQueue.tsx`, also in the
 - The console probes each visible site (16 today); the proposals read is ~4 s per site. A cross-site count read would make it instant.
 
 ## Change Log
+
+- 2026-09-17 — Claude (U-P4, google-native PLAN §5.5): **this queue became THE platform queue.** It was already the generic mechanism, so by chair ruling it was lifted whole into `features/approvals/` rather than a fourth approval surface being built beside it: `ApprovalQueue.tsx`, `types.ts`, `registry.ts`, `kinds/*`, `doors.tsx` and `__tests__/ApprovalQueue.decision-lifecycle.test.tsx` moved (the local copies are deleted, not shimmed), and the five mounts here — this console, the value workbench (×2), the guidelines panel, discovery and the offering tree — now import `@/features/approvals/ApprovalQueue` and pass `key` on their scope. `platform.assists` stays the store for both. Two widenings a keyword reader should know about: the scope reaches beyond a site, so these kinds declare `scopeRequirement` and are never silently absent; and every item now states its autonomy mode, with `keyword_meaning` reporting mode 3 plus the instant when a waiting autonomy mode wrote its row (`platform.assists.auto_apply_at`, added by `migrations/platform_approval_queue.sql`, NOT yet applied) and mode 4 otherwise. `placement_drift` and `topic_placement` are mode 4 always. Nothing about the keyword writers changed.
 
 - 2026-09-14 — Claude (KI-045 follow-up, 375px walk): **a row's kind badge no longer spills out of its box on a phone.** Measured at 375px the "Offering placement" badge wrapped inside its fixed 16px height (content 23px, box 14px) and its text ran over the headline; it is now `shrink-0 whitespace-nowrap`. The phone layout from the previous entry (decisions on their own row of 40px targets) is correct in source — compiling `app/globals.css` through `@tailwindcss/postcss` generates every `max-md:` rule it uses — but the shared dev server was still serving CSS generated before that edit, so at 375px it rendered 24px buttons in a squeezed side column; verify it on a fresh build, not that server.
 
