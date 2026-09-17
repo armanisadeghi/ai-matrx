@@ -73,6 +73,12 @@ comment on column platform.assists.auto_apply_at is
 -- The sweep's read: pending rows whose clock has passed, across every kind.
 -- (This file creates NO schedule — see the known gap in features/approvals/FEATURE.md.
 -- An automated sweep needs Arman's approval by name and interval first.)
+--
+-- A PLAIN `create index`, not CONCURRENTLY, by measurement rather than habit:
+-- `platform.assists` held 577 rows live on 2026-09-17, so this builds in
+-- milliseconds. CONCURRENTLY needs autocommit, which `pnpm db:apply` refuses by
+-- name, and splitting this file across two runners to protect a 577-row table
+-- would be the larger risk. Re-measure before adding another index here.
 create index if not exists assists_auto_apply_due_idx
   on platform.assists (auto_apply_at)
   where status = 'pending' and auto_apply_at is not null and deleted_at is null;
