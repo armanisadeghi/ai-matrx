@@ -17,6 +17,7 @@ import {
   isSourceFeature,
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
+import type { AutonomyMode as ApprovalAutonomyMode } from "@/features/approvals/types";
 import {
   toKeywordMeaningProposal,
   toKeywordMeaningProvenance,
@@ -187,6 +188,56 @@ export type AssistAction =
       provenance: KeywordMeaningProvenance;
       /** md5 of the canonical proposal — the dedupe identity a rejection kills. */
       payloadHash: string;
+    }
+  | {
+      /**
+       * A proposal waiting in THE PLATFORM APPROVAL QUEUE (`features/approvals/`).
+       *
+       * Human-in-the-loop policy rule 5 gives the platform ONE approval
+       * surface, and this store is that surface's store (chair ruling
+       * 2026-09-17). The row is addressed to the OPERATOR — the person whose
+       * authority the agent ran under — and the decision happens in the queue,
+       * where the kind's own reviewer renders the would-be change and whose
+       * accept replays the ordinary human write path.
+       *
+       * Its own variant rather than a `server_action` for the same reason
+       * `apply_keyword_meaning` is: the writes are client-side, through the
+       * same services a person clicking in the product uses.
+       *
+       * 🚨 It has NO chip-side applier. Its handler
+       * (`runtime/handlers/open-approval-queue.ts`) only takes the person TO
+       * the queue: an approval that could be granted from a collapsed chip,
+       * with the review body not on screen, would defeat the review.
+       */
+      kind: "approval_proposal";
+      /**
+       * The approval KIND id — the key of a registration in
+       * `features/approvals/registry.ts` (`gmail_send`, `sheet_write`, …). A
+       * string on purpose: a new kind is a data value plus one renderer, and
+       * this union must never need editing for each one.
+       */
+      proposalKind: string;
+      /** Which of the five autonomy modes produced it. */
+      mode: ApprovalAutonomyMode;
+      /** Who proposed it, in the reader's words ("the CRM follow-up agent"). */
+      proposerLabel?: string;
+      /** The acting agent, the run, and the person whose authority it used. */
+      proposerAgentId?: string;
+      proposerRunId?: string;
+      operatorUserId?: string;
+      /**
+       * The would-be change, verbatim — a tool's `dry_run` result. Its shape is
+       * owned by the kind's module, which narrows it at run time, and it keeps
+       * its `__kind` marker like everything else stored (THE KIND-MARKER LAW).
+       */
+      payload: Json;
+      /**
+       * Set when the addressee CANNOT perform this change (the operator does
+       * not hold the sending account, for example). The item still appears —
+       * never silently dropped — showing this sentence and who can act,
+       * instead of offering a decision that would be refused.
+       */
+      blocked?: { reason: string; whoCan: string };
     };
 
 /**
@@ -380,6 +431,18 @@ export interface Assist {
   isStarred: boolean;
   /** Stamped when the row was first read in the manager (the unseen dot). */
   viewedAt: string | null;
+  /**
+   * Mode 3 only: the instant this proposal applies ITSELF if nobody rules
+   * (`platform.assists.auto_apply_at`). Absent means no clock — every other
+   * mode, and every assist that is not an approval proposal. It is NOT
+   * `expiresAt`: expiring hides a chip, this one makes the change, and the
+   * approval queue prints it before it can fire (HITL policy rule 4).
+   *
+   * Optional until `migrations/platform_approval_queue.sql` is applied and
+   * `pnpm db-types` regenerated; `readAutoApplyAt` reads it without depending
+   * on the generated column, and never invents a clock.
+   */
+  autoApplyAt?: string | null;
 }
 
 /**
@@ -679,5 +742,18 @@ export function toAssist(row: AssistRow): Assist | null {
     decisionNote: row.decision_note,
     isStarred: row.is_starred,
     viewedAt: row.viewed_at,
+    autoApplyAt: readAutoApplyAt(row),
   };
+}
+
+/**
+ * `platform.assists.auto_apply_at`, read without depending on the generated
+ * column type — the column ships in `migrations/platform_approval_queue.sql`,
+ * and `types/database.types.ts` only learns of it once that is applied and
+ * regenerated. Anything that is not a non-empty string is NO CLOCK: a
+ * malformed value must never read as "this applies itself at some point".
+ */
+export function readAutoApplyAt(row: AssistRow): string | null {
+  const value: unknown = (row as Record<string, unknown>)["auto_apply_at"];
+  return typeof value === "string" && value.length > 0 ? value : null;
 }

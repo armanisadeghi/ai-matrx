@@ -1,21 +1,27 @@
 "use client";
 
 /**
- * THE ONE APPROVAL QUEUE (register KI-045).
+ * THE ONE APPROVAL QUEUE (human-in-the-loop policy rule 5).
  *
- * Every AI proposal for one site — whatever produced it — in one list a person
- * works through: per-item decisions and select-all, every consequence listed
- * before anything runs, a reason captured wherever the write keeps one, and a
- * door on every record a row names. Proposal kinds are REGISTERED
- * (`./registry.ts`); this component knows none of them by name.
+ * Every pending AI proposal in one scope — whatever produced it — in one list a
+ * person works through: accept all, reject all, or one by one (the system has
+ * no opinion which), every consequence listed before anything runs, a reason
+ * captured wherever the write keeps one, the mode each item is running in, when
+ * a mode-3 item applies itself, and a door on every record a row names.
+ * Proposal kinds are REGISTERED (`./registry.ts`); this component knows none of
+ * them by name.
+ *
+ * PROMOTED from `features/marketing/seo/value-system/approvals/ApprovalQueue.tsx`
+ * on 2026-09-17 (see `./FEATURE.md` § The ruling). The SEO queue now mounts
+ * this same component with its own kinds, so there is one engine, not two.
  *
  * 🚨 WHY A BATCH IS ALLOWED HERE. `features/assists/FEATURE.md` refuses bulk
  * accept in `/assists`, because there one click fires unlike actions nobody
  * read. Here the list is open before anything can be selected, every row
  * states its exact write, the confirm dialog re-lists every one of them, and
  * each item still runs through its kind's own single-item writer. Individual
- * AND all — never forced. Items that must be read on their own (a full
- * guidelines document) are never selectable.
+ * AND all — never forced. Items that must be read on their own (a Gmail message
+ * whose review card IS the authorization) are never selectable.
  *
  * 🚨 ONE TREE POSITION FOR THE KIND SLOTS AND THE DIALOGS. Deciding the last
  * row empties the queue while its writer is still running. The slots (each
@@ -34,6 +40,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Clock,
   ExternalLink,
   X,
 } from "lucide-react";
@@ -43,16 +50,17 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { ApprovalLoadError } from "./ApprovalLoadError";
 import { APPROVAL_KINDS } from "./registry";
-import type {
-  ApprovalDecisions,
-  ApprovalItem,
-  ApprovalKind,
-  ApprovalScope,
-  ApprovalSource,
+import {
+  AUTONOMY_MODE_LABEL,
+  type ApprovalDecisions,
+  type ApprovalItem,
+  type ApprovalKind,
+  type ApprovalScope,
+  type ApprovalSource,
 } from "./types";
 
 type Decision = "accept" | "reject";
@@ -84,7 +92,7 @@ function KindSlot({
   const source = kind.useSource(scope);
   const decisions = kind.useDecisions(scope);
   const signature = [
-    scope.siteId,
+    scope.key,
     source.loading,
     source.error ? String(source.error) : "",
     source.total,
@@ -116,8 +124,36 @@ interface PendingDecision {
   choice: string | null;
 }
 
+/**
+ * The sentence under a row: which mode it is running in and, in mode 3, the
+ * exact instant it applies itself (policy rule 4 — visible BEFORE it fires).
+ * A mode-3 item with no instant is a defect in its reader, and says so rather
+ * than reading as a calm "waiting".
+ */
+function ModeLine({ item }: { item: ApprovalItem }) {
+  const auto = item.mode === "mode_3";
+  const when = item.autoApplyAt ? new Date(item.autoApplyAt) : null;
+  const broken = auto && (!when || Number.isNaN(when.getTime()));
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap",
+        broken ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      {auto ? <Clock className="size-3 shrink-0" /> : null}
+      {broken
+        ? "Set to apply itself, but nothing says when — treat it as needing your decision."
+        : auto && when
+          ? `Applies itself ${when.toLocaleString()} unless you decide`
+          : AUTONOMY_MODE_LABEL[item.mode]}
+    </span>
+  );
+}
+
 export function ApprovalQueue({
   scope,
+  registry,
   kinds,
   title,
   defaultExpanded = false,
@@ -126,6 +162,12 @@ export function ApprovalQueue({
   className,
 }: {
   scope: ApprovalScope;
+  /**
+   * Override the registry — tests only. Production mounts use THE registry so
+   * that every kind reaches every queue; a host narrows with `kinds`, never by
+   * handing in a shorter list (that is how a second queue starts).
+   */
+  registry?: readonly ApprovalKind[];
   /** Narrow to some kinds (`kindId` or `kindId:subKind`); omit for all. */
   kinds?: readonly string[];
   /** Header title; defaults to "Waiting on your approval". */
@@ -133,14 +175,22 @@ export function ApprovalQueue({
   defaultExpanded?: boolean;
   /** Render nothing while there is nothing to decide (and nothing failed). */
   hideWhenEmpty?: boolean;
-  /** For a host that aggregates many queues (the cross-site console). */
-  onSummary?: (siteId: string, summary: ApprovalQueueSummary) => void;
+  /** For a host that aggregates many queues (a cross-scope console). */
+  onSummary?: (scopeKey: string, summary: ApprovalQueueSummary) => void;
   className?: string;
 }) {
-  const mounted = APPROVAL_KINDS.filter(
-    (kind) =>
-      !kinds || kinds.some((entry) => entry.split(":")[0] === kind.id),
+  const all = registry ?? APPROVAL_KINDS;
+  const requested = all.filter(
+    (kind) => !kinds || kinds.some((entry) => entry.split(":")[0] === kind.id),
   );
+  // A kind that needs a dimension this mount does not carry is NOT quietly
+  // dropped — it is named, with the door to where its proposals live.
+  const elsewhere = requested.filter(
+    (kind) =>
+      kind.scopeRequirement !== undefined &&
+      !scope[kind.scopeRequirement.field],
+  );
+  const mounted = requested.filter((kind) => !elsewhere.includes(kind));
   const [slots, setSlots] = useState<Record<string, Slot>>({});
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -167,20 +217,29 @@ export function ApprovalQueue({
       slot,
       items,
       // A sub-kind filter only knows the page it filtered.
-      total: narrowed ? items.length : Math.max(slot?.source.total ?? 0, items.length),
+      total: narrowed
+        ? items.length
+        : Math.max(slot?.source.total ?? 0, items.length),
     };
   });
   const allItems = sections.flatMap((section) => section.items);
   const count = sections.reduce((sum, section) => sum + section.total, 0);
-  const loading = mounted.some((kind) => !slots[kind.id] || slots[kind.id]?.source.loading);
+  const loading = mounted.some(
+    (kind) => !slots[kind.id] || slots[kind.id]?.source.loading,
+  );
   const failed = sections.filter((section) => section.slot?.source.error);
 
   const summarySignature = `${count}|${loading}|${failed.length}`;
   useEffect(() => {
-    onSummary?.(scope.siteId, { count, loading, errors: failed.length });
-  }, [summarySignature, scope.siteId]);
+    onSummary?.(scope.key, { count, loading, errors: failed.length });
+  }, [summarySignature, scope.key]);
 
-  const selectable = allItems.filter((item) => !item.individualReview);
+  // Reviewed-alone rows and rows this reader cannot act on are never part of
+  // a batch: one is a decision that needs its body read, the other is not the
+  // reader's to make.
+  const selectable = allItems.filter(
+    (item) => !item.individualReview && !item.blocked,
+  );
   const selectedItems = selectable.filter((item) => selected.has(item.key));
   const allSelected =
     selectable.length > 0 && selectedItems.length === selectable.length;
@@ -214,7 +273,9 @@ export function ApprovalQueue({
     const failures: string[] = [];
     // Kind by kind, in queue order; each kind's writer runs its items itself.
     for (const section of sections) {
-      const items = decision.items.filter((item) => item.kindId === section.kind.id);
+      const items = decision.items.filter(
+        (item) => item.kindId === section.kind.id,
+      );
       if (items.length === 0 || !section.slot) continue;
       const writer =
         decision.decision === "accept"
@@ -279,7 +340,11 @@ export function ApprovalQueue({
     setSelected(next);
   };
 
-  const hidden = hideWhenEmpty && allItems.length === 0 && failed.length === 0;
+  const hidden =
+    hideWhenEmpty &&
+    allItems.length === 0 &&
+    failed.length === 0 &&
+    elsewhere.length === 0;
 
   return (
     <>
@@ -321,7 +386,7 @@ export function ApprovalQueue({
           </div>
 
           {failed.map((section) => (
-            <InlineQueryError
+            <ApprovalLoadError
               key={section.kind.id}
               what={`the ${section.kind.label.toLowerCase()} proposals`}
               error={section.slot?.source.error}
@@ -357,7 +422,7 @@ export function ApprovalQueue({
                     <div className="ml-auto flex flex-wrap items-center gap-1.5">
                       {batchRejectNeedsOneKind ? (
                         <span className="text-[11px] text-muted-foreground">
-                          Placing elsewhere needs rows of one kind
+                          This reject needs rows of one kind
                         </span>
                       ) : null}
                       <Button
@@ -395,7 +460,7 @@ export function ApprovalQueue({
                         </h3>
                         <span className="text-[11px] text-muted-foreground">
                           {section.total > section.items.length
-                            ? `${section.items.length} of ${section.total.toLocaleString()} shown, highest demand first`
+                            ? `${section.items.length} of ${section.total.toLocaleString()} shown`
                             : `${section.items.length}`}
                         </span>
                         {section.total > section.items.length &&
@@ -421,7 +486,9 @@ export function ApprovalQueue({
                                 checked={selected.has(item.key)}
                                 onCheckedChange={() => toggle(item.key)}
                                 aria-label={`Select: ${item.headline}`}
-                                disabled={busy || Boolean(item.individualReview)}
+                                disabled={
+                                  busy || Boolean(item.individualReview)
+                                }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">
                                 <div className="flex flex-wrap items-center gap-1.5">
@@ -449,12 +516,23 @@ export function ApprovalQueue({
                                     ? ` · ${new Date(item.proposedAt).toLocaleDateString()}`
                                     : ""}
                                 </p>
+                                <p className="break-words text-[11px]">
+                                  <ModeLine item={item} />
+                                </p>
+                                {/* Not yours to approve — but never hidden, and
+                                    never a disabled control with no reason
+                                    (THE NO-SILENT-FAILURE LAW). */}
+                                {item.blocked ? (
+                                  <p className="break-words text-[11px] text-warning">
+                                    {item.blocked.reason} {item.blocked.whoCan}
+                                  </p>
+                                ) : null}
                               </div>
                               {/* Phones: the decisions drop to their own full-width
                                   row of 40px targets under the text, instead of a
                                   squeezed 24px column beside it. */}
                               <div className="flex shrink-0 items-center gap-1 max-md:w-full max-md:justify-end max-md:pl-6">
-                                {item.individualReview ? null : (
+                                {item.individualReview || item.blocked ? null : (
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -476,6 +554,11 @@ export function ApprovalQueue({
                                 </Button>
                               </div>
                             </div>
+                            {item.body ? (
+                              <div className="mt-1 pl-6 max-md:pl-0">
+                                {item.body}
+                              </div>
+                            ) : null}
                             {item.individualReview ? (
                               <div className="mt-1 pl-6 max-md:pl-0">
                                 {item.individualReview}
@@ -489,6 +572,28 @@ export function ApprovalQueue({
               </div>
             </div>
           ) : null}
+
+          {/* Kinds this mount cannot read for, named with their door — a queue
+              that silently omits a whole kind is the scattered-inbox failure
+              wearing a single-queue costume. */}
+          {elsewhere.map((kind) => {
+            const requirement = kind.scopeRequirement;
+            if (!requirement) return null;
+            return (
+              <p
+                key={kind.id}
+                className="mt-1.5 break-words text-[11px] text-muted-foreground"
+              >
+                {kind.label}: {requirement.explain}{" "}
+                <AppLink
+                  href={requirement.where.href}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {requirement.where.label}
+                </AppLink>
+              </p>
+            );
+          })}
         </div>
       )}
 

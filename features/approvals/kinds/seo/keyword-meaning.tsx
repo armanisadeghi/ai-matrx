@@ -35,7 +35,8 @@ import {
 } from "@/features/marketing/seo/value-system/suggestions/proposal";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { KeywordDoor } from "../doors";
+import { KeywordDoor } from "./doors";
+import { siteOf } from "./siteScope";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -43,7 +44,7 @@ import type {
   ApprovalOutcome,
   ApprovalScope,
   ApprovalSource,
-} from "../types";
+} from "@/features/approvals/types";
 
 /**
  * The surface every keyword-meaning suggestion is addressed to. Written by
@@ -66,11 +67,11 @@ function ProposalDoors({
   scope: ApprovalScope;
   proposal: KeywordMeaningProposal;
 }) {
-  const ctx = { brandId: scope.brandId, siteId: scope.siteId };
+  const ctx = { brandId: scope.brandId, siteId: siteOf(scope) };
   if (proposal.proposal === "guideline_edit") {
     return (
       <AppLink
-        href={marketingRoutes.site(scope.brandId, scope.siteId, "/value/guidelines")}
+        href={marketingRoutes.site(scope.brandId, siteOf(scope), "/value/guidelines")}
         className="text-primary underline-offset-2 hover:underline"
       >
         Business guidelines
@@ -80,7 +81,7 @@ function ProposalDoors({
   if (proposal.proposal === "offering") {
     const offeringsDoor = (
       <AppLink
-        href={marketingRoutes.site(scope.brandId, scope.siteId, "/value/offerings")}
+        href={marketingRoutes.site(scope.brandId, siteOf(scope), "/value/offerings")}
         className="text-primary underline-offset-2 hover:underline"
       >
         Offerings
@@ -161,6 +162,12 @@ function toItem(scope: ApprovalScope, assist: Assist): MeaningItem | null {
       "Rejects the suggestion with your reason; this exact suggestion is never proposed again.",
     proposedBy: provenance.agentName ?? null,
     proposedAt: assist.createdAt,
+    // The mode is the ROW's, not this kind's: a suggestion written by a
+    // waiting autonomy mode carries the instant it applies itself
+    // (`seo.fn_autonomy_apply_timed_out` replays the same RPCs a human
+    // approval does), and everything else is review-required.
+    mode: assist.autoApplyAt ? "mode_3" : "mode_4",
+    autoApplyAt: assist.autoApplyAt ?? null,
     badge: PROPOSAL_KIND_LABEL[proposal.proposal],
     doors: <ProposalDoors scope={scope} proposal={proposal} />,
     // A full document is read (and may be edited) in its own card before it
@@ -216,7 +223,7 @@ function useSource(scope: ApprovalScope): ApprovalSource {
     .filter(
       (assist) =>
         assist.action.kind === "apply_keyword_meaning" &&
-        assist.action.siteId === scope.siteId,
+        assist.action.siteId === siteOf(scope),
     )
     .flatMap((assist) => {
       const item = toItem(scope, assist);
@@ -289,4 +296,17 @@ export const keywordMeaningKind: ApprovalKind = {
   },
   useSource,
   useDecisions,
+  /**
+   * These read one site's proposals, so a person- or organization-scoped mount
+   * cannot show them — and says so with the door instead of omitting them.
+   */
+  scopeRequirement: {
+    field: "siteId",
+    explain:
+      "keyword proposals belong to one website, so they are shown on each site's own queue.",
+    where: {
+      label: "Open the marketing approvals console",
+      href: "/marketing/operations/approvals",
+    },
+  },
 };

@@ -31,7 +31,8 @@ import {
 } from "@/features/marketing/seo/keyword-workbench/data";
 import { SITE_OFFERINGS_KEY } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { extractErrorMessage } from "@/utils/errors";
-import { KeywordDoor } from "../doors";
+import { KeywordDoor } from "./doors";
+import { siteOf } from "./siteScope";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -39,7 +40,7 @@ import type {
   ApprovalOutcome,
   ApprovalScope,
   ApprovalSource,
-} from "../types";
+} from "@/features/approvals/types";
 
 const KIND_ID = "placement_drift";
 const PAGE = 50;
@@ -55,12 +56,15 @@ const NO_ORGANIZATION =
   "This queue does not know which organization owns the site, so nothing can be written from here. Open the site's own queue.";
 
 function toItem(scope: ApprovalScope, row: OfferingDriftRow): DriftItem {
-  const offeringsHref = marketingRoutes.site(scope.brandId ?? null, scope.siteId, "/value/offerings");
+  const offeringsHref = marketingRoutes.site(scope.brandId ?? null, siteOf(scope), "/value/offerings");
   const from = row.oldOfferingName ?? "no offering";
   return {
     key: `${KIND_ID}:${row.keywordId}`,
     kindId: KIND_ID,
     row,
+    // Mode 4, always: a drift row is a derived read of a move the assigner
+    // already made, and nothing applies it but a person here.
+    mode: "mode_4",
     headline: `"${row.phrase}" — the assigner moved it from ${from} to ${row.newOfferingName}`,
     acceptEffect: `Keeps "${row.phrase}" under ${row.newOfferingName} as this site's own ruling.`,
     rejectEffect: row.oldOfferingName
@@ -92,8 +96,8 @@ function toItem(scope: ApprovalScope, row: OfferingDriftRow): DriftItem {
 
 function useSource(scope: ApprovalScope): ApprovalSource {
   const query = useQuery({
-    queryKey: queryKey(scope.siteId),
-    queryFn: ({ signal }) => getOfferingPlacementDrift(scope.siteId, PAGE, signal),
+    queryKey: queryKey(siteOf(scope)),
+    queryFn: ({ signal }) => getOfferingPlacementDrift(siteOf(scope), PAGE, signal),
     staleTime: 60_000,
   });
   const items = (query.data ?? []).map((row) => toItem(scope, row));
@@ -110,7 +114,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
   const queryClient = useQueryClient();
   const settle = () => {
     void queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY });
-    void queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, scope.siteId] });
+    void queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, siteOf(scope)] });
   };
   return {
     acceptItems: async (items, reason) => {
@@ -121,7 +125,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
       try {
         await confirmKeywordOfferings({
           organizationId: scope.organizationId,
-          siteId: scope.siteId,
+          siteId: siteOf(scope),
           keywordIds: (items as DriftItem[]).map((item) => item.row.keywordId),
           notes: reason,
         });
@@ -151,7 +155,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
         try {
           await setKeywordOffering({
             organizationId: scope.organizationId,
-            siteId: scope.siteId,
+            siteId: siteOf(scope),
             keywordIds: [item.row.keywordId],
             offeringId: item.row.oldOfferingId,
             notes: reason ?? `Kept this site's own placement for "${item.row.phrase}"`,
@@ -182,4 +186,17 @@ export const placementDriftKind: ApprovalKind = {
   },
   useSource,
   useDecisions,
+  /**
+   * These read one site's proposals, so a person- or organization-scoped mount
+   * cannot show them — and says so with the door instead of omitting them.
+   */
+  scopeRequirement: {
+    field: "siteId",
+    explain:
+      "keyword proposals belong to one website, so they are shown on each site's own queue.",
+    where: {
+      label: "Open the marketing approvals console",
+      href: "/marketing/operations/approvals",
+    },
+  },
 };

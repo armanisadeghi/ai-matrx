@@ -45,7 +45,8 @@ import {
   useSiteOfferings,
 } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { extractErrorMessage } from "@/utils/errors";
-import { KeywordDoor } from "../doors";
+import { KeywordDoor } from "./doors";
+import { siteOf } from "./siteScope";
 import type {
   ApprovalChooserProps,
   ApprovalDecisions,
@@ -54,7 +55,7 @@ import type {
   ApprovalOutcome,
   ApprovalScope,
   ApprovalSource,
-} from "../types";
+} from "@/features/approvals/types";
 
 const KIND_ID = "topic_placement";
 const PAGE = 25;
@@ -78,7 +79,7 @@ function window90(): { start: string; end: string } {
 }
 
 function offeringsHref(scope: ApprovalScope): string {
-  return marketingRoutes.site(scope.brandId ?? null, scope.siteId, "/value/offerings");
+  return marketingRoutes.site(scope.brandId ?? null, siteOf(scope), "/value/offerings");
 }
 
 function toItem(scope: ApprovalScope, row: OfferingProposalRow): PlacementItem {
@@ -87,6 +88,9 @@ function toItem(scope: ApprovalScope, row: OfferingProposalRow): PlacementItem {
     key: `${KIND_ID}:${row.keywordId}`,
     kindId: KIND_ID,
     row,
+    // Mode 4, always: an unconfirmed placement stays unconfirmed until a
+    // person rules — no clock applies it.
+    mode: "mode_4",
     headline: `Place "${row.phrase}" under ${row.offeringName}`,
     acceptEffect: `Confirms "${row.phrase}" under ${row.offeringName} as this site's own ruling, with your reason; the assigner will not revisit it.`,
     rejectEffect: `Places "${row.phrase}" under the offering you choose, as this site's own ruling.`,
@@ -111,10 +115,10 @@ function toItem(scope: ApprovalScope, row: OfferingProposalRow): PlacementItem {
 
 function useSource(scope: ApprovalScope): ApprovalSource {
   const query = useQuery({
-    queryKey: queryKey(scope.siteId),
+    queryKey: queryKey(siteOf(scope)),
     queryFn: ({ signal }) => {
       const { start, end } = window90();
-      return listOfferingProposals(scope.siteId, start, end, PAGE, signal);
+      return listOfferingProposals(siteOf(scope), start, end, PAGE, signal);
     },
     staleTime: 60_000,
   });
@@ -142,7 +146,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
   const queryClient = useQueryClient();
   const settle = () => {
     void queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY });
-    void queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, scope.siteId] });
+    void queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, siteOf(scope)] });
   };
   return {
     acceptItems: async (items, reason) => {
@@ -151,7 +155,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
       try {
         await confirmKeywordOfferings({
           organizationId: scope.organizationId,
-          siteId: scope.siteId,
+          siteId: siteOf(scope),
           keywordIds: ids,
           notes: reason,
         });
@@ -168,7 +172,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
       try {
         await setKeywordOffering({
           organizationId: scope.organizationId,
-          siteId: scope.siteId,
+          siteId: siteOf(scope),
           keywordIds: ids,
           offeringId: choice,
           notes: reason,
@@ -189,7 +193,7 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
  */
 function RejectChooser({ scope, items, onChosen, onCancel }: ApprovalChooserProps) {
   const { start, end } = window90();
-  const offerings = useSiteOfferings(scope.siteId, start, end);
+  const offerings = useSiteOfferings(siteOf(scope), start, end);
   const [search, setSearch] = useState("");
   const [chosen, setChosen] = useState<string | null>(null);
   const [reason, setReason] = useState("");
@@ -291,4 +295,17 @@ export const topicPlacementKind: ApprovalKind = {
   useSource,
   useDecisions,
   RejectChooser,
+  /**
+   * These read one site's proposals, so a person- or organization-scoped mount
+   * cannot show them — and says so with the door instead of omitting them.
+   */
+  scopeRequirement: {
+    field: "siteId",
+    explain:
+      "keyword proposals belong to one website, so they are shown on each site's own queue.",
+    where: {
+      label: "Open the marketing approvals console",
+      href: "/marketing/operations/approvals",
+    },
+  },
 };

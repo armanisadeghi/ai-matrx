@@ -39,6 +39,7 @@ import "./handlers/apply-page-meta";
 import "./handlers/launch-agent";
 import "./handlers/run-mandate";
 import "./handlers/navigate";
+import "./handlers/open-approval-queue";
 import "./handlers/server-action";
 import "./handlers/surface-write";
 

@@ -174,7 +174,7 @@ import {
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
-import { ApprovalQueue } from "@/features/marketing/seo/value-system/approvals/ApprovalQueue";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
 import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -1188,6 +1188,7 @@ export function ValueWorkbench() {
         {sessionOpen ? (
           <ApprovalQueue
             scope={{
+              key: siteId,
               siteId,
               brandId,
               organizationId: site.organization_id,
@@ -1318,6 +1319,7 @@ export function ValueWorkbench() {
           it renders nothing at all when the queue is empty. */}
             <ApprovalQueue
               scope={{
+                key: siteId,
                 siteId,
                 brandId,
                 organizationId: site.organization_id,

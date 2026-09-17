@@ -7,7 +7,8 @@
  */
 
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
-import type { ApprovalScope } from "./types";
+import type { ApprovalScope } from "@/features/approvals/types";
+import { siteOf } from "./siteScope";
 
 export function KeywordDoor({
   scope,
@@ -26,7 +27,7 @@ export function KeywordDoor({
         event.stopPropagation();
         openKeyword({
           phrase,
-          siteId: scope.siteId,
+          siteId: siteOf(scope),
           brandId: scope.brandId ?? undefined,
           // A site binding always travels with its owning organization.
           organizationId: scope.organizationId ?? undefined,

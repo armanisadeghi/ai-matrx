@@ -20,7 +20,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { ApprovalKind, ApprovalScope } from "../types";
+import type { ApprovalKind, ApprovalScope } from "@/features/approvals/types";
 
 let mockKinds: ApprovalKind[] = [];
 let mockDriftRows: Array<Record<string, unknown>> = [];
@@ -74,7 +74,7 @@ jest.mock("@/components/ui/confirm-dialog", () => ({
 // eslint-disable-next-line import/first -- after the mocks above
 import { ApprovalQueue } from "../ApprovalQueue";
 // eslint-disable-next-line import/first -- after the mocks above
-import { placementDriftKind } from "../kinds/placement-drift";
+import { placementDriftKind } from "../kinds/seo/placement-drift";
 
 let fakeRows: string[] = [];
 

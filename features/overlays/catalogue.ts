@@ -24,6 +24,12 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // THE approval queue as a floating window (the same surface as /approvals).
+  approvalsWindow: {
+    label: "Waiting on you",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   adminIndicator: {
     label: "Admin Indicator",
     instanceMode: "singleton",
@@ -41,6 +47,16 @@ export const OVERLAY_CATALOGUE = {
   },
   audioControlWindow: {
     label: "Media",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  detailDocked: {
+    label: "Record detail (docked)",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
+  detailWindow: {
+    label: "Record detail",
     instanceMode: "singleton",
     isWindow: true,
   },
@@ -604,11 +620,6 @@ export const OVERLAY_CATALOGUE = {
   },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
-  itemDetailWindow: {
-    label: "Item Details",
     instanceMode: "singleton",
     isWindow: true,
   },

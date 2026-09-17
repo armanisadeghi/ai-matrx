@@ -20,7 +20,7 @@ import {
   LoadingSurface,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { listConsoleSites } from "@/features/marketing/seo/run-console/data";
-import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
+import { ApprovalQueue, type ApprovalQueueSummary } from "@/features/approvals/ApprovalQueue";
 
 export function ApprovalsConsole() {
   const sites = useQuery({
@@ -81,6 +81,7 @@ export function ApprovalsConsole() {
         <ApprovalQueue
           key={site.id}
           scope={{
+            key: site.id,
             siteId: site.id,
             brandId: site.brand_id,
             organizationId: site.organization_id,

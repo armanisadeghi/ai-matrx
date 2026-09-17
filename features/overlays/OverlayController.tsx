@@ -26,6 +26,7 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -606,8 +607,12 @@ const SourceInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/source-inspector/SourceInspectorWindow"),
   { ssr: false },
 );
-const ItemDetailWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
+const DetailWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailWindow"),
+  { ssr: false },
+);
+const DetailDocked = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailDocked"),
   { ssr: false },
 );
 const NoteInfoWindow = lazyOverlay(
@@ -1021,6 +1026,10 @@ const QuickNoteSaveOverlay = lazyOverlay(
     ),
   { ssr: false },
 );
+const ApprovalsWindow = lazyOverlay(
+  () => import("@/features/approvals/windows/ApprovalsWindow"),
+  { ssr: false },
+);
 const ScraperWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ScraperWindow"),
   { ssr: false },
@@ -1381,8 +1390,11 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextWindow"),
     ),
-    itemDetailWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailWindow"),
+    ),
+    detailDocked: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailDocked"),
     ),
     researchContextPreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "researchContextPreviewWindow"),
@@ -1521,6 +1533,9 @@ export default function OverlayController() {
     ),
     quickUtilities: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickUtilities"),
+    ),
+    approvalsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "approvalsWindow"),
     ),
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
@@ -1786,8 +1801,11 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextWindow"),
     ) as Record<string, unknown> | null,
-    itemDetailWindow: useAppSelector((s) =>
-      selectOverlayData(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectOverlayData(s, "detailWindow"),
+    ) as Record<string, unknown> | null,
+    detailDocked: useAppSelector((s) =>
+      selectOverlayData(s, "detailDocked"),
     ) as Record<string, unknown> | null,
     researchContextPreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "researchContextPreviewWindow"),
@@ -4503,26 +4521,42 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* itemDetailWindow */}
+      {/* detailWindow — the Detail primitive's window presentation (lib/detail) */}
       {(() => {
-        const isOpen = isOpenById.itemDetailWindow;
-        const data = dataById.itemDetailWindow as
-          Record<string, unknown> | null | undefined;
+        const isOpen = isOpenById.detailWindow;
         if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailWindow);
+        if (!data) return null;
         return (
-          <ItemDetailWindow
+          <DetailWindow
             isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
-            }
-            itemType={typeof data?.itemType === "string" ? data.itemType : null}
-            itemId={typeof data?.itemId === "string" ? data.itemId : null}
-            initialName={
-              typeof data?.initialName === "string" ? data.initialName : null
-            }
-            initialAbout={
-              typeof data?.initialAbout === "string" ? data.initialAbout : null
-            }
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailWindow" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
+          />
+        );
+      })()}
+
+      {/* detailDocked — the Detail primitive's docked presentation (lib/detail) */}
+      {(() => {
+        const isOpen = isOpenById.detailDocked;
+        if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailDocked);
+        if (!data) return null;
+        return (
+          <DetailDocked
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailDocked" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
           />
         );
       })()}
@@ -6672,6 +6706,15 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* approvalsWindow — THE approval queue, same surface as /approvals */}
+      {isOpenById.approvalsWindow ? (
+        <ApprovalsWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "approvalsWindow" }))
+          }
+        />
+      ) : null}
 
       {/* scraperWindow */}
       {(() => {
