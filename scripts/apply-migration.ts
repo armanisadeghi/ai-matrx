@@ -208,21 +208,104 @@ function lit(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
-/** Comments stripped, so a detector never trips on a commented-out statement. */
+/**
+ * Comments stripped and NOTHING ELSE. This is the JUDGE's input (the allow-list,
+ * the deny-list, the guard reader, the custom-data reader in
+ * `scripts/lib/migration-target.ts`), which documents its parameter as a
+ * "comment-stripped body" and does its own dollar-quote-aware statement splitting
+ * inside. It is NOT a statement detector — see `stripForStatementDetection`.
+ */
 function stripForDetection(sql: string): string {
   return sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
 }
 
+/** One pass over the bytes: comment, single-quoted literal, quoted identifier, dollar tag. */
+const DETECT_TOKEN_SOURCE =
+  "--[^\\n]*|/\\*|'(?:[^']|'')*'|\"(?:[^\"]|\"\")*\"|\\$[A-Za-z_0-9\\u0080-\\uFFFF]*\\$";
+
 /**
- * Comments, single-quoted literals AND dollar-quoted bodies stripped. Needed for
- * the transaction-control detector only: `begin`/`end` are also plpgsql block
- * keywords, and every function body in this repo lives inside `$$ … $$`.
+ * 🚨 THE ONE STATEMENT-DETECTION STRIPPER. Every "does this file CONTAIN statement
+ * X" question in this runner is asked of THIS text, never of the raw bytes and never
+ * of comment-only-stripped text.
+ *
+ * WHY (measured 2026-09-17): `NEEDS_AUTOCOMMIT_RE` was tested against
+ * `stripForDetection` output, so the words `CREATE INDEX CONCURRENTLY` written inside
+ * a function's own HINT string — `raise exception … using hint = 'create the index
+ * with CREATE INDEX CONCURRENTLY'`, itself inside a `$$ … $$` body — made this runner
+ * refuse a file that needs no autocommit at all and send its author to the other
+ * runner for nothing. The transaction-control detector already stripped bodies and
+ * literals; the self-ledger and autocommit detectors did not. A detector that reads
+ * prose as DDL is the class, not the instance: the fix is that there is ONE stripper
+ * and all three use it.
+ *
+ * What it removes: line and block comments, single-quoted literals, and the body of
+ * every dollar-quoted string (`$$ … $$`, `$tag$ … $tag$`) — a function body, a DO
+ * block's body, a quoted default. What it KEEPS: quoted identifiers (`"custom.record"`
+ * is a name, not text), and everything that is actual SQL. One left-to-right pass, so
+ * a `--` inside a literal is not a comment and a `'` inside a comment does not open a
+ * string; the old two-regex form got both of those wrong.
+ *
+ * A dollar body can hold DDL that a `DO` block really does execute. That is not a hole
+ * here: such DDL is built at run time from a string, so no textual detector could read
+ * it either way, and `CREATE INDEX CONCURRENTLY` inside a `DO` block fails in Postgres
+ * whatever transaction this runner opens. The judge refuses run-time-built DDL by name
+ * (`a6-10-do-block.sql`).
  */
-function stripForTransactionDetection(sql: string): string {
-  let s = stripForDetection(sql);
-  s = s.replace(/\$([A-Za-z_]\w*)?\$[\s\S]*?\$\1?\$/g, " '' ");
-  s = s.replace(/'(?:[^']|'')*'/g, " '' ");
-  return s;
+function stripForStatementDetection(sql: string): string {
+  const re = new RegExp(DETECT_TOKEN_SOURCE, "g");
+  let out = "";
+  let i = 0;
+  while (i < sql.length) {
+    re.lastIndex = i;
+    const m = re.exec(sql);
+    if (!m) {
+      out += sql.slice(i);
+      break;
+    }
+    out += sql.slice(i, m.index);
+    const tok = m[0];
+    if (tok.startsWith("--")) {
+      out += " ";
+      i = m.index + tok.length;
+    } else if (tok === "/*") {
+      const end = sql.indexOf("*/", m.index + 2);
+      out += " ";
+      i = end === -1 ? sql.length : end + 2;
+    } else if (tok.startsWith("'")) {
+      out += " '' ";
+      i = m.index + tok.length;
+    } else if (tok.startsWith('"')) {
+      out += tok;
+      i = m.index + tok.length;
+    } else {
+      const close = sql.indexOf(tok, m.index + tok.length);
+      out += " '' ";
+      i = close === -1 ? sql.length : close + tok.length;
+    }
+  }
+  return out;
+}
+
+/**
+ * The three file-level statement facts, read ONCE off the one stripped text: does the
+ * file write the ledger itself, does it carry its own transaction control, does it need
+ * an autocommit session. `--judge-only` prints them so the conformance corpus can hold
+ * both runners to the same answer — the apply path is the only place they refuse.
+ */
+interface StatementFacts {
+  readonly selfLedger: boolean;
+  readonly txnControl: string | null;
+  readonly autocommit: boolean;
+}
+
+function statementFacts(sql: string): StatementFacts {
+  const s = stripForStatementDetection(sql);
+  const txn = s.match(TXN_CONTROL_RE);
+  return {
+    selfLedger: SELF_LEDGER_RE.test(s),
+    txnControl: txn ? txn[1]!.toUpperCase() : null,
+    autocommit: NEEDS_AUTOCOMMIT_RE.test(s),
+  };
 }
 
 /** Mirror of the aidream runner's `_find_self_ledgering` write pattern. */
@@ -668,7 +751,8 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   }
 
   const stripped = stripForDetection(sql);
-  if (SELF_LEDGER_RE.test(stripped)) {
+  const facts = statementFacts(sql);
+  if (facts.selfLedger) {
     console.error(
       `${TAG.fail}${filename} writes public._schema_migrations itself.\n` +
         `  The applier owns that row and records the SHA-256 of the bytes it executed. A\n` +
@@ -677,10 +761,9 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     );
     return 1;
   }
-  const txn = stripForTransactionDetection(sql).match(TXN_CONTROL_RE);
-  if (txn) {
+  if (facts.txnControl) {
     console.error(
-      `${TAG.fail}${filename} carries its own ${txn[1]!.toUpperCase()}.\n` +
+      `${TAG.fail}${filename} carries its own ${facts.txnControl}.\n` +
         `  This runner owns the transaction: it opens one, runs the whole file inside it, writes\n` +
         `  the ledger row in the same transaction and commits once. A COMMIT inside the file would\n` +
         `  end that transaction early, so the rest of the file — and the ledger row — would land\n` +
@@ -689,7 +772,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     );
     return 1;
   }
-  if (NEEDS_AUTOCOMMIT_RE.test(stripped)) {
+  if (facts.autocommit) {
     console.error(
       `${TAG.fail}${filename} contains a statement that cannot run inside a transaction\n` +
         `  (CREATE/DROP INDEX CONCURRENTLY, REINDEX CONCURRENTLY, VACUUM, or ALTER TYPE ... ADD VALUE).\n` +
@@ -709,6 +792,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   let guard: { feature: string; key: string } | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
   let chairStep: { why: string; reasons: string[] } | null = null;
+  let customDataInserts: string[] = [];
   let chairStepConfirmed: string | null = null;
   let headerNamesProduction = false;
   try {
@@ -718,7 +802,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT, branchRefPath);
-    ({ guard, revokeExemption, chairStep } = assertHeaderAgreesWithFlag({
+    ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
       basedOnNames: basedOnFunctionNames(sql),
       filename,
       flagTarget: target,
@@ -743,6 +827,21 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     );
     for (const st of revokeExemption.statements) {
       console.log(`       ${C.dim}${st.text}${C.reset}`);
+    }
+  }
+
+  // The same rule for the custom-data INSERT: a shape that puts ROWS on production is
+  // announced with the statements it admitted, or it is not bounded.
+  if (customDataInserts.length) {
+    console.log(
+      `${TAG.ok}custom-data insert ${C.bold}schema custom${C.reset} ` +
+        `${C.dim}— ${customDataInserts.length} row-writing statement(s) admitted under ` +
+        `-- guard: ${guard ? `${guard.feature}/${guard.key}` : "(none)"}; schema custom is revoked ` +
+        `from every client role and absent from pgrst.db_schemas, and the file's inverse removes ` +
+        `them${C.reset}`,
+    );
+    for (const st of customDataInserts) {
+      console.log(`       ${C.dim}${st.slice(0, 200)}${st.length > 200 ? " …" : ""}${C.reset}`);
     }
   }
 
@@ -1762,6 +1861,16 @@ function judgeOnly(paths: readonly string[]): number {
   for (const file of files) {
     const sql = readFileSync(file, "utf8");
     const name = basename(file);
+    // Target-independent, and printed on BOTH the accept and the refuse line: the
+    // statement detectors are the OTHER half of the judgement, and until 2026-09-17
+    // the corpus could not see them at all (the autocommit detector read a function's
+    // HINT text as DDL and nothing went red).
+    const facts = statementFacts(sql);
+    const detectors = {
+      autocommit: facts.autocommit,
+      txn_control: facts.txnControl,
+      self_ledger: facts.selfLedger,
+    };
     for (const target of TARGETS) {
       let line: Record<string, unknown>;
       try {
@@ -1784,6 +1893,8 @@ function judgeOnly(paths: readonly string[]): number {
           chair_step: Boolean(verdict.chairStep),
           excused: verdict.chairStep ? verdict.chairStep.reasons.length : 0,
           revoke_exemption: verdict.revokeExemption ? verdict.revokeExemption.schema : null,
+          custom_inserts: verdict.customDataInserts.length,
+          ...detectors,
         };
       } catch (err) {
         if (!(err instanceof TargetRefusal)) throw err;
@@ -1794,6 +1905,7 @@ function judgeOnly(paths: readonly string[]): number {
           verdict: "refuse",
           code: err.code,
           detail: err.message.split("\n")[0],
+          ...detectors,
         };
       }
       console.log(JSON.stringify(line));

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDeepLinkArrival } from "@/lib/deep-link/useDeepLinkArrival";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -181,6 +182,7 @@ import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/mast
 // modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
 import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
 import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildWindow";
+import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 
 /**
@@ -486,13 +488,22 @@ export function RuleRow({
     >
       <div className="flex w-full items-start gap-2 px-3 py-2">
         {canEdit ? (
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelected}
-            aria-label={`Select "${rule.name}" for a bulk action`}
-            className="mt-1 h-4 w-4 shrink-0 accent-primary"
-          />
+          // 16px is the right SIZE for a tick box and the wrong TAP TARGET on a
+          // phone (measured 16×16 at 390px, 2026-09-17). The subtree touch
+          // floor deliberately refuses to grow a checkbox — it would paint a
+          // 44px empty square — so the label carries the platform's hit-area
+          // ring instead (`.matrx-tap-area`, app/globals.css): the tick stays
+          // 16px and the finger gets 44. `mt-1` moves to the label so the ring
+          // is centred on the box, not above it.
+          <label className="matrx-tap-area mt-1 inline-flex shrink-0">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelected}
+              aria-label={`Select "${rule.name}" for a bulk action`}
+              className="h-4 w-4 shrink-0 accent-primary"
+            />
+          </label>
         ) : null}
         <button
           type="button"
@@ -813,8 +824,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // The guided start ("Distill your expertise") lands here with ?interview=1
   // when the knowledge lives in the Expert's head — the Scout interview IS the
   // next step.
-  const [interviewOpen, setInterviewOpen] = useState(
-    searchParams.get("interview") === "1",
+  const [interviewOpen, setInterviewOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("interview") === "1", true, () =>
+    setInterviewOpen(true),
   );
   // Which interview the panel opens INTO — set by the Conversations section
   // (Continue resumes that conversation; New skips the chooser into a fresh
@@ -827,13 +839,15 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // THE CONDUCTOR — the one canonical Masterwork system, held as a live
   // streaming conversation with this Rulebook attached. ?conduct=1 deep-links
   // straight into it.
-  const [conductorOpen, setConductorOpen] = useState(
-    searchParams.get("conduct") === "1",
+  const [conductorOpen, setConductorOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("conduct") === "1", true, () =>
+    setConductorOpen(true),
   );
   // THE MEETING SCAVENGER lands here with ?meeting=1 — its dialog IS the next
   // step (`intake_query = {"meeting":"1"}` on the registry row).
-  const [meetingOpen, setMeetingOpen] = useState(
-    searchParams.get("meeting") === "1",
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("meeting") === "1", true, () =>
+    setMeetingOpen(true),
   );
   // 🚨 THE TRIAD GAME'S DEEP LINK. The guided start (`/masterwork/new?approach=
   // triad_game`) creates the Rulebook and then appends the registry row's own
@@ -896,24 +910,23 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const router = useRouter();
 
   const triadParam = searchParams.get("triad") === "1";
-  const triadHandoff = useRef(false);
-  useEffect(() => {
-    if (!triadParam || triadHandoff.current || !rulebook?.id) return;
-    triadHandoff.current = true;
-    router.replace(`/masterwork/${rulebook.id}/triad`);
-  }, [triadParam, rulebook?.id, router]);
+  useDeepLinkArrival(triadParam, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/triad`);
+  });
 
 
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
-  const [corpusOpen, setCorpusOpen] = useState(
-    searchParams.get("body_of_work") === "1",
+  const [corpusOpen, setCorpusOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("body_of_work") === "1", true, () =>
+    setCorpusOpen(true),
   );
   // The chat-import Approach ("Import your AI chats") lands here with
   // ?chatImport=1 — the import dialog IS the next step. Full page:
   // /masterwork/[id]/import.
-  const [chatImportOpen, setChatImportOpen] = useState(
-    searchParams.get("chatImport") === "1",
+  const [chatImportOpen, setChatImportOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("chatImport") === "1", true, () =>
+    setChatImportOpen(true),
   );
   // SHADOW-THE-INBOX ("Shadow your inbox") lands here with ?shadowInbox=1 —
   // the inbox dialog IS the next step. The registry row carries the same
@@ -929,13 +942,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const shadowInboxOpen = shadowInboxSession.open;
   const setShadowInboxOpen = shadowInboxSession.setOpen;
   const shadowInboxDeepLink = searchParams.get("shadowInbox") === "1";
-  const shadowInboxDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!shadowInboxDeepLink || shadowInboxDeepLinkRef.current || !rulebook?.id)
-      return;
-    shadowInboxDeepLinkRef.current = true;
-    setShadowInboxOpen(true);
-  }, [shadowInboxDeepLink, rulebook?.id, setShadowInboxOpen]);
+  useDeepLinkArrival(shadowInboxDeepLink, Boolean(rulebook?.id), () =>
+    setShadowInboxOpen(true),
+  );
   // The TIMELINE Approach ("a case that unfolded") lands here with
   // ?intake=timeline — the unfolding dialog IS the next step. The registry row
   // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
@@ -954,12 +963,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const timelineOpen = timelineSession.open;
   const setTimelineOpen = timelineSession.setOpen;
   const timelineDeepLink = searchParams.get("intake") === "timeline";
-  const timelineDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!timelineDeepLink || timelineDeepLinkRef.current || !rulebook?.id) return;
-    timelineDeepLinkRef.current = true;
-    setTimelineOpen(true);
-  }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
+  useDeepLinkArrival(timelineDeepLink, Boolean(rulebook?.id), () =>
+    setTimelineOpen(true),
+  );
 
   // THE BAD EXAMPLE PROBE Approach lands here with ?probe=1 from the guided
   // start, and its next step is a PAGE, not a dialog — so the deep link does
@@ -974,12 +980,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // to start an interview — the exact shape of the `timeline` defect, one step
   // further in. Found by driving the funnel end to end, 2026-09-15.
   const probeDeepLink = searchParams.get("probe") === "1";
-  const probeDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!probeDeepLink || probeDeepLinkRef.current || !rulebook?.id) return;
-    probeDeepLinkRef.current = true;
-    router.replace(`/masterwork/${rulebook.id}/probe`);
-  }, [probeDeepLink, rulebook?.id, router]);
+  useDeepLinkArrival(probeDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/probe`);
+  });
 
   // THE SORTING TABLE lands here with ?sort=1 from the guided start, and its
   // next step is a PAGE, not a dialog — so the deep link does the one thing the
@@ -995,12 +998,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // every future lane is
   // `features/masterwork/browse/__tests__/approachLaneCoverage.test.ts`.
   const sortDeepLink = searchParams.get("sort") === "1";
-  const sortDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!sortDeepLink || sortDeepLinkRef.current || !rulebook?.id) return;
-    sortDeepLinkRef.current = true;
-    router.replace(`/masterwork/${rulebook.id}/sort`);
-  }, [sortDeepLink, rulebook?.id, router]);
+  useDeepLinkArrival(sortDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/sort`);
+  });
 
   // THE TEACH-BACK Approach lands here with ?teachBack=1 from the guided start,
   // and its next step is a PAGE, not a dialog — so the deep link does the one
@@ -1009,12 +1009,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // picks an Approach ON this page, and a Rulebook the funnel created and
   // deep-linked arrives with nobody having picked anything.
   const teachBackDeepLink = searchParams.get("teachBack") === "1";
-  const teachBackDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!teachBackDeepLink || teachBackDeepLinkRef.current || !rulebook?.id) return;
-    teachBackDeepLinkRef.current = true;
-    router.replace(`/masterwork/${rulebook.id}/teach-back`);
-  }, [teachBackDeepLink, rulebook?.id, router]);
+  useDeepLinkArrival(teachBackDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/teach-back`);
+  });
 
   // THE CAPTURE PLAN lands here with ?plan=1 from the guided start, and its
   // next step is its own PAGE. Same census-row-3 reasoning as the probe and the
@@ -1023,12 +1020,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // nobody having picked anything — without this the card is a real door all
   // the way through and the Expert still lands on a bare Rulebook.
   const planDeepLink = searchParams.get("plan") === "1";
-  const planDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!planDeepLink || planDeepLinkRef.current || !rulebook?.id) return;
-    planDeepLinkRef.current = true;
-    router.replace(`/masterwork/${rulebook.id}/plan`);
-  }, [planDeepLink, rulebook?.id, router]);
+  useDeepLinkArrival(planDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/plan`);
+  });
 
   // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
   // ?predictions=1 — the ledger dialog IS the next step. The registry row
@@ -1044,13 +1038,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const predictionOpen = predictionSession.open;
   const setPredictionOpen = predictionSession.setOpen;
   const predictionDeepLink = searchParams.get("predictions") === "1";
-  const predictionDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!predictionDeepLink || predictionDeepLinkRef.current || !rulebook?.id)
-      return;
-    predictionDeepLinkRef.current = true;
-    setPredictionOpen(true);
-  }, [predictionDeepLink, rulebook?.id, setPredictionOpen]);
+  useDeepLinkArrival(predictionDeepLink, Boolean(rulebook?.id), () =>
+    setPredictionOpen(true),
+  );
 
   // THE DAILY DRIP ("One question a day") lands here with ?drip=1 — the drip
   // dialog IS the next step, because the first thing to do is pick a channel
@@ -1070,12 +1060,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const dripOpen = dripSession.open;
   const setDripOpen = dripSession.setOpen;
   const dripDeepLink = searchParams.get("drip") === "1";
-  const dripDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!dripDeepLink || dripDeepLinkRef.current || !rulebook?.id) return;
-    dripDeepLinkRef.current = true;
-    setDripOpen(true);
-  }, [dripDeepLink, rulebook?.id, setDripOpen]);
+  useDeepLinkArrival(dripDeepLink, Boolean(rulebook?.id), () => setDripOpen(true));
   // THE RED-PEN LANE ("Mark it up here instead") lands here with ?red_pen=1 —
   // the markup dialog IS the next step. The registry row carries the same
   // `{"red_pen":"1"}` in its `intake_query`, so the deep link and the in-page
@@ -1090,12 +1075,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const redPenOpen = redPenSession.open;
   const setRedPenOpen = redPenSession.setOpen;
   const redPenDeepLink = searchParams.get("red_pen") === "1";
-  const redPenDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!redPenDeepLink || redPenDeepLinkRef.current || !rulebook?.id) return;
-    redPenDeepLinkRef.current = true;
-    setRedPenOpen(true);
-  }, [redPenDeepLink, rulebook?.id, setRedPenOpen]);
+  useDeepLinkArrival(redPenDeepLink, Boolean(rulebook?.id), () =>
+    setRedPenOpen(true),
+  );
 
   // Read straight off the Rulebook already in hand — the ledger lives on
   // `metadata.prediction_ledger`, so the page owes it no query of its own.
@@ -2225,12 +2207,26 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
         >
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
+            {/* MOBILE: the Rulebook's NAME is the sentence the expert typed,
+                and it shared this row with the icon utilities. At 390px that
+                left the heading 182px — "An assistant that deci…" — so the one
+                thing on the page that is hers was the one thing she could not
+                read. The row wraps on a phone (`basis-full`): the name takes
+                the card's full width on its own line and the utilities drop
+                below it, right-aligned. From `sm:` up nothing changes. */}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  {/* MOBILE: `truncate` gave this heading ONE line. At 390px
+                      that line is 182px wide and a Rulebook's name is the
+                      sentence the expert typed — 528px of it here — so the
+                      phone showed "An assistant that deci…" and the expert
+                      could not read back her own goal anywhere on the page.
+                      Two lines on a phone, one truncated line from `sm:` up
+                      where the row has the width for it. */}
                   <h2
-                    className="truncate text-base font-semibold text-foreground"
+                    className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
                     data-surface-value="rulebook_name"
                   >
                     {rulebook.name}
@@ -2239,7 +2235,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
               </div>
               {/* Rulebook-level utilities only. Rule actions live with the
                   rule KPIs below; Masterwork actions live in their own section. */}
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0">
                 {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
                     a Rulebook is a registered shareable resource
                     (`platform.shareable_resource_registry` token `rulebook`,
@@ -2551,6 +2547,21 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                   />
                 </div>
+
+                {/* 🚨 "0 Built" OVER A LIVE BUILD IS NOT A COUNT, IT IS A LIE
+                    (cold walk 7, finding 1, 2026-09-17). The Build keeps going
+                    without the person who started it — the window says so —
+                    but every signal that one was in flight lived in the tab
+                    that launched it (a `localStorage` receipt, and the window
+                    that renders the progress). The walk started a Quick Build,
+                    closed the browser context entirely, came back inside the
+                    build's own stated minute, and got a page identical to one
+                    where nothing had ever been started. This asks the SERVER
+                    row instead, on mount, in any browser. */}
+                <BuildInFlightNotice
+                  rulebookId={rulebook.id}
+                  onSettled={reloadMasterworks}
+                />
 
                 {/* THE ARCHIVED-ITEMS LAW: the KPI strip above counts only the
                     LIVE systems, so the archived ones get their own honest

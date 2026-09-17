@@ -63,6 +63,11 @@ jest.mock("../useTriageRun", () => ({
     result: null,
     start: jest.fn(),
     reset: jest.fn(),
+    // The dialog's latch asks `surfacing`, never `running` — a live run the
+    // Expert has not closed away from (cold walk 7, finding 3). Nothing in
+    // this suite dismisses anything, so the two agree here.
+    surfacing: runningFor === rulebookId,
+    dismiss: jest.fn(),
   }),
 }));
 

@@ -27,7 +27,7 @@
 //
 // Server half: `aidream/aidream/services/distillation/probe.py`.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Check, Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
+import { WorkingNotice } from "@/lib/progress/WorkingNotice";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import type { Rulebook } from "../types";
@@ -48,6 +49,7 @@ import {
   PROBE_PATH,
   buildProbeRequest,
   describeCatch,
+  parsePriorRounds,
   parseProbeRound,
   validateCaseBrief,
   type ProbeRound,
@@ -167,6 +169,32 @@ export function BadExampleProbe({
     setCaseBrief((current) => (current.trim() ? current : restoredCaseBrief));
   }, [restoredCaseBrief]);
 
+  // AND SO DO THE ROUNDS ALREADY ANSWERED (cold walk 6, finding 3, 2026-09-17).
+  //
+  // The durable row carries the round being written and nothing else, so a
+  // reload mid-round-2 left the screen with no example, no answer and no
+  // history — "round 1's finished content gone from view", which is most of
+  // what made that screen read as broken. The rounds are not the server's to
+  // remember (it is handed the whole session on every request), so they ride on
+  // the run's own receipt beside the case brief, the same way and for the same
+  // reason. Local to this browser, never sent anywhere; a probe is capped at
+  // the organization's round knob, so this is a handful of KB at most.
+  const restoredRounds = run.memo?.prior_rounds ?? "";
+  const seededRounds = useRef(false);
+  useEffect(() => {
+    if (!restoredRounds || seededRounds.current) return;
+    seededRounds.current = true;
+    const earlier = parsePriorRounds(restoredRounds);
+    if (!earlier.length) return;
+    // Only ever a PREFIX: anything already on screen came from the server and
+    // is a LATER round than anything on the receipt.
+    setRounds((current) => [...earlier, ...current]);
+    // The answer the Expert had typed was sent with the launch, so it belongs
+    // back in the box it was typed in — exactly as it looks before a reload.
+    const lastCritique = earlier[earlier.length - 1]?.critique ?? "";
+    if (lastCritique) setCritique((current) => current || lastCritique);
+  }, [restoredRounds]);
+
   const running = run.running;
   const current = rounds.length ? rounds[rounds.length - 1] : null;
   const started = rounds.length > 0 || finished !== null;
@@ -251,14 +279,24 @@ export function BadExampleProbe({
         roundCap: knobs.rounds,
       }),
       finish ? "your last answer" : `round ${rounds.length + 1}`,
-      // The brief travels with the run's receipt so a restored round is still
-      // a round about the same kind of work — see `restoredCaseBrief`.
-      { memo: { case_brief: caseBrief.trim() } },
+      // The brief and the rounds already answered travel with the run's
+      // receipt, so a restored round is still a round about the same kind of
+      // work and the session it belongs to is still on screen — see
+      // `restoredCaseBrief` and `restoredRounds`.
+      {
+        memo: {
+          case_brief: caseBrief.trim(),
+          prior_rounds: JSON.stringify(outgoing),
+        },
+      },
     );
   };
 
   const restart = () => {
     run.reset();
+    // A new probe is a new session — the previous one's rounds must not be
+    // seeded back in from a receipt this screen has finished with.
+    seededRounds.current = true;
     setRounds([]);
     setCritique("");
     setFinished(null);
@@ -365,25 +403,36 @@ export function BadExampleProbe({
       ) : null}
 
       {/* ── THE WORKING STATE ────────────────────────────────────────────── */}
+      {/* 🚨 A MOTIONLESS LABEL READS AS STUCK (cold walk 6, finding 6). This
+          said "Writing round 1 — a version of this work that looks right and is
+          not." and then said exactly that, unchanged, for 61 measured seconds
+          while a reasoning model wrote a whole work product. The server's
+          sentence is still the only thing that describes the work — the screen
+          never writes its own — but it now sits over a clock that moves and an
+          honest expectation, which is everything this path actually knows. No
+          percentage: nothing here knows a fraction. */}
       {running ? (
-        <p className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          {/* The server wrote this sentence for this person; the screen never
-              hardcodes its own promise. */}
-          <span>{run.stage || run.waitMessage || "Working…"}</span>
-          {run.cancel ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto"
-              disabled={run.cancelling}
-              onClick={() => void run.cancel?.("The expert stopped the probe.")}
-            >
-              <Square className="size-3.5" />
-              Stop
-            </Button>
-          ) : null}
-        </p>
+        <WorkingNotice
+          doing={run.stage || run.waitMessage || "Working…"}
+          startedAt={run.startedAt}
+          usualMs={run.expectedMs}
+          keepsGoingWithoutYou
+          action={
+            run.cancel ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={run.cancelling}
+                onClick={() =>
+                  void run.cancel?.("The expert stopped the probe.")
+                }
+              >
+                <Square className="size-3.5" />
+                Stop
+              </Button>
+            ) : null
+          }
+        />
       ) : null}
 
       {run.error ? (

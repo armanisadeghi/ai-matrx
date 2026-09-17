@@ -6,73 +6,135 @@
  * package (0.3.0); the app supplies nothing but the markdown.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { SectionShell, StatusChip } from "@/features/print/components/shared";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createMarkdownPdfScope,
+  MARKDOWN_PDF_SURFACE_NAME,
+} from "@/features/surfaces/manifests/markdown-pdf.manifest";
 import { SAMPLE_MARKDOWN } from "./sample-data";
 
 export function MarkdownPdfSection() {
-    const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
-    const [busy, setBusy] = useState(false);
+  const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
+  const [busy, setBusy] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleDownload = async () => {
-        if (busy || !markdown.trim()) return;
-        setBusy(true);
-        try {
-            const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }] =
-                await Promise.all([
-                    import("@ai-matrx/print/pdf"),
-                    import("@ai-matrx/print/markdown"),
-                ]);
-            const blob = await markdownToPdfBlob(markdown, {
-                convertToHtml: markdownToHtml,
-                loadCss: getMarkdownStylesheet,
-            });
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = "document.pdf";
-            document.body.appendChild(anchor);
-            anchor.click();
-            anchor.remove();
-            URL.revokeObjectURL(url);
-            toast.success("PDF downloaded");
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "PDF generation failed");
-        } finally {
-            setBusy(false);
+  const handleDownload = async () => {
+    if (busy || !markdown.trim()) return;
+    setBusy(true);
+    try {
+      const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }] =
+        await Promise.all([
+          import("@ai-matrx/print/pdf"),
+          import("@ai-matrx/print/markdown"),
+        ]);
+      const blob = await markdownToPdfBlob(markdown, {
+        convertToHtml: markdownToHtml,
+        loadCss: getMarkdownStylesheet,
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "document.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF downloaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PDF generation failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const getApplicationScope = () =>
+    createMarkdownPdfScope({
+      content: markdown,
+      pdf_status: busy ? "generating" : "idle",
+    });
+
+  const menuSections: ContextMenuExtraSection[] = [
+    {
+      id: "markdown-pdf-actions",
+      label: "PDF",
+      anchor: "after-compare",
+      items: [
+        {
+          kind: "item",
+          id: "download-pdf",
+          label: "Download PDF",
+          icon: FileDown,
+          disabled: busy || !markdown.trim(),
+          onSelect: handleDownload,
+        },
+      ],
+    },
+  ];
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={MARKDOWN_PDF_SURFACE_NAME}
+      getScope={getApplicationScope}
+      isEditable
+    >
+      <SectionShell
+        title="Markdown → PDF"
+        entry="@ai-matrx/print/pdf"
+        blurb="html2canvas + jsPDF, lazy-loaded on use. The package brings the renderer; the app brings the converter and CSS."
+        actions={
+          <Button
+            size="sm"
+            onClick={handleDownload}
+            disabled={busy || !markdown.trim()}
+          >
+            {busy ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FileDown className="mr-1 h-3.5 w-3.5" />
+            )}
+            Download PDF
+          </Button>
         }
-    };
-
-    return (
-        <SectionShell
-            title="Markdown → PDF"
-            entry="@ai-matrx/print/pdf"
-            blurb="html2canvas + jsPDF, lazy-loaded on use. The package brings the renderer; the app brings the converter and CSS."
-            actions={
-                <Button size="sm" onClick={handleDownload} disabled={busy || !markdown.trim()}>
-                    {busy ? (
-                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                        <FileDown className="mr-1 h-3.5 w-3.5" />
-                    )}
-                    Download PDF
-                </Button>
-            }
+      >
+        <EditableContextMenu
+          sourceFeature="print"
+          surfaceName={MARKDOWN_PDF_SURFACE_NAME}
+          menuVersion={1}
+          getApplicationScope={getApplicationScope}
+          getTextarea={() => textareaRef.current}
+          onTextReplace={setMarkdown}
+          extraSections={menuSections}
         >
-            <textarea
-                className="h-64 w-full resize-y rounded-md border border-input bg-background p-3 font-mono text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={markdown}
-                onChange={(e) => setMarkdown(e.target.value)}
-                spellCheck={false}
-            />
-            <StatusChip tone="info" className="mt-3">
-                Rendering rasterizes the page off-screen — it takes a few seconds on a long document and downloads a
-                file when it finishes. The Tailwind v4 oklch/lab problem is handled inside the package by a scoped
-                <code className="mx-1 font-mono">getComputedStyle</code> patch that is always restored.
-            </StatusChip>
-        </SectionShell>
-    );
+          <ProTextarea
+            ref={textareaRef}
+            className="h-64 w-full resize-y rounded-md border border-input bg-background p-3 font-mono text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            value={markdown}
+            onChange={(e) => setMarkdown(e.target.value)}
+            spellCheck={false}
+            enableVoice={false}
+            enableCleanup={false}
+            enableTextStats
+            surfaceName={MARKDOWN_PDF_SURFACE_NAME}
+            sourceFeature="print"
+            getApplicationScope={getApplicationScope}
+          />
+        </EditableContextMenu>
+        <StatusChip tone="info" className="mt-3">
+          Rendering rasterizes the page off-screen — it takes a few seconds on a
+          long document and downloads a file when it finishes. The Tailwind v4
+          oklch/lab problem is handled inside the package by a scoped
+          <code className="mx-1 font-mono">getComputedStyle</code> patch that is
+          always restored.
+        </StatusChip>
+      </SectionShell>
+    </SurfaceRuntimeProvider>
+  );
 }

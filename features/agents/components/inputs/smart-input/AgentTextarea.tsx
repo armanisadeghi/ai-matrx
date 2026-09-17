@@ -43,6 +43,7 @@ import {
 import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
+import { ComposerDraftNotice } from "./ComposerDraftNotice";
 import {
   smartExecute,
   interruptAndSend,
@@ -324,7 +325,13 @@ export function AgentTextarea({
 
   if (singleRow) {
     return (
-      <div className="relative flex items-center min-w-0">
+      <div className="relative flex flex-col min-w-0">
+        <ComposerDraftNotice
+          conversationId={conversationId}
+          surfaceKey={surfaceKey}
+          currentChars={charCount}
+        />
+        <div className="relative flex items-center min-w-0">
         <textarea
           ref={textareaRef}
           value={visibleText}
@@ -336,12 +343,18 @@ export function AgentTextarea({
           rows={1}
           data-agent-main-input
         />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="px-2 relative shrink-0">
+      <ComposerDraftNotice
+        conversationId={conversationId}
+        surfaceKey={surfaceKey}
+        currentChars={charCount}
+      />
       <div className="relative">
         {/* The layout effect owns the exact content height. The CSS cap is a
             second line of defence: if a host reflows between measurement and

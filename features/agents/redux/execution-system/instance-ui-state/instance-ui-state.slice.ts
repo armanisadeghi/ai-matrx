@@ -215,6 +215,18 @@ export interface InitInstanceUIStatePayload {
  *
  * A reducer that cannot apply a write must queue it or raise. It must never
  * swallow it.
+ *
+ * 🚨 AND THE QUEUE IS THE NORMAL PATH, SO IT IS NEVER SCREAMED ABOUT
+ * (cold-walk-6 finding 8, 2026-09-17). Staging fired at `console.error` for its
+ * first day, which raised the Next.js dev error overlay on the Masterwork
+ * interview and Conductor rooms — a red "1 Issue" chip on a first-time Expert's
+ * screen, over a write that had been kept and applied. The write-before-the-row
+ * ordering is not a surface's mistake to correct: `useAgentLauncher` mints the
+ * conversation id during RENDER and creates the row in an async thunk from its
+ * own effect, so a child's mount effect can only ever run first. Staging is
+ * announced at `console.debug`; the genuine failure — an instance that never
+ * lands — is readable in `pendingByConversationId`, which is never cleared for
+ * a conversation that was never created.
  */
 function stageOrApply(
   state: InstanceUIStateSlice,
@@ -232,12 +244,32 @@ function stageOrApply(
     return;
   }
 
-  console.error(
-    `[instance-ui-state] ${actionName} arrived for conversation ` +
-      `"${conversationId}" before its UI-state entry existed. The entry is ` +
-      `being created at defaults and the write kept; it will be replayed on ` +
-      `top of the real instance when it lands. If the instance never lands, ` +
-      `the surface launched its UI without a conversation.`,
+  // WHY THIS IS NOT AN ERROR, AND MUST NOT BE (cold-walk-6 finding 8,
+  // 2026-09-17). Staging is not a recovery from a defect — since D326 it IS the
+  // write path, and it runs on the NORMAL order of things:
+  // `useAgentLauncher` mints the conversation id synchronously DURING RENDER and
+  // hands it down from the first paint on purpose ("the surface never re-keys"),
+  // while `createInstanceFull` lands inside an async thunk dispatched from the
+  // launcher's own effect. A child's mount effect therefore always runs first —
+  // there is no ordering for a surface to get right, and the three surfaces that
+  // trip this (`ScoutInterviewPanel`, `ConductorPanel`, `RoleHeroIdentity`) each
+  // carry a comment saying they deliberately no longer gate on the row, because
+  // gating was the local workaround D326 removed.
+  // Logged at error level, this fired on that designed path and raised the
+  // Next.js dev error overlay — a red "1 Issue" chip on the first screen a
+  // first-time Expert ever sees, over a write that was kept and applied. A
+  // scream on a normal path with no remedy in it is itself the defect: it trains
+  // everyone in the checkout to ignore the overlay that exists to carry real
+  // ones. It stays announced — at the level the event actually is — so the
+  // sequence remains discoverable in the console without being cried as a fault.
+  console.debug(
+    `[instance-ui-state] ${actionName} was staged for conversation ` +
+      `"${conversationId}": the write arrived before the instance row and is ` +
+      `held at this slice's defaults until the row lands, then replayed on top ` +
+      `of it. This is the normal launcher order and nothing is lost. A write ` +
+      `that is still staged when the surface is gone means the instance never ` +
+      `landed — its fields are readable in ` +
+      `state.instanceUIState.pendingByConversationId["${conversationId}"].`,
   );
 
   instanceUIStateSlice.caseReducers.initInstanceUIState(
@@ -376,14 +408,19 @@ const instanceUIStateSlice = createSlice({
         if (replayed.length > 0) {
           const entry = state.byConversationId[conversationId];
           for (const key of replayed) {
-            (entry as Record<string, unknown>)[key as string] = staged[key];
+            (entry as unknown as Record<string, unknown>)[key as string] =
+              staged[key];
           }
-          console.warn(
-            `[instance-ui-state] conversation "${conversationId}" was created ` +
-              `after ${replayed.length} write(s) had already been made against ` +
-              `it (${replayed.join(", ")}); they were replayed on top of the ` +
-              `new entry. A surface is writing display state before its ` +
-              `instance exists — that is handled, but it is worth knowing.`,
+          // The other half of the same designed sequence — it fires on every
+          // staged mount, so it is announced at the same honest level as the
+          // staging itself (see `stageOrApply`). This is the contract working,
+          // not a surface misbehaving.
+          console.debug(
+            `[instance-ui-state] conversation "${conversationId}" landed after ` +
+              `${replayed.length} write(s) had been staged against it ` +
+              `(${replayed.join(", ")}); they were replayed on top of the new ` +
+              `entry. Expected: a surface writes its display state on mount, ` +
+              `which is before the launcher's async creation resolves.`,
           );
         }
       }

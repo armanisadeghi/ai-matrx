@@ -96,6 +96,8 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
   {
     id: "description",
     label: "Description",
+    // A sentence of prose is not a phone-card field: one tap away. (phoneCards.tsx)
+    phone: "rest",
     column: {
       id: "description",
       accessorKey: "description",
@@ -176,6 +178,8 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
     id: "status",
     label: "Last run status",
     facet: "status",
+    // Did it work last time — the first thing a phone reader wants.
+    phone: "primary",
     formatFacetValue: formatStatusFacet,
     column: {
       id: "status",

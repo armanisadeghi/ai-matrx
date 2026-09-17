@@ -202,6 +202,8 @@ export function buildGridCellMenuSection(opts: {
   readOnly: boolean;
   /** Overrides the default view-only sentence when it would be untrue. */
   readOnlyReason?: string;
+  /** True when a CELL is what the user right-clicked — see `primary` in v3 types. */
+  primary?: boolean;
   on: {
     /** Copy the range to the clipboard as TSV. Range only — see the header. */
     copy: (address: CellAddress) => void;
@@ -302,6 +304,7 @@ export function buildGridCellMenuSection(opts: {
           : "Cell",
       icon: Pencil,
       anchor: "after-clipboard",
+      primary: opts.primary,
       items,
     },
     {
@@ -324,6 +327,8 @@ export function buildGridRowMenuSection(opts: {
   readOnly: boolean;
   /** Overrides the default view-only sentence when it would be untrue. */
   readOnlyReason?: string;
+  /** True when the ROW (its checkbox / actions, not a cell) is what was right-clicked. */
+  primary?: boolean;
   on: {
     /** Open the new-row form. Rows are unordered, so there is no above/below. */
     add: () => void;
@@ -407,6 +412,7 @@ export function buildGridRowMenuSection(opts: {
       label: row ? `Row · ${row.label}` : "Row",
       icon: ArrowUpDown,
       anchor: "after-clipboard",
+      primary: opts.primary,
       items,
     },
     {
@@ -441,7 +447,11 @@ export function buildGridColumnMenuSection(opts: {
   readOnlyReason?: string;
   /** The table has one column left — it cannot be removed. */
   isOnlyColumn: boolean;
+  /** True when the column HEADER is what the user right-clicked. */
+  primary?: boolean;
   on: {
+    /** Rename the column in place, in its header. */
+    rename: (fieldName: string) => void;
     sortAsc: (fieldName: string) => void;
     sortDesc: (fieldName: string) => void;
     clearSort: () => void;
@@ -463,22 +473,24 @@ export function buildGridColumnMenuSection(opts: {
   const noColumn = !column ? needs("a column") : undefined;
   const writeGate = noColumn ?? viewOnlyGate(readOnly, opts.readOnlyReason);
 
+  // Ordered the way a header click is used: name it, arrange it, add beside
+  // it, color it, and the destructive row last (Airtable's field menu order).
   const items: ContextMenuExtraItem[] = [
     {
       kind: "item",
-      id: "grid-col-insert-left",
-      label: "Insert column left…",
-      icon: PanelLeft,
-      onSelect: () => name && on.insert(name, "left"),
+      id: "grid-col-rename",
+      label: "Rename column",
+      icon: Pencil,
+      onSelect: () => name && on.rename(name),
     },
     {
       kind: "item",
-      id: "grid-col-insert-right",
-      label: "Insert column right…",
-      icon: PanelRight,
-      onSelect: () => name && on.insert(name, "right"),
+      id: "grid-col-configure",
+      label: "Column settings…",
+      icon: Settings2,
+      onSelect: () => name && on.configure(name),
     },
-    { kind: "separator", id: "grid-col-sep-insert" },
+    { kind: "separator", id: "grid-col-sep-name" },
     {
       kind: "item",
       id: "grid-col-sort-asc",
@@ -507,6 +519,21 @@ export function buildGridColumnMenuSection(opts: {
       icon: EyeOff,
       onSelect: () => name && on.hide(name),
     },
+    { kind: "separator", id: "grid-col-sep-insert" },
+    {
+      kind: "item",
+      id: "grid-col-insert-left",
+      label: "Insert column left…",
+      icon: PanelLeft,
+      onSelect: () => name && on.insert(name, "left"),
+    },
+    {
+      kind: "item",
+      id: "grid-col-insert-right",
+      label: "Insert column right…",
+      icon: PanelRight,
+      onSelect: () => name && on.insert(name, "right"),
+    },
     { kind: "separator", id: "grid-col-sep-color" },
     buildHighlightSubmenu({
       id: "grid-col-highlight",
@@ -530,14 +557,7 @@ export function buildGridColumnMenuSection(opts: {
       icon: Paintbrush,
       onSelect: () => on.colors(),
     },
-    { kind: "separator", id: "grid-col-sep-settings" },
-    {
-      kind: "item",
-      id: "grid-col-configure",
-      label: "Column settings…",
-      icon: Settings2,
-      onSelect: () => name && on.configure(name),
-    },
+    { kind: "separator", id: "grid-col-sep-delete" },
     {
       kind: "item",
       id: "grid-col-delete",
@@ -554,9 +574,11 @@ export function buildGridColumnMenuSection(opts: {
       label: column ? `Column · ${column.displayName}` : "Column",
       icon: Settings2,
       anchor: "after-clipboard",
+      primary: opts.primary,
       items,
     },
     {
+      "grid-col-rename": writeGate,
       "grid-col-insert-left": writeGate,
       "grid-col-insert-right": writeGate,
       "grid-col-sort-asc": noColumn,

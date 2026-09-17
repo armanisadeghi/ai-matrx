@@ -1,6 +1,11 @@
 /** Live Cloud Browser data and control-plane client. */
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
+import {
+  peekSelectedOrganizationId,
+  waitForOrganizationAdmission,
+} from "@/lib/api/organization-admission";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canViewAccess } from "@/utils/permissions/access-core";
@@ -528,6 +533,14 @@ async function displayNameFor(userId: string): Promise<string> {
  * here instead, by sharing the promise.
  */
 const startRunInFlight = new Map<string, Promise<string>>();
+// Keep the initiating admitted organization and activation key together until
+// the server acknowledges the start. A dropped POST is ambiguous: retrying it
+// under a newly selected organization or a fresh key would no longer be the
+// same durable activation.
+const startRunAttempts = new Map<string, {
+  activationKey: string;
+  organizationId: string;
+}>();
 
 async function startRun(profileId?: string): Promise<string> {
   const key = profileId || "__personal_default__";
@@ -535,12 +548,24 @@ async function startRun(profileId?: string): Promise<string> {
   if (existing) return existing;
 
   const attempt = (async () => {
+    let start = startRunAttempts.get(key);
+    if (!start) {
+      await waitForOrganizationAdmission();
+      start = {
+        activationKey: crypto.randomUUID(),
+        organizationId: requireOrganizationContext(peekSelectedOrganizationId()),
+      };
+      startRunAttempts.set(key, start);
+    }
     const { data } = await postJson<unknown>("/browser-manager/runs", {
       profile_id: profileId || null,
       mode: "handoff_capable",
       execution_target: "browser_fleet",
-      activation_key: crypto.randomUUID(),
-    });
+      activation_key: start.activationKey,
+    }, { organizationId: start.organizationId });
+    // A response is the durable receipt. Only now is a future start allowed to
+    // mint a new activation key and snapshot a newly admitted organization.
+    startRunAttempts.delete(key);
     return requiredText(record(record(data).run).run_id, "run id");
   })();
 
@@ -656,6 +681,11 @@ export async function loadSnapshot(
     : { data: null, error: null };
   if (pinnedRunResult.error) throw pinnedRunResult.error;
   const pinnedRun = pinnedRunResult.data;
+  // A caller that names a run is reconnecting to that exact durable activation.
+  // Never fall through to default-profile creation when it is no longer visible:
+  // a stale queued-start poll must not conjure a different browser.
+  if (requestedRunId && !pinnedRun)
+    throw new Error("That Cloud Browser run is no longer available.");
   let profiles = await listProfiles();
   let selected =
     profiles.find((item) => item.id === pinnedRun?.profile_id) ??
@@ -666,18 +696,17 @@ export async function loadSnapshot(
   // id — re-deriving it below would start a SECOND browser and 503 against the
   // one we just made (the fleet admits exactly one).
   let openedRunId: string | null = null;
-  if (!selected) {
+  if (!selected && !requestedRunId) {
     openedRunId = await startRun();
     profiles = await listProfiles();
     selected = profiles.find((item) => item.isPersonalDefault) ?? profiles[0];
   }
   if (!selected)
     throw new Error("Cloud Browser could not create your browser profile.");
-  const pinnedRunIsLive =
-    pinnedRun !== null &&
-    LIVE_STATES.some((state) => state === pinnedRun.state);
   const runQuery = requestedRunId
-    ? { data: pinnedRunIsLive ? [pinnedRun] : [], error: null }
+    // The queued-start poll must observe its own terminal result too. The
+    // handoff-only loader above deliberately remains live-only.
+    ? { data: pinnedRun ? [pinnedRun] : [], error: null }
     : await supabase
         .schema("browser")
         .from("run")
@@ -849,9 +878,16 @@ export async function mintStreamTicket(
   mode: StreamMode,
   takeover = false,
 ): Promise<StreamTicketEnvelope> {
+  // A stream ticket and its lease must stay in the organization that admitted
+  // the initiating request even if the person changes organization mid-connect.
+  await waitForOrganizationAdmission();
+  const organizationId = requireOrganizationContext(
+    peekSelectedOrganizationId(),
+  );
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/stream-ticket`,
     { mode, takeover },
+    { organizationId },
   );
   const value = record(data);
   const control = value.control === null ? null : record(value.control);
@@ -859,6 +895,7 @@ export async function mintStreamTicket(
   const viewport = record(value.viewport);
   const envelope = {
     ticket: requiredText(value.ticket, "stream ticket"),
+    organizationId,
     expiresAt: requiredNumber(value.expires_at, "ticket expiry"),
     endpoint: requiredText(value.endpoint, "stream endpoint"),
     protocol: "selkies_webrtc",
@@ -900,26 +937,33 @@ async function streamRequest(
   const endpoint = new URL(operation, ticket.endpoint);
   if (
     endpoint.protocol !== "https:" ||
-    endpoint.hostname !== "stream.aimatrx.com"
+    endpoint.origin !== "https://stream.aimatrx.com"
   ) {
     throw new Error(
       "The Cloud Browser server returned an invalid stream address.",
     );
   }
-  const { data, error } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
-  if (error || !accessToken)
-    throw error ?? new Error("Sign in to use Cloud Browser.");
-  const response = await fetch(endpoint, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const response = await requestRaw(
+    `${endpoint.pathname}${endpoint.search}`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body:
+        operation === "claim" ? JSON.stringify({ ticket: ticket.ticket }) : "{}",
     },
-    body:
-      operation === "claim" ? JSON.stringify({ ticket: ticket.ticket }) : "{}",
-  });
+    {
+      // Validation above makes this foreign-origin override safe; the shared
+      // client then supplies the authenticated organization context, request
+      // id, and diagnostic capture used by every other backend request.
+      baseUrlOverride: endpoint.origin,
+      organizationId: ticket.organizationId,
+      allowHttpError: true,
+      // A claimed view is an expected domain outcome handled below, not an
+      // Error Inspector incident. Other stream refusals stay captured there.
+      expectedErrorStatuses: [409],
+    },
+  );
   if (!response.ok) throw await streamConnectError(response);
 }
 

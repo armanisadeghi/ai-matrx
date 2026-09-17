@@ -1427,6 +1427,55 @@
       min-height: 2.75rem;
     }
   }
+
+  /* =========================================================================
+     .matrx-tap-area — THE ONE HIT-AREA RING, for a control that must STAY
+     SMALL.
+
+     The subtree floor above GROWS a control, which is right for a button and
+     wrong for the handful of controls whose size is the control: a bare
+     `<input type="checkbox">`, a radio, a 14px switch. Blowing one up to 44px
+     turns a tick box into an empty bordered square (measured 2026-08-25), so
+     the floor excludes them by name and the note there promised a call-site
+     hit area. It never existed — every such control was left at 16px, which is
+     how ten rule checkboxes on `/masterwork/<id>` measured 16x16 at 390px on
+     2026-09-17, beside rows whose every button had been lifted to 44.
+
+     So: an INVISIBLE 44x44 ring, centred on the control, that leaves the
+     painted box exactly where it was. Same media query as the floor, so
+     desktop density is untouched.
+
+     🚨 IT GOES ON THE CONTROL'S `<label>`, NOT ON THE CONTROL. An `<input>` is
+     a replaced element and renders NO `::before` at all, so a ring drawn on the
+     checkbox itself does not exist — and a ring on a plain wrapper `<div>`
+     would swallow the tap without toggling anything, which is worse than a
+     small target. A `<label>` wrapping (or `htmlFor`-bound to) the input is
+     already the accessible tap target; this only makes it finger-sized.
+
+     🚨 OPT-IN PER CONTROL, NEVER SPRAYED ON A CONTAINER. The ring extends past
+     the control's own box, so on a TOOLBAR of adjacent controls the rings
+     overlap in the gaps and one control eats taps aimed at its neighbour —
+     unacceptable where a neighbour is destructive, and the reason
+     `@ai-matrx/design-system` 0.21.0 grew its Buttons instead of ringing them.
+     Use it only where the control stands alone with real space around it.
+     ========================================================================= */
+  @media (pointer: coarse), (max-width: 1023px) {
+    .matrx-tap-area {
+      position: relative;
+      touch-action: manipulation;
+    }
+    .matrx-tap-area::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2.75rem;
+      height: 2.75rem;
+      transform: translate(-50%, -50%);
+      /* Behind nothing and painted with nothing: this only catches pointers. */
+      background: transparent;
+    }
+  }
 }
 
 @layer utilities {

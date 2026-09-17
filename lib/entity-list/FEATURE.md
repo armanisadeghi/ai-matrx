@@ -120,6 +120,119 @@ Guard: `__tests__/all-archived-empty-state.test.tsx` drives the real
 `EntityListPage` through the real `useEntityList` — **8 of its 12 RED against
 the pre-fix shell at `41fb3da018`**, 12 GREEN after.
 
+## Bulk selection (`config.bulkActions`) — opt-in, and silent until it is taken
+
+Declaring `bulkActions` is the whole switch. **Absent or empty = nothing
+changes**: no `selection` prop reaches `MatrxDataTable`, so there is no checkbox
+column, no header select-all, no bulk bar, no banner and no keyboard handler —
+the exact list the other surfaces render today. Acting on many rows at once is a
+capability a surface has to be ready for, never something the shell turns on for
+eighteen pages at once. Guard: `__tests__/bulk-selection.test.tsx`
+§ _"a surface that declares no bulk actions"_.
+
+```ts
+bulkActions?: EntityBulkAction<TRow>[];      // the opt-in
+bulkSelection?: {
+  noun?: string;                              // default: entityLabel.singular
+  isRowSelectable?: (row: TRow) => boolean;   // a refused row renders NO checkbox
+  selectAllMatching?: boolean;                // default false — see below
+};
+
+interface EntityBulkAction<TRow> {
+  id: string;
+  label: string;
+  icon?: ComponentType<{ className?: string }>;   // Lucide, never an emoji
+  variant?: "default" | "outline" | "destructive";
+  confirm?: (s: EntityBulkSelection<TRow>) => EntityBulkActionConfirm | null;
+  run: (s: EntityBulkSelection<TRow>) =>
+    | Promise<EntityBulkActionResult | void>
+    | EntityBulkActionResult
+    | void;
+}
+
+interface EntityBulkSelection<TRow> {
+  mode: "ids" | "matching";   // what the PERSON meant
+  ids: string[];              // every selected id
+  rows: TRow[];               // the selected rows the list HOLDS (see below)
+  count: number;              // ids.length — the number to name in a confirm
+  filter: EntityBulkFilter;   // scope, search, deep, archived, filters — no page
+}
+
+interface EntityBulkActionResult {
+  message?: string;      // success sentence
+  removedIds?: string[]; // dropped locally, no refetch flash
+  refresh?: boolean;     // re-ask rows, counts and facets
+  keepSelection?: boolean; // default: the shell clears it, the work is done
+}
+```
+
+**THE TWO MEANINGS OF "ALL", AND WHY BOTH ARE SAID OUT LOUD.** A header checkbox
+over a server-paged list can only truthfully tick the rows on this page. A person
+looking at 3 of 4,613 reads it as everything, and a list that quietly serves the
+first meaning is one click from a disaster it invited. So the banner under the
+toolbar (Gmail's) states which is true:
+
+- `ids` — what is ticked. **Survives sort, search, filter, scope and paging**; it
+  is cleared only deliberately (the bar's Clear, Escape, or a finished action).
+- `matching` — offered only where the surface set `selectAllMatching`, because it
+  is a promise: the shell resolves it by paging **the surface's own service**
+  with the same filters and no page, announcing progress and offering Cancel
+  while it runs. There is no invented ceiling — it stops at the server's own
+  total. A surface that does NOT declare it gets a banner naming the larger
+  number anyway ("Only the 3 on this page are selected — this view matches 7"),
+  because silence there is what the header checkbox gets mistaken for.
+- `matching` decays to `ids` the moment the live query stops matching the one the
+  claim was made against, and the moment the person unticks a row. The membership
+  never changes on its own; only the sentence about it does.
+
+`rows` is the selected rows **the list holds**: in `ids` mode a selection outlives
+a page change, so it can be a strict subset of `ids` (a surface whose action needs
+row objects must say so — `/transcripts`' export names the shortfall in its
+confirm). In `matching` mode it is every resolved row.
+
+**Anything destructive or expensive returns a `confirm` that NAMES the
+consequence** — what is lost, duplicated, spent or sent, and how many times
+(`common-docs/policies/destructive-and-expensive-actions.md`). The shell owns the
+stop, the pending state, the toast and the lifecycle; the surface owns only what
+the verb does. On failure the selection is KEPT, so nobody re-ticks 40 rows.
+
+**Where the chrome lives.** The buttons render inside `MatrxDataTable`'s own bulk
+bar (its `selection.actions` seam), which already owns the count, Clear and
+copy-of-selection — a second bar beside it would be a fork whose count would
+eventually disagree. The cards and dense-rows views have no bar, so there the
+banner carries the buttons instead (a selection you cannot act on is a dead end).
+
+**The phone has its own select-all.** Below `sm` the canonical table swaps its
+grid for stacked cards and the header row — with the select-all in it — goes
+with it, so `<EntityCardsSelectAll>` renders there instead (`sm:hidden`, one
+control at any width). It is the SAME verb (`toggleLoaded`) the table header
+uses, so the two widths cannot come to mean different things, it shows a
+half-ticked page as indeterminate, and it is what makes the "all N matching this
+filter" offer reachable on a phone at all — that offer only appears once every
+row on screen is ticked, and nobody taps 25 boxes to discover an option exists.
+Its label is a verb ("Select all 25 on this page" / "Deselect all 25 on this
+page"), never a restatement of the banner above it, and it carries no Clear
+because the bar directly below has one.
+
+**Touch, keyboard, phone.** The table's checkbox column gets its 44px hit area
+from `@ai-matrx/design-system/tap-target.css` under `pointer: coarse`; the phone
+card's checkbox is this primitive's and carries `.matrx-tap-area` on its
+`<label>` (the one documented ring for a control whose size IS the control —
+`app/globals.css`). Shift-click selects a range (the table's). `x` toggles the row
+under the caret or the pointer, `cmd/ctrl-A` selects everything on screen, `Escape`
+clears — each only while this list pane holds the focus or the pointer, never in a
+text field, never over an open dialog.
+
+**Selection state is local to the list shell** (`useEntityListSelection`), beside
+the query, not in Redux: it belongs to this mount of this page, and restoring one
+would arm a bulk action against rows nobody has in mind any more.
+
+**Left behind, deliberately:** `EntityAltViewProps` carries no selection, so a
+feature-owned cards/rows VIEW (the `views.cards` render prop — not the table's
+own phone cards, which are fully wired) renders no checkboxes of its own — a selection made
+in the table stays actionable there through the banner, but cannot be STARTED
+there. Wire it the day a surface needs it.
+
 ## Honest defaults (`config.defaultFilters`)
 
 A corpus is not always the list. `/work/conversations` holds ~4,613
@@ -167,6 +280,9 @@ names on one page.
 | `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                                                                                                                                                        |
 | `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config |
 | `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                                                                                                                                                          |
+| `selection.ts`                                                                                                  | Bulk-selection vocabulary — `EntityBulkAction`, `EntityBulkSelection`, `EntityBulkFilter`, and the pure `bulkSelectionMode` that decides which meaning of "all" is currently true                                                                                                   |
+| `useEntityListSelection.ts`                                                                                     | The selection state — local beside the query, never Redux; resolves "everything matching" by paging the surface's own service, cancellably                                                                                                                                          |
+| `components/EntityBulkBar.tsx`                                                                                  | The declared buttons (rendered inside the table's own bulk bar) and the one banner that says which meaning of "all" is true                                                                                                                                                         |
 
 ## Rules
 
@@ -206,10 +322,20 @@ names on one page.
    attach a record that does not exist. Keep the entity identical to what the
    name column's `entityToken` resolves and what the kebab's share action uses:
    one record, one identity, three entry points.
-8. **Phone cards remain the table view.** `config.mobileCards` forwards only a
-   feature-owned row summary into `MatrxDataTable.mobileCards`; the canonical
-   table still owns query state, pagination, copy controls, and row actions.
-   Never fetch a second mobile list or rebuild those actions inside the card.
+8. **Phone cards remain the table view, and the SHELL supplies them.** Below
+   `sm` the shell renders a stacked record card per row instead of the
+   horizontal grid — name, the one or two fields that decide what the row is,
+   status, the row's actions, everything else behind one tap. It is derived
+   from the columns the surface already declared (`./phoneCards.tsx`,
+   `resolvePhoneCardLayout`), so a surface inherits a phone layout without
+   writing one; declare `EntityColumnSpec.phone`
+   (`title`/`primary`/`meta`/`rest`/`off`) only where the derivation promotes
+   the wrong field. `config.mobileCards` still wins when a surface hand-writes
+   its own. The canonical table owns query state, pagination, copy controls and
+   row actions either way; a card's every value goes through
+   `controls.renderCell`, so it is a LAYOUT, never a second renderer. Never
+   fetch a second mobile list or rebuild those actions inside the card.
+   Guard: `__tests__/phone-cards.test.tsx`.
 9. **One context menu per pane.** The shell wraps the list once and resolves
    the clicked `data-row-id` at open time. Every view must stamp that anchor;
    the table already does. The resolver reuses `actions.menuFor(row)`, supplies
@@ -302,6 +428,29 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-17` — **Bulk selection, as an opt-in capability of the primitive**
+  (`config.bulkActions` + `config.bulkSelection`). Per-row checkbox with a 44px
+  touch hit area, shift-click range, header select-all, the honest two-meaning
+  banner with "select all M matching this filter" resolved through the surface's
+  own service, selection that survives sort/filter/paging, keyboard (`x`,
+  `cmd/ctrl-A`, `Escape`), phone-card checkbox, confirms that name the
+  consequence. Zero behaviour change for the eighteen surfaces that declare
+  nothing — proven by `__tests__/bulk-selection.test.tsx`, whose opt-out block
+  goes RED (3 failures) the moment the shell passes `selection` unconditionally
+  and whose banner block goes RED (4 failures) without the banner; 21 GREEN.
+  First consumer: `/transcripts` bulk **Export**. Full contract above under
+  § Bulk selection.
+
+- `2026-09-17` — **The card list got its own select-all**
+  (`<EntityCardsSelectAll>`). Below `sm` the table's header row is replaced by
+  cards, so a phone could only select a page one tap at a time and never reached
+  the "all N matching this filter" offer, which needs every row on screen ticked
+  — the gap that mattered for a channel library of hundreds of videos. Same
+  `toggleLoaded` verb as the table header, indeterminate on a half-ticked page,
+  44px row with the `.matrx-tap-area` ring. RED 5 without it. Verified live at
+  390 on `/transcripts`: one tap → 25 selected → the 524-matching offer →
+  "Every item matching this filter is selected — 524 in total", light and dark.
+
 - `2026-09-11` — Facets now carry their own request-keyed loading and failure
   state on `EntityListController`. `EMPTY_FACETS` remains a safe payload shape,
   never evidence that a read completed with zero values; consumers suppress
@@ -390,6 +539,23 @@ how that savior page gets built.
   right-click share actions, per-row entity, and live surface values. The
   toolbar refresh indicator now names its operation for assistive technology,
   and fetch failures use the canonical toast façade.
+
+- 2026-09-17 — **The shell now HAS a narrow layout.** The `mobileCards` seam
+  had existed for a year and not one of the ~23 surfaces supplied one, so at
+  390px `/masterwork/all` rendered a seven-column, 3,065px-wide table inside a
+  364px box (`/masterwork/encore` 1,720px; `/agents/all` eleven columns,
+  `/work/conversations` thirteen) — about a column and a half of seven behind a
+  sideways scroll, with the record name a 2,483px anchor 20px tall. A default
+  phone card now renders for every surface that declares none
+  (`phoneCards.tsx`), derived from the door column, the date columns and
+  declaration order, honouring the user's hidden-column preference, carrying
+  `data-row-id` for the pane menu and `.matrx-touch-targets` for the 44px
+  floor. Four surfaces declared a `phone` role where the derivation was wrong
+  (agents, workflows, masterwork). Measured after, at 390×844 in both themes:
+  every list route renders cards and the grid is gone below `sm`; at 1440 with
+  a fine pointer the seven-column table and its density are byte-for-byte what
+  they were. Guard: `__tests__/phone-cards.test.tsx` (3 of its 9 RED with the
+  default removed).
 
 - 2026-08-25 — Added the generic `config.mobileCards` forwarding seam so a
   feature-entry list can expose its essential phone context while retaining the

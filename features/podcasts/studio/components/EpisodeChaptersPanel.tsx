@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import MediaChaptersBlock from "@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock";
 import { podcastService } from "@/features/podcasts/service";
+import { chapterTimingAdjustmentNotice } from "@/features/podcasts/chapter-timing";
 import { useEpisodeChapters } from "@/features/podcasts/generator/useEpisodeChapters";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -144,11 +145,25 @@ export function EpisodeChaptersPanel({
         );
       }
       const saved = await podcastService.saveEpisodeChapters(episode.id, next);
-      setWritten(saved.chapters ?? next);
-      toast.success(`Chapter markers updated (${next.length}).`);
+      const persisted = saved.chapters ?? next;
+      setWritten(persisted);
+      const adjustment = chapterTimingAdjustmentNotice(
+        next,
+        persisted,
+        saved.audioMetadataDurationSeconds,
+      );
+      toast.success(
+        adjustment ?? `Chapter markers updated (${persisted.length}).`,
+      );
     },
     [episode, busy],
   );
+
+  // Keep a surface-written list visible through an unsuccessful regeneration.
+  // Only a newly persisted canonical list may replace the READ twin.
+  const regenerate = useCallback(async () => {
+    if (await generate()) setWritten(null);
+  }, [generate]);
 
   useSurfaceWriteHandlers(PODCAST_RUN_SURFACE_NAME, {
     episode_chapters: applyChapters,
@@ -169,7 +184,7 @@ export function EpisodeChaptersPanel({
           variant={hasChapters ? "ghost" : "default"}
           className="gap-1.5"
           disabled={busy || !episode || noScript}
-          onClick={() => void generate()}
+          onClick={() => void regenerate()}
         >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -75,7 +75,7 @@ function createAction() {
     agentId: AGENT,
     agentType: "standard",
     origin: "manual",
-  } as Parameters<typeof createInstanceFull>[0]);
+  } as unknown as Parameters<typeof createInstanceFull>[0]);
 }
 
 function addedMcpFor(uiState: UIState): string[] | undefined {
@@ -87,17 +87,20 @@ describe("a per-run MCP attachment survives every step of the /chat/new handoff"
   let errorSpy: jest.SpyInstance;
   let warnSpy: jest.SpyInstance;
   let infoSpy: jest.SpyInstance;
+  let debugSpy: jest.SpyInstance;
 
   beforeEach(() => {
     errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    debugSpy = jest.spyOn(console, "debug").mockImplementation(() => {});
   });
 
   afterEach(() => {
     errorSpy.mockRestore();
     warnSpy.mockRestore();
     infoSpy.mockRestore();
+    debugSpy.mockRestore();
   });
 
   it("keeps a pick made before the conversation's UI-state entry exists, and says so", () => {
@@ -113,8 +116,14 @@ describe("a per-run MCP attachment survives every step of the /chat/new handoff"
     );
 
     expect(addedMcpFor(after)).toEqual(["context7"]);
-    // Silent is the defect. The ordering problem still has to be visible to us.
-    expect(errorSpy).toHaveBeenCalled();
+    // Silent is the defect — so the staging still announces itself. But it
+    // announces at `console.debug`, not `console.error`: writing before the row
+    // is the launcher's designed order (the id is minted during render, the row
+    // is created by an async thunk), so an error here raised the Next.js dev
+    // overlay on a normal path. Cold-walk-6 finding 8, 2026-09-17; the reason
+    // lives beside `stageOrApply` in the slice.
+    expect(debugSpy).toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 
   it("carries the attachment across a re-create of the same conversation id", () => {

@@ -1305,3 +1305,62 @@ export function withComputedColumns<
   });
   return { rows: computed, errors, formulaFieldNames };
 }
+
+// ─── renaming a column a formula refers to ──────────────────────────────────
+
+/**
+ * Rewrite every `{from}` reference in `expression` to `{to}` — what keeps a
+ * formula working when the column it names is renamed (Airtable and Sheets do
+ * this silently; a rename that turned a working column into #ERROR would be
+ * the platform punishing the user for tidying up).
+ *
+ * Walks the source with the tokenizer's own rules for the two things that
+ * matter: a `{…}` inside a quoted string is TEXT and is left alone, and `\`
+ * escapes the next character inside a string. The match is on the trimmed
+ * name, case-insensitive — the same comparison `withComputedColumns` makes.
+ * Returns the SAME string when nothing referenced `from`.
+ */
+export function rewriteFormulaReferences(
+  expression: string,
+  from: string,
+  to: string,
+): string {
+  const target = from.trim().toLowerCase();
+  if (!target) return expression;
+  let out = "";
+  let i = 0;
+  while (i < expression.length) {
+    const ch = expression[i];
+    if (ch === '"' || ch === "'") {
+      let j = i + 1;
+      while (j < expression.length) {
+        if (expression[j] === "\\" && j + 1 < expression.length) {
+          j += 2;
+          continue;
+        }
+        if (expression[j] === ch) {
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      out += expression.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (ch === "{") {
+      const close = expression.indexOf("}", i + 1);
+      if (close === -1) {
+        out += expression.slice(i);
+        break;
+      }
+      const name = expression.slice(i + 1, close);
+      out += name.trim().toLowerCase() === target ? `{${to}}` : expression.slice(i, close + 1);
+      i = close + 1;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}

@@ -4262,3 +4262,95 @@ Sibling not fixed: `components/matrx/resizable/MatrxDynamicPanel.tsx` still rese
 height, where the app shell's header is `--shell-header-h`. `SidePanelSurface` never reaches that
 path (it uses a Drawer on mobile), so it is not the same instance — but every other direct
 `MatrxDynamicPanel` consumer that renders under the shell on a touch device is off by 4px there.
+## ~~A typed-but-unsent chat message does not survive a reload~~ **FIXED 2026-09-17**
+
+Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now
+keeps its in-progress work through `features/masterwork/sitting/`, and the census that proves it
+turned up one lane it cannot reach: the Scout interview room and the Conductor room hold their
+in-progress work in the shared chat composer, and a message typed there and not yet sent is gone
+after a browser reload. Measured live on a brand-new Rulebook: 198 characters typed into the
+interview composer, reload, field empty, nothing said.
+
+`features/agents/redux/execution-system/instance-user-input/input-draft-protection.ts` is emphatic
+that this draft is "the single most valuable, irreplaceable piece of data in the app" and protects
+it against every in-session clear — but the slice is in-memory only, so the protection ends at the
+tab. The same is true of `/chat` and every other composer surface; this is not a Masterwork defect
+and must not be patched inside Masterwork.
+
+NOT FIXED HERE, deliberately: persisting that slice is a platform change touching every streaming
+surface in the product, and getting it wrong re-opens exactly the class that file exists to guard
+(a restore racing a submit could resurrect a message the user already sent). It needs its own
+session, with the composer's owners, and a forcing-function test that a restore can never
+re-submit. `features/masterwork/sitting/lanePersistence.ts` declares the two rooms `server-write`,
+which is true of the TURNS and is not a claim about the composer.
+
+**FIXED as the platform primitive it is, 2026-09-17.** The durable half of the composer draft is
+`features/agents/redux/execution-system/instance-user-input/composer-draft-store.ts` (storage,
+submit generations, tombstones) driven by `composer-draft.middleware.ts`, the ONE writer, in the
+store's middleware chain. It watches the actions every composer already dispatches — so the
+guarantee is a property of conversation state, not of one component, and `/chat`, the interview
+room, the Conductor, agent run and every embedded conversation inherit it. The restore is a
+two-step compare-and-apply (`peekComposerDraft` → `applyComposerDraft`), and `AgentTextarea`
+mounts it through `useComposerDraftRestore` + `ComposerDraftNotice` — a restore is never silent
+("We put your unsent draft back (N characters)"), and a browser that refuses storage says so
+instead of pretending.
+
+The resurrection hazard the entry names is closed by CLEAR-BEFORE-SEND: `markInputSubmitted` bumps
+a per-conversation submit generation and lays a `{sent:true}` tombstone BEFORE the request leaves,
+every write carries its generation and is refused when storage holds a newer one, and a peeked
+token is re-validated at apply time against both the record and the live generation. Clears follow
+the SLICE, not the action's intent, so a next-message draft `clearUserInput` preserved (and a
+failed send's kept text) stays restorable.
+
+TWO KEYS, found live while verifying: a room the person has not spoken in yet mints a client-only
+conversation id and mints a DIFFERENT one after a reload (the Conductor), so a surface may
+register an alias — `AgentTextarea` passes its `surfaceKey`, e.g.
+`masterwork-conduct:<rulebookId>` — that every write, tombstone and clear is mirrored to and that
+a restore falls back to. Knob: `userPreferences.prompts.restoreUnsentDrafts`, default ON, in
+Settings → AI → Assistants → Composing; a preferences blob written before the key existed reads
+as ON.
+
+Guards (proven failing-then-passing):
+`features/agents/redux/execution-system/instance-user-input/__tests__/an-unsent-draft-survives-a-reload.test.ts`
+— ten cases over the real middleware, slice, storage and thunk, with a reload modelled as
+"discard the store and every in-memory generation, keep sessionStorage". Removing the write from
+the middleware and the generation check from the thunk fails 4 of 8; removing the surface alias
+fails the Conductor case.
+
+Verified live on the preview as `admin@admin.com`: `/chat/b69c1397-…` (221 characters typed →
+reload → back, with the notice; send → tombstone `{"v":"","gen":1,"sent":true}` → record cleared →
+reload → empty box, no notice), `/masterwork/2bd1f094-…/interview` (197 characters back after a
+reload and Continue), `/masterwork/2bd1f094-…/conduct` (199 characters back through the surface
+alias, on a re-minted conversation id).
+
+**`/chat/new` and the handoff line, same session.** The first pass left one door open: `/chat/new`
+mounts its own hero composer (`NewChatLandingInput`, not `AgentTextarea`), so the restore never ran
+there — and the landing mints a client-only conversation id that is re-minted on every reload. The
+hero composer now mounts `ComposerDraftNotice` itself, and the surface alias (`chat:<agentId>`)
+carries the draft until the first send hands over to the real conversation id.
+
+That handoff is now THE RULE for every surface, not a `/chat` special case, because a surface key is
+stable per SURFACE and `/chat` uses ONE key for every conversation with an agent — keyed on that
+alone, a landing draft would surface inside an unrelated conversation.
+`useComposerDraftRestore` registers and consults the alias ONLY while the conversation has no
+messages, and RELEASES it at the first turn (dropping the alias record when it is that send's
+tombstone, so the surface is never left looking permanently "already sent"). Unmount flushes the
+pending keystroke BEFORE the alias is released — otherwise a draft typed in the last 400ms would
+land under the conversation key alone, the one key a re-minted room never asks for again.
+
+Census: every one of the 13 `AgentConversationColumn` mounts passes a `surfaceKey`, so every
+`AgentTextarea`-based composer inherits the alias; `NewChatLandingInput` was the only composer with
+its own textarea that mounts before its conversation exists (`NewChatLandingInputShell` is a static
+skeleton with no state).
+
+Guard: `__tests__/the-surface-alias-is-only-for-an-unstarted-conversation.test.tsx` runs the hook
+for real in React over the real `instanceUserInput` + `messages` reducers and the real middleware.
+Removing the `hasMessages` gate lets a landing draft into a conversation that already has messages;
+removing the release leaves the tombstone under the surface key. Both proven failing, then passing.
+Verified live: `/chat/new` — 202 characters typed → reload (id re-minted) → back with the notice,
+restored from `matrx.composer-draft.surface.chat:6b6b4e45-…`; then send → tombstone on the
+conversation key while the alias record is released → reload → empty box, no notice, no records.
+
+Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
+`ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
+cheap half of this job and would need its own design.

@@ -111,6 +111,8 @@ export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
     id: "status",
     label: "Status",
     facet: "status",
+    // Status belongs on the phone card's face, above author and version.
+    phone: "primary",
     column: {
       id: "status",
       accessorKey: "status",

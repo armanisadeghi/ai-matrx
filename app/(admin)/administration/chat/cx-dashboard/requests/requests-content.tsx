@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, Wrench } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useCxTableFilters } from "@/features/cx-dashboard/components/useCxTableFilters";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import {
   cxUserRequestMenuTarget,
@@ -52,6 +53,7 @@ const requestDuration = (r: CxUserRequest) =>
 
 export function RequestsContent({ result }: Props) {
   const router = useRouter();
+  const sourceFilter = useCxTableFilters("cx-requests");
 
   const rowMenu = useCxRowMenu({
     rows: () => result.data,
@@ -307,24 +309,22 @@ export function RequestsContent({ result }: Props) {
             pageSize={0}
             emptyState={{ title: "No requests match" }}
             toolbar={{
+              refresh: { onRefresh: () => router.refresh() },
               search: true,
               searchPlaceholder: "Filter fetched page…",
               facets: [
                 {
                   type: "custom",
                   id: "server-filters",
+                  filter: sourceFilter,
                   render: () => (
                     <CxFiltersBar
+                      hideClear
                       showSearch={false}
                       showStatusFilter
                       statusOptions={["completed", "pending", "error"]}
-                      onRefresh={() => router.refresh()}
-                      onExportCSV={() =>
-                        exportToCSV(exportData, "user-requests")
-                      }
-                      onExportJSON={() =>
-                        exportToJSON(exportData, "user-requests")
-                      }
+                      onExportCSV={() => exportToCSV(exportData, "user-requests")}
+                      onExportJSON={() => exportToJSON(exportData, "user-requests")}
                     />
                   ),
                 },

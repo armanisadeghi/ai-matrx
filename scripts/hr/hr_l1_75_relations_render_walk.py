@@ -129,8 +129,12 @@ async def main():
             await page.screenshot(path=f"{SHOTS}/{shot}", full_page=True)
             # 🚨 ASSERT IDENTITY AFTER LOGIN, NOT AFTER THE REDIRECT. A shared browser profile
             # has handed a walk somebody else's perfectly correct render as a defect before.
+            # /api/whoami, NEVER /api/session-token: this value gets printed into
+            # the walk's own report, and the token endpoint answers with a LIVE
+            # credential (that is how one reached an agent transcript on
+            # 2026-09-17). whoami returns the user id and email and nothing else.
             who = await page.evaluate(
-                "async () => (await (await fetch('/api/session-token')).json())")
+                "async () => (await (await fetch('/api/whoami')).json())")
             return page, ctx, body, errs, who
 
         # ── C1 · AN ORDINARY EMPLOYEE HAS A DOOR TO FILE A COMPLAINT ──────────────────────────

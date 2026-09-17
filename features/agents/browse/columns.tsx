@@ -94,6 +94,8 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
   {
     id: "description",
     label: "Description",
+    // A sentence of prose is not a phone-card field: one tap away. (phoneCards.tsx)
+    phone: "rest",
     column: {
       id: "description",
       accessorKey: "description",

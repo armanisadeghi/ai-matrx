@@ -225,7 +225,7 @@ export function CheckupSuggestionDialog({
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
-      <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border px-5 py-3">
           <DialogTitle className="text-base">
             {mode === "improve"

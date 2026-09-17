@@ -219,7 +219,7 @@ export function ExpertSignOff({
       </div>
 
       <Dialog open={correcting} onOpenChange={setCorrecting}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="matrx-touch-targets sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>What should it have said?</DialogTitle>
             <DialogDescription>

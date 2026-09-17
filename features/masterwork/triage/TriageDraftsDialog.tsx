@@ -41,6 +41,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
 import { useRunOutcome } from "../durable-run/useRunOutcome";
 import { useTriageRun } from "./useTriageRun";
 import { triageSummary } from "./types";
@@ -100,26 +101,50 @@ export function TriageDraftsDialog({
   // the moment the run is no longer running lets the NEXT live run reopen in
   // its turn, while the `open` guard still keeps it from re-firing on the run
   // that is already on screen.
+  //
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — so this sort's dialog could pull itself open
+  // over an unrelated later visit to the Rulebook page, on top of real
+  // controls, for a sort that had already finished. It also had NO record of
+  // an Expert closing it at all, which its five sibling ingest dialogs at
+  // least kept per mount. `surfacing` is false once the run's own receipt
+  // records the dismissal, and that receipt outlives the mount.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
-  /** Closing clears the finished run, so reopening starts from the form rather
-   * than from the last answer. Never while it is still going: Escape and an
-   * overlay click would otherwise hide a run that is still changing her
-   * drafts. */
-  const requestOpenChange = (next: boolean) => {
-    if (run.running) return;
-    if (!next) run.reset();
-    onOpenChange(next);
-  };
+  /**
+   * Closing clears the finished run, so reopening starts from the form rather
+   * than from the last answer.
+   *
+   * 🚨 THE CLOSE ALWAYS CLOSES. This was `if (run.running) return;`, which is
+   * the exact defect `durableRunDialogOnOpenChange` was written for and which
+   * its five sibling dialogs were moved off on 2026-09-15: Radix routes the X,
+   * Escape AND an outside click through here, so that one line made all three
+   * inert — including while the run was only `"rejoining"`, i.e. exactly the
+   * state a person lands in when the live view is lost. A durable sort is
+   * server-owned; closing its dialog was never what stopped it, and stopping
+   * is the Stop control's job. Found alongside cold walk 7's finding 3, in the
+   * same file, on the same primitive.
+   */
+  const requestOpenChange = durableRunDialogOnOpenChange({
+    running: run.running,
+    reset: run.reset,
+    onOpenChange: (next) => {
+      // The Expert walked away from this sort — recorded on the RECEIPT.
+      if (!next) run.dismiss();
+      onOpenChange(next);
+    },
+    runLabel: "Sorting your drafts",
+  });
 
   const start = async () => {
     // Gated on the button below; an empty "keep" cannot reach here. A field
@@ -135,7 +160,7 @@ export function TriageDraftsDialog({
 
   return (
     <Dialog open={open} onOpenChange={requestOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="matrx-touch-targets max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ListFilter className="h-4 w-4" />

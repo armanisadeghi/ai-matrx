@@ -17,6 +17,7 @@
 
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import type { EntityPhoneRole } from "./phoneCards";
 
 /**
  * A date column's finite value set is "how recently", not "which exact
@@ -64,6 +65,15 @@ export interface EntityColumnSpec<TRow> {
    * still appended by the shell, so this never costs the option its number.
    */
   formatFacetValue?: (value: string) => string;
+  /**
+   * Where this column belongs on the PHONE CARD, below `sm`, where the shell
+   * renders a stacked record card instead of a horizontal table (see
+   * ./phoneCards.tsx for the layout and the derivation). Optional: a surface
+   * that declares nothing gets a sensible default from the door column, the
+   * date columns and declaration order. Declare it when the default promotes
+   * the wrong field to the card face.
+   */
+  phone?: EntityPhoneRole;
   column: MatrxColumnDef<TRow>;
 }
 

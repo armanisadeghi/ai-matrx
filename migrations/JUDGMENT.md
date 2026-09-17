@@ -40,6 +40,21 @@ corpus for the whole runner.
 **Every glob in both runners is non-recursive**, so none of `rehearsal/`, `inverse/`,
 `campaign/` or `judgment-corpus/` is ever swept by a release, a CI job or a cron.
 
+### 1a. The statement detectors read SQL, never prose
+
+Layer 2 asks three questions of the bytes: does the file write the ledger itself, does it carry
+its own transaction control, does it need an autocommit session. **Every one of those questions
+is asked of the file with its comments, its single-quoted literals and its dollar-quoted bodies
+removed** — one stripper per runner, used by all three. Words in a comment, in a string, in a
+function body or in a `$tag$ … $tag$` body are prose: they are not statements the migration
+executes, and a detector that refuses a file over them is wrong. A real top-level statement is
+still seen, and that is what the refusal is for.
+
+On 2026-09-17 this was measured the other way round: `CREATE INDEX CONCURRENTLY` inside a
+function's own HINT text made `pnpm db:apply` refuse a file that needed no autocommit at all.
+Both runners now print `autocommit`, `txn_control` and `self_ledger` on every `--judge-only`
+line, so the corpus holds them to the same reading.
+
 ## 2. The headers
 
 | header | meaning | notes |
@@ -88,6 +103,7 @@ direction a safety scan may fail in.
   `platform.knob_rung_lock`, `platform.entity_types` *(branch only, §3.3)*,
   `platform.entity_relationships`, `platform.client_callable_door`,
   `campaign_watch.build_lock`, `campaign_watch.go_signal_capture`
+- `INSERT INTO custom.<table>` — a data row in schema `custom`, under the four bounds in §4c
 - `ALTER DEFAULT PRIVILEGES … REVOKE`
 - `REVOKE`, only under a proven `-- allows: revoke <schema>`
 - `COMMENT ON`
@@ -105,7 +121,31 @@ builds DDL at run time, so the allow-list cannot read what it will execute).
 - **A guarded body must READ its guard** (`guard-unread`). A `CREATE OR REPLACE` of a live
   definition, or a `CREATE POLICY`, whose body never names the `-- guard:` feature **and** key
   is refused. Static: it cannot prove the read is on the right branch; it proves the body
-  mentions the thing that is supposed to hold it OFF.
+  mentions the thing that is supposed to hold it OFF. **One exemption, the same one the
+  trigger rule below already carries: a `CREATE OR REPLACE FUNCTION | PROCEDURE` whose name is
+  qualified into schema `custom`.** Nothing reads that schema until the switch — it is revoked
+  from every client role, absent from `pgrst.db_schemas` and absent from the ORM — so there is
+  no live path whose body such a statement could replace, which is the whole defect this rule
+  closes (`public._provision_new_user_personal_org()`, which every signup executes). An
+  **unqualified** name is outside `custom`, because `search_path` settles it at execution time.
+  **The exemption does NOT cover a FUNCTION whose RETURNS clause names `trigger` or
+  `event_trigger`.** Postgres resolves a trigger's function by OID at fire time, not by schema
+  privilege: once a `custom.*` function is bound with `CREATE TRIGGER … EXECUTE FUNCTION
+  custom.fn()` on a live table (the trigger rule below's own exemption lets that binding
+  exist), it is a live path regardless of what is revoked from schema `custom`, and a later
+  `CREATE OR REPLACE FUNCTION custom.fn() RETURNS TRIGGER …` replaces the body that path
+  executes — the exact shape this rule exists to catch. A return type that cannot be
+  determined statically is treated as `trigger`: the exemption is never granted on an unproven
+  negative. The exemption is deliberately NOT extended to `CREATE POLICY` (a policy decides row
+  access the moment the switch flips) or to `CREATE OR REPLACE TRIGGER` (which binds behaviour
+  rather than replacing a body), so no verdict already fixed by a fixture moves. `CREATE OR
+  REPLACE VIEW` carries no arm here at all — it is refused by name in the allow-list below at
+  every target, unconditionally, before a file's statements ever reach this rule. Fixtures:
+  `a6-15-guard-unread-replace-in-custom.sql` (an ordinary custom function) and
+  `a6-19-…-returns-trigger.sql` (a guarded trigger-returning one) accept;
+  `a6-16-…-outside-custom.sql`, `a6-17-…-unqualified.sql`, and
+  `a6-18-…-custom-returns-trigger.sql` (the same trigger-returning function, unguarded) refuse;
+  `a6-13-guard-unread-by-policy.sql` still refuses a policy on a `custom` table.
 - **A new trigger on a live table must name its guard** (`trigger-guard-unnamed`). A
   `CREATE TRIGGER` on a table **outside schema `custom`** — an unqualified table counts as
   outside, since `search_path` decides it at execution time — requires the guard's feature and
@@ -125,6 +165,42 @@ SECURITY`, `NO FORCE ROW LEVEL SECURITY`, `ALTER TABLE … DISABLE TRIGGER`, `AL
 `ALTER DEFAULT PRIVILEGES … GRANT`, `ALTER FUNCTION … SECURITY DEFINER`. `GRANT` is
 deliberately **not** on it. `-- additive: yes` and `-- guard:` are **not** required here: they
 are the campaign's contract, and demanding them of every repo migration buys nothing.
+
+### 4c. The CUSTOM-DATA INSERT
+
+`INSERT INTO custom.<table>` is an enumerated additive shape at **both** targets, and is
+accepted only when **all four** of these hold. Any one of them missing is `not-additive`,
+with the statement quoted.
+
+1. **The schema is exactly `custom`, written plainly.** No quoting anywhere in the
+   reference, so `"custom.record"` (one identifier, in whatever schema `search_path`
+   picks) and `"Custom".record` (a different schema — quoting keeps the capital) are
+   refused; `customx.<table>` is refused; `custom` as a TABLE name in another schema
+   (`platform.custom`) is refused. Never `platform`, `iam`, `public`, or any of the
+   eighteen protected schemas.
+2. **The file's guard is a `custom/…` knob** — `-- guard: custom/system_enabled` or
+   another key of that feature — plus `-- additive: yes`, which any header naming
+   production already requires. The claim that the row is unreachable IS that switch.
+3. **The row's source is `VALUES`, constants, or a `SELECT` that reads only `custom.*`.**
+   An `INSERT … SELECT` naming any relation outside `custom` is refused: it copies
+   customer data into the table whose entire safety argument is that it holds nothing yet.
+4. **`ON CONFLICT` may only be `DO NOTHING`.** `DO UPDATE` rewrites rows that are already
+   there, which is an `UPDATE`.
+
+`UPDATE` and `DELETE` on `custom.*` are **not** on the allow-list and stay refused at
+production; an inverse is a chair step. Nothing else about `custom` is loosened —
+`select platform.create_entity_table(…)` and `INSERT INTO platform.entity_types` at
+production are refused exactly as before.
+
+Why this shape is additive in the judgement's own sense: schema `custom` is created by
+this campaign, revoked from `PUBLIC`, `anon`, `authenticated` and `service_role` (default
+privileges included), absent from `pgrst.db_schemas`, and guarded by
+`custom/system_enabled` — so a row written there is reachable by no client, and the file's
+stored inverse removes it.
+
+**It announces itself.** Both runners print the accepted statements, exactly as a used
+`-- allows: revoke` exemption is printed, and `--judge-only` carries their count
+(`custom_inserts`) so the two runners must agree on it too.
 
 ## 5. `-- chair-step:` — the header-less route, and the only unattended-proof escape
 
@@ -212,13 +288,20 @@ The corpus compares codes; the prose is for the human at 3 a.m. and may differ.
 `migrations/judgment-corpus/*.sql`. Every fixture's first line is
 
 ```
--- expect: branch=<accept|refuse:<code>> production=<accept|refuse:<code>>
+-- expect: branch=<accept|refuse:<code>> production=<accept|refuse:<code>> [autocommit=yes] [txn_control=BEGIN] [self_ledger=yes]
 ```
+
+The two target words are required. The three statement-detector words (§1a) are optional and
+default to the quiet answer — `autocommit=no`, `txn_control=-`, `self_ledger=no` — so a fixture
+states one only when the file really carries that statement.
 
 A fixture with no `-- expect:` line fails the check — a fixture with no expectation is a fixture
 nobody reviewed. The corpus covers every shape ATTACK-6 ran through the old blacklist, every
-ATTACK-7 case, both positive controls (an ordinary migration, and a full campaign file using
-every enumerated additive shape), and the command rules of §6 as flag cases the checkers invoke
+ATTACK-7 case, the custom-data INSERT's accepted forms and every near miss §4c names
+(`customx`, a quoted `"custom.record"`, `"Custom".record`, `platform.custom`, a SELECT out of a
+live schema, an upsert, and `UPDATE`/`DELETE` on `custom.*`), both positive controls (an
+ordinary migration, and a full campaign file using every enumerated additive shape), and the
+command rules of §6 as flag cases the checkers invoke
 for real. **These files are never applied to anything**: LOCATION refuses the directory at every
 target in both runners.
 

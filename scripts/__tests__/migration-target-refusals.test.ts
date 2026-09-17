@@ -477,6 +477,44 @@ describe("a guarded body must READ its guard (ATTACK-6 finding 2, second half)",
   });
 });
 
+describe("the schema-`custom` exemption does not cover a RETURNS TRIGGER function", () => {
+  // Postgres resolves a trigger's function by OID at fire time, not by schema
+  // privilege — a `custom.*` function already bound with `CREATE TRIGGER … ON
+  // platform.associations … EXECUTE FUNCTION custom.zz_hook()` (a7-02) is a live path
+  // the moment that trigger exists, so revoking schema `custom` stops nothing. A LATER
+  // file that replaces that function's body must still read its guard, exactly as if
+  // it were outside `custom`.
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const TRIGGER_BASED_ON =
+    "-- based-on: custom.zz_hook() " +
+    "0000000000000000000000000000000000000000000000000000000000000000\n";
+  const triggerFn = (inner: string) =>
+    `create or replace function custom.zz_hook() returns trigger ` +
+    `language plpgsql as $$ begin ${inner} return new; end $$;\n`;
+  const PROJECTION_BASED_ON =
+    "-- based-on: custom.zz_projection(uuid) " +
+    "0000000000000000000000000000000000000000000000000000000000000000\n";
+  const projectionFn =
+    "create or replace function custom.zz_projection(p_organization_id uuid) returns jsonb " +
+    "language sql stable as $$ select '{}'::jsonb $$;\n";
+
+  it("refuses a custom.* RETURNS TRIGGER replacement whose body never names its guard", () => {
+    expect(() => judge(HEAD + TRIGGER_BASED_ON + triggerFn(""))).toThrow(
+      /never names custom\/system_enabled/,
+    );
+  });
+
+  it("admits the SAME trigger-returning replacement when the body reads the knob", () => {
+    const inner =
+      "if not platform.knob_resolve('custom', 'system_enabled', null)::boolean then return new; end if;";
+    expect(judge(HEAD + TRIGGER_BASED_ON + triggerFn(inner))).toBeTruthy();
+  });
+
+  it("still exempts an ordinary (non-trigger-returning) custom.* function replacement", () => {
+    expect(judge(HEAD + PROJECTION_BASED_ON + projectionFn)).toBeTruthy();
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ATTACK-7 — the two runners had two judgements. These are the rules that changed,
 // as unit cases; `pnpm check:migration-judgment` proves the OTHER runner agrees
@@ -600,5 +638,91 @@ describe("every judgement refusal carries a stable code — the corpus compares 
       code = (e as TargetRefusal).code;
     }
     expect(code).toBe("not-additive");
+  });
+});
+
+describe("CHAIR RULING 2026-09-17 — the custom-data INSERT, bounded four ways", () => {
+  // `INSERT INTO custom.<table>` was refused at production by "not one of the registry
+  // tables", and that refusal was wrong for this ONE class: schema `custom` is created by
+  // the campaign, revoked from every client role, absent from `pgrst.db_schemas` and held
+  // shut by `custom/system_enabled`, so the row is unreachable by every client and the
+  // file's stored inverse removes it. The allowance is bounded by the schema being EXACTLY
+  // `custom`, by a `custom/…` guard, by the row's SOURCE, and by ON CONFLICT DO NOTHING.
+  const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
+  const VALUES = "insert into custom.record (id, data) values (1, '{}'::jsonb);\n";
+
+  it("admits a VALUES insert at BOTH targets", () => {
+    expect(judge(HEAD + VALUES, "production")).toBeTruthy();
+    expect(judge(HEAD + VALUES, "branch")).toBeTruthy();
+  });
+
+  it("admits ON CONFLICT DO NOTHING and refuses ON CONFLICT DO UPDATE", () => {
+    const nothing =
+      "insert into custom.record (id, data) values (1, '{}'::jsonb) on conflict (id) do nothing;\n";
+    expect(judge(HEAD + nothing, "production")).toBeTruthy();
+    const update =
+      "insert into custom.record (id, data) values (1, '{}'::jsonb) " +
+      "on conflict (id) do update set data = excluded.data;\n";
+    expect(refusal(HEAD + update)).toContain("ON CONFLICT");
+  });
+
+  it("refuses a SELECT out of a live schema — that would COPY CUSTOMER DATA", () => {
+    const body = "insert into custom.record (id, data) select p.id, to_jsonb(p) from crm.party p;\n";
+    expect(refusal(HEAD + body)).toContain("crm.party");
+  });
+
+  it("admits a SELECT that stays inside custom.*", () => {
+    const body =
+      "insert into custom.record (id, data) select t.id, '{}'::jsonb from custom.table_def t;\n";
+    expect(judge(HEAD + body, "production")).toBeTruthy();
+  });
+
+  it("refuses the same INSERT with no guard, and under a guard outside the custom feature", () => {
+    let code = "";
+    try {
+      judge("-- target: branch,production\n-- additive: yes\n" + VALUES);
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("production-no-guard");
+    const foreign = "-- target: branch,production\n-- additive: yes\n-- guard: platform/zz_knob\n";
+    expect(refusal(foreign + VALUES)).toContain("custom-data INSERT is admitted only under");
+  });
+
+  it.each([
+    ["the schema must be EXACTLY custom", "insert into customx.record (id) values (1);\n"],
+    [
+      "a quoted `custom.record` is ONE identifier in whatever schema search_path picks",
+      'insert into "custom.record" (id) values (1);\n',
+    ],
+    ['"Custom" is a DIFFERENT schema — quoting preserves the capital', 'insert into "Custom".record (id) values (1);\n'],
+    ["`custom` as a TABLE name in a live schema", "insert into platform.custom (id) values (1);\n"],
+  ])("refuses the near miss: %s", (_what, body) => {
+    let code = "";
+    try {
+      judge(HEAD + body);
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("not-additive");
+  });
+
+  it.each([
+    ["update custom.record set data = '{}'::jsonb where id = 1;\n"],
+    ["delete from custom.record where id = 1;\n"],
+  ])("leaves UPDATE/DELETE on custom.* refused: %s", (body) => {
+    let code = "";
+    try {
+      judge(HEAD + body);
+    } catch (e) {
+      code = (e as TargetRefusal).code;
+    }
+    expect(code).toBe("not-additive");
+  });
+
+  it("carries the admitted statements so the runner ANNOUNCES them", () => {
+    const verdict = judge(HEAD + VALUES, "production");
+    expect(verdict.customDataInserts).toHaveLength(1);
+    expect(verdict.customDataInserts[0]).toContain("custom.record");
   });
 });

@@ -145,6 +145,115 @@ describe("a restoring probe never offers to start", () => {
     await act(async () => root.unmount());
   });
 
+  /**
+   * 🚨 THE PATH THE FIRST GUARD MISSED (cold walk 6, finding 3, 2026-09-17).
+   *
+   * The test above holds the rejoin open FOR EVER, which is the one shape of
+   * that nine-second window where nothing else can go wrong. The real window
+   * is the opposite: the rejoin RETURNS, almost at once, without handing the
+   * screen anything to render. Both of its real-world endings do that —
+   *
+   *   * the rejoin is routed to any worker but the one executing the run (the
+   *     live replay channel is process-local, the API runs many workers), and
+   *     answers with the durable ROW, which mid-run says `processing`; or
+   *   * the rejoin request simply does not land.
+   *
+   * — and the run still has a minute of work left either way. `restoring` was
+   * cleared in the rejoin's `.finally`, so it went false while the surface held
+   * no content and `running` was still true: the setup screen came straight
+   * back over a live round, which is the defect the first guard was written to
+   * make impossible.
+   *
+   * RED against the pre-fix hook, both cases:
+   *   ● does not paint the setup screen while the run is still working
+   *     on the server › expect(text).not.toContain("Write the first one")
+   *     Expected substring: not "Write the first one"
+   *     Received string:    "…Write the first one Up to 5 rounds…"
+   */
+  it("does not paint the setup screen while the run is still working on the server", async () => {
+    plantTheReceipt();
+    // The rejoin answers at once with the durable row: still processing, and
+    // nothing to render.
+    mockDispatch.mockImplementation((request: Record<string, unknown>) => {
+      const onStreamEvent = request.onStreamEvent as
+        | ((event: unknown) => void)
+        | undefined;
+      onStreamEvent?.({
+        event: "data",
+        data: {
+          type: "masterwork_run_snapshot",
+          status: "processing",
+          run_id: "6f0a1b2c-3d4e-4f50-8a9b-0c1d2e3f4a5b",
+        },
+      });
+      return Promise.resolve({});
+    });
+    const { container, root } = await mountProbe();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const text = container.textContent ?? "";
+    expect(text).not.toContain("Write the first one");
+    expect(text).not.toContain("Up to 5 rounds");
+    await act(async () => root.unmount());
+  });
+
+  it("does not paint the setup screen when the rejoin cannot be reached", async () => {
+    plantTheReceipt();
+    mockDispatch.mockImplementation(() =>
+      Promise.resolve({ error: { message: "Failed to fetch" } }),
+    );
+    const { container, root } = await mountProbe();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const text = container.textContent ?? "";
+    expect(text).not.toContain("Write the first one");
+    expect(text).not.toContain("Up to 5 rounds");
+    await act(async () => root.unmount());
+  });
+
+  /**
+   * AND THE SESSION COMES BACK WITH IT. Round 1's example and the Expert's own
+   * words about it live in mount-local state that a reload throws away, so the
+   * restored screen used to be empty even once it stopped contradicting
+   * itself — "round 1's finished content gone from view", which is most of
+   * what made the walker call the screen garbled. They ride on the run's own
+   * receipt now, beside the case brief.
+   */
+  it("brings back the round already answered while the next one is written", async () => {
+    const key = `probe:${RULEBOOK_ID}`;
+    window.localStorage.setItem(
+      `${MASTERWORK_RUN_WIRE.pointerPrefix}${key}`,
+      JSON.stringify({
+        runId: "6f0a1b2c-3d4e-4f50-8a9b-0c1d2e3f4a5b",
+        startedAt: Date.now() - 20_000,
+        settled: false,
+        memo: {
+          case_brief: "A new hire intake checklist draft",
+          prior_rounds: JSON.stringify([
+            {
+              example_title: "A new hire intake checklist that looks right",
+              example_body: "Day one: hand over the laptop, then the badge.",
+              probe_label: "sequencing",
+              critique: "The badge has to come before the laptop, always.",
+            },
+          ]),
+        },
+      }),
+    );
+    mockDispatch.mockImplementation(() => new Promise(() => undefined));
+    const { container, root } = await mountProbe();
+    const text = container.textContent ?? "";
+    // The example's own heading — the body renders through `RichDocument`,
+    // which is not what this is about.
+    expect(text).toContain("A new hire intake checklist that looks right");
+    expect(container.querySelector<HTMLTextAreaElement>("#probe-critique")?.value).toBe(
+      "The badge has to come before the laptop, always.",
+    );
+    await act(async () => root.unmount());
+  });
+
   it("still offers to start when there is no round to pick up", async () => {
     const { container, root } = await mountProbe();
     expect(container.textContent).toContain("Write the first one");

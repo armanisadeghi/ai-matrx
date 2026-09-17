@@ -31,6 +31,7 @@ import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -40,7 +41,6 @@ import {
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 import {
   durableRunDialogOnOpenChange,
-  shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
 
 /**
@@ -128,6 +128,20 @@ const BODY_OF_WORK_DESCRIPTION =
   "follow are worked out from the whole body of work. Everything lands as " +
   "drafts for you to approve; nothing goes live without you.";
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+
+interface BodyOfWorkSitting extends SittingBase {
+  urlsText: string;
+  sourceNote: string;
+}
+
+const bodyOfWorkSittings = createSittingStore<BodyOfWorkSitting>({
+  keyPrefix: "matrx.masterwork.body-of-work.v1:",
+  isUsable: (sitting) => (sitting.urlsText ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function BodyOfWorkDialog({
   open,
   onOpenChange,
@@ -147,6 +161,24 @@ export function BodyOfWorkDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [urlsText, setUrlsText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<BodyOfWorkSitting>({
+    store: bodyOfWorkSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { urlsText, sourceNote },
+    isWorthKeeping: (s) => (s.urlsText ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0,
+    apply: (kept) => {
+      setUrlsText(kept.urlsText ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+    },
+    clearScreen: () => {
+      setUrlsText("");
+      setSourceNote("");
+    },
+  });
+
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [board, setBoard] = useState<CorpusPieceRow[]>([]);
@@ -218,21 +250,24 @@ export function BodyOfWorkDialog({
   // Clearing it the moment the run is no longer running lets the NEXT live run
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
-  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
-    // A run the user deliberately closed out of stays closed — otherwise an
-    // honest close is instantly undone by this latch and the dialog cannot be
-    // dismissed at all. The NEXT run still surfaces.
-    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   const pieceCount = files.length + parseUrls(urlsText).length;
 
@@ -299,6 +334,16 @@ export function BodyOfWorkDialog({
     setUploadProgress(null);
   };
 
+  /**
+   * Back to this lane's own first step for the NEXT batch — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const again = () => {
+    reset();
+    setFiles([]);
+    setUrlsText("");
+  };
+
   const summary = run.result;
   const missingChunkSummary = summary
     ? describeMissingIngestParts(summary)
@@ -336,6 +381,16 @@ export function BodyOfWorkDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE, NOT TO THE DIALOG CHROME. This
+          surface renders as a dialog AND as its own page; putting the notice
+          under <DialogHeader> meant the page half restored work in silence. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the links you had listed, and what you called them"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -391,6 +446,13 @@ export function BodyOfWorkDialog({
                   Try the failed pieces again
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain
+                label="Add more of your work"
+                onAgain={again}
+              />
             </div>
           </div>
         ) : running || run.stages.length > 0 ? (
@@ -608,13 +670,15 @@ export function BodyOfWorkDialog({
         running,
         reset,
         onOpenChange: (next) => {
-          if (!next && running) dismissedRunIdRef.current = run.runId;
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
           onOpenChange(next);
         },
         runLabel: "Reading your published work",
       })}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Everything you&apos;ve published
@@ -634,6 +698,7 @@ export function BodyOfWorkDialog({
           </DialogTitle>
           <DialogDescription>{BODY_OF_WORK_DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
         {content}
       </DialogContent>
     </Dialog>

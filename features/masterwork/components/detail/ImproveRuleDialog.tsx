@@ -245,7 +245,7 @@ export function ImproveRuleDialog({
       rulebookId={rulebookId}
     >
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-1 border-b border-border px-6 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Zap className="h-4 w-4 text-primary" />

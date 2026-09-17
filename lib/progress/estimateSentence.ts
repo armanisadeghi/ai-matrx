@@ -59,6 +59,16 @@ export interface EstimateSentenceInput {
   failureRemedy?: string;
 }
 
+/**
+ * The grace band before an estimate is treated as overtaken. Nobody wants
+ * "taking longer than usual" the second the estimate ticks over, and a
+ * hair-trigger warning is its own false alarm. Exported because the elapsed
+ * clock beside this sentence (`lib/progress/elapsed.ts`) must flip at exactly
+ * the same moment — two waiting lines that disagree about whether a run is
+ * late are worse than either one alone.
+ */
+export const OVERDUE_GRACE_FACTOR = 1.5;
+
 /** Whole minutes, rounded down, at least one. */
 function minutesSoFar(elapsedMs: number): number {
   return Math.max(1, Math.floor(elapsedMs / MINUTE_MS));
@@ -88,9 +98,7 @@ export function estimateSentence({
   const failed = failureSummary(steps, failureRemedy);
   if (failed) return failed;
 
-  // A grace band: nobody wants "taking longer than usual" the second the
-  // estimate ticks over, and a hair-trigger warning is its own false alarm.
-  const overdueAt = usualMs * 1.5;
+  const overdueAt = usualMs * OVERDUE_GRACE_FACTOR;
 
   if (elapsedMs < overdueAt) {
     return `${doing} — this usually takes ${describeDuration(usualMs)}.`;

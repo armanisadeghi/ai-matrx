@@ -308,6 +308,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
         <MatrxDataTable<ToolBindingRow>
           data={rows}
           columns={bindingColumns(onToggleActive)}
+          tableId={`tool-registry/tools/${toolId}/bindings`}
           getRowId={(row) => `${row.tool_id}-${row.executor_name}`}
           rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
           toolbar={{ search: true, refresh: { onRefresh: load } }}
@@ -584,6 +585,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
         <MatrxDataTable<BundleMembership>
           data={rows}
           columns={membershipColumns()}
+          tableId={`tool-registry/tools/${toolId}/bundle-memberships`}
           getRowId={(row) => `${row.member.bundle_id}-${row.member.tool_id}`}
           toolbar={{ search: true, refresh: { onRefresh: load } }}
         />

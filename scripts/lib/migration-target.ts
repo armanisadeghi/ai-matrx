@@ -686,6 +686,116 @@ export const REGISTRY_INSERT_TABLES: readonly string[] = [
  */
 export const ENTITY_TYPES_TABLE = "platform.entity_types";
 
+// ── THE CUSTOM-DATA INSERT (the campaign's own store lane) ──────────────────
+//
+// `INSERT INTO custom.<table>` was refused at production by
+// "not one of the registry tables", and that refusal was wrong for this ONE class.
+// Schema `custom` is created by this campaign, revoked from PUBLIC, anon,
+// authenticated and service_role (default privileges included), absent from
+// `pgrst.db_schemas`, and held shut by `custom/system_enabled`: a row written there
+// is unreachable by every client and is removed by the file's own stored inverse. It
+// is additive in the judgement's own sense — and the kernel Table rows are the store
+// lane's ONLY positive production proof, so without this shape that lane cannot prove
+// it ran at all.
+//
+// It is bounded, and every bound is checked here:
+//   · the target schema is EXACTLY `custom`, written plainly — no quoting, no
+//     `customx`, no `custom` as a TABLE name in some other schema;
+//   · the file's guard is a `custom/…` knob (plus `-- additive: yes`, which the
+//     header rule already demands of anything naming production);
+//   · the row's source is `VALUES`/constants or a `SELECT` that reads only `custom.*`
+//     — never a SELECT out of a live schema, which would COPY CUSTOMER DATA into a
+//     table whose whole safety argument is that it holds nothing yet;
+//   · `ON CONFLICT DO NOTHING` is admitted; `ON CONFLICT … DO UPDATE` is an UPDATE
+//     wearing an INSERT's clothes and is refused.
+// `UPDATE` and `DELETE` on `custom.*` are NOT on the allow-list and stay refused at
+// production, exactly as before.
+
+/** The ONE schema whose data rows an additive production file may INSERT. */
+export const CUSTOM_DATA_SCHEMA = "custom";
+
+/**
+ * The table name when this statement is plainly `INSERT INTO custom.<table>`, else null.
+ *
+ * 🚨 Read from the statement AS WRITTEN, never from a lowercased, quote-stripped
+ * rendering, because that rendering is exactly where the tricks live: `INSERT INTO
+ * "custom.record"` is ONE identifier in whatever schema `search_path` picks, and
+ * `INSERT INTO "Custom".record` names a DIFFERENT schema than `custom`. Both collapse
+ * to `custom.record` once quotes are dropped and case is folded. So a double quote
+ * anywhere in the reference means "not plainly custom" and the statement falls through
+ * to the ordinary registry refusal.
+ */
+const CUSTOM_INSERT_TARGET_RE =
+  /^insert\s+into\s+(?:only\s+)?custom\.([a-z_][a-z0-9_$]*)(?=[\s(]|$)/i;
+
+export function customDataInsertTargetOf(stmt: string): string | null {
+  const m = CUSTOM_INSERT_TARGET_RE.exec(stmt.replace(/\s+/g, " ").trim());
+  return m ? m[1]!.toLowerCase() : null;
+}
+
+/** Every relation a statement reads (`FROM`/`JOIN`), as written. */
+function readRelationsOf(stmt: string): string[] {
+  return [...stmt.matchAll(/\b(?:from|join)\s+(?:only\s+)?([a-z0-9_."$]+)/gi)].map((m) => m[1]!);
+}
+
+const CUSTOM_RELATION_RE = /^custom\.[a-z_][a-z0-9_$]*$/i;
+
+/**
+ * Why this `INSERT INTO custom.<table>` is NOT the bounded custom-data shape — or null
+ * when it is, and may land on production.
+ */
+export function customDataInsertRefusal(
+  stmt: string,
+  table: string,
+  guard: { feature: string; key: string } | null,
+): string | null {
+  const s = stmt.replace(/\s+/g, " ").trim();
+  if (!guard || guard.feature.toLowerCase() !== CUSTOM_DATA_SCHEMA) {
+    return (
+      `an INSERT into ${CUSTOM_DATA_SCHEMA}.${table} in a file whose \`-- guard:\` is ` +
+      `${guard ? `${guard.feature}/${guard.key}` : "(absent)"} — a custom-data INSERT is admitted ` +
+      `only under a \`-- guard: ${CUSTOM_DATA_SCHEMA}/<key>\` knob, because the argument that the ` +
+      `row is unreachable IS that switch`
+    );
+  }
+  if (/\bon\s+conflict\b/i.test(s) && !/\bon\s+conflict\b[\s\S]*?\bdo\s+nothing\b/i.test(s)) {
+    return (
+      `an INSERT into ${CUSTOM_DATA_SCHEMA}.${table} whose ON CONFLICT clause is not ` +
+      `DO NOTHING — an upsert rewrites rows that are already there, which is an UPDATE`
+    );
+  }
+  if (/\bselect\b/i.test(s)) {
+    for (const ref of readRelationsOf(s)) {
+      if (!CUSTOM_RELATION_RE.test(ref)) {
+        return (
+          `an INSERT … SELECT into ${CUSTOM_DATA_SCHEMA}.${table} that reads ${ref} — a ` +
+          `custom-data INSERT may read VALUES, constants, or ${CUSTOM_DATA_SCHEMA}.* and nothing ` +
+          `else; copying rows out of a live schema moves CUSTOMER DATA into the table whose ` +
+          `whole safety argument is that it holds nothing yet`
+        );
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * The custom-data INSERTs a body carries and this judgement ACCEPTED — the runner
+ * prints them, exactly as it prints the statements `-- allows: revoke` admitted.
+ * Nothing passes silently.
+ */
+export function customDataInsertsOf(
+  strippedSql: string,
+  guard: { feature: string; key: string } | null,
+): string[] {
+  const out: string[] = [];
+  for (const stmt of topLevelStatements(strippedSql)) {
+    const table = customDataInsertTargetOf(stmt);
+    if (table && customDataInsertRefusal(stmt, table, guard) === null) out.push(stmt);
+  }
+  return out;
+}
+
 /** Session GUCs §6b.3 REQUIRES every production file to set explicitly. */
 const ALLOWED_SET_GUCS = ["lock_timeout", "statement_timeout", "idle_in_transaction_session_timeout"];
 
@@ -700,6 +810,11 @@ export interface AllowListContext {
    * branch and a production token mint on production (ATTACK-7 finding 3).
    */
   readonly flagTarget?: Target;
+  /**
+   * The file's `-- guard:` — the custom-data INSERT shape is admitted only under a
+   * `custom/…` knob, so the allow-list has to see it.
+   */
+  readonly guard?: { feature: string; key: string } | null;
 }
 
 /** `{ ok }` or the reason this statement is not one of the enumerated shapes. */
@@ -805,6 +920,9 @@ function additiveVerdictOf(stmt: string, ctx: AllowListContext): string | null {
         `is a chair step with its own inverse`
       );
     if (REGISTRY_INSERT_TABLES.includes(t)) return null;
+    // The campaign's own store lane: a data row in schema `custom`, bounded four ways.
+    const customTable = customDataInsertTargetOf(s);
+    if (customTable) return customDataInsertRefusal(s, customTable, ctx.guard ?? null);
     return `an INSERT into ${t}, which is not one of the registry tables (${REGISTRY_INSERT_TABLES.join(", ")})`;
   }
   // — COMMENT ON: documentation.
@@ -830,12 +948,14 @@ export function nonAdditiveReasons(
     readonly allowRevokeSchema?: string | null;
     readonly basedOnNames?: ReadonlySet<string>;
     readonly flagTarget?: Target;
+    readonly guard?: { feature: string; key: string } | null;
   },
 ): string[] {
   const ctx: AllowListContext = {
     allowRevokeSchema: opts?.allowRevokeSchema ?? null,
     basedOnNames: opts?.basedOnNames,
     flagTarget: opts?.flagTarget,
+    guard: opts?.guard ?? null,
   };
   const out: string[] = [];
   for (const stmt of topLevelStatements(strippedSql)) {
@@ -855,6 +975,37 @@ export function nonAdditiveReasons(
  * STATIC check: the feature and the key must both appear in the body that replaces a
  * live definition or creates a policy. It cannot prove the read is on the right branch;
  * it can prove the body never mentions the thing that is supposed to hold it OFF.
+ *
+ * 🚨 A `CREATE OR REPLACE FUNCTION | PROCEDURE` IN SCHEMA `custom` IS EXEMPT — EXCEPT A
+ * FUNCTION `RETURNS TRIGGER` OR `RETURNS EVENT_TRIGGER`, WHICH IS NOT.
+ *
+ * The exemption for the rest of the schema stands for the reason `triggerOnLiveTableUnguardedBy`
+ * already gives for a trigger there: the whole schema is this campaign's own new namespace —
+ * revoked from PUBLIC, `anon`, `authenticated` and `service_role`, absent from
+ * `pgrst.db_schemas`, absent from the ORM's `generate:` blocks — so nothing reads it until
+ * the switch and replacing an ordinary body there cannot change a live path. Without this, a
+ * wave-1 lane extending an EARLIER WAVE-1 LANE's function (`W1-VAL` extending `W1-FIELD`'s
+ * `custom.record_values` so it does not return the new reserved keys as if they were the
+ * record's own values) is refused unless it writes a knob read into a pure projection
+ * function that has no business reading one — which buys nothing and teaches the next
+ * author that the guard line is a formality to be satisfied with a mention.
+ *
+ * A `RETURNS TRIGGER` (or `RETURNS EVENT_TRIGGER`) function is different: Postgres resolves a
+ * trigger's function by OID at fire time, not by schema privilege, so `custom.zz_hook()` bound
+ * with `CREATE TRIGGER … ON platform.associations … EXECUTE FUNCTION custom.zz_hook()` (see
+ * `triggerOnLiveTableUnguardedBy`'s own example) is a live path the moment that trigger exists
+ * — schema `custom` being unreadable by every client role stops nothing, because nothing
+ * reads the schema to fire the trigger. A LATER file that does
+ * `CREATE OR REPLACE FUNCTION custom.zz_hook() RETURNS TRIGGER …` replaces the body every write
+ * to that live table now executes, with no guard read required, which is exactly the class of
+ * defect this whole check exists to close (`public._provision_new_user_personal_org()`).  So a
+ * trigger-returning function in `custom` is judged exactly as it would be outside `custom`: its
+ * body must name the guard. `functionReturnsTrigger` decides this from the statement's own
+ * `RETURNS` clause; when it cannot determine the return type at all, the statement is treated
+ * as if it does return a trigger — an unproven negative is never grounds for exemption.
+ *
+ * An UNQUALIFIED name is treated as OUTSIDE `custom`, because `search_path` decides it at
+ * execution time and nothing static can prove where it lands.
  */
 export function guardUnreadBy(
   guard: { feature: string; key: string } | null,
@@ -862,9 +1013,11 @@ export function guardUnreadBy(
 ): string | null {
   if (!guard) return null;
   const body = strippedSql.toLowerCase();
-  const gates = topLevelStatements(strippedSql).filter((s) =>
-    /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
-  );
+  const gates = topLevelStatements(strippedSql)
+    .filter((s) =>
+      /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
+    )
+    .filter((s) => replacedObjectSchema(s) !== "custom" || !customReplaceIsExempt(s));
   if (gates.length === 0) return null;
   if (body.includes(guard.feature.toLowerCase()) && body.includes(guard.key.toLowerCase())) return null;
   return (
@@ -874,6 +1027,71 @@ export function guardUnreadBy(
   );
 }
 
+
+/**
+ * The schema a `CREATE OR REPLACE FUNCTION | PROCEDURE` REPLACES A BODY IN, or null for
+ * every other shape and for an unqualified name (which `search_path` settles at execution
+ * time, so nothing static can prove where it lands).
+ *
+ * 🚨 DELIBERATELY NOT `VIEW` — `CREATE OR REPLACE VIEW` is refused by `additiveVerdictOf`
+ * (`"CREATE OR REPLACE VIEW rewrites a live view body with no concurrency check"`) before a
+ * file's statements ever reach `guardUnreadBy`, at BOTH targets, unconditionally. A view arm
+ * here would judge a shape the runner has already refused for every other reason — dead code
+ * that looks like coverage. Confirmed unreachable: no corpus fixture exercises it, and none
+ * should — `not-additive` fires first every time.
+ *
+ * 🚨 DELIBERATELY NOT triggers and NOT policies, although both are in `guardUnreadBy`'s
+ * gate set. This function exists to answer one question — "could this statement replace a
+ * body a live path already executes?" — and only a function or procedure body can. A
+ * `CREATE POLICY` decides row access the moment the switch flips, and
+ * `migrations/judgment-corpus/a6-13-guard-unread-by-policy.sql` already fixes the verdict
+ * for one on a `custom` table at `refuse:guard-unread`; a `CREATE OR REPLACE TRIGGER` binds
+ * behaviour rather than replacing a body. Neither is narrowed here, so no existing verdict
+ * moves.
+ */
+export function replacedObjectSchema(stmt: string): string | null {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  const own = /^create\s+or\s+replace\s+(?:function|procedure)\s+([a-z0-9_."]+)/i.exec(one);
+  if (!own) return null;
+  const bare = own[1]!.replace(/"/g, "").toLowerCase();
+  return bare.includes(".") ? bare.split(".")[0]! : null;
+}
+
+/**
+ * `CREATE OR REPLACE FUNCTION`'s RETURNS clause, read case-insensitively across
+ * whitespace/newlines, with or without a `pg_catalog.` prefix or double quotes, and whether
+ * or not it is immediately followed by `AS`/`LANGUAGE`/a volatility keyword — so `RETURNS
+ * TRIGGER AS $$`, `returns\n  pg_catalog.trigger`, and `RETURNS "trigger" LANGUAGE plpgsql`
+ * all match.
+ *
+ * Returns `true` when the clause names `trigger` or `event_trigger`, `false` when a RETURNS
+ * clause is found and provably names something else, and `null` when the statement is not a
+ * `CREATE OR REPLACE FUNCTION` at all, OR when it is one but no RETURNS clause could be
+ * found — which cannot legitimately happen (a function statement is invalid SQL without
+ * one), so an undetectable clause means the parse missed something, not that the function is
+ * safe. The caller treats `null` the same as `true`: never exempt on an unproven negative.
+ */
+export function functionReturnsTrigger(stmt: string): boolean | null {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  if (!/^create\s+or\s+replace\s+function\b/i.test(one)) return null;
+  if (/\breturns\s+(?:pg_catalog\s*\.\s*)?"?(?:trigger|event_trigger)"?\b/i.test(one)) return true;
+  if (/\breturns\s+/i.test(one)) return false;
+  return null;
+}
+
+/**
+ * Called only once `replacedObjectSchema(stmt) === "custom"`. A `CREATE OR REPLACE
+ * PROCEDURE` has no `RETURNS` clause at all, so it can never be a trigger function and the
+ * schema-wide exemption holds unconditionally. A `CREATE OR REPLACE FUNCTION` is exempt only
+ * when `functionReturnsTrigger` can PROVE its `RETURNS` clause names something other than
+ * `trigger`/`event_trigger` — `true` (returns trigger) and `null` (undetermined) both refuse
+ * the exemption, per `functionReturnsTrigger`'s own contract.
+ */
+function customReplaceIsExempt(stmt: string): boolean {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  if (/^create\s+or\s+replace\s+procedure\b/i.test(one)) return true;
+  return functionReturnsTrigger(stmt) === false;
+}
 
 /**
  * A NEW TRIGGER ON A LIVE TABLE MUST NAME ITS GUARD (ATTACK-7 finding 3, first half).
@@ -983,6 +1201,12 @@ export interface AgreementVerdict {
    * the escape is loud or it is not an escape.
    */
   readonly chairStep: { why: string; reasons: string[] } | null;
+  /**
+   * The `INSERT INTO custom.<table>` statements the allow-list ADMITTED, so the runner
+   * prints them the way it prints a used `-- allows: revoke` exemption. A shape that
+   * lets rows onto production announces itself or it is not bounded.
+   */
+  readonly customDataInserts: string[];
 }
 
 export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerdict {
@@ -1192,6 +1416,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       allowRevokeSchema: header.allowsRevokeSchema,
       basedOnNames: input.basedOnNames,
       flagTarget,
+      guard: header.guard,
     });
     if (reasons.length) {
       fail([
@@ -1249,7 +1474,14 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       ], "guard-unread");
     }
   }
-  return { guard: header.guard, revokeExemption, chairStep: headerlessChairStep };
+  return {
+    guard: header.guard,
+    revokeExemption,
+    chairStep: headerlessChairStep,
+    // Only a file the allow-list judged can carry an ADMITTED custom-data INSERT: a
+    // header-less file never reaches this shape, and a refusal never reaches here.
+    customDataInserts: namesProduction ? customDataInsertsOf(strippedSql, header.guard) : [],
+  };
 }
 
 /**

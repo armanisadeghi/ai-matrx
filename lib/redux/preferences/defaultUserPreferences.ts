@@ -23,6 +23,7 @@ export const defaultUserPreferences: UserPreferences = {
     includeThinkingInAutoPrompts: "none",
     submitOnEnter: true,
     autoClearResponsesInEditMode: true,
+    restoreUnsentDrafts: true,
   },
   voice: {
     voice: "",

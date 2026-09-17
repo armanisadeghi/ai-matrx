@@ -30,6 +30,9 @@ import { useAppStore } from "@/lib/redux/hooks";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
@@ -39,6 +42,7 @@ import {
   type IngestSummary,
 } from "./IngestSourceDialog";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -47,7 +51,6 @@ import {
 } from "@/lib/durable-run/DurableRunStop";
 import {
   durableRunDialogOnOpenChange,
-  shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
 
 /**
@@ -150,6 +153,27 @@ const SHADOW_INBOX_DESCRIPTION =
   "have sent — without ever being shown yours. The difference between the two " +
   "is what becomes your rules. Everything lands as drafts you approve.";
 
+/**
+ * A PASTED THREAD IS REAL, IRREPLACEABLE WORK — it is the Expert's own
+ * correspondence, copied out of their mail client by hand. The cold-walk-6
+ * census (2026-09-17) pasted one in, reloaded, and it was gone with nothing
+ * said: the same class walk 4 found in the Triad, walk 5 in the Sorting Table
+ * and walk 6 in the Red-Pen lane and the Daily Drip.
+ */
+interface ShadowInboxSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  expertEmail: string;
+  door: InboxDoor;
+}
+
+const shadowInboxSittings = createSittingStore<ShadowInboxSitting>({
+  keyPrefix: "matrx.masterwork.shadow-inbox.v1:",
+  isUsable: (sitting) =>
+    (sitting.text ?? "").trim().length > 0 ||
+    (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function ShadowInboxDialog({
   open,
   onOpenChange,
@@ -184,6 +208,28 @@ export function ShadowInboxDialog({
   const [notes, setNotes] = useState<string[]>([]);
   const [connection, setConnection] = useState<ConnectionState | null>(null);
 
+  const sitting = useDialogSitting<ShadowInboxSitting>({
+    store: shadowInboxSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { text, sourceNote, expertEmail, door },
+    isWorthKeeping: (s) =>
+      s.text.trim().length > 0 || s.sourceNote.trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+      setExpertEmail(kept.expertEmail ?? "");
+      // Put it back on the door it was written on — restoring a pasted thread
+      // onto the connected-mailbox door would hide it from its own owner.
+      if (kept.door) setDoor(kept.door);
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+      setExpertEmail("");
+    },
+  });
+
   const run = useMasterworkRun<IngestSummary>({
     surface: "shadow_inbox",
     rulebookId: rulebook.id,
@@ -215,7 +261,25 @@ export function ShadowInboxDialog({
     setPreparing(false);
   };
 
-  useRunResultOnce(run, onIngested);
+  /**
+   * What the last thread produced, kept after the lane is sent back to its
+   * first step — so "Shadow another thread" is a continuation and not an
+   * erasure. See `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const [shadowedSoFar, setShadowedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setShadowedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  useRunResultOnce(run, () => {
+    // The lane finished for real — nothing is in progress to keep.
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -224,18 +288,24 @@ export function ShadowInboxDialog({
   // A run picked back up after a reload must be VISIBLE — rejoining behind a
   // closed dialog reads as "nothing happened", which is the defect durability
   // exists to kill. The latch is per RUN, not per mount.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
-  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
-    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   // ── the connected door: ask, then obey the answer ────────────────────────
   //
@@ -431,6 +501,28 @@ export function ShadowInboxDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE: this surface renders as a dialog AND
+          as its own page (/masterwork/[id]/inbox), and a restore that only the
+          dialog half announced would be a silent one on the page. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the thread you had pasted in, and what you called it"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
+      {/* WHAT THIS SITTING HAS ALREADY DONE. A second thread starts on the same
+          blank first step as the first one did, so without this the screen
+          silently forgets the work the person just watched land. */}
+      {!summary && shadowedSoFar.length > 0 ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {shadowedSoFar.length === 1
+            ? "Already shadowed in this sitting: "
+            : `Already shadowed in this sitting (${shadowedSoFar.length} threads): `}
+          {shadowedSoFar[shadowedSoFar.length - 1]}
+        </p>
+      ) : null}
+
       {/* A failure STAYS on screen with its reason and a way out. */}
       <DurableRunFailure
         error={run.error}
@@ -466,6 +558,13 @@ export function ShadowInboxDialog({
                 Interview me about the gaps
               </Button>
             ) : null}
+            {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7). Both buttons above
+                LEAVE — this lane's own doors say "Paste a thread" / "Upload an
+                export", one at a time, and a person who has just watched it
+                work on one thread is the likeliest person in the product to
+                want a second. Before this, the only route to one was closing
+                the dialog and coming back in through the Rulebook. */}
+            <DurableRunAgain label="Shadow another thread" onAgain={again} />
           </div>
         </div>
       ) : run.running || run.stages.length > 0 ? (
@@ -879,7 +978,9 @@ export function ShadowInboxDialog({
       running,
       reset,
       onOpenChange: (value) => {
-        if (!value && running) dismissedRunIdRef.current = run.runId;
+        // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!value) run.dismiss();
         onOpenChange(value);
       },
       runLabel: "Shadowing your inbox",
@@ -891,7 +992,7 @@ export function ShadowInboxDialog({
       open={open}
       onOpenChange={handleDialogOpenChange}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Inbox className="h-4 w-4 text-muted-foreground" />

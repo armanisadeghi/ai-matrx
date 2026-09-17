@@ -38,6 +38,18 @@
  *                    branch too and no lane ever opens it — §11.3's "until this,
  *                    no application flip can reach anything, by construction"
  *                    binds the rehearsal exactly as it binds production.
+ *   --unexpose <s>   THE EXACT INVERSE OF --expose, BRANCH ONLY, and the reason --expose
+ *                    can stay a sanctioned rehearsal act at all. It declares the
+ *                    schema CLOSED in `platform.schema_client_exposure`, revokes
+ *                    USAGE and every table, function and sequence privilege from
+ *                    PUBLIC, `anon`, `authenticated` and `service_role`, resets
+ *                    both default-privilege sets, and removes `<s>` from
+ *                    `pgrst.db_schemas`. It then prints
+ *                    `platform.schema_exposure_violations(<s>)` and FAILS if that
+ *                    is not empty, so "closed" is a measurement rather than a
+ *                    claim. Until this verb existed, the only way back from an
+ *                    --expose was a hand-written pile of REVOKEs that nobody
+ *                    re-ran after the next provision.
  *   --prove <s.t>    One real HTTP request to the branch's REST API for a table
  *                    in `<s>`, with `Accept-Profile`, printed with its status.
  *                    PGRST106 ("the schema must be one of the following") is the
@@ -513,15 +525,24 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const ref = loadBranchRef(ROOT, branchRefOverride(argv));
   const exposeAt = argv.indexOf("--expose");
+  const unexposeAt = argv.indexOf("--unexpose");
   const proveAt = argv.indexOf("--prove");
-  const doSync = argv.includes("--sync-schemas") || (exposeAt < 0 && proveAt < 0);
-  const doGrants = argv.includes("--sync-grants") || (exposeAt < 0 && proveAt < 0);
+  const doSync =
+    argv.includes("--sync-schemas") || (exposeAt < 0 && unexposeAt < 0 && proveAt < 0);
+  const doGrants =
+    argv.includes("--sync-grants") || (exposeAt < 0 && unexposeAt < 0 && proveAt < 0);
   const exposeSchema = exposeAt >= 0 ? argv[exposeAt + 1] : undefined;
+  const unexposeSchema = unexposeAt >= 0 ? argv[unexposeAt + 1] : undefined;
   const proveTarget = proveAt >= 0 ? (argv[proveAt + 1] ?? "platform.entity_types") : undefined;
 
   if (exposeAt >= 0 && !exposeSchema) fail([`--expose wants a schema name.`]);
+  if (unexposeAt >= 0 && !unexposeSchema) fail([`--unexpose wants a schema name.`]);
+  if (exposeSchema && unexposeSchema) {
+    fail([`--expose and --unexpose in one invocation: say which one you mean.`]);
+  }
 
-  const client = doSync || doGrants || exposeSchema ? await branchClient(ref) : null;
+  const client =
+    doSync || doGrants || exposeSchema || unexposeSchema ? await branchClient(ref) : null;
   try {
     if (doGrants) await syncGrants(client!, ref);
     if (doSync) {
@@ -583,17 +604,95 @@ async function main(): Promise<void> {
         ]);
       }
       // Switch-checklist step 3, then step 5 — the production order, rehearsed.
+      //
+      // 🚨 THE WRITE GRANT IS NOT BLANKET, AND IT USED TO BE. This step ran
+      // `grant select, insert, update, delete on ALL TABLES in schema <s> to authenticated`,
+      // which handed `authenticated` a direct INSERT on `custom.record` — the one table in
+      // the campaign whose LAW (DOOR-N-1) is that it holds none of the three, and whose
+      // whole write-door posture `iam.apply_table_grants` had just issued correctly. The
+      // switch step would have re-opened on production exactly what a lane spent itself
+      // closing, silently, one statement after the door was proven shut.
+      //
+      // The register that already decides this is `platform.stamped_write_table` (DD-248),
+      // read by `iam.apply_table_grants` — so this step reads the SAME register instead of
+      // deciding again. SELECT for everything; the three write privileges for everything
+      // the register does not name; and what it withheld is PRINTED with the reason.
+      // 🚨 THE DECLARATION COMES FIRST, AND THAT IS WHAT MAKES THIS REVERSIBLE.
+      // `platform.schema_client_exposure` is what the provisioner reads before it issues any
+      // client grant. Granting here without writing the row would leave the catalogue open and
+      // the declaration saying closed — which `platform.provision` now REFUSES outright, so an
+      // --expose that did not declare would break the next provision into the schema. Exposure,
+      // grants and PostgREST membership move together in one verb or they drift apart again.
+      await client!.query(
+        `insert into platform.schema_client_exposure
+           (schema_name, client_exposed, reason, declared_by)
+         values ($1, true, $2, $3)
+         on conflict (schema_name) do update
+            set client_exposed = true, reason = excluded.reason,
+                declared_by = excluded.declared_by, declared_at = now()`,
+        [
+          exposeSchema,
+          `Opened on the REHEARSAL BRANCH by scripts/gate-corpus/branch-api.ts --expose, which ` +
+            `rehearses switch-checklist steps 3 and 5. This is a rehearsal act, not the ` +
+            `production decision; --unexpose ${exposeSchema} is its exact inverse.`,
+          "scripts/gate-corpus/branch-api.ts --expose",
+        ],
+      );
       await client!.query(`grant usage on schema ${exposeSchema} to authenticated`);
       await client!.query(
-        `grant select, insert, update, delete on all tables in schema ${exposeSchema} to authenticated`,
+        `grant select on all tables in schema ${exposeSchema} to authenticated`,
+      );
+      const writeDoored = await client!.query<{ table_name: string }>(
+        `select c.relname as table_name
+           from pg_class c
+           join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = $1 and c.relkind in ('r','p') and not c.relispartition
+            and exists (select 1 from platform.stamped_write_table s
+                         where s.schema_name = n.nspname and s.table_name = c.relname)
+          order by 1`,
+        [exposeSchema],
+      );
+      const withheld = new Set(writeDoored.rows.map((r) => r.table_name));
+      const writable = await client!.query<{ table_name: string }>(
+        `select c.relname as table_name
+           from pg_class c
+           join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = $1 and c.relkind in ('r','p') and not c.relispartition
+            and not exists (select 1 from platform.stamped_write_table s
+                             where s.schema_name = n.nspname and s.table_name = c.relname)
+          order by 1`,
+        [exposeSchema],
+      );
+      for (const r of writable.rows) {
+        await client!.query(
+          `grant insert, update, delete on ${exposeSchema}."${r.table_name}" to authenticated`,
+        );
+      }
+      // The DEFAULT for a table created later is SELECT only. Its write privilege is
+      // `iam.apply_table_grants`'s to issue, from the variant and this same register —
+      // never a standing widening that outranks both.
+      // REVOKE first: ALTER DEFAULT PRIVILEGES … GRANT adds to the existing default ACL
+      // rather than replacing it, so without this a run that previously granted the three
+      // write privileges leaves them standing and "the default is SELECT only" is a
+      // sentence rather than a fact.
+      await client!.query(
+        `alter default privileges in schema ${exposeSchema} ` +
+          `revoke insert, update, delete on tables from authenticated`,
       );
       await client!.query(
         `alter default privileges in schema ${exposeSchema} ` +
-          `grant select, insert, update, delete on tables to authenticated`,
+          `grant select on tables to authenticated`,
       );
       console.log(
-        `${OK}step 3 rehearsed on the BRANCH: usage on schema ${exposeSchema} and the table ` +
-          `grants to authenticated. (Production's own grant is switch-checklist step 3, a chair step.)`,
+        `${OK}step 3 rehearsed on the BRANCH: usage on schema ${exposeSchema}, SELECT on every ` +
+          `table, and INSERT/UPDATE/DELETE on ${writable.rowCount} of ` +
+          `${(writable.rowCount ?? 0) + (writeDoored.rowCount ?? 0)}. ` +
+          (withheld.size
+            ? `WITHHELD from ${[...withheld].join(", ")}: platform.stamped_write_table names ` +
+              `them, so their writes belong to their declared SECURITY DEFINER door (DD-248, ` +
+              `DOOR-N-1). Grant a client write on one of those only by removing its register row.`
+            : `platform.stamped_write_table names none of them.`) +
+          ` (Production's own grant is switch-checklist step 3, a chair step.)`,
       );
       const current = (await readBranchSchemas(client!)) ?? "";
       const list = current.split(",").filter(Boolean);
@@ -607,6 +706,86 @@ async function main(): Promise<void> {
       console.log(
         `${OK}step 5 rehearsed on the BRANCH: ${exposeSchema} is in pgrst.db_schemas ` +
           `(${after.split(",").length} schemas) and PostgREST was told to reload.`,
+      );
+    }
+
+    if (unexposeSchema) {
+      const exists = await client!.query(
+        `select 1 from pg_namespace where nspname = $1`,
+        [unexposeSchema],
+      );
+      if (exists.rowCount === 0) {
+        fail([`--unexpose ${unexposeSchema}: the schema does not exist on the branch.`]);
+      }
+      // THE EXACT INVERSE OF --expose, IN THE REVERSE ORDER: PostgREST first (so no request can
+      // arrive against a schema mid-revoke), then the declaration, then the privileges.
+      const current = (await readBranchSchemas(client!)) ?? "";
+      const list = current.split(",").filter(Boolean);
+      if (list.includes(unexposeSchema)) {
+        await setBranchSchemas(client!, list.filter((x) => x !== unexposeSchema).join(","));
+      }
+      const afterList = (await readBranchSchemas(client!)) ?? "";
+      if (afterList.split(",").includes(unexposeSchema)) {
+        fail([`${unexposeSchema} is still in the branch's pgrst.db_schemas after the ALTER ROLE.`]);
+      }
+
+      await client!.query(
+        `insert into platform.schema_client_exposure
+           (schema_name, client_exposed, reason, declared_by)
+         values ($1, false, $2, $3)
+         on conflict (schema_name) do update
+            set client_exposed = false, reason = excluded.reason,
+                declared_by = excluded.declared_by, declared_at = now()`,
+        [
+          unexposeSchema,
+          `Closed to PUBLIC, anon, authenticated and service_role. The provisioner reads this ` +
+            `row before it issues any client grant, so no later platform.provision() into this ` +
+            `schema can re-open it — which is the defect this verb exists to end.`,
+          "scripts/gate-corpus/branch-api.ts --unexpose",
+        ],
+      );
+
+      // `revoke all on all …` covers only the relations and routines that exist NOW; the
+      // ALTER DEFAULT PRIVILEGES lines are what cover the ones created later, and the provisioner
+      // is what covers the ones it creates itself. All three, or the schema re-opens by a
+      // different door each time.
+      for (const stmt of [
+        `revoke all on schema ${unexposeSchema} from public, anon, authenticated, service_role`,
+        `revoke all on all tables in schema ${unexposeSchema} from public, anon, authenticated, service_role`,
+        `revoke all on all functions in schema ${unexposeSchema} from public, anon, authenticated, service_role`,
+        `revoke all on all routines in schema ${unexposeSchema} from public, anon, authenticated, service_role`,
+        `revoke all on all sequences in schema ${unexposeSchema} from public, anon, authenticated, service_role`,
+        `alter default privileges in schema ${unexposeSchema} revoke all on tables from public, anon, authenticated, service_role`,
+        `alter default privileges in schema ${unexposeSchema} revoke all on functions from public, anon, authenticated, service_role`,
+        `alter default privileges in schema ${unexposeSchema} revoke all on sequences from public, anon, authenticated, service_role`,
+      ]) {
+        await client!.query(stmt);
+      }
+
+      // A CLAIM IS NOT A MEASUREMENT. The same function platform.provision runs on itself is what
+      // decides whether this verb worked, and anything it returns fails the command by name.
+      const viol = await client!.query<{
+        kind: string;
+        object_name: string;
+        detail: string;
+      }>(
+        `select kind, object_name, detail from platform.schema_exposure_violations($1)`,
+        [unexposeSchema],
+      );
+      if ((viol.rowCount ?? 0) > 0) {
+        fail([
+          `--unexpose ${unexposeSchema}: the schema is NOT closed after the revokes. ` +
+            `platform.schema_exposure_violations('${unexposeSchema}') returned ${viol.rowCount} row(s):`,
+          ...viol.rows.map((r) => `  ${r.kind} ${r.object_name}: ${r.detail}`),
+        ]);
+      }
+      console.log(
+        `${OK}${unexposeSchema} is CLOSED on the BRANCH: declared client_exposed = false in ` +
+          `platform.schema_client_exposure, removed from pgrst.db_schemas ` +
+          `(${afterList.split(",").length} schemas), USAGE and every table, function and sequence ` +
+          `privilege revoked from PUBLIC, anon, authenticated and service_role, both ` +
+          `default-privilege sets reset — and platform.schema_exposure_violations('${unexposeSchema}') ` +
+          `returns ZERO rows. --expose ${unexposeSchema} puts it all back.`,
       );
     }
   } finally {

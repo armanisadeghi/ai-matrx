@@ -519,6 +519,17 @@ export interface PromptsPreferences {
   includeThinkingInAutoPrompts: ThinkingMode;
   submitOnEnter: boolean;
   autoClearResponsesInEditMode: boolean;
+  /**
+   * Keep a typed-but-unsent composer message through a reload and put it back,
+   * per conversation. Default ON — never losing user input is table stakes
+   * (`common-docs/policies/table-stakes-are-never-a-question.md`); the knob
+   * exists for shared or kiosk-ish machines where a draft left in the tab's
+   * storage is unwanted. Read through `isDraftRestoreEnabled`, which treats a
+   * MISSING key as ON so the default never depends on a preferences backfill.
+   * Machinery: `features/agents/redux/execution-system/instance-user-input/
+   * composer-draft-store.ts`.
+   */
+  restoreUnsentDrafts: boolean;
 }
 
 /** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
@@ -924,6 +935,7 @@ export const initializeUserPreferencesState = (
       includeThinkingInAutoPrompts: "none",
       submitOnEnter: true,
       autoClearResponsesInEditMode: true,
+      restoreUnsentDrafts: true,
     },
     voice: {
       // Empty = no explicit choice → resolveVoiceId() falls back to the

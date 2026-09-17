@@ -57,7 +57,20 @@ import {
   GatedActionButton,
 } from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { WorkingNotice } from "@/lib/progress/WorkingNotice";
 import { cn } from "@/lib/utils";
+
+/**
+ * How long dealing a round of cards usually takes — MEASURED, never guessed.
+ *
+ * One live deal on a brand-new Rulebook took 18 s (2026-09-17); the sixth cold
+ * walk put the same step at 45–75 s the day before, on a Rulebook with more to
+ * read. The honest promise is the slower end, because a promise that expires is
+ * the defect this number exists to close, and `elapsedDetail` stops promising
+ * and starts reporting once it is overtaken either way. Re-measure when the
+ * dealer's pipeline changes.
+ */
+const TRIAD_DEAL_USUAL_MS = 45_000;
 import { useAppStore } from "@/lib/redux/hooks";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { AgentCredit } from "@/features/masterwork/components/AgentCredit";
@@ -152,6 +165,19 @@ export function TriadGamePage({
 
   const [deck, setDeck] = useState<TriadDeck | null>(saved?.deck ?? null);
   const [dealing, setDealing] = useState(false);
+  /**
+   * When the deal in flight began — the clock under "Writing your cards…".
+   *
+   * 🚨 "Writing your cards…" used to be the whole disclosure, and it is the
+   * same pixels at second 1 and at second 45 (cold walk 6, finding 6; measured
+   * 2026-09-17 on a brand-new Rulebook at 18 unbroken identical seconds, and
+   * 45–75 s on the walk itself). A first-time Expert with no sense of how long
+   * AI generation takes reads a motionless label as stuck — especially in a
+   * product where the Teach-back's paragraph and an Encore run both stream
+   * visibly. The deal is one paid call with no stream to show, so what it owes
+   * the reader is the clock and the honest expectation, never a made-up bar.
+   */
+  const [dealStartedAt, setDealStartedAt] = useState<number | null>(null);
   const [dealError, setDealError] = useState<string | null>(null);
   const [mode, setMode] = useState<TriadMode | null>(saved?.mode ?? null);
   const [index, setIndex] = useState(saved?.index ?? 0);
@@ -222,6 +248,7 @@ export function TriadGamePage({
   const deal = useCallback(
     async (nextMode?: TriadMode) => {
       setDealing(true);
+      setDealStartedAt(Date.now());
       setDealError(null);
       try {
         const next = await dealTriads(store, {
@@ -246,6 +273,7 @@ export function TriadGamePage({
         );
       } finally {
         setDealing(false);
+        setDealStartedAt(null);
       }
     },
     [rulebookId, store],
@@ -417,6 +445,11 @@ export function TriadGamePage({
             </>
           )}
         </Button>
+        <WorkingNotice
+          doing="Three real cases, written for the work you actually described."
+          startedAt={dealStartedAt}
+          usualMs={TRIAD_DEAL_USUAL_MS}
+        />
         <div className="flex justify-center">
           <AgentCredit mandate={TRIAD_GENERATOR_MANDATE} />
         </div>
@@ -478,6 +511,13 @@ export function TriadGamePage({
               See what landed{rulesThisSitting ? ` (${rulesThisSitting})` : ""}
             </Link>
           </Button>
+        </div>
+        <div>
+          <WorkingNotice
+            doing="Three real cases, written for the work you actually described."
+            startedAt={dealStartedAt}
+            usualMs={TRIAD_DEAL_USUAL_MS}
+          />
         </div>
         {dealError ? (
           <p className="text-center text-sm text-amber-700 dark:text-amber-400">

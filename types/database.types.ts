@@ -21612,6 +21612,7 @@ export type Database = {
           do_not_contact_reason: string | null
           employee_band: string | null
           expert_status: string | null
+          field_provenance: Json
           first_name: string | null
           founded_year: number | null
           headline: string | null
@@ -21674,6 +21675,7 @@ export type Database = {
           do_not_contact_reason?: string | null
           employee_band?: string | null
           expert_status?: string | null
+          field_provenance?: Json
           first_name?: string | null
           founded_year?: number | null
           headline?: string | null
@@ -21736,6 +21738,7 @@ export type Database = {
           do_not_contact_reason?: string | null
           employee_band?: string | null
           expert_status?: string | null
+          field_provenance?: Json
           first_name?: string | null
           founded_year?: number | null
           headline?: string | null
@@ -92091,6 +92094,7 @@ export type Database = {
           p_facet_key: string
           p_map_id: string
           p_slug: string
+          p_source: string
           p_value_slug: string
         }
         Returns: Json
@@ -92100,7 +92104,12 @@ export type Database = {
         Returns: Json
       }
       set_page_map_facet: {
-        Args: { p_facet_key: string; p_page_id: string; p_value_slug: string }
+        Args: {
+          p_facet_key: string
+          p_page_id: string
+          p_source: string
+          p_value_slug: string
+        }
         Returns: Json
       }
       set_page_map_topics: {
@@ -96026,6 +96035,7 @@ export type Database = {
         Row: {
           account_email: string | null
           account_name: string | null
+          capability_health: Json
           created_at: string
           created_by: string | null
           credential_item_id: string | null
@@ -96049,6 +96059,7 @@ export type Database = {
         Insert: {
           account_email?: string | null
           account_name?: string | null
+          capability_health?: Json
           created_at?: string
           created_by?: string | null
           credential_item_id?: string | null
@@ -96072,6 +96083,7 @@ export type Database = {
         Update: {
           account_email?: string | null
           account_name?: string | null
+          capability_health?: Json
           created_at?: string
           created_by?: string | null
           credential_item_id?: string | null
@@ -104963,7 +104975,10 @@ export type Database = {
           reminders: Json
           settings: Json
           source_id: string | null
+          source_imported_at: string | null
           source_label: string | null
+          source_list_id: string | null
+          source_snapshot: Json | null
           source_type: string | null
           source_url: string | null
           start_date: string | null
@@ -104996,7 +105011,10 @@ export type Database = {
           reminders?: Json
           settings?: Json
           source_id?: string | null
+          source_imported_at?: string | null
           source_label?: string | null
+          source_list_id?: string | null
+          source_snapshot?: Json | null
           source_type?: string | null
           source_url?: string | null
           start_date?: string | null
@@ -105029,7 +105047,10 @@ export type Database = {
           reminders?: Json
           settings?: Json
           source_id?: string | null
+          source_imported_at?: string | null
           source_label?: string | null
+          source_list_id?: string | null
+          source_snapshot?: Json | null
           source_type?: string | null
           source_url?: string | null
           start_date?: string | null

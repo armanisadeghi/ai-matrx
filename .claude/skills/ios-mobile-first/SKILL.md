@@ -18,7 +18,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 1. **Always `dvh`** — never `vh` or `h-screen`
 2. **Always `pb-safe`** — on fixed bottom elements
 3. **Fields are ≥16px on touch** — enforced globally by THE iOS ZOOM FLOOR in `app/globals.css`; author mobile-facing fields `text-base` anyway, and never set an inline `fontSize` below 16px on one
-4. **Always 44pt touch targets** — minimum `h-10 w-10`
+4. **Always 44pt touch targets** — and NEVER one element at a time. Put `matrx-touch-targets` on the feature/section/dialog ROOT (`app/globals.css`): it floors every button, tab, menu item and `a[data-tap-target]` inside it — including files written later — under `pointer: coarse` or below `lg` only, so desktop density never moves. A control that must stay SMALL because its size is the control (a bare checkbox, a radio, a 14px switch) is excluded there by design and takes `matrx-tap-area` on its `<label>` instead: an invisible 44×44 ring, painted box unchanged. Opt one control out of the floor with `data-touch-exempt` + a reason at the call site. A Radix dialog PORTALS out of its route's subtree, so its `DialogContent` carries the class itself
 5. **Header tokens:** `--shell-header-h` / `--header-height` — never hardcode in calc
 6. **Always Drawer on mobile** — never Dialog
 7. **Never tabs on mobile** — stack vertically

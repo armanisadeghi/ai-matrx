@@ -71,6 +71,31 @@ import {
   type StopRule,
 } from "./types";
 import { useCapturePlanSettings } from "./useCapturePlanSettings";
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
+
+/**
+ * THE PLAN BEING SET UP IS IN-PROGRESS WORK. The cold-walk-6 census
+ * (2026-09-17) drove this page the way a person does — typed into "What do you
+ * want covered?", reloaded — and the answer was gone with nothing said, the
+ * same class the Red-Pen lane and the Daily Drip were found in. The plan itself
+ * lives on the Rulebook once it is built; until then it lives here, so it is
+ * kept here.
+ */
+interface PlanSetupSitting extends SittingBase {
+  goal: string;
+  minutesPerDay: number;
+  cadence: Cadence | null;
+  channel: ReminderChannel | null;
+  stopRule: StopRule | null;
+  horizonDays: number | null;
+}
+
+const planSetupSittings = createSittingStore<PlanSetupSitting>({
+  keyPrefix: "matrx.masterwork.capture-plan-setup.v1:",
+  isUsable: (sitting) => typeof sitting.goal === "string" && sitting.goal.trim().length > 0,
+});
 
 const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -289,6 +314,36 @@ export function CapturePlanPage({
   const [horizonDays, setHorizonDays] = useState<number | null>(null);
   const [buildRefusal, setBuildRefusal] = useState<string | null>(null);
 
+  // Only kept once it DIFFERS from the sentence this page starts from — putting
+  // the Masterwork's own description back and announcing it as rescued work
+  // would be a notice about nothing.
+  const seededGoal = rulebook.description?.trim() ?? "";
+  const sitting = useDialogSitting<PlanSetupSitting>({
+    store: planSetupSittings,
+    scopeId: rulebook.id,
+    active: !plan || plan.status !== "active",
+    snapshot: { goal, minutesPerDay, cadence, channel, stopRule, horizonDays },
+    isWorthKeeping: (s) =>
+      s.goal.trim().length > 0 &&
+      (s.goal.trim() !== seededGoal || s.minutesPerDay !== 30),
+    apply: (kept) => {
+      setGoal(kept.goal);
+      setMinutesPerDay(kept.minutesPerDay || 30);
+      setCadence(kept.cadence ?? null);
+      setChannel(kept.channel ?? null);
+      setStopRule(kept.stopRule ?? null);
+      setHorizonDays(kept.horizonDays ?? null);
+    },
+    clearScreen: () => {
+      setGoal(seededGoal);
+      setMinutesPerDay(30);
+      setCadence(null);
+      setChannel(null);
+      setStopRule(null);
+      setHorizonDays(null);
+    },
+  });
+
   const startPlan = useCallback(async () => {
     if (settings.state !== "ready" || !approaches) return;
     const merged: PlanSettings = {
@@ -314,6 +369,7 @@ export function CapturePlanPage({
       return;
     }
     setBuildRefusal(null);
+    sitting.forget();
     await save(
       (s) => ({ ...s, plan: built.plan }),
       pushReminders,
@@ -484,6 +540,15 @@ export function CapturePlanPage({
               rest — the method, the schedule, the reminder, and dropping
               whatever stops paying.
             </p>
+            {sitting.resumed ? (
+              <div className="mt-4">
+                <SittingResumed
+                  what="the plan you were setting up"
+                  onDiscard={sitting.discard}
+                  onAcknowledge={sitting.acknowledge}
+                />
+              </div>
+            ) : null}
             <div className="mt-4 space-y-4">
               <div>
                 <Label htmlFor="cp-goal">What do you want covered?</Label>

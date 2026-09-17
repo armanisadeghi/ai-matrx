@@ -148,6 +148,20 @@ function formatWhen(value: string | null): string {
   });
 }
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+
+interface MeetingSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+}
+
+const meetingScavengerSittings = createSittingStore<MeetingSitting>({
+  keyPrefix: "matrx.masterwork.meeting-scavenger.v1:",
+  isUsable: (sitting) => (sitting.text ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function MeetingScavengerDialog({
   open,
   onOpenChange,
@@ -173,6 +187,24 @@ export function MeetingScavengerDialog({
   const [fileId, setFileId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<MeetingSitting>({
+    store: meetingScavengerSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { text, sourceNote },
+    isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+    },
+  });
+
 
   const [speakers, setSpeakers] = useState<SpeakerRow[] | null>(null);
   const [mine, setMine] = useState<Set<string>>(new Set());
@@ -444,7 +476,7 @@ export function MeetingScavengerDialog({
         runLabel: "The Meeting Scavenger",
       })}
     >
-      <DialogContent className="flex max-h-[88dvh] max-w-3xl flex-col gap-4 overflow-hidden">
+      <DialogContent className="matrx-touch-targets flex max-h-[88dvh] max-w-3xl flex-col gap-4 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-4 w-4" aria-hidden="true" />
@@ -452,6 +484,14 @@ export function MeetingScavengerDialog({
           </DialogTitle>
           <DialogDescription>{DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the meeting you had pasted in, and what you called it"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {/* A failure STAYS on screen with its reason and a way out. */}
         <DurableRunFailure

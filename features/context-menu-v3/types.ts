@@ -155,6 +155,21 @@ export interface ContextMenuExtraSection {
    */
   icon?: LucideIcon;
   anchor?: ExtraSectionAnchor;
+  /**
+   * THE THING THE USER RIGHT-CLICKED (Arman, 2026-09-17: "make it clear what
+   * section of actions are specific to the cell, the table or something
+   * else"). On a pane with several targets (a grid's cell / row / column, a
+   * tree's node / folder) the host marks the section for the clicked target
+   * `primary`. Every layout then renders it FIRST — above the universal rows —
+   * INLINE, with its heading kept, never folded into a submenu: the most
+   * specific actions are the first thing under the cursor, the way Excel,
+   * Sheets and Airtable answer a header click with column actions. When a menu
+   * has a primary section, its sibling surface sections also keep their
+   * headings when inline, so the hierarchy (this cell · its row · its column ·
+   * the table) reads at a glance. At most one section should be primary; a
+   * surface with a single identity never needs it.
+   */
+  primary?: boolean;
   items: ContextMenuExtraItem[];
 }
 

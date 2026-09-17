@@ -13,6 +13,7 @@ import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input
 import { SmartInputFileDropTarget } from "@/features/agents/components/inputs/smart-input/SmartInputFileDropTarget";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
 import { InboxQueueStrip } from "@/features/agents/components/inputs/smart-input/InboxQueueStrip";
+import { ComposerDraftNotice } from "@/features/agents/components/inputs/smart-input/ComposerDraftNotice";
 import { AttachedDocumentChips } from "@/features/agents/components/inputs/resources/AttachedDocumentChips";
 import {
   smartExecute,
@@ -265,6 +266,18 @@ export function NewChatLandingInput({
       {/* Attachments / inclusions — pinned at the top, same Redux source as
           the standard input. Renders nothing (no extra height) when empty. */}
       <div onClick={(e) => e.stopPropagation()}>
+        {/* A typed-but-unsent message survives a reload here too. This composer
+            is NOT `AgentTextarea` (it is the hero box), so it mounts the shared
+            draft notice itself — and it is the case that needs it most: the
+            landing mints a client-only conversation id and mints a DIFFERENT
+            one after a reload, so the restore rides the surface alias
+            (`chat:<agentId>`) until the first send hands over to the real
+            conversation id. See composer-draft-store.ts § TWO KEYS. */}
+        <ComposerDraftNotice
+          conversationId={conversationId}
+          surfaceKey={surfaceKey}
+          currentChars={text.length}
+        />
         {/* Queued-while-running message cards (Turn-Boundary Inbox) */}
         <InboxQueueStrip conversationId={conversationId} />
         <SmartAgentResourceChips conversationId={conversationId} />

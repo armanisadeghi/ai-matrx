@@ -111,8 +111,20 @@ export function FormattedFieldValue({
     if (rich !== undefined) return rich;
   }
 
+  // A caller that asks for `truncate` needs a BOX: `text-overflow: ellipsis`
+  // does nothing on an inline span, so a long plain value in a grid cell was
+  // cut mid-word with no "…" to say there is more. Only then — an inline span
+  // stays inline for every caller that flows the value inside a sentence.
+  const wantsTruncate = /(^|\s)truncate(\s|$)/.test(className ?? "");
   return (
-    <span className={cn(def?.numericAlign && "tabular-nums", className)}>
+    <span
+      className={cn(
+        wantsTruncate && "inline-block max-w-full align-bottom",
+        def?.numericAlign && "tabular-nums",
+        className,
+      )}
+      title={wantsTruncate ? result.text : undefined}
+    >
       {result.text}
     </span>
   );
@@ -193,7 +205,15 @@ function renderRich(
       );
     case "markdown":
       return (
-        <span className={cn("min-w-0", className)}>
+        // Same rule as the plain branch: `truncate` needs a box to end in "…".
+        <span
+          className={cn(
+            "min-w-0",
+            /(^|\s)truncate(\s|$)/.test(className ?? "") &&
+              "inline-block max-w-full align-bottom",
+            className,
+          )}
+        >
           <InlineMarkdownWithLinks text={text} />
         </span>
       );

@@ -57,6 +57,12 @@ function AgentCreditForAdmins({ mandate, agent }: AgentCreditProps) {
       <TooltipTrigger asChild>
         <Link
           href="/mandates"
+          // DELIBERATELY UNDER THE TOUCH FLOOR, and declared so rather than
+          // left looking like an oversight in a phone census: this is a
+          // super-admin engineering credit, not an Expert's control. Growing it
+          // to 44px on a phone would put a debug affordance above the lane's own
+          // buttons in visual weight. It opts OUT of `.matrx-touch-targets`.
+          data-touch-exempt
           className="inline-flex items-center gap-1 rounded px-1 text-[10px] text-muted-foreground/70 hover:text-foreground"
           onClick={(e) => e.stopPropagation()}
         >

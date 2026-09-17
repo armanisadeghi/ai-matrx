@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { GitBranch, MessageSquare } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useCxTableFilters } from "@/features/cx-dashboard/components/useCxTableFilters";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import {
   cxConversationMenuTarget,
@@ -44,6 +45,7 @@ const detailHref = (id: string) =>
 
 export function ConversationsContent({ result }: Props) {
   const router = useRouter();
+  const sourceFilter = useCxTableFilters("cx-conversations");
 
   const rowMenu = useCxRowMenu({
     rows: () => result.data,
@@ -202,24 +204,22 @@ export function ConversationsContent({ result }: Props) {
             pageSize={0}
             emptyState={{ title: "No conversations match" }}
             toolbar={{
+              refresh: { onRefresh: () => router.refresh() },
               search: true,
               searchPlaceholder: "Filter fetched page…",
               facets: [
                 {
                   type: "custom",
                   id: "server-filters",
+                  filter: sourceFilter,
                   render: () => (
                     <CxFiltersBar
+                      hideClear
                       showSearch
                       showStatusFilter
                       statusOptions={["active", "archived"]}
-                      onRefresh={() => router.refresh()}
-                      onExportCSV={() =>
-                        exportToCSV(exportData, "conversations")
-                      }
-                      onExportJSON={() =>
-                        exportToJSON(exportData, "conversations")
-                      }
+                      onExportCSV={() => exportToCSV(exportData, "conversations")}
+                      onExportJSON={() => exportToJSON(exportData, "conversations")}
                     />
                   ),
                 },

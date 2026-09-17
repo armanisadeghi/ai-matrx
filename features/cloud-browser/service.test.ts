@@ -4,6 +4,12 @@ import { mintStreamTicket, parseHandoffReason } from "./service";
 jest.mock("@/lib/python-client", () => ({
   getJson: jest.fn(),
   postJson: jest.fn(),
+  requestRaw: jest.fn(async () => ({ ok: true })),
+}));
+
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStore: () => mockStreamTicketStore,
+  getStoreSingleton: () => mockStreamTicketStore,
 }));
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -35,6 +41,16 @@ const ticketResponse = {
   viewport: { width: 1920, height: 1080 },
 };
 
+const mockStreamTicketStore = {
+  getState: () => ({
+    appContext: {
+      organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+      orgBootstrapResolved: true,
+    },
+  }),
+  subscribe: () => () => undefined,
+};
+
 describe("mintStreamTicket", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,6 +67,7 @@ describe("mintStreamTicket", () => {
     expect(postJson).toHaveBeenCalledWith(
       "/browser-manager/runs/run-1/stream-ticket",
       { mode: "control", takeover: false },
+      { organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b" },
     );
   });
 
@@ -60,6 +77,7 @@ describe("mintStreamTicket", () => {
     expect(postJson).toHaveBeenCalledWith(
       "/browser-manager/runs/run-1/stream-ticket",
       { mode: "control", takeover: true },
+      { organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b" },
     );
   });
 });

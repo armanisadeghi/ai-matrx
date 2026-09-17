@@ -75,20 +75,60 @@ interface Verdict {
   chair_step?: boolean;
   excused?: number;
   revoke_exemption?: string | null;
+  custom_inserts?: number;
   detail?: string;
+  /** The file-level statement detectors, target-independent, on every line (2026-09-17). */
+  autocommit?: boolean;
+  txn_control?: string | null;
+  self_ledger?: boolean;
+}
+
+/**
+ * THE STATEMENT DETECTORS ARE PART OF THE JUDGEMENT.
+ *
+ * `NEEDS_AUTOCOMMIT_RE` was read off comment-only-stripped text, so the words
+ * `CREATE INDEX CONCURRENTLY` inside a function's HINT string made `pnpm db:apply`
+ * refuse a file that needs no autocommit — and this corpus could not see it, because
+ * `--judge-only` printed the target verdict and nothing else. Both runners now print
+ * `autocommit` / `txn_control` / `self_ledger` on every line, a fixture states them with
+ * `-- expect: … autocommit=yes`, and the default for each is the quiet one.
+ */
+const DETECTORS = ["autocommit", "txn_control", "self_ledger"] as const;
+type DetectorKey = (typeof DETECTORS)[number];
+const DETECTOR_DEFAULT: Record<DetectorKey, string> = {
+  autocommit: "no",
+  txn_control: "-",
+  self_ledger: "no",
+};
+
+/** The detectors of one verdict, as the same `key=value` words a fixture writes. */
+function detectorsOf(v: Verdict): Record<DetectorKey, string> {
+  return {
+    autocommit: v.autocommit ? "yes" : "no",
+    txn_control: v.txn_control ?? "-",
+    self_ledger: v.self_ledger ? "yes" : "no",
+  };
 }
 
 /** The part of a verdict the two runners must agree on, as one comparable string. */
 function shape(v: Verdict): string {
-  if (v.verdict === "refuse") return `refuse:${v.code}`;
+  const d = detectorsOf(v);
+  const detectors = DETECTORS.map((k) => `${k}=${d[k]}`).join(" ");
+  if (v.verdict === "refuse") return `refuse:${v.code} ${detectors}`;
   return (
     `accept guard=${v.guard ?? "-"} chair_step=${v.chair_step ? "yes" : "no"} ` +
-    `excused=${v.excused ?? 0} revoke=${v.revoke_exemption ?? "-"}`
+    `excused=${v.excused ?? 0} revoke=${v.revoke_exemption ?? "-"} ` +
+    `custom_inserts=${v.custom_inserts ?? 0} ${detectors}`
   );
 }
 
-/** What the fixture's own `-- expect:` line says, per target. */
-function expectationOf(file: string): Record<Target, string> {
+/** What the fixture's own `-- expect:` line says: a verdict per target, plus the detectors. */
+interface Expectation {
+  readonly targets: Record<Target, string>;
+  readonly detectors: Record<DetectorKey, string>;
+}
+
+function expectationOf(file: string): Expectation {
   const first = readFileSync(file, "utf8")
     .split("\n")
     .find((l) => /^\s*--\s*expect\s*:/i.test(l));
@@ -97,22 +137,29 @@ function expectationOf(file: string): Record<Target, string> {
       `${basename(file)} carries no \`-- expect:\` line. Every corpus fixture states the verdict ` +
         `both runners must return for it, at each target — a fixture with no expectation is a ` +
         `fixture nobody reviewed.\n` +
-        `  Form: -- expect: branch=accept production=refuse:<code>`,
+        `  Form: -- expect: branch=accept production=refuse:<code> [autocommit=yes]`,
     );
-  const out: Partial<Record<Target, string>> = {};
+  const targets: Partial<Record<Target, string>> = {};
+  const detectors: Record<DetectorKey, string> = { ...DETECTOR_DEFAULT };
   for (const part of first.replace(/^\s*--\s*expect\s*:/i, "").trim().split(/\s+/)) {
     const [t, v] = part.split("=");
-    if (!TARGETS.includes(t as Target) || !v)
+    if (!v)
       throw new Error(
         `${basename(file)}: \`${part}\` is not an expectation. Form: ` +
-          `-- expect: branch=accept production=refuse:<code>`,
+          `-- expect: branch=accept production=refuse:<code> [autocommit=yes]`,
       );
-    out[t as Target] = v;
+    if (TARGETS.includes(t as Target)) targets[t as Target] = v;
+    else if (DETECTORS.includes(t as DetectorKey)) detectors[t as DetectorKey] = v;
+    else
+      throw new Error(
+        `${basename(file)}: \`${part}\` names neither a target (${TARGETS.join(", ")}) nor a ` +
+          `statement detector (${DETECTORS.join(", ")}).`,
+      );
   }
   for (const t of TARGETS)
-    if (!out[t])
+    if (!targets[t])
       throw new Error(`${basename(file)}: the \`-- expect:\` line says nothing about --target ${t}.`);
-  return out as Record<Target, string>;
+  return { targets: targets as Record<Target, string>, detectors };
 }
 
 /** An expectation (`accept`, `refuse:<code>`) against a runner's full verdict shape. */
@@ -229,7 +276,7 @@ function main(): number {
   let failures = 0;
   let agreements = 0;
   for (const name of files) {
-    let expect: Record<Target, string>;
+    let expect: Expectation;
     try {
       expect = expectationOf(resolve(CORPUS_DIR, name));
     } catch (err) {
@@ -260,10 +307,24 @@ function main(): number {
         failures += 1;
         continue;
       }
-      if (!satisfies(expect[target], a)) {
+      const wrongDetectors = DETECTORS.filter((k) => detectorsOf(a)[k] !== expect.detectors[k]).map(
+        (k) => `${k}=${detectorsOf(a)[k]} (the fixture expects ${k}=${expect.detectors[k]})`,
+      );
+      if (wrongDetectors.length) {
+        console.error(
+          `${FAIL}${name} @ ${target}: both runners READ THE FILE the same way and it is not ` +
+            `what the fixture says.\n` +
+            `         ${wrongDetectors.join("\n         ")}\n` +
+            `         A statement detector reads the file with comments, single-quoted strings ` +
+            `and dollar-quoted bodies removed — migrations/JUDGMENT.md § The statement detectors.`,
+        );
+        failures += 1;
+        continue;
+      }
+      if (!satisfies(expect.targets[target], a)) {
         console.error(
           `${FAIL}${name} @ ${target}: both runners say ${sa}, and the fixture expects ` +
-            `${expect[target]}.\n` +
+            `${expect.targets[target]}.\n` +
             `         Either the rule moved (update migrations/JUDGMENT.md and this fixture in the ` +
             `same commit) or the runners are wrong.${a.detail ? `\n           ${C.dim}${a.detail}${C.reset}` : ""}`,
         );

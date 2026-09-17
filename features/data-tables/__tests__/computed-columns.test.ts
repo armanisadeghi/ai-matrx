@@ -99,3 +99,38 @@ describe("withComputedColumns", () => {
     expect(result.rows.every((r) => r.data.total === null)).toBe(true);
   });
 });
+
+describe("rewriteFormulaReferences — a renamed column keeps its formulas working", () => {
+  // Imported lazily so this block reads on its own.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { rewriteFormulaReferences } = require("../formulas") as typeof import("../formulas");
+
+  it("rewrites every reference to the renamed column, case-insensitively", () => {
+    expect(rewriteFormulaReferences("{Price} * {quantity} + {PRICE}", "price", "Unit price")).toBe(
+      "{Unit price} * {quantity} + {Unit price}",
+    );
+  });
+
+  it("leaves a brace inside a quoted string alone", () => {
+    expect(rewriteFormulaReferences(`IF({Status} = '{Status}', "a\\"{Status}", 1)`, "Status", "State")).toBe(
+      `IF({State} = '{Status}', "a\\"{Status}", 1)`,
+    );
+  });
+
+  it("returns the same string when nothing refers to the column", () => {
+    const source = "{Budget} / {Story points}";
+    expect(rewriteFormulaReferences(source, "Velocity", "Speed")).toBe(source);
+  });
+
+  it("the rewritten formula computes exactly what the old one did", () => {
+    const before = withComputedColumns(rows, [price, qty, formula("{Price} * {Quantity}")]);
+    const renamed = { ...price, display_name: "Unit price" };
+    const after = withComputedColumns(rows, [
+      renamed,
+      qty,
+      formula(rewriteFormulaReferences("{Price} * {Quantity}", "Price", "Unit price")),
+    ]);
+    expect(after.rows.map((r) => r.data.total)).toEqual(before.rows.map((r) => r.data.total));
+    expect(after.errors.size).toBe(0);
+  });
+});

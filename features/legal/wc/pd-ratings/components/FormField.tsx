@@ -31,10 +31,7 @@ export function Field({
         >
           {label}
           {required && (
-            <span
-              aria-label="required"
-              className="ml-1 text-destructive"
-            >
+            <span aria-label="required" className="ml-1 text-destructive">
               *
             </span>
           )}
@@ -47,8 +44,24 @@ export function Field({
   );
 }
 
-interface NumberFieldProps {
+/**
+ * Match the browser's own `<input type="number">` value sanitization before a
+ * context-menu replacement reaches controlled React state. In particular,
+ * pasted non-numeric text becomes the empty value a native number input shows.
+ */
+export function normalizeNativeNumberInputValue(value: string): string {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.value = value;
+  return input.value;
+}
+
+interface NumberFieldProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "id" | "onChange" | "prefix" | "inputMode"
+> {
   id?: string;
+  type?: "number" | "text";
   value: string;
   onChange: (value: string) => void;
   prefix?: React.ReactNode;
@@ -61,58 +74,67 @@ interface NumberFieldProps {
   className?: string;
 }
 
-export function NumberField({
-  id,
-  value,
-  onChange,
-  prefix,
-  suffix,
-  placeholder,
-  min,
-  max,
-  step = 1,
-  inputMode = "decimal",
-  className,
-}: NumberFieldProps) {
-  return (
-    <div
-      className={cn(
-        "relative flex items-center w-full",
-        "rounded-lg border border-border bg-background",
-        "transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20",
-        className,
-      )}
-    >
-      {prefix && (
-        <span className="pl-3 pr-1 text-muted-foreground flex items-center pointer-events-none">
-          {prefix}
-        </span>
-      )}
-      <input
-        id={id}
-        type="number"
-        inputMode={inputMode}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        min={min}
-        max={max}
-        step={step}
+export const NumberField = React.forwardRef<HTMLDivElement, NumberFieldProps>(
+  function NumberField(
+    {
+      id,
+      type = "number",
+      value,
+      onChange,
+      prefix,
+      suffix,
+      placeholder,
+      min,
+      max,
+      step = 1,
+      inputMode = "decimal",
+      className,
+      ...rest
+    },
+    ref,
+  ) {
+    return (
+      <div
+        ref={ref}
+        {...rest}
         className={cn(
-          "h-11 flex-1 min-w-0 bg-transparent text-base font-medium tabular-nums text-foreground",
-          "placeholder:text-muted-foreground/60",
-          "px-3",
-          prefix && "pl-1",
-          suffix && "pr-1",
-          "outline-none",
-          "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          "relative flex items-center w-full",
+          "rounded-lg border border-border bg-background",
+          "transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20",
+          className,
         )}
-      />
-      {suffix && (
-        <span className="pr-3 pl-1 text-muted-foreground flex items-center pointer-events-none">
-          {suffix}
-        </span>
-      )}
-    </div>
-  );
-}
+      >
+        {prefix && (
+          <span className="pl-3 pr-1 text-muted-foreground flex items-center pointer-events-none">
+            {prefix}
+          </span>
+        )}
+        <input
+          id={id}
+          type={type}
+          inputMode={inputMode}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          min={min}
+          max={max}
+          step={step}
+          className={cn(
+            "h-11 flex-1 min-w-0 bg-transparent text-base font-medium tabular-nums text-foreground",
+            "placeholder:text-muted-foreground/60",
+            "px-3",
+            prefix && "pl-1",
+            suffix && "pr-1",
+            "outline-none",
+            "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          )}
+        />
+        {suffix && (
+          <span className="pr-3 pl-1 text-muted-foreground flex items-center pointer-events-none">
+            {suffix}
+          </span>
+        )}
+      </div>
+    );
+  },
+);

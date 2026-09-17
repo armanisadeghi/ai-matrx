@@ -186,7 +186,7 @@ export function CompareTwoDialog({
       rulebookId={rulebookId}
     >
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="matrx-touch-targets max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GitCompareArrows className="h-4 w-4 text-primary" />

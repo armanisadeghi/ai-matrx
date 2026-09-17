@@ -851,6 +851,7 @@ function ToolsTab({
       <MatrxDataTable<ServerToolRow>
         data={tools}
         columns={serverToolColumns()}
+        tableId={`tool-registry/mcp-servers/${serverId}/tools`}
         getRowId={(row) => row.id}
         isLoading={loading}
         rowClassName={(row) => (row.is_active ? undefined : "opacity-60")}
@@ -858,45 +859,24 @@ function ToolsTab({
           title: `Tools of ${slug}`,
           search: true,
           refresh: { onRefresh: load },
-          actions: (
-            <CopyButtons
-              size="icon"
-              label={`Tools of ${slug}`}
-              human={() => tools.map(serverToolSummary).join("\n")}
-              json={() => tools}
-              agent={() => ({
-                kind: "mcp-server-tools",
-                location: PAGE_LOCATION,
-                description: `All tools registered under the MCP server "${slug}".`,
-                data: tools,
-                attributes: { server: slug, count: tools.length },
-              })}
-              export={{
-                items: [
-                  jsonExportItem(() => tools),
-                  csvExportItem(
-                    () => tools as unknown as Array<Record<string, unknown>>,
-                    "CSV",
-                  ),
-                ],
-              }}
-            />
-          ),
         }}
         copy={{
           label: `Tools of ${slug}`,
+          export: (_visible, all) => ({ items: [jsonExportItem(() => all), csvExportItem(() => all as unknown as Array<Record<string, unknown>>, "CSV (raw data)")] }),
           location: PAGE_LOCATION,
           rowKind: "mcp-server-tool",
           listKind: "mcp-server-tools",
           rowDescription: `One tool registered under the MCP server "${slug}".`,
           listDescription: `All tools registered under the MCP server "${slug}".`,
           humanRow: serverToolSummary,
+          listLabel: `Tools of ${slug}`,
           listAttributes: (visible) => ({
             server: slug,
             count: visible.length,
           }),
           rowAttributes: (row) => ({ server: slug, name: row.name }),
           agentRow: (row) => row,
+          listContext: (visible) => ({ server: slug, count: visible.length }),
         }}
         emptyState={{
           title: "No tools registered for this server",

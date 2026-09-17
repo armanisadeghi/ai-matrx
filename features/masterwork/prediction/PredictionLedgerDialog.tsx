@@ -58,6 +58,9 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
 import type { paths } from "@/types/python-generated/api-types";
 import { MasterworkDictationOrigin } from "../MasterworkDictationOrigin";
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../durable-run/useRunResultOnce";
@@ -180,6 +183,23 @@ export function validateNewPrediction(input: {
   return null;
 }
 
+interface PredictionSitting extends SittingBase {
+  caseLabel: string;
+  prediction: string;
+  confidence: number;
+  why: string;
+  dueAt: string;
+}
+
+const predictionSittings = createSittingStore<PredictionSitting>({
+  keyPrefix: "matrx.masterwork.prediction-call.v1:",
+  isUsable: (sitting) =>
+    typeof sitting.prediction === "string" &&
+    (sitting.caseLabel?.trim().length > 0 ||
+      sitting.prediction.trim().length > 0 ||
+      sitting.why?.trim().length > 0),
+});
+
 export function PredictionLedgerDialog({
   open,
   onOpenChange,
@@ -253,6 +273,10 @@ export function PredictionLedgerDialog({
   const openEntries = openEntriesByUrgency(entries);
 
   // ─── "Call it" form ─────────────────────────────────────────────────────
+  // A HALF-WRITTEN CALL IS REAL WORK (cold walk 6 census, 2026-09-17: every
+  // capture dialog on this page lost typed work on a reload). The call being
+  // written — the case, the prediction, the reason and the date — is kept
+  // until it is actually recorded, and says so when it comes back.
   const [caseLabel, setCaseLabel] = useState("");
   const [prediction, setPrediction] = useState("");
   const [confidence, setConfidence] = useState(0.7);
@@ -262,6 +286,31 @@ export function PredictionLedgerDialog({
   // Whether ANY of this call's words arrived by voice. Stamped on the entry so
   // a later reader knows whether the wording is spoken or written.
   const [usedVoice, setUsedVoice] = useState(false);
+
+  const sitting = useDialogSitting<PredictionSitting>({
+    store: predictionSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { caseLabel, prediction, confidence, why, dueAt },
+    isWorthKeeping: (s) =>
+      s.caseLabel.trim().length > 0 ||
+      s.prediction.trim().length > 0 ||
+      s.why.trim().length > 0,
+    apply: (kept) => {
+      setCaseLabel(kept.caseLabel);
+      setPrediction(kept.prediction);
+      setConfidence(kept.confidence);
+      setWhy(kept.why);
+      if (kept.dueAt) setDueAt(kept.dueAt);
+    },
+    clearScreen: () => {
+      setCaseLabel("");
+      setPrediction("");
+      setWhy("");
+      setUsedVoice(false);
+      setDueAt(defaultDueDate());
+    },
+  });
 
   // ─── "What happened" ────────────────────────────────────────────────────
   const [noteFor, setNoteFor] = useState<Record<string, string>>({});
@@ -340,6 +389,7 @@ export function PredictionLedgerDialog({
         setWhy("");
         setUsedVoice(false);
         setDueAt(defaultDueDate());
+        sitting.forget();
         toast.success(
           `Recorded. Come back on or after ${dueAt} and tell us how it turned out.`,
         );
@@ -396,7 +446,7 @@ export function PredictionLedgerDialog({
         runLabel: "Turning your calls into rules",
       })}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Call it before you know</DialogTitle>
           <DialogDescription>
@@ -407,6 +457,14 @@ export function PredictionLedgerDialog({
             its edges really are.
           </DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the call you were in the middle of writing"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {knobs.problem ? (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">

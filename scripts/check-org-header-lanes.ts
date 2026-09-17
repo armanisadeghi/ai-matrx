@@ -1,236 +1,561 @@
 /**
  * check-org-header-lanes — static sweep for the X-Organization-Id admission
- * contract (matrx-connect AuthMiddleware, 2026-08-30).
+ * contract. A Bearer-authenticated call to an internal backend must carry the
+ * selected organization; AuthMiddleware refuses an omitted header with
+ * `organization_required`.
  *
- * THE CLASS this guards: a hand-rolled transport that sends a Bearer JWT to a
- * python-backend base URL without organization admission. The server refuses
- * such requests with 400 organization_required, so every one of these lanes is
- * a production outage waiting for its first authenticated caller — the agent
- * cache-bust lane and the lulu-pricing guest lane both shipped broken because
- * per-file censuses kept missing lanes. This sweep is mechanical: it flags any
- * file that BOTH
- *
- *   1. builds an `Authorization: Bearer ${…}` header by hand, AND
- *   2. names a python-backend base URL
- *      (AIDREAM_PRODUCTION_URL / NEXT_PUBLIC_BACKEND_URL* / BACKEND_URLS /
- *      selectResolvedBaseUrl / resolveServiceBaseUrl / resolveBaseUrl /
- *      *.matrxserver.com / NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL),
- *
- * while carrying NONE of the compliance signals:
- *
- *   - an `X-Organization-Id` header (hand-stamped),
- *   - the shared kernel (`applyOrganizationContextHeader` /
- *     `requireOrganizationContext` / `organizationContextHeaders`),
- *   - the admission primitive (`waitForOrganizationAdmission` /
- *     `peekSelectedOrganizationId`),
- *   - a compliant choke point's ready-made header object (`authHeaders` from
- *     `useApiTestConfig` / `useServerConfig`, `buildApiAuthHeaders`,
- *     `getBackendProxyAuthHeaders`),
- *   - an import of an allowlisted transport module (the request then rides a
- *     compliant choke point).
- *
- * A lane that is legitimately org-less goes in
- * scripts/org-header-lanes.allowlist.json WITH A REASON — never silently.
- *
- * Run: pnpm check:org-header-lanes   (also runs inside
- * pnpm check:organization-context, which CI runs on every PR).
- * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
+ * The unit of inspection is one hand-written `fetch` and its enclosing
+ * transport function. File-wide imports, comments, and a second compliant
+ * request are not evidence that this particular wire call is compliant.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import process from "node:process";
+import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
-const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
-
-const SCAN_DIRS = [
-  "app",
-  "components",
-  "features",
-  "hooks",
-  "lib",
-  "utils",
-  "scripts",
-];
-
-/** Hand-built Bearer template: `Authorization` near a `Bearer ${...}` interpolation. */
-const BEARER_TEMPLATE = /Authorization[^\n]{0,60}Bearer \$\{/;
-
-const BACKEND_URL_SIGNALS = [
-  "AIDREAM_PRODUCTION_URL",
-  "NEXT_PUBLIC_BACKEND_URL",
-  "NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL",
-  "BACKEND_URLS",
-  "selectResolvedBaseUrl",
-  "resolveServiceBaseUrl",
-  "resolveBaseUrl(",
+const ROOT = resolve(__dirname, "..");
+const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "utils", "scripts"];
+const INTERNAL_HOSTS = ["stream.aimatrx.com"];
+const BACKEND_IDENTIFIERS = new Set([
+  "AIDREAM_PRODUCTION_URL", "BACKEND_URLS", "selectResolvedBaseUrl",
+  "resolveServiceBaseUrl", "resolveBaseUrl", "resolveBaseUrlForPath",
+  "NEXT_PUBLIC_BACKEND_URL", "NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL",
+]);
+const COMPLIANT_CALLEES = new Set([
+  "applyOrganizationContextHeader", "requireOrganizationContext",
+  "organizationContextHeaders", "waitForOrganizationAdmission",
+  "peekSelectedOrganizationId", "stampRunStreamOrganizationContext",
+  "buildApiAuthHeaders", "getBackendProxyAuthHeaders", "buildHeaders",
+  "authHeaders",
+]);
+const LEGACY_BEARER_TEMPLATE = /Authorization[^\n]{0,60}Bearer \$\{/;
+const LEGACY_BACKEND_SIGNALS = [
+  "AIDREAM_PRODUCTION_URL", "NEXT_PUBLIC_BACKEND_URL",
+  "NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL", "BACKEND_URLS",
+  "selectResolvedBaseUrl", "resolveServiceBaseUrl", "resolveBaseUrl(",
   ".matrxserver.com",
 ];
-
-/**
- * `db.matrxserver.com` is SUPABASE — the one database — not a python backend,
- * and PostgREST has no organization-admission contract to violate: matrx-connect
- * AuthMiddleware is not in front of it, and clients are REQUIRED to reach it
- * direct (workspace CLAUDE.md, "clients never route DB reads/writes through the
- * Python server"). But it ends in `.matrxserver.com`, so the host signal above
- * matched it and this sweep flagged correct, mandated, direct-to-Supabase code.
- *
- * That is not a near-miss: it makes the gate red for doing the right thing, and
- * the "fix" it prints (stamp X-Organization-Id, or allowlist it) would have
- * pushed a real lane onto a transport that does not serve it. It first fired on
- * 2026-09-11 against scripts/check-hr-custom-field-targets.ts, where the ONLY
- * match in the whole file was the string `db.matrxserver.com` inside a doc
- * comment saying which database the script reads.
- *
- * So the host signal is subtracted before it is tested. A genuine python-backend
- * host (server.app.matrxserver.com, and every other subdomain) still matches,
- * and nothing else about the sweep is relaxed. Anything that reaches the python
- * backend AND mentions the database host is still caught by its own signals.
- */
-const NOT_A_BACKEND_HOST = ["db.matrxserver.com"];
-
-function mentionsBackendHost(source: string): boolean {
-  let stripped = source;
-  for (const host of NOT_A_BACKEND_HOST) stripped = stripped.split(host).join("");
-  return BACKEND_URL_SIGNALS.some((s) => stripped.includes(s));
-}
-
-const COMPLIANCE_SIGNALS = [
-  "X-Organization-Id",
-  "applyOrganizationContextHeader",
-  "requireOrganizationContext",
-  "organizationContextHeaders",
-  "waitForOrganizationAdmission",
-  "peekSelectedOrganizationId",
-  "stampRunStreamOrganizationContext",
-  "buildApiAuthHeaders",
-  "getBackendProxyAuthHeaders",
-  ".authHeaders",
-  "authHeaders,",
-  "authHeaders:",
+const LEGACY_COMPLIANCE_SIGNALS = [
+  "X-Organization-Id", "applyOrganizationContextHeader",
+  "requireOrganizationContext", "organizationContextHeaders",
+  "waitForOrganizationAdmission", "peekSelectedOrganizationId",
+  "stampRunStreamOrganizationContext", "buildApiAuthHeaders",
+  "getBackendProxyAuthHeaders", ".authHeaders", "authHeaders,", "authHeaders:",
 ];
-
-/**
- * Importing one of these means the request rides a compliant choke point that
- * stamps (or deliberately, contract-correctly omits) the organization header.
- */
-const ALLOWLISTED_TRANSPORT_IMPORTS = [
-  "@/lib/api/call-api",
-  "@/lib/api/backend-client",
-  "@/lib/api/matrx-transport",
-  "@/lib/api/context-api",
-  "@/lib/api/typed-client",
-  "@/lib/api/hr-contract-client",
-  "@/lib/api/proxy-backend-auth-headers",
-  "@/lib/python-client",
-  "@/hooks/useApiAuth",
-  "@/features/files/media-client/client",
-  "@/components/api-test-config/useApiTestConfig",
+const LEGACY_COMPLIANT_IMPORTS = [
+  "@/lib/api/call-api", "@/lib/api/backend-client", "@/lib/api/matrx-transport",
+  "@/lib/api/context-api", "@/lib/api/typed-client", "@/lib/api/hr-contract-client",
+  "@/lib/api/proxy-backend-auth-headers", "@/lib/python-client", "@/hooks/useApiAuth",
+  "@/features/files/media-client/client", "@/components/api-test-config/useApiTestConfig",
   "@ai-matrx/agents/matrx",
 ];
 
-interface AllowlistEntry {
-  file: string;
-  reason: string;
+interface AllowlistEntry { file: string; reason: string }
+export interface OrganizationHeaderFinding { line: number; reason: string }
+
+function nodeName(node: ts.Node): string | null {
+  if (ts.isIdentifier(node)) return node.text;
+  if (ts.isStringLiteral(node)) return node.text;
+  if (ts.isPropertyAccessExpression(node)) return node.name.text;
+  return null;
+}
+
+function isBackendIdentifier(name: string): boolean {
+  return BACKEND_IDENTIFIERS.has(name)
+    || /^NEXT_PUBLIC_(?:BACKEND_URL|EC2_SANDBOX_SERVER_URL)(?:_|$)/.test(name);
+}
+
+function processEnvPropertyName(expression: ts.Expression): string | null {
+  if (
+    ts.isPropertyAccessExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    ts.isIdentifier(expression.expression.expression) &&
+    expression.expression.expression.text === "process" &&
+    expression.expression.name.text === "env"
+  ) return expression.name.text;
+  if (
+    ts.isElementAccessExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    ts.isIdentifier(expression.expression.expression) &&
+    expression.expression.expression.text === "process" &&
+    expression.expression.name.text === "env" &&
+    expression.argumentExpression &&
+    (ts.isStringLiteral(expression.argumentExpression) ||
+      ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+  ) return expression.argumentExpression.text;
+  return null;
+}
+
+function isProcessEnvBackend(expression: ts.Expression): boolean {
+  const name = processEnvPropertyName(expression);
+  return name !== null && isBackendIdentifier(name);
+}
+
+function isDirectProcessEnvObject(expression: ts.Expression): boolean {
+  return ts.isPropertyAccessExpression(expression) &&
+    ts.isIdentifier(expression.expression) &&
+    expression.expression.text === "process" &&
+    expression.name.text === "env";
+}
+
+interface BindingResolution {
+  initializer: ts.Expression | null;
+  backendIdentifier: boolean;
+}
+
+function bindingResolution(
+  declaration: ts.VariableDeclaration | ts.ParameterDeclaration,
+  name: string,
+  initializerIsProcessEnv = false,
+): BindingResolution | null {
+  if (ts.isIdentifier(declaration.name)) {
+    return declaration.name.text === name
+      ? { initializer: declaration.initializer ?? null, backendIdentifier: false }
+      : null;
+  }
+  if (!ts.isObjectBindingPattern(declaration.name)) return null;
+  for (const element of declaration.name.elements) {
+    if (!ts.isIdentifier(element.name) || element.name.text !== name) continue;
+    const propertyName = nodeName(element.propertyName ?? element.name);
+    return {
+      initializer: null,
+      backendIdentifier:
+        propertyName !== null &&
+        isBackendIdentifier(propertyName) &&
+        initializerIsProcessEnv,
+    };
+  }
+  return null;
+}
+
+function isFetch(node: ts.Node): node is ts.CallExpression {
+  return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "fetch";
+}
+
+function functionBoundary(node: ts.Node): ts.Node {
+  let current: ts.Node = node.parent;
+  while (current.parent) {
+    if (ts.isFunctionLike(current)) return current;
+    current = current.parent;
+  }
+  return node.getSourceFile();
+}
+
+function isLexicalContainer(node: ts.Node): boolean {
+  return ts.isBlock(node) ||
+    ts.isSourceFile(node) ||
+    ts.isFunctionLike(node) ||
+    ts.isCatchClause(node) ||
+    ts.isForStatement(node) ||
+    ts.isForInStatement(node) ||
+    ts.isForOfStatement(node) ||
+    ts.isCaseBlock(node);
+}
+
+function isLoop(node: ts.Node): node is ts.ForStatement | ts.ForInStatement | ts.ForOfStatement {
+  return ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node);
+}
+
+function isVarDeclaration(declaration: ts.VariableDeclaration): boolean {
+  const list = declaration.parent;
+  return ts.isVariableDeclarationList(list) &&
+    !(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const));
+}
+
+function resolveVariableDeclaration(
+  declaration: ts.VariableDeclaration,
+  name: string,
+): BindingResolution | null {
+  let resolved = bindingResolution(declaration, name);
+  if (
+    resolved &&
+    ts.isObjectBindingPattern(declaration.name) &&
+    declaration.initializer &&
+    isProcessEnvObject(declaration.initializer, declaration.initializer)
+  ) resolved = bindingResolution(declaration, name, true);
+  return resolved;
+}
+
+function loopHeaderBinding(
+  loop: ts.ForStatement | ts.ForInStatement | ts.ForOfStatement,
+  name: string,
+): BindingResolution | null {
+  const declarations = ts.isForStatement(loop)
+    ? loop.initializer
+    : loop.initializer;
+  if (!declarations || !ts.isVariableDeclarationList(declarations)) return null;
+  for (const declaration of declarations.declarations) {
+    const resolved = resolveVariableDeclaration(declaration, name);
+    if (!resolved) continue;
+    if (ts.isForOfStatement(loop)) {
+      return {
+        initializer: null,
+        // `for...of` yields iterable values; `for...in` yields keys and must
+        // never infer a backend endpoint from its object expression.
+        backendIdentifier: expressionTargetsInternalHost(loop.expression, loop.expression),
+      };
+    }
+    return resolved;
+  }
+  return null;
+}
+
+function hoistedVarBindingInLoop(
+  loop: ts.ForStatement | ts.ForInStatement | ts.ForOfStatement,
+  name: string,
+  usePosition: number,
+): BindingResolution | null {
+  const header = loopHeaderBinding(loop, name);
+  if (header) {
+    const declarations = ts.isForStatement(loop) ? loop.initializer : loop.initializer;
+    if (declarations && ts.isVariableDeclarationList(declarations) &&
+      declarations.declarations.some((declaration) => isVarDeclaration(declaration))) return header;
+  }
+  let found: BindingResolution | null = null;
+  const visit = (node: ts.Node) => {
+    if (found || (node !== loop && ts.isFunctionLike(node))) return;
+    if (
+      ts.isVariableDeclaration(node) &&
+      isVarDeclaration(node) &&
+      node.getStart() < usePosition
+    ) found = resolveVariableDeclaration(node, name);
+    ts.forEachChild(node, visit);
+  };
+  visit(loop.statement);
+  return found;
+}
+
+function hoistedVarBindingInScope(
+  scope: ts.SourceFile | ts.FunctionLikeDeclaration,
+  name: string,
+  usePosition: number,
+): BindingResolution | null {
+  let lastBeforeUse: BindingResolution | null = null;
+  let declared = false;
+  const visit = (node: ts.Node) => {
+    if (node !== scope && ts.isFunctionLike(node)) return;
+    if (ts.isVariableDeclaration(node) && isVarDeclaration(node)) {
+      const parentLoop = node.parent.parent;
+      const resolved = isLoop(parentLoop)
+        ? loopHeaderBinding(parentLoop, name)
+        : resolveVariableDeclaration(node, name);
+      if (resolved) {
+        declared = true;
+        if (node.getStart() < usePosition) lastBeforeUse = resolved;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(scope);
+  // A later `var` still hoists its binding and shadows an outer declaration,
+  // but its initializer has not run at this use site.
+  return lastBeforeUse ?? (declared
+    ? { initializer: null, backendIdentifier: false }
+    : null);
+}
+
+function bindingInContainer(
+  name: string,
+  container: ts.Node,
+  usePosition: number,
+): BindingResolution | null {
+  if (ts.isFunctionLike(container)) {
+    for (const parameter of container.parameters) {
+      const resolved = bindingResolution(parameter, name);
+      if (resolved) return resolved;
+    }
+    return hoistedVarBindingInScope(container, name, usePosition);
+  }
+
+  if (ts.isCatchClause(container) && container.variableDeclaration) {
+    const resolved = bindingResolution(container.variableDeclaration, name);
+    if (resolved) return resolved;
+  }
+
+  if (isLoop(container)) {
+    const resolved = loopHeaderBinding(container, name);
+    if (resolved) return resolved;
+  }
+
+  let found: BindingResolution | null = null;
+  const visit = (node: ts.Node) => {
+    if (found) return;
+    if (node !== container && isLoop(node) && node.getStart() < usePosition) {
+      found = hoistedVarBindingInLoop(node, name, usePosition);
+      if (found) return;
+    }
+    if (node !== container && isLexicalContainer(node)) return;
+    if (ts.isVariableDeclaration(node) && node.getStart() < usePosition) {
+      found = resolveVariableDeclaration(node, name);
+      if (found) return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(container);
+  if (found || !ts.isSourceFile(container)) return found;
+
+  const hoisted = hoistedVarBindingInScope(container, name, usePosition);
+  if (hoisted) return hoisted;
+
+  for (const statement of container.statements) {
+    if (statement.getStart() >= usePosition) break;
+    if (ts.isImportDeclaration(statement) && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)) {
+      for (const element of statement.importClause.namedBindings.elements) {
+        if (element.name.text !== name) continue;
+        const imported = element.propertyName?.text ?? element.name.text;
+        return { initializer: null, backendIdentifier: isBackendIdentifier(imported) };
+      }
+    }
+  }
+  return null;
+}
+
+/** Recognize only direct `process.env` and lexically resolved aliases of it. */
+function isProcessEnvObject(
+  expression: ts.Expression,
+  useSite: ts.Node,
+  seen = new Set<string>(),
+): boolean {
+  if (isDirectProcessEnvObject(expression)) return true;
+  if (ts.isParenthesizedExpression(expression))
+    return isProcessEnvObject(expression.expression, expression.expression, seen);
+  if (!ts.isIdentifier(expression) || seen.has(expression.text)) return false;
+  seen.add(expression.text);
+  const initializer = variableInitializer(expression.text, useSite);
+  return initializer ? isProcessEnvObject(initializer, initializer, seen) : false;
+}
+
+/** Resolve from the identifier's exact use site, walking its lexical ancestry. */
+function resolveBinding(name: string, useSite: ts.Node): BindingResolution | null {
+  const usePosition = useSite.getStart();
+  for (let current: ts.Node | undefined = useSite; current; current = current.parent) {
+    if (!isLexicalContainer(current)) continue;
+    const found = bindingInContainer(name, current, usePosition);
+    if (found) return found;
+  }
+  return null;
+}
+
+function variableInitializer(name: string, useSite: ts.Node): ts.Expression | null {
+  return resolveBinding(name, useSite)?.initializer ?? null;
+}
+
+function fetchHeaders(call: ts.CallExpression): ts.Expression | null {
+  const options = call.arguments[1];
+  if (!options || !ts.isObjectLiteralExpression(options)) return null;
+  const headers = options.properties.find(
+    (property): property is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(property) && nodeName(property.name) === "headers",
+  );
+  return headers?.initializer ?? null;
+}
+
+function expressionHasBearer(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
+  if (ts.isIdentifier(expression)) {
+    if (seen.has(expression.text)) return false;
+    seen.add(expression.text);
+    const initializer = variableInitializer(expression.text, useSite);
+    return initializer ? expressionHasBearer(initializer, initializer, seen) : false;
+  }
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isPropertyAssignment(node) && nodeName(node.name)?.toLowerCase() === "authorization") {
+      const value = node.initializer;
+      if (ts.isTemplateExpression(value) && value.head.text.includes("Bearer ")) found = true;
+      if (ts.isStringLiteral(value) && value.text.startsWith("Bearer ")) found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(expression);
+  return found;
+}
+
+function expressionTargetsInternalHost(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
+  if (ts.isIdentifier(expression)) {
+    if (seen.has(expression.text)) return false;
+    seen.add(expression.text);
+    const binding = resolveBinding(expression.text, useSite);
+    if (binding?.backendIdentifier) return true;
+    const initializer = binding?.initializer ?? null;
+    if (initializer && expressionTargetsInternalHost(initializer, initializer, seen)) return true;
+    if (!binding && isBackendIdentifier(expression.text)) return true;
+    // A URL object can be safely treated as the persistent-cloud-browser edge
+    // only when its own boundary validates that exact object's hostname.
+    let validatedHost = false;
+    const validate = (node: ts.Node) => {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === expression.text &&
+        node.name.text === "hostname"
+      ) {
+        const parent = node.parent;
+        if (ts.isBinaryExpression(parent)) {
+          const other = parent.left === node ? parent.right : parent.left;
+          if (ts.isStringLiteral(other) && INTERNAL_HOSTS.some((host) => other.text === host)) validatedHost = true;
+        }
+      }
+      ts.forEachChild(node, validate);
+    };
+    validate(functionBoundary(useSite));
+    return validatedHost;
+  }
+  if (isProcessEnvBackend(expression)) return true;
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isExpression(node) && isProcessEnvBackend(node)) found = true;
+    if (ts.isIdentifier(node)) {
+      const binding = resolveBinding(node.text, node);
+      if (binding?.backendIdentifier || (!binding && isBackendIdentifier(node.text))) {
+        found = true;
+      } else if (!seen.has(node.text)) {
+        seen.add(node.text);
+        const initializer = binding?.initializer ?? null;
+        if (initializer && expressionTargetsInternalHost(initializer, initializer, seen)) found = true;
+      }
+    }
+    if (ts.isCallExpression(node) && isBackendIdentifier(nodeName(node.expression) ?? "")) found = true;
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const value = node.text;
+      if (value.includes(".matrxserver.com") && !value.includes("db.matrxserver.com")) found = true;
+      if (INTERNAL_HOSTS.some((host) => value.includes(host))) found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(expression);
+  return found;
+}
+
+function expressionHasOrganizationCompliance(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
+  if (ts.isIdentifier(expression)) {
+    if (seen.has(expression.text)) return false;
+    seen.add(expression.text);
+    const initializer = variableInitializer(expression.text, useSite);
+    return initializer ? expressionHasOrganizationCompliance(initializer, initializer, seen) : false;
+  }
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isPropertyAssignment(node) && nodeName(node.name)?.toLowerCase() === "x-organization-id") found = true;
+    if (ts.isCallExpression(node) && COMPLIANT_CALLEES.has(nodeName(node.expression) ?? "")) found = true;
+    if (ts.isPropertyAccessExpression(node) && node.name.text === "authHeaders") found = true;
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      node.name.text === "headers" &&
+      ts.isIdentifier(node.expression)
+    ) {
+      const initializer = variableInitializer(node.expression.text, node.expression);
+      if (initializer && expressionHasOrganizationCompliance(initializer, initializer, seen)) found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(expression);
+  return found;
+}
+
+/**
+ * Preserve the prior coarse census for non-fetch/custom-request shapes. It is
+ * deliberately additive: its import allowance remains for legacy callers,
+ * while the AST rule above judges each direct fetch without that allowance.
+ */
+function legacyFileNeedsOrganizationAdmission(source: string): boolean {
+  if (!LEGACY_BEARER_TEMPLATE.test(source)) return false;
+  const withoutDatabaseHost = source.split("db.matrxserver.com").join("");
+  if (!LEGACY_BACKEND_SIGNALS.some((signal) => withoutDatabaseHost.includes(signal))) return false;
+  if (LEGACY_COMPLIANCE_SIGNALS.some((signal) => source.includes(signal))) return false;
+  return !LEGACY_COMPLIANT_IMPORTS.some((transport) => source.includes(`"${transport}"`));
+}
+
+/** Analyze one source file. Exported for the guard's forcing tests. */
+export function findOrganizationHeaderViolations(source: string, fileName = "source.ts"): OrganizationHeaderFinding[] {
+  const parsed = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const findings: OrganizationHeaderFinding[] = [];
+  let inspectedFetch = false;
+  const visit = (node: ts.Node) => {
+    if (isFetch(node)) {
+      inspectedFetch = true;
+      const headers = fetchHeaders(node);
+      const target = node.arguments[0];
+      if (
+        headers && target &&
+        expressionHasBearer(headers, node) &&
+        expressionTargetsInternalHost(target, node) &&
+        !expressionHasOrganizationCompliance(headers, node)
+      ) {
+        findings.push({
+          line: parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1,
+          reason: "hand-built Bearer fetch to an internal host has no organization admission",
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(parsed);
+  // The AST path is request-specific. Keep the old file-wide detector alive
+  // for transport shapes it cannot safely trace (for example XHR adapters).
+  if (!inspectedFetch && legacyFileNeedsOrganizationAdmission(source)) {
+    findings.push({
+      line: 1,
+      reason: "legacy Bearer backend lane has no organization admission",
+    });
+  }
+  return findings;
 }
 
 function loadAllowlist(): Map<string, string> {
   const path = join(ROOT, "scripts", "org-header-lanes.allowlist.json");
-  const parsed = JSON.parse(readFileSync(path, "utf8")) as {
-    entries: AllowlistEntry[];
-  };
-  const map = new Map<string, string>();
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as { entries: AllowlistEntry[] };
+  const entries = new Map<string, string>();
   for (const entry of parsed.entries ?? []) {
     if (!entry.file || !entry.reason || entry.reason.trim().length < 10) {
-      console.error(
-        `[check-org-header-lanes] allowlist entry for ${entry.file ?? "(missing file)"} needs a real reason (>= 10 chars).`,
-      );
-      exitAfterDrain(2);
+      throw new Error(`allowlist entry for ${entry.file ?? "(missing file)"} needs a real reason`);
     }
-    map.set(entry.file, entry.reason);
+    entries.set(entry.file, entry.reason);
   }
-  return map;
+  return entries;
 }
 
 function* walk(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
     if (name === "node_modules" || name.startsWith(".")) continue;
     const full = join(dir, name);
-    const st = statSync(full);
-    if (st.isDirectory()) {
-      if (name === "__tests__" || name === "__mocks__") continue;
-      yield* walk(full);
-    } else if (
-      /\.(ts|tsx)$/.test(name) &&
-      !/\.(test|spec|stories)\.tsx?$/.test(name) &&
-      // This guard and its allowlist describe the pattern they hunt.
-      name !== "check-org-header-lanes.ts"
-    ) {
+    if (statSync(full).isDirectory()) {
+      if (name !== "__tests__" && name !== "__mocks__") yield* walk(full);
+    } else if (/\.(ts|tsx)$/.test(name) && !/\.(test|spec|stories)\.tsx?$/.test(name) && name !== "check-org-header-lanes.ts") {
       yield full;
     }
   }
 }
 
-function main(): number {
+export function main(): number {
   const allowlist = loadAllowlist();
   const violations: string[] = [];
   const allowlisted: string[] = [];
   let scanned = 0;
-
   for (const dir of SCAN_DIRS) {
-    const abs = join(ROOT, dir);
-    let files: Generator<string>;
-    try {
-      statSync(abs);
-      files = walk(abs);
-    } catch {
-      continue;
-    }
-    for (const file of files) {
+    const root = join(ROOT, dir);
+    try { statSync(root); } catch { continue; }
+    for (const file of walk(root)) {
       scanned += 1;
-      const source = readFileSync(file, "utf8");
-      if (!BEARER_TEMPLATE.test(source)) continue;
-      if (!mentionsBackendHost(source)) continue;
-      if (COMPLIANCE_SIGNALS.some((s) => source.includes(s))) continue;
-      if (
-        ALLOWLISTED_TRANSPORT_IMPORTS.some((s) => source.includes(`"${s}"`))
-      ) {
-        continue;
-      }
-      const rel = relative(ROOT, file);
-      const reason = allowlist.get(rel);
-      if (reason) {
-        allowlisted.push(`${rel} — allowlisted: ${reason}`);
-      } else {
-        violations.push(rel);
-      }
+      const relativeFile = relative(ROOT, file);
+      const findings = findOrganizationHeaderViolations(readFileSync(file, "utf8"), file);
+      if (!findings.length) continue;
+      const reason = allowlist.get(relativeFile);
+      if (reason) allowlisted.push(`${relativeFile} — allowlisted: ${reason}`);
+      else violations.push(...findings.map((finding) => `${relativeFile}:${finding.line}`));
     }
   }
-
-  for (const line of allowlisted) {
-    console.log(`[check-org-header-lanes] ${line}`);
-  }
-
-  if (violations.length > 0) {
-    console.error(
-      `\n[check-org-header-lanes] ${violations.length} lane(s) hand-build a Bearer header toward a python-backend base URL with NO organization admission — the server refuses these with 400 organization_required:\n`,
-    );
-    for (const v of violations) console.error(`  ✗ ${v}`);
-    console.error(
-      `\nFix: stamp X-Organization-Id via the shared kernel (lib/api/organization-context.ts — see features/marketing/seo/dataforseo/client.ts for the pattern), ride a compliant transport (callApi / python-client / backend-client / matrx-transport / typed-client), or — ONLY for a lane that is legitimately org-less — add an entry with a reason to scripts/org-header-lanes.allowlist.json.\n`,
-    );
+  for (const line of allowlisted) console.log(`[check-org-header-lanes] ${line}`);
+  if (violations.length) {
+    console.error(`\n[check-org-header-lanes] ${violations.length} hand-built Bearer call(s) toward an internal host have no organization admission:\n`);
+    for (const violation of violations) console.error(`  ✗ ${violation}`);
+    console.error("\nFix: use a canonical transport, or build headers with the shared organization-context kernel. Legitimately org-less lanes require a reasoned allowlist entry.\n");
     return 1;
   }
-
-  console.log(
-    `[check-org-header-lanes] OK — ${scanned} files scanned, 0 org-less hand-built Bearer lanes toward the backend.`,
-  );
+  console.log(`[check-org-header-lanes] OK — ${scanned} files scanned, 0 org-less hand-built Bearer lanes toward internal hosts.`);
   return 0;
 }
 
-try {
-  exitAfterDrain(main());
-} catch (err) {
-  console.error("[check-org-header-lanes] unexpected error:", err);
-  exitAfterDrain(2);
+if (process.argv[1]?.endsWith("check-org-header-lanes.ts")) {
+  try { exitAfterDrain(main()); }
+  catch (error) { console.error("[check-org-header-lanes] unexpected error:", error); exitAfterDrain(2); }
 }

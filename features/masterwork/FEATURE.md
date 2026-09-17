@@ -441,6 +441,117 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (phone width, the class) — **EVERY MASTERWORK SURFACE AND LANE
+  CARRIES THE 44px TOUCH FLOOR.** Measured at 390×844 as `admin@admin.com`:
+  `/masterwork/<rulebook>` rendered 84 controls, 59 of them under the floor, and
+  only seven of those were design-system `Button`s (already lifted in
+  `@ai-matrx/design-system` 0.21.0). The rest were raw `<button>`/`<a>`
+  inheriting no primitive at all. The fix is the platform's ONE coarse-pointer
+  hit-area utility, `.matrx-touch-targets`, declared once at the route root
+  (`app/(core)/masterwork/layout.tsx`, `display: contents` so the `(core)`
+  scroll chain is untouched) and once on each of the 24 lane `DialogContent`s,
+  which portal out of that subtree. The ten rule checkboxes — which the floor
+  deliberately refuses to GROW, since a 44px tick box is an empty square —
+  got the new `.matrx-tap-area` ring on their labels instead: 16px tick,
+  44×44 finger, proven live by hit-testing 18px off-centre in all four
+  directions. After: 2 controls under the floor on that page, both
+  `Button asChild` links waiting only on the 0.21.0 publish. At 1440 with a
+  fine pointer nothing in this tree changed — neither rule's media query
+  matches. Guard: `__tests__/every-lane-carries-the-touch-floor.test.ts`
+  (2 of 3 RED before).
+
+- 2026-09-17 (sixth cold walk, the class) — **IN-PROGRESS WORK SURVIVES A
+  RELOAD IN EVERY CAPTURE LANE, AND THE REGISTRY NOW FORCES THE QUESTION.**
+  Walk 4 found the Triad erasing an answered round; walk 5 found it on the
+  Sorting Table; walk 6 found it on the Red-Pen lane and the Daily Drip. Each
+  was fixed where it was found, so the census walk 6 triggered asked every lane
+  the same question by driving it — type a real sentence, reload — and the
+  answer was the same everywhere: Red-Pen, the Prediction Ledger, all five
+  ingest lanes, "Everything you've published", the chat import, the Meeting
+  Scavenger, the unfolding case, Shadow-the-inbox and the Capture Plan's setup
+  form ALL swallowed the sentence and said nothing.
+  Two root causes, both closed as classes.
+  *Nothing kept the lane's working state.* The round-shaped `createSittingStore`
+  existed but had no shape a dialog could adopt, and `lib/drafts/useTextDraft`
+  covers ONE field with a 40-character floor — so a source's title and every
+  saved correction were never kept at all.
+  [`sitting/useDialogSitting.ts`](./sitting/useDialogSitting.ts) +
+  [`sitting/SittingResumed.tsx`](./sitting/SittingResumed.tsx) are that shape:
+  one call keeps the whole lane, puts it back, and SAYS SO with a "Start again"
+  beside it. Every lane above is on it.
+  *Seventeen deep links held a `useRef(false)` latch,* and `/masterwork/[id]` is
+  ONE component instance across client-side navigation — so a second visit to
+  `?drip=1` or `?red_pen=1` opened nothing and said nothing (walk 6 finding 5).
+  [`lib/deep-link/useDeepLinkArrival.ts`](../../lib/deep-link/useDeepLinkArrival.ts)
+  treats a deep link as an arrival that re-arms when the URL stops asking.
+  🚨 **A NEW LANE MUST ANSWER "what happens when she reloads?"**
+  [`sitting/lanePersistence.ts`](./sitting/lanePersistence.ts) holds the answer
+  per lane, and
+  [`sitting/__tests__/every-lane-keeps-its-work.test.ts`](./sitting/__tests__/every-lane-keeps-its-work.test.ts)
+  reads the live `platform.approach` registry, fails on any promised lane with
+  no answer, and reads each declared module from disk so a declaration cannot be
+  a sticker over a lane that keeps nothing. Both guards proven failing-then-
+  passing. NOT closed, and recorded in `FOUND_DEFECTS.md` with its reason: a
+  typed-but-unsent message in the interview and Conductor rooms, which lives in
+  the shared chat composer and is a platform-wide gap, not a Masterwork one.
+
+- 2026-09-17 (sixth cold walk, findings 3 / 6 / 7) — **A RESTORE THAT
+  CONTRADICTED ITSELF, TWO MOTIONLESS WAITS, AND A LANE WITH NO SECOND GO.**
+  *The probe's restore:* `restoring` on the shared durable-run handle was
+  cleared in the rejoin request's `.finally`, which is not the moment the mount
+  can describe what it holds — a rejoin routed to any worker but the executing
+  one answers at once with the durable ROW (`processing`) and hands the screen
+  nothing, and a rejoin that does not land answers even faster. Either way the
+  Bad Example Probe went back to offering "Write the first one" over a live,
+  paid round. Measured on a brand-new Rulebook (2026-09-17): 87 seconds of a
+  start button over round 2 being written, with the receipt itself deleted, so
+  no later reload could find the run again. Fixed in the PRIMITIVE
+  (`lib/durable-run/useDurableRun.ts`): `restoring` now ends only on a terminal
+  status, a fresh launch, or a pointer that turned out to be nothing; and an
+  unreachable rejoin for an unfinished run keeps its receipt and enters the
+  honest reconnect loop instead of resetting the surface. The probe's rounds
+  already answered now ride on the run's own receipt (`memo.prior_rounds`), so
+  the restored screen shows round 1's example and the Expert's own words rather
+  than a blank page. Guards: three new cases in
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`, red against the
+  pre-fix hook. *The motionless waits:* "Writing round N…" and "Writing your
+  cards…" were the same pixels at second 1 and second 61 (measured: 61 and 18
+  unbroken identical seconds). Both lanes now render `<WorkingNotice>`
+  (`lib/progress/`), which keeps the server's own sentence and adds a clock
+  that moves every second plus what this kind of work usually takes — never a
+  fabricated percentage. Guard:
+  `lib/progress/__tests__/a-waiting-screen-is-never-motionless.test.tsx`.
+  *The dead end:* Shadow-the-inbox's result screen offered only ways out, on a
+  lane whose own doors expect many threads over time. `DurableRunAgain` is the
+  shared affordance and every repeatable source lane now carries it. Guard:
+  `__tests__/a-finished-lane-offers-another-go.test.tsx`.
+- 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
+  SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
+  `/masterwork/new`, went to look at the catalog and came back; the textarea
+  already held the old sentence with nothing on screen admitting it, so she
+  read it as the blank page, clicked where her eye landed and typed her
+  sentence into the middle of the old one — `platform.rulebook.description`
+  and `metadata.intake.goal` got `prefix + whole sentence + suffix`, 286
+  characters from a 143-character sentence, and the Capture Plan faithfully
+  displayed the mess. Fixed in the PRIMITIVE: `useWizardDraft` now applies a
+  restored draft through `applyOnce`, which cannot run without raising
+  `didRestore`, and `<WizardDraftRestored>` says it in plain words with a
+  "Start fresh" that empties the form. Adopted by every consumer — the guided
+  start, the rule editor and the Research init wizard. (A successful Start was
+  checked live too: `clearDraft()` durably reaches storage even when the
+  navigation follows immediately, so a started Rulebook never resurrects its
+  draft.) *The teach-back's "You corrected 0 rounds":* the session's rounds
+  lived only in mount-time React state, so a rejoin rebuilt it from the durable
+  run's LAST round and the request went out with no correction in it at all —
+  the server counts the corrections in the request, so it counted zero, and the
+  explainer had lost her corrections with them. The whole session is persisted
+  through the same wizard-draft primitive now, and the sign-off counts the
+  rounds it actually holds; when this device does not hold the whole session it
+  says so instead of printing a number. Guards, both proven failing then
+  passing: `lib/wizard-draft/__tests__/restored-draft-is-announced.test.tsx`
+  (plus a census so the next wizard cannot repeat it) and
+  `teach-back/__tests__/teach-back-remembers-the-corrections.test.tsx`.
+
 - 2026-09-17 (later) — **FOUR SCREENS THAT CONTRADICTED THEMSELVES** (fifth cold
   walk, findings 3, 4, 6 and 6b), each fixed at the layer that owns the class.
   *The probe's two states at once:* a reload mid-round painted the SETUP screen
@@ -999,3 +1110,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   reach is not a control, and replaced code gets deleted (`no-legacy`). The `/masterwork/admin`
   map, which still described the deleted home as the live authed landing, now describes the
   redirect.
+
+- 2026-09-17 — Cold walk 7's fix round, four Masterwork halves, each closed at the layer that
+  owns it. **The Approach card**: `inert` meant "cannot be the lane Start begins with" and was
+  read as "has nowhere to go", so the Vision Interview and the Oracle tap — built lanes whose
+  door is their own `launch_href` page — rendered as `aria-disabled` divs among twenty-one
+  clickable cards, with the only live target a small inline link. Inert + a door of its own is
+  now a whole-card `<Link>`. **The reopen latch**: every durable-run dialog asks
+  `run.surfacing`, never `run.running` — the dismissal lives on the run's RECEIPT
+  (`DurableRunHandle.dismiss`), not in a per-mount ref, so a completed sitting no longer reopens
+  itself over later, unrelated visits; `shouldReopenForRun` is retired and
+  `TriageDraftsDialog`'s dead `if (run.running) return;` close went with it. **The Build**:
+  `getBuildInFlight` reads `platform.masterwork_run` so a live build is visible on mount in any
+  browser, with no receipt — "0 Built" over a running build is not a count — and a run whose
+  heartbeat has gone quiet is reported as stalled, never as progress. **Red-Pen**: a selection
+  boundary is MEASURED with a Range and the selection is clamped to the work, because a
+  triple-click ends outside it; it used to record a correction against the wrong passage, or
+  drop the gesture in silence.

@@ -165,6 +165,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Jest proof of the copy's freshness ceiling — the 12 h boundary age W7-GATE breaches at H+49 (ATTACK-7 finding 6/14). No database, no credential.",
     },
     {
+        id: "check-branch-schema-drift",
+        file: "scripts/check-branch-schema-drift.ts",
+        kind: "tooling",
+        why: "pnpm check:branch-schema-drift — W0-SYNC's gate that production holds no event trigger, function, trigger, policy or table the rehearsal branch lacks. Both connections run inside a read-only transaction and it has no write path; a human or the chair's pre-dispatch gate runs it, and it serves nothing.",
+    },
+    {
         id: "db-objects-diff",
         file: "scripts/db-objects-diff.ts",
         kind: "tooling",
@@ -175,6 +181,30 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "scripts/gate-corpus/branch-api.ts",
         kind: "tooling",
         why: "The rehearsal branch's API layer — pgrst.db_schemas, production's grants, and the branch-only grant/expose of the campaign's schema (ATTACK-8 finding 2). A script a human runs against the BRANCH; it refuses production twice and serves nothing to a user.",
+    },
+    {
+        id: "gate-corpus-merge-plan",
+        file: "scripts/gate-corpus/merge-plan.ts",
+        kind: "tooling",
+        why: "BUILD-BOOK §13's row disposition for THE REFRESH — the marker, the guarded upsert, the guarded delete and the replace path they are contrasted with. Pure SQL construction plus catalogue reads; both restore-graph.ts --merge and refresh-merge-proof.ts call it, so the proof exercises the shipped statements. No credential, never part of a served request.",
+    },
+    {
+        id: "gate-corpus-door-surface",
+        file: "scripts/gate-corpus/door-surface.ts",
+        kind: "tooling",
+        why: "restore-graph --verify's DOOR-SURFACE verdict, extracted so it can be tested without either database. A door production holds and the branch lacks is a SECURITY DEFINER function whose client EXECUTE grant silently does not stick on the branch. Pure comparison, no database, no credential.",
+    },
+    {
+        id: "restore-graph-door-surface-test",
+        file: "scripts/__tests__/restore-graph-door-surface.test.ts",
+        kind: "tooling",
+        why: "Jest proof of that verdict: five missing doors pass, six fail by name, one definition mismatch fails with no tolerance, and a branch-only door is reported without failing. No database, no credential.",
+    },
+    {
+        id: "gate-corpus-refresh-merge-proof",
+        file: "scripts/gate-corpus/refresh-merge-proof.ts",
+        kind: "tooling",
+        why: "RED-then-GREEN for §13's merge: the replace path takes the campaign-owned count to zero in a disposable zz_w0_* schema, the merge path leaves it equal and non-zero, and a planted row on the live branch survives a real --merge with the receipt counting it. Branch-only — it opens no production connection at all — and serves nothing to a user.",
     },
     {
         id: "gate-corpus-seed-contract",
@@ -199,6 +229,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "scripts/__tests__/gate-corpus-identity-shell.test.ts",
         kind: "tooling",
         why: "Jest proof of restore-graph.ts's auth.users id-only-shell and auth-wide secret deny-list checks (the chair's 2026-09-16 ruling). No database, no credential; never part of a served request.",
+    },
+    {
+        id: "gate-corpus-refuses-production-identity-test",
+        file: "scripts/__tests__/gate-corpus-refuses-production-identity.test.ts",
+        kind: "tooling",
+        why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
     },
 ];
 

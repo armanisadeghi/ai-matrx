@@ -540,6 +540,8 @@ export function RulebookSourcesPanel({
           {/* THE DOOR LAW — this working mode has its own URL. */}
           <Link
             href={`/masterwork/${rulebook.id}/sources`}
+            // A door, not prose: opt into the subtree touch floor (globals.css).
+            data-tap-target
             className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             title="Open Sources as its own page"
           >

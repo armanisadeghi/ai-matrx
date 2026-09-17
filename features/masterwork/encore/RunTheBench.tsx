@@ -393,7 +393,7 @@ export function RunTheBench({
               : form.durable_note,
           })}
         >
-          <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+          <DialogContent className="matrx-touch-targets max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FlaskConical className="h-4 w-4 text-primary" />
