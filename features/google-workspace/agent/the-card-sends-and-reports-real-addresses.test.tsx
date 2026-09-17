@@ -129,7 +129,18 @@ const gate = (draft: {
     },
     check: async (): Promise<EligibilityVerdict> => ({
       allowed: true,
+      lane: "cold_outreach",
       blocks: [],
+      warnings: [],
+      resolved: {
+        jurisdiction: null,
+        confidence: "none",
+        method: "test",
+        jurisdiction_verdict: null,
+        jurisdiction_ratified: false,
+        consent_basis: "none",
+        subscriber_kind: "unknown",
+      },
     }),
   });
 
