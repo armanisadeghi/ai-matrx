@@ -1,6 +1,7 @@
 import {
   preserveUploadedIdentity,
   shouldInheritActiveScope,
+  stampScope,
 } from "./upload";
 import type { NormalizedFile } from "./types";
 import { classify } from "./utils/classify";
@@ -60,6 +61,49 @@ describe("shouldInheritActiveScope", () => {
     expect(
       shouldInheritActiveScope("public", true, "Shared Assets/feedback-images"),
     ).toBe(true);
+  });
+});
+
+describe("stampScope", () => {
+  it("writes the explicit organization instead of the ambient organization", () => {
+    expect(
+      stampScope(
+        {
+          source: "brand-library",
+          scope: { custom_field: "kept", organization_id: "stale-org" },
+        },
+        true,
+        "brand-org",
+        {
+          organizationId: "ambient-org",
+          projectId: "ambient-project",
+          taskId: "ambient-task",
+        },
+      ),
+    ).toEqual({
+      source: "brand-library",
+      scope: {
+        custom_field: "kept",
+        organization_id: "brand-org",
+        project_id: "ambient-project",
+        task_id: "ambient-task",
+      },
+    });
+  });
+
+  it("writes an explicit organization for personal uploads without ambient scope", () => {
+    expect(
+      stampScope(
+        { scope: { source_context: "brand-editor" } },
+        false,
+        "brand-org",
+      ),
+    ).toEqual({
+      scope: {
+        source_context: "brand-editor",
+        organization_id: "brand-org",
+      },
+    });
   });
 });
 

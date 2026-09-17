@@ -378,6 +378,12 @@ export interface UploadOpts {
   shareLevel?: PermissionLevel;
   /** Free-form metadata stored on the row. */
   metadata?: Record<string, unknown>;
+  /**
+   * The organization that owns the uploaded bytes. When supplied, this wins
+   * over the ambient app context for every visibility and is written into
+   * `metadata.scope.organization_id` before the transport starts.
+   */
+  organizationId?: string;
   /** Override filename when source has no inherent name. */
   fileName?: string;
   /**
