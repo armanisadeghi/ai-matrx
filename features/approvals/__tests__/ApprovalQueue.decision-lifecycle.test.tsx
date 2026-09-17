@@ -88,7 +88,7 @@ const fakeKind: ApprovalKind = {
       slotMounts += 1;
     }, []);
     const query = useQuery({
-      queryKey: ["fake", scope.siteId],
+      queryKey: ["fake", scope.key],
       queryFn: async () => [...fakeRows],
     });
     const items = (query.data ?? []).map((id) => ({
@@ -97,6 +97,9 @@ const fakeKind: ApprovalKind = {
       headline: `row ${id}`,
       acceptEffect: "accept",
       rejectEffect: "reject",
+      // Every item declares its mode (HITL policy rule 1); mode 4 is the
+      // "nothing applies until a human decides" case this guard exercises.
+      mode: "mode_4" as const,
     }));
     return {
       items,
@@ -182,6 +185,7 @@ describe("ApprovalQueue decision lifecycle", () => {
         defaultOptions: { queries: { retry: false } },
       });
       const scope = {
+        key: "s1",
         siteId: "s1",
         brandId: "b1",
         organizationId: "o1",

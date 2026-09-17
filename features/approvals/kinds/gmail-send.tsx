@@ -277,7 +277,9 @@ function useSource(scope: ApprovalScope): ApprovalSource {
     void client.invalidateQueries({ queryKey: QUERY_KEY });
   };
 
-  const items: GmailItem[] = proposals.flatMap((proposal, index) => {
+  // The callback's return is annotated because each branch returns a different
+  // literal shape; without it TypeScript infers a union of arrays and refuses.
+  const items: GmailItem[] = proposals.flatMap((proposal, index): GmailItem[] => {
     const payload = narrowGmailSendPayload(proposal.payload);
     const recipients = payload
       ? [payload.to, ...payload.cc].filter(Boolean).join(", ")
