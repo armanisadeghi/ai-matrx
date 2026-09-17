@@ -130,6 +130,9 @@ describe("the receipt adapter reads the state aidream now writes", () => {
       failed: true,
       rejected: true,
       unknown: true,
+      // A state the SERVER declared that this build has not learned yet
+      // (round-4 § V14-4) — its own state, never folded into `unknown`.
+      unrecognized: true,
     };
     expect(Object.keys(answered).sort()).toEqual([
       "applied",
@@ -138,6 +141,7 @@ describe("the receipt adapter reads the state aidream now writes", () => {
       "failed",
       "rejected",
       "unknown",
+      "unrecognized",
     ]);
   });
 });

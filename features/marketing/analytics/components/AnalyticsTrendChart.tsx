@@ -31,7 +31,12 @@ import {
   dayAtOffset,
   type AlignedDay,
 } from "@/features/marketing/analytics/chart-alignment";
-import { previousSeriesDisclosure } from "@/features/marketing/analytics/disclosures";
+import {
+  disclosuresForSeries,
+  previousSeriesDisclosure,
+} from "@/features/marketing/analytics/disclosures";
+import { CaveatMark } from "@/features/marketing/analytics/components/CaveatMark";
+import type { AnalyticsCaveat } from "@/features/marketing/analytics/caveats";
 
 export const ANALYTICS_SERIES = [
   { key: "sessions", label: "Sessions", color: "#3b82f6" },
@@ -81,6 +86,12 @@ export interface AnalyticsTrendChartProps {
   windowDays: number;
   /** The tile's verdict. Refused → the previous series is not drawn at all. */
   comparison: AnalyticsComparison;
+  /**
+   * 🚨 THE WINDOW'S GA4 CAVEATS, so each SERIES wears what its own numbers wear
+   * (round-4 § V14-4). A chart is a number too: a sampled or thresholded line is
+   * as misleading as a sampled tile, and the Users line is the summed one.
+   */
+  caveats?: readonly AnalyticsCaveat[];
   visible: readonly AnalyticsSeriesKey[];
   onToggle: (key: AnalyticsSeriesKey) => void;
 }
@@ -92,9 +103,12 @@ export function AnalyticsTrendChart({
   previousStart,
   windowDays,
   comparison,
+  caveats = [],
   visible,
   onToggle,
 }: AnalyticsTrendChartProps) {
+  // The legend asks the ONE attribution map, exactly as the tiles do.
+  const caveatSource = { caveats: [...caveats], comparison };
   const [hover, setHover] = useState<number | null>(null);
   const shown = ANALYTICS_SERIES.filter((s) => visible.includes(s.key));
   const plotW = WIDTH - PAD.left - PAD.right;
@@ -162,6 +176,10 @@ export function AnalyticsTrendChart({
                 aria-hidden
               />
               {s.label}
+              <CaveatMark
+                what={s.label}
+                disclosures={disclosuresForSeries(caveatSource, s.key)}
+              />
             </button>
           );
         })}

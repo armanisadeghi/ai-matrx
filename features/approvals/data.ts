@@ -332,6 +332,16 @@ export type ApprovalProposalStatus =
    * that would append or create a second copy.
    */
   | "applied_unconfirmed"
+  /**
+   * 🚨 THE RECEIPT NAMES A STATE THIS BUILD HAS NEVER HEARD OF (`receipt.state`
+   * is `unrecognized` — Cursor Bugbot round 17, frontend PR 228, the same class
+   * as round-4 § V14-4). Never `decided`: the deep link used to answer *"already
+   * decided — it was approved or rejected"* while the queue row beside it froze
+   * and said it could not read the state. And never `pending` either, even when
+   * the row IS back on the queue, because something was attempted and this build
+   * cannot say what. `state` carries the server's word so the sentence can name it.
+   */
+  | "unknown_state"
   /** The id names an assist, but not one any approval kind reads. */
   | "not_a_proposal"
   | "unknown";
@@ -344,6 +354,8 @@ export interface ApprovalProposalRead {
   where?: { label: string; href: string };
   /** `apply_failed`: the server's refusal, verbatim. */
   error?: string | null;
+  /** `unknown_state`: the receipt state, exactly as the server wrote it. */
+  state?: string | null;
 }
 
 /**
@@ -396,6 +408,14 @@ export async function readProposalStatus({
       return { status: "applied_unconfirmed", error: receipt.error };
     }
     if (receipt.state === "applying") return { status: "applying" };
+    // 🚨 AND A STATE THIS BUILD HAS NEVER HEARD OF IS NEITHER (Bugbot round 17).
+    // This must sit ABOVE the status branches: a claimed row carrying `claimed`
+    // or `queued_for_retry` fell through to `decided`, and a row returned to the
+    // queue with one fell through to `pending` — two confident answers about an
+    // outcome nothing here can read.
+    if (receipt.state === "unrecognized") {
+      return { status: "unknown_state", state: receipt.rawState };
+    }
     if (assist.status !== "pending") return { status: "decided" };
 
     const verdict = willRenderAction(assist.action, {

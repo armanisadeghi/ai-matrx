@@ -777,6 +777,107 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-17 — Claude (google-native lane F-33; round-4 hostile re-verification,
+  common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R4.md` — **verdict U-M1:
+  REOPEN** — findings V14-4 (B side), V14-8 and V14-9): **the GA4 caveats moved
+  onto the numbers, a zero baseline stopped being explained as a collection gap,
+  and the freshness line runs on one clock.**
+
+  (1) **§ V14-4 — the caveats are printed ON the numbers now**
+  (`analytics/caveats.ts`, `analytics/disclosures.ts`, the new
+  `analytics/components/CaveatMark.tsx`, `SiteAnalyticsPanel.tsx`,
+  `AnalyticsTrendChart.tsx`). PLAN §4.9 asks for *"the honesty caveats printed on
+  the numbers (thresholding, `(other)` rows, sampling)"* and §1 for *"the caveat
+  on the number itself"* — the champion edge over every other GA4 consumer. What
+  shipped put only the COMPARISON caveat on a tile and collected thresholding,
+  sampling, schema restriction, the `(other)` row and users-are-summed into one
+  bordered block *below the chart*, with the Users tile reading "Summed across
+  landing pages — see the caveat" (an instruction to go and look) and a landing
+  page literally named `(other)` rendering as an ordinary table row. Now: ONE
+  component (`CaveatMark` — not interactive, `role="img"`, the sentence as BOTH
+  the hover title and the accessible name, and the accessible name says WHICH
+  number it qualifies) and ONE attribution map (`AFFECTS` in `disclosures.ts`,
+  with `disclosuresForTile` / `…Series` / `…LandingPage` / `…Table`), so a
+  surface never decides for itself again. The attributions are the caveats' own
+  physics: thresholding, sampling, schema restriction and the measurement note
+  mark every total and every series; users-are-summed marks the Users tile and
+  the Users line ALONE; `(other)` marks the `(other)` ROW and the page list and
+  never a site total (site totals stay right when Google bundles — the per-page
+  list is what loses pages by name); sampling also marks every row, because then
+  every figure in the list is an estimate; the comparison caveat is deliberately
+  NOT duplicated into a mark, because the tile and the chart legend already print
+  it in full. The explanation block stays — it is where the DETAIL belongs — but
+  it is no longer the only place the caveat exists.
+
+  🚨 **AND THE UNMEASURED STATE IS SAID OUT LOUD, with the consumer action for
+  aidream.** Live 2026-09-17: `seo.web_analytics_daily` holds **62,301** GA4 rows,
+  every one carrying `extras.ga4_collection_metadata`, and there is exactly **ONE
+  distinct value** across all of them — `{timeZone: "America/Los_Angeles",
+  currencyCode: "USD", schemaRestrictionResponse: {}}`. **0** rows carry a
+  `subjectToThresholding`, `samplingMetadatas` or `dataLossFromOtherRow` key at
+  all, and **0** landing pages equal `(other)`, so no honesty caveat has ever
+  fired on this platform. Google reports those three only when they apply, so
+  their absence is "nothing flagged" — which is NOT the positive all-clear a
+  silent clean number implies. So a window that carries no flag now carries the
+  caveat `flags-not-affirmed` as a note-toned mark on its totals and on its page
+  list: *"Nothing was flagged for this window — which is not the same as a clean
+  bill of health"*, with the two known limits in its detail. **Consumer action for
+  aidream** (`packages/matrx-seo/matrx_seo/providers/ga4.py`, written onto
+  `seo.web_analytics_daily.extras.ga4_collection_metadata`): (a) persist
+  `subjectToThresholding` and `dataLossFromOtherRow` **explicitly as `false`** and
+  `samplingMetadatas` as `[]` when Google omits them, so a consumer can tell
+  "Google said no" from "never captured"; (b) MERGE the metadata across report
+  pages — `report_metadata` is taken from the first page only (`if report_metadata
+  is None: report_metadata = current_metadata`) and later pages are compared on
+  `timeZone`/`currencyCode` alone (`_property_metadata_identity`), so a flag
+  Google raises on page 2 is **discarded** — the three flags should be OR'd and
+  `samplingMetadatas` concatenated; (c) the object describes the whole REPORT yet
+  is stored on every row, so this repo's per-day caveat counts ("all 28 collected
+  days") are really per-run — a per-day capture, or a field naming the report
+  window, would make that count true.
+
+  (2) **§ V14-8 — a zero baseline is its own verdict** (`analytics/gsc-delta.ts`).
+  `percent` was nulled for four different reasons and both delta pills could only
+  tell the coverage story, so five live sites with 28 of 28 days collected in BOTH
+  windows and nothing recorded before printed **"no comparison · 28 of 28 days now
+  vs 28 of 28"** with the tooltip *"The two windows were not collected alike."*
+  They were collected identically. `GscWindowDelta` now carries a `verdict`
+  (`comparable` / `coverage_refused` / `no_baseline` / `unknown_totals`), judged in
+  that order because coverage outranks a zero (with 4 of 28 previous days a zero is
+  not a measurement, so "nothing happened before" would be a guess) and a missing
+  total is not a zero. Each verdict has its own sentence and its own pill label —
+  *"There is no previous period to compare: the previous 28 days recorded 0 … Both
+  windows were collected the same way, so this is the site, not our collection."*
+  — and a refused delta now ALWAYS carries a caveat, which makes the two pills'
+  hand-typed `?? "The two windows were not collected alike."` fallbacks
+  unreachable (`SiteKpiPeeks.tsx`, `SearchConsolePortfolio.tsx` — left in place
+  because they belong to other lanes' files this lane may not touch; they are dead
+  strings, and a guard here fails if any refused delta ever returns a null caveat
+  again).
+
+  (3) **§ V14-9 — ONE clock** (`google/freshness.ts`,
+  `components/shared/DataFreshnessLine.tsx` + its new test). `stale` was judged
+  against the injectable `now` while the printed age came from
+  `formatRelativeTime`'s own `Date.now()`: a 40-minute-old pull printed "pulled 4
+  hours ago" under a frozen test clock, which is why the PRINTED half of round-2's
+  NEW-B7 was never proven. `formatRelativeTime` already accepts `now`, so both
+  halves now read one instant, and `DataFreshnessLine` takes an optional `now` —
+  omitted in production, frozen by its first-ever render test, which holds the
+  printed age, the stale warning, the unreadable-knob stand-in and the clock-ahead
+  sentence to that one instant.
+
+  Tests: `npx jest features/marketing` — **160 of 161 suites, 1,545 of 1,546 tests
+  green**; the one failure is `lib/route-metadata.test.ts` (a favicon letter badge,
+  `Ce` vs the generated `Tm`), which this lane did not touch and which fails
+  identically at `01566c21` — recorded here, not fixed, because it is another
+  lane's file. `pnpm check:parse` and `pnpm check:kind-marker-law` green; `pnpm
+  type-check` cannot complete in this container (`tsc` over the whole repo is
+  OOM-killed) so these files were type-checked under the repo `tsconfig.json` over
+  a scoped include. **No screen was seen** — this lane has no browser and no
+  sign-in, so the marks are proven by rendering the real `CaveatMark` and the real
+  `AnalyticsTrendChart` legend in jsdom and by source-guarding the panel's call
+  sites, not by looking at the panel.
+
 - 2026-09-17 — Claude (google-native lane F-23, closing aidream B-9's cross-repo
   half): **the client's refusal vocabulary was RED against B-9's new
   `resource_permission_denied`, and `metadata.discovery_outage` was unread.**

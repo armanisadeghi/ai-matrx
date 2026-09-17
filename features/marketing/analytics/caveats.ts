@@ -32,7 +32,18 @@ export interface AnalyticsCaveat {
     | "other-row"
     | "sampling"
     | "schema-restriction"
-    | "users-not-unique";
+    | "users-not-unique"
+    /**
+     * 🚨 NOT A CAVEAT ABOUT THE DATA — a caveat about the MEASUREMENT (round-4
+     * finding V14-4, B side). Google reports thresholding, sampling and the
+     * `(other)` bundle only when they apply, and this window's stored report
+     * carries none of them: that is "nothing was flagged", which is not the same
+     * claim as "checked and clean". Live on 2026-09-17 all 62,301 GA4 rows carry
+     * ONE metadata object — `{timeZone, currencyCode, schemaRestrictionResponse:
+     * {}}` — so no honesty caveat has ever fired on this platform, and a silent
+     * clean number would be the GA4 lie §1 names, wearing our own colours.
+     */
+    | "flags-not-affirmed";
   /** What is wrong with the number, in the reader's words. */
   headline: string;
   /** What they should do with that knowledge. */
@@ -160,6 +171,27 @@ export function ga4Caveats(input: Ga4CaveatInput): AnalyticsCaveat[] {
       headline: `Your Google role hid some metrics on ${dayCount(restricted, total)}`,
       detail:
         "Google restricted at least one metric for the account this data was pulled with, so it is missing rather than zero. A property Analyst or Administrator sees the full set.",
+    });
+  }
+  // 🚨 WHAT WAS NOT MEASURED IS SAID TOO (§ V14-4, B side). Only when Google
+  // flagged NOTHING: a window with a real flag has a real caveat and needs no
+  // note about the ones it did not carry.
+  const affirmed = input.days.some((day) => {
+    const metadata = asRecord(day.metadata);
+    return (
+      metadata !== null &&
+      ("subjectToThresholding" in metadata ||
+        "dataLossFromOtherRow" in metadata ||
+        "samplingMetadatas" in metadata)
+    );
+  });
+  if (total > 0 && caveats.length === 0 && !affirmed) {
+    caveats.push({
+      id: "flags-not-affirmed",
+      headline:
+        "Nothing was flagged for this window — which is not the same as a clean bill of health",
+      detail:
+        "Google only mentions withheld rows, sampling and “(other)” bundling when they apply, and AI Matrx stores its answer word for word rather than inventing a “no”. So these numbers carry no known distortion — and no positive all-clear either. Two known limits: the report's metadata is kept from the FIRST page of each day's report, so a flag Google raised on a later page is not stored; and it describes the whole report rather than one day inside it.",
     });
   }
   if (input.usersAreSummed) {

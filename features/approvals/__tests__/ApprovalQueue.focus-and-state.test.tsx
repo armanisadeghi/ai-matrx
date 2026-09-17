@@ -28,7 +28,12 @@ import type { ApprovalKind, ApprovalScope } from "@/features/approvals/types";
 let mockKinds: ApprovalKind[] = [];
 /** `../data`'s read now answers with a verdict OBJECT, so a "not in this list"
  * or a failed apply can carry the door and the reason with it. */
-type ProposalRead = { status: string; explain?: string; error?: string | null };
+type ProposalRead = {
+  status: string;
+  explain?: string;
+  error?: string | null;
+  state?: string | null;
+};
 const mockReadProposalStatus = jest.fn(
   async (): Promise<ProposalRead> => ({ status: "unknown" }),
 );
@@ -264,6 +269,39 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
 
     expect(container.textContent).toContain("No proposals yet");
     expect(container.textContent).not.toContain("it appears here");
+  });
+
+  /*
+    🚨 A RECEIPT STATE THIS BUILD HAS NEVER HEARD OF IS NOT "DECIDED" — the deep
+    link's half (Cursor Bugbot round 17, frontend PR 228, same class as round-4
+    § V14-4). The read reports `unknown_state`, and the banner must name the state
+    rather than telling the person their change was approved or rejected.
+  */
+  it("never reports an unknown receipt state as decided, and names the state", async () => {
+    mockKinds = [staticKind(["a"])];
+    mockReadProposalStatus.mockImplementation(async (): Promise<ProposalRead> => ({
+      status: "unknown_state",
+      state: "queued_for_retry",
+    }));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <ApprovalsWorkspace focusItemId="claimed-row" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain(
+      "a state this screen does not know",
+    );
+    expect(container.textContent).toContain("queued_for_retry");
+    expect(container.textContent).toContain("refresh after the next release");
+    expect(container.textContent).not.toContain("has already been decided");
+    expect(container.textContent).not.toContain("still waiting on you");
   });
 
   it("says a missing row was decided only when the direct read proves it", async () => {

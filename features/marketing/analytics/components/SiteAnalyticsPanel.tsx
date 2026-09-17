@@ -81,7 +81,11 @@ import {
 import {
   analyticsCopyLines,
   analyticsDisclosures,
+  disclosuresForLandingPage,
+  disclosuresForTable,
+  disclosuresForTile,
 } from "@/features/marketing/analytics/disclosures";
+import { CaveatMark } from "@/features/marketing/analytics/components/CaveatMark";
 import {
   describeBackendFailure,
   type BackendFailureExplanation,
@@ -111,7 +115,14 @@ const TILES: ReadonlyArray<{
   hint: string;
 }> = [
   { key: "sessions", label: "Sessions", hint: "Visits Google attributed to this site." },
-  { key: "users", label: "Users", hint: "Summed across landing pages — see the caveat." },
+  {
+    key: "users",
+    label: "Users",
+    // 🚨 NO "go and look at the block below" (§ V14-4): the caveat rides the
+    // number itself, as a `CaveatMark` beside it. A hint that sends the reader
+    // hunting for the qualification IS the defect.
+    hint: "Summed across landing pages, so one visitor who saw two pages counts twice.",
+  },
   {
     key: "engagedSessions",
     label: "Engaged sessions",
@@ -232,15 +243,28 @@ export function SiteAnalyticsPanel({
       header: "Landing page",
       filter: "text",
       cellKind: "text",
-      cell: (row) =>
-        row.pageId ? (
-          // THE DOOR LAW: the landing page resolved to a canonical page row.
-          <EntityRef token="web_page" id={row.pageId} name={row.landingPage} />
-        ) : (
-          <span className="truncate font-mono text-xs" title={row.landingPage}>
-            {row.landingPage}
-          </span>
-        ),
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-1">
+          {row.pageId ? (
+            // THE DOOR LAW: the landing page resolved to a canonical page row.
+            <EntityRef token="web_page" id={row.pageId} name={row.landingPage} />
+          ) : (
+            <span className="truncate font-mono text-xs" title={row.landingPage}>
+              {row.landingPage}
+            </span>
+          )}
+          {/* 🚨 § V14-4: a landing page literally named `(other)` used to render
+              as an ordinary row — Google's cardinality bundle, unmarked, in a
+              list of real pages. Sampling marks every row here too, because then
+              every figure in it is an estimate. */}
+          <CaveatMark
+            what={row.landingPage}
+            disclosures={
+              data ? disclosuresForLandingPage(data, row.landingPage) : []
+            }
+          />
+        </span>
+      ),
     },
     {
       id: "sessions",
@@ -465,8 +489,15 @@ export function SiteAnalyticsPanel({
                   title={tile.hint}
                 >
                   <p className="text-[11px] text-muted-foreground">{tile.label}</p>
-                  <p className="text-lg font-semibold leading-6 text-foreground">
+                  <p className="flex items-center gap-1 text-lg font-semibold leading-6 text-foreground">
                     {integer(current)}
+                    {/* 🚨 THE CAVEAT IS ON THE NUMBER (§ V14-4) — ONE component,
+                        ONE attribution map, the sentence on hover and in the
+                        accessible name. */}
+                    <CaveatMark
+                      what={tile.label}
+                      disclosures={disclosuresForTile(data, tile.key)}
+                    />
                   </p>
                   {refused ? (
                     <>
@@ -509,6 +540,8 @@ export function SiteAnalyticsPanel({
             previousStart={data.previous.start}
             windowDays={range}
             comparison={data.comparison}
+            // The series legend wears the same marks the tiles do (§ V14-4).
+            caveats={data.caveats}
             visible={visible}
             onToggle={(key) =>
               setVisible((current) =>
@@ -544,6 +577,19 @@ export function SiteAnalyticsPanel({
           {data.daysWithData < range && !data.comparison.caveat ? (
             <p className="text-[11px] text-muted-foreground">
               {`${data.daysWithData} of the last ${range} days have stored rows — the rest were never collected, so they count as zero in the totals above.`}
+            </p>
+          ) : null}
+
+          {/* 🚨 WHAT IS WRONG WITH THE LIST ITSELF, on the list (§ V14-4):
+              withheld rows and a cardinality bundle mean pages are MISSING from
+              it, which no per-row mark can say. */}
+          {disclosuresForTable(data).length ? (
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <CaveatMark
+                what="This landing-page list"
+                disclosures={disclosuresForTable(data)}
+              />
+              This list is incomplete — hover the mark for what Google left out.
             </p>
           ) : null}
 

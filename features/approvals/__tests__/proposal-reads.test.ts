@@ -155,6 +155,44 @@ describe("readProposalStatus", () => {
     ).resolves.toMatchObject({ status: "unknown" });
   });
 
+  /*
+    🚨 A RECEIPT STATE THIS BUILD HAS NEVER HEARD OF IS NOT "DECIDED"
+    (Cursor Bugbot round 17, frontend PR 228, review 5242056308 — the same class
+    as round-4 § V14-4). Every other consumer of the receipt state was taught the
+    new state and this one was not: a claimed row carrying `queued_for_retry` fell
+    past the receipt ladder to `assist.status !== "pending"` and answered
+    `decided`, so the deep link said "already decided — it was approved or
+    rejected" while the row itself froze and named a state it could not read. One
+    person, one link, two opposite answers about the same row.
+  */
+  it("never calls an unrecognized receipt state `decided`", async () => {
+    for (const state of ["claimed", "queued_for_retry"]) {
+      mockGetAssistById.mockResolvedValue({
+        id: "x",
+        status: "accepted",
+        action: proposalAction,
+        result: { __kind: "google_workspace_approval_receipt", state },
+      });
+      await expect(
+        readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
+      ).resolves.toMatchObject({ status: "unknown_state", state });
+    }
+  });
+
+  it("does not call a still-PENDING row with an unknown state `pending` either", async () => {
+    // The row is back on the queue, but something was attempted and this build
+    // cannot say what — so the link must not read as an ordinary waiting row.
+    mockGetAssistById.mockResolvedValue({
+      id: "x",
+      status: "pending",
+      action: proposalAction,
+      result: { __kind: "google_workspace_approval_receipt", state: "claimed" },
+    });
+    await expect(
+      readProposalStatus({ userId: "u1", proposalId: "x", mounted, scope }),
+    ).resolves.toMatchObject({ status: "unknown_state", state: "claimed" });
+  });
+
   it("accepts the keyword kinds' own action shape", async () => {
     // The three SEO kinds are registrations in THE registry, so their rows are
     // approval-queue rows too — reported by where they live, never as "not an

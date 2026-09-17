@@ -98,6 +98,10 @@ export function ApprovalsWorkspace({
         ? `You approved that item, AI Matrx sent the change to Google, and the answer was lost — so it MAY have been made.${
             detail.error ? ` ${detail.error}` : ""
           } Nothing was retried, and nothing will retry itself: doing it twice would append or create a second copy. Open the file, see what is there, and ask for the change again only if it is missing.`
+        : focusResolution === "unknown_state"
+          ? `You approved that item and its last attempt is in a state this screen does not know${
+              detail.state ? `: \`${detail.state}\`` : ""
+            }. This build cannot tell whether the change was made, so nothing here will retry it — refresh after the next release, and open the file in Google if you need to know now.`
         : focusResolution === "applying"
           ? "That item is being applied right now. Reload in a moment to see whether the change was made."
           : focusResolution === "decided"

@@ -360,6 +360,13 @@ export type ApprovalFocusResolution =
    * offer a retry that duplicates it.
    */
   | "applied_unconfirmed"
+  /**
+   * 🚨 THE ROW'S RECEIPT NAMES A STATE THIS BUILD HAS NEVER HEARD OF (Cursor
+   * Bugbot round 17, frontend PR 228). Never `decided` and never
+   * `pending_elsewhere`: something was attempted, this build cannot read what
+   * happened, and the verdict says exactly that and names the state.
+   */
+  | "unknown_state"
   | "unconfirmed";
 
 /**
@@ -374,6 +381,8 @@ export interface ApprovalFocusDetail {
   where?: { label: string; href: string };
   /** `apply_failed`: the server's refusal, verbatim. */
   error?: string | null;
+  /** `unknown_state`: the receipt state, verbatim, so the sentence names it. */
+  state?: string | null;
 }
 
 /**

@@ -593,15 +593,21 @@ export function ApprovalQueue({
                   ? "applied_unconfirmed"
                   : read.status === "applying"
                     ? "applying"
-                    : read.status === "decided"
-                      ? "decided"
-                      : read.status === "not_a_proposal"
-                        ? "not_an_approval"
-                        : "unconfirmed";
+                    : // 🚨 A receipt state this build cannot read is its own
+                      // verdict too (Bugbot round 17): it used to fall through
+                      // to `decided` below.
+                      read.status === "unknown_state"
+                      ? "unknown_state"
+                      : read.status === "decided"
+                        ? "decided"
+                        : read.status === "not_a_proposal"
+                          ? "not_an_approval"
+                          : "unconfirmed";
       onFocusResolved?.(focusItemId, resolution, {
         ...(read.explain ? { explain: read.explain } : {}),
         ...(read.where ? { where: read.where } : {}),
         ...(read.error !== undefined ? { error: read.error } : {}),
+        ...(read.state !== undefined ? { state: read.state } : {}),
       });
     })();
     return () => {

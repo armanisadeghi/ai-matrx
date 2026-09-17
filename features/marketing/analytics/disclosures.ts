@@ -64,6 +64,116 @@ export function analyticsDisclosures(
   return list;
 }
 
+
+/**
+ * 🚨 WHICH NUMBER EACH DISCLOSURE IS PRINTED ON — ONE MAP, round-4 § V14-4.
+ *
+ * §4.9 asks for the caveats *"printed on the numbers"* and §1 for *"the caveat on
+ * the number itself"*. What shipped instead was one bordered block under the
+ * chart plus a Users hint reading "Summed across landing pages — see the caveat",
+ * an instruction to go and look; a landing page literally named `(other)`
+ * rendered as an ordinary row. The block is still there — it is where the
+ * EXPLANATION belongs — but the mark now rides the number, and which numbers a
+ * caveat touches is decided HERE rather than per surface, because a surface
+ * deciding for itself is how the `(other)` row went unmarked.
+ *
+ * The attributions are the caveats' own physics:
+ *   · thresholding — Google withheld ROWS, so every total is low and the page
+ *     LIST is missing pages. Tiles and series, and the table; not a single row,
+ *     which is not itself wrong.
+ *   · sampling — every figure is an estimate, so every number carries it.
+ *   · schema-restriction — a metric is missing rather than zero: the totals.
+ *   · other-row — site totals are still RIGHT; the per-page list is what lost
+ *     pages by name, so it marks the `(other)` row and the list, never a tile.
+ *   · users-not-unique — the Users number alone, on the tile and in the chart.
+ *   · flags-not-affirmed — what the stored metadata cannot tell us, so it
+ *     qualifies the totals and the list, and nothing per row.
+ *   · comparison — already printed IN FULL, in words, by the tile and the chart
+ *     legend. A mark would be the same sentence twice on one number.
+ */
+type MarkedMetric = keyof AnalyticsTotals;
+
+const AFFECTS: Record<
+  AnalyticsDisclosure["id"],
+  {
+    /** `"all"`, or the metrics whose tile and series carry it. */
+    numbers: "all" | readonly MarkedMetric[];
+    /** Every landing-page row, only the `(other)` row, or none. */
+    rows: "all" | "other-only" | "none";
+    /** The landing-page list as a whole. */
+    table: boolean;
+  }
+> = {
+  comparison: { numbers: [], rows: "none", table: false },
+  thresholding: { numbers: "all", rows: "none", table: true },
+  sampling: { numbers: "all", rows: "all", table: false },
+  "schema-restriction": { numbers: "all", rows: "none", table: true },
+  "other-row": { numbers: [], rows: "other-only", table: true },
+  "users-not-unique": { numbers: ["users"], rows: "none", table: false },
+  "flags-not-affirmed": { numbers: "all", rows: "none", table: true },
+};
+
+function marks(
+  data: AnalyticsDisclosureSource,
+  keep: (rule: (typeof AFFECTS)[AnalyticsDisclosure["id"]]) => boolean,
+): AnalyticsDisclosure[] {
+  return analyticsDisclosures(data).filter((disclosure) =>
+    keep(AFFECTS[disclosure.id]),
+  );
+}
+
+/** What this metric's TILE must wear. */
+export function disclosuresForTile(
+  data: AnalyticsDisclosureSource,
+  metric: MarkedMetric,
+): AnalyticsDisclosure[] {
+  return marks(
+    data,
+    (rule) => rule.numbers === "all" || rule.numbers.includes(metric),
+  );
+}
+
+/** What this metric's CHART SERIES must wear — the same physics as its tile. */
+export function disclosuresForSeries(
+  data: AnalyticsDisclosureSource,
+  metric: MarkedMetric,
+): AnalyticsDisclosure[] {
+  return disclosuresForTile(data, metric);
+}
+
+/** What ONE landing-page row must wear. */
+export function disclosuresForLandingPage(
+  data: AnalyticsDisclosureSource,
+  landingPage: string,
+): AnalyticsDisclosure[] {
+  return marks(
+    data,
+    (rule) =>
+      rule.rows === "all" ||
+      (rule.rows === "other-only" && landingPage === "(other)"),
+  );
+}
+
+/** What the landing-page LIST as a whole must wear. */
+export function disclosuresForTable(
+  data: AnalyticsDisclosureSource,
+): AnalyticsDisclosure[] {
+  return marks(data, (rule) => rule.table);
+}
+
+/** The whole mark, as one string — the hover title and the accessible name. */
+export function disclosureSentence(
+  disclosures: readonly AnalyticsDisclosure[],
+): string {
+  return disclosures
+    .map((disclosure) =>
+      disclosure.detail
+        ? `${disclosure.headline}. ${disclosure.detail}`
+        : disclosure.headline,
+    )
+    .join(" ");
+}
+
 /** What the chart must say about the dashed previous-period series. */
 export interface PreviousSeriesDisclosure {
   /** False when the comparison is refused — the series is not drawn at all. */

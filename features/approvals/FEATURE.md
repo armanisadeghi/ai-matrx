@@ -190,7 +190,26 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 
   (2) **§ V14-7 — the expired-Gmail proof mocked the thing under test.** `__tests__/an-expired-row-mounts-no-live-action.test.tsx` replaced the real `GmailReviewCard` with a stand-in `<button>Send email</button>`, so it proved the queue's gate and not that the real card's Send disappears. It now mounts the **real** card through the real `ApprovalQueue` and the real `gmailSendKind`: the non-expired row shows the card's own words (*"Nothing sends until you press Send"*), its own `Send` control and the draft's subject, and the expired row shows neither. Only the card's outside edges are stubbed — the reviewed-send POST, the Google connection inventory, and `ProTextarea` (the body FIELD, whose shipped version drags mic-device enumeration and the recording provider into a suite about a button) — plus jsdom's missing `matchMedia`/`ResizeObserver`. Proven red by removing `!noLiveAction(item)` from the `individualReview` render site: 6 of 8 cases fail, including the real card's Send reappearing on an expired row. The new unrecognised-state row is also added to that file's per-state contract table, so every state in which no control may be live is driven through the real queue.
 
-  Tests: `npx jest features/approvals` — **18 suites, 135 tests, all green** (134 before the added case). Checks: `pnpm check:parse`, `pnpm check:kind-marker-law` green; `pnpm type-check` cannot complete in this container (`tsc` over the whole repo is OOM-killed on this box) so these files were type-checked under the repo `tsconfig.json` over a scoped include. **Nothing was verified in a browser** and the queue still has never held a live row (§ A-1 remains open, and it is not this lane's).
+  (3) **Cursor Bugbot round 17 (frontend PR 228, review 5242056308, comment
+  4041939038, Medium) — the SAME class, one consumer short.** `readProposalStatus`
+  (`data.ts`) never branched on the new state, so a claimed row carrying
+  `queued_for_retry` fell past the receipt ladder to `assist.status !== "pending"`
+  and answered `decided`: the `?item=` banner said *"has already been decided — it
+  was approved or rejected"* while the row beside it froze and said it could not
+  read the state. One person, one link, two opposite answers about one row — the
+  exact shape of § A-N2. Every consumer of the receipt state now treats it alike:
+  `ApprovalProposalStatus` gains `unknown_state` (carrying `state`, the server's
+  word) judged ABOVE the status branches so a row returned to `pending` with an
+  unreadable state is not called `pending` either; `ApprovalFocusResolution` gains
+  the matching verdict; and `ApprovalsWorkspace` prints *"its last attempt is in a
+  state this screen does not know: `queued_for_retry` … refresh after the next
+  release, and open the file in Google if you need to know now."* Proven red in two
+  places: `__tests__/proposal-reads.test.ts` (the read returned `decided` for
+  `claimed` and `queued_for_retry`, and `pending` for a returned row) and
+  `__tests__/ApprovalQueue.focus-and-state.test.tsx` (the banner, re-proven red by
+  deleting the queue's new mapping branch).
+
+  Tests: `npx jest features/approvals` — **18 suites, 138 tests, all green** (134 before the added case). Checks: `pnpm check:parse`, `pnpm check:kind-marker-law` green; `pnpm type-check` cannot complete in this container (`tsc` over the whole repo is OOM-killed on this box) so these files were type-checked under the repo `tsconfig.json` over a scoped include. **Nothing was verified in a browser** and the queue still has never held a live row (§ A-1 remains open, and it is not this lane's).
 
 - 2026-09-17 — Claude (lane F-28; Cursor Bugbot MEDIUM on frontend PR 228, comment 4041625792, review 5241698510): **the shell badge now settles after a decision, not up to 60s later.**
 
