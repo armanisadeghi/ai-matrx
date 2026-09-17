@@ -173,6 +173,12 @@ function useDecisions(scope: ApprovalScope): ApprovalDecisions {
 
 export const placementDriftKind: ApprovalKind = {
   id: KIND_ID,
+  /**
+   * These rows are `apply_keyword_meaning` assists, not `approval_proposal`
+   * ones — declared so THE ONE WILL-RENDER PREDICATE (`../../rendered.ts`) can
+   * tell a badge, a header and a deep link the same truth about them.
+   */
+  reads: "keyword_meaning",
   label: "The AI moved an offering",
   accept: {
     label: "Take it",

@@ -29,6 +29,11 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Json } from "@/types/database.types";
 import { listPendingProposals, type ApprovalProposal } from "../data";
 import { applyGoogleApproval, rejectGoogleApproval } from "../google-door";
+import {
+  applyingSentence,
+  failedApplySentence,
+  readApprovalReceipt,
+} from "../receipt";
 import type {
   ApprovalDecisions,
   ApprovalItem,
@@ -197,6 +202,14 @@ export function useGoogleProposalSource(
         proposal.payload,
         contract.payloadKind,
       );
+      /**
+       * 🚨 WHAT THE LAST APPROVE ACTUALLY DID, read from the row's own receipt
+       * (`../receipt.ts`). A row can be back in the queue after a claimed apply
+       * FAILED, or be sitting here while one is still running — and until
+       * 2026-09-17 the screen showed both as an ordinary waiting row with a live
+       * Approve button (round-2 verification § A-iii).
+       */
+      const receipt = readApprovalReceipt(proposal.assist.result);
       const base = {
         key: `${contract.kindId}:${proposal.assist.id}`,
         kindId: contract.kindId,
@@ -207,6 +220,17 @@ export function useGoogleProposalSource(
         proposedBy: proposal.proposerLabel,
         proposedAt: proposal.assist.createdAt,
         blocked: proposal.blocked,
+        ...(receipt.state === "applying"
+          ? { inFlight: { sentence: applyingSentence() } }
+          : {}),
+        ...(receipt.state === "failed"
+          ? {
+              lastAttempt: {
+                state: "failed" as const,
+                sentence: failedApplySentence(receipt),
+              },
+            }
+          : {}),
       };
       if (!payload) {
         return {
@@ -297,6 +321,28 @@ export function useGoogleApprovalDecisions(
    * because nothing was applied. Gating reject on it would report every
    * successful reject as a no-op. `status` is the only signal that carries both
    * cases, which is why both paths are judged on it.
+   *
+   * 🚨 AND THE RECEIPT DECIDES WHAT "already approved" MEANS (round-2
+   * verification § A-iii — the worst finding on this unit). The reply's
+   * `receipt.state` was never read, so a receipt saying `failed` — the row was
+   * claimed and the change could NOT be made — was reported with the sentence
+   * *"the change was made by that first approval, not by this click"*, and so was
+   * a receipt still saying `applying`. Nobody was ever told the change did not
+   * happen. Now:
+   *
+   * | reply                                   | what the person is told        |
+   * |---|---|
+   * | `accepted` + `applied_now`              | this click made the change     |
+   * | `accepted` + receipt `applied`          | already done; not by this click |
+   * | `accepted`/`pending` + receipt `failed` | NOT made — retry or reject     |
+   * | `accepted`/`pending` + receipt `applying` | being applied right now      |
+   * | `pending` + receipt `unknown`           | nothing happened; still waiting |
+   * | `dismissed`                             | already rejected; not made     |
+   *
+   * The `pending` rows are aidream lane B-8's contract: a failed apply RETURNS
+   * the row to `pending` carrying the failed receipt so the person can retry
+   * from the queue. Both that contract and the pre-B-8 `accepted` rows are
+   * judged by the state, which is why the state is what this reads.
    */
   const decide = async (
     items: ApprovalItem[],
@@ -311,18 +357,49 @@ export function useGoogleApprovalDecisions(
       const what = row.headline;
       try {
         const reply = await run(row.proposal.assist.id);
+        const receipt = readApprovalReceipt(reply.receipt);
+        // A claimed apply that failed, or one still running, is the SAME answer
+        // on either path and on either server contract — say it first.
+        if (receipt.state === "failed") {
+          failures.push({
+            key: item.key,
+            message: failedApplySentence(receipt, what),
+          });
+          continue;
+        }
+        if (receipt.state === "applying") {
+          alreadyDecided.push({
+            key: item.key,
+            message: applyingSentence(what),
+          });
+          continue;
+        }
         if (decision === "accept") {
           if (reply.status === "accepted" && reply.applied_now) {
             applied += 1;
-          } else if (reply.status === "accepted") {
+          } else if (reply.status === "accepted" && receipt.state === "applied") {
             alreadyDecided.push({
               key: item.key,
               message: `"${what}" had already been approved, so nothing was done again — the change was made by that first approval, not by this click.`,
+            });
+          } else if (reply.status === "accepted") {
+            // Approved, no receipt this build can read: the record does not say
+            // whether the change was made, so neither does the screen.
+            alreadyDecided.push({
+              key: item.key,
+              message: `"${what}" had already been approved and this click did nothing. The record does not say whether the change was actually made — open the row and check before approving it again.`,
             });
           } else if (reply.status === "dismissed") {
             alreadyDecided.push({
               key: item.key,
               message: `"${what}" had already been rejected, so it was NOT approved and the change was not made. Ask for it again if you want it.`,
+            });
+          } else if (reply.status === "pending") {
+            // B-8 returns a failed apply to `pending`; a `pending` reply whose
+            // receipt this build cannot read is still "nothing happened".
+            failures.push({
+              key: item.key,
+              message: `"${what}" is still waiting on you — the change was NOT made and the server did not say why. Try again, or reject it.`,
             });
           } else {
             failures.push({

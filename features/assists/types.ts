@@ -496,7 +496,20 @@ export type AssistSortField =
 
 export interface AssistsPage {
   rows: Assist[];
+  /**
+   * The server's `count` for this query — EVERY matching row, including the
+   * ones `narrowRows` dropped. A surface that prints a number a person reads
+   * must subtract `unreadable` (or count `rows`), because a count over rows
+   * nothing can render is the header claiming work nobody can see (round-2
+   * verification of the approval queue, § A-ii).
+   */
   total: number;
+  /**
+   * How many rows on THIS page the narrowing refused — already screamed about
+   * by `narrowRows`, and reported here so a caller can make its own total
+   * honest instead of rediscovering the gap.
+   */
+  unreadable: number;
 }
 
 /** Per-status counts for the manager's summary strip. */

@@ -333,6 +333,21 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
         });
         return;
       }
+      // NOTHING WAS WRITTEN, and it is not a failure: the organization reviews
+      // this kind of change first, so the server filed it in the approval queue
+      // instead. Saying "Created" here would claim a file that does not exist
+      // (round-2 verification of the approval queue, § A-vii).
+      if (!result.ok && result.reason === "proposed") {
+        toast.info(result.message, {
+          description: "Nothing in Google has changed yet.",
+          action: {
+            label: "Open the approval",
+            onClick: () =>
+              window.open(result.queueHref, "_blank", "noopener"),
+          },
+        });
+        return;
+      }
       if (!result.ok) {
         toast.info("Connect Google to send this to a Doc", {
           description:

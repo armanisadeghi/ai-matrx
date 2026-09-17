@@ -55,9 +55,11 @@ import { cn } from "@/lib/utils";
 import { ApprovalLoadError } from "./ApprovalLoadError";
 import { readProposalStatus } from "./data";
 import { APPROVAL_KINDS } from "./registry";
+import { mountedApprovalKinds } from "./rendered";
 import {
   AUTONOMY_MODE_LABEL,
   type ApprovalDecisions,
+  type ApprovalFocusDetail,
   type ApprovalFocusResolution,
   type ApprovalItem,
   type ApprovalKind,
@@ -240,6 +242,11 @@ export function ApprovalQueue({
   onFocusResolved?: (
     itemId: string,
     resolution: ApprovalFocusResolution,
+    /**
+     * What the verdict cannot invent: where a row that is NOT in this list
+     * lives, and the refusal a failed apply came back with (THE DOOR LAW).
+     */
+    detail?: ApprovalFocusDetail,
   ) => void;
   className?: string;
 }) {
@@ -248,13 +255,11 @@ export function ApprovalQueue({
     (kind) => !kinds || kinds.some((entry) => entry.split(":")[0] === kind.id),
   );
   // A kind that needs a dimension this mount does not carry is NOT quietly
-  // dropped — it is named, with the door to where its proposals live.
-  const elsewhere = requested.filter(
-    (kind) =>
-      kind.scopeRequirement !== undefined &&
-      !scope[kind.scopeRequirement.field],
-  );
-  const mounted = requested.filter((kind) => !elsewhere.includes(kind));
+  // dropped — it is named, with the door to where its proposals live. THE ONE
+  // PREDICATE decides what is mounted (`./rendered.ts`), and the badge asks it
+  // over the same list, so the two can never disagree (§ A-i).
+  const mounted = mountedApprovalKinds(requested, scope);
+  const elsewhere = requested.filter((kind) => !mounted.includes(kind));
   const [slots, setSlots] = useState<Record<string, Slot>>({});
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -302,7 +307,7 @@ export function ApprovalQueue({
   // a batch: one is a decision that needs its body read, the other is not the
   // reader's to make.
   const selectable = allItems.filter(
-    (item) => !item.individualReview && !item.blocked,
+    (item) => !item.individualReview && !item.blocked && !item.inFlight,
   );
   const selectedItems = selectable.filter((item) => selected.has(item.key));
   const allSelected =
@@ -461,17 +466,37 @@ export function ApprovalQueue({
     if (loading) return;
     let cancelled = false;
     void (async () => {
-      const status = await readProposalStatus(scope.userId, focusItemId);
+      // THE SAME PREDICATE the list and the badge ask — so "not here" can be
+      // told apart from "not in this list at all" (Bugbot round 9 #9), and a
+      // FAILED or in-flight apply is never called "decided" (§ A-iii).
+      const read = await readProposalStatus(
+        scope.userId,
+        focusItemId,
+        mounted,
+        all,
+      );
       if (cancelled) return;
       const resolution: ApprovalFocusResolution =
-        status === "pending"
+        read.status === "pending"
           ? "pending_elsewhere"
-          : status === "decided"
-            ? "decided"
-            : status === "not_a_proposal"
-              ? "not_an_approval"
-              : "unconfirmed";
-      onFocusResolved?.(focusItemId, resolution);
+          : read.status === "not_in_this_list"
+            ? "not_in_this_list"
+            : read.status === "no_screen"
+              ? "no_screen"
+              : read.status === "apply_failed"
+                ? "apply_failed"
+                : read.status === "applying"
+                  ? "applying"
+                  : read.status === "decided"
+                    ? "decided"
+                    : read.status === "not_a_proposal"
+                      ? "not_an_approval"
+                      : "unconfirmed";
+      onFocusResolved?.(focusItemId, resolution, {
+        ...(read.explain ? { explain: read.explain } : {}),
+        ...(read.where ? { where: read.where } : {}),
+        ...(read.error !== undefined ? { error: read.error } : {}),
+      });
     })();
     return () => {
       cancelled = true;
@@ -636,7 +661,8 @@ export function ApprovalQueue({
                                 disabled={
                                   busy ||
                                   Boolean(item.individualReview) ||
-                                  Boolean(item.blocked)
+                                  Boolean(item.blocked) ||
+                                  Boolean(item.inFlight)
                                 }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">
@@ -676,31 +702,61 @@ export function ApprovalQueue({
                                     {item.blocked.reason} {item.blocked.whoCan}
                                   </p>
                                 ) : null}
+                                {/* An approve is running on the server RIGHT NOW
+                                    (`receipt.state === "applying"`). No decision
+                                    controls: a second Approve does nothing and a
+                                    Reject cannot call a write back. */}
+                                {item.inFlight ? (
+                                  <p className="break-words text-[11px] text-muted-foreground">
+                                    {item.inFlight.sentence}
+                                  </p>
+                                ) : null}
+                                {/* 🚨 THE LAST APPROVE FAILED AND THE CHANGE WAS
+                                    NOT MADE (`receipt.state === "failed"`). The
+                                    screen used to say the opposite, in words:
+                                    "the change was made by that first approval"
+                                    (round-2 verification § A-iii). */}
+                                {item.lastAttempt?.state === "failed" ? (
+                                  <p className="break-words text-[11px] font-medium text-destructive">
+                                    {item.lastAttempt.sentence}
+                                  </p>
+                                ) : null}
                               </div>
                               {/* Phones: the decisions drop to their own full-width
                                   row of 40px targets under the text, instead of a
                                   squeezed 24px column beside it. */}
                               <div className="flex shrink-0 items-center gap-1 max-md:w-full max-md:justify-end max-md:pl-6">
-                                {item.individualReview || item.blocked ? null : (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 px-2 text-xs max-md:h-10 max-md:px-3"
-                                    disabled={busy}
-                                    onClick={() => begin("accept", [item])}
-                                  >
-                                    {section.kind.accept.label}
-                                  </Button>
+                                {item.inFlight ? null : (
+                                  <>
+                                    {item.individualReview ||
+                                    item.blocked ? null : (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 px-2 text-xs max-md:h-10 max-md:px-3"
+                                        disabled={busy}
+                                        onClick={() => begin("accept", [item])}
+                                      >
+                                        {/* After a failed apply the same door IS
+                                            the retry, and the label says so —
+                                            "Approve" again would read as a
+                                            decision nobody has to make twice. */}
+                                        {item.lastAttempt?.state === "failed"
+                                          ? "Try again"
+                                          : section.kind.accept.label}
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-2 text-xs text-muted-foreground max-md:h-10 max-md:px-3"
+                                      disabled={busy}
+                                      onClick={() => begin("reject", [item])}
+                                    >
+                                      {section.kind.reject.label}
+                                    </Button>
+                                  </>
                                 )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 px-2 text-xs text-muted-foreground max-md:h-10 max-md:px-3"
-                                  disabled={busy}
-                                  onClick={() => begin("reject", [item])}
-                                >
-                                  {section.kind.reject.label}
-                                </Button>
                               </div>
                             </div>
                             {item.body ? (

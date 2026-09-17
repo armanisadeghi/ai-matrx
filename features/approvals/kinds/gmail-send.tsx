@@ -36,6 +36,8 @@ import {
   narrowGmailSendReceipt,
   recordGmailSendInteraction,
 } from "@/features/crm/gmail/service";
+import { preflightGmailRecipients } from "@/features/crm/gmail/preflight";
+import { assessGmailRecipientIntegrity } from "@/features/crm/gmail/recipient-integrity";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
@@ -49,13 +51,13 @@ import {
   recordApprovalDecision,
   type ApprovalProposal,
 } from "../data";
-import { GMAIL_SEND_MODE } from "../mode";
 import type {
   ApprovalDecisions,
   ApprovalItem,
   ApprovalKind,
   ApprovalScope,
   ApprovalSource,
+  AutonomyMode,
 } from "../types";
 
 const KIND_ID = "gmail_send";
@@ -153,6 +155,28 @@ export function narrowGmailSendPayload(
 }
 
 /**
+ * GMAIL SEND IS HUMAN-CONFIRMED PER MESSAGE, ALWAYS, FOR EVERYONE — and that is
+ * NOT a knob (google-native PLAN §4.4 "Not a knob"). The send path
+ * (`GmailReviewCard` → `sendReviewedGmail`) has no code that can send without a
+ * click, so declaring anything else would be a control that governs nothing.
+ *
+ * It lives here, beside the one kind it describes, because
+ * `features/approvals/mode.ts` was DELETED on 2026-09-17: that module
+ * implemented the whole five-mode ladder for the browser (`HITL_KNOBS`,
+ * `resolveHitlMode`, `useHitlMode`, `useHitlModeSentence`,
+ * `useHitlReviewTimeoutHours`) and a repo-wide search found NO consumer of any
+ * of it, while the browser wrote to Google through four ungated routes — so the
+ * knob a person's own writes would obey governed nothing (round-2 hostile
+ * verification, common-docs
+ * `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` § A-vii). THE SERVER now
+ * resolves the mode and answers 202 with a filed proposal when review is
+ * required (`features/google-workspace/service.ts` → `GoogleWriteOutcome`), so a
+ * second ladder in the browser would be a second opinion about who may write.
+ * This constant is the one thing that module held which was never a read.
+ */
+export const GMAIL_SEND_MODE: AutonomyMode = "mode_4";
+
+/**
  * THE DRAFT'S IDENTITY — every field the review card and the timeline write
  * read, in one comparable string.
  *
@@ -163,7 +187,37 @@ export function narrowGmailSendPayload(
  * a future proposer adds is in the identity the moment it exists.
  */
 export function gmailPayloadFingerprint(payload: GmailSendPayload): string {
-  return JSON.stringify(payload);
+  const json = JSON.stringify(payload);
+  // Hashed, not the whole JSON: the fingerprint is now part of an ask CALL ID
+  // (see `gmailApprovalCallId`), which travels through Redux actions and the
+  // draft registry. djb2 over the exact bytes — same input, same identity.
+  let hash = 5381;
+  for (let index = 0; index < json.length; index += 1) {
+    hash = ((hash << 5) + hash + json.charCodeAt(index)) | 0;
+  }
+  return (hash >>> 0).toString(16);
+}
+
+/**
+ * THE ASK IDENTITY OF ONE PROPOSAL VERSION — the assist id AND the draft's
+ * fingerprint.
+ *
+ * 🚨 IT IS NOT THE ASSIST ID ALONE (Bugbot round 9, finding 8). The card
+ * resolves through the module-level ask-resolver registry, keyed by call id, and
+ * `registerAskResolver` OVERWRITES. A re-proposal under the same dedupe key
+ * replaces the payload on the same assist id, so the card remounts and registers
+ * a new resolver — under the same key. An in-flight Send from the OLD card then
+ * resolved that key and ran the NEW card's resolver: the new draft was recorded
+ * as approved, and its receipt written to the timeline, for a message that was
+ * never sent. One identity per proposal VERSION closes that door; the version
+ * that goes away leaves a REFUSAL behind it rather than a silent hand-off (see
+ * `GmailApprovalBody`).
+ */
+export function gmailApprovalCallId(
+  assistId: string,
+  payload: GmailSendPayload,
+): string {
+  return `approval:${assistId}:${gmailPayloadFingerprint(payload)}`;
 }
 
 /**
@@ -205,25 +259,29 @@ async function recordProposalOnTimeline(
    * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
    * OTHERWISE (Bugbot MEDIUM, frontend PR 228).
    *
-   * The proposal's `partyId` is the party the PROPOSED address belonged to.
-   * When the approver typed a different address before Send, nothing here knows
-   * whose it is — the platform holds no address→party resolver to ask — so the
-   * message is recorded on NO record rather than stamped onto the original
-   * Person's timeline, where it would read as "we emailed her" about a message
-   * she never received. Dropping only the contact point and keeping the party
-   * was the quiet version of the same lie.
+   * The rule, the comparison and the sentence all live in ONE primitive —
+   * `features/crm/gmail/recipient-integrity.ts` — because this path had the
+   * guard and the compose panel did not, and the compose panel therefore
+   * recorded a stranger's message on the open record's timeline (VERIFY-B1-B2
+   * D1). This file's private copy is deleted; both consumers call the same
+   * function, so the two paths cannot drift again.
    *
-   * Written to no timeline is a loss a person can repair (the toast says so and
-   * carries the address). A false row on a customer's history is a loss nobody
-   * can see to repair.
+   * The proposal's `partyId` is the party the PROPOSED address belonged to, so
+   * the proposed address is what authorizes the row. Written to no timeline is a
+   * loss a person can repair (the toast says so and carries the address); a
+   * false row on a customer's history is a loss nobody can see to repair.
    */
-  const sameRecipient =
-    receipt.to.trim().toLocaleLowerCase() ===
-    payload.to.trim().toLocaleLowerCase();
-  if (!sameRecipient) {
-    toast.warning(
-      `The message was sent to ${receipt.to}, not the address this draft proposed, so it was not added to any record's timeline — we cannot tell whose address that is. Log it on the right record by hand. The unsubscribe and blocklist checks did not cover that address either.`,
-    );
+  const integrity = assessGmailRecipientIntegrity({
+    sentTo: receipt.to,
+    source: {
+      kind: "proposal",
+      proposedAddress: payload.to,
+      contactPointId: payload.contactPointId ?? null,
+      mediumId: payload.recipientMediumId ?? null,
+    },
+  });
+  if (!integrity.recordOnRecord) {
+    toast.warning(integrity.refusal);
     return;
   }
 
@@ -233,8 +291,8 @@ async function recordProposalOnTimeline(
       partyId: payload.partyId,
       organizationId: payload.organizationId,
       dealId: payload.dealId ?? null,
-      contactPointId: payload.contactPointId ?? null,
-      mediumId: payload.recipientMediumId ?? null,
+      contactPointId: integrity.contactPointId,
+      mediumId: integrity.mediumId,
     },
     approvedByUserId: approverId,
     draftedBy: {
@@ -246,11 +304,14 @@ async function recordProposalOnTimeline(
   });
 
   if (result.failure) {
-    // The message HAS LEFT. Never swallowed, never retried on its own.
-    toast.error(
-      "The message was sent, but it could not be recorded on the record's timeline. Log it by hand so the history is true.",
-      { description: result.failure },
-    );
+    // The message HAS LEFT. Never swallowed, never retried on its own — and the
+    // writer already turned the database's refusal into a sentence with its
+    // remedy, so no raw Postgres text reaches a person here.
+    toast.error(result.failure);
+  }
+  // The row is true even when one of its "Associated with" edges did not land.
+  for (const missing of result.associationFailures) {
+    toast.warning(missing);
   }
 }
 
@@ -272,7 +333,6 @@ function GmailApprovalBody({
   payload: GmailSendPayload;
   onDecided: () => void;
 }) {
-  const callId = `approval:${proposal.assist.id}`;
   const approverId = useAppSelector(selectUserId);
   /**
    * 🚨 WHICH DRAFT THIS CARD IS REVIEWING — the identity the effect and the
@@ -285,9 +345,19 @@ function GmailApprovalBody({
    * was no longer showing, and record it against the superseded draft.
    */
   const payloadFingerprint = gmailPayloadFingerprint(payload);
+  // ONE IDENTITY PER PROPOSAL VERSION (Bugbot round 9 #8).
+  const callId = gmailApprovalCallId(proposal.assist.id, payload);
 
   useEffect(() => {
+    /**
+     * Did THIS version resolve? If it did not, and it is going away, the id it
+     * owned must not be left un-owned: a Send already in flight would then
+     * resolve nothing and the message would leave with no record at all. So the
+     * cleanup replaces the resolver with a REFUSAL that screams (below).
+     */
+    let resolvedHere = false;
     registerAskResolver(callId, (response) => {
+      resolvedHere = true;
       void (async () => {
         try {
           if (response.confirmed === true) {
@@ -335,8 +405,24 @@ function GmailApprovalBody({
       })();
     });
     return () => {
-      // Unmounting is not a decision; drop the resolver without resolving it.
-      // (`resolveAskByCallId` is the only other exit and the card owns it.)
+      // Unmounting is not a decision; this version simply stops being the one on
+      // screen. But a Send may already be in flight from the card that is going
+      // away, so the id it owned keeps an owner — one that RECORDS NOTHING and
+      // says so loudly. Never a silent approve of a draft nobody is looking at.
+      if (resolvedHere) return;
+      registerAskResolver(callId, (response) => {
+        if (response.confirmed !== true) return;
+        console.error(
+          `[approvals] a Gmail send resolved for proposal version ${callId}, which is no longer on screen — the proposal was NOT recorded as approved`,
+        );
+        toast.error(
+          "A message was sent from a draft this queue has since replaced, so it was NOT recorded as approved and nothing was written to the record's timeline.",
+          {
+            description:
+              "Check the sent folder for that message and log it by hand; the proposal is still waiting on you.",
+          },
+        );
+      });
     };
     // The fingerprint is a dependency, not a decoration: the resolver closes
     // over `payload`, and a stale closure records the wrong draft.
@@ -370,27 +456,33 @@ function GmailApprovalBody({
          before pressing Send, and a suppressed address must not slip in that
          way. Same medium -> re-check and fail closed; a different address has
          no contact point to look up and is reported on the record instead. */
-      preflight={async (draft) => {
-        const unchanged =
-          draft.to.trim().toLocaleLowerCase() ===
-          payload.to.trim().toLocaleLowerCase();
-        if (!unchanged || !payload.recipientMediumId) return null;
-        try {
-          const verdict = await checkSendEligibility({
-            mediumId: payload.recipientMediumId,
-            listId: payload.listId ?? null,
-            identityId: payload.identityId ?? null,
-          });
-          if (verdict.allowed) return null;
-          return verdict.blocks
-            .map((block) => `${block.message} ${block.fix}`.trim())
-            .join(" ");
-        } catch (error) {
-          return `The outbound checks could not be read. ${
-            error instanceof Error ? error.message : String(error)
-          }`;
-        }
-      }}
+      preflight={(draft) =>
+        /* THE LAST GATE, at Send time, on the card's own recipients — the ONE
+           preflight both send paths use (`features/crm/gmail/preflight.ts`).
+           EVERY address is asked about, To and Cc: an address the proposal did
+           not name is resolved against the organization's own contact mediums,
+           where the unsubscribes and the blocklist actually live, instead of
+           being waved through (VERIFY-B1-B2 D2). It fails CLOSED. */
+        preflightGmailRecipients({
+          to: draft.to,
+          cc: draft.cc,
+          options: payload.recipientMediumId
+            ? [
+                {
+                  address: payload.to,
+                  contactPointId: payload.contactPointId ?? "",
+                  mediumId: payload.recipientMediumId,
+                  label: null,
+                  isPrimary: true,
+                  warning: null,
+                },
+              ]
+            : [],
+          organizationId: payload.organizationId ?? null,
+          listId: payload.listId ?? null,
+          identityId: payload.identityId ?? null,
+        })
+      }
     />
   );
 }

@@ -21,8 +21,15 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
 import { APPROVAL_PAGE_SIZE } from "./data";
-import { APPROVALS_EMPTY_BODY, APPROVALS_EMPTY_TITLE } from "./empty-state";
-import type { ApprovalFocusResolution } from "./types";
+import {
+  APPROVALS_EMPTY_BODY,
+  APPROVALS_EMPTY_TITLE,
+  APPROVALS_EMPTY_TITLE_ELSEWHERE,
+} from "./empty-state";
+import type {
+  ApprovalFocusDetail,
+  ApprovalFocusResolution,
+} from "./types";
 import { useState } from "react";
 
 export function ApprovalsWorkspace({
@@ -52,11 +59,13 @@ export function ApprovalsWorkspace({
   const [focus, setFocus] = useState<{
     itemId: string;
     resolution: ApprovalFocusResolution;
+    detail: ApprovalFocusDetail;
   } | null>(null);
-  const focusResolution =
-    focus && focusItemId && focus.itemId === focusItemId
-      ? focus.resolution
-      : null;
+  const current = focus && focusItemId && focus.itemId === focusItemId
+    ? focus
+    : null;
+  const focusResolution = current?.resolution ?? null;
+  const detail = current?.detail ?? {};
 
   if (!userId) {
     return (
@@ -72,16 +81,44 @@ export function ApprovalsWorkspace({
     );
   }
 
+  /**
+   * 🚨 EVERY VERDICT SAYS WHAT IS TRUE OF THAT ROW, and the two that used to be
+   * folded into "already decided" are the ones that matter most: an approve that
+   * FAILED after the claim (the change was never made — round-2 verification
+   * § A-iii) and one still running. A site-scoped row gets its own answer and
+   * its own door, instead of "past the first page of this list" about a list it
+   * was never in (Bugbot round 9 #9).
+   */
   const focusMessage =
-    focusResolution === "decided"
-      ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
-      : focusResolution === "pending_elsewhere"
-        ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
-        : focusResolution === "not_an_approval"
-          ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
-          : focusResolution === "unconfirmed"
-            ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
-            : null;
+    focusResolution === "apply_failed"
+      ? `You approved that item and THE CHANGE WAS NOT MADE.${
+          detail.error ? ` ${detail.error}` : ""
+        } Nothing was retried automatically — approve it again to retry, or reject it.`
+      : focusResolution === "applying"
+        ? "That item is being applied right now. Reload in a moment to see whether the change was made."
+        : focusResolution === "decided"
+          ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
+          : focusResolution === "not_in_this_list"
+            ? `That item is still waiting on you, but not in this list: ${
+                detail.explain ?? "it belongs to a queue this page does not show."
+              }`
+            : focusResolution === "no_screen"
+              ? "That item is still waiting on you and this version of the app has no screen for it — it was filed by a newer part of the system. Nothing was decided; tell us and it will be shown here."
+              : focusResolution === "pending_elsewhere"
+                ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
+                : focusResolution === "not_an_approval"
+                  ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
+                  : focusResolution === "unconfirmed"
+                    ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
+                    : null;
+
+  /** True while the person is holding a link to a row that IS still waiting. */
+  const waitingElsewhere =
+    focusResolution === "not_in_this_list" ||
+    focusResolution === "pending_elsewhere" ||
+    focusResolution === "no_screen" ||
+    focusResolution === "apply_failed" ||
+    focusResolution === "applying";
 
   const settled = summary !== null && !summary.loading;
   const empty = settled && summary.count === 0 && summary.errors === 0;
@@ -97,8 +134,8 @@ export function ApprovalsWorkspace({
         hideWhenEmpty={false}
         onSummary={(_scopeKey, next) => setSummary(next)}
         focusItemId={focusItemId}
-        onFocusResolved={(itemId, resolution) =>
-          setFocus({ itemId, resolution })
+        onFocusResolved={(itemId, resolution, focusDetail) =>
+          setFocus({ itemId, resolution, detail: focusDetail ?? {} })
         }
       />
       {/* A link that points at a row nobody can find gets an ANSWER, not a
@@ -124,19 +161,40 @@ export function ApprovalsWorkspace({
               </AppLink>
             </>
           ) : null}
+          {/* THE DOOR LAW again: the row lives somewhere, so the sentence that
+              says "not in this list" carries the way there. */}
+          {focusResolution === "not_in_this_list" && detail.where ? (
+            <>
+              {" "}
+              <AppLink
+                href={detail.where.href}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                {detail.where.label}
+              </AppLink>
+            </>
+          ) : null}
         </p>
       ) : null}
       {empty ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-8 text-center">
           <CheckCircle2 className="size-8 text-success" />
           <p className="text-sm font-medium text-foreground">
-            {APPROVALS_EMPTY_TITLE}
+            {/* 🚨 NEVER "nothing is waiting on you" while the person is holding a
+                link to something that IS (Bugbot round 9 #9). */}
+            {waitingElsewhere
+              ? APPROVALS_EMPTY_TITLE_ELSEWHERE
+              : APPROVALS_EMPTY_TITLE}
           </p>
           {/* The copy lives in `./empty-state.ts` so the lane that ships the
               first producer changes it in one place, in the commit that makes
               it true. */}
           <p className="max-w-md text-xs text-muted-foreground">
-            {APPROVALS_EMPTY_BODY}
+            {/* The banner above already carries the whole answer and its door;
+                the card only has to stop contradicting it. */}
+            {waitingElsewhere
+              ? "One item you were sent a link to is still waiting on you — the note above says where it is."
+              : APPROVALS_EMPTY_BODY}
           </p>
         </div>
       ) : null}

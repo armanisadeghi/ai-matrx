@@ -27,6 +27,24 @@ export async function sendRowsToSheetOutcome(
       message: `Created "${result.name}" in Google Drive`,
     };
   }
+  // NOTHING WAS WRITTEN and it is not a failure: the organization reviews this
+  // kind of change first, so the server filed it in the approval queue and this
+  // must not say "Created" (round-2 verification § A-vii).
+  if (result.reason === "proposed") {
+    toast.info(result.message, {
+      description: "Nothing in Google has changed yet.",
+      action: {
+        label: "Open the approval",
+        onClick: () => window.open(result.queueHref, "_blank", "noopener"),
+      },
+    });
+    return {
+      status: "error",
+      code: "google_sheet_proposed",
+      message: `${result.message}. Nothing in Google has changed yet.`,
+      retryable: false,
+    };
+  }
   if (result.reason === "not_connected") toast.info("Connect Google Workspace to send this to a Sheet", {action: {label: "Connect", onClick: () => window.open(result.settingsHref, "_blank", "noopener")}});
   return result.reason === "not_connected"
     ? {

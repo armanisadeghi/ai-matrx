@@ -280,6 +280,12 @@ function useDecisions(): ApprovalDecisions {
 
 export const keywordMeaningKind: ApprovalKind = {
   id: KIND_ID,
+  /**
+   * These rows are `apply_keyword_meaning` assists, not `approval_proposal`
+   * ones — declared so THE ONE WILL-RENDER PREDICATE (`../../rendered.ts`) can
+   * tell a badge, a header and a deep link the same truth about them.
+   */
+  reads: "keyword_meaning",
   label: "Keyword meaning",
   accept: {
     label: "Approve",

@@ -106,8 +106,13 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 }));
 jest.mock("@/lib/toast", () => ({
   toast: {
-    warning: (message: string) => warnings.push(message),
-    error: (message: string) => warnings.push(message),
+    // The DESCRIPTION is captured too: half of what a person is told lives
+    // there (what to do about it), and a test blind to it cannot assert the
+    // remedy was said.
+    warning: (message: string, options?: { description?: string }) =>
+      warnings.push(`${message} ${options?.description ?? ""}`),
+    error: (message: string, options?: { description?: string }) =>
+      warnings.push(`${message} ${options?.description ?? ""}`),
     success: () => undefined,
     info: () => undefined,
   },
@@ -119,6 +124,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { gmailSendKind } from "../kinds/gmail-send";
 
 const scope: ApprovalScope = { key: "u1", organizationId: "o1", userId: "u1" };
+
+/**
+ * The ask id registered for the draft ON SCREEN. It carries the payload's
+ * fingerprint, so a re-proposal is a different identity (Bugbot round 9 #8) —
+ * which is why a test may not hard-code `approval:assist-1`. Read from the
+ * registry rather than recomputed: the kind narrows the payload before
+ * fingerprinting it, and a test that re-derived the hash would be asserting
+ * about its own arithmetic.
+ */
+const registeredCallIds = () =>
+  [...resolvers.keys()].filter((key) => key.startsWith("approval:assist-1:"));
+const currentCallId = () => {
+  const ids = registeredCallIds();
+  expect(ids).toHaveLength(1);
+  return ids[0] as string;
+};
 
 function payload(overrides: Record<string, unknown> = {}) {
   return {
@@ -196,7 +217,7 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
 
   it("writes the sent record when the approver sent it to the proposed address", async () => {
     await render();
-    const resolve = resolvers.get("approval:assist-1");
+    const resolve = resolvers.get(currentCallId());
     expect(resolve).toBeDefined();
 
     await act(async () => {
@@ -216,7 +237,7 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
 
   it("records a changed recipient on NO record, and says so with the address", async () => {
     await render();
-    const resolve = resolvers.get("approval:assist-1");
+    const resolve = resolvers.get(currentCallId());
 
     await act(async () => {
       // The approver retyped `to` on the card before pressing Send.
@@ -258,5 +279,90 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
     // first draft in its own editable state while the row showed the new one.
     expect(secondKey).not.toBe(firstKey);
     expect(container.textContent).toContain("CARD to newsam@example.com");
+  });
+});
+
+/**
+ * FORCING TEST for Bugbot round 9, finding 8: AN IN-FLIGHT SEND MUST NOT RESOLVE
+ * THE NEXT DRAFT'S RESOLVER.
+ *
+ * The ask-resolver registry is keyed by call id and `registerAskResolver`
+ * overwrites. With the call id built from the assist id alone, a re-proposal
+ * under the same dedupe key registered the NEW card's resolver under the SAME
+ * key — so a Send already in flight from the old card resolved it and the new
+ * draft was recorded as approved, with the old send's receipt, for a message
+ * that was never sent.
+ */
+describe("gmail_send: one ask identity per proposal VERSION", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (
+      globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    resolvers.clear();
+    warnings.length = 0;
+    mockRecordInteraction.mockClear();
+    proposalPayload = payload();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  const render = async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <Harness onItems={() => undefined} />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+  };
+
+  it("gives each draft its own call id, and the old one records nothing", async () => {
+    await render();
+    const firstId = currentCallId();
+
+    // The same assist, re-proposed with a new draft.
+    act(() => root.unmount());
+    container.remove();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    proposalPayload = payload({ to: "newsam@example.com", subject: "Take 2" });
+    await render();
+
+    // Both ids are now registered: the new card's real resolver, and the old
+    // id's REFUSAL left behind by the unmounted version.
+    const ids = registeredCallIds();
+    expect(ids).toHaveLength(2);
+    const secondId = ids.find((id) => id !== firstId) as string;
+    expect(secondId).toBeDefined();
+
+    // Now the OLD card's Send lands. It must not be recorded against the new
+    // draft — and it must not vanish silently either.
+    await act(async () => {
+      resolvers.get(firstId)?.({
+        confirmed: true,
+        data: { message_id: "m-old", to: "sam@example.com" },
+      });
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    expect(mockRecordInteraction).not.toHaveBeenCalled();
+    const said = warnings.join(" ");
+    expect(said).toContain("since replaced");
+    expect(said).toContain("by hand");
   });
 });

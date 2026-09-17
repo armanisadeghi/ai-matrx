@@ -124,6 +124,23 @@ attachment it cannot open. Server half:
 
 ## Invariants
 
+- 🚨 **A WRITE MAY COME BACK AS A PROPOSAL, AND EVERY CALLER SAYS SO.** The four
+  direct write calls in `service.ts` — `documents/create`, `sheets/create`,
+  `documents/append`, `sheets/write` — return `GoogleWriteOutcome<T>`: either the
+  written file, or `{proposed: true, assistId, mode}` when the server answered
+  HTTP 202 because the organization's autonomy mode for that capability
+  (`hitl.google.attended_file_write`) asks a person to review it first. The server
+  writes NOTHING in that case and files the change in THE approval queue. A caller
+  says `SENT_FOR_APPROVAL_MESSAGE` and opens `approvalQueueHref(assistId)` — never
+  "Created", and never "Connect Google", which is what every caller said before
+  the union existed. A 202 that does not name the approval is REFUSED with its
+  remedy: the change may be queued or may not exist, and only the queue can say.
+  The one adapter is `writeOutcome`; the guard is `write-gate.test.ts`. Why it
+  exists: `gate_mutating_action` wraps the AGENT tool dispatch table only, so
+  until 2026-09-17 that knob governed the agent path and a person's own click
+  ignored it entirely — a knob that governs nothing (round-2 hostile
+  verification, common-docs
+  `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` § A-vii).
 - The Settings and window overview share one compact account inspector. An
   explicit requested account that is unavailable stays unavailable until the
   user chooses another reachable account; ordinary no-target inspection may
@@ -165,6 +182,21 @@ attachment it cannot open. Server half:
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-17` — **the autonomy knob now reaches a person's own Google writes**
+  (lane F-14, round-2 verification § A-vii). `service.ts`'s four write calls
+  return a `GoogleWriteOutcome` union through one adapter, and every caller reads
+  it: `GoogleWorkspaceReviewWorkspace` (append + sheet write), both
+  `export/sendToGoogle.ts` exports (new result variant `reason: "proposed"`,
+  carrying the queue href), and the four surfaces downstream of those —
+  `components/agent-copy/useExportActions.ts`,
+  `components/content-actions/contentActionRegistry.ts`,
+  `components/mardown-display/tables/SendToGoogleSheetButton.tsx` and the message
+  options registry. `features/approvals/mode.ts`, the dead client-side mode
+  ladder, was deleted in the same commit: the server resolves the mode. Guard:
+  `write-gate.test.ts` (11 cases, all proven red against the pre-fix bytes).
+  Unverified in a browser — every route on this branch answers 500 on an
+  unrelated missing manifest.
 
 - `2026-09-17` — **Google is now the first PROVIDER CONFIG of the connector
   primitive, not a set of Google-only surfaces.** The nine approved products, each

@@ -36,6 +36,13 @@
 import type { ReactNode } from "react";
 
 /**
+ * The assist action shapes an approval kind can read. Declared here (not beside
+ * the predicate) because it is part of the kind CONTRACT; `./rendered.ts` maps
+ * each family to its action kind and asks the one will-render question.
+ */
+export type ApprovalRowFamily = "approval_proposal" | "keyword_meaning";
+
+/**
  * The five autonomy modes, verbatim from
  * common-docs `/policies/human-in-the-loop-autonomy-modes.md`. The list is
  * CLOSED until amended there (rule 7) — never add a sixth value here.
@@ -159,6 +166,23 @@ export interface ApprovalItem {
    */
   body?: ReactNode;
   /**
+   * THE APPROVE IS IN FLIGHT — the row was claimed on the server and the change
+   * is being made right now (`receipt.state === "applying"`). The sentence is
+   * shown and the row offers NO DECISION CONTROLS: a second Approve would do
+   * nothing and a Reject cannot undo a write already running. Before this
+   * existed the screen showed a live Approve button and, on a second click,
+   * said the change "was made by that first approval" (round-2 verification
+   * § A-iii).
+   */
+  inFlight?: { sentence: string } | null;
+  /**
+   * THE LAST APPROVE FAILED AFTER THE CLAIM (`receipt.state === "failed"`). The
+   * change was NOT made. The sentence names the refusal, the row's Approve
+   * becomes an explicit RETRY, and Reject stays available — because the person's
+   * two real options are to try again or to give up on it.
+   */
+  lastAttempt?: { state: "failed"; sentence: string } | null;
+  /**
    * Set when this item must be reviewed on its own — a Gmail message whose
    * review card IS the authorization, a full guidelines document the person
    * may edit first. The node is the review affordance; the row is excluded
@@ -251,6 +275,19 @@ export interface ApprovalDecisions {
 export type ApprovalFocusResolution =
   | "shown"
   | "decided"
+  /**
+   * Waiting, and rendered by a kind THIS MOUNT DOES NOT CARRY — a site-scoped
+   * keyword row opened from the person-scoped queue. It is answered with the
+   * door to where it lives; "past the first page of this list" sent the reader
+   * hunting through a list it was never in (Bugbot round 9 #9).
+   */
+  | "not_in_this_list"
+  /** Waiting, and NO registered kind can show it. Said out loud, not hidden. */
+  | "no_screen"
+  /** Approved, and the change was NOT made (`receipt.state === "failed"`). */
+  | "apply_failed"
+  /** An approve is running right now (`receipt.state === "applying"`). */
+  | "applying"
   | "pending_elsewhere"
   /**
    * The id names one of this person's assists, but not an approval item — a
@@ -260,6 +297,20 @@ export type ApprovalFocusResolution =
    */
   | "not_an_approval"
   | "unconfirmed";
+
+/**
+ * What the verdict needs to be honest AND to open. A resolution alone is a
+ * sentence; these are the facts that sentence cannot invent (THE DOOR LAW: the
+ * answer that says "not here" says where).
+ */
+export interface ApprovalFocusDetail {
+  /** `not_in_this_list`: one sentence saying why it is not in this list. */
+  explain?: string;
+  /** `not_in_this_list`: the door to where it IS. */
+  where?: { label: string; href: string };
+  /** `apply_failed`: the server's refusal, verbatim. */
+  error?: string | null;
+}
 
 /**
  * A dimension a kind cannot work without, plus where its proposals CAN be seen.
@@ -278,6 +329,17 @@ export interface ApprovalScopeRequirement {
 export interface ApprovalKind {
   /** Stable id, e.g. `gmail_send`. Used in `kinds` filters and item keys. */
   id: string;
+  /**
+   * WHICH ASSIST ACTION SHAPE THIS KIND READS. Defaults to
+   * `approval_proposal` (the platform/Google kinds, whose `id` IS the
+   * producer's `proposalKind`); the keyword kinds read `keyword_meaning`.
+   *
+   * It exists so THE ONE WILL-RENDER PREDICATE (`./rendered.ts`) can answer
+   * "would this row be on screen here?" without knowing a kind by name — the
+   * question the badge, the section header and every deep link now ask in one
+   * place instead of three.
+   */
+  reads?: ApprovalRowFamily;
   /** Group label on each row's badge, e.g. "Email to send". */
   label: string;
   accept: ApprovalDecisionCopy;

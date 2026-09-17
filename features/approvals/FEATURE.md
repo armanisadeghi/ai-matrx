@@ -20,10 +20,11 @@ The SEO value-system queue (register KI-045) was already the generic mechanism: 
 | Registry | `registry.ts` | `APPROVAL_KINDS` — THE one ordered list |
 | Queue | `ApprovalQueue.tsx` | One list: per-item + select-all, consequences re-listed in the confirm, reason where the write keeps one, the mode line, blocked rows, kinds that live elsewhere named with their door |
 | Failure strip | `ApprovalLoadError.tsx` | A kind that cannot be read is named and retryable; the missing-store case names the migration |
-| Store seam | `data.ts` | The ONLY module that names `platform.assists`: read, decide, propose |
+| Store seam | `data.ts` | The ONLY module that names `platform.assists`: read and record a decision. It PRODUCES nothing — the server is the one producer |
+| Will-render predicate | `rendered.ts` | THE one question "would this row be on screen here?", asked by the badge, the section header, the list and every deep link |
+| Receipt adapter | `receipt.ts` | THE one reader of `receipt.state` (`applying` / `failed` / `applied` / `rejected`) — a claimed apply that failed is never reported as done |
 | Decision door | `google-door.ts` | THE ONE apply/reject call for every Google kind — `POST /google-workspace/approvals/{id}/apply` and `/reject` |
 | Google kind engine | `kinds/google-proposal.tsx` | The shared reader, payload narrowing and writers the six Google kinds register with |
-| Mode ladder | `mode.ts` | `hitl.*` knob reads that REFUSE rather than guess (policy rule 8) |
 | Surface | `ApprovalsWorkspace.tsx` | The one screen both hosts mount |
 | Route | `app/(core)/approvals/page.tsx` | `/approvals`; reads `?item=<assist id>` server-side and hands it down, so the queue expands, scrolls to that row and rings it — and says plainly when that row is no longer waiting |
 | Window | `windows/ApprovalsWindow.tsx` + `features/overlays/openers/approvalsWindow.tsx` | The same surface in a `WindowPanel`, wrapping the canonical component |
@@ -64,11 +65,38 @@ For `gmail_send` the operator must additionally be able to send from that accoun
    - `useDecisions(scope)` → `acceptItems` / `rejectItems` returning `{ applied, failures }`; never throw for one item's failure;
    - `scopeRequirement` when the kind needs a dimension a person-scoped mount lacks.
 3. Add it to `APPROVAL_KINDS`. Every mounted queue and both hosts now render it.
-4. Emit rows with `proposeApproval` from `data.ts` (client) or the same `approval_proposal` action shape from aidream (server), addressed to the operator, with `__kind` on the payload.
+4. Emit rows FROM THE SERVER — `aidream/services/google_workspace/approvals.py` or the same `approval_proposal` action shape from another aidream producer, addressed to the operator, with `__kind` on the payload. There is deliberately no client-side producer: a row written from the browser carries no `metadata.google_workspace`, and both server doors refuse such a row with 403 — including reject — so it could never leave the list (see the invariants).
 5. Add a census row here and a Change Log line.
 
 ## Invariants
 
+- 🚨 **ONE PREDICATE decides whether a row is on screen** — `rendered.ts`
+  (`willRenderRow` / `willRenderAction` + `mountedApprovalKinds`). Action narrowing
+  AND kind registration are ONE question, and the badge, the section header, the
+  list and every deep link ask it over the kinds the mount actually carries. Two
+  rules is how "1 waiting" came to sit over an empty screen and how a header
+  printed 3 over two visible rows. A row the predicate refuses is loud once in
+  the console and counted nowhere.
+- 🚨 **The section header counts what the screen shows.** `listPendingProposals`
+  subtracts the rows the narrowing dropped (`AssistsPage.unreadable`, new on the
+  assists service) and the ones no mounted kind renders, from the server's raw
+  `count`. A number a person reads is never a bare PostgREST `count`.
+- 🚨 **`receipt.state` DECIDES WHAT HAPPENED, ahead of `status`** (`receipt.ts`).
+  `failed` = the change was NOT made → the row says so in destructive colour, its
+  Approve becomes "Try again", and a decision reply lands in `failures`.
+  `applying` = an apply is in flight → the row shows the sentence and offers NO
+  decision controls. `applied` = the change was made. A receipt this build cannot
+  read says "the record does not say", never "the change was made".
+- 🚨 **THERE IS NO CLIENT PRODUCER AND NO CLIENT MODE LADDER.** `proposeApproval`
+  and `mode.ts` are deleted. The server produces every row and resolves every
+  mode; the four direct Google write routes answer HTTP 202
+  `{proposed, assist_id, mode}` when review is required, and
+  `features/google-workspace/service.ts` returns a `GoogleWriteOutcome` union so
+  no caller can say "Written" over a filed proposal.
+- **A Gmail ask id carries the DRAFT's fingerprint** — `gmailApprovalCallId`. One
+  identity per proposal VERSION, and the version that leaves the screen leaves a
+  REFUSAL behind at its own id rather than handing an in-flight send to the next
+  draft's resolver.
 - ONE queue component and ONE registry. A host narrows with `kinds`; it never hands in a shorter list and never forks a list.
 - A kind renders no review UI of its own when the product already has one (Gmail).
 - Nothing applies without a person, except mode 3's server-side timeout — which has no runner yet (see the gaps).
@@ -88,9 +116,28 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 4. **No `sending_event` on an approved Gmail send.** The pre-send half of the CRM outbound spine is wired (`checkSendEligibility`). The post-send half — recording the send as a `sending_event` so the inbox can match replies — has no client-callable entry point for a 1:1 reviewed send; `sendReviewedGmail` posts to `/api/google-workspace/gmail/send-reviewed` in aidream, which is where that record belongs. Contract named, gap owned there.
 5. **A recipient we do not hold as a contact point** cannot be checked against unsubscribes or the blocklist. The row says so in words and the person sends on their own judgement; it is not silently skipped.
 6. **The CMS approvals panel and the HR workflow inbox are still separate surfaces.** CMS (`features/cms/components/admin/ApprovalsQueuePanel.tsx`) is a content-exception queue over a table that does not exist yet; HR's inbox (`hr_wf_inbox` / `hr_wf_decide`) is human workflow steps with their own delegation and authority model, not AI proposals. Neither is folded in by this lane; both are candidate kinds.
-7. **Nothing here is verified on a live surface, because the queue has never held a row.** The zero-authorship verification (2026-09-17) found `proposeApproval` with zero callers, no `approval_proposal` emitter in aidream, and **0** rows on `matrx-user/approval-queue` against 434 pending assists elsewhere: the screen exists, the pipe into it does not, at either end. Every guard in `__tests__/` is therefore the only proof this engine has, and the empty state says only what is true (`./empty-state.ts`).
+7. **Nothing here is verified on a live surface, because the queue has never held a row.** Round 2 of the zero-authorship verification (2026-09-17) confirmed the server producer now EXISTS and is wired, and that `platform.assists` still holds **0** rows on `matrx-user/approval-queue`: the pipe exists at one end and has never carried anything. Every guard in `__tests__/` is therefore the only proof this engine has, and the empty state names exactly the six kinds the producer files (`./empty-state.ts`). `proposeApproval` is gone — the client half of gap 7 is closed by deletion, not by a caller.
+8. **`hitl.google.review_timeout_hours` (live, 24) has no reader in this repo.** Its only reader was `useHitlReviewTimeoutHours` in the deleted `mode.ts`, which had zero callers — so the knob was already governing nothing (round-2 verification § A-vi). The window it sets belongs to the mode-3 applier, which does not exist (gap 2); the Office Assistant mandate's prompt still tells the model "`review_timeout_hours` is read by the queue, not by this job", which is false and is aidream's line to fix.
 
 ## Change Log
+
+- 2026-09-17 — Claude (google-native lane F-14; round-2 hostile re-verification, common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` Unit A, plus Bugbot round 9 findings 8-9): **three numbers became one predicate, the screen stopped saying a failed change was made, and the knob that governed nothing is gone.**
+
+  (1) **§ A-i + A-ii + Bugbot 9 — ONE WILL-RENDER PREDICATE** (`rendered.ts`). The badge shared the queue's ACTION narrowing but not its KIND REGISTRATION, so a pending row whose `proposalKind` nothing registered renders was counted and shown nowhere; the section header printed the raw server `count` over rows the narrowing had already dropped; and a deep link to a site-scoped keyword row answered "waiting past the first page of this list" about a list that never mounts those kinds. All three now ask `willRenderRow` / `willRenderAction` over `mountedApprovalKinds(...)` — the literal filter the queue mounts with — and a refused row is loud ONCE in the console rather than folded into a number. The store seam subtracts both the unrenderable rows and the ones the narrowing refused (new: `AssistsPage.unreadable`, from `narrowRowsCounted` in the assists service, so any consumer of `queryAssists` can make its own total honest). A kind declares which action shape it reads (`ApprovalKind.reads`); the three keyword kinds declare `keyword_meaning`. New resolutions `not_in_this_list` (with the kind's own door) and `no_screen`, and the empty state no longer claims nothing is waiting while the person holds a link to something that is.
+
+  (2) **§ A-iii, the worst finding — the frontend now reads `receipt.state`** (`receipt.ts`, THE one adapter). aidream writes `applying` / `failed` / `applied` / `rejected` into the row's `result` and returns it as the door's `receipt`, and this repo read neither: a `failed` receipt was reported with the words *"had already been approved… the change was made by that first approval, not by this click"*, an `applying` one got the same sentence, and a deep link to either answered "already decided". Nobody was ever told the change did not happen. Now a `failed` receipt is a FAILURE naming the refusal with "Try again" (the same door IS the retry), an `applying` row shows "being applied now" and offers NO decision controls and cannot be selected, a reject over a failed row no longer says "Undo it where it landed", and an unreadable receipt says the record does not say. Coded to aidream lane B-8's contract (a failed apply returns the row to `pending` with the receipt) AND to the pre-B-8 `accepted` rows — the STATE decides either way.
+
+  (3) **§ A-vii — the knob that governed a person's own Google writes governed nothing.** `mode.ts` (177 lines, the whole five-mode ladder for the browser) had no consumer anywhere, while the browser wrote to Google through four ungated routes that `gate_mutating_action` never touches. It is DELETED (no legacy); its one non-read, `GMAIL_SEND_MODE`, moved beside the kind it describes. The server owns the judgement and answers HTTP 202 `{proposed: true, assist_id, mode}` with the change filed in this queue, so `appendGoogleDocument`, `writeGoogleSheet`, `createGoogleDocument` and `createGoogleSheet` return a `GoogleWriteOutcome` union through ONE adapter (`writeOutcome`) and every caller — the review workspace, both `sendToGoogle` exports, and the four surfaces downstream of them — says "Sent for approval instead — it is in your approval queue" with the door to `/approvals?item=…`, never "Written" and never "Connect Google". A 202 that does not name the approval is REFUSED with its remedy.
+
+  (4) **§ A-viii — `proposeApproval` deleted.** A client-produced row carries no `metadata.google_workspace`, and both server doors call `_execution_record` first — including reject — so such a row could be neither approved nor rejected and would never leave the list. The server is the ONE producer, said in the invariants and in the registering-a-kind steps.
+
+  (5) **§ A-2 — the empty state stopped promising email drafts**, which the producer excludes by design ("the Gmail review card IS the authorization and never enters this path"). It now names the six kinds that do arrive.
+
+  (6) **Bugbot round 9 #8 — an in-flight send can no longer resolve the next draft's resolver.** The ask call id was the assist id alone and `registerAskResolver` overwrites, so a re-proposal under the same dedupe key put the NEW card's resolver under the OLD card's key: a Send already in flight recorded the new draft as approved, with the old send's receipt, for a message never sent. The id is now `approval:<assist>:<payload fingerprint>` (`gmailApprovalCallId`; the fingerprint is hashed because it travels in a call id), and the version that leaves the screen leaves a REFUSAL at its own id that records nothing and screams with the remedy.
+
+  (7) **§ A-v / item 7 — `applied_now` is already read as "this call changed the row"**, which is what B-8's semantics make it; no change was needed and the status-based reporting is correct under either.
+
+  Guards, each proven red against this branch's pre-fix bytes and green after: `__tests__/one-predicate.test.ts` (13 cases — badge = header = list = 0 for an unregistered kind with the kind named in a console warning; `not_in_this_list` with its door; failed/applying/applied reads; the empty-state sentence; no client producer; no client knob read), seven new cases in `__tests__/google-kinds.test.tsx` (every receipt state on both paths, and the two row states), one in `__tests__/gmail-send.recipient-and-refresh.test.tsx` (one ask identity per version, and the old id records nothing but says so), and `features/google-workspace/write-gate.test.ts` (11 cases: the 202 branch on all four routes, an unreadable 202 refused, and a branch per caller). **Nothing was verified in a browser:** every route on this branch answers HTTP 500 on a missing `barcode-preview.manifest` that exists only on `origin/main`, and this container signs in to no Matrx host. `pnpm type-check` cannot complete here either — `tsc` over the whole repo is OOM-killed on this 16 GB shared box — so the files above were type-checked under the same `tsconfig.json` over a scoped include and are clean; four pre-existing errors in files this lane did not touch remain (`GoogleWorkspaceOverviewBody.tsx`, `connection.test.ts`, `alchemy-references.test.ts`, `TuiEditorContent.tsx`).
 
 - 2026-09-17 — Claude (google-native lane F-8; Cursor Bugbot on frontend PR 228, finding 6): **the queue says what the door actually did.** `useGoogleApprovalDecisions` counted every non-throwing reply as applied and discarded `status` and `applied_now` — but the door is idempotent by design, so the two replies that mean "nothing happened now" look exactly like success: a second approve returns the first call's receipt with `applied_now: false`, and a row somebody already REJECTED answers an approve with `status: "dismissed"`. The screen therefore said "Approved 1 proposal" over a change that was never made, and — on the reject path — "Rejected 1" over a message that had already gone out. The verdict now comes from `status` on both paths, `applied_now` only separates "this click did it" from "it was already done", and a third bucket on the contract (`ApprovalOutcome.alreadyDecided`, optional so no other kind changed) carries the sentence the queue toasts: which row, what was already true of it, and what to do instead. A status this build cannot read is a FAILURE that names the status, never a silent success. ⚠️ Recorded for the next agent: aidream's `reject_google_approval` returns `applied_now: false` for a FRESH reject as well (nothing was applied), so gating reject on that flag would report every successful reject as a no-op — that asymmetry is why `status` is the only signal used. Guard: six cases in `__tests__/google-kinds.test.tsx`, four of them proven red against the old "count anything that did not throw". Also fixed in passing: the four dry-run readers in `kinds/google-proposal.tsx` returned `null` but refused it as input, so every chained read (`readString(readRecord(preview, …), …)`) was a type error in three sibling kinds — eleven `type-check` errors in this feature, now none.
 

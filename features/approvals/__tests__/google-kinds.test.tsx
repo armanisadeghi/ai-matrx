@@ -48,6 +48,8 @@ const mockWriteGoogleSheet = jest.fn();
 const mockRecordDecision = jest.fn();
 
 let mockPayload: Json = null;
+/** A receipt on the STILL-PENDING row — what a failed or in-flight apply leaves. */
+let failedReceiptOnRow: Json = null;
 
 jest.mock("../google-door", () => ({
   applyGoogleApproval: (...args: unknown[]) => mockApply(...(args as [])),
@@ -63,6 +65,7 @@ jest.mock("../data", () => ({
           id: "assist-1",
           title: `a ${kindId} proposal`,
           createdAt: "2026-09-17T00:00:00Z",
+          result: failedReceiptOnRow,
         },
         proposalKind: kindId,
         mode: "mode_4",
@@ -616,7 +619,13 @@ describe("the door's answer is read, not assumed", () => {
       approval_id: "assist-1",
       status: "accepted",
       applied_now: false,
-      receipt: {},
+      // The producer's own receipt for a change that DID land.
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "applied",
+        action: "append_document",
+        output: {},
+      },
     });
     let outcome: ApprovalOutcome | null = null;
     await act(async () => {
@@ -697,5 +706,181 @@ describe("the door's answer is read, not assumed", () => {
     });
     expect(outcome!.applied).toBe(0);
     expect(outcome!.failures[0]?.message).toContain("superseded");
+  });
+});
+
+/**
+ * FORCING TESTS for the worst finding of the round-2 hostile verification
+ * (common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` § A-iii): THE
+ * FRONTEND NEVER READ `receipt.state`.
+ *
+ * aidream's `apply_google_approval` claims the row, runs the action, and on
+ * failure stores `{state: "failed", error}` — and the door's reply carries that
+ * same receipt. Reading only `status` + `applied_now`, the queue answered a
+ * FAILED receipt with, verbatim, "had already been approved, so nothing was
+ * done again — the change was made by that first approval, not by this click",
+ * and said the same while an apply was still `applying`. Nobody was ever told
+ * the change did not happen.
+ *
+ * The replies below are the producer's, field for field, including the `pending`
+ * status aidream lane B-8 returns a failed apply with so the person can retry
+ * from the queue.
+ */
+describe("the receipt says what happened, and the screen says the same", () => {
+  const readyItems = async () => {
+    mockPayload = READABLE_PAYLOAD.document_append;
+    await mount(documentAppendKind);
+    return harness!.items;
+  };
+
+  it("a FAILED receipt is a failure that names the refusal and offers a retry", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "failed",
+        action: "append_document",
+        error: "Google refused the request: the document is read-only.",
+        failed_at: "2026-09-17T00:00:00Z",
+      },
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.alreadyDecided ?? []).toHaveLength(0);
+    const said = outcome!.failures[0]?.message ?? "";
+    expect(said).toContain("NOT made");
+    expect(said).toContain("read-only");
+    expect(said).toContain("Try again");
+    // The sentence that was printed over this exact receipt must be gone.
+    expect(said).not.toContain("the change was made");
+  });
+
+  it("B-8's contract — a failed apply returned to `pending` — reads the same", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "pending",
+      applied_now: false,
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "failed",
+        action: "append_document",
+        error: "The Google token expired mid-write.",
+      },
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    expect(outcome!.failures[0]?.message).toContain("NOT made");
+  });
+
+  it("an APPLYING receipt is neither applied nor already-decided", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "applying",
+        started_at: "2026-09-17T00:00:00Z",
+      },
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    const said = outcome!.alreadyDecided?.[0]?.message ?? "";
+    expect(said).toContain("being applied now");
+    expect(said).not.toContain("the change was made");
+  });
+
+  it("a reject over a row whose apply FAILED does not claim the change landed", async () => {
+    const items = await readyItems();
+    mockReject.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {
+        __kind: "google_workspace_approval_receipt",
+        state: "failed",
+        error: "Sheets refused the range.",
+      },
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.reject(items, null)) as ApprovalOutcome;
+    });
+    // The old reject path said "had already been APPROVED and the change was
+    // made, so it could not be rejected. Undo it where it landed." — over a
+    // change that never landed (§ A-v, second gap).
+    expect(outcome!.applied).toBe(0);
+    const said =
+      (outcome!.failures[0]?.message ?? "") +
+      (outcome!.alreadyDecided?.[0]?.message ?? "");
+    expect(said).toContain("NOT made");
+    expect(said).not.toContain("Undo it where it landed");
+  });
+
+  it("an approve with no readable receipt says the record does not say", async () => {
+    const items = await readyItems();
+    mockApply.mockResolvedValueOnce({
+      approval_id: "assist-1",
+      status: "accepted",
+      applied_now: false,
+      receipt: {},
+    });
+    let outcome: ApprovalOutcome | null = null;
+    await act(async () => {
+      outcome = (await harness!.accept(items)) as ApprovalOutcome;
+    });
+    expect(outcome!.applied).toBe(0);
+    const said = outcome!.alreadyDecided?.[0]?.message ?? "";
+    expect(said).toContain("does not say");
+    expect(said).not.toContain("the change was made");
+  });
+
+  it("a pending row carrying a FAILED receipt renders as a retry, not as waiting", async () => {
+    mockPayload = READABLE_PAYLOAD.document_append;
+    failedReceiptOnRow = {
+      __kind: "google_workspace_approval_receipt",
+      state: "failed",
+      error: "Google refused the request: the document is read-only.",
+    };
+    try {
+      await mount(documentAppendKind);
+      const item = harness!.items[0]!;
+      expect(item.lastAttempt?.state).toBe("failed");
+      expect(item.lastAttempt?.sentence).toContain("NOT made");
+      expect(item.inFlight ?? null).toBeNull();
+    } finally {
+      failedReceiptOnRow = null;
+    }
+  });
+
+  it("a pending row whose apply is IN FLIGHT offers no decision at all", async () => {
+    mockPayload = READABLE_PAYLOAD.document_append;
+    failedReceiptOnRow = {
+      __kind: "google_workspace_approval_receipt",
+      state: "applying",
+      started_at: "2026-09-17T00:00:00Z",
+    };
+    try {
+      await mount(documentAppendKind);
+      const item = harness!.items[0]!;
+      expect(item.inFlight?.sentence).toContain("being applied now");
+      expect(item.lastAttempt ?? null).toBeNull();
+    } finally {
+      failedReceiptOnRow = null;
+    }
   });
 });

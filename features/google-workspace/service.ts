@@ -48,6 +48,75 @@ async function responseRecord(
   return payload;
 }
 
+/**
+ * 🚨 THE KNOB GOVERNS A PERSON'S OWN CLICK TOO — THE ONE ADAPTER.
+ *
+ * Until 2026-09-17 the four write routes below went straight to Google and the
+ * five-mode ladder governed the AGENT path only: `gate_mutating_action` wraps the
+ * tool dispatch table, not these routers. So an organization that set
+ * `hitl.google.attended_file_write` to "review required" changed nothing about
+ * what a person's own button did, and no screen said so — a knob that governs
+ * nothing, which Law 6 makes the same defect as no knob at all (round-2 hostile
+ * verification, common-docs
+ * `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` § A-vii).
+ *
+ * THE SERVER NOW OWNS THAT JUDGEMENT (aidream lane B-8): when the effective mode
+ * is 4 or 5 these endpoints write NOTHING and answer
+ *
+ *     HTTP 202  { "proposed": true, "assist_id": "<uuid>", "mode": "mode_4" }
+ *
+ * having filed the change in the ONE approval queue. Every caller of these four
+ * functions therefore gets a UNION, and TypeScript makes reading it mandatory —
+ * a caller that said "Written" over a 202 would be the screen lying about a
+ * change that has not happened.
+ *
+ * A 202 whose body this cannot read is a REFUSAL with a remedy, never a quiet
+ * success: the change may be queued or may not exist at all, and only the queue
+ * can say.
+ */
+export interface GoogleWriteProposed {
+  proposed: true;
+  /** The approval-queue row id — `/approvals?item=<assistId>` opens it. */
+  assistId: string;
+  /** The mode that decided it, verbatim from the server. */
+  mode: string;
+}
+
+export type GoogleWriteOutcome<T> =
+  | { proposed: false; result: T }
+  | GoogleWriteProposed;
+
+/** The door to the queued proposal. One place builds it. */
+export function approvalQueueHref(assistId: string): string {
+  return `/approvals?item=${encodeURIComponent(assistId)}`;
+}
+
+/** The sentence every caller says when a write became a proposal instead. */
+export const SENT_FOR_APPROVAL_MESSAGE =
+  "Sent for approval instead — it is in your approval queue";
+
+async function writeOutcome<T>(
+  response: Response,
+  build: (body: Record<string, unknown>) => T,
+): Promise<GoogleWriteOutcome<T>> {
+  const body = await responseRecord(response);
+  if (response.status !== 202 && body.proposed !== true) {
+    return { proposed: false, result: build(body) };
+  }
+  const assistId = body.assist_id;
+  const mode = body.mode;
+  if (typeof assistId !== "string" || assistId.length === 0) {
+    throw new Error(
+      "Google Workspace said this change needs an approval but did not say which one, so nothing can be shown. Open your approval queue to see whether it was filed.",
+    );
+  }
+  return {
+    proposed: true,
+    assistId,
+    mode: typeof mode === "string" ? mode : "unknown",
+  };
+}
+
 export async function registerSelectedGoogleFile(
   connectionId: string,
   fileId: string,
@@ -95,13 +164,13 @@ export async function createGoogleDocument(
   connectionId: string,
   title: string,
   text: string,
-): Promise<SelectedGoogleFile> {
+): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/create",
     { connection_id: connectionId, title, text },
     "Unable to create the Google Doc.",
   );
-  return selectedFile(await responseRecord(response));
+  return writeOutcome(response, selectedFile);
 }
 
 /** Create a NEW Sheet in the user's own Drive and register it. */
@@ -109,13 +178,13 @@ export async function createGoogleSheet(
   connectionId: string,
   title: string,
   values: string[][],
-): Promise<SelectedGoogleFile> {
+): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/create",
     { connection_id: connectionId, title, values },
     "Unable to create the Google Sheet.",
   );
-  return selectedFile(await responseRecord(response));
+  return writeOutcome(response, selectedFile);
 }
 
 export async function readGoogleDocument(
@@ -140,19 +209,18 @@ export async function appendGoogleDocument(
   connectionId: string,
   fileId: string,
   text: string,
-): Promise<GoogleDocumentContent> {
+): Promise<GoogleWriteOutcome<GoogleDocumentContent>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/append",
     { connection_id: connectionId, file_id: fileId, text },
     "Unable to append to the selected Google Doc.",
   );
-  const body = await responseRecord(response);
-  return {
+  return writeOutcome(response, (body) => ({
     fileId: requiredString(body, "file_id"),
     title: requiredString(body, "title"),
     text: requiredString(body, "text"),
     truncated: booleanValue(body, "truncated"),
-  };
+  }));
 }
 
 function stringMatrix(value: unknown): string[][] {
@@ -194,7 +262,7 @@ export async function writeGoogleSheet(
   fileId: string,
   rangeA1: string,
   values: string[][],
-): Promise<GoogleSheetValues> {
+): Promise<GoogleWriteOutcome<GoogleSheetValues>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/write",
     {
@@ -205,7 +273,7 @@ export async function writeGoogleSheet(
     },
     "Unable to update the selected Google Sheet.",
   );
-  return sheetValues(await responseRecord(response));
+  return writeOutcome(response, sheetValues);
 }
 
 export async function sendReviewedGmail(

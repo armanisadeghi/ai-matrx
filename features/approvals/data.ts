@@ -24,18 +24,20 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import {
   decideAssist,
-  emitAssist,
   getAssistById,
   queryAssists,
 } from "@/features/assists/service";
-import {
-  narrowAction,
-  type Assist,
-  type AssistAction,
-} from "@/features/assists/types";
+import { type Assist, type AssistAction } from "@/features/assists/types";
 import { createClient } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import type { AutonomyMode } from "./types";
+import { readApprovalReceipt } from "./receipt";
+import {
+  ROW_FAMILY_ACTION_KIND,
+  warnNotRendered,
+  willRenderAction,
+  willRenderRow,
+} from "./rendered";
+import type { ApprovalKind, AutonomyMode } from "./types";
 
 /**
  * The surface every platform approval proposal is addressed to. It is the
@@ -64,10 +66,8 @@ export const APPROVAL_PAGE_SIZE = 50;
  * `__tests__/proposal-reads.test.ts` scans every module under `features/approvals`
  * for `action.kind === "…"` comparisons and fails until it does.
  */
-export const APPROVAL_ASSIST_ACTION_KINDS: readonly AssistAction["kind"][] = [
-  "approval_proposal",
-  "apply_keyword_meaning",
-];
+export const APPROVAL_ASSIST_ACTION_KINDS: readonly AssistAction["kind"][] =
+  Object.values(ROW_FAMILY_ACTION_KIND);
 
 /**
  * The source key one kind's rows carry. It is what makes a per-kind read a
@@ -137,6 +137,9 @@ export async function listPendingProposals(
   userId: string,
   proposalKind: string,
 ): Promise<ApprovalProposalPage> {
+  // The kind doing the asking is, by construction, registered and mounted — so
+  // the predicate below judges this page against exactly it.
+  const kindsHere: ApprovalKind[] = [{ id: proposalKind } as ApprovalKind];
   const page = await queryAssists(userId, {
     statuses: ["pending"],
     // Filtered SERVER-side by this kind's own source key, so `total` is this
@@ -157,12 +160,32 @@ export async function listPendingProposals(
     starredOnly: false,
     unseenOnly: false,
   });
-  const proposals = page.rows
-    .map(narrow)
-    .filter((proposal): proposal is ApprovalProposal => proposal !== null)
-    // Belt and braces: the source key says what it is, the action proves it.
-    .filter((proposal) => proposal.proposalKind === proposalKind);
-  return { proposals, total: page.total };
+  /**
+   * 🚨 THE TOTAL IS WHAT WILL RENDER, NOT WHAT THE SERVER COUNTED. `queryAssists`
+   * returns the raw `count` (every matching row) alongside rows its narrowing
+   * already dropped, so a section header built on it printed "3" over two
+   * visible rows and said nothing — while the badge, which re-narrowed, said 2
+   * (round-2 verification § A-ii). One predicate decides, here, and a row it
+   * refuses is loud once rather than folded into a number.
+   */
+  const proposals: ApprovalProposal[] = [];
+  let dropped = page.unreadable;
+  for (const assist of page.rows) {
+    const verdict = willRenderAction(assist.action, kindsHere, kindsHere);
+    const narrowed = verdict.renders ? narrow(assist) : null;
+    if (narrowed && narrowed.proposalKind === proposalKind) {
+      proposals.push(narrowed);
+      continue;
+    }
+    dropped += 1;
+    if (!verdict.renders) {
+      warnNotRendered(assist.id, verdict, `the ${proposalKind} section`);
+    }
+  }
+  return {
+    proposals,
+    total: Math.max(page.total - dropped, proposals.length),
+  };
 }
 
 /**
@@ -170,34 +193,94 @@ export async function listPendingProposals(
  * that landed on a row the queue is not showing.
  *
  * `listPendingProposals` reads ONE page per kind, so a row's absence from the
- * list is not evidence it was decided: it may be row 51, or it may belong to a
- * kind whose rows are keyed on the record rather than on an assist (the SEO
- * kinds). This read answers only what it can prove — `unknown` is a real
- * answer here, and the surface says so rather than inventing a verdict
- * (Bugbot MEDIUM #2, 2026-09-17).
+ * list is not evidence it was decided: it may be row 51, it may belong to a kind
+ * this mount does not carry, or its approve may have FAILED after the claim.
+ * This read answers only what it can prove — `unknown` is a real answer here,
+ * and the surface says so rather than inventing a verdict (Bugbot MEDIUM #2,
+ * 2026-09-17; round-2 verification § A-iii; Bugbot round 9 #9).
+ *
+ * 🚨 IT ASKS THE SAME PREDICATE THE BADGE AND THE LIST ASK (`./rendered.ts`),
+ * and it reads the RECEIPT before the status (`./receipt.ts`).
  */
 export type ApprovalProposalStatus =
+  /** Waiting, and a kind mounted on this queue renders it. */
   | "pending"
+  /**
+   * Waiting, real, and NOT in this list — some registered kind renders it on a
+   * mount this one is not (the keyword kinds need a site). Answered with the
+   * door to where it lives; saying "past the first page of this list" about it
+   * sent the reader hunting through a list it was never in (Bugbot round 9 #9).
+   */
+  | "not_in_this_list"
+  /** Waiting, and NO registered kind can show it — a producer ran ahead. */
+  | "no_screen"
   | "decided"
-  /** The id names an assist, but not one any approval kind can show. */
+  /**
+   * The person approved it and the change was NOT made (`receipt.state` is
+   * `failed`). Never "decided": nobody had been told the change did not happen
+   * (round-2 verification § A-iii).
+   */
+  | "apply_failed"
+  /** An approve is in flight right now (`receipt.state` is `applying`). */
+  | "applying"
+  /** The id names an assist, but not one any approval kind reads. */
   | "not_a_proposal"
   | "unknown";
+
+export interface ApprovalProposalRead {
+  status: ApprovalProposalStatus;
+  /** `not_in_this_list`: one sentence saying why it is not here. */
+  explain?: string;
+  /** `not_in_this_list`: the door to where it IS (THE DOOR LAW). */
+  where?: { label: string; href: string };
+  /** `apply_failed`: the server's refusal, verbatim. */
+  error?: string | null;
+}
 
 export async function readProposalStatus(
   userId: string | null | undefined,
   proposalId: string,
-): Promise<ApprovalProposalStatus> {
-  if (!userId || !proposalId) return "unknown";
+  /**
+   * The kinds the asking queue actually mounted (`mountedApprovalKinds`), and
+   * THE registry. The same predicate the badge and the list use decides whether
+   * this row would be on screen — a third rule here is how the three numbers
+   * came to disagree in the first place.
+   */
+  mounted: readonly ApprovalKind[],
+  allKinds: readonly ApprovalKind[] = mounted,
+): Promise<ApprovalProposalRead> {
+  if (!userId || !proposalId) return { status: "unknown" };
   try {
     const assist = await getAssistById(userId, proposalId);
-    if (!assist) return "unknown";
+    if (!assist) return { status: "unknown" };
     // An id that names one of this person's OTHER assists is not an approval
     // item, and calling it one would send the reader hunting through a queue it
     // was never in.
     if (!APPROVAL_ASSIST_ACTION_KINDS.includes(assist.action.kind)) {
-      return "not_a_proposal";
+      return { status: "not_a_proposal" };
     }
-    return assist.status === "pending" ? "pending" : "decided";
+    // 🚨 THE RECEIPT OUTRANKS THE STATUS. A claimed apply that FAILED left the
+    // row non-pending with a `failed` receipt, and "decided" over that is the
+    // screen telling the next reader the change was made (§ A-iii).
+    const receipt = readApprovalReceipt(assist.result);
+    if (receipt.state === "failed") {
+      return { status: "apply_failed", error: receipt.error };
+    }
+    if (receipt.state === "applying") return { status: "applying" };
+    if (assist.status !== "pending") return { status: "decided" };
+
+    const verdict = willRenderAction(assist.action, mounted, allKinds);
+    if (verdict.renders) return { status: "pending" };
+    const elsewhere = verdict.elsewhere?.scopeRequirement;
+    if (elsewhere) {
+      return {
+        status: "not_in_this_list",
+        explain: elsewhere.explain,
+        where: elsewhere.where,
+      };
+    }
+    warnNotRendered(assist.id, verdict, "the deep-link read");
+    return { status: "no_screen" };
   } catch (error) {
     // Loud for developers, honest on screen: the caller reports "unconfirmed".
     console.warn(
@@ -205,25 +288,35 @@ export async function readProposalStatus(
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    return "unknown";
+    return { status: "unknown" };
   }
 }
 
 /**
  * HOW MANY PROPOSALS ARE WAITING ON THIS PERSON — the shell badge's count.
  *
- * 🚨 IT RUNS THE SAME NARROWING THE QUEUE DOES. A head-only `count` in SQL
- * counted every pending row on this surface, including rows whose `action` this
- * build cannot read — so the badge could say "3 waiting" over a screen showing
- * nothing, which is the badge lying about work nobody can see (Bugbot HIGH,
- * frontend PR 228). It therefore reads `id, action` (two small columns, no
- * payloads on the wire) through `readAllRows` — a count treated as complete is
- * never a bare `.select()` — and counts the rows that narrow.
+ * 🚨 IT ASKS THE ONE "WILL THIS ROW RENDER" PREDICATE (`./rendered.ts`). A
+ * head-only `count` in SQL counted every pending row on this surface (Bugbot
+ * HIGH, frontend PR 228); narrowing the ACTION alone then still counted a row
+ * whose `proposalKind` NO REGISTERED KIND RENDERS, so "1 waiting" could sit over
+ * an empty screen for a second reason (round-2 verification § A-i). Action
+ * narrowing and kind registration are one question and are asked once.
  *
- * A row that does NOT narrow is loud in the console rather than counted: the
+ * It reads `id, action` (two small columns, no payloads on the wire) through
+ * `readAllRows` — a count treated as complete is never a bare `.select()`.
+ *
+ * A row the predicate refuses is loud in the console rather than counted: the
  * badge agrees with the screen, and the defect is a developer's to fix.
  */
-export async function countPendingProposals(userId: string): Promise<number> {
+export async function countPendingProposals(
+  userId: string,
+  /**
+   * The kinds the queue this badge stands for actually mounts
+   * (`mountedApprovalKinds(APPROVAL_KINDS, personScope)`). Passing them is what
+   * makes the badge and the screen the same number.
+   */
+  mounted: readonly ApprovalKind[],
+): Promise<number> {
   const supabase = createClient();
   const rows = await readAllRows<{ id: string; action: Json }>(
     ({ from, to }) =>
@@ -241,14 +334,12 @@ export async function countPendingProposals(userId: string): Promise<number> {
   );
   let count = 0;
   for (const row of rows) {
-    const action = narrowAction(row.action);
-    if (action && APPROVAL_ASSIST_ACTION_KINDS.includes(action.kind)) {
+    const verdict = willRenderRow(row.action, mounted, mounted);
+    if (verdict.renders) {
       count += 1;
       continue;
     }
-    console.warn(
-      `[approvals] pending row ${row.id} is on the approval surface but its action does not narrow to a proposal this build can show — not counted`,
-    );
+    warnNotRendered(row.id, verdict, "the approvals badge");
   }
   return count;
 }
@@ -275,60 +366,18 @@ export async function recordApprovalDecision(
 }
 
 /**
- * Write a proposal into the queue from a client-side path (an attended flow
- * that resolved to a reviewing mode). Server-side producers write the same
- * shape from aidream.
+ * 🚨 THERE IS NO CLIENT-SIDE PRODUCER, BY RULING (round-2 verification
+ * § A-viii, 2026-09-17). `proposeApproval` lived here with zero callers and
+ * would have written a row nobody could ever decide: it carries no
+ * `metadata.google_workspace`, and BOTH server doors call `_execution_record`
+ * first — including `reject_google_approval` — which refuses such a row with
+ * 403 "This approval was not created by the Google Workspace producer… Approve
+ * it where it was proposed." For every registered Google kind the queue IS
+ * where it was proposed, so the row could be neither approved nor rejected and
+ * would never leave the list. It was deleted rather than documented (no
+ * legacy).
  *
- * Returns the row id, or null when the write was refused — and the refusal is
- * already loud in the console via the assists service. A caller that gets null
- * must NOT perform the change it was proposing.
+ * THE ONE PRODUCER IS THE SERVER: `aidream/services/google_workspace/approvals.py`,
+ * which stores the exact action and arguments the approve door re-runs. A lane
+ * that needs a new proposal kind adds it THERE and registers the renderer here.
  */
-export async function proposeApproval(input: {
-  /** The operator: whose authority the agent ran under. THE addressee. */
-  operatorUserId: string;
-  organizationId: string;
-  proposalKind: string;
-  mode: AutonomyMode;
-  /** One line the reader sees in the list. */
-  title: string;
-  body?: string;
-  subject: { token: string; id: string };
-  payload: Json;
-  proposerLabel?: string;
-  proposerAgentId?: string;
-  proposerRunId?: string;
-  blocked?: { reason: string; whoCan: string };
-  /** Stable identity so a re-proposal refreshes instead of duplicating. */
-  dedupeKey: string;
-}): Promise<string | null> {
-  const action: AssistAction = {
-    kind: "approval_proposal",
-    proposalKind: input.proposalKind,
-    mode: input.mode,
-    payload: input.payload,
-    ...(input.proposerLabel ? { proposerLabel: input.proposerLabel } : {}),
-    ...(input.proposerAgentId
-      ? { proposerAgentId: input.proposerAgentId }
-      : {}),
-    ...(input.proposerRunId ? { proposerRunId: input.proposerRunId } : {}),
-    operatorUserId: input.operatorUserId,
-    ...(input.blocked ? { blocked: input.blocked } : {}),
-  };
-  return emitAssist(
-    input.operatorUserId,
-    {
-      sourceKind: "agent",
-      sourceKey: sourceKeyFor(input.proposalKind),
-      surfaceName: APPROVAL_SURFACE,
-      title: input.title,
-      body: input.body,
-      action,
-      entityType: input.subject.token,
-      entityId: input.subject.id,
-      dedupeKey: input.dedupeKey,
-      // A human has to decide this — the urgent band (see `urgencyFromPriority`).
-      priority: 20,
-    },
-    input.organizationId,
-  );
-}

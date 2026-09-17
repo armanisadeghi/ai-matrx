@@ -26,9 +26,11 @@ import {
 import type { ApprovalKind, ApprovalScope } from "@/features/approvals/types";
 
 let mockKinds: ApprovalKind[] = [];
-type ProposalStatus = "pending" | "decided" | "unknown";
+/** `../data`'s read now answers with a verdict OBJECT, so a "not in this list"
+ * or a failed apply can carry the door and the reason with it. */
+type ProposalRead = { status: string; explain?: string; error?: string | null };
 const mockReadProposalStatus = jest.fn(
-  async (): Promise<ProposalStatus> => "unknown",
+  async (): Promise<ProposalRead> => ({ status: "unknown" }),
 );
 
 jest.mock("../registry", () => ({
@@ -215,7 +217,9 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
 
   it("never says a missing row was decided when a direct read says it is pending", async () => {
     mockKinds = [staticKind(["a"])];
-    mockReadProposalStatus.mockImplementation(async (): Promise<ProposalStatus> => "pending");
+    mockReadProposalStatus.mockImplementation(async (): Promise<ProposalRead> => ({
+      status: "pending",
+    }));
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -228,9 +232,13 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
     });
     await flush();
 
+    // It is handed the kinds this mount carries AND the whole registry — the
+    // same predicate the badge and the list ask (round-2 verification § A-i).
     expect(mockReadProposalStatus).toHaveBeenCalledWith(
       "u1",
       "beyond-page-one",
+      expect.any(Array),
+      expect.any(Array),
     );
     expect(container.textContent).toContain("still waiting on you");
     expect(container.textContent).not.toContain("already approved or rejected");
@@ -258,7 +266,9 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
 
   it("says a missing row was decided only when the direct read proves it", async () => {
     mockKinds = [staticKind(["a"])];
-    mockReadProposalStatus.mockImplementation(async (): Promise<ProposalStatus> => "decided");
+    mockReadProposalStatus.mockImplementation(async (): Promise<ProposalRead> => ({
+      status: "decided",
+    }));
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

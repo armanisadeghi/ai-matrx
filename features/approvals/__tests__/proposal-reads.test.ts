@@ -1,6 +1,8 @@
 /**
  * FORCING TESTS for the store seam's two reads (`../data.ts`), both raised by
- * Bugbot on frontend PR 228:
+ * Bugbot on frontend PR 228. Since 2026-09-17 both ask THE ONE WILL-RENDER
+ * PREDICATE (`../rendered.ts`) over the kinds the asking mount carries — the
+ * round-2 verification's § A-i/A-ii cases live in `./one-predicate.test.ts`:
  *
  * 1. THE BADGE COUNTS WHAT THE QUEUE SHOWS. The count was a head-only SQL
  *    `count` over every pending row on the approval surface, so a row whose
@@ -56,6 +58,18 @@ import {
   countPendingProposals,
   readProposalStatus,
 } from "../data";
+// eslint-disable-next-line import/first -- after the mocks above
+import type { ApprovalKind } from "../types";
+
+/**
+ * The kinds a person-scoped mount carries, as the queue hands them to both
+ * reads. Two Google kinds; the keyword kinds need a site and are not here.
+ */
+const mounted = [
+  { id: "sheet_write", label: "Spreadsheet change" },
+  { id: "gmail_send", label: "Email to send" },
+  { id: "keyword_meaning", label: "Keyword meaning", reads: "keyword_meaning" },
+] as unknown as ApprovalKind[];
 
 const proposalAction = {
   kind: "approval_proposal" as const,
@@ -84,7 +98,9 @@ describe("readProposalStatus", () => {
       // kind mounted on /approvals can show at person scope.
       action: { kind: "run_mandate", mandateKey: "k", variables: {} },
     });
-    await expect(readProposalStatus("u1", "x")).resolves.toBe("not_a_proposal");
+    await expect(
+      readProposalStatus("u1", "x", mounted),
+    ).resolves.toMatchObject({ status: "not_a_proposal" });
   });
 
   it("still reports a real pending proposal as pending", async () => {
@@ -93,7 +109,9 @@ describe("readProposalStatus", () => {
       status: "pending",
       action: proposalAction,
     });
-    await expect(readProposalStatus("u1", "x")).resolves.toBe("pending");
+    await expect(
+      readProposalStatus("u1", "x", mounted),
+    ).resolves.toMatchObject({ status: "pending" });
   });
 
   it("reports a decided proposal as decided, and a missing id as unknown", async () => {
@@ -102,9 +120,13 @@ describe("readProposalStatus", () => {
       status: "accepted",
       action: proposalAction,
     });
-    await expect(readProposalStatus("u1", "x")).resolves.toBe("decided");
+    await expect(
+      readProposalStatus("u1", "x", mounted),
+    ).resolves.toMatchObject({ status: "decided" });
     mockGetAssistById.mockResolvedValue(null);
-    await expect(readProposalStatus("u1", "y")).resolves.toBe("unknown");
+    await expect(
+      readProposalStatus("u1", "y", mounted),
+    ).resolves.toMatchObject({ status: "unknown" });
   });
 
   it("accepts the keyword kinds' own action shape", async () => {
@@ -122,7 +144,12 @@ describe("readProposalStatus", () => {
         payloadHash: "h",
       },
     });
-    await expect(readProposalStatus("u1", "x")).resolves.toBe("pending");
+    // On a mount that DOES carry the keyword kinds it is an ordinary pending
+    // row; on the person-scoped queue it is `not_in_this_list`, with the door —
+    // see `./one-predicate.test.ts`.
+    await expect(
+      readProposalStatus("u1", "x", mounted),
+    ).resolves.toMatchObject({ status: "pending" });
   });
 });
 
@@ -138,12 +165,12 @@ describe("countPendingProposals", () => {
       { id: "d", action: { kind: "navigate", href: "/somewhere" } },
     ]);
 
-    await expect(countPendingProposals("u1")).resolves.toBe(2);
+    await expect(countPendingProposals("u1", mounted)).resolves.toBe(2);
   });
 
   it("reads through readAllRows — a count treated as complete is never a bare select", async () => {
     mockReadAllRows.mockResolvedValue([]);
-    await countPendingProposals("u1");
+    await countPendingProposals("u1", mounted);
     expect(mockReadAllRows).toHaveBeenCalledTimes(1);
   });
 });

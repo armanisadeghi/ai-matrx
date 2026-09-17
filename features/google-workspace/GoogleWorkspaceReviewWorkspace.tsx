@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   ChevronDown,
@@ -47,7 +48,9 @@ import type {
 } from "@/features/marketing/google/types";
 import {
   DEFAULT_GOOGLE_SHEET_RANGE,
+  SENT_FOR_APPROVAL_MESSAGE,
   appendGoogleDocument,
+  approvalQueueHref,
   isGoogleWorkspaceInputError,
   readGoogleDocument,
   readGoogleSheet,
@@ -125,6 +128,7 @@ interface GoogleWorkspaceReviewWorkspaceProps {
 export function GoogleWorkspaceReviewWorkspace({
   pickerInitialQuery,
 }: GoogleWorkspaceReviewWorkspaceProps) {
+  const router = useRouter();
   const google = useGoogleAPI();
   const inventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
@@ -295,29 +299,59 @@ export function GoogleWorkspaceReviewWorkspace({
     });
   };
 
+  /**
+   * 🚨 THE WRITE MAY HAVE BECOME A PROPOSAL. When the organization's autonomy
+   * mode for this capability requires review, the server writes NOTHING and
+   * answers 202 having filed the change in the ONE approval queue
+   * (`hitl.google.attended_file_write`; round-2 verification § A-vii — the knob
+   * governed the agent path only and a person's own click ignored it). Saying
+   * "appended" or "updated" over that would be the screen claiming a change that
+   * has not happened, so it says what did happen and opens the queue row.
+   */
+  const sentForApproval = (assistId: string) => {
+    toast.info(SENT_FOR_APPROVAL_MESSAGE, {
+      description:
+        "Your organization asks a person to review this kind of change before it is written. Nothing in Google has changed yet.",
+      action: {
+        label: "Open the approval",
+        onClick: () => router.push(approvalQueueHref(assistId)),
+      },
+    });
+  };
+
   const writeSelected = () => {
     if (!activeConnection || !selectedResource) return;
     void run("write-file", async () => {
       if (selectedResource.resource_type === "google_document") {
-        const result = await appendGoogleDocument(
+        const outcome = await appendGoogleDocument(
           activeConnection.id,
           selectedResource.resource_ref,
           documentAppend,
         );
-        setDocumentText(result.text);
+        if (outcome.proposed) {
+          sentForApproval(outcome.assistId);
+          return;
+        }
+        setDocumentText(outcome.result.text);
         setDocumentAppend("");
         toast.success("Text appended to the selected Google Doc.");
         return;
       }
       const values = sheetValues.split("\n").map((row) => row.split("\t"));
-      const result = await writeGoogleSheet(
+      const outcome = await writeGoogleSheet(
         activeConnection.id,
         selectedResource.resource_ref,
         sheetRange.trim(),
         values,
       );
-      setSheetValues(result.values.map((row) => row.join("\t")).join("\n"));
-      toast.success(`Updated ${result.range}.`);
+      if (outcome.proposed) {
+        sentForApproval(outcome.assistId);
+        return;
+      }
+      setSheetValues(
+        outcome.result.values.map((row) => row.join("\t")).join("\n"),
+      );
+      toast.success(`Updated ${outcome.result.range}.`);
     });
   };
 
