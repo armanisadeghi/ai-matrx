@@ -301,6 +301,9 @@ function makeShortcutHandler(
 }
 
 const RowAlchemyIcon = createLucideIcon("Alchemy", ALCHEMY_GLYPH_PATHS.portal.map((d, index) => ["path", { d, key: String(index) }]));
+const containsDestructiveAction = (items: ItemMenuEntry[]): boolean => items.some((item) =>
+  (isCommand(item) && item.tone === "destructive") || (isSubmenu(item) && item.sections.some((section) => containsDestructiveAction(section.items))),
+);
 
 // ── ItemMenu (trigger-anchored dropdown / drawer) ───────────────────────────
 
@@ -327,13 +330,8 @@ export function ItemMenu({
   // share one path — no setState-during-render, no empty first frame.
   const baseConfig = open ? resolveItemMenuConfig(config) : null;
   const includeAlchemy = Boolean(rowAlchemy?.ready && !rowAlchemy.copy.hide?.includes("ai"))
-    && !baseConfig?.sections.some((section) => section.items.some((entry) => entry.id === "prepare-in-alchemy"));
-  const resolved: ItemMenuConfig | null = baseConfig && rowAlchemy && includeAlchemy ? {
-    ...baseConfig,
-    sections: [...baseConfig.sections, {
-      id: "alchemy",
-      label: "Alchemy",
-      items: [{
+    && !baseConfig?.sections.some((section) => section.items.some((entry) => !entry.hidden && entry.id === "prepare-in-alchemy"));
+  const alchemyItem: ItemMenuCommand | null = rowAlchemy ? {
         id: "prepare-in-alchemy",
         label: "Prepare in Alchemy",
         icon: RowAlchemyIcon,
@@ -345,8 +343,15 @@ export function ItemMenu({
           success: "Alchemy is ready",
           error: (error) => error instanceof Error ? error.message : "Could not open Alchemy",
         },
-      }],
-    }],
+  } : null;
+  const normalSections = baseConfig?.sections.map((section, index) => ({ section, index }))
+    .filter(({ section }) => section.id !== "danger" && !containsDestructiveAction(section.items)) ?? [];
+  const targetSection = (normalSections.find(({ section }) => !section.label) ?? normalSections[0])?.index;
+  const resolved: ItemMenuConfig | null = baseConfig && alchemyItem && includeAlchemy ? {
+    ...baseConfig,
+    sections: targetSection !== undefined
+      ? baseConfig.sections.map((section, index) => index === targetSection ? { ...section, items: [...section.items, alchemyItem] } : section)
+      : [{ id: "actions", items: [alchemyItem] }, ...baseConfig.sections],
   } : baseConfig;
   // ── A LONG MENU SAYS SO, IN WORDS ────────────────────────────────────────
   //
