@@ -4,11 +4,17 @@ import { useSearchParams } from "next/navigation";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
-import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
+// A failure on this page is read by the person who typed the URL, not by an
+// engineer: plain words and a pressable remedy first, the engineer's report
+// only behind the admin-gated "Technical details" disclosure. Never the raw
+// `error` string and never the Diagnostics JSON as the body (2026-09-17).
+import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
+import { ScrapeProvenance } from "@/features/scraper/parts/ScrapeProvenance";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2,
   Search,
@@ -33,12 +39,12 @@ export default function QuickScrapePage() {
     data,
     isLoading,
     hasError,
-    error,
-    errorDiagnostics,
+    failure,
     statusMessage,
     reset,
   } = useScraperApi();
   const fullScrapeApi = useScraperApi();
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   const [url, setUrl] = useState(searchParams.get("url") ?? "");
   const [urlError, setUrlError] = useState<string | null>(null);
@@ -164,6 +170,28 @@ export default function QuickScrapePage() {
   const selectedResult =
     viewMode === "full" ? (fullScrapeApi.data ?? data) : data;
 
+  // THE FAILURE THE PERSON IS LOOKING AT — the one belonging to the lane whose
+  // view is on screen. Before this, the banner read `error || fullScrapeApi.error`,
+  // so a failed quick scrape kept its own message on screen after Full Scrape
+  // ran and failed too: the request went out, the screen did not change by a
+  // single pixel, and the button was indistinguishable from dead.
+  const activeFailure = viewMode === "full" ? fullScrapeApi.failure : failure;
+  const retryActiveMode = viewMode === "full" ? handleFullScrape : handleQuickScrape;
+
+  const failureNotice = activeFailure ? (
+    <ScrapeFailureNotice
+      failure={activeFailure}
+      size="page"
+      detailsAllowed={isAdmin}
+      remedyAction={{
+        label: viewMode === "full" ? "Try the full scrape again" : "Try again",
+        onClick: () => {
+          void retryActiveMode();
+        },
+      }}
+    />
+  ) : null;
+
   return (
     // `matrx-user/scraper` — the single-URL mount. It owns the URL box and
     // nothing else, so `scrape_command` (URL only) is the one target here.
@@ -172,7 +200,10 @@ export default function QuickScrapePage() {
         mode: "url",
         selected: selectedResult,
         activeTab: (viewMode === "full" ? activeTab : quickContentTab) as never,
-        failureReason: urlError || error || fullScrapeApi.error,
+        // Plain words for the agent too — the engineer string stays in
+        // `errorDiagnostics` and in the captured error, never in the sentence
+        // an agent is going to read back to a person.
+        failureReason: urlError || activeFailure?.title || null,
         targetUrl: url,
         results: selectedResult ? [selectedResult] : [],
         selectedIndex: 0,
@@ -252,18 +283,6 @@ export default function QuickScrapePage() {
             {urlError}
           </p>
         )}
-        {(hasError || fullScrapeApi.hasError) && (
-          <Alert variant="destructive" className="mt-2 max-w-5xl mx-auto py-2">
-            <AlertDescription className="text-xs">
-              {error || fullScrapeApi.error}
-              <ScraperHookErrorDetails
-                diagnostics={
-                  hasError ? errorDiagnostics : fullScrapeApi.errorDiagnostics
-                }
-              />
-            </AlertDescription>
-          </Alert>
-        )}
         {activeStatus && isAnyLoading && (
           <p className="text-xs text-muted-foreground mt-1 max-w-5xl mx-auto">
             {activeStatus}
@@ -273,13 +292,23 @@ export default function QuickScrapePage() {
 
       {/* Full scrape — rich tabbed UI */}
       {viewMode === "full" && fullResult && (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <PageContent
-            pageData={fullResult}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            dataUtils={ScraperDataUtils}
-          />
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {fullScrapeApi.data ? (
+            <ScrapeProvenance
+              engine={fullScrapeApi.data.engine}
+              escalated={fullScrapeApi.data.escalated}
+              escalationReason={fullScrapeApi.data.escalationReason}
+              className="flex-shrink-0 px-4 pt-2"
+            />
+          ) : null}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <PageContent
+              pageData={fullResult}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              dataUtils={ScraperDataUtils}
+            />
+          </div>
         </div>
       )}
 
@@ -295,10 +324,31 @@ export default function QuickScrapePage() {
         </div>
       )}
 
+      {/* Full scrape that produced nothing — the screen says so instead of
+          going blank, which is what made the button look dead. */}
+      {viewMode === "full" && !fullScrapeApi.isLoading && !fullResult && (
+        <div className="flex-1 overflow-auto p-4">
+          <div className="max-w-3xl mx-auto">
+            {failureNotice ?? (
+              <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                <Search className="w-10 h-10 mb-3 opacity-40" />
+                <p className="text-sm">
+                  The full scrape returned no page content.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Quick scrape — simple text view */}
       {viewMode === "quick" && (
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-5xl mx-auto">
+            {!isLoading && failureNotice && (
+              <div className="max-w-3xl mx-auto mb-4">{failureNotice}</div>
+            )}
+
             {isLoading && !data && (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -330,6 +380,14 @@ export default function QuickScrapePage() {
                           <span className="truncate">{data.overview.url}</span>
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
                         </a>
+                        {/* Which engine actually produced this — silent when
+                            the backend did not say. */}
+                        <ScrapeProvenance
+                          engine={data.engine}
+                          escalated={data.escalated}
+                          escalationReason={data.escalationReason}
+                          className="mt-2"
+                        />
                       </div>
                       <Button
                         onClick={handleCopy}

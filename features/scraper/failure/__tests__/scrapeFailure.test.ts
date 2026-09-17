@@ -99,6 +99,19 @@ describe("classifyScrapeFailure", () => {
       "getaddrinfo ENOTFOUND nosuchdomain.example",
       { firstResult: null, expectKind: "bad_address" },
     ],
+    // The two failure_reason values the backend added 2026-09-17. Before the
+    // classifier learned them, `wrong_entity` fell through to "unknown" and
+    // the person read "We could not read that page" for a page we DID read.
+    [
+      "empty_content",
+      "https://example.com/a: empty_content",
+      { firstResult: { success: false, failure_reason: "empty_content" }, expectKind: "empty" },
+    ],
+    [
+      "wrong_entity",
+      "https://example.com/a: wrong_entity",
+      { firstResult: { success: false, failure_reason: "wrong_entity" }, expectKind: "wrong_page" },
+    ],
     [
       "unknown",
       "Something nobody has classified yet",
