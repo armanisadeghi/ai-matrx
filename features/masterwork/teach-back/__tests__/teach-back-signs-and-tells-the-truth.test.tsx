@@ -38,6 +38,11 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+// The session's rounds are persisted through the shared wizard-draft slice, so
+// the SUT needs a real store — the same one the app boots with.
+import { Provider } from "react-redux";
+import { configureStore, type Store } from "@reduxjs/toolkit";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 
 import { TeachBack } from "../TeachBack";
 import {
@@ -155,14 +160,20 @@ function roundPayload(over: Record<string, unknown> = {}) {
 
 let container: HTMLDivElement;
 let root: Root;
+let store: Store;
 
 async function mount(payload: Record<string, unknown>) {
   runResult.current = parseTeachBackRound(payload);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  store = configureStore({ reducer: createSlimRootReducer() });
   await act(async () => {
-    root.render(<TeachBack rulebook={RULEBOOK} canEdit />);
+    root.render(
+      <Provider store={store}>
+        <TeachBack rulebook={RULEBOOK} canEdit />
+      </Provider>,
+    );
   });
   // let the knob reads settle
   await act(async () => {

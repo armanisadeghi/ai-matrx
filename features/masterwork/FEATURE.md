@@ -441,6 +441,33 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
+  SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
+  `/masterwork/new`, went to look at the catalog and came back; the textarea
+  already held the old sentence with nothing on screen admitting it, so she
+  read it as the blank page, clicked where her eye landed and typed her
+  sentence into the middle of the old one — `platform.rulebook.description`
+  and `metadata.intake.goal` got `prefix + whole sentence + suffix`, 286
+  characters from a 143-character sentence, and the Capture Plan faithfully
+  displayed the mess. Fixed in the PRIMITIVE: `useWizardDraft` now applies a
+  restored draft through `applyOnce`, which cannot run without raising
+  `didRestore`, and `<WizardDraftRestored>` says it in plain words with a
+  "Start fresh" that empties the form. Adopted by every consumer — the guided
+  start, the rule editor and the Research init wizard. (A successful Start was
+  checked live too: `clearDraft()` durably reaches storage even when the
+  navigation follows immediately, so a started Rulebook never resurrects its
+  draft.) *The teach-back's "You corrected 0 rounds":* the session's rounds
+  lived only in mount-time React state, so a rejoin rebuilt it from the durable
+  run's LAST round and the request went out with no correction in it at all —
+  the server counts the corrections in the request, so it counted zero, and the
+  explainer had lost her corrections with them. The whole session is persisted
+  through the same wizard-draft primitive now, and the sign-off counts the
+  rounds it actually holds; when this device does not hold the whole session it
+  says so instead of printing a number. Guards, both proven failing then
+  passing: `lib/wizard-draft/__tests__/restored-draft-is-announced.test.tsx`
+  (plus a census so the next wizard cannot repeat it) and
+  `teach-back/__tests__/teach-back-remembers-the-corrections.test.tsx`.
+
 - 2026-09-17 (later) — **FOUR SCREENS THAT CONTRADICTED THEMSELVES** (fifth cold
   walk, findings 3, 4, 6 and 6b), each fixed at the layer that owns the class.
   *The probe's two states at once:* a reload mid-round painted the SETUP screen

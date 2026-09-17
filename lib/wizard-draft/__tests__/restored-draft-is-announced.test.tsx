@@ -270,6 +270,7 @@ it("every wizard that restores a persisted draft renders the notice", () => {
   // counts too — `selectWizardDraft` is in the pattern.
   const consumers = [
     "features/masterwork/components/detail/RuleEditorDialog.tsx",
+    "features/masterwork/teach-back/TeachBack.tsx",
     "features/masterwork/intake/NewRulebookFlow.tsx",
     "features/research/components/init/ResearchInitForm.tsx",
   ];
