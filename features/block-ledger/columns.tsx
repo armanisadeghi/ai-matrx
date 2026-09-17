@@ -86,7 +86,13 @@ export const BLOCK_COLUMNS: EntityColumnSpec<AcquisitionBlock>[] = [
       sortable: false,
       width: 380,
       cell: (row) => (
-        <span className="line-clamp-2 text-xs" title={row.error_sentence}>
+        // `break-words` + `whitespace-normal` because the phone card lays this
+        // out inline beside its label: without them the one sentence that IS the
+        // finding runs off the edge of the card instead of wrapping.
+        <span
+          className="line-clamp-3 whitespace-normal break-words text-xs"
+          title={row.error_sentence}
+        >
           {row.error_sentence}
         </span>
       ),
@@ -105,7 +111,7 @@ export const BLOCK_COLUMNS: EntityColumnSpec<AcquisitionBlock>[] = [
       cell: (row) =>
         row.unblock_note?.trim() ? (
           <span
-            className="line-clamp-2 text-xs text-muted-foreground"
+            className="line-clamp-3 whitespace-normal break-words text-xs text-muted-foreground"
             title={row.unblock_note}
           >
             {row.unblock_note}
