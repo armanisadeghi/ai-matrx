@@ -35,6 +35,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import cronstrue from "cronstrue";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { PencilTapButton, PlayTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -512,47 +514,13 @@ export default function SystemJobsPage() {
   const renderRowActions = (r: SystemTaskResponse) => {
     const isBusy = busy.has(r.id);
     return (
-      <span className="flex items-center gap-1">
-        <Button
-          size="sm"
-          variant={r.enabled ? "outline" : "default"}
-          className="h-7 px-2 text-xs"
-          disabled={isBusy}
-          onClick={() => void toggleEnabled(r)}
-        >
-          {isBusy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Power className="h-3 w-3" />
-          )}
-          {r.enabled ? "Disable" : "Enable"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          disabled={isBusy}
-          onClick={() => setEditing(r)}
-        >
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          disabled={isBusy || r.handler_registered === false}
-          title={
-            r.handler_registered === false
-              ? "No handler registered — nothing would run."
-              : undefined
-          }
-          onClick={() => void runNow(r)}
-        >
-          <Play className="h-3 w-3" />
-          Run now
-        </Button>
-      </span>
+      <>
+        <TapTargetButtonTransparent ariaLabel={isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"} disabled={isBusy} onClick={() => void toggleEnabled(r)}>
+          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
+        </TapTargetButtonTransparent>
+        <PencilTapButton variant="transparent" ariaLabel="Edit job" disabled={isBusy} onClick={() => setEditing(r)} />
+        <PlayTapButton variant="transparent" ariaLabel="Run job now" disabled={isBusy || r.handler_registered === false} tooltip={r.handler_registered === false ? "No handler registered — nothing would run." : "Run job now"} onClick={() => void runNow(r)} />
+      </>
     );
   };
 
@@ -797,32 +765,12 @@ export default function SystemJobsPage() {
   const renderDbRowActions = (j: DbJobResponse) => {
     const isBusy = dbBusy.has(j.jobid);
     return (
-      <span className="flex items-center gap-1">
-        <Button
-          size="sm"
-          variant={j.active ? "outline" : "default"}
-          className="h-7 px-2 text-xs"
-          disabled={isBusy}
-          onClick={() => void toggleDbActive(j)}
-        >
-          {isBusy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Power className="h-3 w-3" />
-          )}
-          {j.active ? "Disable" : "Enable"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          disabled={isBusy}
-          onClick={() => setEditingDbJob(j)}
-        >
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-      </span>
+      <>
+        <TapTargetButtonTransparent ariaLabel={isBusy ? "Updating database job" : j.active ? "Disable database job" : "Enable database job"} disabled={isBusy} onClick={() => void toggleDbActive(j)}>
+          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
+        </TapTargetButtonTransparent>
+        <PencilTapButton variant="transparent" ariaLabel="Edit database job" disabled={isBusy} onClick={() => setEditingDbJob(j)} />
+      </>
     );
   };
 
