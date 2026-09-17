@@ -135,6 +135,15 @@ CREATE INDEX IF NOT EXISTS interaction_approved_by_idx
 -- The external message id is how an inbound reply is matched back to what we
 -- sent, and how a duplicate send is caught. Live rows already use
 -- `provider_interaction_id` for the voice provider's call id.
+-- A nullable FK into tenant-scoped platform.assists could point at another
+-- organization's queue row; RLS on this table checks only ITS organization.
+-- The shape guard (lane nullable_tenant_fk) refuses the COMMIT without this
+-- validation-only trigger: it refuses a cross-org row, it never assigns one
+-- (NO-BACKSTOP, db-rules §2/§6e). Found on the chair's second apply.
+CREATE TRIGGER trg_same_org_crm_interaction_approval_assist_id
+  BEFORE INSERT OR UPDATE OF approval_assist_id ON crm.interaction
+  FOR EACH ROW EXECUTE FUNCTION platform.assert_same_org('approval_assist_id', 'platform.assists');
+
 -- The approval queue row's FK needs a covering index or the DB's shape guard
 -- (`platform._provision_shape_settled`, lane fk_without_index) refuses the
 -- COMMIT — found on the chair's first apply, 2026-09-17. Partial, like its
