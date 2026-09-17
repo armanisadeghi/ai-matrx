@@ -192,7 +192,26 @@ export function SidePanelSurface({
         // presentation). The padding is on the FIXED CONTAINER, so the panel
         // card's `h-full` resolves against the remaining height: the class is
         // fixed once here for every docked panel, not offset per panel.
-        className={cn("z-40 pt-[var(--header-height)]")}
+        //
+        // 🚨 THE HEIGHT IS `--shell-header-h`, AND IT IS THE ONLY TRUTH FOR IT.
+        // `--header-height` (globals.css, 2.5rem) is the token the pre-shell
+        // ResponsiveLayout pages were authored against; the app shell's own
+        // header is `--shell-header-h` (styles/shell.css, 2.75rem — 2.5rem only
+        // under `/administration`, where that sheet re-declares it for the
+        // legacy admin tree). Reserving 2.5rem under a 2.75rem header left the
+        // panel 4px over the header's right-hand cluster, which is the whole
+        // D3 defect reappearing at 4px (Bugbot, frontend PR 228). No third
+        // token: the surface asks for the shell's own value.
+        //
+        // The value crosses a PORTAL. `MatrxDynamicPanelHost` renders into
+        // `#glass-layer`, a direct child of <body> outside `.shell-root`, so a
+        // value declared on `.shell-root` could never reach it by inheritance.
+        // That is why `styles/shell.css` declares the admin tree's 2.5rem on
+        // <body> (§ Admin tree compatibility) — ONE declaration the shell
+        // subtree and the portal layer both inherit. The `0px` fallback is not a
+        // guess: a route that does not mount `AppShell` never loads that sheet
+        // AND never renders a shell header, so there is nothing to clear.
+        className={cn("z-40 pt-[var(--shell-header-h,0px)]")}
       >
         {children}
       </MatrxDynamicPanelHost>
