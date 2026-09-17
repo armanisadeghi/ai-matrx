@@ -155,8 +155,16 @@ checks now have concrete procedures in runtime-rollout. Corrected candidates pas
 passed. Backend attribution is pushed at `62fa56114`; at 08:57Z the live server
 still reported `efe84a435`, so new legal/print run proof remains pending deployment.
 Authenticated binding-to-run evidence and final live acceptance remain pending;
-shared-preview hot reload interrupted owner browser attempts. These corrections do
-not change the frozen blind score or the GREEN3 result.
+shared-preview hot reload interrupted earlier owner browser attempts. A later
+owner walk at approximately 09:01–09:03Z verified Barcode input
+`LUNA-PILOT-20260917` produced its current preview; native-number Cut cleared
+500 and the estimate, then canonical Paste 750 produced $73,562.13 present value
+and $75,000 total; blocked clipboard copying exposed the existing explicit
+manual-copy dialog with 500 preserved. Markdown’s actual context-menu Download
+PDF action reached the visible `PDF downloaded` receipt. That receipt is not an
+independent inspection of the downloaded file. Source corrections are committed
+in `d14033d5d2`, integrated and pushed in `e90df16828`. These corrections and owner
+UI observations do not change the frozen blind score or the GREEN3 result.
 
 ## E1 — split did not lose behavior (2026-09-10)
 
