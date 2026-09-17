@@ -4237,3 +4237,28 @@ carries `setDisplayNameOverride arrived … before its UI-state entry existed` f
 `… was created after 3 write(s) … they were replayed on top of the new entry`, and the hero reads
 "Your interviewer" — not "Ready to run". `setDisplayMode` hits the same race on that screen and is
 now kept as well.
+
+---
+
+## A map-valued knob cannot be written safely from a client — the DOOR has no merge and no precondition (2026-09-17, F-9)
+
+Found while fixing the Detail primitive's per-record-type setting (Bugbot, frontend PR 228).
+`platform.knob_override_set(p_value jsonb)` REPLACES the whole value, offers no per-entry merge and
+exposes no `updated_at` to guard on, so a knob that holds a map of per-thing exceptions
+(`ui.detail.presentation_by_type` = `{"file":"docked"}`) can only be changed by a client-side
+read-modify-write. `setUserKnobMapEntry` (`lib/scoped-config/service.ts`) closes the two failure
+modes a client CAN close — a failed read refuses the write instead of merging into `{}`, and the
+base is re-read past the 60s cache — and its header says the rest plainly: **two writers inside one
+round trip still lose the loser's entries, and nothing on the client can see it.** `guardedUpdate`
+cannot ride this because the write is an RPC through the key's declared door, not a table update.
+Closing it needs a per-entry merge (or an optimistic precondition) AT THE DOOR: a
+`platform.knob_override_merge(p_feature, p_key, p_entry_key, p_entry_value, …)`, or an
+`p_if_unchanged_at` argument on the existing door. Not mine to add — it is a migration against a
+client-callable `SECURITY DEFINER` function, and no map-valued knob today has enough writers for
+the race to be likely.
+
+Sibling not fixed: `components/matrx/resizable/MatrxDynamicPanel.tsx` still reserves
+`var(--header-height)` (the pre-shell 2.5rem token) on its MOBILE header padding and mobile content
+height, where the app shell's header is `--shell-header-h`. `SidePanelSurface` never reaches that
+path (it uses a Drawer on mobile), so it is not the same instance — but every other direct
+`MatrxDynamicPanel` consumer that renders under the shell on a touch device is off by 4px there.
