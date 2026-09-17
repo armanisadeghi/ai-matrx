@@ -169,6 +169,26 @@ const CHANNEL_ICON: Record<DripChannel, typeof Mail> = {
  */
 const HOURS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
+
+/**
+ * A HALF-TYPED ANSWER TO TODAY'S QUESTION IS REAL WORK. Cold walk 6
+ * (2026-09-17) found this lane in the same class as the Red-Pen lane: the
+ * deep link would not reopen, and nothing typed into it survived a reload.
+ * The link is fixed in the primitive that owns deep-link arrivals; the answer
+ * is kept here.
+ */
+interface DripSitting extends SittingBase {
+  answer: string;
+}
+
+const dripSittings = createSittingStore<DripSitting>({
+  keyPrefix: "matrx.masterwork.daily-drip-answer.v1:",
+  isUsable: (sitting) => (sitting.answer ?? "").trim().length > 0,
+});
+
 export function DailyDripDialog({
   open,
   onOpenChange,
@@ -249,6 +269,19 @@ export function DailyDripDialog({
   const [answering, setAnswering] = useState(false);
   const [answer, setAnswer] = useState("");
   const [usedVoice, setUsedVoice] = useState(false);
+
+  const sitting = useDialogSitting<DripSitting>({
+    store: dripSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { answer },
+    isWorthKeeping: (s) => s.answer.trim().length > 0,
+    apply: (kept) => setAnswer(kept.answer ?? ""),
+    clearScreen: () => {
+      setAnswer("");
+      setUsedVoice(false);
+    },
+  });
 
   const running = isActive(drip);
   const paused = isPaused(drip);
@@ -344,6 +377,7 @@ export function DailyDripDialog({
       if (result.status === "saved") {
         setDrip(result.drip);
         setAnswer("");
+        sitting.forget();
         setUsedVoice(false);
         toast.success("Got it. That's today done.");
         onChanged?.();
@@ -388,6 +422,14 @@ export function DailyDripDialog({
             day and nothing breaks.
           </DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the answer you had started typing"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {knobs.problem ? (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">

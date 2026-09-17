@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileUp, RotateCcw, X } from "lucide-react";
+import { FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,9 @@ import type { paths } from "@/types/python-generated/api-types";
 import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -46,7 +49,6 @@ import {
   durableRunDialogOnOpenChange,
   shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
-import { useTextDraft } from "@/lib/drafts/useTextDraft";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -275,6 +277,21 @@ const SHAPE_OPTIONS: {
   },
 ];
 
+interface IngestSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  hideResolution: boolean;
+}
+
+/** One sitting per Rulebook PER LANE — the timeline lane's case and the source
+ *  lane's material are different work and must never restore into each other. */
+const ingestSittings = createSittingStore<IngestSitting>({
+  keyPrefix: "matrx.masterwork.ingest.v1:",
+  isUsable: (sitting) =>
+    typeof sitting.text === "string" &&
+    (sitting.text.trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0),
+});
+
 export function IngestSourceDialog({
   open,
   onOpenChange,
@@ -367,17 +384,31 @@ export function IngestSourceDialog({
     setRecordedSeconds(null);
   };
 
-  // A DIALOG NEVER LOSES TYPED TEXT. On 2026-09-15 a non-technical Expert
+  // A DIALOG NEVER LOSES IN-PROGRESS WORK. On 2026-09-15 a non-technical Expert
   // pasted an ~8,000-character transcript into this exact field and watched it
   // vanish twice when the dialog was torn down underneath her. The sibling key
-  // collision that tore it down is fixed and guarded — this is the net under
-  // every OTHER way a dialog can go away (a reload, a crash, a stray click).
-  const draft = useTextDraft(
-    `ingest-text:${rulebook.id}:${timeline ? "timeline" : "source"}`,
-    text,
-    setText,
-    open,
-  );
+  // collision that tore it down is fixed and guarded; a per-field text draft
+  // then covered the paste box — and the cold-walk-6 census (2026-09-17) found
+  // everything AROUND it still lost on a reload: what the Expert called the
+  // source, and, on the timeline lane, whether the ending was to be held back.
+  // The whole lane is one sitting now, so there is one writer and one notice.
+  const sitting = useDialogSitting<IngestSitting>({
+    store: ingestSittings,
+    scopeId: `${rulebook.id}:${timeline ? "timeline" : monologue ? "monologue" : "source"}`,
+    active: open,
+    snapshot: { text, sourceNote, hideResolution },
+    isWorthKeeping: (s) =>
+      s.text.trim().length > 0 || s.sourceNote.trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text);
+      setSourceNote(kept.sourceNote);
+      setHideResolution(Boolean(kept.hideResolution));
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+    },
+  });
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
@@ -388,7 +419,7 @@ export function IngestSourceDialog({
   // three sibling ingest dialogs use.
   useRunResultOnce(run, () => {
     // Only once the server has actually accepted the text is it safe to drop.
-    draft.forget();
+    sitting.forget();
     onIngested?.();
   });
 
@@ -848,26 +879,14 @@ export function IngestSourceDialog({
               {/* A restore is never silent, and neither is a browser that
                   refuses to keep the draft — the user has to know which of the
                   two they are in before they paste an hour of work. */}
-              {draft.restored ? (
-                <p className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
-                  <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    We kept what you had typed here last time and put it back.{" "}
-                    <button
-                      type="button"
-                      className="underline underline-offset-2"
-                      onClick={() => {
-                        setText("");
-                        draft.forget();
-                      }}
-                    >
-                      Clear it
-                    </button>{" "}
-                    to start over.
-                  </span>
-                </p>
+              {sitting.resumed ? (
+                <SittingResumed
+                  what="what you had put in here, and what you called it"
+                  onDiscard={sitting.discard}
+                  onAcknowledge={sitting.acknowledge}
+                />
               ) : null}
-              {!draft.available ? (
+              {!sitting.available ? (
                 <p className="text-xs text-amber-600 dark:text-amber-500">
                   This browser will not let us keep a copy of what you type
                   here, so nothing is saved until you press the button below.
@@ -877,10 +896,7 @@ export function IngestSourceDialog({
               <ProTextarea
                 id="ingest-text"
                 value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                  draft.remember(e.target.value);
-                }}
+                onChange={(e) => setText(e.target.value)}
                 placeholder={
                   timeline
                     ? "Paste the case in order — what was known at the start, what happened next, what you did about it, and how it ended."

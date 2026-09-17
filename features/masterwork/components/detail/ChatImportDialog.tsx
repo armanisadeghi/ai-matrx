@@ -133,6 +133,21 @@ const CHAT_IMPORT_DESCRIPTION =
   "and we mine YOUR rules from them, never the AI's opinions. Everything " +
   "lands as drafts you approve.";
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+
+interface ChatImportSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  topic: string;
+}
+
+const chatImportSittings = createSittingStore<ChatImportSitting>({
+  keyPrefix: "matrx.masterwork.chat-import.v1:",
+  isUsable: (sitting) => (sitting.text ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0 || (sitting.topic ?? "").trim().length > 0,
+});
+
 export function ChatImportDialog({
   open,
   onOpenChange,
@@ -161,6 +176,26 @@ export function ChatImportDialog({
   const [text, setText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
   const [topic, setTopic] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<ChatImportSitting>({
+    store: chatImportSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { text, sourceNote, topic },
+    isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0 || (s.topic ?? "").trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+      setTopic(kept.topic ?? "");
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+      setTopic("");
+    },
+  });
+
   const [preparing, setPreparing] = useState(false);
   const [shortlisting, setShortlisting] = useState(false);
   const [rows, setRows] = useState<ConversationRow[] | null>(null);
@@ -202,7 +237,10 @@ export function ChatImportDialog({
   // ONCE PER COMPLETED RUN, never once per render: the host passes a new
   // inline callback every render and the reload it starts re-renders this
   // dialog. See `useRunResultOnce`.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -902,6 +940,14 @@ export function ChatImportDialog({
           </DialogTitle>
           <DialogDescription>{CHAT_IMPORT_DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the chat you had pasted in, and what you called it"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
         {content}
       </DialogContent>
     </Dialog>
