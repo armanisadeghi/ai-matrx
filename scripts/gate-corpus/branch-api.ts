@@ -583,17 +583,74 @@ async function main(): Promise<void> {
         ]);
       }
       // Switch-checklist step 3, then step 5 — the production order, rehearsed.
+      //
+      // 🚨 THE WRITE GRANT IS NOT BLANKET, AND IT USED TO BE. This step ran
+      // `grant select, insert, update, delete on ALL TABLES in schema <s> to authenticated`,
+      // which handed `authenticated` a direct INSERT on `custom.record` — the one table in
+      // the campaign whose LAW (DOOR-N-1) is that it holds none of the three, and whose
+      // whole write-door posture `iam.apply_table_grants` had just issued correctly. The
+      // switch step would have re-opened on production exactly what a lane spent itself
+      // closing, silently, one statement after the door was proven shut.
+      //
+      // The register that already decides this is `platform.stamped_write_table` (DD-248),
+      // read by `iam.apply_table_grants` — so this step reads the SAME register instead of
+      // deciding again. SELECT for everything; the three write privileges for everything
+      // the register does not name; and what it withheld is PRINTED with the reason.
       await client!.query(`grant usage on schema ${exposeSchema} to authenticated`);
       await client!.query(
-        `grant select, insert, update, delete on all tables in schema ${exposeSchema} to authenticated`,
+        `grant select on all tables in schema ${exposeSchema} to authenticated`,
+      );
+      const writeDoored = await client!.query<{ table_name: string }>(
+        `select c.relname as table_name
+           from pg_class c
+           join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = $1 and c.relkind in ('r','p') and not c.relispartition
+            and exists (select 1 from platform.stamped_write_table s
+                         where s.schema_name = n.nspname and s.table_name = c.relname)
+          order by 1`,
+        [exposeSchema],
+      );
+      const withheld = new Set(writeDoored.rows.map((r) => r.table_name));
+      const writable = await client!.query<{ table_name: string }>(
+        `select c.relname as table_name
+           from pg_class c
+           join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = $1 and c.relkind in ('r','p') and not c.relispartition
+            and not exists (select 1 from platform.stamped_write_table s
+                             where s.schema_name = n.nspname and s.table_name = c.relname)
+          order by 1`,
+        [exposeSchema],
+      );
+      for (const r of writable.rows) {
+        await client!.query(
+          `grant insert, update, delete on ${exposeSchema}."${r.table_name}" to authenticated`,
+        );
+      }
+      // The DEFAULT for a table created later is SELECT only. Its write privilege is
+      // `iam.apply_table_grants`'s to issue, from the variant and this same register —
+      // never a standing widening that outranks both.
+      // REVOKE first: ALTER DEFAULT PRIVILEGES … GRANT adds to the existing default ACL
+      // rather than replacing it, so without this a run that previously granted the three
+      // write privileges leaves them standing and "the default is SELECT only" is a
+      // sentence rather than a fact.
+      await client!.query(
+        `alter default privileges in schema ${exposeSchema} ` +
+          `revoke insert, update, delete on tables from authenticated`,
       );
       await client!.query(
         `alter default privileges in schema ${exposeSchema} ` +
-          `grant select, insert, update, delete on tables to authenticated`,
+          `grant select on tables to authenticated`,
       );
       console.log(
-        `${OK}step 3 rehearsed on the BRANCH: usage on schema ${exposeSchema} and the table ` +
-          `grants to authenticated. (Production's own grant is switch-checklist step 3, a chair step.)`,
+        `${OK}step 3 rehearsed on the BRANCH: usage on schema ${exposeSchema}, SELECT on every ` +
+          `table, and INSERT/UPDATE/DELETE on ${writable.rowCount} of ` +
+          `${(writable.rowCount ?? 0) + (writeDoored.rowCount ?? 0)}. ` +
+          (withheld.size
+            ? `WITHHELD from ${[...withheld].join(", ")}: platform.stamped_write_table names ` +
+              `them, so their writes belong to their declared SECURITY DEFINER door (DD-248, ` +
+              `DOOR-N-1). Grant a client write on one of those only by removing its register row.`
+            : `platform.stamped_write_table names none of them.`) +
+          ` (Production's own grant is switch-checklist step 3, a chair step.)`,
       );
       const current = (await readBranchSchemas(client!)) ?? "";
       const list = current.split(",").filter(Boolean);
