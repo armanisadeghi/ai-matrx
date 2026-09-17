@@ -307,7 +307,12 @@ describe("the Google proposal kinds render the producer's dry run", () => {
     expect(body).toContain("Dana");
   });
 
-  it("contact_import shows the field map, value by value", async () => {
+  it("contact_import shows the plan's rows, value by value", async () => {
+    // 🚨 aidream lane B-15 (commit `90e10777a`): the producer's dry run now
+    // carries the plan under `preview.would_write` — `platform.assists` has
+    // held zero `contact_import` rows across four rounds of hostile
+    // verification, so there is no live payload shaped without it, and the
+    // kind no longer renders one (F-36 follow-up).
     mockPayload = {
       __kind: "contact_import_dry_run",
       preview: {
@@ -322,13 +327,54 @@ describe("the Google proposal kinds render the producer's dry run", () => {
           },
         ],
         field_map: [
-          { person_field: "display_name", value: "Dana Reed", source: "google_contacts" },
           {
+            key: "display_name",
+            person_field: "display_name",
+            person_label: "Name",
+            value: "Dana Reed",
+            current_value: null,
+            action: "create",
+            explanation: "Name will be set to Dana Reed.",
+          },
+          {
+            key: "emails",
             person_field: "emails",
+            person_label: "Email",
             value: ["dana@example.com"],
-            source: "google_contacts",
+            current_value: null,
+            action: "added",
+            explanation: "dana@example.com will be added as email.",
           },
         ],
+        would_write: {
+          writes: 1,
+          contact_points: 1,
+          promise: "Writes 1 field and 1 contact point onto a new Person. Google Contacts is not changed.",
+          reimport_policy: "manual_wins",
+          kept_fields: [],
+          refused_fields: [],
+          warnings: [],
+          plan: [
+            {
+              key: "display_name",
+              person_field: "display_name",
+              person_label: "Name",
+              value: "Dana Reed",
+              current_value: null,
+              action: "create",
+              explanation: "Name will be set to Dana Reed.",
+            },
+            {
+              key: "emails",
+              person_field: "emails",
+              person_label: "Email",
+              value: ["dana@example.com"],
+              current_value: null,
+              action: "added",
+              explanation: "dana@example.com will be added as email.",
+            },
+          ],
+        },
         dry_run: true,
         imported: false,
       },
@@ -342,6 +388,33 @@ describe("the Google proposal kinds render the producer's dry run", () => {
     expect(body).toContain("Email");
     expect(body).toContain("dana@example.com");
     expect(body).toContain("arman@example.com");
+  });
+
+  it("contact_import with no plan renders the honest unrenderable row, never a client-derived count", async () => {
+    // The shape `contact_import shows the plan's rows, value by value` used
+    // to exercise before B-15 — a `field_map` with no `would_write` at all.
+    // No such row has ever reached `platform.assists`, so it is no longer a
+    // fallback; it is a shape this build cannot review.
+    mockPayload = {
+      __kind: "contact_import_dry_run",
+      preview: {
+        action: "import_contact",
+        google_account: "arman@example.com",
+        contacts: [
+          { contact_id: "people/c1", name: "Dana Reed", emails: ["dana@example.com"] },
+        ],
+        field_map: [
+          { person_field: "display_name", value: "Dana Reed", source: "google_contacts" },
+        ],
+        dry_run: true,
+        imported: false,
+      },
+      arguments: { contact: "dana@example.com" },
+    } as unknown as Json;
+    const node = await mount(contactImportKind);
+    expect(text(node, "headline")).toContain("Dana Reed");
+    expect(text(node, "accept-effect")).toBe("Nothing — this proposal cannot be read.");
+    expect(text(node, "blocked")).toContain("does not carry the import's plan");
   });
 
   it("task_import marks the rows already here and opens them", async () => {
