@@ -424,23 +424,46 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
-  // ── Item Detail ───────────────────────────────────────────────────────────
-  // Generic fallback detail view for an item_presentation entity (task,
-  // project, scope, document, …) that has no bespoke window yet. Tied to the
-  // clicked entity, so ephemeral — nothing to restore.
+  // ── Record Detail (the Detail primitive, lib/detail) ──────────────────────
+  // ONE core per record type, three presentations. `detailWindow` is the
+  // default (Arman, 2026-09-17); `detailDocked` is the resizable side panel;
+  // the page presentation is the `/detail/[type]/[id]` route. Both overlays
+  // share the `detail` deep-link key: `?panels=detail:<type>.<id>:as-window`
+  // / `:as-docked` (hydrator in url-sync/initUrlHydration.ts). Tied to the
+  // clicked record, so ephemeral — nothing to restore across reloads beyond
+  // the URL itself.
   {
-    slug: "item-detail-window",
-    overlayId: "itemDetailWindow",
+    slug: "detail-window",
+    overlayId: "detailWindow",
     kind: "window",
-    label: "Item details",
+    label: "Record detail",
     defaultData: {
-      itemType: null,
-      itemId: null,
-      initialName: null,
-      initialAbout: null,
+      type: null,
+      id: null,
+      seedName: null,
+      seedAbout: null,
+      listItems: null,
+      listIndex: null,
     },
     ephemeral: true,
     mobilePresentation: "drawer",
+    urlSync: { key: "detail" },
+  },
+  {
+    slug: "detail-docked",
+    overlayId: "detailDocked",
+    kind: "sheet",
+    label: "Record detail (docked)",
+    defaultData: {
+      type: null,
+      id: null,
+      seedName: null,
+      seedAbout: null,
+      listItems: null,
+      listIndex: null,
+    },
+    ephemeral: true,
+    urlSync: { key: "detail" },
   },
 
   // ── Web Scraper ───────────────────────────────────────────────────────────

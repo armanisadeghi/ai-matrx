@@ -3,6 +3,11 @@
 /**
  * Maps an item-presentation type to its window-panel opener.
  *
+ * Four bespoke openers stay bespoke (agent run, note info, file preview,
+ * structured-list manager); everything else goes to the Detail primitive
+ * (`lib/detail`, `useOpenDetail`), which yields window / docked / page from
+ * the item registry's one entry per type.
+ *
  * Openers are React hooks, so this lives in a hook (not the data registry).
  * `getItemConfig(type).config.open` is the discriminant; this hook turns it
  * into an actual `openOverlay` dispatch. Returns a stable function:
@@ -22,7 +27,7 @@ import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindo
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
-import { useOpenItemDetailWindow } from "@/features/overlays/openers/itemDetailWindow";
+import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 
 import { getItemConfig } from "./registry";
 import type { ItemType } from "./types";
@@ -38,7 +43,7 @@ export function useOpenItemPresentation() {
   const openNote = useOpenNoteInfoWindow();
   const openFile = useOpenFilePreviewWindow();
   const openPicklist = useOpenStructuredListManagerV2Window();
-  const openDetail = useOpenItemDetailWindow();
+  const openDetail = useOpenDetail();
 
   return useCallback(
     (
@@ -51,14 +56,14 @@ export function useOpenItemPresentation() {
       if (!config.open) return false;
 
       // Generic fallback: any recognized type without a bespoke window opens
-      // the shared ItemDetailWindow (fetches the full row when a detailSource
-      // is declared, else shows the seed). Closes the gap for every type.
+      // the Detail primitive (lib/detail) — window by default, docked or page
+      // per the person's `ui.detail.default_presentation` setting. It fetches
+      // the full row when a detailSource is declared, else shows the seed.
       const openGenericDetail = () => {
-        openDetail({
-          itemType: type ?? null,
-          itemId: id,
-          initialName: seed?.name ?? null,
-          initialAbout: seed?.about ?? null,
+        void openDetail({
+          type: type ?? "",
+          id,
+          seed: { name: seed?.name ?? null, about: seed?.about ?? null },
         });
         return true;
       };
@@ -107,7 +112,7 @@ export function useOpenItemPresentation() {
         case "picklist":
           openPicklist({ forcedListId: id });
           return true;
-        // Everything else opens the generic detail window. As a type earns a
+        // Everything else opens the Detail primitive. As a type earns a
         // bespoke window, add its branch above — nothing else changes.
         case "app":
         case "task":

@@ -3,6 +3,11 @@ import { initInstanceUIState } from "@/features/agents/redux/execution-system/in
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
+import {
+  DETAIL_URL_AS_ARG,
+  parseDetailInstanceKey,
+  presentationFromUrlArg,
+} from "@/lib/detail/presentation";
 
 /**
  * URL sync uses the instance slot for both singleton window identities and
@@ -70,6 +75,34 @@ export function initUrlHydration() {
         overlayId: "credentialVaultWindow",
         instanceId: "default",
         data: { selectedItemId: id ?? null, scope: "mine" },
+      }),
+    );
+  });
+
+  // Record detail (the Detail primitive, lib/detail) —
+  // `?panels=detail:<type>.<id>:as-window|docked`. The instance is the record
+  // (`type.id`); `as` picks the in-place presentation, window by default. The
+  // page presentation is its own route and never appears here.
+  registerPanelHydrator("detail", (dispatch, id, args) => {
+    const ref = parseDetailInstanceKey(id);
+    if (!ref) {
+      console.warn(
+        `[UrlPanelManager] ?panels=detail:${id} names no record — expected detail:<type>.<id>.`,
+      );
+      return;
+    }
+    const presentation = presentationFromUrlArg(args[DETAIL_URL_AS_ARG]);
+    dispatch(
+      openOverlay({
+        overlayId: presentation === "docked" ? "detailDocked" : "detailWindow",
+        data: {
+          type: ref.type,
+          id: ref.id,
+          seedName: null,
+          seedAbout: null,
+          listItems: null,
+          listIndex: null,
+        },
       }),
     );
   });

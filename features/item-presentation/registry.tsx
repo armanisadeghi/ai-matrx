@@ -81,11 +81,11 @@ export interface ItemTypeConfig {
    */
   open?: ItemOpenKind;
   /**
-   * Where the generic `ItemDetailWindow` reads the full record from. Types
-   * without a bespoke window use this to open a clean, formatted detail view
-   * (every scalar column rendered). Omit for types with a bespoke window
-   * (agent/note/file/picklist) or no single canonical table (session/message)
-   * — the detail window still opens, just seed-only.
+   * Where the Detail primitive (`lib/detail`, via `detail.tsx`) reads the
+   * full record from. Types without a bespoke window use this to open a
+   * clean, formatted detail view (every scalar column rendered) in the
+   * window, docked and page presentations. Omit for a type with no single
+   * canonical table (session/message) — the detail still opens, seed-only.
    */
   detailSource?: {
     /** Table to `select('*')` from, keyed by `id`. */
@@ -175,6 +175,17 @@ async function fetchRow(
 // ---------------------------------------------------------------------------
 // The registry
 // ---------------------------------------------------------------------------
+
+/**
+ * `files.files`, for the Detail primitive (`lib/detail`). The click-through
+ * for a file stays the bespoke preview window; the detail primitive reads the
+ * row here when a file is opened as a record (window / docked / page).
+ */
+const FILE_DETAIL_SOURCE: NonNullable<ItemTypeConfig["detailSource"]> = {
+  table: "files",
+  schemaName: "files",
+  titleField: "file_name",
+};
 
 const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   agent: {
@@ -414,6 +425,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-rose-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   video: {
@@ -426,6 +438,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-red-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   audio: {
@@ -438,6 +451,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-orange-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   file: {
@@ -450,6 +464,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-slate-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   session: {

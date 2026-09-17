@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-06-15`
+**Last updated:** `2026-09-17`
 
 ---
 
@@ -22,12 +22,12 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 **Component**
 - `ItemPresentationBlock.tsx` — the renderer (instant skeleton → recognized icon/accent → DB enrichment → grow-in details → click-to-open).
-- `features/window-panels/windows/item-detail/ItemDetailWindow.tsx` — the generic fallback detail window. Opens any `{type,id}`, seeds from the agent name/about, fetches the full row via the registry's `detailSource`, renders every populated scalar field. Registered overlay `itemDetailWindow`.
+- `detail.tsx` — `resolveItemDetailType(type)`: turns a registry entry into the Detail primitive's `DetailRecordType` (`lib/detail`), so every registry-known type shows as a window (`detailWindow`, the default), a docked side panel (`detailDocked`) or a page (`/detail/[type]/[id]`) from this ONE type map. Seeds from the agent name/about, fetches the full row via `detailSource`, renders every populated scalar field. Replaced `ItemDetailWindow` on 2026-09-17.
+- `ItemDetailFrame.tsx` — the frame around every item body in all three presentations: the `matrx-user/item-detail` surface runtime + the right-click menu (moved verbatim from the old window).
 
 **Hooks**
 - `useEnrichItem()` — soft-fails; fetches the authoritative row for a recognized type, returns `{ status, notFound, detail }`.
-- `useOpenItemPresentation()` — dispatches the right window-panel opener by type, passing a `{ name, about }` seed. Bespoke windows for agent/note/file/picklist; **every other recognized type opens `ItemDetailWindow`**. Returns `false` only when there's no id or `config.open` is unset.
-- `useOpenItemDetailWindow()` (`features/overlays/openers/itemDetailWindow.tsx`) — opener for the generic detail window.
+- `useOpenItemPresentation()` — dispatches the right window-panel opener by type, passing a `{ name, about }` seed. Bespoke windows for agent/note/file/picklist stay bespoke; **every other recognized type opens the Detail primitive** through `useOpenDetail()` (`lib/detail`), which honours `ui.detail.default_presentation`. Returns `false` only when there's no id or `config.open` is unset.
 
 **Demo**
 - `app/(dev)/demos/blocks/item-presentation/page.dev.tsx` — streaming simulation + gallery of states.
@@ -62,9 +62,10 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 - **`type` is the only required field.** The splitter validates `item_presentation.type` is a string; everything else is optional and tolerated.
 - **`canOpen` does NOT gate on `notFound`** (`ItemPresentationBlock.tsx`) — deliberate; see flow 3.
 - **Reconstruct as a ```json fence** on DB round-trip — the XML-wrapper default would corrupt the block.
-- **Every recognized type is now clickable.** Bespoke windows: `agent` (run window — now seeded with the known name so the title shows instantly), `note`, `file`/`image`/`video`/`audio`, `picklist`. All others open the generic `ItemDetailWindow`. To upgrade a type to a bespoke window later, add a branch above the generic cases in `useOpenItemPresentation` — nothing else changes.
-- **`detailSource` is the only thing the generic window needs.** A type with `detailSource: { table, titleField }` gets a full-record view; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See FOUND_DEFECTS D8.
-- **Dynamic-table Supabase queries must use `string` variables, never literals.** `supabase.from("literal")` / `.select("*")` resolve the entire schema union and blow TS instantiation depth. `ItemDetailWindow` and `registry.fetchRow` both pass `string` variables to stay generic.
+- **Every recognized type is now clickable.** Bespoke windows: `agent` (run window — now seeded with the known name so the title shows instantly), `note`, `file`/`image`/`video`/`audio`, `picklist`. All others open the Detail primitive. To upgrade a type to a bespoke window later, add a branch above the generic cases in `useOpenItemPresentation` — nothing else changes.
+- **`detailSource` is the only thing the Detail primitive needs.** A type with `detailSource: { table, titleField }` gets a full-record view in all three presentations; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See FOUND_DEFECTS D8. The file kinds carry `FILE_DETAIL_SOURCE` (`files.files`) even though their click-through stays the preview window, so a file opened AS A RECORD shows its row.
+- **This registry IS the Detail primitive's type map** (chair ruling 2026-09-17) — never a second registry; `detail.tsx` adapts entries, it does not list them.
+- **Dynamic-table Supabase queries must use `string` variables, never literals.** `supabase.from("literal")` / `.select("*")` resolve the entire schema union and blow TS instantiation depth. `detail.tsx`'s loader and `registry.fetchRow` both pass `string` variables to stay generic.
 
 ---
 
@@ -91,6 +92,7 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- 2026-09-17 — **`ItemDetailWindow` → the Detail primitive.** The generic window and its opener are deleted; `detail.tsx` (`resolveItemDetailType`) + `ItemDetailFrame.tsx` carry the identical body behind `lib/detail`'s contract, so every non-bespoke type opens as a window (default), a docked side panel or a page per `ui.detail.default_presentation`, with `[`/`]` list navigation, deep links (`?panels=detail:<type>.<id>:as-…`) and the associations + history sections. `file`/`image`/`video`/`audio` gained `FILE_DETAIL_SOURCE`.
 - 2026-09-11 — **`conversation` is a first-class item type.** The reference chip's "Open conversation" silently no-oped (no registry entry → fallback config with no `open`). New entry (Chat label, `chat.conversation` detailSource) + `ItemOpenKind` `conversation` branch: resolves `initial_agent_id` then opens the floating Chat window on that conversation; lookup failure is a loud toast.
 
 - `2026-08-24` — **The Item Detail window mounts its own right-click menu, and IS a surface.** Right-clicking inside the floating dossier was answered by whatever page sat underneath, handing the user THAT page's surface, values and agents while they looked at this record — so the platform's generic peek target could not even be copied for an AI. `ItemDetailWindow` now wraps its body in `NonEditableContextMenu` (`sourceFeature="system"`, `contentSource={{type:"raw"}}`, `entity` from the normalised `doorToken` whenever it is a registered `EntityTypeToken`), so Copy-as / Export / Download-as-Markdown / Convert / Attach To all act on the record. Content is resolved GENERICALLY from what the panel already rendered (title, type, id, the opener's one-liner, then every rendered field as `Label: value`) — never per-type, because the window shows an arbitrary entity by definition. New surface `matrx-user/item-detail` (`features/surfaces/manifests/item-detail.manifest.ts`, emitter = nested `SurfaceRuntimeProvider` at the window root) so a menu launch carries declared values instead of screaming a value-mapping gap. Body wrapper is `min-h-full` so the menu answers a right-click anywhere in the window, not just on the rows. Verified live: menu opens un-clipped over the window, no `INERT MENU` / `VALUE MAPPING GAP`, Export → Download as Markdown and Copy as → Copy text both carry the full dossier.
