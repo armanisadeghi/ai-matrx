@@ -322,6 +322,13 @@ export function ExtractionCatalogClient() {
                     {
                       type: "custom",
                       id: "context-filter",
+                      filter: {
+                        active: filterScopeIds.length > 0,
+                        onReset: () => {
+                          setFilterScopeIds([]);
+                          setShowFilter(false);
+                        },
+                      },
                       render: () => (
                         <Button
                           variant={
@@ -347,6 +354,7 @@ export function ExtractionCatalogClient() {
                   leading: showFilter ? (
                     <div className="rounded-md border border-border bg-card p-2">
                       <ContextAssignmentField
+                        initialSelection={{ scopeIds: filterScopeIds }}
                         mode="filter"
                         writeMode="preview"
                         sectionHeight={220}
