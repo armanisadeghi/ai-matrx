@@ -58,9 +58,13 @@ in the same change.
    its new file ID before the local preview is retired. Never call a file URL endpoint directly
    from image or thumbnail UI. `FilePreview` treats an incomplete `useEnsureCloudFile` result as
    loading even when Redux already holds a partial record; empty placeholder MIME/name values are
-   never rendered as an authoritative unsupported-file result. A revoked blob-backed element delegates one bounded re-read to
-   `@ai-matrx/data/files` through `recoverBlobLoadError`; the host cache supplies only its existing
-   per-file `invalidate` identity door and never implements retry policy.
+   never rendered as an authoritative unsupported-file result. In block renderers,
+   `useBlockMediaSource` must honor `useMediaResolution(...).transport`: `"blob"` means
+   `useMediaBlob` bearer-fetches authenticated bytes and supplies its package-owned `blob:` URL;
+   it releases that URL's handle when the media ref changes or the hook unmounts. Only
+   `"element"` transport may bind `resolution.src` to a media element and enter the one-retry
+   session-refresh recovery path. The host never substitutes an endpoint URL for a blob URL or
+   owns a second cleanup/retry policy.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
@@ -116,6 +120,14 @@ in the same change.
 and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
+
+- **2026-09-17 — Shared block images honor authenticated blob transport.**
+  `useBlockMediaSource` now sends a `transport: "blob"` resolution through
+  `useMediaBlob` instead of binding the durable `/files/{id}/download` endpoint to an `<img>`.
+  The hook returns the package-owned object URL; direct element/session-refresh recovery remains
+  exclusively for `transport: "element"`. `blocks/useBlockMediaSource.test.tsx` guards the
+  incident-shaped owned endpoint promoted from a URL: it must render `blob:private-image` and
+  pass `null` to element-load recovery, preventing the same failing endpoint from being retried.
 
 - **2026-09-12 — Video-block downloads now use the canonical file-handler byte path.**
   `useVideoActions` passes Matrx `file_id` identity to `mediaRefToDownloadSource` /

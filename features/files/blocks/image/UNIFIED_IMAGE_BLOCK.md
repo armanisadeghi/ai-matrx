@@ -2,7 +2,7 @@
 
 > 🚫 **`storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06).** The client never carries a native storage location: no `fileUri`/`canonicalFileUri` on any block, no `file_uri` on the wire. Identify by `fileId`; render via `cdnUrl`/`downloadUrl`/the durable inline URL.
 >
-> 🚫 **Signed URLs were ERADICATED platform-wide (2026-08-26).** `signedUrl`/`signedUrlExpiresAt` no longer exist on any block or wire shape; the render URL for a private file is the durable `{base}/files/{id}/download?inline=1` (authenticated by the `mx_files_session` cookie — see `features/files/handler/session.ts`), and error recovery is a session refresh, never a re-mint. Any mention of signed URLs, expiry, or re-minting below is historical narrative — see [features/files/handler/FEATURE.md](../../handler/FEATURE.md) and `docs/CDN_INTEGRATION.md` for the live contract.
+> 🚫 **Signed URLs were ERADICATED platform-wide (2026-08-26).** `signedUrl`/`signedUrlExpiresAt` no longer exist on any current block or wire shape. `useBlockMediaSource` asks `useMediaResolution` to select transport: private or unknown image bytes, including a durable `/files/{id}/download` endpoint promoted from a URL, resolve as `transport: "blob"` and are bearer-fetched by `useMediaBlob`. The package owns the resulting `blob:` object URL and releases its handle on ref change or unmount. Only `transport: "element"` binds a source directly and can use the one-retry session-refresh path. Mentions of signed URLs below are historical narrative; the live contract is in [features/files/handler/FEATURE.md](../../handler/FEATURE.md).
 
 > **Audience:** Python team, frontend engineers, future agents working on streaming, persistence, or rendering of images.
 > **Status:** Phase 2 — frontend ingestion is **wire-shape ready and awaiting the Python deploy**. The shared `UnifiedMediaBlock` shape, the `fromMediaBlock` adapter, and the `process-stream.ts` dispatch are all live; Python backend code landed on `main` 2026-05-16 (commit `96f7ff7b`) but isn't deployed yet at the time of writing. The legacy adapters (`image_output` / `partial_image`) currently carry traffic and become fallback once Python deploys.
@@ -12,7 +12,7 @@
 
 ## Why
 
-Today, image data crosses the frontend boundary in four different shapes (stream `image_output` data event, stream `partial_image`, stream `render_block:image`, and DB `cx_message.content[]` media part). Each shape carries a different subset of fields; URL flavors are flattened into a single `url` field with no expiry signal; rich metadata (file_id, cdn_url, signed_url, visibility, thumbnails, dimensions) is either dropped or buried in untyped `metadata` blobs. The result: streaming images don't render, signed URLs expire silently, downloads fall back to bad fetches, and every component that touches an image rolls its own URL-resolution + expiry-detection logic.
+Historically, image data crossed the frontend boundary in four different shapes (stream `image_output` data event, stream `partial_image`, stream `render_block:image`, and DB `cx_message.content[]` media part). Each shape carried a different subset of fields; URL flavors were flattened into a single `url` field and rich metadata (`file_id`, `cdn_url`, visibility, thumbnails, dimensions) was either dropped or buried in untyped `metadata` blobs. The result was bespoke resolution at every image component. The canonical block now preserves durable identity and leaves transport selection to the shared media client.
 
 **Goal:** one shape, one renderer, one resolver, one place where expiry lives — everywhere images touch the system.
 
@@ -50,7 +50,7 @@ interface MatrxImageBlock extends ImageBlockShared {
   origin: "matrx";
   fileId: string;                     // REQUIRED — files.files id (the permanent identity)
   // No fileUri/canonicalFileUri — the native storage location is server-only (2026-07-06).
-  visibility: "public" | "private" | "shared";
+  visibility: "personal" | "internal" | "link" | "public";
   // Phase 1b: `thumbnailUrl` / `thumbnailUri` REMOVED. The canonical
   // thumbnail source is `Asset.variants["thumbnail_url"].url` via
   // `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl`
@@ -76,7 +76,6 @@ from pydantic import BaseModel, Field
 
 class ImageBlockShared(BaseModel):
     cdn_url: Optional[str] = None
-    signed_url: Optional[str] = None
     download_url: Optional[str] = None
     base64: Optional[str] = None
 
@@ -88,8 +87,6 @@ class ImageBlockShared(BaseModel):
 
     status: Literal["complete", "streaming", "error"] = "complete"
     progress: Optional[float] = None
-    signed_url_expires_at: Optional[int] = None  # ms epoch
-
     metadata: Optional[Dict[str, Any]] = None
 
 
@@ -97,7 +94,7 @@ class MatrxImageBlock(ImageBlockShared):
     origin: Literal["matrx"] = "matrx"
     file_id: str
     # No file_uri/canonical_file_uri — server-only, never emitted (2026-07-06).
-    visibility: Literal["public", "private", "shared"]
+    visibility: Literal["personal", "internal", "link", "public"]
     # Phase 1b: thumbnail_url / thumbnail_uri removed. Canonical source:
     # Asset.variants["thumbnail_url"].url via GET /assets/{file_id}.
     parent_file_id: Optional[str] = None
@@ -142,14 +139,20 @@ Dimensions (`width`, `height`) come from cld_files.metadata if available, otherw
 
 ## How is the render URL resolved?
 
-Single source of truth: [`features/files/blocks/useBlockMediaSource.ts`](../useBlockMediaSource.ts) (over `@ai-matrx/media`'s `useMediaResolution`/`useMediaLoadRecovery`).
+Single source of truth: [`features/files/blocks/useBlockMediaSource.ts`](../useBlockMediaSource.ts) (over `@ai-matrx/media`'s `useMediaResolution`, `useMediaBlob`, and `useMediaLoadRecovery`).
 
 1. **External** → use `externalUrl`.
-2. **Matrx + public visibility** → prefer `cdnUrl` (a true permanent CDN URL, verified with `isSignedUrl`).
-3. **Matrx** → the handler resolves the durable inline URL from `fileId` (`useFileAs(html_src)`).
-4. **Load failure on an owned file** → `reportLoadError` refreshes the file-session cookie once and retries the SAME durable URL (`retryNonce` key bump). A second failure is terminal.
+2. **Matrx + public visibility** → prefer a true permanent `cdnUrl`; otherwise preserve the
+   `fileId` or recognized durable endpoint as media identity.
+3. **`transport: "blob"`** → private or unknown image bytes are fetched with the media client's
+   bearer-authenticated byte transport. `useBlockMediaSource` renders only the `blob:` URL from
+   `useMediaBlob`, never `resolution.src`; `useMediaBlob` owns releasing that URL's handle when
+   the ref changes or unmounts.
+4. **`transport: "element"`** → a direct element source may use `useMediaLoadRecovery`'s one
+   session-refresh retry. Blob transport never enters that retry path, so a failed direct endpoint
+   cannot be rebound to an `<img>` after refresh.
 
-Components NEVER touch URL/auth plumbing — there is no expiry.
+Components NEVER touch URL/auth plumbing or object-URL cleanup.
 
 ## Adapter contract (the temporary translation layer)
 
@@ -179,9 +182,7 @@ authoritative spec). For an image, the inner `block` looks like:
     "origin": "matrx",
     "file_id": "122a35b5-2875-4251-9c11-bb57993f6f2f",
     "cdn_url": "https://cdn.matrxserver.com/.../122a35b5.png",
-    "signed_url": "https://...?X-Amz-Date=...",
     "download_url": "https://...?disposition=attachment",
-    "signed_url_expires_at": 1716000000000,
     "mime_type": "image/png",
     "file_name": "blueprint-poster.png",
     "width": 1024,
@@ -279,6 +280,12 @@ lands.
 
 ## Change log
 
+- **2026-09-17 — Authenticated image bytes obey resolver transport.** The shared block hook now
+  feeds `transport: "blob"` through `useMediaBlob`, rendering its package-owned object URL rather
+  than a durable private endpoint. Direct element/session-refresh recovery is only for
+  `transport: "element"`. `../useBlockMediaSource.test.tsx` fixes the regression boundary with an
+  incident-shaped `/files/{id}/download` URL: it must render blob bytes and must not call element
+  recovery with that endpoint.
 - **2026-08-30** — **Media wave 2.** `useUnifiedImageUrl.ts` DELETED — URL resolution +
   load recovery now ride `../useBlockMediaSource.ts` over `@ai-matrx/media`
   (`useMediaResolution` + `useMediaLoadRecovery`; the client's ONE retry contract).
