@@ -537,23 +537,23 @@ apply_frontend_migrations
 
 # ── Entity registry drift gate (live DB ↔ installed @ai-matrx/associations) ───
 # The entity-type vocabulary ships in @ai-matrx/associations; this repo keeps
-# no local copy. Admin edits must never leave a release carrying a stale
-# vocabulary, so after migrations the installed package is diffed against
-# platform.entity_types. Drift is fixed by regenerating + patch-releasing the
-# PACKAGE, never here.
+# no local copy. After migrations the installed package is checked for
+# compatibility with platform.entity_types: removed installed tokens or changed
+# installed metadata halt the release; newly registered tokens warn with the
+# package publication remedy because this build cannot yet produce them.
 if $DRY_RUN; then
-    info "Checking generated entity metadata (dry-run — read-only)..."
+    info "Checking installed entity vocabulary compatibility (dry-run — read-only)..."
     if pnpm check:entity-types; then
-        ok "Generated entity metadata matches platform.entity_types."
+        ok "Installed entity vocabulary is compatible with platform.entity_types."
     else
-        warn "Entity registry drift found. A real release would regenerate and commit it."
+        warn "Installed entity vocabulary is incompatible. A real release would stop."
     fi
 else
-    info "Synchronizing generated entity metadata from platform.entity_types..."
+    info "Checking installed entity vocabulary compatibility..."
     if ! pnpm check:entity-types; then
-        fail "Generated entity metadata still differs from platform.entity_types."
+        fail "Installed entity vocabulary is incompatible with platform.entity_types."
     fi
-    ok "Generated entity metadata matches platform.entity_types."
+    ok "Installed entity vocabulary is compatible with platform.entity_types."
 fi
 
 # ── Protocol mirror sync (docs/protocol ↔ aidream, byte-identical pact) ──────

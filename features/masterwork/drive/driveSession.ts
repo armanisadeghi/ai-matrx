@@ -181,3 +181,23 @@ export function describeIdle(idleMs: number): string {
   const hours = Math.round(minutes / 60);
   return hours === 1 ? "an hour ago" : `${hours} hours ago`;
 }
+
+/**
+ * 🚨 A FRESH DRIVE NEVER ADOPTS WHATEVER THE APP LAST FOCUSED.
+ *
+ * Found live on this lane's first run (2026-09-17): a drive started on a
+ * brand-new Rulebook silently continued the conversation the "Talk it through"
+ * sheet had opened seconds earlier, because `useAgentLauncher` resolves
+ * `focusedConversationId ?? mint()` whenever no id is handed in. On a desk
+ * that is a confusing thread; in a car it is invisible — the driver is told
+ * nothing and her words join a conversation nobody is watching.
+ *
+ * So the launcher options are DERIVED, in one place, and proven.
+ */
+export function driveLauncherFreshness(
+  resumeConversationId: string | null | undefined,
+): { preferFresh: boolean; freshSessionKey: number } {
+  return resumeConversationId
+    ? { preferFresh: false, freshSessionKey: 0 }
+    : { preferFresh: true, freshSessionKey: 1 };
+}
