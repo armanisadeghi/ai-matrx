@@ -10,6 +10,7 @@
 
 import {
   describeIdle,
+  driveLauncherFreshness,
   parseDriveMemory,
   resolveDriveSession,
   type DriveSessionMemory,
@@ -162,5 +163,34 @@ describe("describeIdle", () => {
     [180 * MINUTE, "3 hours ago"],
   ])("%p → %p", (ms, expected) => {
     expect(describeIdle(ms)).toBe(expected);
+  });
+});
+
+describe("a fresh drive never adopts whatever the app last focused", () => {
+  // The defect this closes, found live 2026-09-17: a drive started on a
+  // brand-new Rulebook continued the conversation the "Talk it through" sheet
+  // had opened seconds earlier, because the launcher falls back to the
+  // surface-focused conversation when it is handed no id. These are the exact
+  // launcher options; asserting the wrong half fails.
+  it("asks the launcher for a NEW conversation when there is nothing to resume", () => {
+    expect(driveLauncherFreshness(null)).toEqual({
+      preferFresh: true,
+      freshSessionKey: 1,
+    });
+    expect(driveLauncherFreshness(undefined)).toEqual({
+      preferFresh: true,
+      freshSessionKey: 1,
+    });
+    expect(driveLauncherFreshness("")).toEqual({
+      preferFresh: true,
+      freshSessionKey: 1,
+    });
+  });
+
+  it("does NOT force a fresh conversation when it is resuming one", () => {
+    expect(driveLauncherFreshness("conv-abc")).toEqual({
+      preferFresh: false,
+      freshSessionKey: 0,
+    });
   });
 });

@@ -1,3 +1,6 @@
+-- based-on: custom.record_values(uuid,uuid) f8d3fd7c0de466c811d2b3a818096f72ea02432e6f6766094a79f66bb5aa0778
+-- based-on: custom.record_values_versioned(uuid,uuid) 6c54f5e5c1dbdd3aee134955796069bca316cb84bd951855776c5e490a36dc03
+--
 -- chair-step: the inverse of W1-FIELD-TYPES' parity floor (BUILD-BOOK §4.13, rule 27). It
 -- removes ONLY what `migrations/campaign/w1_field_types_the_parity_floor.sql` created —
 -- two triggers, the thirteen parity bodies, the fixture rows it seeded — and restores
