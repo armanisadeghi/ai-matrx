@@ -89,10 +89,7 @@ export function readQueryFromParams(
   const filters = parseFilters(params.get(ENTITY_LIST_URL_PARAMS.filters));
 
   return {
-    scope: parseScope(
-      params.get(ENTITY_LIST_URL_PARAMS.scope),
-      defaults.scope,
-    ),
+    scope: parseScope(params.get(ENTITY_LIST_URL_PARAMS.scope), defaults.scope),
     search: params.get(ENTITY_LIST_URL_PARAMS.search) ?? defaults.search,
     deep: params.has(ENTITY_LIST_URL_PARAMS.deep)
       ? params.get(ENTITY_LIST_URL_PARAMS.deep) === "1"
@@ -116,9 +113,10 @@ export function readSortFromParams(
   const direction = params.get(ENTITY_LIST_URL_PARAMS.direction);
   return {
     sort: params.get(ENTITY_LIST_URL_PARAMS.sort) ?? defaults.sort,
-    direction: direction === "asc" || direction === "desc"
-      ? direction
-      : defaults.direction,
+    direction:
+      direction === "asc" || direction === "desc"
+        ? direction
+        : defaults.direction,
   };
 }
 
@@ -148,13 +146,11 @@ export function queryToParamPatch(
 
 export function sortToParamPatch(
   sort: EntityListUrlSort,
-  defaults: EntityListUrlSort,
 ): Record<string, string | null> {
+  // A shared link cannot depend on the recipient's personal sort preference.
   return {
-    [ENTITY_LIST_URL_PARAMS.sort]:
-      sort.sort === defaults.sort ? null : sort.sort,
-    [ENTITY_LIST_URL_PARAMS.direction]:
-      sort.direction === defaults.direction ? null : sort.direction,
+    [ENTITY_LIST_URL_PARAMS.sort]: sort.sort,
+    [ENTITY_LIST_URL_PARAMS.direction]: sort.direction,
   };
 }
 

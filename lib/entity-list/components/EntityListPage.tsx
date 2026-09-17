@@ -32,7 +32,11 @@ import { defaultHiddenColumns } from "../columns";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
 import type { EntityListConfig, EntityListController } from "../config";
 import { useEntityList } from "../useEntityList";
-import { readSortFromParams, sortToParamPatch } from "../urlQuery";
+import {
+  ENTITY_LIST_URL_PARAMS,
+  readSortFromParams,
+  sortToParamPatch,
+} from "../urlQuery";
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EditRowRegistry } from "../editRowRegistry";
@@ -162,22 +166,53 @@ export function EntityListPage<TRow>({
     ? readSortFromParams(urlParams, prefsSort)
     : prefsSort;
 
+  // The explicit boolean sort is the grouping setting, including shared URLs.
+  const effectiveFavoritesFirst =
+    config.favorite && effectiveSort.sort === "favorite"
+      ? effectiveSort.direction === "desc"
+      : prefs.favoritesFirst;
+
   const commitSort = (next: { sort: string; direction: "asc" | "desc" }) => {
-    setPrefs(next);
+    // An explicit favorite sort must also update the grouping preference;
+    // otherwise its server-side priority silently defeats ascending order.
+    setPrefs({
+      ...next,
+      ...(config.favorite && next.sort === "favorite"
+        ? { favoritesFirst: next.direction === "desc" }
+        : {}),
+    });
     if (config.urlState) {
-      commitUrlParams(sortToParamPatch(next, prefsSort), "push");
+      commitUrlParams(sortToParamPatch(next), "push");
     }
   };
 
   const patchView = (patch: Partial<ListViewPrefs>) => {
-    const { sort, direction, ...rest } = patch;
-    if (sort !== undefined || direction !== undefined) {
-      commitSort({
-        sort: sort ?? effectiveSort.sort,
-        direction: direction ?? effectiveSort.direction,
-      });
+    const nextSort = patch.sort ?? effectiveSort.sort;
+    const nextDirection =
+      config.favorite &&
+      nextSort === "favorite" &&
+      patch.favoritesFirst !== undefined
+        ? patch.favoritesFirst
+          ? "desc"
+          : "asc"
+        : (patch.direction ?? effectiveSort.direction);
+    const sortChanged =
+      patch.sort !== undefined ||
+      patch.direction !== undefined ||
+      (config.favorite &&
+        nextSort === "favorite" &&
+        patch.favoritesFirst !== undefined);
+    const next = { sort: nextSort, direction: nextDirection } as const;
+    setPrefs({
+      ...patch,
+      ...(sortChanged ? next : {}),
+      ...(config.favorite && nextSort === "favorite"
+        ? { favoritesFirst: nextDirection === "desc" }
+        : {}),
+    });
+    if (sortChanged && config.urlState) {
+      commitUrlParams(sortToParamPatch(next), "push");
     }
-    if (Object.keys(rest).length > 0) setPrefs(rest);
   };
 
   // An empty RESULT is not an empty LIST. Saying "Nothing here yet — create
@@ -197,7 +232,7 @@ export function EntityListPage<TRow>({
     view: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
-      favoritesFirst: prefs.favoritesFirst,
+      favoritesFirst: effectiveFavoritesFirst,
       pageSize: prefs.pageSize,
     },
   });
@@ -397,7 +432,7 @@ export function EntityListPage<TRow>({
     sort: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
-      favoritesFirst: prefs.favoritesFirst,
+      favoritesFirst: effectiveFavoritesFirst,
       pageSize: prefs.pageSize,
     },
     service: config.service,
@@ -535,7 +570,7 @@ export function EntityListPage<TRow>({
     view: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
-      favoritesFirst: prefs.favoritesFirst,
+      favoritesFirst: effectiveFavoritesFirst,
       pageSize: prefs.pageSize,
     },
     patchView,
@@ -599,7 +634,11 @@ export function EntityListPage<TRow>({
           query={list.query}
           facets={list.facets}
           isFetching={list.isFetching}
-          prefs={{ ...prefs, ...effectiveSort }}
+          prefs={{
+            ...prefs,
+            ...effectiveSort,
+            favoritesFirst: effectiveFavoritesFirst,
+          }}
           showSharedColumns={showSharedColumns}
           columns={config.columns}
           defaultHidden={defaultHidden}
@@ -623,7 +662,17 @@ export function EntityListPage<TRow>({
           // table header's sort write the same two places (prefs + URL).
           onPatchPrefs={patchView}
           onResetFilters={list.resetFilters}
-          onResetView={reset}
+          onResetView={() => {
+            reset();
+            if (config.urlState)
+              commitUrlParams(
+                {
+                  [ENTITY_LIST_URL_PARAMS.sort]: null,
+                  [ENTITY_LIST_URL_PARAMS.direction]: null,
+                },
+                "push",
+              );
+          }}
         />
 
         {/*

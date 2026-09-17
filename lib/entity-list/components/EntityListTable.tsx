@@ -206,6 +206,7 @@ export function EntityListTable<TRow>({
       const facetOptions = spec.facet ? facets.byKind[spec.facet] : undefined;
       return {
         ...spec.column,
+        label: spec.column.label ?? spec.label,
         cell:
           spec.id === "favorite" && favorite ? favoriteCell : spec.column.cell,
         href:
