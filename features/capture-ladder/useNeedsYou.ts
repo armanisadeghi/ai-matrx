@@ -19,20 +19,21 @@
  *     it, because the events that matter here MOVE a row in or out of the queue
  *     — a claim, a needs-drive, a capture — and a patched list would need every
  *     one of those transitions re-implemented on the client.
- *   • A POLL FLOOR (60s, visible tabs only). Not belt-and-braces. VERIFIED
- *     2026-09-17 against the live database: `media.capture_handoff` is NOT in
- *     the `supabase_realtime` publication (`select … from
- *     pg_publication_tables where pubname='supabase_realtime'` returns no
- *     `media` row at all). A subscription to an unpublished table joins, says
- *     SUBSCRIBED and delivers NOTHING, forever, with no error anywhere — which
- *     is precisely the silent lie this feature is not allowed to tell. So the
- *     floor is not a backstop today, it is THE mechanism; realtime is the
- *     optimisation that switches itself on the day somebody runs
- *       ALTER PUBLICATION supabase_realtime ADD TABLE media.capture_handoff;
- *     `onBackfill` is what makes it true after a laptop sleep.
+ *   • A POLL FLOOR (60s, visible tabs only). Realtime is the fast path; this is
+ *     the one that cannot lie. A socket still drops, a laptop still sleeps, and
+ *     a dropped socket that reconnects has no replay — so the floor stays even
+ *     now that the table is published, and `onBackfill` re-reads on every
+ *     reconnect, tab wake, network restore and queue overflow.
  *
- *     Because of that, `liveness` below never claims "live" on the strength of
- *     a SUBSCRIBED status alone: a screen says what it can prove.
+ *     THIS WAS NOT ALWAYS TRUE, and the history is the reason `liveness` exists
+ *     at all. Until aidream migration 0873 (2026-09-17) `media.capture_handoff`
+ *     was NOT in the `supabase_realtime` publication, and a subscription to an
+ *     unpublished table joins, says SUBSCRIBED and delivers NOTHING, forever,
+ *     with no error anywhere. The screen looked perfectly healthy and was
+ *     silently an hour stale. It was findable only because this hook refused to
+ *     translate a channel status into a freshness claim. Keep that refusal:
+ *     `REALTIME_PUBLISHED` is a fact somebody checked against
+ *     `pg_publication_tables`, not an inference from `status === "connected"`.
  *
  * realtime-publication: media.capture_handoff
  */
@@ -203,10 +204,11 @@ export function useNeedsYou(): UseNeedsYouResult {
 
   const handoffs = state.kind === "ready" ? state.handoffs : EMPTY;
 
-  // THE HONEST ANSWER. A SUBSCRIBED channel on an unpublished table delivers
-  // nothing while looking perfectly healthy, so "connected" is NOT allowed to
-  // buy the word "live" here — see the header. The day the table is published,
-  // flip REALTIME_PUBLISHED and this reads "live" with no other change.
+  // THE HONEST ANSWER. Two independent facts have to hold before this screen
+  // may say "live": the socket is up AND the table is actually published. A
+  // SUBSCRIBED channel on an unpublished table delivers nothing while looking
+  // perfectly healthy — see the header — so "connected" alone never buys the
+  // word.
   const liveness: NeedsYouLiveness = !organizationId
     ? "polling"
     : channelStatus === "connected"
@@ -235,12 +237,27 @@ export function useNeedsYou(): UseNeedsYouResult {
 /**
  * Whether `media.capture_handoff` is in the `supabase_realtime` publication.
  *
- * `false`, verified against the live database on 2026-09-17. This constant
- * exists so the claim a SCREEN makes about freshness is a fact somebody
- * checked, not an inference from a channel status that cannot see the
- * publication. Flip it in the same change that runs the ALTER PUBLICATION.
+ * `true` since aidream migration 0873. Verified directly against the live
+ * database on 2026-09-17, not taken on report:
+ *
+ *   select count(*) from pg_publication_tables
+ *    where pubname='supabase_realtime' and schemaname='media'
+ *      and tablename='capture_handoff';                        -- 1
+ *   select relreplident from pg_class
+ *    where oid='media.capture_handoff'::regclass;              -- 'f' (FULL)
+ *
+ * REPLICA IDENTITY FULL is the half that matters for THIS tray specifically:
+ * the event we care most about is a row LEAVING the queue (`waiting` →
+ * `claimed`/`captured`), and without the old row an UPDATE that moves a row out
+ * of our filter is indistinguishable from one that was never in it. With FULL,
+ * a leaving row is a real event and the tray's count comes down on its own.
+ *
+ * This constant exists so the claim a SCREEN makes about freshness is a fact
+ * somebody checked, not an inference from a channel status that cannot see the
+ * publication. If the table is ever unpublished, flip this back rather than
+ * letting the screen keep promising "live".
  */
-const REALTIME_PUBLISHED = false;
+const REALTIME_PUBLISHED = true;
 
 /** One frozen empty array — a fresh `[]` per render re-runs every memo below it. */
 const EMPTY: CaptureHandoff[] = [];

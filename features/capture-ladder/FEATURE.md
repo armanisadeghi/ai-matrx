@@ -61,10 +61,11 @@ the **Send the rest to my browser** action) and by
 |---|---|
 | `media.capture_handoff` | **LIVE.** Verified column-for-column against `information_schema.columns` on project `brsgrqvjdzwihsvnfqkf`. |
 | `media` in `pnpm db-types` | **NO.** Which is why `CaptureHandoff` is hand-written and `captureHandoffTable.ts` casts the client once, named, with a Zod parse on every row behind it. The day `media` joins that list, delete both and alias the generated row. |
-| `media.capture_handoff` in `supabase_realtime` | **NO.** Verified against `pg_publication_tables`. A subscription to an unpublished table says SUBSCRIBED and delivers nothing, forever, silently — so the 60s poll floor is THE mechanism today, not a backstop, and `useNeedsYou` refuses to claim "live" on a channel status alone (`REALTIME_PUBLISHED = false`). One `ALTER PUBLICATION supabase_realtime ADD TABLE media.capture_handoff;` and one constant flip turns it on. |
+| `media.capture_handoff` in `supabase_realtime` | **YES**, since aidream migration 0873, and `REPLICA IDENTITY FULL`. Both verified directly against `pg_publication_tables` / `pg_class.relreplident`, not taken on report. FULL is the half that matters here: the tray's most important event is a row LEAVING the queue, and without the old row an UPDATE that moves a row out of the filter is indistinguishable from one that was never in it. It was **NO** until that migration, which is the bug this feature's `liveness` reporting found — keep the reporting. |
+| real rows in the live queue | **YES.** Two `waiting` / `own_browser` rows for org `304cd2ed…`, written by the real scraper climbing http → server browser against instagram.com and nytimes.com and being told `login_wall` by both. They are the fixture in `__tests__/liveQueueRows.test.ts`. |
 | aidream `/capture/*` | **NOT LIVE.** Built by a sibling lane. `sendToOwnBrowser.ts` is written against CONTRACT.md §4 and treats a 404 as its own named outcome with its own sentence, so the button says "not switched on yet" rather than showing a red error nobody can act on. |
 | the ladder fields on `/quick-scrape` | **On the server's `ScrapeResult` and reaching `to_dict()`; not deployed.** Verified by reading `orchestrator.py` and `scrape_options.py::apply_field_flags` (a denylist none of them are on) — NOT by calling the endpoint. Until it deploys, `readLadderOutcome` returns `null` and the Rung column says "Not said". |
-| `media_capture_handoff` in `@ai-matrx/associations` | **NOT in the installed dist.** The token is not in `node_modules/@ai-matrx/associations/dist/index.d.ts`, so nothing here depends on it. |
+| `media_capture_handoff` in `@ai-matrx/associations` | **Regenerated in aidream, but NOT in the copy installed here** — a package-version lag, not a missing token. Nothing in this feature depends on it, so nothing here is blocked; it lands on the next dependency bump. |
 
 ## Where the contract and reality differ
 
@@ -80,6 +81,13 @@ Reported rather than reconciled — CONTRACT.md is somebody else's file to chang
   which §3 does not say.
 
 ## Guards
+
+`__tests__/liveQueueRows.test.ts` — the two REAL rows out of the live queue, read
+verbatim, run through the tray's ingress parse and its sentences. Not a fixture
+shaped like the contract: a fixture shaped like the contract would have had a
+title on every row, and the real Instagram row does not. Proven failing (3 of 8)
+by assuming it does — and the failure is the exact silent one, a tray reading
+"1 page" while two were waiting.
 
 `__tests__/ladderLaw.test.ts` — `assertNoSkippedRung` refuses a jump, a repeat, a
 backwards step and a rung key that does not exist. Proven failing (7 of 11) with
