@@ -18,10 +18,13 @@ import {
   isComposerDraftStorageAvailable,
   peekComposerDraft,
   registerComposerDraftAlias,
-  unregisterComposerDraftAlias,
+  releaseComposerDraftAlias,
 } from "./composer-draft-store";
 import { applyComposerDraft } from "./restore-composer-draft.thunk";
-import { isDraftRestoreEnabled } from "./composer-draft.middleware";
+import {
+  flushComposerDraftWrite,
+  isDraftRestoreEnabled,
+} from "./composer-draft.middleware";
 import { selectUserInputText } from "./instance-user-input.selectors";
 
 export type ComposerDraftRestoreState = {
@@ -38,10 +41,12 @@ export type ComposerDraftRestoreState = {
 };
 
 /**
- * @param alias a key that is stable for THIS surface and record (the composer
- *   passes its `surfaceKey`). It is what keeps the draft findable in a room
- *   that mints a fresh client-only conversation id on every mount — see
- *   `composer-draft-store.ts` § TWO KEYS.
+ * @param alias the surface's stable key (the composer passes its `surfaceKey`).
+ *   It keeps the draft findable in a room that mints a fresh client-only
+ *   conversation id on every mount — `/chat/new`, the Scout interview room, the
+ *   Conductor. It is used ONLY while the conversation has no messages, and is
+ *   RELEASED at the first turn, because a surface key is not unique per
+ *   conversation. See `composer-draft-store.ts` § TWO KEYS.
  */
 export function useComposerDraftRestore(
   conversationId: string,
@@ -50,6 +55,19 @@ export function useComposerDraftRestore(
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const text = useAppSelector(selectUserInputText(conversationId));
+  // THE HANDOFF LINE. No messages = the id is client-only and will be re-minted
+  // on reload, so the surface alias is the only findable key. With messages the
+  // conversation is real and its own id is the only correct key.
+  // Read inline rather than through `selectMessageCount`: that selectors module
+  // pulls the whole content-ir kind registry (and with it the Supabase client)
+  // for one array length, which has no business in the composer's draft keeper.
+  // It returns a primitive, so there is no reference churn.
+  const hasMessages = useAppSelector(
+    (state) =>
+      (state.messages.byConversationId[conversationId]?.orderedIds?.length ??
+        0) > 0,
+  );
+  const liveAlias = hasMessages ? undefined : alias;
 
   const [restoredValue, setRestoredValue] = useState<string | null>(null);
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -57,12 +75,22 @@ export function useComposerDraftRestore(
 
   const enabled = isDraftRestoreEnabled(store.getState());
 
-  // Registered BEFORE the first keystroke so every write is mirrored to it.
+  // Defined BEFORE the alias effect ON PURPOSE: React runs cleanups in
+  // definition order, so an unmount flushes the pending keystroke while the
+  // alias is still registered. The other way round, a draft typed in the last
+  // 400ms before the composer went away would land under the conversation key
+  // only — and that key is the one a re-minted room will never ask for again.
   useEffect(() => {
-    if (!alias) return undefined;
-    registerComposerDraftAlias(conversationId, alias);
-    return () => unregisterComposerDraftAlias(conversationId);
-  }, [conversationId, alias]);
+    return () => flushComposerDraftWrite(conversationId);
+  }, [conversationId]);
+
+  // Registered BEFORE the first keystroke so every write is mirrored to it,
+  // and released the moment the conversation becomes real.
+  useEffect(() => {
+    if (!liveAlias) return undefined;
+    registerComposerDraftAlias(conversationId, liveAlias);
+    return () => releaseComposerDraftAlias(conversationId);
+  }, [conversationId, liveAlias]);
 
   useEffect(() => {
     // Once per conversation id per mount. A second pass could only re-restore
@@ -72,14 +100,14 @@ export function useComposerDraftRestore(
     setRestoredValue(null);
     setStorageAvailable(isComposerDraftStorageAvailable());
     if (!enabled) return;
-    const token = peekComposerDraft(conversationId, alias);
+    const token = peekComposerDraft(conversationId, liveAlias);
     if (!token) return;
     // Compare-and-apply — the thunk refuses the token if a send, another tab or
     // a destroy moved underneath it. See restore-composer-draft.thunk.ts.
     if (dispatch(applyComposerDraft(token)) === "restored") {
       setRestoredValue(token.value);
     }
-  }, [conversationId, alias, dispatch, enabled]);
+  }, [conversationId, liveAlias, dispatch, enabled]);
 
   // The notice belongs to the restored text and nothing else: the moment the
   // person edits it, it has stopped being news.

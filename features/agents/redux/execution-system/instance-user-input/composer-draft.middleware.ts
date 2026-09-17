@@ -81,6 +81,21 @@ function scheduleWrite(conversationId: string, text: string): void {
   );
 }
 
+/**
+ * Write this conversation's pending keystroke NOW. The composer calls it as it
+ * unmounts, BEFORE the surface alias is released, so a draft still sitting in
+ * the debounce is written under every key it belongs to rather than losing the
+ * alias on the way out.
+ */
+export function flushComposerDraftWrite(conversationId: string): void {
+  const text = pending.get(conversationId);
+  const t = timers.get(conversationId);
+  if (t) clearTimeout(t);
+  timers.delete(conversationId);
+  pending.delete(conversationId);
+  if (text !== undefined) writeComposerDraft(conversationId, text);
+}
+
 export function isDraftRestoreEnabled(state: RootState): boolean {
   // `!== false` and never `=== true`: a preferences blob persisted before this
   // key existed has no value for it, and the default is ON.

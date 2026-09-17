@@ -4259,6 +4259,34 @@ reload → empty box, no notice), `/masterwork/2bd1f094-…/interview` (197 char
 reload and Continue), `/masterwork/2bd1f094-…/conduct` (199 characters back through the surface
 alias, on a re-minted conversation id).
 
+**`/chat/new` and the handoff line, same session.** The first pass left one door open: `/chat/new`
+mounts its own hero composer (`NewChatLandingInput`, not `AgentTextarea`), so the restore never ran
+there — and the landing mints a client-only conversation id that is re-minted on every reload. The
+hero composer now mounts `ComposerDraftNotice` itself, and the surface alias (`chat:<agentId>`)
+carries the draft until the first send hands over to the real conversation id.
+
+That handoff is now THE RULE for every surface, not a `/chat` special case, because a surface key is
+stable per SURFACE and `/chat` uses ONE key for every conversation with an agent — keyed on that
+alone, a landing draft would surface inside an unrelated conversation.
+`useComposerDraftRestore` registers and consults the alias ONLY while the conversation has no
+messages, and RELEASES it at the first turn (dropping the alias record when it is that send's
+tombstone, so the surface is never left looking permanently "already sent"). Unmount flushes the
+pending keystroke BEFORE the alias is released — otherwise a draft typed in the last 400ms would
+land under the conversation key alone, the one key a re-minted room never asks for again.
+
+Census: every one of the 13 `AgentConversationColumn` mounts passes a `surfaceKey`, so every
+`AgentTextarea`-based composer inherits the alias; `NewChatLandingInput` was the only composer with
+its own textarea that mounts before its conversation exists (`NewChatLandingInputShell` is a static
+skeleton with no state).
+
+Guard: `__tests__/the-surface-alias-is-only-for-an-unstarted-conversation.test.tsx` runs the hook
+for real in React over the real `instanceUserInput` + `messages` reducers and the real middleware.
+Removing the `hasMessages` gate lets a landing draft into a conversation that already has messages;
+removing the release leaves the tombstone under the surface key. Both proven failing, then passing.
+Verified live: `/chat/new` — 202 characters typed → reload (id re-minted) → back with the notice,
+restored from `matrx.composer-draft.surface.chat:6b6b4e45-…`; then send → tombstone on the
+conversation key while the alias record is released → reload → empty box, no notice, no records.
+
 Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
 `ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
 cheap half of this job and would need its own design.

@@ -29,12 +29,25 @@
 // different one, so a conversation-keyed draft would be orphaned in exactly the
 // situation the defect describes. Measured live 2026-09-17 in the Conductor.
 //
-// So a surface may register an ALIAS — a key that is stable for that surface
-// and that record, e.g. `masterwork-conduct:<rulebookId>`. Every write, every
-// tombstone and every clear is mirrored to it, and a restore falls back to it
-// when the conversation key holds nothing. The alias is never a second source
-// of truth: it holds the same bytes, dies at the same moment, and carries the
-// same tombstone.
+// So a surface may register an ALIAS — a key that is stable for that surface,
+// e.g. `masterwork-conduct:<rulebookId>` or `chat:<agentId>`. Every write,
+// every tombstone and every clear is mirrored to it, and a restore falls back
+// to it when the conversation key holds nothing. The alias is never a second
+// source of truth: it holds the same bytes, dies at the same moment, and
+// carries the same tombstone.
+//
+// 🚨 THE ALIAS IS ONLY FOR A CONVERSATION THAT DOES NOT EXIST YET. A surface
+// key is stable per SURFACE, and some surfaces — `/chat` is the plain case —
+// use one key for every conversation with that agent. Keyed on that alone, a
+// draft left in conversation A would surface in conversation B. So
+// `useComposerDraftRestore` registers and consults the alias ONLY while the
+// conversation has no messages, and RELEASES it at the handoff (first turn),
+// after which the conversation id is real, stable and the only key. Nothing
+// with messages ever writes an alias record, so the worst an alias can hold is
+// an unsent draft from an unstarted composer on that same surface, in this
+// same tab. (Known narrow edge, accepted: opening an EMPTY existing
+// conversation on the same surface can adopt such a draft. It is the person's
+// own unsent text, it is announced on screen, and it is never auto-sent.)
 //
 // ── THE RESURRECTION HAZARD (the reason for `gen`) ──────────────────────────
 //
@@ -134,6 +147,22 @@ export function registerComposerDraftAlias(
 
 export function unregisterComposerDraftAlias(conversationId: string): void {
   aliases.delete(conversationId);
+}
+
+/**
+ * THE HANDOFF. The conversation is real now (it has a turn), so its own id is
+ * the only key it needs. Drop the alias registration, and drop the alias
+ * RECORD when it is the tombstone this conversation's send laid down — the
+ * conversation key already carries that fact, and leaving it behind would make
+ * the surface look permanently "already sent" to the next unstarted composer.
+ * A live draft under the alias is never touched: it belongs to whatever
+ * unstarted composer wrote it.
+ */
+export function releaseComposerDraftAlias(conversationId: string): void {
+  const key = aliases.get(conversationId);
+  aliases.delete(conversationId);
+  if (!key) return;
+  if (readAt(key)?.sent) removeAt(key);
 }
 
 function keysFor(conversationId: string): string[] {
