@@ -27,6 +27,27 @@ import { MediaApiError, createLibrary, resolveMediaInput } from "../api";
 import { formatCompactNumber } from "../format";
 import type { ResolveResult } from "../types";
 
+/**
+ * WHAT THIS BOX HONESTLY ACCEPTS TODAY — named once, used everywhere below.
+ *
+ * 🚨 THIS LIST IS NOT A WISH. The server registers four source adapters
+ * (youtube, podcast_rss, blog_feed, slide_deck), but two of them cannot yet be
+ * SAVED: `media.source_library`'s adapter CHECK does not admit blog_feed or
+ * slide_deck until aidream migration 0871 runs, and 0871 is a chair step that
+ * needs a person at a terminal. Advertising a blog here before then would invite
+ * a paste that resolves and then fails at insert — a screen promising something
+ * it cannot do, which is the one thing this feature's rules forbid.
+ *
+ * So podcasts are advertised (they work end to end — 886 episodes of The Tim
+ * Ferriss Show, verified live 2026-09-17) and blogs and decks are not, YET.
+ * WHEN 0871 LANDS this is the only edit: add "a blog, Substack or Medium
+ * address, or a SlideShare or Speaker Deck profile" to both strings.
+ */
+const ACCEPTED_INPUTS_LABEL =
+    "YouTube channel, handle, playlist or video link, or a podcast name, Apple Podcasts link or RSS feed";
+const ACCEPTED_INPUTS_PLACEHOLDER =
+    "Paste a YouTube channel, @handle or video link — or a podcast name, Apple link or RSS feed";
+
 type Stage =
     | { kind: "idle" }
     | { kind: "resolving" }
@@ -66,7 +87,7 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 message:
                     error instanceof MediaApiError
                         ? error.message
-                        : "That link could not be read. Paste a YouTube channel address, an @handle, a playlist or any video link.",
+                        : `That could not be read. Paste a ${ACCEPTED_INPUTS_LABEL}.`,
                 remedy: error instanceof MediaApiError ? error.remedy : null,
             });
             return;
@@ -103,7 +124,24 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
 
     return (
         <div className="w-full">
-            <div
+            {/*
+              * IT IS A REAL FORM, SO ENTER IS THE BROWSER'S JOB AND NOT OURS.
+              * This box used to be a bare <div> with an `onKeyDown` that
+              * compared `event.key === "Enter"` — which works right up until
+              * something upstream hands React a key event it does not
+              * recognize, and then the one instruction on the screen ("paste
+              * and press Enter") silently does nothing. A <form> with a
+              * `type="submit"` button gets implicit submission from the
+              * browser itself, which is also what puts "Go" on an iOS keyboard
+              * and what a screen reader announces. The keydown handler stays as
+              * well: both roads lead to the same `submit()`, and `busy` makes a
+              * double fire a no-op.
+              */}
+            <form
+                onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+                    event.preventDefault();
+                    void submit();
+                }}
                 className={cn(
                     "flex items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors",
                     "focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20",
@@ -121,21 +159,24 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                         if (stage.kind === "failed") setStage({ kind: "idle" });
                     }}
                     onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (event.key === "Enter") {
+                        // Belt as well as braces: the form's implicit
+                        // submission already covers Enter. This only matters
+                        // for a composed/synthesised key event that never
+                        // reaches the browser's default action.
+                        if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                             event.preventDefault();
                             void submit();
                         }
                     }}
-                    aria-label="YouTube channel, handle, playlist or video link"
-                    placeholder="Paste a YouTube channel, @handle, playlist or any video link"
+                    aria-label={ACCEPTED_INPUTS_LABEL}
+                    placeholder={ACCEPTED_INPUTS_PLACEHOLDER}
                     className="h-11 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
                 />
                 <Button
-                    type="button"
+                    type="submit"
                     size="lg"
                     className="h-11 shrink-0 gap-2"
                     disabled={!value.trim() || busy}
-                    onClick={() => void submit()}
                 >
                     {busy ? (
                         <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -148,17 +189,18 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                           ? "Cataloguing"
                           : "Catalogue"}
                 </Button>
-            </div>
+            </form>
 
             <div className="mt-2 min-h-[1.5rem] px-1 text-sm" aria-live="polite">
                 {stage.kind === "idle" && (
                     <span className="text-muted-foreground">
-                        Every video lists in seconds, split into long videos, Shorts and live.
+                        Everything in it lists in seconds — videos split into long,
+                        Shorts and live; podcasts into every episode with its length.
                     </span>
                 )}
 
                 {stage.kind === "resolving" && (
-                    <span className="text-muted-foreground">Asking YouTube what that is…</span>
+                    <span className="text-muted-foreground">Working out what that is…</span>
                 )}
 
                 {(stage.kind === "resolved" || stage.kind === "creating") && (
