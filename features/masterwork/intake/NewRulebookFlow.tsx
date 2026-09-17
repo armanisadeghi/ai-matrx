@@ -75,6 +75,7 @@ import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWork
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { createDraftRulebook } from "../service";
 import {
   startableApproaches,
@@ -387,6 +388,10 @@ export function NewRulebookFlow() {
   const {
     status: draftStatus,
     restored,
+    applyOnce: applyDraftOnce,
+    didRestore: draftRestored,
+    acknowledge: acknowledgeDraft,
+    discard: discardDraft,
     patch: patchDraft,
     clear: clearDraft,
   } = useWizardDraft<NewRulebookDraftValues>(WIZARD_ID, {
@@ -459,15 +464,30 @@ export function NewRulebookFlow() {
 
   // One-time draft recovery — fill only what the Expert hasn't typed here.
   // `restored` settles exactly once, when the persisted read comes back.
-  const draftApplied = useRef(false);
+  //
+  // AND IT IS SAID OUT LOUD (cold walk 6, 2026-09-17). This used to put the
+  // old goal back with nothing on screen admitting it. The Expert read the
+  // pre-filled textarea as the page she still had to fill in, clicked where
+  // her eye landed and typed her sentence into the middle of the old one —
+  // the Rulebook was created with `prefix + sentence + suffix` as its goal and
+  // the Capture Plan faithfully showed the mess. `applyOnce` owns the
+  // once-ness now and raises `didRestore`, which draws the notice below.
   useEffect(() => {
-    if (draftApplied.current || !restored?.values) return;
-    draftApplied.current = true;
-    const v = restored.values;
-    if (v.goal) setGoal((current) => current || v.goal);
-    if (v.name) setName((current) => current || v.name);
-    setAnswers(v.answers);
-  }, [restored]);
+    applyDraftOnce((v) => {
+      if (v.goal) setGoal((current) => current || v.goal);
+      if (v.name) setName((current) => current || v.name);
+      setAnswers(v.answers);
+    });
+  }, [applyDraftOnce, restored]);
+
+  /** "Start fresh": the saved draft goes, and so does everything it put on
+   *  screen — a notice that leaves the old words in the field is no notice. */
+  const startFresh = () => {
+    discardDraft();
+    setGoal("");
+    setName("");
+    setAnswers(defaultIntakeAnswers);
+  };
 
   // A registry that read cleanly but offers nothing startable is not an error
   // the loader can name — it is this wizard's own problem, so this wizard says
@@ -676,6 +696,16 @@ export function NewRulebookFlow() {
               that isn&apos;t true for you, or leave it and keep going.
             </p>
           </div>
+
+          {/* NOTHING FAILS SILENTLY — including a kindness. The fields below
+              may already hold what this person started last time; if they do,
+              they are told, and "Start fresh" empties them in one click. */}
+          {draftRestored ? (
+            <WizardDraftRestored
+              onStartFresh={startFresh}
+              onDismiss={acknowledgeDraft}
+            />
+          ) : null}
 
           <section className="space-y-2.5">
             <h2 className="text-sm font-semibold text-foreground">
