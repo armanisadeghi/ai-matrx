@@ -93,7 +93,7 @@ export async function fetchExportLibrary(
   signal?: AbortSignal,
 ): Promise<ExportLibrary> {
   const { data } = await getJson<ExportLibrary>(
-    `/media/libraries/${encodeURIComponent(libraryId)}`,
+    `/media/exports/${encodeURIComponent(libraryId)}`,
     { signal, captureErrors: false },
   );
   return data;
