@@ -21,6 +21,7 @@ import {
   MessageSquare,
   NotebookPen,
   Phone,
+  Send,
   Trash2,
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
@@ -37,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
 import { logInteraction, removeInteraction } from "../../service";
 import { parseInteraction } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
@@ -85,6 +87,15 @@ interface Props {
   writeSurfaceName?: string;
   /** Enables party-record copy context; deal reuse deliberately omits it. */
   copyParent?: CrmRecordCopyParent;
+  /**
+   * The person or company this timeline belongs to. Required for the Gmail
+   * compose window's title and for the sentence it shows before Send; without
+   * it the control is not offered rather than opening a window that cannot say
+   * who it is writing to.
+   */
+  partyLabel?: string | null;
+  /** The deal this timeline belongs to, when it is a deal's timeline. */
+  dealLabel?: string | null;
 }
 
 export function InteractionTimeline({
@@ -96,6 +107,8 @@ export function InteractionTimeline({
   getApplicationScope,
   writeSurfaceName,
   copyParent,
+  partyLabel,
+  dealLabel,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -104,6 +117,7 @@ export function InteractionTimeline({
   const [minutes, setMinutes] = useState("");
   const [saving, setSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const openGmailCompose = useOpenGmailComposeWindow();
 
   const expandableRowIds = interactions
     .filter((row) => Boolean(row.body))
@@ -270,6 +284,31 @@ export function InteractionTimeline({
             )}
             {direction === "outbound" ? "Outbound" : "Inbound"}
           </button>
+          {/* Composing an email is not the same act as LOGGING one that
+              already happened, so it is its own control rather than a mode of
+              this strip. It opens the compose window over the record — the
+              record stays readable while the message is written about it. */}
+          {channel === "email" && partyLabel && (
+            <button
+              type="button"
+              onClick={() =>
+                openGmailCompose({
+                  partyId,
+                  organizationId: orgId,
+                  partyLabel,
+                  dealId: dealId ?? null,
+                  dealLabel: dealLabel ?? null,
+                  onSent: () => {
+                    void onChanged();
+                  },
+                })
+              }
+              className="inline-flex h-11 items-center gap-1 rounded border border-border px-2 text-[11px] font-medium text-foreground hover:bg-accent sm:h-6"
+            >
+              <Send className="h-3 w-3" />
+              Write and send with Gmail
+            </button>
+          )}
           {channel === "call" && (
             <Input
               value={minutes}

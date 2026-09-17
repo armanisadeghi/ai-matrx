@@ -397,6 +397,8 @@ export function DealRecordPage({ dealId }: Props) {
                     interactions={detail.interactions}
                     onChanged={refresh}
                     dealId={deal.id}
+                    partyLabel={deal.party.display_name}
+                    dealLabel={deal.name}
                   />
                 ) : (
                   <SectionCard title="Activity" Icon={History}>

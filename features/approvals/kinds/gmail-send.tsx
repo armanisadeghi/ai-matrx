@@ -32,6 +32,10 @@ import { useEffect } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { checkSendEligibility } from "@/features/crm/compliance/service";
+import {
+  GMAIL_AUDIT_PENDING_MESSAGE,
+  recordGmailSendInteraction,
+} from "@/features/crm/gmail/service";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
@@ -82,6 +86,17 @@ export interface GmailSendPayload {
   listId?: string | null;
   /** The sending identity, when the proposer chose one. */
   identityId?: string | null;
+  /**
+   * WHO THE SENT RECORD BELONGS TO (google-native PLAN §4.4). Without it an
+   * approved message leaves and nothing on the Person's timeline ever says so —
+   * which is the entire reason to send from a CRM at all. A proposer that
+   * cannot name a party simply omits it and the message is recorded nowhere,
+   * loudly, rather than on the wrong record.
+   */
+  partyId?: string | null;
+  organizationId?: string | null;
+  dealId?: string | null;
+  contactPointId?: string | null;
 }
 
 function isRecord(value: Json): value is { [key: string]: Json } {
@@ -124,7 +139,89 @@ export function narrowGmailSendPayload(
     listId: typeof payload.listId === "string" ? payload.listId : null,
     identityId:
       typeof payload.identityId === "string" ? payload.identityId : null,
+    partyId: typeof payload.partyId === "string" ? payload.partyId : null,
+    organizationId:
+      typeof payload.organizationId === "string"
+        ? payload.organizationId
+        : null,
+    dealId: typeof payload.dealId === "string" ? payload.dealId : null,
+    contactPointId:
+      typeof payload.contactPointId === "string"
+        ? payload.contactPointId
+        : null,
   };
+}
+
+/**
+ * Put the approved message on the CRM record's timeline.
+ *
+ * Calls the ONE writer (`features/crm/gmail/service.ts`) — the same one the
+ * compose window uses — so an agent's sent message and a person's sent message
+ * are the same kind of row, with the same fields, on the same timeline. The
+ * difference is only what this path can fill in: who drafted it, which run,
+ * and which queue row the approval was recorded in.
+ *
+ * A proposal that names no party is NOT recorded silently. The queue says so,
+ * because the alternative is a message that left with no trace in the CRM.
+ */
+async function recordProposalOnTimeline(
+  payload: GmailSendPayload,
+  proposal: ApprovalProposal,
+  responseData: unknown,
+  approverId: string | null,
+): Promise<void> {
+  if (!payload.partyId || !payload.organizationId) {
+    toast.warning(
+      "The message was sent, but the draft did not say which record it belongs to, so nothing was added to a timeline. Log it by hand.",
+    );
+    return;
+  }
+  const messageId =
+    responseData && typeof responseData === "object"
+      ? (responseData as { message_id?: unknown }).message_id
+      : null;
+  if (typeof messageId !== "string") {
+    toast.error(
+      "The message was sent but Gmail's message id did not come back, so it could not be recorded on the timeline.",
+    );
+    return;
+  }
+
+  const result = await recordGmailSendInteraction({
+    receipt: {
+      messageId,
+      connectionId: payload.connectionId,
+      fromEmail: payload.fromEmail,
+      to: payload.to,
+      cc: payload.cc,
+      subject: payload.subject,
+      body: payload.body,
+    },
+    association: {
+      partyId: payload.partyId,
+      organizationId: payload.organizationId,
+      dealId: payload.dealId ?? null,
+      contactPointId: payload.contactPointId ?? null,
+      mediumId: payload.recipientMediumId ?? null,
+    },
+    approvedByUserId: approverId,
+    draftedBy: {
+      agentId: proposal.proposerAgentId,
+      runId: proposal.proposerRunId,
+      label: proposal.proposerLabel,
+      assistId: proposal.assist.id,
+    },
+  });
+
+  if (result.failure) {
+    // The message HAS LEFT. Never swallowed, never retried on its own.
+    toast.error(
+      "The message was sent, but it could not be recorded on the record's timeline. Log it by hand so the history is true.",
+      { description: result.failure },
+    );
+  } else if (result.auditTrailPending) {
+    toast.warning(GMAIL_AUDIT_PENDING_MESSAGE);
+  }
 }
 
 /**
@@ -146,6 +243,7 @@ function GmailApprovalBody({
   onDecided: () => void;
 }) {
   const callId = `approval:${proposal.assist.id}`;
+  const approverId = useAppSelector(selectUserId);
 
   useEffect(() => {
     registerAskResolver(callId, (response) => {
@@ -160,6 +258,17 @@ function GmailApprovalBody({
               receipt,
             );
             toast.success("Sent, and recorded as approved by you.");
+            // 🚨 AND ONTO THE RECORD'S TIMELINE, through the ONE writer the
+            // compose window uses (`features/crm/gmail/service.ts`). An agent
+            // draft that leaves without a sent record is the anti-pattern the
+            // plan names by name: the message exists and the CRM never heard
+            // of it.
+            await recordProposalOnTimeline(
+              payload,
+              proposal,
+              response.data,
+              approverId ?? null,
+            );
           } else if (response.confirmed === false) {
             await recordApprovalDecision(
               proposal.assist.id,

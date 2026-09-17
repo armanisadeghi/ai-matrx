@@ -461,6 +461,12 @@ const CrmCreatePartyWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/crm/CrmCreatePartyWindow"),
   { ssr: false },
 );
+import { narrowGmailDraftedBy } from "@/features/crm/gmail/types";
+
+const GmailComposeWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/crm/GmailComposeWindow"),
+  { ssr: false },
+);
 const CodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/code/CodeEditorWindow").then(
@@ -1346,6 +1352,9 @@ export default function OverlayController() {
     crmCreatePartyWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "crmCreatePartyWindow"),
     ),
+    gmailComposeWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "gmailComposeWindow"),
+    ),
     cropStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cropStudioWindow"),
     ),
@@ -1755,6 +1764,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     crmCreatePartyWindow: useAppSelector((s) =>
       selectOverlayData(s, "crmCreatePartyWindow"),
+    ) as Record<string, unknown> | null,
+    gmailComposeWindow: useAppSelector((s) =>
+      selectOverlayData(s, "gmailComposeWindow"),
     ) as Record<string, unknown> | null,
     cropStudioWindow: useAppSelector((s) =>
       selectOverlayData(s, "cropStudioWindow"),
@@ -3906,6 +3918,50 @@ export default function OverlayController() {
             }
             initialName={
               typeof data?.initialName === "string" ? data.initialName : null
+            }
+          />
+        );
+      })()}
+
+      {/* gmailComposeWindow */}
+      {(() => {
+        if (!isOpenById.gmailComposeWindow) return null;
+        const data = dataById.gmailComposeWindow;
+        const partyId = typeof data?.partyId === "string" ? data.partyId : null;
+        const organizationId =
+          typeof data?.organizationId === "string" ? data.organizationId : null;
+        // A compose window with no record and no organization cannot write the
+        // sent record it exists to write — it does not open half-alive.
+        if (!partyId || !organizationId) return null;
+        const draftedBy = narrowGmailDraftedBy(data?.draftedBy);
+        return (
+          <GmailComposeWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "gmailComposeWindow" }))
+            }
+            partyId={partyId}
+            organizationId={organizationId}
+            partyLabel={
+              typeof data?.partyLabel === "string" ? data.partyLabel : "this record"
+            }
+            dealId={typeof data?.dealId === "string" ? data.dealId : null}
+            dealLabel={
+              typeof data?.dealLabel === "string" ? data.dealLabel : null
+            }
+            projectId={
+              typeof data?.projectId === "string" ? data.projectId : null
+            }
+            initialTo={typeof data?.initialTo === "string" ? data.initialTo : null}
+            initialSubject={
+              typeof data?.initialSubject === "string" ? data.initialSubject : null
+            }
+            initialBody={
+              typeof data?.initialBody === "string" ? data.initialBody : null
+            }
+            draftedBy={draftedBy}
+            sentCallbackId={
+              typeof data?.sentCallbackId === "string" ? data.sentCallbackId : null
             }
           />
         );

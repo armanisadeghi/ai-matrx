@@ -820,8 +820,69 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 - **Enrollment asks the same question everywhere** — `OutreachListPicker`
   (hook + fields), extracted from `AddToOutreachListDialog`.
 
+## Email a record with Gmail (`features/crm/gmail/`)
+
+Write an email **from** a Person (or a deal's Person) and send it through the
+reviewed-send path Google approved us on — then keep the sent message as a real
+row on that record's timeline. Champions: HubSpot for the associated sent
+record, Superhuman for the draft experience; the audit trail on the sent record
+is the part neither of them has. Plan: `common-docs/projects/google-native/PLAN.md` §4.4.
+
+**The parts.** `GmailComposePanel` is the surface (compose → review); it is
+mounted by `GmailComposeWindow` (overlay `gmailComposeWindow`, opened with
+`useOpenGmailComposeWindow`) and nowhere else yet. `recipients.ts` decides which
+addresses the record offers; `service.ts` holds the ONE writer of a
+Gmail-sent interaction row; `types.ts` holds the shapes and the `*Pending`
+stand-in for the audit columns.
+
+**The rules this corner runs on**
+
+- **The panel never sends.** `GmailReviewCard`
+  (`features/google-workspace/agent/`) sends, because that card IS the
+  authorization: every field editable, the bytes on screen are the bytes that
+  leave, one message per approval. The panel's own primary button says "Review
+  before sending" and the review step spells out the consequence above the
+  card's Send.
+- **`crm.check_send_eligibility` runs before the card is offered**, through
+  `features/crm/compliance/service.ts` — the ONE send authority. A verdict that
+  has not answered yet is NOT permission: Review stays disabled while the checks
+  are in flight, because the card's Send posts straight to the reviewed-send
+  endpoint and cannot be gated from outside it. An address that is not a contact
+  point we hold has nothing to check, and the panel says exactly that instead of
+  implying it was cleared.
+- **`channel = gmail` is `channel_code = 'email'` + `provider = 'gmail'`.**
+  `channel_code`'s CHECK is a closed list of eight and `provider` is already how
+  the table names the carrier (live rows say `twilio`, `apollo`). The external
+  message id is `provider_interaction_id`; the account it went out through is
+  `provider_account_id` (the Google **connection id**, not the address — an
+  address can be aliased).
+- **ONE writer, two callers.** `recordGmailSendInteraction` is called by the
+  compose panel and by the approval queue's `gmail_send` kind
+  (`features/approvals/kinds/gmail-send.tsx`), so an agent's sent message and a
+  person's sent message are the same row shape on the same timeline. An agent
+  proposal carries `partyId` / `organizationId` / `dealId` / `contactPointId` on
+  its payload; one that does not is still sent (the card is the authorization)
+  and the queue says out loud that nothing was recorded.
+- **The message has already left when the writer runs.** It never throws, never
+  retries on its own, and never reports success it did not achieve — a caller
+  that thinks a send was not recorded will send it again.
+- **The audit columns are pending.** `migrations/crm_interaction_gmail_audit_trail.sql`
+  adds `drafted_by_agent_id`, `drafted_by_run_id`, `drafted_by_label`,
+  `approved_by`, `approved_at`, `approval_assist_id` to `crm.interaction`. Until
+  it is applied and `pnpm db-types` has run, the writer records the send WITHOUT
+  them and the surface shows `GMAIL_AUDIT_PENDING_MESSAGE`, which names the file.
+- **No `project_id`.** A CRM table may not depend on a project FK (db-rules
+  §6d); a message composed from a project associates through
+  `platform.associations`. The panel carries the project id and the metadata
+  payload records which surface composed it — that wiring is NOT built yet.
+
 ## Not built yet
 
+- Associating a Gmail send with a **project** through `platform.associations`
+  (the id is carried and recorded in `metadata`, never dropped silently).
+- A `crm.sending_event` row for a Gmail send: that table's `identity_id` is NOT
+  NULL and points at a verified CRM sending identity, which a personal Gmail
+  mailbox is not. The eligibility gate runs either way; the ledger row does not.
 - "Shared" list scope (needs a crm grant-reader RPC).
 - The `web.brand` fold and public expert registration — see
   [`common-docs/systems/crm/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/crm/HANDOFF.md).

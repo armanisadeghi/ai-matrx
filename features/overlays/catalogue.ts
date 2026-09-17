@@ -433,6 +433,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  gmailComposeWindow: {
+    label: "Email a CRM record",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   cropStudioWindow: {
     label: "Crop Studio Window",
     instanceMode: "singleton",

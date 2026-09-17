@@ -292,6 +292,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
     mobilePresentation: "drawer",
   },
+  {
+    // A WINDOW so the record stays readable behind the message being written
+    // about it. Ephemeral: a half-written email is not state to restore into a
+    // new session with an account and a recipient that may have moved on.
+    slug: "gmail-compose-window",
+    overlayId: "gmailComposeWindow",
+    kind: "window",
+    label: "Email a CRM record",
+    defaultData: { partyId: null, organizationId: null, partyLabel: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
 
   // ── Task Editor ─────────────────────────────────────────────────────────
   {

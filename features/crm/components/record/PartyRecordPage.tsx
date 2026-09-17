@@ -328,6 +328,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   getApplicationScope={getScope}
                   writeSurfaceName={CRM_RECORD_SURFACE_NAME}
                   copyParent={copyParent}
+                  partyLabel={party.display_name}
                 />
                 <PartyNotes
                   partyId={party.id}
