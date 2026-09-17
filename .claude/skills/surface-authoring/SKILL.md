@@ -85,6 +85,7 @@ Every manifest declares `readiness: "verified" | "partial" | "stub"` (REQUIRED â
 1. Make sure ui_client row exists       (matrx-user / matrx-admin / matrx-public / chrome-extension)
 2. Add the manifest file + register     (features/surfaces/manifests/...)
 3. Sync that surface's DB mirror        (direct transactional `--surface` command)
+4. Verify its live mirror              (matching `--check --surface` command)
 ```
 
 Then in the surface's code: emit an `ApplicationScope` via `createXxxScope(...)` and pass `runtime: { surfaceName: "<client>/<local>" }` to `launchAgentExecution`.

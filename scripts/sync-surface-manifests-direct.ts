@@ -387,7 +387,15 @@ async function runSelfTest() {
     let legacyFailed = false;
     try {
       await client.query(legacySql);
-    } catch {
+    } catch (error) {
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        error.code !== "23503"
+      ) {
+        throw error;
+      }
       legacyFailed = true;
     }
     await client.query("ROLLBACK TO SAVEPOINT legacy_emitter");

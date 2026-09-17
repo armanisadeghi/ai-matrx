@@ -127,7 +127,7 @@ export const educationFlashcardSetManifest: SurfaceManifest = {
   urlPattern: "/education/flashcards/[setId]",
   readiness: "partial",
   readinessNote:
-    "Live registration and the deck-detail production context run are verified. Independent end-to-end binding mutation and full surface certification remain required before verified.",
+    "Live registration, the deck-detail production context run, and an independent User/Me binding mutation are verified. Broader full surface certification remains required before verified.",
   intro: `<surface_intro>
 You are on one flashcard SET at /education/flashcards/[setId], not the flashcards library and not its editor. This page shows the deck's title and metadata, all cards, and the learner's real study signal so they can study, enrich, or understand this particular deck.
 Check set_loaded first. When it is false, do not describe the deck as empty: load_error may explain why it is unavailable. When it is true, cards is the complete deck visible on this page. Use card_kind to interpret each entry: matching cards use pairs, and cloze cards preserve deletion markup in front. card_mastery is evidence about learning, not content an agent may invent or change.

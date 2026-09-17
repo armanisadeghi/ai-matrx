@@ -15,6 +15,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+**Analyzed 2026-09-17 — verified live and in the write path:** the production
+`AgentListInlinePicker` used by
+`features/surfaces/components/bind/SurfaceAgentBindPanel.tsx` listed **Quick Test Agent 2**
+(`92c37a37-7630-4517-b2a2-b6f1d2427208`) under Mine on
+`/education/flashcards/397e8cbb-d6fc-49cd-8864-542c2f910601`. Selecting it and saving a User/Me
+binding produced `platform.associations.id = 336d5eb9-cea7-467f-9596-c67bc5f59cfa`, role
+`binding:u:87a6e699-3622-4869-8843-d0867456c0dd`, with an empty `surface_binding` payload. The UI
+closed as though the save succeeded, but the binding was invisible in the reopened Agents menu
+because `agent.menu_surface` inner-joins `agent.card`; a direct production read found no
+`agent.card` row for that selected ID. Card absence alone does **not** prove the picker identity is
+invalid: the canonical picker package may intentionally source another agent model, so that source
+model and its lifecycle must be investigated before choosing the repair.
+
+**Cleanup proof:** the exact association above was deleted in a guarded transaction, and the
+surface association census returned to zero after the independent Badass Agent bind probe was also
+cleaned up. **Fix shape:** trace which Redux/package source supplied the stale picker row; then make
+selection and binding agree on one live agent identity contract, reject an unresolvable source ID
+before `assoc_add`, and pin the stale/deleted-agent case so no successful-looking invisible binding
+can be created.
+
 ### D324 — EVERY release is blocked: `@ai-matrx/associations` is installed twice, and the remedy needs an install the shared preview refuses (2026-09-15)
 
 **Live release blocker, not mine, and it blocks the `Matrx frontend release watch` automation too** —
