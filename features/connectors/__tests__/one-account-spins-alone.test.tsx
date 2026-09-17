@@ -56,7 +56,7 @@ function account(id: string, label: string): ConnectorAccount {
     statusReason: "This account can authorize Google calls.",
     statusRemedy: null,
     lastVerifiedAt: "2026-09-17T00:00:00Z",
-    lastError: null,
+    lastRefusalSentence: null,
     activity: {},
   };
 }
@@ -87,7 +87,9 @@ afterEach(() => {
 });
 
 describe("a press on one account", () => {
-  const busy = { accountId: "acct-1", productKey: "calendar" } as const;
+  // F-19 / VERIFY-U-P2-R3 N17: the panel holds a SET of in-flight presses, so a
+  // second account's press cannot clear the first account's marker.
+  const busy = [{ accountId: "acct-1", productKey: "calendar" }] as const;
 
   it("spins that account's control", () => {
     render(

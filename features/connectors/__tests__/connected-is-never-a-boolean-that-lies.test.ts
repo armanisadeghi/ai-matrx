@@ -65,7 +65,7 @@ function account(
     statusReason: "It can authorize Google requests.",
     statusRemedy: null,
     lastVerifiedAt: "2026-09-17T00:00:00Z",
-    lastError: null,
+    lastRefusalSentence: null,
     ...overrides,
   };
 }

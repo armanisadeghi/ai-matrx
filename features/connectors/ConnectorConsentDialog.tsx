@@ -262,10 +262,12 @@ function ProductRow({
           <p
             className={cn(
               "mt-1 text-xs",
-              outcome.state === "refused" ? "text-destructive" : "text-success",
+              outcome.state === "granted" || outcome.state === "already_granted"
+                ? "text-success"
+                : "text-destructive",
             )}
           >
-            {outcome.state === "refused" ? outcome.message : "Connected."}
+            {outcome.state === "granted" ? "Connected." : outcome.message}
           </p>
         ) : null}
 
@@ -357,6 +359,12 @@ export function ConnectorConsentBody({
   const [busy, setBusy] = useState(false);
   /** True once a consent has been attempted — per-row results only exist after. */
   const [attempted, setAttempted] = useState(false);
+  /**
+   * Did the last attempt's exchange COMPLETE? Per-row outcomes cannot be read
+   * off the account's scopes alone, because a renewal's scopes were already
+   * there (N10). Reset with every change of selection or account.
+   */
+  const [exchangeCompleted, setExchangeCompleted] = useState(false);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
   /**
    * D8: the answer a press gets when the press would do nothing. The button
@@ -386,6 +394,7 @@ export function ConnectorConsentBody({
   const chooseAccount = (nextId: string) => {
     setAccountId(nextId);
     setAttempted(false);
+    setExchangeCompleted(false);
     setFailure(null);
     setAnswer(null);
     const nextAccount = accounts.find((row) => row.id === nextId) ?? null;
@@ -399,6 +408,7 @@ export function ConnectorConsentBody({
 
   const toggle = (product: ConnectorProduct, next: boolean) => {
     setAttempted(false);
+    setExchangeCompleted(false);
     setFailure(null);
     setAnswer(null);
     setSelected((current) =>
@@ -429,6 +439,7 @@ export function ConnectorConsentBody({
             : { type: "user" },
         loginHint: account?.label ?? null,
       });
+      setExchangeCompleted(true);
       setAttempted(true);
       await refetch();
       toast.success(`${provider.name} connected.`);
@@ -443,6 +454,9 @@ export function ConnectorConsentBody({
       // inline — a code or a capability key on this screen is the leak N4 found.
       setFailure(consentFailureAnswer(cause));
       // Read the account back anyway: a partial grant must not be invisible.
+      // But the exchange did NOT complete, and no row may call itself granted on
+      // the strength of scopes a renewal already had (N10).
+      setExchangeCompleted(false);
       setAttempted(true);
       await refetch();
     } finally {
@@ -455,7 +469,13 @@ export function ConnectorConsentBody({
   // nothing to show before the person has actually pressed the button.
   const resultRows: ConsentOutcome[] | null =
     attempted && !busy
-      ? consentOutcomes({ provider, plan, account, rollout })
+      ? consentOutcomes({
+          provider,
+          plan,
+          account,
+          rollout,
+          exchange: { completed: exchangeCompleted },
+        })
       : null;
 
   if (isLoading) {

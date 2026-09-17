@@ -20,8 +20,12 @@
 //     account instead of the same press repeated on every row, because one
 //     approval renews every product it holds (`actionScope`, VERIFY-U-P2-R2 N2:
 //     nine rows used to say "Reconnect <account>." beside no control at all);
-//   • when the ACCOUNT was last confirmed, and its last refusal verbatim,
-//     labelled as account-level because that is what the server records.
+//   • when the ACCOUNT was last confirmed, and the account-level refusal AS A
+//     SENTENCE the adapter translated — never the server's own words, which are
+//     written for an operator and carried a vault item name, a connection UUID
+//     and a Python exception class onto this card eleven times (VERIFY-U-P2-R3,
+//     N9); and it is stated once, not repeated when it is already the account's
+//     status sentence.
 
 import {
   AlertTriangle,
@@ -74,6 +78,20 @@ export interface ConnectorBusyAction {
   productKey: string | null;
 }
 
+/** One in-flight press, as a key a set can hold. */
+export function busyActionKey(action: ConnectorBusyAction): string {
+  return `${action.accountId}:${action.productKey ?? ""}`;
+}
+
+/** Is THIS press one of the ones running right now? */
+export function isBusy(
+  running: readonly ConnectorBusyAction[] | null | undefined,
+  action: ConnectorBusyAction,
+): boolean {
+  const key = busyActionKey(action);
+  return (running ?? []).some((entry) => busyActionKey(entry) === key);
+}
+
 export interface ConnectedAccountHealthProps {
   provider: ConnectorProviderConfig;
   account: ConnectorAccount;
@@ -90,8 +108,14 @@ export interface ConnectedAccountHealthProps {
   onReconnectAccount: () => void;
   /** Remove the account. The caller states the consequence before it runs. */
   onRevoke: () => void;
-  /** The press that is running right now, anywhere in the panel, or null. */
-  busy?: ConnectorBusyAction | null;
+  /**
+   * EVERY press running right now, anywhere in the panel. A set, not one slot:
+   * with one provider window open on account one, a press on account two used to
+   * move the single marker and then clear it in its own `finally`, so account
+   * one's control stopped spinning while its window was still open
+   * (VERIFY-U-P2-R3, N17).
+   */
+  busy?: readonly ConnectorBusyAction[] | null;
   revoking?: boolean;
   className?: string;
 }
@@ -104,7 +128,7 @@ export function ConnectedAccountHealth({
   onReconnect,
   onReconnectAccount,
   onRevoke,
-  busy = null,
+  busy = [],
   revoking = false,
   className,
 }: ConnectedAccountHealthProps) {
@@ -115,8 +139,7 @@ export function ConnectedAccountHealth({
   const accountScoped = health.filter(
     (row) => row.actionLabel !== null && row.actionScope === "account",
   );
-  const busyHere = busy?.accountId === account.id ? busy : null;
-  const accountBusy = busyHere?.productKey === null;
+  const accountBusy = isBusy(busy, { accountId: account.id, productKey: null });
 
   return (
     <div
@@ -200,16 +223,20 @@ export function ConnectedAccountHealth({
                 </p>
               </div>
             ) : null}
-            <p
-              className={cn(
-                "mt-1 text-xs",
-                account.lastError ? "text-warning" : "text-muted-foreground",
-              )}
-            >
-              {account.lastError
-                ? `Last refusal recorded on this account: ${account.lastError}`
-                : `No refusal recorded on this account.`}
-            </p>
+            {/* The account-level refusal, in the words the adapter translated it
+                into — and only when it adds something the status sentence above
+                has not already said, so one fact is stated once. */}
+            {account.lastRefusalSentence &&
+            account.lastRefusalSentence !== account.statusReason ? (
+              <p className="mt-1 text-xs text-warning">
+                Last refusal recorded on this account:{" "}
+                {account.lastRefusalSentence}
+              </p>
+            ) : account.lastRefusalSentence ? null : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                No refusal recorded on this account.
+              </p>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -232,7 +259,10 @@ export function ConnectedAccountHealth({
           const style = STATE_STYLE[row.state];
           const StateIcon = style.icon;
           const Icon = row.product.icon;
-          const busy = busyHere?.productKey === row.product.key;
+          const rowBusy = isBusy(busy, {
+            accountId: account.id,
+            productKey: row.product.key,
+          });
           // A dead credential is repaired once, on the account above: repeating
           // the same press on every row would be nine windows for one repair.
           const productAction =
@@ -315,10 +345,10 @@ export function ConnectedAccountHealth({
                     variant="outline"
                     size="sm"
                     onClick={() => onReconnect(row.product.key)}
-                    disabled={busy}
+                    disabled={rowBusy}
                     className="h-11 shrink-0 text-sm sm:h-7 sm:text-xs"
                   >
-                    {busy ? (
+                    {rowBusy ? (
                       <Loader2
                         className="mr-1 h-3 w-3 animate-spin"
                         aria-hidden

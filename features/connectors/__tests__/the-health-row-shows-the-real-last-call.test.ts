@@ -87,7 +87,7 @@ function account(overrides: Partial<ConnectorAccount> = {}): ConnectorAccount {
     statusReason: "This account can authorize Google calls.",
     statusRemedy: null,
     lastVerifiedAt: "2026-09-14T22:11:00Z",
-    lastError: null,
+    lastRefusalSentence: null,
     ...overrides,
   };
 }
@@ -170,6 +170,12 @@ describe("folding capabilities into the product the person sees", () => {
         code: "quota_exhausted",
         httpStatus: 429,
       },
+      // F-19 / VERIFY-U-P2-R3 N11: the fold now STATES whether the refusal it
+      // carries still stands, because only it can compare a capability's refusal
+      // with that capability's OWN success. Sheets has never succeeded, so the
+      // quota refusal stands — it is self-healing, so the row stays connected
+      // with the quota sentence beside it either way.
+      refusalStands: true,
     });
     // A product with no recorded call is absent, not zeroed.
     expect(activity.gmail).toBeUndefined();

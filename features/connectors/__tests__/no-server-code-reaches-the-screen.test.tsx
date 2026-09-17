@@ -190,7 +190,7 @@ const ACCOUNT: ConnectorAccount = {
   statusReason: "This account can authorize Google calls.",
   statusRemedy: null,
   lastVerifiedAt: "2026-09-17T00:00:00Z",
-  lastError: null,
+  lastRefusalSentence: null,
   activity: {},
 };
 

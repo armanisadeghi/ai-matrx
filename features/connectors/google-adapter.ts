@@ -26,7 +26,10 @@ import {
   useGoogleCapabilities,
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
-import { diagnoseGoogleConnection } from "@/features/marketing/google/health";
+import {
+  diagnoseGoogleConnection,
+  googleAccountRefusalSentence,
+} from "@/features/marketing/google/health";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
@@ -154,12 +157,20 @@ export const GOOGLE_FAILURE_LANGUAGE: Record<string, string> = {
 };
 
 /**
- * The one sentence for a failure we have no sentence for. It is honest about all
- * three things that matter — it failed, nothing changed, and the detail is one
- * click away — and it never carries the code (D6).
+ * The one sentence for a failure we have no sentence for. It states ONLY what is
+ * known and never carries the code (D6).
+ *
+ * 🚨 IT MUST NOT CLAIM "nothing was changed" (VERIFY-U-P2-R3, N16). This
+ * sentence is what every UNMAPPED failure gets, and the hub's own
+ * post-authorization raise — "authorized, but NONE of its N discovered resources
+ * could be persisted" — lands here AFTER the token exchange, the vault write and
+ * the scope update. The connection very much changed. The mapped sentences that
+ * do say "nothing was changed" are the pre-exchange policy refusals, where it is
+ * true. So this one sends the person to the place that knows: the account's own
+ * health rows.
  */
 export const GOOGLE_GENERIC_FAILURE_SENTENCE =
-  "Google did not finish connecting this, and nothing was changed. Try again; if it keeps happening, open the details below and send them to us.";
+  "Google did not finish connecting this. Part of it may already have been recorded, so check this account's health below before you try again — and if it keeps happening, open the details and send them to us.";
 
 /** What a consent surface shows after a failed press. */
 export interface ConsentFailureAnswer {
@@ -234,7 +245,10 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     statusReason: diagnosis.reason,
     statusRemedy: diagnosis.remedy,
     lastVerifiedAt: row.last_verified_at,
-    lastError: row.last_error,
+    // TRANSLATED, never the column. `last_error` is aidream's operator text and
+    // the generic shape has no field a raw provider string may travel in
+    // (VERIFY-U-P2-R3, N9).
+    lastRefusalSentence: googleAccountRefusalSentence(row),
     activity: googleActivityByProduct(GOOGLE_CONNECTOR_PROVIDER, recorded),
   };
 }

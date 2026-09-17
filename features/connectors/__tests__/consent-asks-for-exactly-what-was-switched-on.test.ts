@@ -60,7 +60,7 @@ function account(scopes: string[]): ConnectorAccount {
     statusReason: "fine",
     statusRemedy: null,
     lastVerifiedAt: "2026-09-17T00:00:00Z",
-    lastError: null,
+    lastRefusalSentence: null,
   };
 }
 
@@ -156,6 +156,10 @@ describe("consentOutcomes", () => {
       plan,
       account: account([OPENID, DRIVE_FILE]),
       rollout: rollout(),
+      // F-19 / VERIFY-U-P2-R3 N10: the exchange result is part of the answer —
+      // scope presence alone cannot tell a renewal that landed from one that
+      // never happened.
+      exchange: { completed: true },
     });
     const byKey = Object.fromEntries(
       outcomes.map((outcome) => [outcome.product.key, outcome.state]),

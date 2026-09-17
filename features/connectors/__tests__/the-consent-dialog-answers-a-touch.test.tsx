@@ -123,7 +123,7 @@ const INFO: ConnectorAccount = {
   statusReason: "This account can authorize Google calls.",
   statusRemedy: null,
   lastVerifiedAt: "2026-09-14T22:11:00Z",
-  lastError: null,
+  lastRefusalSentence: null,
 };
 
 let container: HTMLDivElement;

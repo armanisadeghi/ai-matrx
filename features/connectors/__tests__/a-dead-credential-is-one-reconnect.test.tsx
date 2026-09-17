@@ -127,7 +127,7 @@ const DEAD: ConnectorAccount = {
   statusReason: "Google would not renew this account's permission.",
   statusRemedy: "Reconnect probe@example.com.",
   lastVerifiedAt: "2026-07-25T12:00:00Z",
-  lastError: null,
+  lastRefusalSentence: null,
   activity: {},
 };
 

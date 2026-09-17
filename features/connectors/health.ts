@@ -40,6 +40,15 @@
 // beside no control at all and the consent dialog answered "everything you
 // switched on is already connected" (VERIFY-U-P2-R2, N2).
 //
+// A REFUSAL STANDS UNTIL SOMETHING ANSWERS THE CALL IT REFUSED — and when a
+// product covers several provider capabilities, only the adapter can tell:
+// `activity.refusalStands` is its answer, and this file honours it rather than
+// comparing the product's newest refusal with the product's newest success. A
+// `docs` refusal followed five minutes later by a `drive_files` success rendered
+// "Connected" with no control and "Reconnect it and approve Docs." two lines
+// below it (VERIFY-U-P2-R3, N11). A timestamp that does not parse is not a
+// timestamp, on either half (N14).
+//
 // A RECORDED REFUSAL CHANGES WHAT THE ROW MAY CLAIM. "Connected" is never a
 // boolean that lies, and a product whose last provider call was refused is not
 // connected just because its scopes are all present: when the newest fact for a
@@ -77,8 +86,17 @@ export interface ConnectorAccount {
   statusRemedy: string | null;
   /** Account-level: when the provider last confirmed this credential. */
   lastVerifiedAt: string | null;
-  /** Account-level: the last refusal the server recorded, verbatim. */
-  lastError: string | null;
+  /**
+   * Account-level: the last refusal recorded on this account, AS A SENTENCE an
+   * adapter already translated. Never the provider's or the server's own text.
+   *
+   * 🚨 There used to be a `lastError` here carrying `users.integration_connections
+   * .last_error` verbatim, which is aidream's operator text — a vault item name,
+   * a connection UUID and a Python exception class reached the screen through it
+   * (VERIFY-U-P2-R3, N9). The field is gone so no adapter can do that again: the
+   * translation happens where the provider is known, and this carries the result.
+   */
+  lastRefusalSentence: string | null;
   /**
    * What the provider RECORDED for this account, per product key. Supplied by
    * the provider adapter from the server's own call record; absent means the
@@ -128,6 +146,16 @@ export interface ConnectorProductActivity {
   lastSuccessAt?: string | null;
   /** The last refusal for this product, in the provider's own words. */
   lastRefusal?: ConnectorRefusalInput | null;
+  /**
+   * Does that refusal still STAND — has nothing since answered the call it
+   * refused? The adapter states it because only the adapter has the facts: one
+   * product row may cover several provider capabilities (Workspace files covers
+   * `drive_files`, `docs` and `sheets`), and comparing the product's newest
+   * refusal against the product's newest success loses a live refusal behind a
+   * sibling capability's success (VERIFY-U-P2-R3, N11). Absent = derive it from
+   * the two timestamps, which is correct for a one-capability product.
+   */
+  refusalStands?: boolean;
 }
 
 /** What an adapter hands over for one recorded refusal. */
@@ -305,6 +333,16 @@ export type ConnectorProductAction = "Connect" | "Reconnect";
  */
 export type ConnectorActionScope = "product" | "account";
 
+/**
+ * A timestamp, or null when the string is not one. Used on BOTH halves of the
+ * recorded activity: `NaN` comparisons are silently false, so an unreadable
+ * success timestamp used to make every refusal stop standing (N14).
+ */
+function parsableTimestamp(value: string | null): string | null {
+  if (!value) return null;
+  return Number.isNaN(Date.parse(value)) ? null : value;
+}
+
 function rolloutFor(
   product: ConnectorProduct,
   rollout: readonly ConnectorCapabilityRollout[],
@@ -383,11 +421,13 @@ export function productHealth({
   // tests) or leave it on the account it read it from. One resolution, so no
   // component has to remember to pass it through.
   const recorded = (activity ?? account?.activity)?.[product.key];
-  const lastSuccessAt = recorded?.lastSuccessAt ?? null;
+  // A timestamp that does not parse is not a timestamp (N14): a success nobody
+  // can date must not silence a refusal, whatever an adapter handed over.
+  const lastSuccessAt = parsableTimestamp(recorded?.lastSuccessAt ?? null);
   const lastRefusal: ConnectorRefusalFact | null = recorded?.lastRefusal
     ? {
         message: recorded.lastRefusal.message,
-        at: recorded.lastRefusal.at ?? null,
+        at: parsableTimestamp(recorded.lastRefusal.at ?? null),
         code: recorded.lastRefusal.code ?? null,
         httpStatus: recorded.lastRefusal.httpStatus ?? null,
         disposition: refusalDisposition(recorded.lastRefusal.code ?? null),
@@ -406,8 +446,10 @@ export function productHealth({
    */
   const refusalStands = Boolean(
     lastRefusal &&
-      (!lastSuccessAt ||
-        Date.parse(lastRefusal.at ?? "") > Date.parse(lastSuccessAt)),
+      (recorded?.refusalStands ??
+        (!lastSuccessAt ||
+          !lastRefusal.at ||
+          Date.parse(lastRefusal.at) > Date.parse(lastSuccessAt))),
   );
   const standingRefusal = refusalStands ? lastRefusal : null;
   const refusalNeedsReconnect =

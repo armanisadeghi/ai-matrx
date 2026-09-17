@@ -35,6 +35,7 @@ function connection(
     metadata: {},
     credential_present: true,
     credential_stable: true,
+    capability_health: { __kind: "google_connection_capability_health" },
     health: "connected",
     ...overrides,
   };
@@ -133,7 +134,12 @@ describe("diagnoseGoogleConnection", () => {
     expect(diagnosis.label).not.toBe("Connected");
   });
 
-  it("surfaces the server-recorded reason for a flagged connection", () => {
+  /**
+   * F-19 / VERIFY-U-P2-R3 N9: the server-recorded reason picks the fault; it
+   * never speaks. `last_error` is operator text and this sentence is read by a
+   * non-technical person on the connector card.
+   */
+  it("translates the server-recorded reason instead of repeating it", () => {
     const diagnosis = diagnoseGoogleConnection(
       connection({
         status: "needs_attention",
@@ -141,7 +147,22 @@ describe("diagnoseGoogleConnection", () => {
         last_error: "invalid_grant from Google token refresh",
       }),
     );
-    expect(diagnosis.reason).toBe("invalid_grant from Google token refresh");
+    expect(diagnosis.reason).not.toContain("invalid_grant");
+    expect(diagnosis.reason).toContain("expired or been withdrawn");
+    expect(diagnosis.remedy).toContain("arman@armansadeghi.com");
+  });
+
+  it("prefers the typed code the server stamps beside the row", () => {
+    const diagnosis = diagnoseGoogleConnection(
+      connection({
+        status: "needs_attention",
+        health: "needs_reauth",
+        last_error: "Some sentence a later server release wrote.",
+        metadata: { credential_failure: { code: "credential_missing" } },
+      }),
+    );
+    expect(diagnosis.reason).toContain("no longer holds a saved permission");
+    expect(diagnosis.reason).not.toContain("later server release");
   });
 
   it("still explains a flagged connection that recorded no reason", () => {

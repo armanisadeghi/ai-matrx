@@ -35,6 +35,7 @@ import { useDisconnectGoogle } from "@/features/marketing/google/hooks";
 import { cn } from "@/lib/utils";
 import {
   ConnectedAccountHealth,
+  busyActionKey,
   type ConnectorBusyAction,
 } from "./ConnectedAccountHealth";
 import { ConsentFailureNotice } from "./ConsentFailureNotice";
@@ -85,12 +86,17 @@ function ProviderConnectorsPanel({
   const disconnect = useDisconnectGoogle();
   const organizations = useAppSelector(selectOrganizationsList);
   /**
-   * WHICH PRESS IS RUNNING, AND ON WHICH ACCOUNT. One bare product key here was
+   * WHICH PRESSES ARE RUNNING, AND ON WHICH ACCOUNTS. A SET, and each entry
+   * names its account — two defects, two lessons. One bare product key was
    * handed to every account card, so a press on one account spun the same
-   * product's control on all the others (VERIFY-U-P2-R2, N6). The account id is
-   * part of the value now, and the card checks it against its own account.
+   * product's control on all the others (VERIFY-U-P2-R2, N6). Then one slot held
+   * one press: with account one's provider window open, account two's press
+   * moved the marker, the runner refused it immediately, and that refusal's
+   * `finally` cleared busy entirely — account one's Reconnect stopped spinning
+   * and invited a press that could only be refused (VERIFY-U-P2-R3, N17). A
+   * press now removes only its own entry.
    */
-  const [busy, setBusy] = useState<ConnectorBusyAction | null>(null);
+  const [busy, setBusy] = useState<readonly ConnectorBusyAction[]>([]);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
 
@@ -131,7 +137,11 @@ function ProviderConnectorsPanel({
       });
       return;
     }
-    setBusy(pressed);
+    setBusy((running) =>
+      running.some((entry) => busyActionKey(entry) === busyActionKey(pressed))
+        ? running
+        : [...running, pressed],
+    );
     setFailure(null);
     try {
       await runner.run(plan.request, {
@@ -151,7 +161,11 @@ function ProviderConnectorsPanel({
       setFailure(consentFailureAnswer(cause));
       await state.refetch();
     } finally {
-      setBusy(null);
+      // Only this press. Clearing the whole set is what un-spun another
+      // account's open window (N17).
+      setBusy((running) =>
+        running.filter((entry) => busyActionKey(entry) !== busyActionKey(pressed)),
+      );
     }
   };
 

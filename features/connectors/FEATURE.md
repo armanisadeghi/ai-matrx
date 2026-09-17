@@ -221,6 +221,11 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - 🚨 **A DEAD CREDENTIAL IS A RENEWAL OF EVERY PRODUCT THE ACCOUNT HOLDS, AND THE REPAIR IS OFFERED ONCE, ON THE ACCOUNT.** `usable: false` (revoked, no credential on file, `needs_attention`) with the grant intact is the 2026-07-25 shape and was live on nine rows: the products are all broken and one fresh approval fixes all of them. So `actionScope` is `account`, `accountRenewalProductKeys` is what one press carries, the dialog starts those rows switched ON, and the card shows a single Reconnect beside the sentence asking for it — never the same press repeated per row, and never (as until 2026-09-17) nine rows asking for a Reconnect that existed nowhere on the screen. Guard: `__tests__/a-dead-credential-is-one-reconnect.test.tsx`.
 - 🚨 **A PRESS THAT CAN ASK FOR NOTHING SAYS WHY — AND NEVER "ALREADY CONNECTED" OVER A BROKEN ROW.** A product refused for a reason a reconnect cannot clear (`platform_configuration`) or still behind the rollout gate is `blocked` with its own reason, and `emptyPlanAnswer` names it; only when nothing is blocked may the plan-empty sentence speak. Guard: `__tests__/a-refusal-we-must-repair-answers-honestly.test.tsx`.
 - 🚨 **A SERVER CODE NEVER REACHES THE SCREEN, KNOWN OR UNKNOWN.** Every press failure goes through `consentFailureAnswer`: a mapped sentence for a code the hub raises, one honest generic sentence otherwise, and text that looks machine-written (a snake_case token, a scope URL, a shouted error class) is never inlined even when the code IS mapped. The raw words live behind `ConsentFailureNotice`'s disclosure. The map is censused against `capabilities.py`, `read_only_product_admission.py` and `service.py`'s `error_code=` by `__tests__/admission-codes-are-the-servers-codes.test.ts`, and the census reads a code out of the conditional expression it may be written in. Guard: `__tests__/no-server-code-reaches-the-screen.test.tsx`.
+- 🚨 **THE SERVER'S OWN WORDS NEVER BECOME A PERSON'S SENTENCE.** `users.integration_connections.last_error` is written for an OPERATOR — a vault item name, a connection UUID, a Python exception class — and the browser reads that row. It is CLASSIFIED, never rendered: `marketing/google/health.ts` reads the typed code aidream stamps in `metadata.credential_failure` when it is there, else classifies the text, and `googleAccountFaultLanguage` is the one place a fault becomes words (an unrecognised fault says "something on our side needs repair" and nothing else). The generic account shape has no field a raw provider string can travel in — `lastRefusalSentence` is the translated sentence, and the card states it once rather than beside a status sentence that already said it. Until 2026-09-17 the vault item name, the connection UUID and `KeyError` rendered eleven times on one card (VERIFY-U-P2-R3 N9). Guard: `__tests__/the-account-fault-is-a-sentence-not-a-stack.test.tsx`.
+- 🚨 **A FAILED EXCHANGE GRANTS NOTHING.** Per-row outcomes cannot be read off the account's scopes, because a RENEWAL asks for scopes the account already holds: `consentOutcomes` takes the exchange result and a failed exchange renders no product as granted. A nine-product renewal whose exchange failed used to print the green "Ready to use" list, with a first action per product, directly beside the red failure notice (VERIFY-U-P2-R3 N10). Guard: `__tests__/a-failed-exchange-grants-nothing.test.tsx`.
+- 🚨 **A STANDING REFUSAL ON ANY CAPABILITY OWNS ITS PRODUCT ROW.** One row may cover several provider capabilities (`drive_files`/`docs`/`sheets`; `youtube`/`youtube_analytics`), so "does the refusal still stand?" is decided PER CAPABILITY in the adapter and stated on the activity (`refusalStands`); `health.ts` honours it instead of comparing the product's newest refusal with the product's newest success. Most-recent-wins let a `drive_files` success five minutes after a `docs` refusal render "Connected" with no Reconnect control while its own disclosure said "Reconnect it and approve Docs" — and the three capabilities need the same one scope, so no scope arithmetic can catch it (VERIFY-U-P2-R3 N11). Guard: `__tests__/a-sibling-success-never-hides-a-refusal.test.ts`.
+- 🚨 **A TIMESTAMP THAT DOES NOT PARSE IS NOT A TIMESTAMP.** A success is read strictly and dropped when it cannot be dated (the row then says "no calls recorded yet"); a refusal that cannot be dated is KEPT and STANDS, because nothing proves a call answered after it. `NaN` comparisons are silently false, so a success written as `"whenever"` used to make every refusal, however new, stop standing — the row claimed to work one line above admitting nothing ever had (VERIFY-U-P2-R3 N14). Guard: `__tests__/an-unreadable-timestamp-is-not-a-success.test.ts`.
+- 🚨 **IN-FLIGHT PRESSES ARE A SET, AND A SENTENCE NEVER CLAIMS WHAT IT CANNOT KNOW.** The settings panel holds one entry per running press, keyed by account and product, and each press clears only its own — one slot meant a second account's press (refused at once by the runner's own guard) cleared the first account's marker while its provider window was still open (N17). And `GOOGLE_GENERIC_FAILURE_SENTENCE`, which every unmapped failure gets, no longer says "nothing was changed": the hub's post-authorization raise lands there AFTER the token exchange, the vault write and the scope update, so it names what is known and sends the person to the account's health rows (N16). Guards: `__tests__/two-accounts-can-be-busy-at-once.test.tsx`, `__tests__/the-generic-failure-claims-only-what-is-known.test.ts`.
 - **A second Google login is only a second account when it is new here.** The hub resolves the row it writes by `provider_subject` + owner and upserts, so signing in with an identity this owner already has connected REFRESHES that account. Never promise a second account unconditionally. Guard: `__tests__/a-second-login-is-described-truthfully.test.ts`.
 - **Which organizations an account serves is NOT a setting.** A personal connection has `organization_id` NULL and is reachable by its owner wherever they work; an organization-owned one is reachable by that organization's members, and the two resolve identically for the same provider login. The whole mechanism is the dialog's "Connect for <org>" switch (chair ruling, 2026-09-17) — never a served-organizations editor, which would be a second, weaker copy of the access rule.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
@@ -253,6 +258,48 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **Six client honesty defects from the third hostile round**
+  (lane F-19, from `common-docs/projects/google-native/VERIFY-U-P2-R3.md`), each
+  reproduced RED on head before the fix:
+  - **N9** — `marketing/google/health.ts` returned `last_error` verbatim as a
+    `needs_attention` connection's reason, `googleAccount` copied it into
+    `statusReason`, every product row repeated it and the card printed the raw
+    column again: the vault item name, the connection UUID and `KeyError` on
+    screen eleven times. Now one typed fault vocabulary
+    (`GOOGLE_ACCOUNT_FAULT_CODES` + `googleAccountFaultLanguage`), fed by the
+    server's `metadata.credential_failure.code` when present and by
+    classification of the text otherwise, with an honest generic sentence for
+    anything unrecognised — and `ConnectorAccount.lastError` is GONE, replaced by
+    `lastRefusalSentence`, so no adapter can carry raw text again. The raw column
+    survives only in `googleConnectionDiagnostics`, the admin label/value list.
+    Red: *"never returns the server's text as the reason of a flagged
+    connection"*, *"prints no vault item, no connection id and no exception class
+    anywhere"*.
+  - **N10** — `consentOutcomes` derived outcomes from scope presence alone, so a
+    renewal whose exchange FAILED reported 9 of 9 granted: the green "Ready to
+    use" list beside the red failure notice. It now takes the exchange result and
+    a failed exchange grants nothing (`not_completed`). Red: *"grants nothing for
+    a nine-product renewal"*, *"shows no green Ready-to-use list beside the
+    failure"*.
+  - **N11** — the capability→product fold was most-recent-wins, so a `docs`
+    refusal followed by a `drive_files` success rendered "Connected" with no
+    control. Standing is now decided per capability and carried on
+    `refusalStands`. Red: *"stays broken when a sibling capability succeeded five
+    minutes later"*, *"does the same for YouTube's two capability keys"*.
+  - **N14** — `parseSuccess` accepted any non-empty `at`, and a `NaN` comparison
+    made every refusal stop standing. One strict timestamp parser guards both
+    halves, asymmetrically: an undated success is dropped, an undated refusal
+    stands. Red: *"does not stop a standing refusal"*.
+  - **N16** — the generic failure sentence asserted "nothing was changed", which
+    is false on the hub's post-authorization raise. It now states only what is
+    known. Red: *"does not claim that nothing was changed"*.
+  - **N17** — one `busy` slot, so a second account's press un-spun the first
+    account's in-flight control. In-flight presses are a set. Red: *"keeps the
+    first account's control spinning when the second is refused"*.
+  Also repaired, found while working (unrelated to the six):
+  `marketing/google/service.auth.test.ts` failed on head with "…returns is not a
+  function" — its query mock stopped at `abortSignal` while the read ends
+  `.returns<ConnectionRow[]>()`, so the projection guard proved nothing.
 - `2026-09-17` — **The import panels tell the truth about where a value came
   from** (lane F-13, from `common-docs/projects/google-native/VERIFY-B1-B2.md`
   B2/B3/B4/D9, plus the contract lane B-7 shipped the same day). One shared

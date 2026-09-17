@@ -49,7 +49,8 @@ export interface GoogleCapabilitySuccess {
 
 /** One capability's last refused call, classified by the server. */
 export interface GoogleCapabilityRefusal {
-  at: string;
+  /** Null when the server wrote something that is not a timestamp (N14). */
+  at: string | null;
   action: string;
   code: ConnectorRefusalCode;
   /** One sentence a non-technical person can act on. The server's words. */
@@ -87,9 +88,29 @@ function stringField(source: Record<string, unknown>, key: string): string | nul
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/**
+ * 🚨 ONE STRICT TIMESTAMP PARSER FOR BOTH HALVES (VERIFY-U-P2-R3, N14). A
+ * success was accepted with ANY non-empty `at`, and every comparison against
+ * `NaN` is false — so a success recorded as `"whenever"` made every refusal,
+ * however new, stop standing, and the row read "Connected" one line above "no
+ * calls recorded yet". Anything that does not parse is not a timestamp.
+ */
+function timestampField(
+  source: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = stringField(source, key);
+  if (!value) return null;
+  return Number.isNaN(Date.parse(value)) ? null : value;
+}
+
+/**
+ * A success we cannot date is NOT a success: the record is dropped, so the row
+ * says "No calls recorded yet" and any refusal keeps standing.
+ */
 function parseSuccess(raw: unknown): GoogleCapabilitySuccess | null {
   if (!isJsonObject(raw)) return null;
-  const at = stringField(raw, "at");
+  const at = timestampField(raw, "at");
   if (!at) return null;
   return { at, action: stringField(raw, "action") ?? "" };
 }
@@ -105,7 +126,10 @@ function parseRefusal(raw: unknown): GoogleCapabilityRefusal | null {
   if (!at || !sentence || !isConnectorRefusalCode(code)) return null;
   const status = raw.http_status;
   return {
-    at,
+    // Asymmetric on purpose (N14): an unreadable success is discarded, an
+    // unreadable refusal is KEPT with no date and stands, because nothing
+    // proves a call answered after it.
+    at: timestampField(raw, "at"),
     action: stringField(raw, "action") ?? "",
     code,
     sentence,
@@ -143,6 +167,21 @@ function newer(a: string | null, b: string | null): boolean {
 }
 
 /**
+ * Has THIS capability's own refusal been overtaken by THIS capability's own
+ * success? That question can only be answered per capability, which is why the
+ * answer is folded up rather than re-derived from the product's timestamps
+ * (N11). A refusal with no readable date stands: nothing proves otherwise.
+ */
+function refusalStandsFor(record: GoogleCapabilityRecord): boolean {
+  const refusal = record.lastRefusal;
+  if (!refusal) return false;
+  const successAt = record.lastSuccess?.at ?? null;
+  if (!successAt) return true;
+  if (!refusal.at) return true;
+  return Date.parse(refusal.at) > Date.parse(successAt);
+}
+
+/**
  * Fold the per-CAPABILITY record into the per-PRODUCT activity map the health
  * rows take. A product may cover several capabilities (Workspace files covers
  * `drive_files`, `docs` and `sheets`; YouTube covers `youtube` and
@@ -158,6 +197,7 @@ export function googleActivityByProduct(
   for (const product of provider.products) {
     let success: GoogleCapabilitySuccess | null = null;
     let refusal: GoogleCapabilityRefusal | null = null;
+    let standing: GoogleCapabilityRefusal | null = null;
     for (const key of product.capabilityKeys) {
       const record = health.capabilities[key];
       if (!record) continue;
@@ -167,18 +207,33 @@ export function googleActivityByProduct(
       if (newer(record.lastRefusal?.at ?? null, refusal?.at ?? null)) {
         refusal = record.lastRefusal;
       }
+      if (refusalStandsFor(record)) {
+        // Undated refusals sort last by `newer`, so prefer whichever standing
+        // refusal we can date, and otherwise keep the first one we saw.
+        if (!standing || newer(record.lastRefusal?.at ?? null, standing.at)) {
+          standing = record.lastRefusal;
+        }
+      }
     }
     if (!success && !refusal) continue;
+    // A STANDING REFUSAL ON ANY CAPABILITY OWNS THE ROW (N11). Folding the
+    // newest success and the newest refusal independently let a `drive_files`
+    // success five minutes after a `docs` refusal render the product
+    // "Connected" with no Reconnect control, while its own disclosure said
+    // "Reconnect it and approve Docs." The three capabilities behind that row
+    // need the SAME single scope, so no scope arithmetic can catch it.
+    const shown = standing ?? refusal;
     activity[product.key] = {
       lastSuccessAt: success?.at ?? null,
-      lastRefusal: refusal
+      lastRefusal: shown
         ? {
-            message: refusal.sentence,
-            at: refusal.at,
-            code: refusal.code,
-            httpStatus: refusal.httpStatus,
+            message: shown.sentence,
+            at: shown.at,
+            code: shown.code,
+            httpStatus: shown.httpStatus,
           }
         : null,
+      refusalStands: Boolean(standing),
     };
   }
   return activity;

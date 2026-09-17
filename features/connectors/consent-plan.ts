@@ -220,7 +220,18 @@ export function emptyPlanAnswer(
     : "Everything you switched on is already connected — there is nothing to approve.";
 }
 
-export type ConsentOutcomeState = "granted" | "refused" | "already_granted";
+export type ConsentOutcomeState =
+  /** The provider granted it and the exchange landed. */
+  | "granted"
+  /** The exchange landed and this one was not granted. */
+  | "refused"
+  /** Nothing was asked for it: it was already granted. */
+  | "already_granted"
+  /**
+   * The exchange itself did not complete, so NOTHING about this row was
+   * confirmed — never "granted" by scope arithmetic (VERIFY-U-P2-R3, N10).
+   */
+  | "not_completed";
 
 export interface ConsentOutcome {
   product: ConnectorProduct;
@@ -230,22 +241,41 @@ export interface ConsentOutcome {
 }
 
 /**
- * Per-row truth AFTER the exchange, read from the account as the server left
- * it — not from what was asked for. A product the provider refused shows its
- * own line and the ones that landed keep theirs, which is the whole point of
- * reading the result back instead of trusting the request.
+ * WHAT THE EXCHANGE ITSELF DID. Required, because per-row truth cannot be read
+ * off the account alone (N10): a RENEWAL asks for scopes the account already
+ * holds, so scope presence says "granted" whether the exchange landed or threw.
+ */
+export interface ConsentExchangeResult {
+  /** True only when the provider exchange returned without throwing. */
+  completed: boolean;
+}
+
+/**
+ * Per-row truth AFTER the exchange: what the exchange did, and then the account
+ * as the server left it — not what was asked for. A product the provider refused
+ * shows its own line and the ones that landed keep theirs, which is the whole
+ * point of reading the result back instead of trusting the request.
+ *
+ * 🚨 A FAILED EXCHANGE GRANTS NOTHING (VERIFY-U-P2-R3, N10). Outcomes were
+ * derived from scope presence alone, so a nine-product renewal whose exchange
+ * failed reported 9 of 9 "granted" — the green "Ready to use" list with a first
+ * action per product, directly beside the red failure notice, while Settings →
+ * Connectors still read "Needs reconnecting" for the same nine rows.
  */
 export function consentOutcomes({
   provider,
   plan,
   account,
   rollout,
+  exchange,
 }: {
   provider: ConnectorProviderConfig;
   plan: ConsentPlan;
   /** The account as re-read after the exchange. */
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
+  /** What the exchange did. A caller cannot forget it. */
+  exchange: ConsentExchangeResult;
 }): ConsentOutcome[] {
   const granted = new Set(account?.grantedScopes ?? []);
   const requested = plan.request?.products ?? [];
@@ -255,6 +285,15 @@ export function consentOutcomes({
     message: "Already connected — nothing changed.",
   }));
   for (const product of requested) {
+    if (!exchange.completed) {
+      outcomes.push({
+        product,
+        state: "not_completed",
+        message:
+          "This was not connected — the approval did not finish. Nothing here is confirmed; this account's health rows say what it can do right now.",
+      });
+      continue;
+    }
     const missing = requiredScopesFor(provider, product, rollout).filter(
       (scope) => !granted.has(scope),
     );
