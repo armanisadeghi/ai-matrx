@@ -32,7 +32,6 @@ import {
   Pencil,
   Play,
   Power,
-  RefreshCw,
 } from "lucide-react";
 import cronstrue from "cronstrue";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
@@ -867,20 +866,7 @@ export default function SystemJobsPage() {
             toolbar={{
               search: true,
               searchPlaceholder: "Search title, tool, classification…",
-              actions: (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void load()}
-                  disabled={fetching}
-                >
-                  {fetching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              ),
+              refresh: { onRefresh: load, label: "Refresh system jobs" },
             }}
             copy={{
               label: "System job",
@@ -947,20 +933,7 @@ export default function SystemJobsPage() {
             toolbar={{
               search: true,
               searchPlaceholder: "Search job, classification, command…",
-              actions: (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void loadDb()}
-                  disabled={dbFetching}
-                >
-                  {dbFetching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              ),
+              refresh: { onRefresh: loadDb, label: "Refresh database jobs" },
             }}
             copy={{
               label: "Database job",
