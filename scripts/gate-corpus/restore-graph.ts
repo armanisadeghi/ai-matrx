@@ -712,7 +712,7 @@ async function branchKeysOf(branch: pg.Client, qualified: string): Promise<Set<s
     `select ${pk.map((c) => `"${c}"::text as "${c}"`).join(", ")} from ${qualified}`,
   );
   return new Set(
-    rows.rows.map((r) => pk.map((c) => String((r as Record<string, unknown>)[c])).join(" ")),
+    rows.rows.map((r) => pk.map((c) => String((r as Record<string, unknown>)[c])).join("\\0")),
   );
 }
 
@@ -1420,7 +1420,7 @@ async function main(): Promise<number> {
             t,
             new Set(
               keyRows.rows.map((r) =>
-                pk.map((c) => String((r as Record<string, unknown>)[c])).join(" "),
+                pk.map((c) => String((r as Record<string, unknown>)[c])).join("\\0"),
               ),
             ),
           );
