@@ -54,18 +54,51 @@ export const DETAIL_LIST_CONTEXT_MAX_KNOB = "ui.detail.list_context_max_ids";
 
 /**
  * The cap when the knob has not answered yet (a cold cache, a signed-out
- * render, a host that binds no settings ladder). 200 `type.id` pairs is ~9 KB of
- * query string — inside every server's request-line limit with room for the rest
- * of the URL, and far more neighbours than a person arrows through in one sitting.
+ * render, a host that binds no settings ladder). 200 uuid `type.id` pairs is
+ * ~8.4 KB of query string; the BYTE budget below is what actually bounds the
+ * URL, and 200 is far more neighbours than a person arrows through in one
+ * sitting.
  */
 export const DEFAULT_DETAIL_LIST_CONTEXT_MAX = 200;
 
-/** The knob's value as a usable cap; the default for anything that is not one. */
+/**
+ * 🚨 NEW-12 (VERIFY-U-P1-R3) — THE REAL BUDGET IS BYTES, AND IT IS THIS ONE.
+ *
+ * The id cap alone measured the wrong thing: a 30-character type token at the
+ * default 200 gave a 13.6 KB query string (past nginx's 8 KB request line), and
+ * the knob's own former `max_value` of 2000 gave 84 KB — four times the >20 KB
+ * href the cap was written to prevent (measured, VERIFY-U-P1-R3 break attempt 7).
+ *
+ * 6000 characters is the budget for the list value itself. The strictest edge in
+ * front of this platform takes an 8 KB request line, and the method, the path,
+ * the `?panels=` token and every other parameter share it — so the list gets
+ * 6 KB and ~2 KB is left for the rest of the URL. `trimListContext` trims until
+ * the encoded value fits and SAYS what it cut (`trimmedFrom`); no caller may
+ * skip it.
+ */
+export const DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES = 6000;
+
+/**
+ * The hard ceiling on the knob. Above this the byte budget always trims first,
+ * so a larger value would be the setting promising records the URL can never
+ * carry — the exact dishonesty NEW-12 named. The knob decides everything below
+ * it; `migrations/detail_list_context_max_ceiling.sql` lowers `max_value` to the
+ * same number so the settings screen cannot offer more either.
+ */
+export const DETAIL_LIST_CONTEXT_MAX_IDS_CEILING = 500;
+
+/**
+ * The knob's value as a usable cap; the default for anything that is not one,
+ * and never more than the ceiling the byte budget can honour (NEW-12). The ONE
+ * place the knob is turned into a number — the page href builder, the window's
+ * deep-link token and the trim itself all read it through here.
+ */
 export function detailListContextMax(raw: unknown): number {
   const value = typeof raw === "number" ? raw : Number(raw);
-  return Number.isFinite(value) && value >= 1
+  const asked = Number.isFinite(value) && value >= 1
     ? Math.floor(value)
     : DEFAULT_DETAIL_LIST_CONTEXT_MAX;
+  return Math.min(asked, DETAIL_LIST_CONTEXT_MAX_IDS_CEILING);
 }
 
 /** The per-type entry for `type`, when the map holds a usable one. */

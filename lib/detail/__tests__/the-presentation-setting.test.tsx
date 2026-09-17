@@ -180,6 +180,78 @@ describe("the presentation pane", () => {
     m.unmount();
   });
 
+  // 🚨 NEW-10 (VERIFY-U-P1-R3) — CLEARING YOUR OWN EXCEPTION NEVER PROMISES
+  // WHAT THE LADDER CAN CONTRADICT. Reproduced at `e64a912f`: with the person's
+  // own exception removed while their ORGANIZATION holds one for the same type,
+  // the write succeeded and the pane said "Session records now open the way you
+  // normally open records." They do not — the organization's entry wins on the
+  // next open, and nothing re-read the ladder.
+  it("re-reads the ladder after a removal and names the rung that answers", async () => {
+    const ports = makePorts();
+    ports.usePresentationSetting.mockReturnValue({
+      value: "page",
+      error: null,
+      forType: "page",
+    });
+    // The org still holds an exception for this type: the ladder says so.
+    const reRead = jest.fn(async () => ({ value: "page" as const, forType: "page" as const }));
+    (ports as { reReadPresentation?: unknown }).reReadPresentation = reRead;
+    const m = mount(<Pane />, ports);
+    openThePane(m.container);
+    await act(async () => {
+      choose(m.container, "Use the default for file records");
+    });
+    expect(reRead).toHaveBeenCalledWith("file");
+    const said = (ports.notify.success as jest.Mock).mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).not.toContain("now open the way you normally open records");
+    expect(said.toLowerCase()).toContain("organization");
+    expect(said.toLowerCase()).toContain("full page");
+    m.unmount();
+  });
+
+  it("says the person's own way answers once nothing else does", async () => {
+    const ports = makePorts();
+    ports.usePresentationSetting.mockReturnValue({
+      value: "page",
+      error: null,
+      forType: "page",
+    });
+    (ports as { reReadPresentation?: unknown }).reReadPresentation = jest.fn(async () => ({
+      value: "window" as const,
+      forType: undefined,
+    }));
+    const m = mount(<Pane />, ports);
+    openThePane(m.container);
+    await act(async () => {
+      choose(m.container, "Use the default for file records");
+    });
+    const said = (ports.notify.success as jest.Mock).mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said.toLowerCase()).toContain("a window");
+    expect(said.toLowerCase()).not.toContain("organization");
+    m.unmount();
+  });
+
+  it("promises nothing at all when the ladder cannot be re-read", async () => {
+    const ports = makePorts();
+    ports.usePresentationSetting.mockReturnValue({
+      value: "page",
+      error: null,
+      forType: "page",
+    });
+    (ports as { reReadPresentation?: unknown }).reReadPresentation = jest.fn(async () => {
+      throw new Error("knob_resolve is unreachable");
+    });
+    const m = mount(<Pane />, ports);
+    openThePane(m.container);
+    await act(async () => {
+      choose(m.container, "Use the default for file records");
+    });
+    const said = (ports.notify.success as jest.Mock).mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).not.toContain("now open the way you normally open records");
+    expect(said.toLowerCase()).toContain("could not be read");
+    m.unmount();
+  });
+
   it("is absent — never disabled-looking — when the host cannot write the setting", () => {
     const ports = makePorts();
     // A host that only READS the setting binds no writer.

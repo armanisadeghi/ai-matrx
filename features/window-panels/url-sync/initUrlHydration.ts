@@ -7,6 +7,7 @@ import {
   DETAIL_URL_AS_ARG,
   parseDetailInstanceKey,
   presentationFromUrlArg,
+  detailListFromUrlArgs,
 } from "@/lib/detail/presentation";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 import { dispatchThunk } from "@/lib/redux/hooks";
@@ -103,7 +104,14 @@ export function initUrlHydration() {
       dispatch,
       openDetailSingleton({
         presentation,
-        data: { type: ref.type, id: ref.id, seed: null, list: null },
+        // 🚨 NEW-15 — the list the window was opened from, when the token
+        // carries it. `null` only when the link genuinely has none.
+        data: {
+          type: ref.type,
+          id: ref.id,
+          seed: null,
+          list: detailListFromUrlArgs(args),
+        },
       }),
     );
   });

@@ -57,6 +57,7 @@ export function DetailWindowPresentation({ data, onClose }: DetailPresentationPr
     <Shell
       instanceKey={detailInstanceKey(core.ref)}
       target={core.ref}
+      list={core.list.context}
       title={core.title}
       titleNode={<DetailTitle core={core} />}
       actions={<DetailActions core={core} />}

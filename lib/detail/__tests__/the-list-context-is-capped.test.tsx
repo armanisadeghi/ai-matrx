@@ -16,7 +16,12 @@ import * as React from "react";
 
 import { DetailActions, DetailRecordMeta } from "../core/DetailHeader";
 import { useDetailCore } from "../core/useDetailCore";
-import { trimListContext } from "../listContext";
+import { trimListContext, listQueryBytes } from "../listContext";
+import {
+  DETAIL_LIST_CONTEXT_MAX_IDS_CEILING,
+  DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+  detailListContextMax,
+} from "../types";
 import {
   decodeListQuery,
   encodeListQuery,
@@ -65,13 +70,18 @@ describe("the page href", () => {
     // (The only difference between the two is the digits of `lt`.)
     const bigger = encodeListQuery({ items: refs(5000), index: 250 }, 200);
     expect(bigger.length - query.length).toBeLessThan(3);
-    expect(query.length).toBeLessThan(9000);
+    // Bounded by the BYTE budget, which bites before the knob's 200 records do
+    // for uuid entries (NEW-12): 200 × ~42 characters is 8.4 KB, over budget.
+    expect(new URLSearchParams(query).get("l")!.length).toBeLessThanOrEqual(
+      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+    );
     const decoded = decodeListQuery(
       new URLSearchParams(query).get("l"),
       new URLSearchParams(query).get("i"),
       new URLSearchParams(query).get("lt"),
     );
-    expect(decoded?.items).toHaveLength(200);
+    expect(decoded?.items.length).toBeGreaterThan(100);
+    expect(decoded?.items.length).toBeLessThanOrEqual(200);
     expect(decoded?.trimmedFrom).toBe(500);
     expect(decoded?.items[decoded.index].id).toBe(refs(500)[250].id);
   });
@@ -111,5 +121,62 @@ describe("the detail says the list was trimmed", () => {
     const m = mount(<Bar />, makePorts());
     expect(m.container.querySelector("[data-detail-list-trimmed]")).toBeNull();
     m.unmount();
+  });
+});
+
+// 🚨 NEW-12 (VERIFY-U-P1-R3) — THE BUDGET IS BYTES, NOT RECORDS.
+//
+// Reproduced at `e64a912f`: the cap counted ids and nothing counted characters,
+// so a 30-character type token at the default 200 gave a 13.6 KB query (past
+// nginx's 8 KB request line) and the live knob's own `max_value` of 2000 —
+// which an organization may set — gave 84 KB, four times the >20 KB href the
+// cap was written to prevent. A ceiling configurable into the defect it guards
+// is not a guard.
+describe("the byte budget", () => {
+  const longType = "a".repeat(30);
+  const fatRefs = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      type: longType,
+      id: `${String(i).padStart(8, "0")}-0000-0000-0000-000000000000`,
+    }));
+
+  it("keeps the query inside the declared budget however many ids the cap allows", () => {
+    const trimmed = trimListContext({ items: fatRefs(2000), index: 1000 }, 2000);
+    expect(trimmed).not.toBeNull();
+    expect(listQueryBytes(trimmed!.items)).toBeLessThanOrEqual(
+      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+    );
+    // And it still says what it cut.
+    expect(trimmed!.trimmedFrom).toBe(2000);
+    expect(trimmed!.items[trimmed!.index].id).toBe(fatRefs(2000)[1000].id);
+  });
+
+  it("trims a fat-token list the id cap would have let through whole", () => {
+    const trimmed = trimListContext({ items: fatRefs(200), index: 100 }, 200);
+    expect(trimmed!.items.length).toBeLessThan(200);
+    expect(trimmed!.trimmedFrom).toBe(200);
+    expect(listQueryBytes(trimmed!.items)).toBeLessThanOrEqual(
+      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+    );
+  });
+
+  it("bounds the href from uuid lists at every knob value, including the old live max", () => {
+    for (const knobValue of [200, 2000, 100000]) {
+      const query = encodeListQuery(
+        { items: refs(5000), index: 2500 },
+        detailListContextMax(knobValue),
+      );
+      expect(new URLSearchParams(query).get("l")!.length).toBeLessThanOrEqual(
+        DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+      );
+    }
+  });
+
+  it("never lets the knob promise more records than the budget can carry", () => {
+    expect(detailListContextMax(2000)).toBe(DETAIL_LIST_CONTEXT_MAX_IDS_CEILING);
+    expect(detailListContextMax(100000)).toBe(DETAIL_LIST_CONTEXT_MAX_IDS_CEILING);
+    // Inside the ceiling the knob still decides.
+    expect(detailListContextMax(50)).toBe(50);
+    expect(detailListContextMax(undefined)).toBe(200);
   });
 });

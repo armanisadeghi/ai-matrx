@@ -34,12 +34,17 @@ import { useRouter } from "next/navigation";
 import { ASSOCIATION_TARGET_TYPES } from "@ai-matrx/associations";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
-import { DetailHostProvider, type DetailHostPorts, type DetailPresentationSetting } from "@/lib/detail/host";
+import {
+  DetailHostProvider,
+  type DetailEffectivePresentation,
+  type DetailHostPorts,
+  type DetailPresentationSetting,
+} from "@/lib/detail/host";
+import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   DETAIL_LIST_CONTEXT_MAX_KNOB,
   DETAIL_PRESENTATION_BY_TYPE_KNOB,
   DETAIL_PRESENTATION_KNOB,
-  detailListContextMax,
   isDetailPresentation,
   presentationForTypeFromMap,
   type DetailHistoryEntry,
@@ -65,6 +70,8 @@ import { supabase } from "@/utils/supabase/client";
 import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
 import { encodeListQuery } from "./detailOverlayData";
+import { resolvedListContextMax } from "./listContextCap";
+import { stashPageSeed } from "./pageSeedHandoff";
 
 /**
  * `/detail/<type>/<id>` — the page presentation's route.
@@ -81,7 +88,7 @@ export function detailPageHref(
 ): string {
   return (
     `/detail/${encodeURIComponent(ref.type)}/${encodeURIComponent(ref.id)}` +
-    encodeListQuery(extra?.list ?? null, detailListContextMax(getSessionKnob(DETAIL_LIST_CONTEXT_MAX_KNOB)))
+    encodeListQuery(extra?.list ?? null, resolvedListContextMax())
   );
 }
 
@@ -192,6 +199,28 @@ async function resolvePresentation(type: string): Promise<DetailPresentation> {
   return raw;
 }
 
+/**
+ * 🚨 NEW-10 — THE LADDER, READ FRESH, AFTER A WRITE. `invalidateEffectiveKnob`
+ * first: the 60s-cached effective answer is exactly what the write just made
+ * stale, and answering from it is how the pane came to promise a person that
+ * their records now opened their way while their organization's exception still
+ * governed. `forType` is the per-type entry from ANY rung — if it survives a
+ * personal removal, it is the organization's and it still wins.
+ */
+async function reReadPresentation(type: string): Promise<DetailEffectivePresentation> {
+  invalidateEffectiveKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB);
+  invalidateEffectiveKnob(DETAIL_PRESENTATION_KNOB);
+  const byType = await resolveSessionKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB).catch(
+    noteByTypeUnavailable,
+  );
+  const forType = presentationForTypeFromMap(byType, type);
+  const raw = await resolveSessionKnob(DETAIL_PRESENTATION_KNOB);
+  return {
+    value: forType ?? (isDetailPresentation(raw) ? raw : undefined),
+    forType,
+  };
+}
+
 function warmPresentation(_type: string): void {
   void getSessionKnob(DETAIL_PRESENTATION_KNOB);
   void getSessionKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB);
@@ -242,6 +271,7 @@ export function DetailHost({ children }: { children: ReactNode }) {
     usePresentationSetting,
     resolvePresentation,
     warmPresentation,
+    reReadPresentation,
     savePresentation,
     open: ({ presentation, data }) => {
       if (presentation === "docked") openDocked(data);
@@ -254,6 +284,20 @@ export function DetailHost({ children }: { children: ReactNode }) {
     navigate: {
       pageHref: detailPageHref,
       toPage: (ref, extra) => {
+        // What this tab already knows travels with the navigation, never in the
+        // URL (NEW-9).
+        stashPageSeed(ref, extra?.seed ?? null);
+        const replacing = extra?.replacing ?? null;
+        if (replacing) {
+          // 🚨 NEW-14 — moving between records inside a list REPLACES the one
+          // detail entry this visit owns, so Back leaves to the list rather than
+          // walking back through every record arrowed past. The replaced
+          // record's "this tab pushed me" answer travels to the new one, or the
+          // exit would think a pushed page had nothing behind it.
+          if (pageWasPushedInThisTab(replacing)) markPagePushed(ref);
+          router.replace(detailPageHref(ref, extra));
+          return;
+        }
         markPagePushed(ref);
         router.push(detailPageHref(ref, extra));
       },

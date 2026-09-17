@@ -22,6 +22,8 @@ import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { createClient } from "@/utils/supabase/client";
 
+import type { DetailPresentation } from "@/lib/detail/types";
+
 import { savePresentation } from "../savePresentation";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
@@ -203,9 +205,24 @@ it("writes the plain default without reading the per-type map at all", async () 
 // 🚨 NEW-2 — AND THE EXCEPTION CAN BE TAKEN BACK FROM THE SAME PANE, through the
 // REAL port: a removal is the same map-entry write with the key absent, and the
 // person's last exception clears the whole row so the ladder answers again.
-it("removes this type's exception through the same write", async () => {
+it("removes this type's exception through the same write, and names what governs now", async () => {
   const ladder = fakeLadder({ file: "docked", task: "page" });
-  const ports = makePorts({ savePresentation });
+  // 🚨 NEW-10 (VERIFY-U-P1-R3) — the pane no longer takes the write's word for
+  // what happens next: it re-reads the ladder and names the rung that answers.
+  // Here the re-read is the same fake ladder the write just changed.
+  const reReadPresentation = async (
+    type: string,
+  ): Promise<{ value: DetailPresentation; forType: DetailPresentation | undefined }> => {
+    const map = ladder.state.value;
+    const entry =
+      map && typeof map === "object" && !Array.isArray(map)
+        ? (map as Record<string, unknown>)[type]
+        : undefined;
+    const forType: DetailPresentation | undefined =
+      entry === "docked" || entry === "window" || entry === "page" ? entry : undefined;
+    return { value: forType ?? ("window" as const), forType };
+  };
+  const ports = makePorts({ savePresentation, reReadPresentation });
   ports.usePresentationSetting.mockReturnValue({
     value: "docked",
     error: null,
@@ -221,7 +238,7 @@ it("removes this type's exception through the same write", async () => {
   expect(m.container.querySelector("[data-detail-presentation-refusal]")).toBeNull();
   expect(ladder.state.value).toEqual({ task: "page" });
   expect(ports.notify.success).toHaveBeenCalledWith(
-    "File records now open the way you normally open records.",
+    "File records now open as a window, the way you normally open records.",
   );
   m.unmount();
 });

@@ -35,12 +35,33 @@ function setup(handlers: {
       // does too — `data-scroller` is the element a test makes scrollable.
       <div data-scroller style={{ overflowY: "auto" }}>
         <div {...kb.rootProps} data-root>
+          {/* An expanded Collapsible / Accordion section inside a record type's
+              own body — the shape NEW-11 was reproduced with. */}
+          <div data-state="open">
+            <button type="button" data-inside-open-section>
+              inside an expanded section
+            </button>
+          </div>
+          {/* A closed combobox input: expanded is false, so Escape is the detail's. */}
+          <input aria-label="a closed combobox" role="combobox" aria-expanded="false" />
+          {/* An OPEN menu's item, in a Radix popper layer. */}
+          <div data-radix-popper-content-wrapper>
+            <div role="menu">
+              <button type="button" role="menuitem" data-inside-open-menu>
+                an item in an open menu
+              </button>
+            </div>
+          </div>
+          {/* The trigger of an open menu, which owns Escape itself. */}
+          <button type="button" aria-haspopup="menu" aria-expanded="true" data-open-menu-trigger>
+            an open menu's trigger
+          </button>
           <input aria-label="a field" />
           <input type="checkbox" aria-label="a checkbox" />
           <select aria-label="a select">
             <option>one</option>
           </select>
-          <button type="button">plain</button>
+          <button type="button" data-plain>plain</button>
         </div>
       </div>
     );
@@ -51,7 +72,9 @@ function setup(handlers: {
   const field = container.querySelector("input[aria-label='a field']") as HTMLInputElement;
   const checkbox = container.querySelector("input[type='checkbox']") as HTMLInputElement;
   const select = container.querySelector("select") as HTMLSelectElement;
-  const button = container.querySelector("button") as HTMLButtonElement;
+  const button = container.querySelector("button[data-plain]") as HTMLButtonElement;
+  const q = <T extends HTMLElement>(selector: string) =>
+    container.querySelector(selector) as T;
   const press = (key: string, target: HTMLElement = button, init: KeyboardEventInit = {}) => {
     act(() => {
       target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, ...init }));
@@ -71,6 +94,7 @@ function setup(handlers: {
     checkbox,
     select,
     button,
+    q,
     get keyboard() {
       return keyboard as DetailKeyboard;
     },
@@ -238,6 +262,49 @@ describe("the detail keyboard model", () => {
     act(() => unregister?.());
     h.press("Enter", h.button, { metaKey: true });
     expect(save).toHaveBeenCalledTimes(2);
+    h.unmount();
+  });
+});
+
+// 🚨 NEW-11 (VERIFY-U-P1-R3) — ESCAPE IS OWNED BY THE CONTROLS THAT ACTUALLY
+// OWN IT, NOT BY ANYTHING EXPANDED.
+//
+// Reproduced at `e64a912f`: the predicate matched any ANCESTOR carrying
+// `data-state="open"` or `aria-expanded="true"`, so an expanded Collapsible or
+// Accordion section in a record type's own body — and a Drawer's content, which
+// is what the docked and window presentations are on a phone — swallowed Escape
+// for everything inside it. The chair's ruling was "an open menu/select or a
+// text field with uncommitted edits".
+describe("who owns Escape", () => {
+  it("closes from inside an expanded Collapsible / Accordion section", () => {
+    const onClose = jest.fn();
+    const h = setup({ onClose });
+    h.press("Escape", h.q("[data-inside-open-section]"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    h.unmount();
+  });
+
+  it("closes from a combobox input that is not open", () => {
+    const onClose = jest.fn();
+    const h = setup({ onClose });
+    h.press("Escape", h.q("input[role='combobox']"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    h.unmount();
+  });
+
+  it("leaves Escape to an OPEN menu's item", () => {
+    const onClose = jest.fn();
+    const h = setup({ onClose });
+    h.press("Escape", h.q("[data-inside-open-menu]"));
+    expect(onClose).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it("leaves Escape to the trigger of a menu that is open", () => {
+    const onClose = jest.fn();
+    const h = setup({ onClose });
+    h.press("Escape", h.q("[data-open-menu-trigger]"));
+    expect(onClose).not.toHaveBeenCalled();
     h.unmount();
   });
 });

@@ -198,6 +198,10 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-violet-500/20",
     },
     open: { kind: "agent" },
+    // 🚨 NEW-9 — the SAME canonical table the enrichment below reads. A type with
+    // no `detailSource` took the honest-absent path, so `/detail/agent/<id>` — a
+    // URL anyone can build — showed nothing about a record that is fully stored.
+    detailSource: { table: "definition", schemaName: "agent", titleField: "name" },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -243,6 +247,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-amber-500/20",
     },
     open: { kind: "note" },
+    // NEW-9 — `workbench.notes`, the table the enrichment below already reads.
+    detailSource: { table: "notes", schemaName: "workbench", titleField: "label" },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -476,8 +482,14 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       bg: "bg-teal-500/10",
       ring: "ring-teal-500/20",
     },
-    // No single canonical "session" table (war-room / studio / window / quiz
-    // all qualify) — opens seed-only until one is chosen. See FOUND_DEFECTS D8.
+    // 🚨 DELIBERATELY SOURCELESS, and the only one left after NEW-9's census
+    // (VERIFY-U-P1-R3): there is no single canonical "session" table — war-room,
+    // studio, window and quiz sessions all qualify — so a detail cannot know
+    // which to read. The Detail primitive's honest absent state carries it: the
+    // record is named from its type and id, one plain sentence says nothing more
+    // is stored here, and the doors it has still open. See FOUND_DEFECTS D8; when
+    // one table is chosen, this entry gets a `detailSource` and nothing else
+    // changes.
     open: { kind: "session" },
   },
   table: {
@@ -516,6 +528,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
+    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
+    detailSource: {
+      table: "udt_structured_lists",
+      schemaName: "workbench",
+      titleField: "list_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -544,6 +562,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
+    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
+    detailSource: {
+      table: "udt_structured_lists",
+      schemaName: "workbench",
+      titleField: "list_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,

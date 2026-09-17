@@ -83,21 +83,50 @@ const NON_TEXT_INPUT_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * The controls that ACTUALLY own Escape when they are open over the detail.
+ *
+ * A menu, a select's list, a combobox's list and a popover all render inside the
+ * floating layer (`[data-radix-popper-content-wrapper]` in this repo's Radix
+ * primitives), and an open menu's items carry the listbox/menu/tree/grid roles.
+ * A Drawer's or Dialog's content is deliberately NOT here: the docked and window
+ * presentations ARE a Drawer on a phone, and Escape there means "close this
+ * detail" — which is the whole binding.
+ */
+const ESCAPE_OWNING_ANCESTORS =
+  '[data-radix-popper-content-wrapper], [role="menu"], [role="menubar"], ' +
+  '[role="listbox"], [role="tree"], [role="grid"]';
+
+/** Whether this element is itself the trigger of something that is OPEN. */
+function isOpenTrigger(element: HTMLElement): boolean {
+  if (element.getAttribute("aria-expanded") !== "true") return false;
+  const role = element.getAttribute("role");
+  if (role === "combobox") return true;
+  const haspopup = element.getAttribute("aria-haspopup");
+  return haspopup !== null && haspopup !== "false" && haspopup !== "dialog";
+}
+
+/**
  * Whether Escape belongs to the focused control rather than to the detail
- * (NEW-6). Two cases, and only two: something that may be OPEN over the detail
- * (a select's list, a menu, a combobox), and a text field holding edits the
- * person has not committed, where Escape means "put it back".
+ * (NEW-6). Two cases, and only two: something that IS OPEN over the detail
+ * (a select's list, a menu, a combobox, a popover — or the focused trigger of
+ * one), and a text field holding edits the person has not committed, where
+ * Escape means "put it back".
+ *
+ * 🚨 NEW-11 (VERIFY-U-P1-R3) — AND NOT ANYTHING MERELY EXPANDED. This used to
+ * match any ANCESTOR carrying `data-state="open"` or `aria-expanded="true"`,
+ * which is every Radix Collapsible and Accordion section a record type puts in
+ * its own body, every Drawer's and Dialog's content (both presentations on a
+ * phone) and a closed combobox's input. Reproduced with one `data-state="open"`
+ * wrapper: Escape stopped working for everything inside it while the same key
+ * from the root left at once. The chair's ruling was "an open menu/select or a
+ * text field with uncommitted edits" — these two cases, and they are narrow on
+ * purpose: over-claiming Escape breaks the detail's only keyboard exit.
  */
 function escapeBelongsToTheControl(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.tagName === "SELECT") return true;
-  if (
-    target.closest(
-      '[aria-expanded="true"], [role="menu"], [role="listbox"], [role="combobox"], [data-state="open"]',
-    )
-  ) {
-    return true;
-  }
+  if (isOpenTrigger(target)) return true;
+  if (target.closest(ESCAPE_OWNING_ANCESTORS)) return true;
   if (target.isContentEditable) return true;
   if (target instanceof HTMLTextAreaElement) return target.value !== target.defaultValue;
   if (target instanceof HTMLInputElement) {

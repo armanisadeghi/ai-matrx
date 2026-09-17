@@ -14,10 +14,16 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import type { DetailWindowShellProps } from "@/lib/detail/host";
-import { DETAIL_URL_AS_ARG, DETAIL_URL_TYPE_KEY } from "@/lib/detail/presentation";
+import {
+  DETAIL_URL_AS_ARG,
+  DETAIL_URL_TYPE_KEY,
+  detailListToUrlArgs,
+} from "@/lib/detail/presentation";
+import { resolvedListContextMax } from "../listContextCap";
 
 export function DetailWindowShell({
   instanceKey,
+  list,
   title,
   titleNode,
   actions,
@@ -39,7 +45,13 @@ export function DetailWindowShell({
       bodyClassName="overflow-y-auto"
       urlSyncKey={DETAIL_URL_TYPE_KEY}
       urlSyncId={instanceKey}
-      urlSyncArgs={{ [DETAIL_URL_AS_ARG]: "window" }}
+      /* 🚨 NEW-15 — the token carries the LIST too, under the same cap and byte
+         budget the page URL obeys, so a refresh keeps the previous / next
+         controls and the counter instead of losing them in silence. */
+      urlSyncArgs={{
+        [DETAIL_URL_AS_ARG]: "window",
+        ...detailListToUrlArgs(list, resolvedListContextMax()),
+      }}
     >
       {children}
     </WindowPanel>

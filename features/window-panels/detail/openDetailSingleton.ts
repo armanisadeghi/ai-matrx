@@ -45,8 +45,17 @@ const SURFACE: Record<InPlaceDetailPresentation, string> = {
   docked: "docked panel",
 };
 
-/** The overlay-slice payload for a detail instance. Flat: Redux data is plain. */
-function overlayPayload(data: DetailInstanceData) {
+/**
+ * The overlay-slice payload for a detail instance. Flat: Redux data is plain.
+ *
+ * 🚨 NEW-13 — EVERY FIELD THE INSTANCE CARRIES IS HERE, `trimmedFrom` INCLUDED.
+ * A field dropped in this function is a field the window and the docked panel
+ * silently do not have: the honest "you are stepping through 200 of 500" line
+ * died exactly here, because nothing downstream can rebuild what the payload
+ * never carried. Exported so the round trip (payload → `readDetailOverlayData` →
+ * `toDetailInstanceData`) is provable without a store.
+ */
+export function overlayPayloadForDetail(data: DetailInstanceData) {
   return {
     type: data.type,
     id: data.id,
@@ -54,6 +63,7 @@ function overlayPayload(data: DetailInstanceData) {
     seedAbout: data.seed?.about ?? null,
     listItems: data.list?.items ?? null,
     listIndex: data.list?.index ?? null,
+    listTrimmedFrom: data.list?.trimmedFrom ?? null,
   };
 }
 
@@ -90,11 +100,11 @@ export function openDetailSingleton({
         reopen: (previous) => {
           // The same open, with no second announcement: the toast this Undo came
           // from already said what is happening.
-          dispatch(openOverlay({ overlayId, data: overlayPayload(previous) }));
+          dispatch(openOverlay({ overlayId, data: overlayPayloadForDetail(previous) }));
         },
       });
     }
-    dispatch(openOverlay({ overlayId, data: overlayPayload(data) }));
+    dispatch(openOverlay({ overlayId, data: overlayPayloadForDetail(data) }));
     return replaced;
   };
 }

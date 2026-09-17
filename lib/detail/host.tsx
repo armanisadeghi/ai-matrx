@@ -42,6 +42,13 @@ export interface DetailWindowShellProps extends DetailShellSlots {
   /** `type.id` — the deep-link instance and the window manager's key. */
   instanceKey: string;
   target: DetailRef;
+  /**
+   * 🚨 NEW-15 — THE LIST TRAVELS INTO THE DEEP LINK. The window's `?panels=`
+   * token used to carry the record and the presentation only, so a REFRESH lost
+   * the previous / next controls and the counter without a word. The shell puts
+   * this into the token the way the page presentation puts it into the query.
+   */
+  list: DetailListContext | null;
 }
 
 export interface DetailDockedShellProps extends DetailShellSlots {
@@ -53,6 +60,13 @@ export interface DetailPageShellProps extends DetailShellSlots {
   target: DetailRef;
   /** Back affordance — the page is the one presentation that left the URL. */
   onBack: () => void;
+}
+
+export interface DetailEffectivePresentation {
+  /** The effective presentation for this type, `undefined` when unresolved. */
+  value: DetailPresentation | undefined;
+  /** The per-record-type exception still in effect, from ANY rung. */
+  forType: DetailPresentation | undefined;
 }
 
 export interface DetailPresentationSetting {
@@ -88,6 +102,17 @@ export interface DetailHostPorts {
   /** Warm the cache so the click path is synchronous. */
   warmPresentation: (type: string) => void;
   /**
+   * 🚨 NEW-10 (VERIFY-U-P1-R3) — RE-READ THE LADDER AFTER A WRITE, AND SAY WHAT
+   * ANSWERS NOW. Removing your own per-type exception while your ORGANIZATION
+   * holds one for the same type succeeded and the pane promised the records
+   * "now open the way you normally open records" — they did not; the
+   * organization's entry still won on the next open and nothing re-read the
+   * ladder. A host binds this to a FRESH ladder read (cache invalidated), never
+   * to the cached value the write just made stale. Optional: a host that cannot
+   * re-read says so and the pane promises nothing.
+   */
+  reReadPresentation?: (type: string) => Promise<DetailEffectivePresentation>;
+  /**
    * Write the person's presentation setting from inside a detail (the ONE
    * screen that writes `ui.detail.default_presentation`). `forType` non-null
    * writes the PER-RECORD-TYPE override instead of the default.
@@ -117,7 +142,20 @@ export interface DetailHostPorts {
     pageHref: (ref: DetailRef, extra?: { list?: DetailListContext | null }) => string;
     toPage: (
       ref: DetailRef,
-      extra?: { seed?: DetailSeed | null; list?: DetailListContext | null },
+      extra?: {
+        seed?: DetailSeed | null;
+        list?: DetailListContext | null;
+        /**
+         * 🚨 NEW-14 (VERIFY-U-P1-R3) — MOVING INSIDE A LIST REPLACES, NEVER
+         * PUSHES. Arrowing to a neighbour on the page called `router.push`, so
+         * twenty records meant twenty Backs and the chevron labelled "Back"
+         * returned to the previous RECORD instead of the list. The record whose
+         * history entry is being replaced, so the host can carry its "this tab
+         * pushed a detail page" answer (`canGoBack`) forward to the record now
+         * showing. Absent ⇒ a push, which is what opening a page IS.
+         */
+        replacing?: DetailRef | null;
+      },
     ) => void;
     back: () => void;
     /**

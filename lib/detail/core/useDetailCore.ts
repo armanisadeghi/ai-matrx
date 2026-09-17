@@ -38,6 +38,14 @@ export interface DetailCore {
   title: string;
   /** The title is a stand-in (loading / not found / failed), not a record's name. */
   titleIsStandIn: boolean;
+  /**
+   * 🚨 NEW-9 — WHETHER THE RECORD'S OWN DOORS MAY SHOW. A question about the
+   * RECORD, not about its name: a record that exists but stores nothing more
+   * here still opens in its home, and a title that could not be loaded has no
+   * record behind it to open. The header hung the doors off `titleIsStandIn`,
+   * which is why a type with no source became a named dead end.
+   */
+  doorsAvailable: boolean;
   /** Human label for the record type ("File"), for a header that must say what this is. */
   typeLabel: string;
   about: string | null;
@@ -63,6 +71,18 @@ export interface DetailCore {
    */
   leave: () => void;
   close: () => void;
+}
+
+function entityTokenOf(recordType: DetailRecordType | null): string | null {
+  return recordType?.entityToken ?? null;
+}
+
+/** One console line per subject per tab — a remedy, never a per-render spam. */
+const announced = new Set<string>();
+function announceOnce(key: string, message: string): void {
+  if (announced.has(key)) return;
+  announced.add(key);
+  console.warn(message);
 }
 
 function neighbour(list: DetailListContext | null, delta: 1 | -1): DetailRef | null {
@@ -107,21 +127,36 @@ export function useDetailCore(
   // `ready` is a loaded row; `none` gets the honest absent state below.
   const loadedTitle =
     state.status === "ready" && recordType ? recordType.title(row, data.seed) : null;
+  //
+  // 🚨 NEW-9 (VERIFY-U-P1-R3) — AND THE `none` STAND-IN IS NEVER A SENTENCE.
+  // Round 2's fix put "No detail is registered for session records" in the
+  // header, which is where the record's NAME goes: the screen named a real
+  // record with a developer's sentence, printed a repo path in the body, and
+  // dropped the doors, so a session (or a note reached by `/detail/note/<id>`)
+  // became a named dead end. A record that exists but stores nothing more here
+  // is named from what is certain — its type and its own id — the body says in
+  // one plain sentence that there is nothing more, and the doors stay.
+  const shortId = data.id.length > 8 ? data.id.slice(0, 8) : data.id;
   const standInTitle =
     state.status === "not-found"
       ? `This ${typeLabel.toLowerCase()} could not be found`
       : state.status === "error"
         ? `This ${typeLabel.toLowerCase()} could not be loaded`
         : state.status === "none"
-          ? `No detail is registered for ${typeLabel.toLowerCase()} records`
+          ? `${typeLabel} ${shortId}`
           : `Loading this ${typeLabel.toLowerCase()}…`;
   const titleIsStandIn = !loadedTitle && !seedName;
   const title = loadedTitle ?? seedName ?? standInTitle;
+  // The record plausibly exists: only a failed or missing read says otherwise.
+  const doorsAvailable =
+    entityTokenOf(recordType) !== null &&
+    state.status !== "not-found" &&
+    state.status !== "error";
   const about = data.seed?.about?.trim() || null;
   const fields: DetailField[] =
     row && recordType ? recordType.fields(row) : [];
   const health = row && recordType?.health ? recordType.health(row) : null;
-  const entityToken = recordType?.entityToken ?? null;
+  const entityToken = entityTokenOf(recordType);
 
   const frameCtx: DetailFrameContext | null = recordType
     ? {
@@ -134,6 +169,31 @@ export function useDetailCore(
         presentation,
       }
     : null;
+
+  // 🚨 NEW-9 — THE REMEDY GOES WHERE THE DEVELOPER IS. The person sees a plain
+  // sentence; the registry instruction is a console warning, once per type per
+  // tab, so it is impossible to miss in development and impossible to read on a
+  // screen in production.
+  useEffect(() => {
+    if (!recordType) {
+      announceOnce(
+        `no-type:${data.type}`,
+        `[detail] Nothing is registered for the record type "${data.type}", so its detail shows ` +
+          "the type, the id and the doors only. Remedy: add an entry for it in the item registry " +
+          "(features/item-presentation/registry.tsx).",
+      );
+      return;
+    }
+    if (state.status === "none") {
+      announceOnce(
+        `no-source:${data.type}`,
+        `[detail] The record type "${data.type}" has no \`detailSource\`, so its detail can show ` +
+          "nothing beyond what the opener already knew. Remedy: give the type a `detailSource` in " +
+          "the item registry (features/item-presentation/registry.tsx), or leave it sourceless " +
+          "deliberately and say why there.",
+      );
+    }
+  }, [recordType, state.status, data.type]);
 
   // Keep the setting warm for this type so a switch or a neighbour opens
   // without an awaited round-trip.
@@ -148,7 +208,10 @@ export function useDetailCore(
     const list: DetailListContext = { items: data.list.items, index: data.list.index + delta };
     const next: DetailInstanceData = { ...target, seed: null, list };
     if (presentation === "page") {
-      host.navigate.toPage(target, { list });
+      // 🚨 NEW-14 — one history entry for the whole detail visit: moving to a
+      // neighbour REPLACES the entry showing the current record, so Back leaves
+      // to the list instead of walking back through every record arrowed past.
+      host.navigate.toPage(target, { list, replacing: ref });
     } else {
       host.open({ presentation, data: next });
     }
@@ -222,6 +285,7 @@ export function useDetailCore(
     row,
     title,
     titleIsStandIn,
+    doorsAvailable,
     typeLabel,
     about,
     fields,

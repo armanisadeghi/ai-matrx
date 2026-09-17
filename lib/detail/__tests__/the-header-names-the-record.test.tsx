@@ -122,17 +122,25 @@ describe("the detail header", () => {
   // `title()` answered "Untitled File" in foreground weight, the record's doors
   // were hung beside it, and the body underneath said no details were
   // available. Every unregistered type takes that path.
-  it("names the type and says no detail is registered, with no doors (NEW-1)", () => {
+  // 🚨 REVISED BY NEW-9 (VERIFY-U-P1-R3). Round 2's fix put the SENTENCE "No
+  // detail is registered for file records" where the record's name goes and
+  // dropped the doors, so a record that exists became a named dead end
+  // (`features/item-presentation/registry.tsx` was printed at the person in the
+  // body). The absent state is still marked a stand-in and still invents no
+  // name — it is named from the type and the record's own id — and the doors
+  // stay, because the record exists and opens elsewhere.
+  it("names the record from its type and id, keeps the doors, invents nothing (NEW-9)", () => {
     const sourceless: DetailRecordType = { ...FILE_TYPE, load: null };
     const m = mount(<Bar />, seatedCore(sourceless));
 
     const title = m.container.querySelector("[data-detail-title]");
     const text = title?.textContent ?? "";
     expect(text).not.toContain("Untitled");
-    expect(text.toLowerCase()).toContain("file");
-    expect(text.toLowerCase()).toContain("no detail");
+    expect(text).toContain("File");
+    expect(text).toContain(ID.slice(0, 8));
+    expect(text.toLowerCase()).not.toContain("registered");
     expect(title?.getAttribute("data-detail-title-standin")).toBe("true");
-    expect(m.container.querySelector("[data-doors]")).toBeNull();
+    expect(m.container.querySelector("[data-doors]")).not.toBeNull();
     m.unmount();
   });
 

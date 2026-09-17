@@ -10,11 +10,14 @@
 
 "use client";
 
+import { useState } from "react";
+
 import { DetailHostProvider } from "@/lib/detail/host";
 import { DetailPagePresentation } from "@/lib/detail/presentations";
 import type { DetailInstanceData } from "@/lib/detail/types";
 import { decodeListQuery } from "./detailOverlayData";
 import { DETAIL_TYPE_BINDING } from "./detailTypeBinding";
+import { takePageSeed } from "./pageSeedHandoff";
 import { DetailPageShell } from "./shells/DetailPageShell";
 
 const SHELLS = { Page: DetailPageShell };
@@ -33,10 +36,17 @@ export function DetailPageRoute({
   /** `lt` — the length of the list this URL's window was cut from (NEW-7). */
   listTotal?: string | null;
 }) {
+  // 🚨 NEW-9 — WHAT THE OPENER KNEW, WHEN IT CAME FROM INSIDE THIS TAB. The
+  // route used to pass `seed: null` always, so a record whose type has no single
+  // canonical table arrived with nothing to show even when the surface that
+  // opened it was holding the name. Taken ONCE, on arrival (a re-render must not
+  // resurrect a name the record has since loaded past); a pasted or bookmarked
+  // link finds nothing and shows what the record's own loader answers.
+  const [seed] = useState(() => takePageSeed({ type, id }));
   const data: DetailInstanceData = {
     type,
     id,
-    seed: null,
+    seed,
     list: decodeListQuery(list, index, listTotal),
   };
   return (

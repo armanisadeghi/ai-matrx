@@ -4,7 +4,11 @@
 // write it flat (Redux data must be plain); the controller reads it back by
 // name; the page route builds it from its params. ONE spelling, here.
 
-import { trimListContext } from "@/lib/detail/listContext";
+import {
+  decodeListItems,
+  encodeListItems,
+  trimListContext,
+} from "@/lib/detail/listContext";
 import {
   DEFAULT_DETAIL_LIST_CONTEXT_MAX,
   type DetailInstanceData,
@@ -19,6 +23,15 @@ export interface DetailOverlayData {
   seedAbout: string | null;
   listItems: DetailRef[] | null;
   listIndex: number | null;
+  /**
+   * 🚨 NEW-13 (VERIFY-U-P1-R3) — THE TRIM TRAVELS. The page presentation's list
+   * is capped before it rides the URL and the detail SAYS so; this payload
+   * carried `listItems` / `listIndex` only, so switching a trimmed page to a
+   * window or a docked panel — or taking the Undo that reopens a replaced record
+   * — presented 200 records as the whole list, silently. The length of the list
+   * the window was cut from, or `null` when nothing was cut.
+   */
+  listTrimmedFrom: number | null;
 }
 
 function isDetailRef(value: unknown): value is DetailRef {
@@ -43,13 +56,24 @@ export function readDetailOverlayData(
     seedAbout: typeof data.seedAbout === "string" ? data.seedAbout : null,
     listItems: listItems && listItems.length > 0 ? listItems : null,
     listIndex: typeof data.listIndex === "number" ? data.listIndex : null,
+    listTrimmedFrom:
+      typeof data.listTrimmedFrom === "number" && Number.isFinite(data.listTrimmedFrom)
+        ? data.listTrimmedFrom
+        : null,
   };
 }
 
 export function toDetailInstanceData(data: DetailOverlayData): DetailInstanceData {
   const list: DetailListContext | null =
     data.listItems && data.listIndex !== null
-      ? { items: data.listItems, index: data.listIndex }
+      ? {
+          items: data.listItems,
+          index: data.listIndex,
+          // A trim smaller than the list it claims to have cut is not a trim.
+          ...(data.listTrimmedFrom && data.listTrimmedFrom > data.listItems.length
+            ? { trimmedFrom: data.listTrimmedFrom }
+            : {}),
+        }
       : null;
   const seed =
     data.seedName || data.seedAbout ? { name: data.seedName, about: data.seedAbout } : null;
@@ -76,7 +100,7 @@ export function encodeListQuery(
   if (!capped) return "";
   // Each `type.id` is encoded, the separators are not: a comma is legal in a
   // query value, and `%2C` × 200 was 400 bytes of nothing.
-  const l = capped.items.map((r) => `${encodeURIComponent(r.type)}.${encodeURIComponent(r.id)}`).join(",");
+  const l = encodeListItems(capped.items);
   const trimmed = capped.trimmedFrom ? `&lt=${capped.trimmedFrom}` : "";
   return `?l=${l}&i=${capped.index}${trimmed}`;
 }
@@ -88,12 +112,7 @@ export function decodeListQuery(
   lt?: string | null | undefined,
 ): DetailListContext | null {
   if (!l) return null;
-  const items: DetailRef[] = [];
-  for (const key of l.split(",")) {
-    const dot = key.indexOf(".");
-    if (dot <= 0 || dot === key.length - 1) continue;
-    items.push({ type: key.slice(0, dot), id: key.slice(dot + 1) });
-  }
+  const items = decodeListItems(l);
   if (items.length === 0) return null;
   const index = Number.parseInt(i ?? "", 10);
   const total = Number.parseInt(lt ?? "", 10);

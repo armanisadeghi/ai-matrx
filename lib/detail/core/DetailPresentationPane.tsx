@@ -77,6 +77,43 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
   };
 
   /**
+   * After a REMOVAL, what governs now — read from the ladder, not from the
+   * cached value this write just made stale (NEW-10). The sentence names the
+   * rung that actually answers, or says plainly that it could not be read.
+   */
+  const sentenceAfterRemoval = async (): Promise<string> => {
+    const reRead = host.reReadPresentation;
+    if (!reRead) {
+      return (
+        `Your own exception for ${core.typeLabel.toLowerCase()} records is gone. How they open now is ` +
+        "whatever your organization and your own default say — open one to see."
+      );
+    }
+    try {
+      const effective = await reRead(core.ref.type);
+      if (effective.forType) {
+        return (
+          `Your own exception is gone, but ${core.typeLabel.toLowerCase()} records still open as ` +
+          `${WORD[effective.forType]} because your organization sets that for everyone.`
+        );
+      }
+      if (effective.value) {
+        return `${core.typeLabel} records now open as ${WORD[effective.value]}, the way you normally open records.`;
+      }
+      return (
+        `Your own exception for ${core.typeLabel.toLowerCase()} records is gone. The setting that ` +
+        "governs them now could not be read, so open one to see how it opens."
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return (
+        `Your own exception for ${core.typeLabel.toLowerCase()} records is gone, but what governs them ` +
+        `now could not be read (${message}), so open one to see how it opens.`
+      );
+    }
+  };
+
+  /**
    * 🚨 NEW-2 — TAKING THE EXCEPTION BACK. Setting "only for file records" wrote
    * one entry of a json map and nothing in the product removed it: the only
    * escape was editing that json in the generic settings row. This clears the
@@ -89,9 +126,12 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
     const result = await save({ presentation: pending, forType: core.ref.type, clear: true });
     if (result.ok) {
       setState({ status: "saved" });
-      host.notify.success(
-        `${core.typeLabel} records now open the way you normally open records.`,
-      );
+      // 🚨 NEW-10 — NEVER "they now open your way" ON THIS WRITE'S OWN WORD. With
+      // an ORGANIZATION exception for the same type still in place, the removal
+      // succeeds and changes nothing a person can see: the organization's entry
+      // wins on the next open. The ladder is re-read and the sentence names
+      // whichever rung answers now.
+      host.notify.success(await sentenceAfterRemoval());
     } else {
       setState({ status: "refused", reason: result.reason });
     }

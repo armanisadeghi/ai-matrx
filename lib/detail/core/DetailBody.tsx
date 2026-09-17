@@ -174,9 +174,13 @@ function FieldsSection({ core }: { core: DetailCore }) {
   const label = core.recordType?.label.toLowerCase() ?? "record";
 
   if (!core.recordType) {
+    // 🚨 NEW-9 — THE PERSON'S LANGUAGE, NEVER A REPO PATH. This sentence named a
+    // source file and told a brilliant non-technical expert to edit a registry.
+    // The remedy is a console warning from the core, where the developer is.
     return (
       <Notice tone="warn">
-        {`Nothing is registered to show a "${core.ref.type}" record yet. Register the type in the item registry (features/item-presentation/registry.tsx) and this detail fills itself in.`}
+        {`This is a ${core.ref.type} record. Nothing more about it is stored here yet, so there is ` +
+          "nothing else to show — the controls above still open it where it lives, and copy its id."}
       </Notice>
     );
   }
@@ -204,9 +208,8 @@ function FieldsSection({ core }: { core: DetailCore }) {
     // latter under an invented title (VERIFY-U-P1-R2).
     return (
       <Notice tone="muted">
-        {`No detail source is registered for ${label} records, so there is nothing to show beyond what the ` +
-          `list already knew. Give the type a \`detailSource\` in the item registry ` +
-          `(features/item-presentation/registry.tsx) and this detail fills itself in.`}
+        {`Nothing more about this ${label} is stored here, so there is nothing else to show. The ` +
+          "controls above still open it where it lives, and copy its id."}
       </Notice>
     );
   }
