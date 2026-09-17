@@ -22,22 +22,29 @@
 // nobody had vetted (VERIFY-B1-B2 D2). The cost of asking is one extra read per
 // stray address.
 //
-// FAILING CLOSED IS THE POINT. A check that cannot be read refuses; a verdict
-// that has not answered is not permission; a lookup that errors refuses too.
-// Only an address this organization holds NO medium row for passes without a
-// verdict, and it passes because no suppression can exist without that row.
+// FAILING CLOSED IS THE POINT, AND THE PARSE IS PART OF IT. A check that
+// cannot be read refuses; a verdict that has not answered is not permission; a
+// lookup that errors refuses too; a recipient FIELD this cannot parse refuses
+// before anything is asked. Only an address this organization holds NO medium
+// row for passes without a verdict, and it passes because no suppression can
+// exist without that row. Until 2026-09-17 the hole was one layer below this
+// law: the lookup swallowed an unnormalisable value and answered "no row", so
+// `Ada Lovelace <ada@example.com>` — the form every mail client prints — was
+// never asked about and was SENT (VERIFY-B1-B2-R2 N2). Every field now goes
+// through the ONE parser (`./mailbox.ts`) FIRST.
 
 import {
   checkSendEligibility,
-  findMediumIdForAddress,
+  findMediumIdsForAddress,
 } from "@/features/crm/compliance/service";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
+import { parseRecipientFields, type ParsedMailbox } from "./mailbox";
 import type { GmailRecipientOption } from "./recipients";
 
 /** Null means "send"; a string is the refusal, in the gate's own words. */
 export type GmailPreflightRefusal = string | null;
 
-/** Map an address to the medium the record holds for it, case-insensitively. */
+/** Map a PARSED address to the medium the record holds for it. */
 export function mediumIdForAddress(
   address: string,
   options: GmailRecipientOption[],
@@ -52,21 +59,21 @@ export function mediumIdForAddress(
 }
 
 /**
- * Every address this send would reach, deduplicated, in the order they appear.
- * Cc counts: an unsubscribe is an unsubscribe whichever header carries it.
+ * Every mailbox this send would reach, parsed and deduplicated — or the field
+ * that could not be read.
+ *
+ * 🚨 THE FIELDS ARE PARSED, NEVER TRIMMED AND HOPED OVER. `To` and every `Cc`
+ * entry is an RFC 5322 address LIST: `Ada Lovelace <ada@example.com>` and
+ * `a@x.com, b@y.com` are both ordinary, and until 2026-09-17 each arrived here
+ * as ONE opaque string that no lookup could match and no gate ever judged
+ * (VERIFY-B1-B2-R2 N2, breaks A/B/C). Cc counts: an unsubscribe is an
+ * unsubscribe whichever header carries it.
  */
-export function recipientsOfSend(to: string, cc: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of [to, ...cc]) {
-    const address = raw.trim();
-    if (!address) continue;
-    const key = address.toLocaleLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(address);
-  }
-  return out;
+export function recipientsOfSend(
+  to: string,
+  cc: string[],
+): { ok: true; mailboxes: ParsedMailbox[] } | { ok: false; raw: string; reason: string } {
+  return parseRecipientFields([to, ...cc]);
 }
 
 /** Turn a refusing verdict into the sentence the person sees, fixes included. */
@@ -88,16 +95,20 @@ export interface GmailPreflightInput {
   options: GmailRecipientOption[];
   /**
    * The organization whose contact mediums an unheld address is resolved
-   * against. Null means there is none to resolve against (and the refusal says
-   * so is not needed: nothing can be looked up, so nothing is claimed).
+   * against. Null means there is none to resolve against.
    */
   organizationId: string | null;
   listId?: string | null;
   identityId?: string | null;
   /** Injected in tests; production asks the one authority. */
   check?: (mediumId: string) => Promise<EligibilityVerdict>;
-  /** Injected in tests; production reads `crm.contact_medium`. */
-  lookup?: (address: string) => Promise<string | null>;
+  /**
+   * Injected in tests; production reads `crm.contact_medium`. Returns EVERY
+   * medium row the organization holds for the address — one address can hold
+   * several (the live unique index includes `platform_slug`) and the
+   * suppression may be on any of them (N10).
+   */
+  lookup?: (address: string) => Promise<string[]>;
 }
 
 /**
@@ -105,7 +116,7 @@ export interface GmailPreflightInput {
  *
  * `check` and `lookup` are injected so the decision logic is testable without a
  * database; production passes `checkSendEligibility` and
- * `findMediumIdForAddress`.
+ * `findMediumIdsForAddress`.
  */
 export async function preflightGmailRecipients(
   input: GmailPreflightInput,
@@ -126,21 +137,37 @@ export async function preflightGmailRecipients(
     input.lookup ??
     ((address: string) =>
       organizationId
-        ? findMediumIdForAddress({ organizationId, address })
-        : Promise.resolve(null));
+        ? findMediumIdsForAddress({ organizationId, address })
+        : Promise.resolve<string[]>([]));
 
-  for (const address of recipientsOfSend(to, cc)) {
-    let mediumId = mediumIdForAddress(address, options);
-    if (!mediumId) {
+  const parsed = recipientsOfSend(to, cc);
+  if (!parsed.ok) {
+    // 🚨 A RECIPIENT FIELD THIS CANNOT READ IS NEVER SENT. Guessing at
+    // `Ada ada@example.com` is how the wrong person gets the message, and
+    // waving it through is how a suppressed one does.
+    return (
+      `This message was not sent: ${parsed.reason} ` +
+      "Write each recipient as name@example.com, or as " +
+      "Name <name@example.com>, and separate them with commas."
+    );
+  }
+  if (parsed.mailboxes.length === 0) {
+    return "This message was not sent: it names no recipient.";
+  }
+
+  for (const mailbox of parsed.mailboxes) {
+    const held = mediumIdForAddress(mailbox.address, options);
+    let mediumIds: string[] = held ? [held] : [];
+    if (!held) {
       // Not on this record — ask the organization, because the opt-out lives on
       // the org's medium row whichever Person happens to hold it.
       try {
-        mediumId = await lookup(address);
+        mediumIds = await lookup(mailbox.address);
       } catch (error) {
-        // 🚨 FAIL CLOSED. A lookup that failed is not a lookup that found
-        // nothing.
+        // 🚨 FAIL CLOSED. A lookup that failed — including a value the
+        // canonicalizer refused — is not a lookup that found nothing.
         return (
-          `The outbound checks for ${address} could not be read. ` +
+          `The outbound checks for ${mailbox.address} could not be read. ` +
           (error instanceof Error ? error.message : String(error))
         );
       }
@@ -149,18 +176,20 @@ export async function preflightGmailRecipients(
     // complaint or blocklist entry that could exist without one, so there is
     // genuinely nothing to ask. The compose surface has already said out loud
     // that this address is not one the record holds.
-    if (!mediumId) continue;
-    let verdict: EligibilityVerdict;
-    try {
-      verdict = await check(mediumId);
-    } catch (error) {
-      // 🚨 FAIL CLOSED. A gate that cannot be read is not a gate that said yes.
-      return (
-        `The outbound checks for ${address} could not be read. ` +
-        (error instanceof Error ? error.message : String(error))
-      );
+    if (mediumIds.length === 0) continue;
+    for (const mediumId of mediumIds) {
+      let verdict: EligibilityVerdict;
+      try {
+        verdict = await check(mediumId);
+      } catch (error) {
+        // 🚨 FAIL CLOSED. A gate that cannot be read is not a gate that said yes.
+        return (
+          `The outbound checks for ${mailbox.address} could not be read. ` +
+          (error instanceof Error ? error.message : String(error))
+        );
+      }
+      if (!verdict.allowed) return refusalSentence(mailbox.address, verdict);
     }
-    if (!verdict.allowed) return refusalSentence(address, verdict);
   }
   return null;
 }

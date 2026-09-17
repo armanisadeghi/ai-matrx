@@ -57,9 +57,9 @@ import { usePartyDetail } from "@/features/crm/hooks/usePartyDetail";
 import {
   defaultGmailRecipient,
   gmailRecipientOptions,
-  parseAddressList,
   type GmailRecipientOption,
 } from "./recipients";
+import { addressOfMailbox, splitMailboxField } from "./mailbox";
 import {
   narrowGmailSendReceipt,
   recordGmailSendInteraction,
@@ -70,8 +70,14 @@ import type { GmailDraftedBy } from "./types";
 
 export interface GmailComposePanelProps {
   partyId: string;
-  /** Explicit, always — no resolver picks an organization for a write. */
-  organizationId: string;
+  /**
+   * The organization the row is filed under. The PARTY's own organization always
+   * wins (two live triggers on `crm.interaction` insist, and the timeline is the
+   * Person's), so an opener that knows only the Person — the chat entrance —
+   * passes null and this panel reads it off the loaded record. Nothing is ever
+   * resolved from the active organization.
+   */
+  organizationId?: string | null;
   /** The person or company the message is about. */
   partyLabel: string;
   /** Present when composed from a deal — the sent record is associated with it. */
@@ -145,6 +151,10 @@ export function GmailComposePanel({
 }: GmailComposePanelProps) {
   const viewerId = useAppSelector(selectUserId);
   const { detail, isLoading, error } = usePartyDetail(partyId);
+  // The party's own organization, with the caller's value only as the value
+  // before the record has loaded (the write waits for the record either way).
+  const recordOrganizationId =
+    detail?.party.organization_id ?? organizationId ?? "";
   const inventory = useGoogleConnectionInventory();
 
   const [step, setStep] = useState<Step>("compose");
@@ -195,11 +205,17 @@ export function GmailComposePanel({
     setSeeded(true);
   }, [options, seeded]);
 
+  // 🚨 THE TYPED FIELD IS PARSED, never compared as text: a person who writes
+  // `Ada Lovelace <ada@example.com>` — the form every mail client shows — is
+  // writing the record's OWN address, and comparing strings made this step say
+  // the record does not hold it (VERIFY-B1-B2-R2 break A / N2).
+  const typedAddress = addressOfMailbox(to);
   const matched =
-    options.find(
-      (option) =>
-        option.address.toLocaleLowerCase() === to.trim().toLocaleLowerCase(),
-    ) ?? null;
+    (typedAddress
+      ? options.find(
+          (option) => option.address.toLocaleLowerCase() === typedAddress,
+        )
+      : null) ?? null;
 
   const mailboxes = eligibleGoogleConnections(
     inventory.data?.connections ?? [],
@@ -260,7 +276,10 @@ export function GmailComposePanel({
           connectionId: mailbox.id,
           fromEmail: mailbox.account_email,
           to: to.trim(),
-          cc: parseAddressList(cc),
+          // Quote-aware split: `"Doe, John" <john@x.com>` is ONE recipient, and
+          // each piece keeps the form the person wrote (the send authority and
+          // the server both parse it — `./mailbox.ts`).
+          cc: splitMailboxField(cc),
           subject,
           body,
         },
@@ -299,6 +318,9 @@ export function GmailComposePanel({
        */
       const integrity = assessGmailRecipientIntegrity({
         sentTo: receipt.to,
+        // A Cc is a recipient: it is attributed onto the row so the timeline can
+        // say whose address it is (N9).
+        sentCc: receipt.cc,
         source: { kind: "record", heldAddresses: optionsRef.current },
       });
       if (!integrity.recordOnRecord) {
@@ -315,11 +337,16 @@ export function GmailComposePanel({
           receipt,
           association: {
             partyId,
-            organizationId,
+            // 🚨 THE PARTY'S OWN ORGANIZATION WINS. `crm._inherit_parent_org`
+            // RAISES when the explicit org differs from the party's, and the row
+            // belongs to the Person's timeline — so an opener that knows only
+            // the Person (the chat entrance) may pass none at all (D8).
+            organizationId: recordOrganizationId,
             dealId: dealId ?? null,
             projectId: projectId ?? null,
             contactPointId: integrity.contactPointId,
             mediumId: integrity.mediumId,
+            ccAttribution: integrity.cc,
           },
           approvedByUserId: viewerId ?? null,
           draftedBy: draftedBy ?? null,
@@ -384,6 +411,15 @@ export function GmailComposePanel({
           <EntityRef token="crm_deal" id={dealId} name={dealLabel ?? "the deal"} />
         </>
       ) : null}
+      {/* The project the message is composed from is ASSOCIATED with the sent
+          row (`./associations.ts`), so it is named here before the send — an
+          association nobody was told about is not disclosure. */}
+      {projectId ? (
+        <>
+          <span>and</span>
+          <EntityRef token="project" id={projectId} />
+        </>
+      ) : null}
     </div>
   );
 
@@ -428,7 +464,7 @@ export function GmailComposePanel({
               // Every address is asked about, held or not: an address this
               // record does not hold is resolved against the organization's own
               // contact mediums, where the unsubscribes live (D2).
-              organizationId,
+              organizationId: recordOrganizationId || null,
             })
           }
         />

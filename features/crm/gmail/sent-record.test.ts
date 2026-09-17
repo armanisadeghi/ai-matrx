@@ -226,7 +226,10 @@ describe("gmailInteractionRow", () => {
 
 describe("recipientsOfSend", () => {
   it("covers Cc and drops blanks and repeats", () => {
-    expect(recipientsOfSend(" a@x.com ", ["b@y.com", "", "A@X.com"])).toEqual([
+    const parsed = recipientsOfSend(" a@x.com ", ["b@y.com", "", "A@X.com"]);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.mailboxes.map((mailbox) => mailbox.address)).toEqual([
       "a@x.com",
       "b@y.com",
     ]);
@@ -258,7 +261,7 @@ describe("preflightGmailRecipients", () => {
       options,
       organizationId: "org-1",
       check: async (mediumId) => verdict(mediumId !== stopMedium),
-      lookup: async () => null,
+      lookup: async () => [],
     });
     expect(refusal).toContain("stop@example.com");
     expect(refusal).toContain("asked us to stop");
@@ -278,7 +281,7 @@ describe("preflightGmailRecipients", () => {
       options,
       organizationId: "org-1",
       check: async (mediumId) => verdict(mediumId !== stopMedium),
-      lookup: async () => null,
+      lookup: async () => [],
     });
     expect(refusal).toContain("stop@example.com");
   });
@@ -293,7 +296,7 @@ describe("preflightGmailRecipients", () => {
       check: async () => {
         throw new Error("network down");
       },
-      lookup: async () => null,
+      lookup: async () => [],
     });
     expect(refusal).toContain("could not be read");
     expect(refusal).toContain("network down");
@@ -308,7 +311,7 @@ describe("preflightGmailRecipients", () => {
         options,
         organizationId: "org-1",
         check: async () => verdict(true),
-        lookup: async () => null,
+        lookup: async () => [],
       }),
     ).toBeNull();
   });
@@ -335,7 +338,7 @@ describe("preflightGmailRecipients", () => {
           return verdict(false);
         },
         lookup: async (address) =>
-          address === "unsubscribed@elsewhere.com" ? "medium-elsewhere" : null,
+          address === "unsubscribed@elsewhere.com" ? ["medium-elsewhere"] : [],
       });
       expect(asked).toEqual(["medium-elsewhere"]);
       expect(refusal).toContain("unsubscribed@elsewhere.com");
@@ -353,7 +356,7 @@ describe("preflightGmailRecipients", () => {
           asked += 1;
           return verdict(false);
         },
-        lookup: async () => null,
+        lookup: async () => [],
       });
       // No medium row means no suppression can exist — nothing to ask.
       expect(asked).toBe(0);

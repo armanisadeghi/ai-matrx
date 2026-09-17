@@ -179,6 +179,17 @@ function sendMetadata(
       approved_by: approvedByUserId,
       approved_at: approvedByUserId ? approvedAt : null,
     },
+    // 🚨 EVERY RECIPIENT IS ACCOUNTED FOR ON THE ROW, not just the one the row
+    // is filed under. Each Cc (and any second To address) says whether THIS
+    // record holds it; `GmailSentRecordDetails` prints that, so a second
+    // customer's address on a Person's timeline is never an unexplained string
+    // (VERIFY-B1-B2-R2 N9 / break D).
+    cc_attribution: (association.ccAttribution ?? []).map((entry) => ({
+      address: entry.address,
+      contact_point_id: entry.contactPointId,
+      medium_id: entry.mediumId,
+      held_by_this_record: entry.heldByThisRecord,
+    })),
     // Carried, not a column: a CRM table may not depend on a project FK
     // (db-rules §6d). The association proper IS written, through
     // `platform.associations` — see `./associations.ts`, called by

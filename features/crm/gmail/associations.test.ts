@@ -5,14 +5,17 @@
 // Gmail path — the project id reached only a metadata breadcrumb. These fail on
 // the pre-fix bytes, where `features/crm/gmail/associations.ts` did not exist.
 //
-// The edge goes through the registered RPC path ONLY: `associationsService`
-// (`assoc_add`), which is mocked here because the subject is WHICH edges are
-// written, with which role and org, and that a failure comes back as words
-// rather than a throw — the message has already left.
+// The edge goes through the registered RPC path ONLY, and through the CACHE-AWARE
+// door: the association store's own `add` (F-20 / R2 N8 — `associationsService.add`
+// writes the same edge without reloading the endpoints the hooks render from, so
+// the record's associations panel kept showing the old set). The store is mocked
+// here because the subject is WHICH edges are written, with which role and org,
+// and that a failure comes back as words rather than a throw — the message has
+// already left.
 
 const add = jest.fn();
-jest.mock("@/features/scopes/service/associationsService", () => ({
-  associationsService: { add: (args: unknown) => add(args) },
+jest.mock("@/features/scopes/host/associationsStore", () => ({
+  getAssociationsStore: () => ({ add: (args: unknown) => add(args) }),
 }));
 
 import { readFileSync } from "node:fs";
@@ -67,7 +70,7 @@ describe("recordGmailSendAssociations", () => {
   it("reports a refused edge in words and never throws", async () => {
     add.mockResolvedValueOnce({
       ok: false,
-      error: { message: "permission denied for table associations" },
+      error: "permission denied for table associations",
     });
     const result = await recordGmailSendAssociations({
       interactionId: "interaction-1",

@@ -10,19 +10,23 @@
 // (VERIFY-B1-B2 A5/D7). The party and the deal were at least columns; the
 // project reached nothing but a breadcrumb in `metadata`.
 //
-// THE REGISTERED PATH ONLY. Every edge goes through `associationsService`
-// (`features/scopes/service/associationsService.ts` → `assoc_add`), which is the
-// one chokepoint for the `assoc_*` family: it re-checks access on BOTH
-// endpoints, resolves the org, and is idempotent on (source, target, role). A
-// direct insert into `platform.associations` is refused by design — the browser
-// holds no grant on that table (access FEATURE.md § associations).
+// THE REGISTERED PATH ONLY, AND THE CACHE-AWARE ONE. Every edge goes through the
+// association store's own `add` (`features/scopes/host/associationsStore.ts` →
+// the package's `assoc_add`), the one chokepoint for the `assoc_*` family: it
+// re-checks access on BOTH endpoints, resolves the org, is idempotent on
+// (source, target, role) — AND reloads both endpoints in the cache the hooks
+// render from. `associationsService.add` is the same RPC WITHOUT that reload, so
+// the edge landed and the Person's own associations panel went on showing the old
+// set until something else refetched (VERIFY-B1-B2-R2 N8). A direct insert into
+// `platform.associations` is refused by design — the browser holds no grant on
+// that table (access FEATURE.md § associations).
 //
 // THE MESSAGE HAS ALREADY LEFT when this runs, and so has the interaction row.
 // A failed edge therefore never throws and never unwinds anything: it comes back
 // as words the caller shows, because a person who thinks the association exists
 // will never go and make it.
 
-import { associationsService } from "@/features/scopes/service/associationsService";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import type { GmailSendAssociation } from "./types";
 
 /** The role every Gmail-send edge carries, so the reverse read is one query. */
@@ -63,7 +67,7 @@ export async function recordGmailSendAssociations(args: {
   const failures: string[] = [];
   for (const target of targets) {
     try {
-      const result = await associationsService.add({
+      const result = await getAssociationsStore().add({
         sourceType: "crm_interaction",
         sourceId: interactionId,
         targetType: target.type,
@@ -75,7 +79,9 @@ export async function recordGmailSendAssociations(args: {
         written.push(`${target.type}:${target.id}`);
       } else {
         failures.push(
-          `The sent message was not linked to this ${LABEL[target.type]}: ${result.error.message}`,
+          `The sent message was not linked to this ${LABEL[target.type]}: ${
+            result.error ?? "the association was refused."
+          }`,
         );
       }
     } catch (error) {

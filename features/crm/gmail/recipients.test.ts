@@ -20,7 +20,6 @@ import type { ContactPoint } from "@/features/crm/types";
 import {
   defaultGmailRecipient,
   gmailRecipientOptions,
-  parseAddressList,
 } from "./recipients";
 
 type MediumOverrides = Partial<ContactPoint["medium"]>;
@@ -160,11 +159,7 @@ describe("defaultGmailRecipient", () => {
   });
 });
 
-describe("parseAddressList", () => {
-  it("splits on commas and semicolons and drops the blanks", () => {
-    expect(parseAddressList(" a@x.com , ;b@y.com; ")).toEqual([
-      "a@x.com",
-      "b@y.com",
-    ]);
-  });
-});
+// `parseAddressList` is gone: splitting a recipient field on every comma broke
+// `"Doe, John" <john@x.com>` and could not read `Ada <ada@example.com>` at all.
+// THE ONE PARSER is `./mailbox.ts` (`splitMailboxField` / `parseMailboxField`),
+// covered by `./send-authority.test.ts` (F-20 item 1).

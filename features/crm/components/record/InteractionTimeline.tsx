@@ -39,6 +39,8 @@ import { formatRelativeTime } from "@/utils/datetime";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useOrgMembers } from "../../deals/useOrgMembers";
 import { GmailSentRecordDetails } from "../../gmail/GmailSentRecordDetails";
 import { isGmailSentRecord } from "../../gmail/sent-record-facts";
@@ -134,6 +136,8 @@ export function InteractionTimeline({
   const [saving, setSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const openGmailCompose = useOpenGmailComposeWindow();
+  // The project the send belongs to (R2 A5/D7 — nothing passed one before F-20).
+  const activeProjectId = useAppSelector(selectActiveProjectId);
 
   /**
    * The ONE place compose is opened from this surface, so the Person header's
@@ -148,6 +152,7 @@ export function InteractionTimeline({
       partyLabel,
       dealId: dealId ?? null,
       dealLabel: dealLabel ?? null,
+      projectId: activeProjectId ?? null,
       onSent: () => {
         void onChanged();
       },

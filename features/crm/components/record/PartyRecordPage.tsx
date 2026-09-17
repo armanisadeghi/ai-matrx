@@ -27,6 +27,8 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
@@ -91,6 +93,11 @@ export function PartyRecordPage({ partyId }: Props) {
   });
   const { edges: partyEdges } = useAssociations({ type: "party", id: partyId });
   const openGmailCompose = useOpenGmailComposeWindow();
+  // The project the person is working in, so the sent message is ASSOCIATED with
+  // it. Until F-20 no opener passed one, so the project edge `associations.ts`
+  // writes was unreachable from every surface (VERIFY-B1-B2-R2 A5/D7). The
+  // compose panel names the project before the send — never a silent link.
+  const activeProjectId = useAppSelector(selectActiveProjectId);
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
@@ -193,6 +200,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     partyId: party.id,
                     organizationId: party.organization_id,
                     partyLabel: party.display_name,
+                    projectId: activeProjectId ?? null,
                     onSent: () => {
                       void refresh();
                     },

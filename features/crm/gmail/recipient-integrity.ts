@@ -23,6 +23,7 @@
 // Pure — no React, no Supabase — so both consumers, and the tests, read the same
 // answer.
 
+import { parseMailboxField } from "./mailbox";
 import type { GmailRecipientOption } from "./recipients";
 
 /** Where the send came from, which decides what "authorized" means. */
@@ -45,9 +46,34 @@ export type GmailRecipientSource =
     };
 
 export interface GmailRecipientIntegrityInput {
-  /** The address the CARD reported sending to (`receipt.to`), never a draft. */
+  /**
+   * The To field the CARD reported sending to (`receipt.to`), never a draft. It
+   * is a FIELD, not an address: `Ada Lovelace <ada@example.com>` and
+   * `a@x.com, b@y.com` both arrive here and are parsed, not compared as text
+   * (VERIFY-B1-B2-R2 break A — the record's OWN address in display form was
+   * refused, so the message left and was recorded on nobody).
+   */
   sentTo: string;
+  /** The Cc the card reported. Checked for eligibility elsewhere; ATTRIBUTED here. */
+  sentCc?: string[];
   source: GmailRecipientSource;
+}
+
+/**
+ * One address that received a copy, and whether this record can account for it.
+ *
+ * 🚨 A Cc IS A RECIPIENT. The row lands on the To's Person and prints the Cc on
+ * her timeline; until this existed nothing said whether the Cc belonged to this
+ * record or to a stranger, so a second customer's address appeared on the first
+ * customer's history with no attribution at all (N9, break D). A Cc that this
+ * record does not hold is still SHOWN — marked as unattributed, never hidden and
+ * never implied to belong here.
+ */
+export interface GmailCcAttribution {
+  address: string;
+  contactPointId: string | null;
+  mediumId: string | null;
+  heldByThisRecord: boolean;
 }
 
 export type GmailRecipientIntegrityVerdict =
@@ -57,6 +83,12 @@ export type GmailRecipientIntegrityVerdict =
       /** The contact point for the address that actually received it. */
       contactPointId: string | null;
       mediumId: string | null;
+      /**
+       * Every OTHER address that received a copy — the Cc, plus any further To
+       * address beyond the one this row is attributed to — each marked with
+       * whether this record holds it.
+       */
+      cc: GmailCcAttribution[];
     }
   | {
       recordOnRecord: false;
@@ -64,8 +96,47 @@ export type GmailRecipientIntegrityVerdict =
       refusal: string;
     };
 
-function same(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+/** The addresses one field names, parsed; an unreadable field names none. */
+function addressesOf(field: string): string[] {
+  const parsed = parseMailboxField(field);
+  return parsed.ok ? parsed.mailboxes.map((mailbox) => mailbox.address) : [];
+}
+
+function holderOf(
+  address: string,
+  held: GmailRecipientOption[],
+): GmailRecipientOption | null {
+  return (
+    held.find(
+      (option) => option.address.trim().toLocaleLowerCase() === address,
+    ) ?? null
+  );
+}
+
+/**
+ * Attribute every copied-to address against the record's own addresses.
+ * `exclude` is the address the row itself is attributed to, so it is not also
+ * listed as a copy.
+ */
+function attributeCopies(
+  addresses: string[],
+  held: GmailRecipientOption[],
+  exclude: string | null,
+): GmailCcAttribution[] {
+  const seen = new Set<string>(exclude ? [exclude] : []);
+  const out: GmailCcAttribution[] = [];
+  for (const address of addresses) {
+    if (seen.has(address)) continue;
+    seen.add(address);
+    const holder = holderOf(address, held);
+    out.push({
+      address,
+      contactPointId: holder?.contactPointId ?? null,
+      mediumId: holder?.mediumId ?? null,
+      heldByThisRecord: Boolean(holder),
+    });
+  }
+  return out;
 }
 
 /**
@@ -79,46 +150,82 @@ function same(a: string, b: string): boolean {
 export function assessGmailRecipientIntegrity(
   input: GmailRecipientIntegrityInput,
 ): GmailRecipientIntegrityVerdict {
-  const sentTo = input.sentTo.trim();
+  const rawTo = input.sentTo.trim();
   const tail =
     "so it was not added to any record's timeline — we cannot tell whose " +
     "address that is. Log it on the right record by hand.";
 
-  if (!sentTo) {
+  if (!rawTo) {
     return {
       recordOnRecord: false,
       refusal: `The message was sent but the review card named no recipient, ${tail}`,
     };
   }
 
+  const toAddresses = addressesOf(rawTo);
+  if (toAddresses.length === 0) {
+    // The field could not be read at all — the send authority refuses such a
+    // field before anything leaves, so reaching here means the card posted
+    // something this cannot attribute. Never guessed at.
+    return {
+      recordOnRecord: false,
+      refusal: `The message was sent to ${rawTo}, which could not be read as an email address, ${tail}`,
+    };
+  }
+  const ccAddresses = (input.sentCc ?? []).flatMap((field) =>
+    addressesOf(field),
+  );
+
   if (input.source.kind === "proposal") {
-    if (same(sentTo, input.source.proposedAddress)) {
+    const proposed = addressesOf(input.source.proposedAddress);
+    const match = toAddresses.find((address) => proposed.includes(address));
+    if (match) {
       // The address is the one the payload's party holds, so the proposal's own
       // contact point is the association.
+      const held: GmailRecipientOption[] = input.source.mediumId
+        ? [
+            {
+              address: match,
+              contactPointId: input.source.contactPointId ?? "",
+              mediumId: input.source.mediumId,
+              label: null,
+              isPrimary: true,
+              warning: null,
+            },
+          ]
+        : [];
       return {
         recordOnRecord: true,
         contactPointId: input.source.contactPointId ?? null,
         mediumId: input.source.mediumId ?? null,
+        cc: attributeCopies([...toAddresses, ...ccAddresses], held, match),
       };
     }
     return {
       recordOnRecord: false,
-      refusal: `The message was sent to ${sentTo}, not the address this draft proposed, ${tail}`,
+      refusal: `The message was sent to ${rawTo}, not the address this draft proposed, ${tail}`,
     };
   }
 
-  const held = input.source.heldAddresses.find((option) =>
-    same(option.address, sentTo),
+  const heldAddresses = input.source.heldAddresses;
+  const attributed = toAddresses.find((address) =>
+    Boolean(holderOf(address, heldAddresses)),
   );
-  if (held) {
+  if (attributed) {
+    const holder = holderOf(attributed, heldAddresses);
     return {
       recordOnRecord: true,
-      contactPointId: held.contactPointId,
-      mediumId: held.mediumId,
+      contactPointId: holder?.contactPointId ?? null,
+      mediumId: holder?.mediumId ?? null,
+      cc: attributeCopies(
+        [...toAddresses, ...ccAddresses],
+        heldAddresses,
+        attributed,
+      ),
     };
   }
   return {
     recordOnRecord: false,
-    refusal: `The message was sent to ${sentTo}, which this record does not hold, ${tail}`,
+    refusal: `The message was sent to ${rawTo}, which this record does not hold, ${tail}`,
   };
 }

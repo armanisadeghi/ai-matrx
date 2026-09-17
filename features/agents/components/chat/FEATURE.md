@@ -306,6 +306,18 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-17` — F-20: **the chat can email a Person.** B-1's own sentence is
+  "compose from a Person, a deal, or the chat" and the chat third did not exist —
+  `useOpenGmailComposeWindow` had three call sites and all three were CRM record
+  surfaces (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` A1). The
+  conversation's own header menu (`ConversationPageMenu`) now offers "Send email
+  to <Person>" for every Person the conversation is ASSOCIATED with, opening the
+  same compose window through the same opener — no second compose path, no picker
+  invented for the occasion, and nothing offered for a Person the window could not
+  open with (`conversation-email-entrance.ts` is the decision;
+  `__tests__/chat-can-send-email.test.ts` is the guard). A conversation linked to
+  nobody shows no entry, because the Person is what makes a sent record true.
+
 - `2026-09-16` — codex: **changing agents preserves the complete unsent request, not only non-empty text.** Replaced the single-field `sessionStorage` bridge for same-tab agent changes with an in-memory handoff transaction that is shared by the header picker, picker detail-card door, mandate chips, pinned agents, and Search Agents. It copies structured composer parts, variables/policies, resources (including in-flight lifecycle updates), context, client tools, run settings, model overrides/removals, sandbox binding, and connector attachments; pins every source until pending work settles; and combines B's edits with A's async completions during rapid A → B → C switching. Guards: `begin-fresh-chat.test.ts`, `chat-route.slice.test.ts`, `abandoned-conversation-cleanup.test.ts`, `copy-instance-request-draft.chat-semantics.test.ts`, and `attachments-survive-the-new-chat-handoff.test.ts`.
 
 - `2026-09-15` — **The Sandbox pane survives a reload, and every composer

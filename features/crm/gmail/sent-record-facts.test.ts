@@ -130,10 +130,15 @@ describe("THE GUARD: the timeline renders the sent record's facts", () => {
     expect(source).toContain("Associated with");
     expect(source).toContain("Drafted by");
     expect(source).toContain("Approved by");
-    // Every named record opens (THE DOOR LAW).
-    expect(source).toMatch(/EntityRef[\s\S]*token="party"/);
-    expect(source).toMatch(/token="crm_deal"/);
-    expect(source).toMatch(/token="project"/);
+    // Every named record opens (THE DOOR LAW) — the token is now the intended
+    // target's own type, because the chips are the EDGES that exist (R2 N7).
+    expect(source).toMatch(/EntityRef[\s\S]*token=\{target\.type\}/);
+    expect(source).toMatch(/type: "party"/);
+    expect(source).toMatch(/type: "crm_deal" as const/);
+    expect(source).toMatch(/type: "project" as const/);
+    // And a missing edge is shown as missing, with a way to repair it.
+    expect(source).toContain("Not linked to");
+    expect(source).toContain("Link it now");
   });
 
   it("nothing outside the accessor reads the audit keys", () => {

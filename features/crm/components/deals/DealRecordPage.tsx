@@ -29,6 +29,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { InteractionTimeline } from "../record/InteractionTimeline";
 import { PartyNotes } from "../record/PartyNotes";
 import { SectionCard, SectionEmpty } from "../record/SectionCard";
@@ -66,6 +68,9 @@ export function DealRecordPage({ dealId }: Props) {
   const router = useRouter();
   const { detail, isLoading, error, refresh } = useDealDetail(dealId);
   const openGmailCompose = useOpenGmailComposeWindow();
+  // The project this work sits in — the third thing a sent message is associated
+  // with, and until F-20 no opener passed it (R2 A5/D7).
+  const activeProjectId = useAppSelector(selectActiveProjectId);
   const { stageById, pipelineById } = usePipelines();
   const deal = detail?.deal ?? null;
   const { memberById } = useOrgMembers(
@@ -165,6 +170,7 @@ export function DealRecordPage({ dealId }: Props) {
                       partyLabel: deal.party!.display_name,
                       dealId: deal.id,
                       dealLabel: deal.name,
+                      projectId: activeProjectId ?? null,
                       onSent: () => {
                         void refresh();
                       },

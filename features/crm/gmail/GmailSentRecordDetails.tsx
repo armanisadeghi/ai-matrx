@@ -17,10 +17,23 @@
  * THE DOOR LAW: every record named here opens — the Person, the deal, the
  * project and the agent through `EntityRef`, the run id as a copyable identity
  * (no run viewer exists to route to, and inventing a route that 404s is worse).
+ *
+ * 🚨 "ASSOCIATED WITH" IS READ FROM THE EDGES. This block used to print the
+ * Person, the deal and the project from the row's own columns, so a refused edge
+ * was asserted here forever while "everything associated with this Person" did
+ * not list the message — and the only trace was a toast that had long since
+ * disappeared (VERIFY-B1-B2-R2 N7). It now compares the row's INTENDED
+ * associations against `platform.associations` (`./sent-record-associations.ts`)
+ * and shows a missing one AS missing, with a retry that writes through the same
+ * registered, cache-aware path.
  */
 
-import { BrainCircuit, Mail, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { BrainCircuit, Link2Off, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table";
+import { useAssociations } from "@ai-matrx/associations/react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   UserAvatarDisplay,
@@ -30,6 +43,11 @@ import {
 import { formatRelativeTime } from "@/utils/datetime";
 import type { InteractionRow } from "@/features/crm/types";
 import { gmailSentRecordFacts } from "./sent-record-facts";
+import {
+  GMAIL_SEND_ASSOCIATION_ROLE,
+  gmailAssociationStanding,
+  type GmailIntendedAssociation,
+} from "./sent-record-associations";
 
 export interface GmailSentRecordDetailsProps {
   row: InteractionRow;
@@ -54,6 +72,59 @@ export function GmailSentRecordDetails({
     ? (memberById?.get(facts.approvedBy) ?? null)
     : null;
 
+  // The edges this row actually has. `add` is the cache-aware door, so a retry
+  // that succeeds refreshes both endpoints — including the Person's own
+  // associations panel (R2 N8).
+  const { edges, status, add } = useAssociations({
+    type: "crm_interaction",
+    id: row.id,
+  });
+  const [linking, setLinking] = useState(false);
+
+  const intended: GmailIntendedAssociation[] = [
+    { type: "party", id: partyId, label: partyLabel },
+    ...(row.deal_id
+      ? [{ type: "crm_deal" as const, id: row.deal_id, label: dealLabel }]
+      : []),
+    ...(facts.composedFromProjectId
+      ? [{ type: "project" as const, id: facts.composedFromProjectId }]
+      : []),
+  ];
+  const settled = status === "ready" || status === "error";
+  const standing = gmailAssociationStanding(intended, edges);
+  // Nothing is claimed while the edges are still being read: the linked list is
+  // what the edges say, and before they answer the row says only what it is.
+  const shown = settled ? standing.linked : intended;
+  const missing = settled ? standing.missing : [];
+
+  const linkMissing = async () => {
+    setLinking(true);
+    const failures: string[] = [];
+    for (const target of missing) {
+      try {
+        const result = await add({
+          targetType: target.type,
+          targetId: target.id,
+          role: GMAIL_SEND_ASSOCIATION_ROLE,
+        });
+        if (!result.ok) {
+          failures.push(result.error ?? "the association was refused");
+        }
+      } catch (error) {
+        failures.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+    setLinking(false);
+    if (failures.length > 0) {
+      toast.error(
+        `This message still could not be linked: ${failures.join(" ")} ` +
+          "Nothing about the message itself changed — it is recorded here either way.",
+      );
+      return;
+    }
+    toast.success("The sent message is linked again.");
+  };
+
   return (
     <div className="mt-1 space-y-1 border-l-2 border-border/70 pl-2">
       {/* What carried it, to whom, and out of which mailbox. */}
@@ -63,7 +134,23 @@ export function GmailSentRecordDetails({
           Sent with {facts.provider === "gmail" ? "Gmail" : facts.provider}
         </span>
         {facts.to ? <span>to {facts.to}</span> : null}
-        {facts.cc.length > 0 ? <span>· cc {facts.cc.join(", ")}</span> : null}
+        {/* A Cc IS a recipient, and it says whose address it is: the row carries
+            the attribution the send decided (R2 N9). Rows written before that
+            print the addresses alone — never invented into "this record's". */}
+        {facts.ccAttribution.length > 0 ? (
+          <span>
+            · cc{" "}
+            {facts.ccAttribution
+              .map((entry) =>
+                entry.heldByThisRecord
+                  ? entry.address
+                  : `${entry.address} (not an address this record holds)`,
+              )
+              .join(", ")}
+          </span>
+        ) : facts.cc.length > 0 ? (
+          <span>· cc {facts.cc.join(", ")}</span>
+        ) : null}
         {facts.sentViaAccountEmail ? (
           <span>· from {facts.sentViaAccountEmail}</span>
         ) : null}
@@ -77,21 +164,53 @@ export function GmailSentRecordDetails({
         ) : null}
       </p>
 
-      {/* "Associated with" — HubSpot's word, and every chip is a door. */}
-      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-        <span>Associated with</span>
-        <EntityRef token="party" id={partyId} name={partyLabel ?? undefined} />
-        {row.deal_id ? (
-          <EntityRef
-            token="crm_deal"
-            id={row.deal_id}
-            name={dealLabel ?? undefined}
-          />
-        ) : null}
-        {facts.composedFromProjectId ? (
-          <EntityRef token="project" id={facts.composedFromProjectId} />
-        ) : null}
-      </p>
+      {/* "Associated with" — HubSpot's word, every chip a door, and every chip
+          an edge that exists. */}
+      {shown.length > 0 ? (
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
+          <span>Associated with</span>
+          {shown.map((target) => (
+            <EntityRef
+              key={`${target.type}:${target.id}`}
+              token={target.type}
+              id={target.id}
+              name={target.label ?? undefined}
+            />
+          ))}
+        </p>
+      ) : null}
+
+      {/* 🚨 A MISSING LINK IS SHOWN, NOT TOASTED. The message is recorded here
+          either way — only the link is missing, and it is repairable in place. */}
+      {missing.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-warning">
+          <Link2Off className="h-3 w-3 shrink-0" aria-hidden />
+          <span>Not linked to</span>
+          {missing.map((target) => (
+            <EntityRef
+              key={`missing:${target.type}:${target.id}`}
+              token={target.type}
+              id={target.id}
+              name={target.label ?? undefined}
+            />
+          ))}
+          <span className="text-muted-foreground">
+            — this message is recorded here, but it will not show up under them.
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px]"
+            disabled={linking}
+            onClick={() => void linkMissing()}
+          >
+            {linking ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
+            ) : null}
+            {linking ? "Linking…" : "Link it now"}
+          </Button>
+        </div>
+      ) : null}
 
       {/* Who wrote it, when it was not the person who sent it. */}
       {facts.draftedByLabel || facts.draftedByAgentId || facts.draftedByRunId ? (

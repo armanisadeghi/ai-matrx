@@ -13,6 +13,8 @@
 // and read by `./sent-record-facts.ts`, the ONE accessor, so the move to columns
 // is a one-line change.
 
+import type { GmailCcAttribution } from "./recipient-integrity";
+
 /**
  * `channel = gmail` (PLAN §4.4) as this table actually spells it.
  *
@@ -61,6 +63,13 @@ export interface GmailSendAssociation {
   contactPointId?: string | null;
   /** The contact point's medium — what the compliance gate is asked about. */
   mediumId?: string | null;
+  /**
+   * Every address that received a COPY (Cc, and any further To address), with
+   * whether this record holds it — decided by `./recipient-integrity.ts` and
+   * written onto the row, so a Cc printed on a Person's timeline says whose
+   * address it is instead of appearing there unattributed (N9).
+   */
+  ccAttribution?: GmailCcAttribution[];
 }
 
 /** The exact bytes that left, as the review card reported them. */

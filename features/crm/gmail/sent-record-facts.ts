@@ -46,6 +46,12 @@ export interface GmailSentRecordFacts {
   /** The addresses the message actually went to, as the card reported them. */
   to: string | null;
   cc: string[];
+  /**
+   * Per-Cc attribution written by the send: whose address it is, and whether
+   * THIS record holds it. Empty on rows written before F-20, which is why the
+   * surface still prints `cc` itself when this is empty (R2 N9).
+   */
+  ccAttribution: GmailCcOnRecord[];
   /** The connected account it went out through. */
   sentViaAccountEmail: string | null;
   draftedByAgentId: string | null;
@@ -56,6 +62,14 @@ export interface GmailSentRecordFacts {
   approvalAssistId: string | null;
   /** The project the message was composed from, when it was composed from one. */
   composedFromProjectId: string | null;
+}
+
+/** One Cc as the row records it — the column spelling, not camelCase. */
+export interface GmailCcOnRecord {
+  address: string;
+  contactPointId: string | null;
+  mediumId: string | null;
+  heldByThisRecord: boolean;
 }
 
 function jsonObject(value: unknown): Record<string, unknown> | null {
@@ -101,12 +115,30 @@ export function gmailSentRecordFacts(row: InteractionRow): GmailSentRecordFacts 
         (entry): entry is string => typeof entry === "string",
       )
     : [];
+  const ccAttribution: GmailCcOnRecord[] = Array.isArray(
+    metadata?.cc_attribution,
+  )
+    ? (metadata.cc_attribution as unknown[]).flatMap((entry) => {
+        const record = jsonObject(entry);
+        const address = text(record, "address");
+        if (!address) return [];
+        return [
+          {
+            address,
+            contactPointId: text(record, "contact_point_id"),
+            mediumId: text(record, "medium_id"),
+            heldByThisRecord: record?.held_by_this_record === true,
+          },
+        ];
+      })
+    : [];
   return {
     provider: row.provider ?? null,
     subject: row.subject ?? null,
     messageId: row.provider_interaction_id ?? null,
     to: text(metadata, "to"),
     cc,
+    ccAttribution,
     sentViaAccountEmail: text(account, "account_email"),
     draftedByAgentId: auditValue(row, "drafted_by_agent_id"),
     draftedByRunId: auditValue(row, "drafted_by_run_id"),

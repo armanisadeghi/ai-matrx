@@ -97,11 +97,3 @@ export function defaultGmailRecipient(
 ): GmailRecipientOption | null {
   return options.find((option) => !option.warning) ?? options[0] ?? null;
 }
-
-/** Split a typed "a@b.com, c@d.com" field the way the review card does. */
-export function parseAddressList(raw: string): string[] {
-  return raw
-    .split(/[,;]/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}

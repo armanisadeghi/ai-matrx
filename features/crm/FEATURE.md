@@ -832,8 +832,9 @@ is the part neither of them has. Plan: `common-docs/projects/google-native/PLAN.
 mounted by `GmailComposeWindow` (overlay `gmailComposeWindow`, opened with
 `useOpenGmailComposeWindow`) from the Person header, the deal header and the
 Activity card. `recipients.ts` decides which addresses the record offers;
-`recipient-integrity.ts` decides whose timeline a send may land on;
-`preflight.ts` is the ONE Send-time gate for both send paths; `service.ts` holds
+`mailbox.ts` is the ONE recipient-field parser (RFC 5322 mailboxes);
+`recipient-integrity.ts` decides whose timeline a send may land on and attributes
+every Cc; `preflight.ts` is the ONE Send-time gate for both send paths; `service.ts` holds
 the ONE writer of a Gmail-sent interaction row; `associations.ts` writes its
 "Associated with" edges; `sent-record-facts.ts` is the ONE reader of a sent row's
 facts and `GmailSentRecordDetails.tsx` renders them on the timeline; `types.ts`
@@ -852,16 +853,25 @@ holds the shapes.
   has not answered yet is NOT permission: Review stays disabled while the checks
   are in flight, because the card's Send posts straight to the reviewed-send
   endpoint and cannot be gated from outside it.
-- 🚨 **EVERY recipient is asked about, held or not.** An address the open record
-  does not hold is not an unknown address: the ORGANIZATION usually already holds
-  the `crm.contact_medium` row it is suppressed on, under another Person.
-  `preflight.ts` resolves it with `findMediumIdForAddress`
-  (`crm/compliance/service.ts`, read-only, never creates the row) and asks the
-  gate; only an address this organization holds no row for at all passes without
-  a verdict, because no suppression can exist without one. A lookup that cannot
-  be read REFUSES. Before 2026-09-17 both paths `continue`d past exactly those
-  addresses, so an unsubscribed person could be emailed by typing her address
-  into any record's compose window (VERIFY-B1-B2 D2).
+- 🚨 **EVERY RECIPIENT FIELD IS PARSED FIRST, then every parsed address is asked
+  about, held or not.** A To or Cc field is an RFC 5322 address LIST, and
+  `mailbox.ts` is the one thing that reads it: `Ada Lovelace <ada@example.com>`,
+  `"Doe, John" <john@x.com>`, `a@x.com, b@y.com`. A field it cannot read is
+  REFUSED by name with the form to use — never guessed at, never waved through.
+  Each parsed address is then resolved with `findMediumIdsForAddress`
+  (`crm/compliance/service.ts`, read-only, never creates the row), which returns
+  EVERY medium row the organization holds for it — the live unique index includes
+  `platform_slug`, so one address can hold several and the suppression may be on
+  any of them — and the gate is asked about each. Only an address this
+  organization holds no row for at all passes without a verdict, because no
+  suppression can exist without one. A lookup that cannot be read, INCLUDING a
+  value the canonicalizer refuses, REFUSES: "cannot confirm eligibility" is never
+  "clear". Two holes closed here: before 2026-09-17 both paths `continue`d past
+  exactly the addresses nobody had vetted (VERIFY-B1-B2 D2), and until F-20 the
+  lookup swallowed `normalizeMediumValue`'s throw and answered "no row", so any
+  recipient written the way every mail client prints it walked straight past the
+  gate and was delivered by the server (VERIFY-B1-B2-R2 N2 — the disqualifying
+  finding; `send-authority.test.ts` is the guard).
 - 🚨 **A CHANGED RECIPIENT IS A DIFFERENT PERSON — one primitive, both paths.**
   `recipient-integrity.ts::assessGmailRecipientIntegrity` decides whether a send
   may be recorded on the record (the address must be one the RECORD holds, or —
@@ -871,7 +881,18 @@ holds the shapes.
   stranger landed on the open Person's timeline under the toast "Sent, and
   recorded on Ada's timeline" (VERIFY-B1-B2 D1). Guard:
   `recipient-integrity.test.ts` scans BOTH consumers for the shared import and
-  for the absence of a private copy.
+  for the absence of a private copy. The comparison is on PARSED addresses, so
+  the record's own address in display form is its own address (it used to be a
+  stranger: the message left and was recorded on nobody, R2 break A).
+- 🚨 **A Cc IS A RECIPIENT, and it is attributed on the row.** The gate asks
+  about every Cc, and `recipient-integrity.ts` now returns one attribution per
+  copied-to address — the contact point when this record holds it, and an honest
+  "this record does not hold it" when it does not. `service.ts` writes that as
+  `metadata.cc_attribution` and `GmailSentRecordDetails` prints it, so a second
+  customer's address on a Person's timeline says what it is instead of sitting
+  there unexplained (R2 N9). Still open, and named: a Cc'd Person gets no row on
+  her OWN timeline — resolving an address to a second Person is the Contacts
+  import's job and is not done here.
 - **`channel = gmail` is `channel_code = 'email'` + `provider = 'gmail'`.**
   `channel_code`'s CHECK is a closed list of eight and `provider` is already how
   the table names the carrier (live rows say `twilio`, `apollo`). The external
@@ -965,6 +986,29 @@ holds the shapes.
 ---
 
 ## Change log
+
+- 2026-09-17 — **F-20: round 2's Gmail findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N2/N7/N8/N9/N10, A1,
+  A5/D7, breaks A/B/C/D/I). **The disqualifying one:** every recipient field now
+  goes through ONE RFC 5322 parser (`gmail/mailbox.ts`) BEFORE the send authority
+  judges anything, so `Ada Lovelace <ada@example.com>` is Ada's address — it was
+  a string nothing could normalise, the lookup answered "no row", the preflight
+  read that as "no suppression can exist" and SENT, and the same input lost the
+  record. A field the parser cannot read is refused with the form to use; a
+  two-address To is checked address by address; `findMediumIdsForAddress`
+  replaced `findMediumIdForAddress` and returns EVERY medium row for an address
+  (the `.limit(1)` ignored `platform_slug`, N10); an unnormalisable value now
+  THROWS so the caller fails closed. Cc is attributed on the row
+  (`metadata.cc_attribution`) and printed on the timeline. The chat has its
+  entrance: the conversation's own menu offers "Send email to <Person>" for every
+  Person the conversation is associated with, through the same opener (A1).
+  Openers pass the project they are standing in, the compose panel names it
+  before the send, and the association write goes through the cache-aware store
+  `add` so the record's own associations panel refreshes (N8). A failed
+  "Associated with" edge is recorded ON the row and shown with a retry instead of
+  a toast nobody keeps (N7); "Associated with" prints what the edges actually
+  say. Migration written, not applied:
+  `migrations/crm_interaction_association_types.sql`.
 
 - 2026-09-17 — **The first hostile verification's Gmail findings, fixed**
   (`common-docs/projects/google-native/VERIFY-B1-B2.md` A1/A4/A5/D1/D2/D6/D7/D8/D9).
