@@ -138,6 +138,7 @@ import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
+import { barcodePreviewManifest } from "./barcode-preview.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
@@ -201,6 +202,8 @@ import { adminBillingSpendManifest } from "./admin-billing-spend.manifest";
 import { adminSandboxManifest } from "./admin-sandbox.manifest";
 import { adminOfficialComponentsManifest } from "./admin-official-components.manifest";
 import { adminApplicationsManifest } from "./admin-applications.manifest";
+import { adminSyncFleetManifest } from "./admin-sync-fleet.manifest";
+import { adminProofRunsManifest } from "./admin-proof-runs.manifest";
 import { adminSchedulingManifest } from "./admin-scheduling.manifest";
 import { adminAgentAppsManifest } from "./admin-agent-apps.manifest";
 import { adminBundlesManifest } from "./admin-bundles.manifest";
@@ -239,6 +242,7 @@ import { quickDataManifest } from "./quick-data.manifest";
  * vocabulary in two. See THE FAMILY DOCTRINE in `.claude/skills/surface-authoring`.
  */
 export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
+  barcodePreviewManifest,
   agentShortcutsManifest,
   aiWorkManifest,
   aiWorkComposerManifest,
@@ -427,6 +431,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminSchedulingManifest,
   adminAgentAppsManifest,
   adminBundlesManifest,
+  adminSyncFleetManifest,
+  adminProofRunsManifest,
   adminMcpServersManifest,
   adminLookupsManifest,
   mandatesManifest,

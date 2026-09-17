@@ -17,6 +17,9 @@ import { AlertTriangle, CircleSlash, HardDrive, Wifi } from "lucide-react";
 import { Badge } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SYNC_FLEET_SURFACE_NAME, createAdminSyncFleetScope } from "@/features/surfaces/manifests/admin-sync-fleet.manifest";
 
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
@@ -29,10 +32,6 @@ import {
   STALLED_STATES,
   type SyncAdminRow,
 } from "./types";
-
-function shortId(id: string): string {
-  return id.slice(0, 8);
-}
 
 function ago(iso: string | null, now: number): string {
   if (!iso) return "never";
@@ -98,30 +97,20 @@ function Table({
     {
       id: "account",
       header: "Account",
-      accessorFn: (row) => shortId(row.user_id),
-      cell: (row) => (
-        <span className="font-mono text-[11px]">{shortId(row.user_id)}</span>
-      ),
+      accessorFn: (row) => row.user_id,
+      cell: (row) => <MatrxUuidCell value={row.user_id} />,
     },
     {
       id: "organization",
       header: "Organization",
-      accessorFn: (row) => shortId(row.organization_id),
-      cell: (row) => (
-        <span className="font-mono text-[11px]">
-          {shortId(row.organization_id)}
-        </span>
-      ),
-      mobileHidden: true,
+      accessorFn: (row) => row.organization_id,
+      cell: (row) => <MatrxUuidCell value={row.organization_id} />,
     },
     {
       id: "device",
       header: "Device",
-      accessorFn: (row) => shortId(row.device_id),
-      cell: (row) => (
-        <span className="font-mono text-[11px]">{shortId(row.device_id)}</span>
-      ),
-      mobileHidden: true,
+      accessorFn: (row) => row.device_id,
+      cell: (row) => <MatrxUuidCell value={row.device_id} />,
     },
     {
       id: "state",
@@ -152,7 +141,6 @@ function Table({
           {ago(row.state_changed_at, now)}
         </span>
       ),
-      mobileHidden: true,
     },
     {
       id: "items",
@@ -164,7 +152,6 @@ function Table({
         </span>
       ),
       align: "right",
-      mobileHidden: true,
     },
     {
       id: "size",
@@ -176,7 +163,6 @@ function Table({
         </span>
       ),
       align: "right",
-      mobileHidden: true,
     },
     {
       id: "last_synced",
@@ -187,7 +173,6 @@ function Table({
           {ago(row.last_synced_at, now)}
         </span>
       ),
-      mobileHidden: true,
     },
   ];
   return (
@@ -202,7 +187,6 @@ function Table({
         data={rows}
         columns={columns}
         getRowId={(row) => row.id}
-        density="condensed"
         pageSize={0}
         hidePagination
         emptyState={{ title: empty }}
@@ -235,6 +219,7 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
   const accountsOverQuota = new Set(overQuota.map((r) => r.user_id)).size;
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_SYNC_FLEET_SURFACE_NAME} getScope={() => createAdminSyncFleetScope({ sync_mappings: rows, sync_mapping_count: rows.length })}>
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat
@@ -314,5 +299,6 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
         </p>
       </section>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
