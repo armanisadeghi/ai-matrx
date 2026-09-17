@@ -4,7 +4,7 @@
  * Announcement Provider — heavy body (Impl).
  *
  * Calls the `getActiveAnnouncements` server action and renders the
- * `SystemAnnouncementModal` when there's an unviewed active announcement.
+ * `SystemAnnouncementBanner` when there's an unviewed active announcement.
  * Lazy-loaded by `AnnouncementProvider.tsx` ONLY after shell data has
  * loaded, so the server action's dep graph (supabase admin client +
  * feedback types + modal markup) never enters the static graph of any
@@ -14,7 +14,7 @@
 import React, { useEffect, useState } from "react";
 import { getActiveAnnouncements } from "@/actions/feedback.actions";
 import { SystemAnnouncement } from "@/types/feedback.types";
-import SystemAnnouncementModal from "./SystemAnnouncementModal";
+import SystemAnnouncementBanner from "./SystemAnnouncementBanner";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 export default function AnnouncementProviderImpl() {
@@ -42,5 +42,10 @@ export default function AnnouncementProviderImpl() {
 
   if (!currentAnnouncement) return null;
 
-  return <SystemAnnouncementModal announcement={currentAnnouncement} />;
+  return (
+    <SystemAnnouncementBanner
+      key={currentAnnouncement.id}
+      announcement={currentAnnouncement}
+    />
+  );
 }

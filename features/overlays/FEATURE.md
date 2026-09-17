@@ -385,6 +385,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
   tokens never enter overlay state.
 - **2026-08-27** — Added `agentTestCasesWindow`, the builder's non-blocking sample-input manager. The existing launcher now uses its typed opener; the lazy controller explicitly wires `agentId` and `conversationId`, and the old local Sheet state is gone.
 
+- **2026-09-16 — The existing `announcements` overlay became the click-through experience for system-announcement banners.** Its typed opener and explicit controller wiring now accept `initialAnnouncementId`; the responsive detail/inbox surface loads the canonical active rows and replaces the prior compact list dialog. The system-announcement global host opens it instead of mounting a second modal stack.
 - **2026-08-23 — Removed unsupported deployment-cause claims from every lazy-overlay recovery surface.** A chunk error or timeout proves only that a module did not load; it does not prove a stale tab, cache fault, or deploy. User copy, timeout errors, human/agent diagnostic payloads, and the diagnostic field now state only observed facts. The separate banner appears only for an actual loaded-script `?dpl=` inconsistency and does not infer how it arose. Regression coverage scans route, global, toast, lazy-overlay, and diagnostic-copy surfaces.
 - **2026-08-21** — **Quick Chat can adopt an existing conversation.**
   `useOpenQuickChatSheet({ initialConversationId, title })` threads both values

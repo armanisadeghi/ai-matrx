@@ -1,4 +1,4 @@
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 // Types for user feedback and bug reporting system
 
@@ -362,17 +362,23 @@ export const ANNOUNCEMENT_TYPES = [
 ] as const;
 export type AnnouncementType = (typeof ANNOUNCEMENT_TYPES)[number];
 
-export interface SystemAnnouncement {
-  id: string;
-  title: string;
-  message: string;
+type SystemAnnouncementDatabaseRow =
+  Database["users"]["Tables"]["system_announcements"]["Row"];
+
+export type SystemAnnouncement = Pick<
+  SystemAnnouncementDatabaseRow,
+  | "id"
+  | "title"
+  | "message"
+  | "is_active"
+  | "created_at"
+  | "updated_at"
+  | "created_by"
+  | "target_user_id"
+> & {
   announcement_type: AnnouncementType;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
   min_display_seconds: number;
-}
+};
 
 export interface CreateAnnouncementInput {
   title: string;

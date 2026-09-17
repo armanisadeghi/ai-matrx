@@ -520,6 +520,7 @@ export function mapSystemAnnouncementRow(
     created_at: requireViewString(row.created_at, "system_announcements.created_at"),
     updated_at: requireViewString(row.updated_at, "system_announcements.updated_at"),
     created_by: row.created_by,
+    target_user_id: row.target_user_id,
     min_display_seconds: row.min_display_seconds ?? 0,
   };
 }

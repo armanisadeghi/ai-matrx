@@ -18,6 +18,8 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 const OVERLAY_ID = "announcements" as const;
 
 export interface OpenAnnouncementsViewerOptions {
+  /** Open directly to one announcement; omit to show the announcement inbox. */
+  initialAnnouncementId?: string;
 }
 
 export interface AnnouncementsViewerHandle {
@@ -28,7 +30,12 @@ export function useOpenAnnouncementsViewer() {
   const dispatch = useAppDispatch();
   return useCallback(
     (opts: OpenAnnouncementsViewerOptions = {}): AnnouncementsViewerHandle => {
-      dispatch(openOverlay({ overlayId: OVERLAY_ID }));
+      dispatch(
+        openOverlay({
+          overlayId: OVERLAY_ID,
+          data: { initialAnnouncementId: opts.initialAnnouncementId ?? null },
+        }),
+      );
       return {
         close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
       };
@@ -42,11 +49,13 @@ export function useOpenAnnouncementsViewer() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function AnnouncementsViewerController(props: OpenAnnouncementsViewerOptions): null {
+export function AnnouncementsViewerController(
+  props: OpenAnnouncementsViewerOptions,
+): null {
   const open = useOpenAnnouncementsViewer();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open]);
+  }, [open, props.initialAnnouncementId]);
   return null;
 }

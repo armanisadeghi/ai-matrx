@@ -185,6 +185,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ## Change log
 
+- `2026-09-16` — Replaced the forced-read system-announcement popup with a non-blocking, dismissible glass banner backed by the existing active/targeted announcement rows and per-user viewed preference. Its action opens the canonical `announcements` overlay directly to the selected update; the overlay is now a polished responsive detail experience with an inbox fallback, honest loading/empty/error states, and mobile Drawer presentation. The Announcements admin table gained a real-data **Preview user experience** control that stages the banner without writing the admin's viewed preference.
 - `2026-09-15` — Guest blocking made usable end to end: `admin_set_guest_block` super-admin RPC with on-row block history, `guest_access` + `guest_fingerprint_hint` on acquisition rows, Guest access column with Block/Unblock and a Blocked guests tile. Reused the acquisition route/table, `ConfirmDialogHost`, and the design-system dialog primitives; no new table, route, or admin surface.
 
 - `2026-09-14` — Fixed organization-member selection through the canonical user-search window: the add dialog now permits interaction with its child search window without dismissing itself, and opening the visible matching row selects it and returns the account even when the trailing table action is off-screen.

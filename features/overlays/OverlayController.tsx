@@ -338,11 +338,8 @@ const AiVoiceWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/voice/AiVoiceWindow"),
   { ssr: false },
 );
-const AnnouncementsViewer = lazyOverlay(
-  () =>
-    import("@/components/layout/AnnouncementsViewer").then((m) => ({
-      default: m.AnnouncementsViewer,
-    })),
+const AnnouncementExperience = lazyOverlay(
+  () => import("@/components/layout/AnnouncementExperience"),
   { ssr: false },
 );
 const AuthGateDialog = lazyOverlay(
@@ -3374,8 +3371,13 @@ export default function OverlayController() {
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <AnnouncementsViewer
+          <AnnouncementExperience
             isOpen
+            initialAnnouncementId={
+              typeof data?.initialAnnouncementId === "string"
+                ? data.initialAnnouncementId
+                : undefined
+            }
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "announcements" }))
             }

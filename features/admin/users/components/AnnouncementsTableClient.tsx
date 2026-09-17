@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminUserRef } from "./AdminUserRef";
-import { Megaphone, Plus, Power, Trash2 } from "lucide-react";
+import { Eye, Megaphone, Plus, Power, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";
+import SystemAnnouncementBanner from "@/components/layout/SystemAnnouncementBanner";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -46,6 +47,8 @@ export function AnnouncementsTableClient() {
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [clickedRow, setClickedRow] = useState<SystemAnnouncement | null>(null);
+  const [previewAnnouncement, setPreviewAnnouncement] =
+    useState<SystemAnnouncement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,8 +60,17 @@ export function AnnouncementsTableClient() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void getAllAnnouncements().then((res) => {
+      if (!active) return;
+      if (res.success) setRows(res.data ?? []);
+      else setError(res.error ?? "Failed to load announcements");
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleActive = useCallback(async (row: SystemAnnouncement) => {
     const res = await updateAnnouncement(row.id, { is_active: !row.is_active });
@@ -203,9 +215,30 @@ export function AnnouncementsTableClient() {
             search: true,
             searchPlaceholder: "Search announcements…",
             actions: (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> New announcement
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    !rows.some(
+                      (row) => row.is_active && row.target_user_id === null,
+                    )
+                  }
+                  onClick={() =>
+                    setPreviewAnnouncement(
+                      rows.find(
+                        (row) =>
+                          row.is_active && row.target_user_id === null,
+                      ) ?? null,
+                    )
+                  }
+                >
+                  <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview user experience
+                </Button>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> New announcement
+                </Button>
+              </div>
             ),
           }}
           copy={{
@@ -234,7 +267,6 @@ export function AnnouncementsTableClient() {
                 </Badge>
                 <p className="whitespace-pre-wrap">{r.message}</p>
                 <p className="text-xs text-muted-foreground">
-                  Min display: {r.min_display_seconds}s ·{" "}
                   {r.is_active ? "Active" : "Inactive"} · created{" "}
                   {new Date(r.created_at).toLocaleString()}
                 </p>
@@ -281,7 +313,13 @@ export function AnnouncementsTableClient() {
           void load();
         }}
       />
+      {previewAnnouncement && (
+        <SystemAnnouncementBanner
+          announcement={previewAnnouncement}
+          preview
+          onDismiss={() => setPreviewAnnouncement(null)}
+        />
+      )}
     </div>
   );
 }
-
