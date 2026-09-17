@@ -520,6 +520,8 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- 2026-09-17 — Creating a site uses the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). A website belongs to the company, so with none selected Create Site is disabled and the dialog says to pick one from the menu under the avatar — never a site filed into a personal workspace a teammate cannot open.
+
 - **2026-08-29:** CMS and Content Plan now share one
   `CmsPageMeasureLazy` loading front door for the canonical measured-page
   workspace. The Content Plan measurement window can stay user-gated without

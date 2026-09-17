@@ -93,10 +93,10 @@ export interface SaveKindInstanceArgs {
   /** The instance value. Its root `__kind` is stamped/corrected before write. */
   value: Record<string, unknown>;
   /**
-   * The CALLER's org (never the kind's). Callers read
-   * `selectEffectiveOrganizationId`, which falls back to the personal org —
-   * so this is normally always set; null happens only pre-bootstrap, and the
-   * throw in `saveKindInstance` is that backstop, not the norm.
+   * The CALLER's org (never the kind's). Callers read `selectOrganizationId`
+   * — the EXPLICIT active organization, with no personal fallback — so null
+   * means the user has not chosen one, and the throw in `saveKindInstance` is
+   * the honest refusal every caller surfaces.
    */
   organizationId: string | null;
   /** Explicit display title; derived from the data when omitted. */

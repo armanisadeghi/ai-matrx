@@ -71,7 +71,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
@@ -385,7 +385,10 @@ export function NewRulebookFlow() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — never the personal workspace standing in for
+  // one. When there is none the bounded wait below settles and the page says
+  // so inline, with the remedy; no Rulebook is created.
+  const organizationId = useAppSelector(selectOrganizationId);
   const {
     status: draftStatus,
     restored,

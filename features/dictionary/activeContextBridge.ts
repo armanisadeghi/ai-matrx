@@ -24,7 +24,7 @@ import {
   type DictPronunciation,
 } from "@/features/dictionary/types";
 import {
-  selectEffectiveOrganizationId,
+  selectOrganizationId,
   selectActiveScopeTypeIds,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectActiveScopeIds } from "@/features/scopes/redux/selectors/active-context";
@@ -59,8 +59,12 @@ async function ensureActiveContextResolved() {
   // getState() is `any` by the store-singleton's cycle-free design; the
   // appContext selectors carry their own typed state param.
   const state = store.getState();
+  // The EXPLICIT active org, never a personal substitute: with none selected
+  // the selection simply carries no organization, and `includePersonal` (set
+  // in `buildDictSelectionFromContext`) still resolves the user's own entries
+  // — a narrower dictionary, never someone else's workspace pulled in.
   const selection = buildDictSelectionFromContext(
-    selectEffectiveOrganizationId(state),
+    selectOrganizationId(state),
     selectActiveScopeTypeIds(state),
     selectActiveScopeIds(state),
   );

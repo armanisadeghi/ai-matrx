@@ -90,6 +90,8 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- 2026-09-17 — `CreatorPayoutsPanel` reads `personal_organization_id` DELIBERATELY, by name, and nothing else: a creator's payout account is theirs, so the checklist run is anchored to their personal organization rather than to the active workspace. The old `personalOrgId ?? selectEffectiveOrganizationId` fallback is gone; until the personal org is known the checklist runs unscoped instead of borrowing a workspace.
+
 - **2026-09-14** — **Caching guidance corrected to the live config.** The hub overview told agents to opt into `'use cache'` + `cacheTag()`, a build error here (`cacheComponents` off). It now names the live path: `unstable_cache` + tags over the anon client (`publishing/queries.ts`), `updateTag` (`publishing/actions.ts`), and route `revalidate`. Docs only.
 - **2026-09-13** — **The shared Education boundary no longer consumes 160px of live viewport above a directly scrolling page.** The central selector recognizes direct `overflow-y-auto` / `overflow-auto` children as the real owner, zeroes the boundary, and preserves the end runway on the child. A regression guard covers the overview-shaped direct-owner case alongside the existing live FastFire geometry check.
 

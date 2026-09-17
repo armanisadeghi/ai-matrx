@@ -32,7 +32,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { dealMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
@@ -211,13 +211,13 @@ export function DealsPage() {
   // belongs to in arbitrary order, so `orgIds[0]` pointed the create dialog's
   // party search (and the deal itself) at whichever org happened to be first —
   // searching an org the user was not even looking at, returning nothing.
-  const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org, and nothing else: neither the personal workspace
+  // nor `orgIds[0]` may stand in for an organization the user did not choose.
+  // With none selected the create dialog refuses by name and Save view is
+  // disabled with its reason — never a deal filed somewhere nobody picked.
+  const activeOrgId = useAppSelector(selectOrganizationId);
   const effectiveOrgId =
-    (activeOrgId && list.ctx?.orgIds.includes(activeOrgId)
-      ? activeOrgId
-      : null) ??
-    list.ctx?.orgIds[0] ??
-    null;
+    activeOrgId && list.ctx?.orgIds.includes(activeOrgId) ? activeOrgId : null;
 
   const onTableState = (state: MatrxDataTableQueryState) => {
     if (

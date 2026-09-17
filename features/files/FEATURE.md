@@ -130,6 +130,8 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- 2026-09-17 — `useStorageQuota` reads the EXPLICIT active organization (`selectOrganizationId`) rather than the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`): the plan shown is the plan of the organization on screen, and with none selected no plan is fetched and none is claimed.
+
 - **2026-09-17 — Shared block images honor authenticated blob transport.**
   `useBlockMediaSource` now sends a `transport: "blob"` resolution through
   `useMediaBlob` instead of binding the durable `/files/{id}/download` endpoint to an `<img>`.

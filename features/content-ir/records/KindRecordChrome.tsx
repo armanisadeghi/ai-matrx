@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   shapeInstancePermalink,
   shapeRecordsTableHref,
@@ -119,7 +119,10 @@ export function KindRecordChrome({
   className?: string;
 }) {
   const disposition = resolveKindRecordDisposition(kind);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org. With none, the count says so on the strip and a
+  // Save refuses through `saveKindInstance` with the same sentence — never a
+  // record quietly filed into the user's personal workspace.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [state, setState] = useState<LoadState>(INITIAL);
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);

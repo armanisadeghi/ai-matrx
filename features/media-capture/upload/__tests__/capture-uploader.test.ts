@@ -13,7 +13,25 @@ jest.mock("@/features/files/utils/folder-conventions", () => ({
   ...jest.requireActual("@/features/files/utils/folder-conventions"),
 }));
 
+/**
+ * The workspace an upload files into. An upload is a WRITE, so the uploader
+ * requires the EXPLICIT active organization and refuses when there is none —
+ * it never falls back to the personal workspace. The bounded wait is the
+ * platform primitive; here it is mocked so both answers can be proven.
+ */
+const ORG_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+const mockAwaitWorkspace = jest.fn(
+  async (): Promise<WorkspaceResolution> => ({
+    status: "ready",
+    organizationId: ORG_ID,
+  }),
+);
+jest.mock("@/features/organizations/awaitWorkspace", () => ({
+  awaitEffectiveOrganizationId: () => mockAwaitWorkspace(),
+}));
+
 import { fileHandler } from "@/features/files/handler/handler";
+import type { WorkspaceResolution } from "@/features/organizations/awaitWorkspace";
 import { captureFolderFor, uploadCapture } from "../capture-uploader";
 import {
   buildPhotoCaptureMetadata,
@@ -41,6 +59,11 @@ function validPhotoMetadata() {
 
 beforeEach(() => {
   uploadMock.mockReset();
+  mockAwaitWorkspace.mockReset();
+  mockAwaitWorkspace.mockResolvedValue({
+    status: "ready",
+    organizationId: ORG_ID,
+  });
 });
 
 describe("buildPhotoCaptureMetadata", () => {
@@ -106,7 +129,7 @@ describe("uploadCapture", () => {
       Record<string, unknown>,
     ];
     expect(source).toEqual({ kind: "file", file });
-    expect(opts.folderPath).toBe("Captures/Photos");
+    expect(opts.folderPath).toBe(`Captures/${ORG_ID}/Photos`);
     expect(opts.visibility).toBe("personal");
     expect(opts.fileName).toBe("capture-x.jpg");
     expect(opts.metadata).toEqual({ capture });
@@ -146,5 +169,17 @@ describe("uploadCapture", () => {
     await expect(
       uploadCapture({ file, capture: validPhotoMetadata() }),
     ).rejects.toThrow(/fileId/);
+  });
+
+  it("refuses with the workspace's own sentence when no organization is selected — nothing uploads", async () => {
+    mockAwaitWorkspace.mockResolvedValue({
+      status: "unavailable",
+      reason:
+        "We could not tell which workspace to file this in. Pick one from the menu under your avatar.",
+    });
+    await expect(
+      uploadCapture({ file, capture: validPhotoMetadata() }),
+    ).rejects.toThrow(/which workspace to file this in/);
+    expect(uploadMock).not.toHaveBeenCalled();
   });
 });
