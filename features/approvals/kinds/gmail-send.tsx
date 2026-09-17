@@ -293,6 +293,12 @@ function useSource(scope: ApprovalScope): ApprovalSource {
       autoApplyAt: null,
       proposedBy: proposal.proposerLabel,
       proposedAt: proposal.assist.createdAt,
+      // 🚨 THE PRODUCER'S OWN BLOCK IS CARRIED, ALWAYS. When the row says the
+      // operator it is addressed to cannot send from that account, the review
+      // card must not mount at all — its Send button posts straight to the
+      // reviewed-send endpoint and would try. Dropping this field is exactly how
+      // a blocked draft got a live Send button (Bugbot HIGH #1, 2026-09-17).
+      blocked: proposal.blocked,
       rejectEffect:
         "Nothing is sent, and the draft is recorded as rejected by you with your reason.",
       doors: proposal.subject ? (
@@ -325,6 +331,11 @@ function useSource(scope: ApprovalScope): ApprovalSource {
     const headline = `Email to ${recipients} — "${payload.subject}"`;
     const acceptEffect = `Sends this message from ${payload.fromEmail ?? "your connected Google account"} to ${recipients}, exactly as it reads when you press Send.`;
 
+    // The producer said this person cannot send it. No card, no Send button.
+    if (proposal.blocked) {
+      return [{ ...base, headline, acceptEffect } satisfies GmailItem];
+    }
+
     // The row's own mode claim, when it disagrees with the law.
     if (proposal.mode !== GMAIL_SEND_MODE) {
       return [
@@ -350,6 +361,28 @@ function useSource(scope: ApprovalScope): ApprovalSource {
     const check = verdicts[index];
     const spineUnreadable = check?.isError === true;
     const verdict = check?.data;
+    // 🚨 PENDING IS NOT ALLOWED. The card has no eligibility check of its own —
+    // its Send posts straight to the reviewed-send endpoint — so while the
+    // outbound checks are still in flight the row must not offer one. Treating
+    // "no verdict yet" as permission is how a click could reach a recipient the
+    // spine was about to refuse (Bugbot HIGH #2, 2026-09-17).
+    const gated = Boolean(payload.recipientMediumId);
+    const stillChecking = gated && !spineUnreadable && verdict === undefined;
+
+    if (stillChecking) {
+      return [
+        {
+          ...base,
+          headline,
+          acceptEffect,
+          blocked: {
+            reason:
+              "Checking this recipient against the unsubscribes, the blocklist and this sender's standing.",
+            whoCan: "The draft opens for sending the moment those checks pass.",
+          },
+        } satisfies GmailItem,
+      ];
+    }
 
     if (spineUnreadable) {
       return [
@@ -484,4 +517,16 @@ export const gmailSendKind: ApprovalKind = {
   },
   useSource,
   useDecisions,
+  /**
+   * These rows are addressed to ONE PERSON (the operator), so a site-scoped
+   * mount must not repeat them: the marketing console mounts a queue per site,
+   * and without this every site would show the same drafts and the waiting count
+   * would be multiplied by the number of sites (Bugbot HIGH #3, 2026-09-17).
+   */
+  scopeRequirement: {
+    field: "userId",
+    explain:
+      "an email or a spreadsheet change waits with the person it is addressed to, not with a website.",
+    where: { label: "Open what is waiting on you", href: "/approvals" },
+  },
 };

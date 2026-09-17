@@ -118,6 +118,11 @@ function matches(filter: readonly string[] | undefined, item: ApprovalItem) {
   });
 }
 
+/** A stable DOM id per row, so a deep link can scroll to one. */
+function rowDomId(key: string): string {
+  return `approval-row-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
 interface PendingDecision {
   decision: Decision;
   items: ApprovalItem[];
@@ -159,6 +164,8 @@ export function ApprovalQueue({
   defaultExpanded = false,
   hideWhenEmpty = true,
   onSummary,
+  focusItemId,
+  onFocusResolved,
   className,
 }: {
   scope: ApprovalScope;
@@ -177,6 +184,18 @@ export function ApprovalQueue({
   hideWhenEmpty?: boolean;
   /** For a host that aggregates many queues (a cross-scope console). */
   onSummary?: (scopeKey: string, summary: ApprovalQueueSummary) => void;
+  /**
+   * A row to open at and point to — the id in `/approvals?item=<id>`, which is
+   * where an assist chip and every deep link land. The queue expands, scrolls
+   * to it and rings it.
+   */
+  focusItemId?: string | null;
+  /**
+   * Told once the read has settled: did that row turn up? A host that asked for
+   * one must SAY when it is gone rather than showing a list and letting the
+   * person hunt for a row that was already decided.
+   */
+  onFocusResolved?: (found: boolean) => void;
   className?: string;
 }) {
   const all = registry ?? APPROVAL_KINDS;
@@ -340,6 +359,23 @@ export function ApprovalQueue({
     setSelected(next);
   };
 
+  // The row a deep link points at (`?item=<assist id>`), matched on the id half
+  // of the item key so a kind never has to know about linking.
+  const focusedKey = focusItemId
+    ? (allItems.find((item) => item.key.endsWith(`:${focusItemId}`))?.key ??
+      null)
+    : null;
+  useEffect(() => {
+    if (!focusItemId) return;
+    if (focusedKey) {
+      if (!expanded) setExpanded(true);
+      const element = document.getElementById(rowDomId(focusedKey));
+      element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    // Only once the read has settled is "not here" an answer rather than "not yet".
+    if (!loading) onFocusResolved?.(Boolean(focusedKey));
+  }, [focusItemId, focusedKey, loading]);
+
   const hidden =
     hideWhenEmpty &&
     allItems.length === 0 &&
@@ -478,7 +514,12 @@ export function ApprovalQueue({
                         {section.items.map((item) => (
                           <li
                             key={item.key}
-                            className="rounded-md px-1.5 py-1.5 hover:bg-muted/50"
+                            id={rowDomId(item.key)}
+                            className={cn(
+                              "rounded-md px-1.5 py-1.5 hover:bg-muted/50",
+                              item.key === focusedKey &&
+                                "ring-2 ring-primary ring-offset-1 ring-offset-card",
+                            )}
                           >
                             <div className="flex items-start gap-2 max-md:flex-wrap">
                               <Checkbox
@@ -486,8 +527,14 @@ export function ApprovalQueue({
                                 checked={selected.has(item.key)}
                                 onCheckedChange={() => toggle(item.key)}
                                 aria-label={`Select: ${item.headline}`}
+                                // Blocked rows are excluded from `selectable`,
+                                // so a tickable box here would look selected and
+                                // then be skipped by Approve/Reject — a control
+                                // that lies (Bugbot LOW #6, 2026-09-17).
                                 disabled={
-                                  busy || Boolean(item.individualReview)
+                                  busy ||
+                                  Boolean(item.individualReview) ||
+                                  Boolean(item.blocked)
                                 }
                               />
                               <div className="min-w-0 flex-1 space-y-0.5">

@@ -10,7 +10,16 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ApprovalsWorkspace } from "@/features/approvals/ApprovalsWorkspace";
 
-export default function ApprovalsPage() {
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  // `?item=<assist id>` — where the assist chip handler and every deep link
+  // land. Read here, in the server component, so the client surface needs no
+  // `useSearchParams` (and so the window, which has no URL, passes nothing).
+  searchParams: Promise<{ item?: string | string[] }>;
+}) {
+  const { item } = await searchParams;
+  const focusItemId = Array.isArray(item) ? (item[0] ?? null) : (item ?? null);
   return (
     <>
       <PageHeader>
@@ -18,7 +27,7 @@ export default function ApprovalsPage() {
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="mx-auto w-full max-w-4xl p-4 md:p-6">
-          <ApprovalsWorkspace />
+          <ApprovalsWorkspace focusItemId={focusItemId} />
         </div>
       </div>
     </>

@@ -33,7 +33,16 @@ export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   topicPlacementKind,
 ];
 
-/** The keyword kinds, for a host that wants only them. */
+/**
+ * The keyword kinds, derived from the modules themselves so it can never drift.
+ *
+ * ONE host uses it: the marketing approvals console, which mounts a queue PER
+ * SITE. Every kind also declares its own `scopeRequirement`, so a person-scoped
+ * kind is already skipped there — but skipped means "named with its door", and
+ * sixteen sites would print the same two "this waits in your own queue" lines
+ * sixteen times. The console narrows instead, and says it once itself
+ * (Bugbot HIGH #3, 2026-09-17).
+ */
 export const SEO_APPROVAL_KIND_IDS: readonly string[] = [
   keywordMeaningKind.id,
   placementDriftKind.id,

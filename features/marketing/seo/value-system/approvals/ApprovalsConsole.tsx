@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2 } from "lucide-react";
+import AppLink from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   InlineQueryError,
@@ -21,6 +22,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { listConsoleSites } from "@/features/marketing/seo/run-console/data";
 import { ApprovalQueue, type ApprovalQueueSummary } from "@/features/approvals/ApprovalQueue";
+import { SEO_APPROVAL_KIND_IDS } from "@/features/approvals/registry";
 
 export function ApprovalsConsole() {
   const sites = useQuery({
@@ -77,6 +79,21 @@ export function ApprovalsConsole() {
         </div>
       ) : null}
 
+      {/* Said once, not once per site: the platform kinds are addressed to a
+          person, so they wait in that person's own queue. */}
+      <p className="text-xs text-muted-foreground">
+        This page is the keyword proposals for every site you can see. An email
+        an agent drafted, or a change to one of your spreadsheets, waits with
+        you rather than with a site —{" "}
+        <AppLink
+          href="/approvals"
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          open what is waiting on you
+        </AppLink>
+        .
+      </p>
+
       {rows.map((site) => (
         <ApprovalQueue
           key={site.id}
@@ -87,6 +104,12 @@ export function ApprovalsConsole() {
             organizationId: site.organization_id,
             siteLabel: site.name || site.domain,
           }}
+          // Site-scoped kinds only. The platform kinds (an email to send, a
+          // spreadsheet change) are addressed to a PERSON, and this console
+          // mounts one queue per site — unfiltered, every site would repeat the
+          // same rows and multiply the waiting count. The line below says where
+          // they are, once.
+          kinds={SEO_APPROVAL_KIND_IDS}
           defaultExpanded
           title={
             <EntityRef

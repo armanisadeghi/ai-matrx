@@ -350,4 +350,16 @@ export const sheetWriteKind: ApprovalKind = {
   },
   useSource,
   useDecisions,
+  /**
+   * These rows are addressed to ONE PERSON (the operator), so a site-scoped
+   * mount must not repeat them: the marketing console mounts a queue per site,
+   * and without this every site would show the same drafts and the waiting count
+   * would be multiplied by the number of sites (Bugbot HIGH #3, 2026-09-17).
+   */
+  scopeRequirement: {
+    field: "userId",
+    explain:
+      "an email or a spreadsheet change waits with the person it is addressed to, not with a website.",
+    where: { label: "Open what is waiting on you", href: "/approvals" },
+  },
 };

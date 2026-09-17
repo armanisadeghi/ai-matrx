@@ -22,13 +22,22 @@ import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
 import { useState } from "react";
 
 export function ApprovalsWorkspace({
+  focusItemId,
   className,
 }: {
+  /**
+   * The row a link asked for — `/approvals?item=<id>`, which is where an
+   * assist chip and every deep link land. The route reads it from
+   * `searchParams` and hands it down; the window has no URL and passes none.
+   */
+  focusItemId?: string | null;
   className?: string;
 }) {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   const [summary, setSummary] = useState<ApprovalQueueSummary | null>(null);
+  // `null` = not answered yet. `false` = the read settled and that row is gone.
+  const [focusFound, setFocusFound] = useState<boolean | null>(null);
 
   if (!userId) {
     return (
@@ -57,7 +66,18 @@ export function ApprovalsWorkspace({
         // waiting on you" is the answer a person came here for.
         hideWhenEmpty={false}
         onSummary={(_scopeKey, next) => setSummary(next)}
+        focusItemId={focusItemId}
+        onFocusResolved={setFocusFound}
       />
+      {/* A link that points at a row nobody can find gets an ANSWER, not a
+          silent list the person has to search (THE NO-SILENT-FAILURE LAW). */}
+      {focusItemId && focusFound === false ? (
+        <p className="mt-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground">
+          The item that link points to is not waiting any more — it was most
+          likely already approved or rejected. Everything still waiting on you is
+          above.
+        </p>
+      ) : null}
       {empty ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-8 text-center">
           <CheckCircle2 className="size-8 text-success" />
