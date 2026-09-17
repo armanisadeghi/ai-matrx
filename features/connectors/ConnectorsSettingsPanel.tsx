@@ -83,6 +83,13 @@ function ProviderConnectorsPanel({
   const reconnect = async (accountId: string, productKey: string) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
+    // The row's own verb, so the confirmation matches the button that was
+    // pressed: a product this account never granted says Connect, not
+    // Reconnect (VERIFY-U-P2 D3).
+    const verb =
+      accountHealth({ provider, account, rollout: state.rollout }).find(
+        (row) => row.product.key === productKey,
+      )?.actionLabel ?? "Connect";
     const plan = buildConsentPlan({
       provider,
       selectedProductKeys: [productKey],
@@ -108,7 +115,7 @@ function ProviderConnectorsPanel({
         loginHint: account.label,
       });
       await state.refetch();
-      toast.success("Reconnected.");
+      toast.success(verb === "Connect" ? "Connected." : "Reconnected.");
     } catch (cause) {
       if (isGoogleAuthorizationCancelled(cause)) {
         toast.info("Authorization cancelled — nothing changed.");

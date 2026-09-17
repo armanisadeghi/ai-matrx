@@ -19,10 +19,16 @@
 // carries ONE `last_verified_at` and ONE `last_error` for the whole account
 // (verified live 2026-09-17: metadata keys are `granted_scopes`, `discovery`,
 // `discovery_errors`, `discovery_warning_count`, `oauth_client_id` — no
-// per-capability timestamps). So "last checked" and "last refusal" are reported
-// at ACCOUNT level, labelled as such, and `lastSuccessAt` on a product row is
-// null until the server records one. Inventing a per-product timestamp from the
+// per-capability timestamps). Inventing a per-product timestamp from the
 // account's would be exactly the lie this file exists to prevent.
+//
+// So the two PLAN §5.3 fields are MODELLED and OPTIONAL, not faked: a product
+// row carries `lastSuccessAt` and `lastRefusal`, an adapter may supply them per
+// product through `activity`, and today Google's adapter supplies neither — the
+// row renders "Not recorded yet" in its own words rather than a blank or a
+// borrowed timestamp (law 4: every stand-in announces itself). The day the hub
+// records a per-capability call log the adapter fills `activity` and the two
+// lines start showing, with no change to any component.
 
 import type {
   ConnectorProduct,
@@ -80,6 +86,30 @@ export type ConnectorProductState =
   /** Behind our rollout gate — it turns on by itself. No toggle. */
   | "pending_rollout";
 
+/**
+ * What a provider adapter knows about ONE product's real traffic on ONE
+ * account. Every field is optional truth: absent means "the server does not
+ * record this", never "it never happened".
+ */
+export interface ConnectorProductActivity {
+  /** ISO timestamp of the last call this product completed. */
+  lastSuccessAt?: string | null;
+  /** The last refusal for this product, in the provider's own words. */
+  lastRefusal?: { message: string; at?: string | null } | null;
+}
+
+/** Per-product activity keyed by `ConnectorProduct.key`. */
+export type ConnectorActivityByProduct = Readonly<
+  Record<string, ConnectorProductActivity>
+>;
+
+export interface ConnectorRefusalFact {
+  /** The provider's own sentence. Never a code. */
+  message: string;
+  /** When it happened, when the server records that too. */
+  at: string | null;
+}
+
 export interface ConnectorScopeFact {
   scope: string;
   /** Plain words for what this scope lets us do. */
@@ -105,12 +135,28 @@ export interface ConnectorProductHealth {
   /**
    * When the provider last succeeded for THIS product. Null whenever the
    * server records no per-capability call — never the account's timestamp
-   * wearing a product's label.
+   * wearing a product's label. Rendered as "Not recorded yet", never blank.
    */
   lastSuccessAt: string | null;
+  /**
+   * The last refusal for THIS product, in the provider's own words. Null
+   * whenever the server records no per-capability refusal — the account-level
+   * refusal stays on the account line and is never re-labelled per product.
+   */
+  lastRefusal: ConnectorRefusalFact | null;
   /** True when the person may switch this row on in the consent dialog. */
   togglable: boolean;
+  /**
+   * The verb for the one action that changes this row, or null when there is
+   * nothing to press. "Reconnect" tells a person something they HAD has broken,
+   * so it is used only when a grant exists; a product never granted on this
+   * account says "Connect".
+   */
+  actionLabel: ConnectorProductAction | null;
 }
+
+/** The verb on a product row's action. Never both, never neither by accident. */
+export type ConnectorProductAction = "Connect" | "Reconnect";
 
 function rolloutFor(
   product: ConnectorProduct,
@@ -164,11 +210,14 @@ export function productHealth({
   product,
   account,
   rollout,
+  activity,
 }: {
   provider: ConnectorProviderConfig;
   product: ConnectorProduct;
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
+  /** Per-product traffic the adapter knows about. Absent = not recorded. */
+  activity?: ConnectorActivityByProduct;
 }): ConnectorProductHealth {
   const required = requiredScopesFor(provider, product, rollout);
   const granted = new Set(account?.grantedScopes ?? []);
@@ -183,104 +232,168 @@ export function productHealth({
     granted: granted.has(scope),
   }));
 
-  const pending = rows.find((row) => row.phase === "pending" && !row.eligible);
+  const recorded = activity?.[product.key];
+  const lastSuccessAt = recorded?.lastSuccessAt ?? null;
+  const lastRefusal: ConnectorRefusalFact | null = recorded?.lastRefusal
+    ? {
+        message: recorded.lastRefusal.message,
+        at: recorded.lastRefusal.at ?? null,
+      }
+    : null;
+
+  /**
+   * Everything common to every state, so a new state can never forget one of
+   * them — and so the ONE place that decides "Connect" vs "Reconnect" is here.
+   */
+  const row = (
+    part: Pick<
+      ConnectorProductHealth,
+      "state" | "label" | "reason" | "remedy" | "togglable"
+    >,
+  ): ConnectorProductHealth => ({
+    product,
+    ...part,
+    scopes,
+    missingScopes,
+    rollout: rows,
+    lastSuccessAt,
+    lastRefusal,
+    // D3: the verb is the truth about this account, not about the button.
+    // Nothing to ask for, or nothing the person may ask for → no action at all.
+    actionLabel:
+      missingScopes.length > 0 && part.togglable
+        ? held
+          ? "Reconnect"
+          : "Connect"
+        : null,
+  });
+
+  const pending = rows.find((r) => r.phase === "pending" && !r.eligible);
   if (pending && !held) {
-    return {
-      product,
+    return row({
       state: "pending_rollout",
       label: "Almost ready",
       // PLAN §2: the exact line for a row still behind our gate.
       reason: "Turns on automatically when ready for your account.",
       remedy: null,
-      scopes,
-      missingScopes,
-      rollout: rows,
-      lastSuccessAt: null,
       togglable: false,
-    };
+    });
   }
 
-  const blockedByServer = rows.find((row) => !row.eligible);
+  const blockedByServer = rows.find((r) => !r.eligible);
 
   if (!account || missingScopes.length === required.length) {
-    return {
-      product,
+    return row({
       state: "not_connected",
       label: "Not connected",
       reason: product.promise,
       remedy: blockedByServer?.ineligibleReason ?? null,
-      scopes,
-      missingScopes,
-      rollout: rows,
-      lastSuccessAt: null,
       togglable: eligible,
-    };
+    });
   }
 
   if (!account.usable) {
-    return {
-      product,
+    return row({
       state: "account_unusable",
       label: "Needs reconnecting",
       reason: account.statusReason,
       remedy:
         account.statusRemedy ??
         `Reconnect ${account.label} to use ${product.name} again.`,
-      scopes,
-      missingScopes,
-      rollout: rows,
-      lastSuccessAt: null,
       togglable: eligible,
-    };
+    });
   }
 
   if (missingScopes.length > 0) {
-    return {
-      product,
+    return row({
       state: "scope_missing",
       label: "Partly connected",
       reason: `${account.label} is connected but has not granted ${missingScopes
         .map((scope) => scopeLanguage(provider, scope).toLowerCase())
         .join(", ")}.`,
       remedy: `Reconnect and approve just that — nothing you already granted is asked for again.`,
-      scopes,
-      missingScopes,
-      rollout: rows,
-      lastSuccessAt: null,
       togglable: eligible,
-    };
+    });
   }
 
   if (blockedByServer) {
-    return {
-      product,
+    return row({
       state: "pending_rollout",
       label: "Paused",
       reason:
         blockedByServer.ineligibleReason ??
         `${product.name} is paused for your account while we finish certifying it.`,
       remedy: null,
-      scopes,
-      missingScopes,
-      rollout: rows,
-      lastSuccessAt: null,
       togglable: false,
-    };
+    });
   }
 
-  return {
-    product,
+  return row({
     state: "connected",
     label: "Connected",
     reason: product.promise,
     remedy: null,
-    scopes,
-    missingScopes,
-    rollout: rows,
-    // Deliberately null: see the header. No per-capability call is recorded yet.
-    lastSuccessAt: null,
     togglable: eligible,
-  };
+  });
+}
+
+/**
+ * THE ROLLOUT STATE IN PLAIN WORDS (PLAN §5.3, D6). A capability key
+ * (`drive_files`, `youtube_analytics`) is a machine address; the person sees
+ * the product name and a sentence, and the keys never render. Null means the
+ * catalog has nothing worth saying about this row.
+ */
+export function rolloutSentence(row: ConnectorProductHealth): string | null {
+  if (row.rollout.length === 0) return null;
+  const blocked = row.rollout.find((entry) => !entry.eligible);
+  if (blocked) {
+    return (
+      blocked.ineligibleReason ??
+      "Turns on automatically when ready for your account."
+    );
+  }
+  if (row.rollout.every((entry) => entry.phase === "available")) {
+    return `${row.product.name} is generally available on your account.`;
+  }
+  return `${row.product.name} is available to your account while we finish certifying it for everyone.`;
+}
+
+/**
+ * WHICH ACCOUNT A CONSENT SURFACE SHOULD OPEN ON (D7). Never "the first row the
+ * inventory happened to return": that is how a dialog opens on an account that
+ * holds nothing and tells a person Docs is not connected while Docs is
+ * connected on the account beside it. The order is: the account the calling
+ * surface is already using, then the usable account holding the MOST live
+ * products, ties broken by config order of the inventory.
+ */
+export function preferredAccountId({
+  provider,
+  accounts,
+  rollout,
+  preferAccountId,
+}: {
+  provider: ConnectorProviderConfig;
+  accounts: readonly ConnectorAccount[];
+  rollout: readonly ConnectorCapabilityRollout[];
+  /** The account the surface is using, when it knows. Wins outright. */
+  preferAccountId?: string | null;
+}): string | null {
+  if (
+    preferAccountId &&
+    accounts.some((account) => account.id === preferAccountId)
+  ) {
+    return preferAccountId;
+  }
+  const usable = accounts.filter((account) => account.usable);
+  const pool = usable.length > 0 ? usable : accounts;
+  let best: { id: string; live: number } | null = null;
+  for (const account of pool) {
+    const live = accountHealth({ provider, account, rollout }).filter(
+      (row) => row.state === "connected",
+    ).length;
+    if (!best || live > best.live) best = { id: account.id, live };
+  }
+  return best?.id ?? null;
 }
 
 /** Every product's health on one account, in config order. */
@@ -288,13 +401,15 @@ export function accountHealth({
   provider,
   account,
   rollout,
+  activity,
 }: {
   provider: ConnectorProviderConfig;
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
+  activity?: ConnectorActivityByProduct;
 }): ConnectorProductHealth[] {
   return provider.products.map((product) =>
-    productHealth({ provider, product, account, rollout }),
+    productHealth({ provider, product, account, rollout, activity }),
   );
 }
 

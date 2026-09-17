@@ -29,8 +29,8 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
   ChevronRight,
-  Info,
   Loader2,
   Lock,
   ShieldCheck,
@@ -46,11 +46,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -69,10 +75,12 @@ import {
 } from "./provider-config";
 import {
   accountHealth,
+  preferredAccountId,
   type ConnectorAccount,
   type ConnectorCapabilityRollout,
   type ConnectorProductHealth,
 } from "./health";
+import { ProductPermissionsDisclosure } from "./ProductPermissions";
 import {
   buildConsentPlan,
   consentOutcomes,
@@ -86,6 +94,20 @@ import {
 } from "./google-adapter";
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
 
+/** The sentinel account id meaning "a Google login not connected here yet". */
+const NEW_ACCOUNT = "__new_account__";
+
+/**
+ * D8: the one sentence a press gets when the plan would ask the provider for
+ * nothing. Used by the button's answer AND by the line under it, so the two can
+ * never say different things.
+ */
+export function emptyPlanAnswer(selectedCount: number): string {
+  return selectedCount === 0
+    ? "Nothing is switched on yet, so there is nothing to connect. Switch on what you want and press this again."
+    : "Everything you switched on is already connected — there is nothing to approve.";
+}
+
 /** Rows the person has already granted start switched on, and stay on. */
 function initialSelection(health: readonly ConnectorProductHealth[]): string[] {
   return health
@@ -95,42 +117,17 @@ function initialSelection(health: readonly ConnectorProductHealth[]): string[] {
     .map((row) => row.product.key);
 }
 
-function ScopeDisclosure({
-  provider,
-  health,
-}: {
-  provider: ConnectorProviderConfig;
-  health: ConnectorProductHealth;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={`What ${health.product.name} asks ${provider.name} for`}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-6 sm:w-6"
-        >
-          <Info className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="left" className="max-w-[20rem]">
-        <p className="mb-1 text-xs font-medium">
-          What {provider.name} is asked for
-        </p>
-        <ul className="space-y-1">
-          {health.scopes.map((fact) => (
-            <li key={fact.scope} className="text-xs">
-              <span className="block text-foreground">{fact.language}</span>
-              <span className="block break-all font-mono text-[10px] text-muted-foreground">
-                {fact.scope}
-                {fact.granted ? " · already granted" : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </TooltipContent>
-    </Tooltip>
-  );
+/** The one-line summary beside an account in the switcher: what it actually has. */
+function accountSummary(
+  provider: ConnectorProviderConfig,
+  account: ConnectorAccount,
+  rollout: readonly ConnectorCapabilityRollout[],
+): string {
+  const live = accountHealth({ provider, account, rollout })
+    .filter((row) => row.state === "connected")
+    .map((row) => row.product.name);
+  if (live.length === 0) return "Nothing connected on this account yet";
+  return live.join(", ");
 }
 
 function ProductRow({
@@ -195,10 +192,19 @@ function ProductRow({
             {outcome.state === "refused" ? outcome.message : "Connected."}
           </p>
         ) : null}
+
+        {/* D1: a REAL disclosure, not a hover-only tooltip. `showActivity` is
+            off here — nothing has run yet on a row nobody has approved. */}
+        <ProductPermissionsDisclosure
+          providerName={provider.name}
+          health={health}
+          showActivity={false}
+          closedLabel={`What ${provider.name} is asked for`}
+          openLabel="Hide what is asked for"
+        />
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <ScopeDisclosure provider={provider} health={health} />
         {gated ? null : (
           <Switch
             checked={selected}
@@ -252,12 +258,18 @@ export function ConnectorConsentBody({
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const runner = useGoogleConsentRunner();
 
-  const usable = accounts.filter((account) => account.usable);
-  const [accountId, setAccountId] = useState<string | null>(
-    initialAccountId ?? usable[0]?.id ?? null,
+  // D7: never "the first row the inventory returned" — the account this
+  // surface is using, else the one holding the most live products.
+  const [accountId, setAccountId] = useState<string>(
+    () =>
+      preferredAccountId({
+        provider,
+        accounts,
+        rollout,
+        preferAccountId: initialAccountId,
+      }) ?? NEW_ACCOUNT,
   );
-  const account =
-    accounts.find((row) => row.id === accountId) ?? usable[0] ?? null;
+  const account = accounts.find((row) => row.id === accountId) ?? null;
   const health = accountHealth({ provider, account, rollout });
 
   const [selected, setSelected] = useState<string[]>(() => [
@@ -270,6 +282,12 @@ export function ConnectorConsentBody({
   /** True once a consent has been attempted — per-row results only exist after. */
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  /**
+   * D8: the answer a press gets when the press would do nothing. The button
+   * stays pressable (see the footer) and says why, instead of sitting there
+   * disabled with no way to ask what is wrong.
+   */
+  const [answer, setAnswer] = useState<string | null>(null);
 
   const activeOrganization =
     organizations.find((org) => org.id === activeOrganizationId) ?? null;
@@ -284,9 +302,29 @@ export function ConnectorConsentBody({
     rollout,
   });
 
+  /**
+   * D4: switching account — including to "a different Google account" — changes
+   * what is already granted, so the switched-on rows are recomputed for the
+   * account now being connected instead of carrying the last one's answers.
+   */
+  const chooseAccount = (nextId: string) => {
+    setAccountId(nextId);
+    setAttempted(false);
+    setFailure(null);
+    setAnswer(null);
+    const nextAccount = accounts.find((row) => row.id === nextId) ?? null;
+    setSelected([
+      ...new Set([
+        ...initialSelection(accountHealth({ provider, account: nextAccount, rollout })),
+        ...(initialProductKeys ?? []),
+      ]),
+    ]);
+  };
+
   const toggle = (product: ConnectorProduct, next: boolean) => {
     setAttempted(false);
     setFailure(null);
+    setAnswer(null);
     setSelected((current) =>
       next
         ? [...new Set([...current, product.key])]
@@ -295,7 +333,16 @@ export function ConnectorConsentBody({
   };
 
   const connect = async () => {
-    if (!plan.request) return;
+    if (!plan.request) {
+      // The press is never swallowed: it says, in words, why there is nothing
+      // to send to the provider — inline for the person reading the dialog and
+      // in a toast for the person who was watching the button.
+      const sentence = emptyPlanAnswer(selected.length);
+      setAnswer(sentence);
+      toast.info(sentence);
+      return;
+    }
+    setAnswer(null);
     setBusy(true);
     setFailure(null);
     try {
@@ -348,8 +395,7 @@ export function ConnectorConsentBody({
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
         {errorMessage ? (
           <div
             role="alert"
@@ -376,74 +422,113 @@ export function ConnectorConsentBody({
           </div>
         ) : null}
 
-        {account ? (
-          <p className="px-0.5 text-xs text-muted-foreground">
-            Connecting as{" "}
-            <span className="font-medium text-foreground">{account.label}</span>
-            {accounts.length > 1 ? (
-              <>
-                {" · "}
-                <span className="inline-flex flex-wrap gap-1.5">
-                  {accounts
-                    .filter((row) => row.id !== account.id)
-                    .map((row) => (
-                      <button
-                        key={row.id}
-                        type="button"
-                        onClick={() => {
-                          setAccountId(row.id);
-                          setAttempted(false);
-                        }}
-                        className="underline underline-offset-2 hover:text-foreground"
-                      >
-                        use {row.label}
-                      </button>
-                    ))}
-                </span>
-              </>
-            ) : null}
-            . Switching on another product adds it to this account.
+        {/* D4 + D7 — WHICH GOOGLE ACCOUNT THIS CONSENT LANDS ON.
+            PLAN §2: "Connecting as arman@…, change", and "a different Google
+            login becomes a second connected account". Before this the line was
+            a full stop with no control, and every consent the dialog could
+            start added to an account that already existed — there was no way to
+            bring a second Google identity in at all. The alternatives were also
+            a run of raw emails with nothing to tell them apart; a select with
+            the email AND what that account actually holds is the change. */}
+        <div className="flex flex-wrap items-center gap-2 px-0.5">
+          <label
+            htmlFor="connector-consent-account"
+            className="text-xs text-muted-foreground"
+          >
+            Connecting as
+          </label>
+          {accounts.length === 0 ? (
+            <span className="text-xs font-medium text-foreground">
+              a {provider.name} account you choose next — {provider.name} asks
+              you to sign in.
+            </span>
+          ) : (
+            <Select value={accountId} onValueChange={chooseAccount}>
+              <SelectTrigger
+                id="connector-consent-account"
+                className="h-11 w-full min-w-0 text-sm sm:h-8 sm:w-auto sm:min-w-[16rem]"
+                aria-label={`Change which ${provider.name} account this connects`}
+              >
+                <SelectValue placeholder={`Choose a ${provider.name} account`} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((row) => (
+                  <SelectItem
+                    key={row.id}
+                    value={row.id}
+                    description={accountSummary(provider, row, rollout)}
+                  >
+                    {row.label}
+                  </SelectItem>
+                ))}
+                <SelectItem
+                  value={NEW_ACCOUNT}
+                  description={`${provider.name} asks you to sign in; it becomes a second connected account.`}
+                >
+                  Use a different {provider.name} account
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <p className="w-full text-xs text-muted-foreground">
+            {account
+              ? "Switching on another product adds it to this account. Nothing it already has is asked for again."
+              : `Nothing you have already connected changes — this adds a second ${provider.name} account.`}
           </p>
-        ) : null}
+        </div>
 
         <div className="flex min-h-0 flex-col gap-3">
           {provider.groups.map((group) => {
             const products = productsInGroup(provider, group.key);
             if (products.length === 0) return null;
             return (
-              <section key={group.key}>
-                <div className="mb-1 flex items-baseline justify-between gap-2 px-0.5">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {group.label}
-                  </h3>
-                  <p className="truncate text-xs text-muted-foreground/80">
+              /* D5 — a REAL disclosure per group (PLAN §2: "Two groups, each
+                 collapsible"). Open by default, because the dialog's job is to
+                 show what is on offer; collapsible because nine rows and two
+                 headers is a long scroll on a phone. Radix `Collapsible` gives
+                 the button semantics, `aria-expanded` and Enter/Space for
+                 free — a hand-rolled div would not. */
+              <Collapsible key={group.key} defaultOpen>
+                <CollapsibleTrigger className="group mb-1 flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-0.5 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <ChevronDown
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
+                      aria-hidden
+                    />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.label}
+                    </span>
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground/80">
                     {group.hint}
-                  </p>
-                </div>
-                <div className="overflow-hidden rounded-lg border border-border bg-card">
-                  {products.map((product) => {
-                    const row = health.find(
-                      (candidate) => candidate.product.key === product.key,
-                    );
-                    if (!row) return null;
-                    return (
-                      <ProductRow
-                        key={product.key}
-                        provider={provider}
-                        health={row}
-                        selected={selected.includes(product.key)}
-                        outcome={
-                          resultRows?.find(
-                            (outcome) => outcome.product.key === product.key,
-                          ) ?? null
-                        }
-                        onToggle={(next) => toggle(product, next)}
-                        busy={busy}
-                      />
-                    );
-                  })}
-                </div>
-              </section>
+                  </span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="overflow-hidden rounded-lg border border-border bg-card">
+                    {products.map((product) => {
+                      const row = health.find(
+                        (candidate) => candidate.product.key === product.key,
+                      );
+                      if (!row) return null;
+                      return (
+                        <ProductRow
+                          key={product.key}
+                          provider={provider}
+                          health={row}
+                          selected={selected.includes(product.key)}
+                          outcome={
+                            resultRows?.find(
+                              (outcome) => outcome.product.key === product.key,
+                            ) ?? null
+                          }
+                          onToggle={(next) => toggle(product, next)}
+                          busy={busy}
+                        />
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>
@@ -536,10 +621,19 @@ export function ConnectorConsentBody({
                 : "Not now"}
             </Button>
           ) : null}
+          {/* D8 — THE PRESS ALWAYS ANSWERS. A disabled primary is the one
+              control a person cannot interrogate: on a phone there is no hover,
+              no title, no tooltip, so "why can't I press this?" has no answer on
+              the screen. Apple's and Slack's consent sheets keep the primary
+              action live and answer the press, and our own law is explicit —
+              "a click that would silently do nothing says so". So the button is
+              disabled ONLY while the provider window is open or its script is
+              still loading (pressing then would genuinely double-fire), and an
+              empty selection is answered in words, inline and in a toast. */}
           <Button
             size="sm"
             onClick={() => void connect()}
-            disabled={busy || plan.empty || !runner.ready}
+            disabled={busy || !runner.ready}
             className="h-11 w-full text-sm sm:h-8 sm:w-auto"
           >
             {busy ? (
@@ -554,11 +648,13 @@ export function ConnectorConsentBody({
             )}
           </Button>
         </div>
-        {plan.empty && !busy ? (
+        {answer ? (
+          <p role="status" className="text-right text-xs text-warning">
+            {answer}
+          </p>
+        ) : plan.empty && !busy ? (
           <p className="text-right text-xs text-muted-foreground">
-            {selected.length === 0
-              ? "Switch on what you want to connect."
-              : "Everything you switched on is already connected — there is nothing to approve."}
+            {emptyPlanAnswer(selected.length)}
           </p>
         ) : (
           <p className="text-right text-xs text-muted-foreground">
@@ -570,7 +666,6 @@ export function ConnectorConsentBody({
           </p>
         )}
       </div>
-    </TooltipProvider>
   );
 }
 

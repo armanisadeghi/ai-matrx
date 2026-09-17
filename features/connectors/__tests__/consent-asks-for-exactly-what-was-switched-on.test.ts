@@ -164,3 +164,48 @@ describe("consentOutcomes", () => {
     expect(byKey.gmail).toBe("refused");
   });
 });
+
+/**
+ * D4 (VERIFY-U-P2): a DIFFERENT Google login becomes a SECOND connected
+ * account. Before 2026-09-17 the dialog always planned against the account it
+ * had chosen, so `targetAccountId` was never null once one account existed and
+ * there was no way to bring a second Google identity in at all — PLAN §2 asks
+ * for exactly that. "Use a different Google account" in the switcher plans with
+ * no account, which is what makes the hub create one instead of adding to one.
+ */
+describe("connecting a second Google account", () => {
+  it("targets no existing account, and asks only for what that product needs", () => {
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["gmail"],
+      account: null,
+      rollout: rollout(),
+    });
+    expect(plan.request?.targetAccountId).toBeNull();
+    expect(plan.request?.scopes).toContain(GMAIL_SEND);
+    expect(plan.request?.scopes).not.toContain(DRIVE_FILE);
+    expect(plan.request?.capabilityKeys).toEqual(["gmail_send"]);
+  });
+
+  it("does not inherit the scopes of the account already connected", () => {
+    const existing = account([OPENID, DRIVE_FILE, GMAIL_SEND]);
+    const addingToIt = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["search_console"],
+      account: existing,
+      rollout: rollout(),
+    });
+    const brandNew = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["search_console"],
+      account: null,
+      rollout: rollout(),
+    });
+    // Adding to the existing account carries its grants so none are dropped…
+    expect(addingToIt.request?.scopes).toContain(DRIVE_FILE);
+    expect(addingToIt.request?.targetAccountId).toBe(existing.id);
+    // …while the new identity is asked for nothing it has not been offered.
+    expect(brandNew.request?.scopes).not.toContain(DRIVE_FILE);
+    expect(brandNew.request?.scopes).toContain(GSC);
+  });
+});

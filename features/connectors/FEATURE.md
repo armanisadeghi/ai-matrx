@@ -26,11 +26,12 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **The connector primitive** (generic; the provider is a config, never a component)
 
 - `features/connectors/provider-config.ts` — `ConnectorProviderConfig` + `GOOGLE_CONNECTOR_PROVIDER`. Nine Google product rows, two groups, one FINAL user-facing sentence each, each row's grant bundle, its server capability keys, and its attachable resource types. **Rollout state is not here** — it comes from the server catalog at request time (PLAN §2: it flips with no rebuild).
-- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`. Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` shapes every provider adapter reports in.
+- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` is the single place "Connect" and "Reconnect" are decided.
 - `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for, what is blocked and why) and `consentOutcomes` (per-row truth read back from the account after the exchange).
 - `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes) and `useGoogleConsentRunner` (one GIS window, one `/exchange`).
 - `features/connectors/ConnectorPromptCard.tsx` — the dismissible offer card, plus `shouldShowConnectorPrompt` (pure). `ConnectorPromptHost.tsx` is its wired form.
-- `features/connectors/ConnectorConsentDialog.tsx` — `ConnectorConsentBody` (the rows, toggles, scope disclosure, org switch, result view) and the `connectorConsentDialog` overlay around it.
+- `features/connectors/ProductPermissions.tsx` — **the ONE permission disclosure**, mounted by both the consent dialog and the health rows: the provider's own scope strings with plain words beside them, the rollout sentence, and this product's last success / last refusal. A real `<button>` with `aria-expanded`, because the tooltip it replaced could not be opened by a finger. Never write a second one.
+- `features/connectors/ConnectorConsentDialog.tsx` — `ConnectorConsentBody` (collapsible groups, the rows, toggles, the account select with "Use a different Google account", the org switch, the result view) and the `connectorConsentDialog` overlay around it. `emptyPlanAnswer` is the one sentence a press with nothing to send gets.
 - `features/connectors/ConnectedAccountHealth.tsx` — the per-account, per-product health rows with Reconnect and Disconnect.
 - `features/connectors/ConnectorsSettingsPanel.tsx` — Settings → Connectors: the health cards plus the same consent body, and the only file in the panel path that names Google.
 - `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
@@ -218,6 +219,71 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — **The zero-authorship verification REOPENED this, and seven of
+  its eight defects are closed here** (`common-docs/projects/google-native/
+  VERIFY-U-P2.md`). The one that stays open is per-product *last successful
+  call* and *last refusal*: the hub still records one `last_verified_at` and one
+  `last_error` per connection and no per-capability call log, so a product row
+  now MODELS both fields (`ConnectorProductActivity` → `accountHealth({…,
+  activity})`), renders them as "not recorded yet — we do not keep a per-product
+  record of Google calls on this account" and "none recorded yet for this
+  product", and will show real values the day an adapter fills them, with no
+  component change. What changed, defect by defect:
+  - **The scope wording was unreachable on every phone.** In the consent dialog
+    Google's own scope strings lived inside a Radix `Tooltip` whose trigger was a
+    `<button>` with no click handler — tooltips open on hover and focus, so a tap
+    opened nothing beside any of the nine rows. There is now ONE disclosure,
+    `ProductPermissions.tsx`, mounted by both the dialog and the health rows: a
+    real `<button>` with `aria-expanded`/`aria-controls` that works on click, tap,
+    Enter and Space. The health rows' own expander was the pattern; it moved into
+    the shared file rather than being copied.
+  - **"Reconnect" was offered on products that were never connected** (seven of
+    the nine rows on `info@aimatrx.com`). `health.ts` now derives `actionLabel`
+    in one place: nothing to ask for → no action; a grant exists and is
+    incomplete → **Reconnect**; nothing ever granted → **Connect**. The settings
+    panel's confirmation toast follows the same verb.
+  - **One connected account meant no "change" and no way to add a second Google
+    login** (PLAN §2 asks for both). The account line is now a real select
+    carrying each account's email plus what it actually holds ("Docs, Sheets &
+    Drive files, Gmail"), with "Use a different Google account" as its last item;
+    choosing it plans with no account, so `targetAccountId` is null and the hub
+    creates a second connection instead of adding to the first.
+  - **The dialog opened on whichever account the inventory returned first** — on
+    the admin seat that was `arman26@gmail.com`, so it said Docs was not
+    connected while Docs was connected next door. `preferredAccountId()` opens on
+    the account the calling surface names, else the usable account holding the
+    most live products.
+  - **The two groups were not collapsible.** Workspace and Marketing are now
+    `Collapsible` disclosures, open by default, keyboard-operable.
+  - **Raw capability keys reached the person** (`drive_files · generally
+    available`, `youtube_analytics · still being certified`). `rolloutSentence()`
+    replaces them with a sentence naming the product; keys never render.
+  - **Connect with nothing switched on was a disabled button.** It is pressable
+    now and the press answers, inline (`role="status"`) and in a toast:
+    "Nothing is switched on yet, so there is nothing to connect…". Apple's and
+    Slack's consent sheets keep the primary action live and answer the press, and
+    a disabled control is the one thing a phone cannot interrogate — no hover, no
+    title, no tooltip. It stays disabled only while Google's window is open or
+    its script is still loading.
+  - **The client's `ADMISSION_LANGUAGE` was keyed to codes the server does not
+    emit** — three `*_internal_test_required` spellings, while the hub's real
+    read-only codes are `google_oauth_internal_test_required` and
+    `google_read_only_sweep_paused` (the second means "paused for everyone", not
+    "not you yet", and had no sentence at all). The map is now exactly
+    `GOOGLE_ADMISSION_CODES`, and its test re-reads `capabilities.py` +
+    `read_only_product_admission.py` from the sibling aidream checkout and fails
+    when the two disagree — announcing itself as UNMEASURED when that checkout is
+    absent.
+  Guards, the first three proven failing-then-passing against the old behaviour:
+  `the-consent-dialog-answers-a-touch.test.tsx` (real DOM, real clicks),
+  `the-row-says-what-this-account-really-has.test.ts` (built on the admin's four
+  real connection rows as the verifier read them live),
+  `admission-codes-are-the-servers-codes.test.ts`, plus the second-account cases
+  added to `consent-asks-for-exactly-what-was-switched-on.test.ts`.
+  **Not verified on a screen:** this sandbox's egress policy blocks Supabase and
+  the backend, so no session exists here; everything above is proven by component
+  tests through a real DOM, not by a browser walk.
 
 - `2026-09-17` — **THE CONNECTOR PRIMITIVE, with Google as the first provider
   config.** Google's ten approved products existed end to end — the OAuth hub,

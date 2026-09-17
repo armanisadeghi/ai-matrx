@@ -42,25 +42,61 @@ import type {
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
 
 /**
- * Google's admission codes, in plain English. The catalog returns a CODE
- * (`capabilities.py` → `admission_error=exc.code`), and a code is never shown
- * to a person. An unknown code still says something true and useful rather than
- * leaking itself — and `null` here means "use the rollout sentence".
+ * GOOGLE'S ADMISSION CODES, IN PLAIN ENGLISH — and the codes are the SERVER's,
+ * not ones this file wishes it emitted.
+ *
+ * The catalog returns a CODE (`capabilities.py` → `admission_error=exc.code`),
+ * and a code is never shown to a person. Until 2026-09-17 three of the four
+ * keys here were `*_internal_test_required` spellings the hub does not emit
+ * (`google_read_only_internal_test_required` in particular), so the read-only
+ * sweep's real refusals fell through to the generic sentence and the paused
+ * case had no sentence at all — the map LOOKED exact and was not (VERIFY-U-P2).
+ *
+ * The exhaustive set the catalog can emit, read from the server on 2026-09-17:
+ *   `aidream/aidream/services/google_integrations/capabilities.py`
+ *     `_require_descriptor_admission` → `unauthenticated`,
+ *     `google_analytics_internal_test_required`, `youtube_internal_test_required`,
+ *     and whatever `require_google_read_only_product_admission` raises;
+ *   `aidream/.../read_only_product_admission.py` → `unauthenticated`,
+ *     `google_oauth_internal_test_required`, `google_read_only_sweep_paused`.
+ *
+ * `GOOGLE_ADMISSION_CODES` below is that set, and
+ * `__tests__/admission-codes-are-the-servers-codes.test.ts` re-reads the two
+ * server files and fails when they disagree — so a new server code cannot ship
+ * without a sentence, and a key here cannot outlive the code it was written for.
  */
-const ADMISSION_LANGUAGE: Record<string, string> = {
+export const GOOGLE_ADMISSION_CODES = [
+  "unauthenticated",
+  "google_analytics_internal_test_required",
+  "youtube_internal_test_required",
+  "google_oauth_internal_test_required",
+  "google_read_only_sweep_paused",
+] as const;
+
+export type GoogleAdmissionCode = (typeof GOOGLE_ADMISSION_CODES)[number];
+
+export const ADMISSION_LANGUAGE: Record<GoogleAdmissionCode, string> = {
   unauthenticated: "Sign in to connect Google.",
   google_analytics_internal_test_required:
     "Analytics turns on automatically when ready for your account.",
   youtube_internal_test_required:
     "YouTube turns on automatically when ready for your account.",
-  google_read_only_internal_test_required:
+  google_oauth_internal_test_required:
     "Turns on automatically when ready for your account.",
+  google_read_only_sweep_paused:
+    "This one is paused for everyone right now while we finish certifying it with Google. Nothing you have connected is affected.",
 };
 
-function admissionLanguage(code: string | null | undefined): string | null {
+/**
+ * An unknown code still says something true and useful rather than leaking
+ * itself — and `null` here means "use the rollout sentence".
+ */
+export function admissionLanguage(
+  code: string | null | undefined,
+): string | null {
   if (!code) return null;
   return (
-    ADMISSION_LANGUAGE[code] ??
+    ADMISSION_LANGUAGE[code as GoogleAdmissionCode] ??
     "Turns on automatically when ready for your account."
   );
 }
