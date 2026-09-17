@@ -15,6 +15,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+
+### D328 — Matrx frontend release watch is stale while associations vocabulary publication catches up (2026-09-17)
+
+**Status:** open · **Priority:** P1
+
+Production release was stale past the 60-minute threshold because installed `@ai-matrx/associations` had 819 tokens while live `platform.entity_types` had 823: `media_catalog_setting`, `media_selection_item`, `media_selection_job`, and `media_source_library`. The old release gate treated those additive registrations as a hard compatibility failure, although this frontend version cannot emit their tokens. `aidream` source correction `8e1ae6ac` regenerated the package and `0.9.22` is now published; frontend adoption is on `origin/main`. The frontend gate now warns with the package publication/remedy for additive tokens while still refusing removed installed tokens, changed installed metadata, scratch registrations, unreadable registry, and overlay ownership. Keep this entry open until an independently verified serving build contains both repairs.
+
+
 ### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
 
 **Status:** open · **Priority:** P2
