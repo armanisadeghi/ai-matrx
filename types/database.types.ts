@@ -65846,6 +65846,7 @@ export type Database = {
       declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
       definer_access_decision_regex: { Args: never; Returns: string }
+      definer_access_decision_regex_strong: { Args: never; Returns: string }
       definer_body_decides_access: {
         Args: { p_depth?: number; p_oid: unknown }
         Returns: boolean
@@ -65879,6 +65880,10 @@ export type Database = {
           p_signature: string
         }
         Returns: string
+      }
+      definer_identity_is_a_decision: {
+        Args: { p_src: string }
+        Returns: boolean
       }
       demote_custom_field_index: {
         Args: { p_definition_id: string }
@@ -89987,6 +89992,10 @@ export type Database = {
       _slugify: { Args: { p: string }; Returns: string }
       _tm_attachments: { Args: { p_topic_id: string }; Returns: Json }
       _tm_cut: { Args: { p_max: number; p_text: string }; Returns: string }
+      _tm_is_a_place: {
+        Args: { p_map_id: string; p_name: string; p_slug: string }
+        Returns: string
+      }
       _tm_item: { Args: { p_id: string; p_type: string }; Returns: Json }
       _tm_kind_alias: { Args: { p_kind: string }; Returns: string }
       _tm_knob: {
