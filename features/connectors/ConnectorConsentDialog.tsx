@@ -85,6 +85,7 @@ import {
   buildConsentPlan,
   consentOutcomes,
   type ConsentOutcome,
+  type ConsentRequest,
 } from "./consent-plan";
 import {
   MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE,
@@ -106,6 +107,33 @@ export function emptyPlanAnswer(selectedCount: number): string {
   return selectedCount === 0
     ? "Nothing is switched on yet, so there is nothing to connect. Switch on what you want and press this again."
     : "Everything you switched on is already connected — there is nothing to approve.";
+}
+
+/**
+ * The line under the button, which must describe the request that is actually
+ * about to be made. A RENEWAL is not "nothing you already granted is asked for
+ * again" — it is precisely a fresh approval of what is already granted, because
+ * the provider stopped honouring the old grant. Saying otherwise on the one
+ * screen a person reaches from "Not working" would tell them their press cannot
+ * fix the thing it is there to fix.
+ */
+export function consentRequestSentence(
+  providerName: string,
+  request: ConsentRequest,
+): string {
+  const label =
+    request.products.length === 1
+      ? (request.products[0]?.name ?? "one product")
+      : `${request.products.length} products`;
+  if (request.renewals.length === 0) {
+    return `${providerName} will ask you to approve ${label}. Nothing you already granted is asked for again.`;
+  }
+  if (request.addedScopes.length === 0) {
+    return `${providerName} will ask you to approve ${label} again, which renews the access it stopped honouring. Nothing new is asked for.`;
+  }
+  return `${providerName} will ask you to approve ${label}. That renews ${request.renewals
+    .map((product) => product.name)
+    .join(", ")} and adds what you switched on — nothing else you already granted changes.`;
 }
 
 /** Rows the person has already granted start switched on, and stay on. */
@@ -191,6 +219,19 @@ function ProductRow({
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Lock className="h-3 w-3" aria-hidden />
             {health.reason}
+          </p>
+        ) : null}
+        {/* A row the provider is REFUSING carried only its promise, so the badge
+            said "Not working" and nothing on the screen said what was wrong or
+            what the press would do about it. The server's own sentence goes
+            here, and a switched-on row says plainly that approving again renews
+            the grant — never that it is already connected. */}
+        {health.state === "refused" ? (
+          <p className="mt-1 text-xs leading-snug text-warning">
+            {health.reason}
+            {selected
+              ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
+              : ""}
           </p>
         ) : null}
         {outcome ? (
@@ -667,15 +708,11 @@ export function ConnectorConsentBody({
           <p className="text-right text-xs text-muted-foreground">
             {emptyPlanAnswer(selected.length)}
           </p>
-        ) : (
+        ) : plan.request ? (
           <p className="text-right text-xs text-muted-foreground">
-            {provider.name} will ask you to approve{" "}
-            {plan.request?.products.length === 1
-              ? plan.request.products[0]?.name
-              : `${plan.request?.products.length} products`}
-            . Nothing you already granted is asked for again.
+            {consentRequestSentence(provider.name, plan.request)}
           </p>
-        )}
+        ) : null}
       </div>
   );
 }

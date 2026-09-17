@@ -222,6 +222,34 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **A standing refusal now renews the grant on EVERY consent
+  surface, because the renew set is DERIVED, not passed in** (lane F-10; Cursor
+  Bugbot on PR 228, `f514f3b7`). `initialSelection` starts a `refused` product
+  switched ON — correctly, the account has it — but the dialog called
+  `buildConsentPlan` without the renew set, so a refusal with every scope
+  already held fell into `alreadyGranted`: the plan was empty, the press
+  answered "Everything you switched on is already connected — there is nothing
+  to approve", and the provider window never opened. Settings → Reconnect passed
+  the renew set and worked, so the same broken account got two different answers
+  depending on which door the person came through. The class fix: the optional
+  `renewProductKeys` parameter is GONE, and `buildConsentPlan` reads
+  `grantNeedsRenewal` (new, in `health.ts`) off the account's own recorded health
+  for every selected product — a `refused` row whose disposition is `reconnect`
+  and whose scopes are all present. A caller can no longer omit it, and
+  `platform_configuration` (ours to repair) is deliberately never a renewal.
+  `ConsentRequest` now carries `renewals`, so copy branches on data instead of
+  scope arithmetic: the refused row prints the server's own sentence plus
+  "Approving Google again renews it — nothing new is asked for", and the line
+  under the button says a renewal renews (`consentRequestSentence`), never
+  "nothing you already granted is asked for again". Guards, red-then-green
+  against a fixture built from the live `capability_health` column through the
+  real parser (marker and all):
+  `__tests__/a-standing-refusal-renews-the-grant.test.tsx` (plan, the
+  ours-to-repair case, and a static guard that no consent surface hand-derives a
+  renew set) + `__tests__/the-refused-row-opens-the-provider-window.test.tsx`
+  (real DOM, real click: `runner.run` is called and no "already connected"
+  toast).
+
 - `2026-09-17` — **D2 is closed: the health rows now show the REAL last success
   and last refusal, per product** (lane F-7 of the google-native build). The
   server side landed first (aidream `b4119fabf`, `5a7e1a3e3`, migration

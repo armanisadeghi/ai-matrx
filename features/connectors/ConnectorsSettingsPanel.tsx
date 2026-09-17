@@ -92,18 +92,15 @@ function ProviderConnectorsPanel({
       rollout: state.rollout,
     }).find((row) => row.product.key === productKey);
     const verb = pressed?.actionLabel ?? "Connect";
+    // A row offering Reconnect with nothing missing is a row the provider
+    // refused on a grant it will not honour any more; the plan reads that off
+    // the account itself and renews the grant instead of asking for a scope, on
+    // this surface and in the dialog alike (see `consent-plan.ts`).
     const plan = buildConsentPlan({
       provider,
       selectedProductKeys: [productKey],
       account,
       rollout: state.rollout,
-      // A row offering Reconnect with nothing missing is a row the provider
-      // refused on a grant it will not honour any more: the request renews that
-      // grant instead of asking for a scope (see `consent-plan.ts`).
-      renewProductKeys:
-        pressed?.actionLabel && pressed.missingScopes.length === 0
-          ? [productKey]
-          : [],
     });
     if (!plan.request) {
       // Never a silent no-op: say why the click did nothing.

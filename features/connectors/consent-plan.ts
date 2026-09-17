@@ -24,6 +24,16 @@
 // switched-on rows add: the union is what the provider is asked for, and
 // `addedScopes` is what the person is really approving.
 //
+// A GRANT THAT NEEDS RENEWING IS DERIVED HERE, NEVER PASSED IN. A product whose
+// scopes are all present can still be broken: when the provider's own last word
+// on it is a refusal only a fresh grant can clear, the request asks for exactly
+// what the account already holds, which is what mints that grant. That reading
+// comes from the account's recorded health (`grantNeedsRenewal`), so every
+// consent surface gets it whether or not its author thought about it — the
+// dialog and Settings → Reconnect planned differently for one account until
+// 2026-09-17, and the dialog told the person everything was already connected
+// while the provider window never opened.
+//
 // Per-row outcome is read back from the account's own scopes after the exchange
 // (`consentOutcomes` below), so one product failing never hides the ones that
 // landed and nothing has to be believed on the client's word.
@@ -34,6 +44,7 @@ import type {
 } from "./provider-config";
 import { productByKey } from "./provider-config";
 import {
+  grantNeedsRenewal,
   productIsEligible,
   requiredScopesFor,
   type ConnectorAccount,
@@ -49,6 +60,13 @@ export interface ConsentRequest {
   addedScopes: string[];
   /** The rows this request turns on, in config order. */
   products: ConnectorProduct[];
+  /**
+   * The subset of `products` whose grant is being RENEWED rather than widened:
+   * every scope is already held and the provider's own last word was a refusal
+   * only a fresh grant can clear. Copy branches on this, so no surface has to
+   * re-derive "is this a renewal?" from scope arithmetic and get it wrong.
+   */
+  renewals: ConnectorProduct[];
   /** The account being added to, or null for a new connection. */
   targetAccountId: string | null;
 }
@@ -75,25 +93,13 @@ export function buildConsentPlan({
   selectedProductKeys,
   account,
   rollout,
-  renewProductKeys,
 }: {
   provider: ConnectorProviderConfig;
   selectedProductKeys: readonly string[];
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
-  /**
-   * Products whose GRANT must be renewed even though no scope is missing — the
-   * account holds every scope, and the provider refused the call anyway
-   * (`grant_expired_or_revoked`, `provider_denied`). Without this the plan would
-   * be empty and the row's Reconnect button would answer "there is nothing left
-   * to approve", which is a dead control on the one screen that must never have
-   * one. The request then adds no scope: it asks the provider for exactly what
-   * the account already holds, which is what mints a fresh grant.
-   */
-  renewProductKeys?: readonly string[];
 }): ConsentPlan {
   const granted = new Set(account?.grantedScopes ?? []);
-  const renewing = new Set(renewProductKeys ?? []);
 
   const selected = selectedProductKeys
     .map((key) => productByKey(provider, key))
@@ -103,7 +109,11 @@ export function buildConsentPlan({
 
   const blocked: ConsentBlock[] = [];
   const alreadyGranted: ConnectorProduct[] = [];
-  const wanted: { product: ConnectorProduct; missing: string[] }[] = [];
+  const wanted: {
+    product: ConnectorProduct;
+    missing: string[];
+    renewal: boolean;
+  }[] = [];
 
   for (const product of selected) {
     if (!productIsEligible(product, rollout)) {
@@ -118,11 +128,17 @@ export function buildConsentPlan({
     const missing = requiredScopesFor(provider, product, rollout).filter(
       (scope) => !granted.has(scope),
     );
-    if (missing.length === 0 && !renewing.has(product.key)) {
+    const renewal = missing.length === 0 && grantNeedsRenewal({
+      provider,
+      product,
+      account,
+      rollout,
+    });
+    if (missing.length === 0 && !renewal) {
       alreadyGranted.push(product);
       continue;
     }
-    wanted.push({ product, missing });
+    wanted.push({ product, missing, renewal });
   }
 
   if (wanted.length === 0) {
@@ -148,6 +164,9 @@ export function buildConsentPlan({
       ],
       addedScopes: added,
       products: wanted.map(({ product }) => product),
+      renewals: wanted
+        .filter(({ renewal }) => renewal)
+        .map(({ product }) => product),
       targetAccountId: account?.id ?? null,
     },
     blocked,

@@ -518,6 +518,38 @@ export function productHealth({
 }
 
 /**
+ * DOES THIS PRODUCT'S GRANT NEED RENEWING, with no scope missing? Exactly the
+ * `refused` rows whose disposition is `reconnect`: the account holds every
+ * scope, the provider's own last word is a refusal, and only a fresh grant can
+ * clear it. Derived from the account's recorded health, never from a caller's
+ * hint — `buildConsentPlan` reads it for every consent surface, so a dialog and
+ * a settings row cannot answer the same account differently (the 2026-09-17
+ * divergence: the dialog planned without it and told the person everything was
+ * already connected while the provider window never opened).
+ *
+ * A refusal that is OURS to repair (`platform_configuration`) or that clears by
+ * itself is deliberately NOT a renewal: re-approving the same scopes would not
+ * help, and offering it would be the dead control this primitive exists to end.
+ */
+export function grantNeedsRenewal({
+  provider,
+  product,
+  account,
+  rollout,
+  activity,
+}: {
+  provider: ConnectorProviderConfig;
+  product: ConnectorProduct;
+  account: ConnectorAccount | null;
+  rollout: readonly ConnectorCapabilityRollout[];
+  activity?: ConnectorActivityByProduct;
+}): boolean {
+  if (!account) return false;
+  const row = productHealth({ provider, product, account, rollout, activity });
+  return row.missingScopes.length === 0 && row.actionLabel === "Reconnect";
+}
+
+/**
  * THE ROLLOUT STATE IN PLAIN WORDS (PLAN §5.3, D6). A capability key
  * (`drive_files`, `youtube_analytics`) is a machine address; the person sees
  * the product name and a sentence, and the keys never render. Null means the
