@@ -22,6 +22,9 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { TableSavedViews } from "./TableSavedViews";
 import { TableToolbarAction } from "./TableToolbarAction";
+import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } from "@/features/context-menu-v3/table-row-context-registry";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
 
 export type TableDensity = MatrxDataTableDensity;
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
@@ -51,6 +54,11 @@ export type {
 function TableWindowPanel(props: TableWindowPanelProps) {
   return <WindowPanel {...props} />;
 }
+function TableContextMenuBoundary({ label, children }: { label: string; children: ReactNode }) {
+  const insideMenu = useIsInsideContextMenu();
+  if (insideMenu) return <>{children}</>;
+  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} enableFloatingIcon={false}><div className="contents">{children}</div></NonEditableContextMenu>;
+}
 const ports: TableHost = {
   JsonViewer,
   Link,
@@ -66,6 +74,9 @@ const ports: TableHost = {
     return { ...(doors.href === null ? {} : { href: doors.href }), peekKind: doors.peekKind, canPeek: doors.canPeek };
   },
   notify: toast,
+  rowContextRegistry: { register: registerTableRowContextResolver },
+  createDefaultRowContext: createDefaultTableRowMenuDescriptor,
+  ContextMenuBoundary: TableContextMenuBoundary,
 };
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const organizationId = useAppSelector(selectOrganizationId);

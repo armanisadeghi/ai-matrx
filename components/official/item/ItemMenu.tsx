@@ -18,7 +18,7 @@ import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } fr
 import { useScrollFade } from "@ai-matrx/design-system";
 import { ChevronDown, createLucideIcon } from "lucide-react";
 import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/icon";
-import { useMatrxTableRowAlchemy } from "@ai-matrx/design-system/data-table/host";
+import { useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -301,6 +301,16 @@ function makeShortcutHandler(
 }
 
 const RowAlchemyIcon = createLucideIcon("Alchemy", ALCHEMY_GLYPH_PATHS.portal.map((d, index) => ["path", { d, key: String(index) }]));
+function hasVisibleEntry(config: ItemMenuConfig | null, id: string): boolean {
+  const entries = config?.sections.flatMap((section) => section.items) ?? [];
+  return entries.some((entry) =>
+    entry.id === id
+      ? !entry.hidden
+      : isSubmenu(entry) && entry.sections.some((section) =>
+          section.items.some((child) => child.id === id && !child.hidden),
+        ),
+  );
+}
 const containsDestructiveAction = (items: ItemMenuEntry[]): boolean => items.some((item) =>
   (isCommand(item) && item.tone === "destructive") || (isSubmenu(item) && item.sections.some((section) => containsDestructiveAction(section.items))),
 );
@@ -319,6 +329,7 @@ export function ItemMenu({
   presentation = "auto",
 }: ItemMenuProps) {
   const rowAlchemy = useMatrxTableRowAlchemy();
+  const rowControls = useMatrxTableRowControls();
   const restoreTargetRef = useRef<HTMLElement | null>(null);
   const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => { rowAlchemy?.activate(); }, [rowAlchemy]);
@@ -347,11 +358,17 @@ export function ItemMenu({
   const normalSections = baseConfig?.sections.map((section, index) => ({ section, index }))
     .filter(({ section }) => section.id !== "danger" && !containsDestructiveAction(section.items)) ?? [];
   const targetSection = (normalSections.find(({ section }) => !section.label) ?? normalSections[0])?.index;
-  const resolved: ItemMenuConfig | null = baseConfig && alchemyItem && includeAlchemy ? {
+  const injectedRowItems: ItemMenuCommand[] = [
+    ...(rowControls?.beginEdit && !hasVisibleEntry(baseConfig, "table-edit-row") ? [{ id: "table-edit-row", label: "Edit row", onSelect: rowControls.beginEdit }] : []),
+    ...(rowControls?.saveEdits && !hasVisibleEntry(baseConfig, "table-save-row") ? [{ id: "table-save-row", label: "Save changes", onSelect: rowControls.saveEdits }] : []),
+    ...(rowControls?.cancelEdits && !hasVisibleEntry(baseConfig, "table-discard-row") ? [{ id: "table-discard-row", label: "Discard changes", onSelect: rowControls.cancelEdits }] : []),
+    ...(alchemyItem && includeAlchemy ? [alchemyItem] : []),
+  ];
+  const resolved: ItemMenuConfig | null = baseConfig && injectedRowItems.length > 0 ? {
     ...baseConfig,
     sections: targetSection !== undefined
-      ? baseConfig.sections.map((section, index) => index === targetSection ? { ...section, items: [...section.items, alchemyItem] } : section)
-      : [{ id: "actions", items: [alchemyItem] }, ...baseConfig.sections],
+      ? baseConfig.sections.map((section, index) => index === targetSection ? { ...section, items: [...section.items, ...injectedRowItems] } : section)
+      : [{ id: "actions", items: injectedRowItems }, ...baseConfig.sections],
   } : baseConfig;
   // ── A LONG MENU SAYS SO, IN WORDS ────────────────────────────────────────
   //
