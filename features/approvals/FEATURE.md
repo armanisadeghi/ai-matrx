@@ -77,7 +77,8 @@ For `gmail_send` the operator must additionally be able to send from that accoun
 4. **No `sending_event` on an approved Gmail send.** The pre-send half of the CRM outbound spine is wired (`checkSendEligibility`). The post-send half — recording the send as a `sending_event` so the inbox can match replies — has no client-callable entry point for a 1:1 reviewed send; `sendReviewedGmail` posts to `/api/google-workspace/gmail/send-reviewed` in aidream, which is where that record belongs. Contract named, gap owned there.
 5. **A recipient we do not hold as a contact point** cannot be checked against unsubscribes or the blocklist. The row says so in words and the person sends on their own judgement; it is not silently skipped.
 6. **The CMS approvals panel and the HR workflow inbox are still separate surfaces.** CMS (`features/cms/components/admin/ApprovalsQueuePanel.tsx`) is a content-exception queue over a table that does not exist yet; HR's inbox (`hr_wf_inbox` / `hr_wf_decide`) is human workflow steps with their own delegation and authority model, not AI proposals. Neither is folded in by this lane; both are candidate kinds.
-7. **Nothing here is verified on a live surface.** Written, type-checked, never opened in a browser with real rows — there are no rows until the migrations land.
+7. **`/approvals?item=<id>` does not scroll to or highlight that row.** The chip handler and any deep link land on the right page with the row present, but nothing focuses it; with one or two rows that is invisible, with fifty it is a hunt.
+8. **Nothing here is verified on a live surface.** Written, type-checked, never opened in a browser with real rows — there are no rows until the migrations land.
 
 ## Change Log
 
