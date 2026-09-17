@@ -28,6 +28,28 @@ describe("organization-context header lanes", () => {
     expect(findings).toHaveLength(1);
   });
 
+  it("fires for a raw canary backend URL beside a canonical request", () => {
+    const findings = findOrganizationHeaderViolations(`
+      import { postJson } from "@/lib/python-client";
+      const canaryBase = process.env.NEXT_PUBLIC_BACKEND_URL_CANARY;
+      async function ticketAndClaim(token: string) {
+        await postJson("/browser-manager/runs/r/stream-ticket", {});
+        return fetch(\`\${canaryBase}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("fires for a module-level stream origin constant", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const streamOrigin = "https://stream.aimatrx.com";
+      async function claim(token: string) {
+        return fetch(\`\${streamOrigin}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
   it("accepts a raw internal fetch whose own headers use the shared builder", () => {
     const findings = findOrganizationHeaderViolations(`
       async function claim(token: string) {

@@ -60,6 +60,11 @@ function nodeName(node: ts.Node): string | null {
   return null;
 }
 
+function isBackendIdentifier(name: string): boolean {
+  return BACKEND_IDENTIFIERS.has(name)
+    || /^NEXT_PUBLIC_(?:BACKEND_URL|EC2_SANDBOX_SERVER_URL)(?:_|$)/.test(name);
+}
+
 function isFetch(node: ts.Node): node is ts.CallExpression {
   return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "fetch";
 }
@@ -84,7 +89,21 @@ function variableInitializer(name: string, scope: ts.Node): ts.Expression | null
     ts.forEachChild(node, visit);
   };
   visit(scope);
-  return found;
+  if (found) return found;
+
+  // A hand-written transport frequently shares a module-level endpoint constant
+  // with its local request function. Resolve that declaration without allowing
+  // unrelated imports or a sibling request to bless this fetch.
+  const source = scope.getSourceFile();
+  for (const statement of source.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (ts.isIdentifier(declaration.name) && declaration.name.text === name) {
+        return declaration.initializer ?? null;
+      }
+    }
+  }
+  return null;
 }
 
 function fetchHeaders(call: ts.CallExpression): ts.Expression | null {
@@ -119,7 +138,7 @@ function expressionHasBearer(expression: ts.Expression, scope: ts.Node, seen = n
 
 function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node, seen = new Set<string>()): boolean {
   if (ts.isIdentifier(expression)) {
-    if (BACKEND_IDENTIFIERS.has(expression.text)) return true;
+    if (isBackendIdentifier(expression.text)) return true;
     if (seen.has(expression.text)) return false;
     seen.add(expression.text);
     const initializer = variableInitializer(expression.text, scope);
@@ -147,8 +166,16 @@ function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node
   }
   let found = false;
   const visit = (node: ts.Node) => {
-    if (ts.isIdentifier(node) && BACKEND_IDENTIFIERS.has(node.text)) found = true;
-    if (ts.isCallExpression(node) && BACKEND_IDENTIFIERS.has(nodeName(node.expression) ?? "")) found = true;
+    if (ts.isIdentifier(node)) {
+      if (isBackendIdentifier(node.text)) {
+        found = true;
+      } else if (!seen.has(node.text)) {
+        seen.add(node.text);
+        const initializer = variableInitializer(node.text, scope);
+        if (initializer && expressionTargetsInternalHost(initializer, scope, seen)) found = true;
+      }
+    }
+    if (ts.isCallExpression(node) && isBackendIdentifier(nodeName(node.expression) ?? "")) found = true;
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
       const value = node.text;
       if (value.includes(".matrxserver.com") && !value.includes("db.matrxserver.com")) found = true;
