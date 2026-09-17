@@ -40,6 +40,44 @@ describe("organization-context header lanes", () => {
     expect(findings).toHaveLength(1);
   });
 
+  it("fires for a computed process.env backend URL", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        return fetch(\`\${process.env["NEXT_PUBLIC_BACKEND_URL_CANARY"]}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("fires for a destructured process.env backend alias", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const { NEXT_PUBLIC_BACKEND_URL_CANARY: canaryBase } = process.env;
+      async function request(token: string) {
+        return fetch(\`\${canaryBase}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("fires for an imported alias of a backend URL symbol", () => {
+    const findings = findOrganizationHeaderViolations(`
+      import { NEXT_PUBLIC_BACKEND_URL as canaryBase } from "@/config";
+      async function request(token: string) {
+        return fetch(\`\${canaryBase}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("fires for lowercase authorization", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        return fetch("https://stream.aimatrx.com/claim", { headers: { authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
   it("fires for a module-level stream origin constant", () => {
     const findings = findOrganizationHeaderViolations(`
       const streamOrigin = "https://stream.aimatrx.com";
@@ -50,11 +88,51 @@ describe("organization-context header lanes", () => {
     expect(findings).toHaveLength(1);
   });
 
+  it("does not resolve a module endpoint through a shadowing local binding", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const AIDREAM_PRODUCTION_URL = "https://server.app.matrxserver.com";
+      async function request(token: string, AIDREAM_PRODUCTION_URL: string) {
+        return fetch(\`\${AIDREAM_PRODUCTION_URL}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("does not resolve a module endpoint through a shadowing local declaration", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const AIDREAM_PRODUCTION_URL = "https://server.app.matrxserver.com";
+      async function request(token: string) {
+        const AIDREAM_PRODUCTION_URL = "https://vendor.example";
+        return fetch(\`\${AIDREAM_PRODUCTION_URL}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("does not resolve a binding declared inside a nested function", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        function unrelated() { const endpoint = "https://stream.aimatrx.com"; return endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
   it("accepts a raw internal fetch whose own headers use the shared builder", () => {
     const findings = findOrganizationHeaderViolations(`
       async function claim(token: string) {
         const headers = await buildHeaders({}, true);
         return fetch("https://stream.aimatrx.com/claim", { headers: { ...headers.headers, Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
+  });
+
+  it("accepts lowercase X-Organization-Id on its own request", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string, organizationId: string) {
+        return fetch("https://stream.aimatrx.com/claim", { headers: { authorization: \`Bearer \${token}\`, "x-organization-id": organizationId } });
       }
     `);
     expect(findings).toEqual([]);

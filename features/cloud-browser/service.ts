@@ -913,7 +913,7 @@ async function streamRequest(
   const endpoint = new URL(operation, ticket.endpoint);
   if (
     endpoint.protocol !== "https:" ||
-    endpoint.hostname !== "stream.aimatrx.com"
+    endpoint.origin !== "https://stream.aimatrx.com"
   ) {
     throw new Error(
       "The Cloud Browser server returned an invalid stream address.",

@@ -182,6 +182,19 @@ describe("Cloud Browser stream transport", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it.each([
+    "https://stream.aimatrx.com:8443/cb-abc/",
+    "https://stream.aimatrx.com:444/cb-abc/",
+  ])("refuses a noncanonical stream port before looking up credentials: %s", async (endpoint) => {
+    const noncanonicalTicket = { ...streamTicket, endpoint };
+
+    await expect(claimStreamTicket(noncanonicalTicket)).rejects.toThrow(
+      "invalid stream address",
+    );
+    expect(jest.mocked(supabase.auth.getSession)).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it("keeps the already-open-elsewhere code from the production envelope", async () => {
     global.fetch = jest.fn().mockResolvedValue(
       response(409, {

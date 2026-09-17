@@ -65,6 +65,64 @@ function isBackendIdentifier(name: string): boolean {
     || /^NEXT_PUBLIC_(?:BACKEND_URL|EC2_SANDBOX_SERVER_URL)(?:_|$)/.test(name);
 }
 
+function processEnvPropertyName(expression: ts.Expression): string | null {
+  if (
+    ts.isPropertyAccessExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    ts.isIdentifier(expression.expression.expression) &&
+    expression.expression.expression.text === "process" &&
+    expression.expression.name.text === "env"
+  ) return expression.name.text;
+  if (
+    ts.isElementAccessExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    ts.isIdentifier(expression.expression.expression) &&
+    expression.expression.expression.text === "process" &&
+    expression.expression.name.text === "env" &&
+    expression.argumentExpression &&
+    ts.isStringLiteral(expression.argumentExpression)
+  ) return expression.argumentExpression.text;
+  return null;
+}
+
+function isProcessEnvBackend(expression: ts.Expression): boolean {
+  const name = processEnvPropertyName(expression);
+  return name !== null && isBackendIdentifier(name);
+}
+
+interface BindingResolution {
+  initializer: ts.Expression | null;
+  backendIdentifier: boolean;
+}
+
+function bindingResolution(
+  declaration: ts.VariableDeclaration | ts.ParameterDeclaration,
+  name: string,
+): BindingResolution | null {
+  if (ts.isIdentifier(declaration.name)) {
+    return declaration.name.text === name
+      ? { initializer: declaration.initializer ?? null, backendIdentifier: false }
+      : null;
+  }
+  if (!ts.isObjectBindingPattern(declaration.name)) return null;
+  for (const element of declaration.name.elements) {
+    if (!ts.isIdentifier(element.name) || element.name.text !== name) continue;
+    const propertyName = nodeName(element.propertyName ?? element.name);
+    return {
+      initializer: null,
+      backendIdentifier:
+        propertyName !== null &&
+        isBackendIdentifier(propertyName) &&
+        !!declaration.initializer &&
+        ts.isPropertyAccessExpression(declaration.initializer) &&
+        ts.isIdentifier(declaration.initializer.expression) &&
+        declaration.initializer.expression.text === "process" &&
+        declaration.initializer.name.text === "env",
+    };
+  }
+  return null;
+}
+
 function isFetch(node: ts.Node): node is ts.CallExpression {
   return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "fetch";
 }
@@ -78,13 +136,20 @@ function functionBoundary(node: ts.Node): ts.Node {
   return node.getSourceFile();
 }
 
-function variableInitializer(name: string, scope: ts.Node): ts.Expression | null {
-  let found: ts.Expression | null = null;
+function resolveBinding(name: string, scope: ts.Node): BindingResolution | null {
+  if (ts.isFunctionLike(scope)) {
+    for (const parameter of scope.parameters) {
+      const resolved = bindingResolution(parameter, name);
+      if (resolved) return resolved;
+    }
+  }
+  let found: BindingResolution | null = null;
   const visit = (node: ts.Node) => {
     if (found) return;
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name) {
-      found = node.initializer ?? null;
-      return;
+    if (node !== scope && ts.isFunctionLike(node)) return;
+    if (ts.isVariableDeclaration(node)) {
+      found = bindingResolution(node, name);
+      if (found) return;
     }
     ts.forEachChild(node, visit);
   };
@@ -96,14 +161,24 @@ function variableInitializer(name: string, scope: ts.Node): ts.Expression | null
   // unrelated imports or a sibling request to bless this fetch.
   const source = scope.getSourceFile();
   for (const statement of source.statements) {
+    if (ts.isImportDeclaration(statement) && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)) {
+      for (const element of statement.importClause.namedBindings.elements) {
+        if (element.name.text !== name) continue;
+        const imported = element.propertyName?.text ?? element.name.text;
+        return { initializer: null, backendIdentifier: isBackendIdentifier(imported) };
+      }
+    }
     if (!ts.isVariableStatement(statement)) continue;
     for (const declaration of statement.declarationList.declarations) {
-      if (ts.isIdentifier(declaration.name) && declaration.name.text === name) {
-        return declaration.initializer ?? null;
-      }
+      const resolved = bindingResolution(declaration, name);
+      if (resolved) return resolved;
     }
   }
   return null;
+}
+
+function variableInitializer(name: string, scope: ts.Node): ts.Expression | null {
+  return resolveBinding(name, scope)?.initializer ?? null;
 }
 
 function fetchHeaders(call: ts.CallExpression): ts.Expression | null {
@@ -125,7 +200,7 @@ function expressionHasBearer(expression: ts.Expression, scope: ts.Node, seen = n
   }
   let found = false;
   const visit = (node: ts.Node) => {
-    if (ts.isPropertyAssignment(node) && nodeName(node.name) === "Authorization") {
+    if (ts.isPropertyAssignment(node) && nodeName(node.name)?.toLowerCase() === "authorization") {
       const value = node.initializer;
       if (ts.isTemplateExpression(value) && value.head.text.includes("Bearer ")) found = true;
       if (ts.isStringLiteral(value) && value.text.startsWith("Bearer ")) found = true;
@@ -138,11 +213,13 @@ function expressionHasBearer(expression: ts.Expression, scope: ts.Node, seen = n
 
 function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node, seen = new Set<string>()): boolean {
   if (ts.isIdentifier(expression)) {
-    if (isBackendIdentifier(expression.text)) return true;
     if (seen.has(expression.text)) return false;
     seen.add(expression.text);
-    const initializer = variableInitializer(expression.text, scope);
+    const binding = resolveBinding(expression.text, scope);
+    if (binding?.backendIdentifier) return true;
+    const initializer = binding?.initializer ?? null;
     if (initializer && expressionTargetsInternalHost(initializer, scope, seen)) return true;
+    if (!binding && isBackendIdentifier(expression.text)) return true;
     // A URL object can be safely treated as the persistent-cloud-browser edge
     // only when its own boundary validates that exact object's hostname.
     let validatedHost = false;
@@ -164,14 +241,17 @@ function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node
     validate(scope);
     return validatedHost;
   }
+  if (isProcessEnvBackend(expression)) return true;
   let found = false;
   const visit = (node: ts.Node) => {
+    if (ts.isExpression(node) && isProcessEnvBackend(node)) found = true;
     if (ts.isIdentifier(node)) {
-      if (isBackendIdentifier(node.text)) {
+      const binding = resolveBinding(node.text, scope);
+      if (binding?.backendIdentifier || (!binding && isBackendIdentifier(node.text))) {
         found = true;
       } else if (!seen.has(node.text)) {
         seen.add(node.text);
-        const initializer = variableInitializer(node.text, scope);
+        const initializer = binding?.initializer ?? null;
         if (initializer && expressionTargetsInternalHost(initializer, scope, seen)) found = true;
       }
     }
@@ -196,7 +276,7 @@ function expressionHasOrganizationCompliance(expression: ts.Expression, scope: t
   }
   let found = false;
   const visit = (node: ts.Node) => {
-    if (ts.isPropertyAssignment(node) && nodeName(node.name) === "X-Organization-Id") found = true;
+    if (ts.isPropertyAssignment(node) && nodeName(node.name)?.toLowerCase() === "x-organization-id") found = true;
     if (ts.isCallExpression(node) && COMPLIANT_CALLEES.has(nodeName(node.expression) ?? "")) found = true;
     if (ts.isPropertyAccessExpression(node) && node.name.text === "authHeaders") found = true;
     if (
@@ -230,8 +310,10 @@ function legacyFileNeedsOrganizationAdmission(source: string): boolean {
 export function findOrganizationHeaderViolations(source: string, fileName = "source.ts"): OrganizationHeaderFinding[] {
   const parsed = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const findings: OrganizationHeaderFinding[] = [];
+  let inspectedFetch = false;
   const visit = (node: ts.Node) => {
     if (isFetch(node)) {
+      inspectedFetch = true;
       const scope = functionBoundary(node);
       const headers = fetchHeaders(node);
       const target = node.arguments[0];
@@ -252,7 +334,7 @@ export function findOrganizationHeaderViolations(source: string, fileName = "sou
   visit(parsed);
   // The AST path is request-specific. Keep the old file-wide detector alive
   // for transport shapes it cannot safely trace (for example XHR adapters).
-  if (!findings.length && legacyFileNeedsOrganizationAdmission(source)) {
+  if (!inspectedFetch && legacyFileNeedsOrganizationAdmission(source)) {
     findings.push({
       line: 1,
       reason: "legacy Bearer backend lane has no organization admission",
