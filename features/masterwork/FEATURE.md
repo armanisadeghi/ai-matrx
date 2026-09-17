@@ -441,6 +441,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (phone width, the class) — **EVERY MASTERWORK SURFACE AND LANE
+  CARRIES THE 44px TOUCH FLOOR.** Measured at 390×844 as `admin@admin.com`:
+  `/masterwork/<rulebook>` rendered 84 controls, 59 of them under the floor, and
+  only seven of those were design-system `Button`s (already lifted in
+  `@ai-matrx/design-system` 0.21.0). The rest were raw `<button>`/`<a>`
+  inheriting no primitive at all. The fix is the platform's ONE coarse-pointer
+  hit-area utility, `.matrx-touch-targets`, declared once at the route root
+  (`app/(core)/masterwork/layout.tsx`, `display: contents` so the `(core)`
+  scroll chain is untouched) and once on each of the 24 lane `DialogContent`s,
+  which portal out of that subtree. The ten rule checkboxes — which the floor
+  deliberately refuses to GROW, since a 44px tick box is an empty square —
+  got the new `.matrx-tap-area` ring on their labels instead: 16px tick,
+  44×44 finger, proven live by hit-testing 18px off-centre in all four
+  directions. After: 2 controls under the floor on that page, both
+  `Button asChild` links waiting only on the 0.21.0 publish. At 1440 with a
+  fine pointer nothing in this tree changed — neither rule's media query
+  matches. Guard: `__tests__/every-lane-carries-the-touch-floor.test.ts`
+  (2 of 3 RED before).
+
 - 2026-09-17 (sixth cold walk, the class) — **IN-PROGRESS WORK SURVIVES A
   RELOAD IN EVERY CAPTURE LANE, AND THE REGISTRY NOW FORCES THE QUESTION.**
   Walk 4 found the Triad erasing an answered round; walk 5 found it on the

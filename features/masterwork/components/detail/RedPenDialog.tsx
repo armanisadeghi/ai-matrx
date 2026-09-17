@@ -445,7 +445,7 @@ export function RedPenDialog({
         runLabel: "Reading your corrections",
       })}
     >
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PenLine className="size-4 text-rose-500" aria-hidden />

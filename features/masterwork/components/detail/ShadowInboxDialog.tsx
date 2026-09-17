@@ -985,7 +985,7 @@ export function ShadowInboxDialog({
       open={open}
       onOpenChange={handleDialogOpenChange}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Inbox className="h-4 w-4 text-muted-foreground" />

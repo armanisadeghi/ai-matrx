@@ -100,7 +100,7 @@ export function RuleFeedbackDialog({
       rulebookName={rulebookName}
     >
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="matrx-touch-targets sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isReject ? (

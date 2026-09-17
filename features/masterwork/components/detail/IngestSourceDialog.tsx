@@ -593,7 +593,7 @@ export function IngestSourceDialog({
         runLabel: "Reading your source",
       })}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {timeline

@@ -165,7 +165,7 @@ export function RuleReviewWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+      <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
         <DialogHeader className="relative space-y-1 border-b border-border px-6 py-5 pr-28 text-left">
           <DialogTitle className="text-lg">Review your rules</DialogTitle>
           <DialogDescription>

@@ -487,13 +487,22 @@ export function RuleRow({
     >
       <div className="flex w-full items-start gap-2 px-3 py-2">
         {canEdit ? (
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelected}
-            aria-label={`Select "${rule.name}" for a bulk action`}
-            className="mt-1 h-4 w-4 shrink-0 accent-primary"
-          />
+          // 16px is the right SIZE for a tick box and the wrong TAP TARGET on a
+          // phone (measured 16×16 at 390px, 2026-09-17). The subtree touch
+          // floor deliberately refuses to grow a checkbox — it would paint a
+          // 44px empty square — so the label carries the platform's hit-area
+          // ring instead (`.matrx-tap-area`, app/globals.css): the tick stays
+          // 16px and the finger gets 44. `mt-1` moves to the label so the ring
+          // is centred on the box, not above it.
+          <label className="matrx-tap-area mt-1 inline-flex shrink-0">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelected}
+              aria-label={`Select "${rule.name}" for a bulk action`}
+              className="h-4 w-4 shrink-0 accent-primary"
+            />
+          </label>
         ) : null}
         <button
           type="button"

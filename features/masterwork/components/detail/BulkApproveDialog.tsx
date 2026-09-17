@@ -60,7 +60,7 @@ export function BulkApproveDialog({
   const total = rules.length;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="matrx-touch-targets max-w-lg">
         <DialogHeader>
           <DialogTitle>Approve {total} selected rules?</DialogTitle>
           <DialogDescription>

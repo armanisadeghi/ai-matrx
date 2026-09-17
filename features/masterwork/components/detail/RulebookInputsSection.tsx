@@ -93,6 +93,10 @@ export function RulebookInputsSection({
             <TooltipTrigger asChild>
               <Link
                 href={`/masterwork/${rulebook.id}/sources`}
+                // A door, not prose: opt into the subtree touch floor
+                // (`.matrx-touch-targets`, app/globals.css), which skips bare
+                // anchors so a sentence's link never becomes a 44px block.
+                data-tap-target
                 className="text-sm font-semibold text-foreground underline-offset-4 hover:underline"
               >
                 Sources

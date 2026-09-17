@@ -446,7 +446,7 @@ export function PredictionLedgerDialog({
         runLabel: "Turning your calls into rules",
       })}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Call it before you know</DialogTitle>
           <DialogDescription>

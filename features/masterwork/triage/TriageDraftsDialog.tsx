@@ -135,7 +135,7 @@ export function TriageDraftsDialog({
 
   return (
     <Dialog open={open} onOpenChange={requestOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="matrx-touch-targets max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ListFilter className="h-4 w-4" />

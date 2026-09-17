@@ -457,7 +457,7 @@ function RuleEditorForm({
   };
 
   return (
-    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
+    <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
       <EditableContextMenu
         sourceFeature="masterwork"
         surfaceName={surfaceName}

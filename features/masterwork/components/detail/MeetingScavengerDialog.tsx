@@ -476,7 +476,7 @@ export function MeetingScavengerDialog({
         runLabel: "The Meeting Scavenger",
       })}
     >
-      <DialogContent className="flex max-h-[88dvh] max-w-3xl flex-col gap-4 overflow-hidden">
+      <DialogContent className="matrx-touch-targets flex max-h-[88dvh] max-w-3xl flex-col gap-4 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-4 w-4" aria-hidden="true" />

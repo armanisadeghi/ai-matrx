@@ -954,7 +954,7 @@ export function ChatImportDialog({
         runLabel: "Reading your chats",
       })}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Import your AI chats

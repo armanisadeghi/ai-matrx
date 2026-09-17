@@ -264,6 +264,14 @@ export function EntityRef({
             onOpen();
           }}
           title={openInNewTab ? `Open ${label} in a new tab` : `Open ${label}`}
+          // THE DOOR IS A CONTROL, NOT PROSE. `.matrx-touch-targets`
+          // (app/globals.css) deliberately skips bare anchors so a sentence's
+          // link does not become a 44px block, and opts real controls in by
+          // this attribute. An EntityRef is never prose — it is the record's
+          // door — so it opts in here, once, for every surface that declared
+          // the floor. Outside such a subtree the attribute does nothing, so
+          // desktop density is untouched everywhere.
+          data-tap-target
           className={cn(
             "min-w-0 text-inherit underline-offset-2 hover:text-primary hover:underline",
             labelFit,

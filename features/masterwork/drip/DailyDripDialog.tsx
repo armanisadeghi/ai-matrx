@@ -411,7 +411,7 @@ export function DailyDripDialog({
         runLabel: "Turning your answers into rules",
       })}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>One question a day</DialogTitle>
           <DialogDescription>

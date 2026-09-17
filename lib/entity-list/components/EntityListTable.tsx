@@ -21,6 +21,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
   MatrxColumnDef,
+  MatrxDataTableMobileCardControls,
 } from "@ai-matrx/design-system/data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
 import { entityColumnSortable } from "../columns";
 import { entityListDoorColumnId, entityListRowHref } from "../doors";
+import { EntityPhoneCard, resolvePhoneCardLayout } from "../phoneCards";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 
 interface Props<TRow> {
@@ -160,6 +162,27 @@ export function EntityListTable<TRow>({
   // config's entity token. A column that declares its own `href` keeps it.
   const doorColumn = entityListDoorColumnId(config);
 
+  // The phone card's layout is derived from the SAME visibility inputs the
+  // grid uses, so a column the user turned off stays off on both widths.
+  const phoneLayout = resolvePhoneCardLayout(config.columns, {
+    doorColumn,
+    hiddenColumns,
+    showSharedColumns,
+  });
+
+  const defaultMobileCards = (
+    row: TRow,
+    _index: number,
+    controls: MatrxDataTableMobileCardControls,
+  ) => (
+    <EntityPhoneCard
+      layout={phoneLayout}
+      controls={controls}
+      rowId={config.getRowId(row)}
+      rowName={config.getRowName(row)}
+    />
+  );
+
   const columns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
@@ -264,7 +287,12 @@ export function EntityListTable<TRow>({
         </ItemMenu>
       )}
       copy={config.copy}
-      mobileCards={config.mobileCards}
+      // THE NARROW LAYOUT IS THE PRIMITIVE'S, NOT THE FEATURE'S. A surface may
+      // still hand-write its phone card; when it does not, the shell renders
+      // the canonical stacked card from the columns the surface already
+      // declared, so every list route inherits a phone layout instead of a
+      // 3,000px table in a 364px box. See ../phoneCards.tsx.
+      mobileCards={config.mobileCards ?? defaultMobileCards}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
     />
   );

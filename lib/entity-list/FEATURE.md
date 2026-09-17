@@ -206,10 +206,20 @@ names on one page.
    attach a record that does not exist. Keep the entity identical to what the
    name column's `entityToken` resolves and what the kebab's share action uses:
    one record, one identity, three entry points.
-8. **Phone cards remain the table view.** `config.mobileCards` forwards only a
-   feature-owned row summary into `MatrxDataTable.mobileCards`; the canonical
-   table still owns query state, pagination, copy controls, and row actions.
-   Never fetch a second mobile list or rebuild those actions inside the card.
+8. **Phone cards remain the table view, and the SHELL supplies them.** Below
+   `sm` the shell renders a stacked record card per row instead of the
+   horizontal grid — name, the one or two fields that decide what the row is,
+   status, the row's actions, everything else behind one tap. It is derived
+   from the columns the surface already declared (`./phoneCards.tsx`,
+   `resolvePhoneCardLayout`), so a surface inherits a phone layout without
+   writing one; declare `EntityColumnSpec.phone`
+   (`title`/`primary`/`meta`/`rest`/`off`) only where the derivation promotes
+   the wrong field. `config.mobileCards` still wins when a surface hand-writes
+   its own. The canonical table owns query state, pagination, copy controls and
+   row actions either way; a card's every value goes through
+   `controls.renderCell`, so it is a LAYOUT, never a second renderer. Never
+   fetch a second mobile list or rebuild those actions inside the card.
+   Guard: `__tests__/phone-cards.test.tsx`.
 9. **One context menu per pane.** The shell wraps the list once and resolves
    the clicked `data-row-id` at open time. Every view must stamp that anchor;
    the table already does. The resolver reuses `actions.menuFor(row)`, supplies
@@ -390,6 +400,23 @@ how that savior page gets built.
   right-click share actions, per-row entity, and live surface values. The
   toolbar refresh indicator now names its operation for assistive technology,
   and fetch failures use the canonical toast façade.
+
+- 2026-09-17 — **The shell now HAS a narrow layout.** The `mobileCards` seam
+  had existed for a year and not one of the ~23 surfaces supplied one, so at
+  390px `/masterwork/all` rendered a seven-column, 3,065px-wide table inside a
+  364px box (`/masterwork/encore` 1,720px; `/agents/all` eleven columns,
+  `/work/conversations` thirteen) — about a column and a half of seven behind a
+  sideways scroll, with the record name a 2,483px anchor 20px tall. A default
+  phone card now renders for every surface that declares none
+  (`phoneCards.tsx`), derived from the door column, the date columns and
+  declaration order, honouring the user's hidden-column preference, carrying
+  `data-row-id` for the pane menu and `.matrx-touch-targets` for the 44px
+  floor. Four surfaces declared a `phone` role where the derivation was wrong
+  (agents, workflows, masterwork). Measured after, at 390×844 in both themes:
+  every list route renders cards and the grid is gone below `sm`; at 1440 with
+  a fine pointer the seven-column table and its density are byte-for-byte what
+  they were. Guard: `__tests__/phone-cards.test.tsx` (3 of its 9 RED with the
+  default removed).
 
 - 2026-08-25 — Added the generic `config.mobileCards` forwarding seam so a
   feature-entry list can expose its essential phone context while retaining the
