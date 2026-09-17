@@ -61,6 +61,30 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // 🚨 THE ARTIFACT CARRIES ITS ORGANIZATION.
+        // `chat.artifact` is one of the 328 tables carrying
+        // `public._stamp_org_default`, a BEFORE INSERT trigger that files a
+        // NULL organization into the WRITER'S PERSONAL organization — so
+        // `organizationId ?? null` was not "no organization", it was a silent
+        // misfile into a tenant nobody chose. The caller (the thunk) sends the
+        // organization the person selected; with none, this refuses and
+        // writes nothing.
+        // common-docs/policies/context-is-carried-never-rebuilt.md
+        const artifactOrganizationId =
+          typeof organizationId === "string" && organizationId.trim().length > 0
+            ? organizationId.trim()
+            : null;
+        if (!artifactOrganizationId) {
+          return NextResponse.json(
+            {
+              error:
+                "No organization was named for this artifact, so nothing was saved. Choose the organization you are working in and try again.",
+              code: "organization_context_required",
+            },
+            { status: 400 },
+          );
+        }
+
         // Atomic get-or-create on the ANY-SURFACE natural key
         //   (created_by, source_system, source_id, artifact_index, artifact_type,
         //   external_system) backed by the FULL `NULLS NOT DISTINCT` unique index
@@ -84,7 +108,7 @@ export async function POST(request: NextRequest) {
           conversation_id: conversationId,
           source_system: "cx_message",
           source_id: messageId,
-          organization_id: organizationId ?? null,
+          organization_id: artifactOrganizationId,
           task_id: taskId ?? null,
           artifact_type: artifactType,
           status: "published" as const,

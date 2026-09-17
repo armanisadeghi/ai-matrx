@@ -520,6 +520,8 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- 2026-09-17 — Creating a site REQUIRES an organization on the wire. `POST /api/cms/sites` (`create`) treated an omitted `organizationId` as "owner-only" and wrote `organization_id: organizationId ?? null` — but the column is trigger-stamped, so the site was filed in the creator's PERSONAL organization: not owner-only, just a tenant nobody chose and no teammate can open. The route now refuses the create with an honest 400 naming the remedy, then keeps the existing membership check on the named organization. Both in-repo callers (`app/(core)/cms/page.tsx`, `features/marketing/content-plan/setup/bridge.ts`) already send one. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - 2026-09-17 — Creating a site uses the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). A website belongs to the company, so with none selected Create Site is disabled and the dialog says to pick one from the menu under the avatar — never a site filed into a personal workspace a teammate cannot open.
 
 - **2026-08-29:** CMS and Content Plan now share one

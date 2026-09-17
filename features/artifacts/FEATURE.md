@@ -43,5 +43,15 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- 2026-09-17 — An artifact is filed in the organization the person selected, or it is not saved.
+  `POST /api/artifacts` (`action: "create"`) wrote `organization_id: organizationId ?? null` into
+  `chat.artifact`, which carries `public._stamp_org_default` — so "no organization" was silently a
+  misfile into the writer's PERSONAL organization, not a null. The route now refuses a create with
+  no organization (400, with the remedy in the person's words), and `registerArtifactThunk`
+  (`lib/redux/thunks/artifactThunks.ts`) throws the one typed
+  `OrganizationContextError("organization_context_required")` BEFORE the network when nothing is
+  selected, so surfaces render `OrganizationRequiredNotice` instead of a raw sentence. Law:
+  `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - 2026-08-27 — Bounded the dedicated library detail host for diagram workspace rendering so the
   canonical full-height renderer receives a non-zero viewport.
