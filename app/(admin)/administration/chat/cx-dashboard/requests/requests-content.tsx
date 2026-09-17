@@ -27,8 +27,7 @@ import {
   computeDuration,
 } from "@/features/cx-dashboard/utils/format";
 import {
-  exportToCSV,
-  exportToJSON,
+  buildCxSourcePageExportConfig,
 } from "@/features/cx-dashboard/utils/export";
 import { originClassLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import type {
@@ -323,8 +322,6 @@ export function RequestsContent({ result }: Props) {
                       showSearch={false}
                       showStatusFilter
                       statusOptions={["completed", "pending", "error"]}
-                      onExportCSV={() => exportToCSV(exportData, "user-requests")}
-                      onExportJSON={() => exportToJSON(exportData, "user-requests")}
                     />
                   ),
                 },
@@ -349,6 +346,8 @@ export function RequestsContent({ result }: Props) {
                   ...(r.error ? [`Error: ${r.error}`] : []),
                 ].join("\n"),
               rowAttributes: (r) => ({ id: r.id, status: r.status }),
+              export: () =>
+                buildCxSourcePageExportConfig(exportData, "user-requests"),
             }}
             detail={{
               title: (r) => r.conversation_title ?? "Untitled request",
