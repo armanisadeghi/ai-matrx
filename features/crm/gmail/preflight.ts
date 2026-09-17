@@ -157,21 +157,24 @@ export async function preflightGmailRecipients(
 
   for (const mailbox of parsed.mailboxes) {
     const held = mediumIdForAddress(mailbox.address, options);
-    let mediumIds: string[] = held ? [held] : [];
-    if (!held) {
-      // Not on this record — ask the organization, because the opt-out lives on
-      // the org's medium row whichever Person happens to hold it.
-      try {
-        mediumIds = await lookup(mailbox.address);
-      } catch (error) {
-        // 🚨 FAIL CLOSED. A lookup that failed — including a value the
-        // canonicalizer refused — is not a lookup that found nothing.
-        return (
-          `The outbound checks for ${mailbox.address} could not be read. ` +
-          (error instanceof Error ? error.message : String(error))
-        );
-      }
+    // 🚨 THE RECORD'S OWN MEDIUM IS NOT THE ONLY ONE. The organization is asked
+    // about EVERY address, including one this record holds: the same value can
+    // carry a second `crm.contact_medium` row (the live unique index includes
+    // `platform_slug`) on another Person, and the unsubscribe may be on that
+    // one. Checking only the record's row is the same hole as `.limit(1)`, one
+    // branch over (R2 N10).
+    let mediumIds: string[] = [];
+    try {
+      mediumIds = await lookup(mailbox.address);
+    } catch (error) {
+      // 🚨 FAIL CLOSED. A lookup that failed — including a value the
+      // canonicalizer refused — is not a lookup that found nothing.
+      return (
+        `The outbound checks for ${mailbox.address} could not be read. ` +
+        (error instanceof Error ? error.message : String(error))
+      );
     }
+    if (held && !mediumIds.includes(held)) mediumIds = [held, ...mediumIds];
     // No medium row in this organization at all: there is no suppression,
     // complaint or blocklist entry that could exist without one, so there is
     // genuinely nothing to ask. The compose surface has already said out loud

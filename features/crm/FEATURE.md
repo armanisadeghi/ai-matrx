@@ -858,13 +858,16 @@ holds the shapes.
   `mailbox.ts` is the one thing that reads it: `Ada Lovelace <ada@example.com>`,
   `"Doe, John" <john@x.com>`, `a@x.com, b@y.com`. A field it cannot read is
   REFUSED by name with the form to use — never guessed at, never waved through.
-  Each parsed address is then resolved with `findMediumIdsForAddress`
+  Each parsed address — INCLUDING one this record holds — is then resolved with
+  `findMediumIdsForAddress`
   (`crm/compliance/service.ts`, read-only, never creates the row), which returns
   EVERY medium row the organization holds for it — the live unique index includes
   `platform_slug`, so one address can hold several and the suppression may be on
   any of them — and the gate is asked about each. Only an address this
   organization holds no row for at all passes without a verdict, because no
-  suppression can exist without one. A lookup that cannot be read, INCLUDING a
+  suppression can exist without one. The record's own medium is asked about as
+  well as the organization's rows, never instead of them: the same value can carry
+  a second medium row on another Person, and the opt-out may be on that one. A lookup that cannot be read, INCLUDING a
   value the canonicalizer refuses, REFUSES: "cannot confirm eligibility" is never
   "clear". Two holes closed here: before 2026-09-17 both paths `continue`d past
   exactly the addresses nobody had vetted (VERIFY-B1-B2 D2), and until F-20 the

@@ -166,6 +166,34 @@ describe("the send authority judges every PARSED address", () => {
     expect(asked).toEqual(["medium-plain", "medium-slug"]);
     expect(refusal).toContain("shared@example.com");
   });
+
+  it("asks the organization about an address the RECORD holds too (N10, second branch)", async () => {
+    const asked: string[] = [];
+    const refusal = await preflightGmailRecipients({
+      to: "ada@example.com",
+      cc: [],
+      options: [
+        {
+          address: "ada@example.com",
+          contactPointId: "point-1",
+          mediumId: "medium-on-this-record",
+          label: null,
+          isPrimary: true,
+          warning: null,
+        },
+      ],
+      organizationId: "org-1",
+      check: async (mediumId) => {
+        asked.push(mediumId);
+        return verdict(mediumId !== "medium-on-another-person");
+      },
+      // The same address, held again on another Person, carrying the opt-out.
+      lookup: async () => ["medium-on-another-person"],
+    });
+    expect(asked).toContain("medium-on-this-record");
+    expect(asked).toContain("medium-on-another-person");
+    expect(refusal).toContain("ada@example.com");
+  });
 });
 
 describe("recipient integrity reads a display-name address as the record's own", () => {
