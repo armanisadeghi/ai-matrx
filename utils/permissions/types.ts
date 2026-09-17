@@ -23,19 +23,33 @@ import type { ResourceType } from "./registry";
 // Core Permission Types
 // ============================================================================
 
-// CONVERGE: the access levels are `viewer` · `commenter` · `editor` · `admin` — one vocabulary
-// everywhere — declared 2026-09-10, AI Matrx Data Doctrine R18 (recorded in
-// common-docs/systems/platform/access/DECISIONS.md, 2026-09-10). Observed here: three levels, no
-// `commenter`, matching live `public.permission_level` = `viewer, editor, admin` [live
-// brsgrqvjdzwihsvnfqkf, 2026-09-10]. Adding it is `ALTER TYPE public.permission_level ADD VALUE
-// 'commenter' BEFORE 'editor'` plus this union and the `satisfiesPermissionLevel` comparator
-// below, and it requires re-reading every ordinal `permission_level` comparison against the new
-// four-value order first. Reconcile when you next change this for another reason. Do NOT escalate.
+// The access levels are `viewer` · `commenter` · `editor` · `admin` — one vocabulary everywhere
+// (AI Matrx Data Doctrine R18, 2026-09-10, recorded in
+// common-docs/systems/platform/access/DECISIONS.md). The ladder is declared ONCE in `./levels.ts`
+// and re-exported here; `commenter` is in the code ladder already and tolerated everywhere, while
+// the live `public.permission_level` enum still holds only `viewer, editor, admin` — see that
+// module's header for which side of the gap each call site belongs on.
 // Register: /projects/data-doctrine-adoption/REGISTER.md#DD-050
-/**
- * Permission levels in hierarchical order: viewer < editor < admin
- */
-export type PermissionLevel = "viewer" | "editor" | "admin";
+export type { PermissionLevel, DbPermissionLevel } from "./levels";
+export {
+  PERMISSION_LEVELS,
+  PERMISSION_LEVEL_RANK,
+  PERMISSION_LEVEL_LABELS,
+  PERMISSION_LEVEL_SHORT_LABELS,
+  DB_PERMISSION_LEVELS,
+  isPermissionLevel,
+  isDbPermissionLevel,
+  toDbPermissionLevel,
+  parsePermissionLevel,
+  permissionLevelRank,
+} from "./levels";
+
+import {
+  PERMISSION_LEVELS,
+  PERMISSION_LEVEL_LABELS,
+  permissionLevelRank,
+  type PermissionLevel,
+} from "./levels";
 
 /**
  * Complete permission record from database
@@ -192,12 +206,7 @@ export function satisfiesPermissionLevel(
   current: PermissionLevel,
   required: PermissionLevel,
 ): boolean {
-  const levels: Record<PermissionLevel, number> = {
-    viewer: 1,
-    editor: 2,
-    admin: 3,
-  };
-  return levels[current] >= levels[required];
+  return permissionLevelRank(current) >= permissionLevelRank(required);
 }
 
 /**
@@ -206,21 +215,17 @@ export function satisfiesPermissionLevel(
 export function getPermissionLevelsAtOrAbove(
   level: PermissionLevel,
 ): PermissionLevel[] {
-  const allLevels: PermissionLevel[] = ["viewer", "editor", "admin"];
-  const levelIndex = allLevels.indexOf(level);
-  return allLevels.slice(levelIndex);
+  const levelIndex = PERMISSION_LEVELS.indexOf(level);
+  return [...PERMISSION_LEVELS].slice(levelIndex);
 }
 
 /**
  * Get display label for permission level
  */
 export function getPermissionLevelLabel(level: PermissionLevel): string {
-  const labels: Record<PermissionLevel, string> = {
-    viewer: "Can view",
-    editor: "Can edit",
-    admin: "Full access",
-  };
-  return labels[level];
+  // Never `undefined` for a known level, and never a blank string on screen for
+  // an unknown one — an unrecognised level names itself instead (law 4).
+  return PERMISSION_LEVEL_LABELS[level] ?? `Unknown level (${level})`;
 }
 
 /**

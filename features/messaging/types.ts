@@ -18,6 +18,7 @@
  */
 
 import type { JsonObject } from "@/types/json";
+import type { PermissionLevel } from "@/utils/permissions/levels";
 
 // ============================================
 // Actionable messages — this app's kinds
@@ -79,7 +80,7 @@ export interface ResourceSharedActionPayload {
   /** Display label of the type (e.g. "Note"). */
   resource_label: string;
   /** Permission granted to the recipient. */
-  permission_level?: "viewer" | "editor" | "admin";
+  permission_level?: PermissionLevel;
   /** Display name of the person who shared it. */
   sharer_name?: string;
 }
@@ -97,7 +98,7 @@ export interface AccessRequestActionPayload {
   /** Registry entity token of the thing being asked for. */
   resource_type: string;
   resource_id: string;
-  requested_level: "viewer" | "editor" | "admin";
+  requested_level: PermissionLevel;
   /** Distinguishes an access upgrade from a one-click owner action. */
   request_kind?: "resource_access" | "resource_action";
   action_key?: "delete" | null;

@@ -14,6 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import { parsePermissionLevel, type PermissionLevel } from "./levels";
 
 export type OrgShareStatus = "active" | "pending" | "rejected";
 
@@ -42,7 +43,7 @@ export interface OrgShareGrant {
   /** Canonical Postgres table name stored in permissions.resource_type. */
   resourceTable: string;
   resourceId: string;
-  permissionLevel: "viewer" | "editor" | "admin";
+  permissionLevel: PermissionLevel;
   status: OrgShareStatus;
   /** The member who contributed the resource (auth.users id). */
   sharedBy: string | null;
@@ -81,7 +82,10 @@ export async function listOrgShareGrants(
       resourceTable: String(r.resource_type),
       resourceId: String(r.resource_id),
       permissionLevel:
-        (r.permission_level as OrgShareGrant["permissionLevel"]) ?? "viewer",
+        parsePermissionLevel(
+          r.permission_level,
+          "listOrgShareGrants.permission_level",
+        ) ?? "viewer",
       status: (r.status as OrgShareStatus) ?? "active",
       sharedBy: (r.created_by as string | null) ?? null,
       createdAt: (r.created_at as string | null) ?? null,

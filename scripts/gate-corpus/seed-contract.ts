@@ -131,9 +131,40 @@ export function checkRunnerContract(runTs: string): Violation[] {
   return v;
 }
 
-export function checkFiles(seedPath: string, runPath: string): Violation[] {
+/**
+ * THE SAME CONTRACT, FOR EVERY RUNNER — not just `run.ts`.
+ *
+ * ATTACK-9 finding 34: rules 24 and 31 both rest on `.env.local`, which "points
+ * wherever it points", and the protection is an instruction to lanes with no
+ * guard underneath it. `run.ts` and `branch-api.ts` are the two files that open a
+ * socket from this directory, and only `run.ts` was covered — so a lane that
+ * exported a production DSN into its own shell was refused by one and, if the
+ * assertion were ever dropped from the other, waved through by the other. The
+ * file that opens the connection is the one that must judge it, so BOTH are held
+ * to the same two codes, and a third runner added here later joins them by being
+ * listed in `RUNNERS`.
+ *
+ * This is a file-shape check and it is deliberately not the whole proof: it can
+ * tell you the call is PRESENT, never that it BITES. That half is
+ * `gate-corpus-refuses-production-identity.test.ts`, which drives the real
+ * `assertServerMatchesTarget` with production's own system_identifier out of
+ * `plan/BRANCH-REF` and requires the refusal to name production.
+ */
+export const RUNNERS: readonly string[] = ["run.ts", "branch-api.ts"];
+
+export function checkFiles(
+  seedPath: string,
+  runPath: string,
+  ...otherRunnerPaths: string[]
+): Violation[] {
+  const runners = [runPath, ...otherRunnerPaths];
   return [
     ...checkSeedContract(readFileSync(seedPath, "utf8")),
-    ...checkRunnerContract(readFileSync(runPath, "utf8")),
+    ...runners.flatMap((p) =>
+      checkRunnerContract(readFileSync(p, "utf8")).map((v) => ({
+        ...v,
+        detail: `${p.split("/").pop()}: ${v.detail}`,
+      })),
+    ),
   ];
 }

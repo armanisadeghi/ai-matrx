@@ -243,6 +243,8 @@
     "check:archived-items-law:self-test": "tsx scripts/check-archived-items-law.ts --self-test",
     "check:canonical-pickers": "tsx scripts/check-canonical-pickers.ts",
     "check:signout-scope": "tsx scripts/check-signout-scope.ts",
+    "check:psql": "tsx scripts/lib/psql-path.ts",
+    "check:campaign-ports": "tsx scripts/check-campaign-ports.ts",
     "check:campaign-entry-points": "tsx scripts/check-campaign-entry-points.ts",
     "check:cron-pause": "tsx scripts/gate-corpus/cron-pause-guard.ts",
     "check:cron-pause:self-test": "tsx scripts/gate-corpus/cron-pause-guard.ts --self-test",
