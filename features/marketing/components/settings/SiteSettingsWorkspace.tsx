@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
+import { actionAuthority } from "@/features/access-gate/service/actionAuthority";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -491,11 +492,10 @@ export function SiteSettingsWorkspace() {
               // Resolve authority BEFORE canceling anything. An editor may see
               // the site and start/stop ordinary work, but a rejected delete
               // must never cancel the owner's active crawl as a side effect.
-              const access = await fetchAccessDeniedContext(
-                "web_site",
-                site.id,
+              const access = actionAuthority(
+                await fetchAccessDeniedContext("web_site", site.id),
               );
-              if (access.status !== "ok") {
+              if (!access.verified) {
                 setConfirmingDelete(false);
                 toast.error(
                   "We couldn't verify deletion access. Nothing was changed.",
