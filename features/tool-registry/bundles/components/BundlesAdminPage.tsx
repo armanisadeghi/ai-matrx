@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
@@ -692,35 +693,17 @@ function BundleDetail({
 
       {/* Members */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-medium">Members</h2>
-            <Badge variant="outline" className="text-[10px]">
-              {members.length}
-            </Badge>
-            {loading && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            Add tool
-          </Button>
-        </div>
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
           </div>
         )}
-        {!loading && members.length === 0 && (
-          <div className="rounded-md border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-            No tools in this bundle yet.
-          </div>
-        )}
-        {members.length > 0 && (
           <MatrxDataTable<BundleMemberWithTool>
             data={members}
+            isLoading={loading}
+            detail={{ enabled: false }}
+            emptyState={{ title: "No tools in this bundle yet" }}
             columns={memberColumns(onSaveAlias)}
             tableId={`tool-registry/bundles/${bundle.id}/members`}
             getRowId={(row) => row.member.tool_id}
@@ -728,22 +711,15 @@ function BundleDetail({
               row.tool?.is_active === false ? "opacity-60" : undefined
             }
             toolbar={{
+              title: "Members",
               search: true,
               refresh: { onRefresh: load },
               add: { onAdd: () => setAdding(true) },
             }}
             rowActions={(row) => (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void onRemove(row)}
-                aria-label="Remove from bundle"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              <XTapButton variant="transparent" onClick={() => void onRemove(row)} ariaLabel="Remove from bundle" />
             )}
           />
-        )}
       </section>
       {adding && (
         <AddMemberDialog
