@@ -17,15 +17,35 @@
 
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Globe, MonitorPlay, DatabaseZap } from "lucide-react";
-import type { ScrapeEngine } from "@/features/scraper/types/scraper-api";
+import { Globe, MonitorPlay, DatabaseZap, ShieldAlert } from "lucide-react";
+import type {
+  ContentWarning,
+  ScrapeEngine,
+} from "@/features/scraper/types/scraper-api";
 
 export interface ScrapeProvenanceProps {
   engine: ScrapeEngine | null | undefined;
   escalated: boolean | null | undefined;
   escalationReason: string | null | undefined;
+  /**
+   * The escalation reason already worded as a sentence, straight from the
+   * backend (2026-09-17). Preferred over building one from `escalationReason`
+   * when present — optional so every existing caller is unaffected.
+   */
+  escalationNote?: string | null;
+  /** A row that succeeded but is suspect — shown as its own line, in words. */
+  contentWarning?: ContentWarning | null;
+  /** True when a configured proxy was skipped/bypassed for this row. */
+  proxyBypassed?: boolean | null;
   className?: string;
 }
+
+const CONTENT_WARNING_SENTENCE: Record<ContentWarning, string> = {
+  thin_content:
+    "This page came back with very little readable text — it may not be the full content.",
+  wrong_resource:
+    "What we opened does not look like the kind of page you asked for.",
+};
 
 const ENGINE_LABEL: Record<ScrapeEngine, string> = {
   http: "Direct fetch",
@@ -69,11 +89,15 @@ export function ScrapeProvenance({
   engine,
   escalated,
   escalationReason,
+  escalationNote,
+  contentWarning,
+  proxyBypassed,
   className,
 }: ScrapeProvenanceProps) {
   // Nothing known → say nothing. An older response must not grow a badge that
   // claims an engine the server never named.
-  if (!engine && escalated !== true) return null;
+  if (!engine && escalated !== true && !contentWarning && proxyBypassed !== true)
+    return null;
 
   const Icon = engine ? ENGINE_ICON[engine] : null;
 
@@ -90,7 +114,18 @@ export function ScrapeProvenance({
       ) : null}
       {escalated === true ? (
         <p className="text-xs text-muted-foreground">
-          {escalationSentence(escalationReason)}
+          {escalationNote?.trim() || escalationSentence(escalationReason)}
+        </p>
+      ) : null}
+      {contentWarning ? (
+        <p className="flex items-start gap-1 text-xs text-amber-600 dark:text-amber-500">
+          <ShieldAlert className="mt-0.5 h-3 w-3 flex-shrink-0" aria-hidden="true" />
+          {CONTENT_WARNING_SENTENCE[contentWarning]}
+        </p>
+      ) : null}
+      {proxyBypassed === true ? (
+        <p className="text-xs text-muted-foreground">
+          A configured proxy was skipped for this page.
         </p>
       ) : null}
     </div>

@@ -96,6 +96,25 @@ export function asScrapeEngine(value: unknown): ScrapeEngine | null {
     : null;
 }
 
+/**
+ * A row that succeeded but whose content is suspect — added 2026-09-17.
+ * Anything else, including absence, means "no warning" and must never be
+ * fabricated.
+ */
+export type ContentWarning = "thin_content" | "wrong_resource";
+
+export const CONTENT_WARNINGS: readonly ContentWarning[] = [
+  "thin_content",
+  "wrong_resource",
+];
+
+export function asContentWarning(value: unknown): ContentWarning | null {
+  return typeof value === "string" &&
+    (CONTENT_WARNINGS as readonly string[]).includes(value)
+    ? (value as ContentWarning)
+    : null;
+}
+
 export interface ScrapedResult {
   /** true = scraped successfully, false = scrape failed */
   success?: boolean;
@@ -121,6 +140,20 @@ export interface ScrapedResult {
   escalated?: boolean;
   /** The named reason we escalated — e.g. "cloudflare_block". */
   escalation_reason?: string | null;
+  /**
+   * The escalation reason already worded as a sentence a non-technical person
+   * reads — added by the backend 2026-09-17, alongside the fields below.
+   * Preferred over building a sentence from `escalation_reason` when present.
+   */
+  escalation_note?: string | null;
+  /** Plain-English reason this row failed — never a stack trace or code. */
+  failure_message?: string | null;
+  /** "thin_content" | "wrong_resource" | null — set only when the row succeeded but is suspect. */
+  content_warning?: ContentWarning | null;
+  /** Character count of the extracted content, when the backend computed it directly. */
+  content_chars?: number | null;
+  /** True when a configured proxy was skipped/bypassed for this row. */
+  proxy_bypassed?: boolean;
 
   // ── Text variants (richest first) ──
   /** Markdown with links and images */
