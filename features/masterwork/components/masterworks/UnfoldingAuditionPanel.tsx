@@ -49,6 +49,7 @@ import {
 } from "../../audition/unfoldingRuns";
 import { listMasterworksForRulebook } from "../../service";
 import type { Masterwork } from "../../types";
+import { RunStages } from "../RunStages";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
 
@@ -449,9 +450,12 @@ export function UnfoldingAuditionPanel({
       >
         {run.running ? (run.stage ?? "Working the cases…") : "Run the exam"}
       </GatedActionButton>
-      {run.running && run.stage ? (
-        <p className="text-xs text-muted-foreground">{run.stage}</p>
-      ) : null}
+      {/* THE WHOLE ACCOUNT, NOT JUST THE CURRENT LINE (cold walk 8,
+          2026-09-17). This lane showed `run.stage` — the latest step only —
+          so every earlier step, including the server's own explanation of why
+          a run found nothing, was overwritten by the next one and gone the
+          moment the run ended. `run.stages` is the full list and it stays. */}
+      <RunStages run={run} />
       {run.error ? (
         <p className="text-sm text-destructive">{run.error}</p>
       ) : null}

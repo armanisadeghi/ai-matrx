@@ -172,6 +172,8 @@ const HOURS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 import { createSittingStore, type SittingBase } from "../sitting/sitting";
 import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
+import { IngestOutcome, RunStages } from "../components/RunStages";
+import { describeIngest } from "../components/detail/IngestSourceDialog";
 
 /**
  * A HALF-TYPED ANSWER TO TODAY'S QUESTION IS REAL WORK. Cold walk 6
@@ -725,21 +727,29 @@ export function DailyDripDialog({
           </Button>
         </DialogFooter>
 
+        {/* 🚨 THIS LANE USED TO WRITE ITS OWN SUMMARY, and with nothing added
+            it read "0 new rules added. 0 quotes checked word-for-word against
+            what you actually said." — a clean zero congratulating itself: the
+            same defect `describeIngest` was fixed for on 2026-09-15 and the
+            same one cold walk 8 found on the Meeting Scavenger. There is ONE
+            honest summary on this platform and this lane now prints it. */}
         {run.result ? (
-          <p className="text-xs text-muted-foreground">
-            {run.result.added} new rule{run.result.added === 1 ? "" : "s"} added
-            {run.result.duplicates
-              ? `, ${run.result.duplicates} duplicate${run.result.duplicates === 1 ? "" : "s"} skipped`
-              : ""}
-            . {run.result.quotesVerified} quote
-            {run.result.quotesVerified === 1 ? "" : "s"} checked word-for-word against what
-            you actually said
-            {run.result.quotesUnverified
-              ? `, ${run.result.quotesUnverified} flagged for you to look at`
-              : ""}
-            .
-          </p>
-        ) : null}
+          <IngestOutcome
+            summary={describeIngest({
+              added: run.result.added,
+              duplicatesSkipped: run.result.duplicates,
+              quotesUnverified: run.result.quotesUnverified,
+              failedChunks: 0,
+              skippedWords: 0,
+              followupSeed: null,
+              alreadyDistilled: 0,
+            })}
+            added={run.result.added}
+            run={run}
+          />
+        ) : (
+          <RunStages run={run} waitingMessage="Turning your answers into rules…" />
+        )}
       </DialogContent>
     </Dialog>
   );

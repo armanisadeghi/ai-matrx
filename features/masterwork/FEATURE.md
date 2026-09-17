@@ -18,6 +18,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Rules an agent editing this directory must obey
 
+0. **A run that added nothing NEVER wears the success box, and `run.stages` is never dropped**
+   (cold walk 8, 2026-09-17). Every lane's outcome goes through `components/RunStages.tsx`:
+   `<IngestOutcome>` heads a zero with "Nothing was added to your Rulebook" in its own tone and
+   prints the sentence from `describeIngest` — the ONE honest summary, never a second one — and
+   `<RunStages>` keeps the server's whole account on screen (the `nothing_found` step, the filter
+   census, the already-distilled note) instead of the latest line only. Seven dialogs rendered no
+   stages at all and the Daily Drip hand-rolled "0 new rules added. 0 quotes checked…"; both are
+   closed. Guards: `__tests__/a-run-that-found-nothing-never-reads-as-success.test.tsx`,
+   `__tests__/zero-is-never-a-clean-success.test.ts`.
+0b. **An error path calls `sitting.keepNow()` BEFORE it reports the error.** `useDialogSitting`
+   debounces its write by 400ms, so work entered and submitted inside that window was never
+   written — a refusal that also costs the person their paste is two failures, not one. A lane
+   whose step is part of the work (the Meeting Scavenger's three tabs) also keeps that step in its
+   sitting, or the work comes back onto a step that is no longer on screen and reads as discarded.
+   Guard: `__tests__/a-refused-paste-is-still-on-screen.test.tsx`.
+
 1. **Human-first.** Anything machine-generated lands as `draft: true` rules or a `status='draft'`
    Rulebook. Never auto-activate.
 2. **`saveRules` is the ONE write path**, and it is a CAS on `version` that ALWAYS carries the

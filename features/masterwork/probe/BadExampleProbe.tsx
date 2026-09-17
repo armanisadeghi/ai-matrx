@@ -43,6 +43,7 @@ import { WorkingNotice } from "@/lib/progress/WorkingNotice";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import type { Rulebook } from "../types";
+import { RunStages } from "../components/RunStages";
 import {
   DECLARED_KNOB_DEFAULTS,
   PROBE_KNOB_FEATURE,
@@ -411,6 +412,12 @@ export function BadExampleProbe({
           never writes its own — but it now sits over a clock that moves and an
           honest expectation, which is everything this path actually knows. No
           percentage: nothing here knows a fraction. */}
+      {/* THE WHOLE ACCOUNT, NOT JUST THE CURRENT LINE (cold walk 8,
+          2026-09-17). This lane showed `run.stage` — the latest step only —
+          so every earlier step, including the server's own explanation of why
+          a run found nothing, was overwritten by the next one and gone the
+          moment the run ended. `run.stages` is the full list and it stays. */}
+      <RunStages run={run} />
       {running ? (
         <WorkingNotice
           doing={run.stage || run.waitMessage || "Working…"}

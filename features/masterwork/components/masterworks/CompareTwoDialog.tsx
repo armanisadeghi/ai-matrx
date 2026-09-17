@@ -341,6 +341,7 @@ export function CompareTwoDialog({
                 : "Compare, blind"}
             </GatedActionButton>
             <RunStages run={run} />
+            <RunStages run={run} />
             {run.error ? (
               <p className="text-sm text-destructive">{run.error}</p>
             ) : null}
