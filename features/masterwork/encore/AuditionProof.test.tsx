@@ -28,6 +28,8 @@ import { AuditionProof, auditionSentence } from "./AuditionProof";
 import {
   CANNOT_TELL_HEADLINE,
   CHECK_FAILED_HEADLINE,
+  ORGANIZATION_REQUIRED,
+  ORG_REQUIRED_HEADLINE,
   checkFailed,
   type BenchProofState,
   type BenchProofWire,
@@ -256,6 +258,15 @@ describe("wall W3 — the bench panel never mistakes a failure for a refusal", (
     expect(text).toContain("Select an organization before sending this request.");
     expect(text).toContain("not a permission problem");
     // The exact sentence the walker was shown must be impossible here.
+    expect(text).not.toContain(CANNOT_TELL_HEADLINE);
+    expect(text).not.toContain("Only people who can open");
+  });
+
+  it("(1b) an unselected organization is said as one, with the remedy", () => {
+    render(ORGANIZATION_REQUIRED);
+    const text = host.textContent ?? "";
+    expect(text).toContain(ORG_REQUIRED_HEADLINE);
+    expect(text).toContain("avatar menu");
     expect(text).not.toContain(CANNOT_TELL_HEADLINE);
     expect(text).not.toContain("Only people who can open");
   });

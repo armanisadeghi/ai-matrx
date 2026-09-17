@@ -301,6 +301,30 @@ export const UNAVAILABLE: BenchProofState = {
   running: null,
 };
 
+export const ORG_REQUIRED_HEADLINE = "Bench proof: no organization selected";
+
+/**
+ * 🚨 THE STATE THE WALL WAS ACTUALLY IN (production walk 4, wall W3).
+ * Every Matrx transport fails CLOSED with no organization selected — it throws
+ * before any networking, with "Select an organization before sending this
+ * request.", which is the production error row this wall left behind. That is
+ * not a permission answer and not a bench fact; it is an unfinished session,
+ * and the remedy is a picker, not a reload. The Encore page now WAITS for the
+ * organization rather than asking and mis-reading the refusal, and this is the
+ * sentence for the genuinely terminal case.
+ */
+export const ORGANIZATION_REQUIRED: BenchProofState = {
+  status: "unavailable",
+  headline: ORG_REQUIRED_HEADLINE,
+  reason:
+    "Every request is filed under one organization, and none is selected for " +
+    "this session. Pick one from the avatar menu and this will answer.",
+  canRunHere: false,
+  form: null,
+  howToRun: "",
+  running: null,
+};
+
 /**
  * 🚨 A FAILED READ IS NOT A DENIED ONE (production walk 4, wall W3).
  * This function used to be one line — every error became `UNAVAILABLE`, whose
