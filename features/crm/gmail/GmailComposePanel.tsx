@@ -28,7 +28,7 @@
  * point of sending from a record instead of from Gmail).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, Mail, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -61,9 +61,10 @@ import {
   type GmailRecipientOption,
 } from "./recipients";
 import {
-  GMAIL_AUDIT_PENDING_MESSAGE,
+  narrowGmailSendReceipt,
   recordGmailSendInteraction,
 } from "./service";
+import { preflightGmailRecipients } from "./preflight";
 import type { GmailDraftedBy } from "./types";
 
 export interface GmailComposePanelProps {
@@ -154,13 +155,38 @@ export function GmailComposePanel({
     preferredGoogleConnectionId("gmail-send"),
   );
   const [recording, setRecording] = useState(false);
+  const [seeded, setSeeded] = useState(Boolean(initialTo?.trim()));
+
+  /**
+   * 🚨 THE DRAFT BELONGS TO ONE RECORD. `gmailComposeWindow` is a singleton, so
+   * opening compose on Ada, navigating to Bo and opening it again reuses this
+   * component instance with a new `partyId`. Without this, Ada's half-written
+   * message would still be on screen while every write used Bo's id and Bo's
+   * organization (Bugbot MEDIUM #3, 2026-09-17). The window also mounts this
+   * panel under `key={partyId}`; this reset is the belt to that's braces, so
+   * the panel is correct wherever it is mounted.
+   */
+  const [ownerPartyId, setOwnerPartyId] = useState(partyId);
+  if (ownerPartyId !== partyId) {
+    setOwnerPartyId(partyId);
+    setStep("compose");
+    setTo(initialTo?.trim() ?? "");
+    setCc("");
+    setSubject(initialSubject ?? "");
+    setBody(initialBody ?? "");
+    setRecording(false);
+    setSeeded(Boolean(initialTo?.trim()));
+  }
 
   // No useMemo anywhere in this file — the React Compiler is on (CLAUDE.md).
   const options = gmailRecipientOptions(detail?.contactPoints ?? []);
+  // The resolver below runs long after render; a ref keeps it reading the
+  // CURRENT options rather than the ones captured when review opened.
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   // The record's own default address, once, and only when the caller did not
   // name one. Re-running this on every load would fight the person's typing.
-  const [seeded, setSeeded] = useState(Boolean(initialTo?.trim()));
   useEffect(() => {
     if (seeded || options.length === 0) return;
     const preferred = defaultGmailRecipient(options);
@@ -248,12 +274,10 @@ export function GmailComposePanel({
         setStep("compose");
         return;
       }
-      const receiptData = response.data;
-      const messageId =
-        receiptData && typeof receiptData === "object"
-          ? (receiptData as { message_id?: unknown }).message_id
-          : null;
-      if (typeof messageId !== "string") {
+      // 🚨 WHAT THE CARD SENT, never what this panel drafted. Every field on
+      // that card is editable right up to the click (Bugbot HIGH #1).
+      const receipt = narrowGmailSendReceipt(response.data, mailbox.id);
+      if (!receipt) {
         // The message went out but the card did not name it. Say so — the
         // record cannot carry an external id it was never given.
         toast.error(
@@ -262,41 +286,46 @@ export function GmailComposePanel({
         onClose();
         return;
       }
+      // And the contact point is the one for the address that ACTUALLY
+      // received it, resolved from the same receipt.
+      const sentTo = optionsRef.current.find(
+        (option) =>
+          option.address.toLocaleLowerCase() ===
+          receipt.to.trim().toLocaleLowerCase(),
+      );
       setRecording(true);
       void (async () => {
         const result = await recordGmailSendInteraction({
-          receipt: {
-            messageId,
-            connectionId: mailbox.id,
-            fromEmail: mailbox.account_email,
-            to: to.trim(),
-            cc: parseAddressList(cc),
-            subject,
-            body,
-          },
+          receipt,
           association: {
             partyId,
             organizationId,
             dealId: dealId ?? null,
             projectId: projectId ?? null,
-            contactPointId: matched?.contactPointId ?? null,
-            mediumId: matched?.mediumId ?? null,
+            contactPointId: sentTo?.contactPointId ?? null,
+            mediumId: sentTo?.mediumId ?? null,
           },
           approvedByUserId: viewerId ?? null,
           draftedBy: draftedBy ?? null,
         });
         setRecording(false);
+        // These sentences NAME A RECORD, so they are raised through
+        // `recordToast` with its identity: the toast is dismissed if the record
+        // is renamed, deleted, or simply left behind (lib/toast.ts, FIX-R17).
+        const ref = { type: "party", id: partyId, title: partyLabel };
         if (result.failure) {
           // The message HAS LEFT. Never a silent failure and never a retry the
           // person did not ask for — a second attempt could send it twice.
-          toast.error(
+          recordToast.error(
+            ref,
             `The message was sent, but it could not be recorded on ${partyLabel}'s timeline. Log it by hand so the history is true.`,
             { description: result.failure },
           );
-        } else if (result.auditTrailPending) {
-          toast.warning(GMAIL_AUDIT_PENDING_MESSAGE);
         } else {
-          toast.success(`Sent, and recorded on ${partyLabel}'s timeline.`);
+          recordToast.success(
+            ref,
+            `Sent, and recorded on ${partyLabel}'s timeline.`,
+          );
         }
         onSent?.(result.interactionId);
         onClose();
@@ -367,7 +396,15 @@ export function GmailComposePanel({
           the person who approved it.
         </p>
         {associations}
-        <GmailReviewCard ask={ask} />
+        <GmailReviewCard
+          ask={ask}
+          /* THE LAST GATE, on the card's own recipients, at Send time. The
+             compose step's check was about the address that was in ITS To
+             field; this one is about whoever is about to receive it. */
+          preflight={(draft) =>
+            preflightGmailRecipients(draft.to, draft.cc, optionsRef.current)
+          }
+        />
       </div>
     );
   }

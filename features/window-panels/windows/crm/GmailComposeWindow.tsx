@@ -80,7 +80,12 @@ export default function GmailComposeWindow({
         contentSource={{ type: "raw" }}
         entity={{ type: "party", id: partyId, title: partyLabel }}
       >
+        {/* Keyed on the record: this overlay is a singleton, so a second open
+            on a different Person reuses the same component instance. The key
+            throws away the first record's half-written draft instead of
+            showing it over the second record's ids. */}
         <GmailComposePanel
+          key={partyId}
           partyId={partyId}
           organizationId={organizationId}
           partyLabel={partyLabel}

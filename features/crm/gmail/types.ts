@@ -2,41 +2,13 @@
 //
 // The shapes the Gmail-from-a-record path speaks.
 //
-// 🚨 STAND-IN TYPES LIVE HERE AND NOWHERE ELSE, AND THEY ANNOUNCE THEMSELVES.
-// `migrations/crm_interaction_gmail_audit_trail.sql` adds six columns to
-// `crm.interaction` (drafted_by_agent_id, drafted_by_run_id, drafted_by_label,
-// approved_by, approved_at, approval_assist_id). That file is written but NOT
-// applied — the chair applies DB files — so `types/database.types.ts` does not
-// carry them yet, and a generated file is NEVER hand-edited.
-//
-// REMEDY, in order: the chair applies the migration, then `pnpm db-types`
-// regenerates `types/database.types.ts`, then `GmailAuditTrailPending` below is
-// DELETED and `InteractionInsert` alone carries these fields. Until then the
-// writer in `./service.ts` degrades LOUDLY: the interaction row is still
-// written with everything the schema does hold, and the caller is told in
-// words that the audit trail could not be stored and why.
-
-import type { InteractionInsert } from "@/features/crm/types";
-
-/**
- * The six audit columns, as the unapplied migration declares them.
- *
- * Named `*Pending` per the google-native register's ruling (2026-09-17):
- * generated types cannot be regenerated from the build container, so a lane
- * that needs a not-yet-generated contract declares its own stand-in and says so.
- */
-export interface GmailAuditTrailPending {
-  drafted_by_agent_id?: string | null;
-  drafted_by_run_id?: string | null;
-  drafted_by_label?: string | null;
-  approved_by?: string | null;
-  approved_at?: string | null;
-  approval_assist_id?: string | null;
-}
-
-/** An interaction insert including the columns the migration is adding. */
-export type InteractionInsertWithAuditPending = InteractionInsert &
-  GmailAuditTrailPending;
+// No stand-in types live here. An earlier draft declared a `*Pending` mirror of
+// the six audit columns `migrations/crm_interaction_gmail_audit_trail.sql`
+// adds, so the writer could name them on a typed insert. It could not: the
+// typed Supabase client refuses a column `types/database.types.ts` does not
+// carry, and a generated file is never hand-edited. The audit trail is stored
+// in the row's own `metadata` instead, in the shape that migration's backfill
+// reads - see `./service.ts` and its `sendMetadata`.
 
 /**
  * `channel = gmail` (PLAN §4.4) as this table actually spells it.
@@ -96,11 +68,6 @@ export interface GmailSendReceipt {
 /** What the writer did, in the words a surface can show. */
 export interface GmailInteractionWriteResult {
   interactionId: string | null;
-  /**
-   * True when the row was written WITHOUT the audit columns because the
-   * migration has not been applied. The caller must say so out loud.
-   */
-  auditTrailPending: boolean;
   /**
    * Set when the message went out but the record did not. The send is NOT
    * reversible, so this is never swallowed and never retried silently.

@@ -866,11 +866,23 @@ stand-in for the audit columns.
 - **The message has already left when the writer runs.** It never throws, never
   retries on its own, and never reports success it did not achieve — a caller
   that thinks a send was not recorded will send it again.
-- **The audit columns are pending.** `migrations/crm_interaction_gmail_audit_trail.sql`
-  adds `drafted_by_agent_id`, `drafted_by_run_id`, `drafted_by_label`,
-  `approved_by`, `approved_at`, `approval_assist_id` to `crm.interaction`. Until
-  it is applied and `pnpm db-types` has run, the writer records the send WITHOUT
-  them and the surface shows `GMAIL_AUDIT_PENDING_MESSAGE`, which names the file.
+- **The sent record is the CARD's receipt, never the draft.** Every field on the
+  review card is editable up to the click, so both writers build the row from
+  `narrowGmailSendReceipt(response.data)` — including the body, which the card
+  now returns for exactly this reason. A record built from the pre-review draft
+  attests to a message nobody received.
+- **The gate runs at Send time, on the card's own recipients.** The compose
+  step's check is about the address in ITS To field; the card's `preflight` prop
+  is the last gate and covers To *and* Cc, failing CLOSED when the checks cannot
+  be read (`preflight.ts`). An address the record does not hold has nothing to
+  look up, and the surface says so in words.
+- **The audit trail is stored TODAY, in `metadata.audit_trail`.**
+  `migrations/crm_interaction_gmail_audit_trail.sql` promotes those six keys to
+  real columns and BACKFILLS every row written before it was applied, so nothing
+  is lost in between. The typed Supabase client cannot name a column
+  `types/database.types.ts` does not carry, and a generated file is never
+  hand-edited — that is why the jsonb step exists, not a preference for jsonb.
+  After it is applied: `pnpm db-types`, then move the six keys onto the insert.
 - **No `project_id`.** A CRM table may not depend on a project FK (db-rules
   §6d); a message composed from a project associates through
   `platform.associations`. The panel carries the project id and the metadata

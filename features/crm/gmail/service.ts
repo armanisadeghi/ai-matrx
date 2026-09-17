@@ -10,7 +10,7 @@
 // same way. A second writer would mean two shapes of "sent email" on one
 // timeline and nobody able to say which is true.
 //
-// Direct browser → Supabase, per CLAUDE.md § Data flow: this is a plain insert
+// Direct browser -> Supabase, per CLAUDE.md § Data flow: this is a plain insert
 // the browser is entitled to make, not compute. The SEND is compute and goes to
 // Python; the RECORD does not.
 //
@@ -21,6 +21,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import type { InteractionInsert } from "@/features/crm/types";
 import {
   GMAIL_INTERACTION_CHANNEL,
   GMAIL_INTERACTION_PROVIDER,
@@ -28,35 +29,51 @@ import {
   type GmailInteractionWriteResult,
   type GmailSendAssociation,
   type GmailSendReceipt,
-  type InteractionInsertWithAuditPending,
 } from "./types";
 
-/** The migration that must be applied before the audit columns exist. */
+/**
+ * 🚨 THE RECEIPT IS THE CARD'S, NEVER THE DRAFT'S.
+ *
+ * Every field on the review card is editable and the card posts the bytes on
+ * its own screen, so what left can differ from what the composer — or the agent
+ * — wrote. A sent record built from the pre-review draft shows text nobody
+ * received, and the audit trail then attests to the wrong message. This narrows
+ * what the CARD reported; it is the only lawful source for a sent record.
+ * (Bugbot HIGH #1, 2026-09-17.)
+ *
+ * Returns null when the card did not name a message id: the message may still
+ * have gone, so the caller SAYS SO rather than writing a row with no external
+ * id or, worse, writing nothing quietly.
+ */
+export function narrowGmailSendReceipt(
+  responseData: unknown,
+  connectionId: string,
+): GmailSendReceipt | null {
+  if (
+    typeof responseData !== "object" ||
+    responseData === null ||
+    Array.isArray(responseData)
+  ) {
+    return null;
+  }
+  const data = responseData as Record<string, unknown>;
+  if (typeof data.message_id !== "string") return null;
+  return {
+    messageId: data.message_id,
+    connectionId,
+    fromEmail: typeof data.from_email === "string" ? data.from_email : null,
+    to: typeof data.to === "string" ? data.to : "",
+    cc: Array.isArray(data.cc)
+      ? data.cc.filter((entry): entry is string => typeof entry === "string")
+      : [],
+    subject: typeof data.subject === "string" ? data.subject : "",
+    body: typeof data.body === "string" ? data.body : "",
+  };
+}
+
+/** The migration that promotes the audit trail from jsonb into its own columns. */
 export const GMAIL_AUDIT_MIGRATION =
   "migrations/crm_interaction_gmail_audit_trail.sql";
-
-const AUDIT_COLUMNS = [
-  "drafted_by_agent_id",
-  "drafted_by_run_id",
-  "drafted_by_label",
-  "approved_by",
-  "approved_at",
-  "approval_assist_id",
-] as const;
-
-/**
- * PostgREST answers an insert naming a column the table does not have with
- * PGRST204 and the column's name. That is the ONLY failure we retry, and we
- * retry it exactly once, without the audit columns, so the send is still
- * recorded — then we tell the caller the trail is missing and why.
- */
-function isMissingAuditColumn(error: {
-  code?: string;
-  message?: string;
-}): boolean {
-  const message = error.message ?? "";
-  return AUDIT_COLUMNS.some((column) => message.includes(column));
-}
 
 function describe(error: { message?: string; code?: string }): string {
   const message = error.message?.trim();
@@ -66,26 +83,39 @@ function describe(error: { message?: string; code?: string }): string {
   return error.code ? `${message} (${error.code})` : message;
 }
 
-/**
- * The subject line a timeline row shows, and the body it keeps.
- *
- * The body is stored verbatim — what the person approved is what the record
- * says was sent. Truncating it here would make the record disagree with the
- * mailbox, which is the one thing a sent record may never do.
- */
+/** The subject a timeline row shows. The body is always stored verbatim. */
 function interactionSubject(receipt: GmailSendReceipt): string {
   return receipt.subject.trim() || "(no subject)";
 }
 
 /**
- * Everything about the send that is not a column, marked with its `__kind` and
- * stored on `metadata` (THE KIND-MARKER LAW — the marker travels with the data).
+ * Everything about the send that is not a column, marked with its `__kind`
+ * (THE KIND-MARKER LAW — the marker travels with the data).
  */
 export const GMAIL_SEND_METADATA_KIND = "crm_gmail_send_record";
 
+/**
+ * WHY THE AUDIT TRAIL RIDES `metadata` TODAY.
+ *
+ * `migrations/crm_interaction_gmail_audit_trail.sql` gives drafted-by and
+ * approved-by their own columns, and it is written but NOT applied — the chair
+ * applies DB files. The typed Supabase client refuses an insert naming a column
+ * `types/database.types.ts` does not carry, a generated file is never
+ * hand-edited, and this container cannot regenerate it; so those columns cannot
+ * be written from here until the migration lands.
+ *
+ * The answer is NOT to drop the trail and warn about it. NOTHING IS LOST: the
+ * facts are stored now, in the row's own jsonb, in exactly the shape the
+ * migration's backfill reads — column names, not camelCase, so the promotion is
+ * a straight copy that cannot mis-map a field. When the migration is applied it
+ * promotes every row written in the meantime; nobody has to go and find them.
+ */
 function sendMetadata(
   receipt: GmailSendReceipt,
   association: GmailSendAssociation,
+  approvedByUserId: string | null,
+  approvedAt: string,
+  draftedBy: GmailDraftedBy | null | undefined,
 ): Json {
   return {
     __kind: GMAIL_SEND_METADATA_KIND,
@@ -95,10 +125,20 @@ function sendMetadata(
       connection_id: receipt.connectionId,
       account_email: receipt.fromEmail,
     },
-    // Carried, not stored as a column: a CRM table may not depend on a project
-    // FK (db-rules §6d). The association proper is written by the caller
-    // through `platform.associations`; this is the breadcrumb that says which
-    // surface the message was composed from.
+    audit_trail: {
+      drafted_by_agent_id: draftedBy?.agentId ?? null,
+      drafted_by_run_id: draftedBy?.runId ?? null,
+      drafted_by_label: draftedBy?.label ?? null,
+      approval_assist_id: draftedBy?.assistId ?? null,
+      // The constraint the migration adds is "a person AND a time, or
+      // neither", so they are written together here too.
+      approved_by: approvedByUserId,
+      approved_at: approvedByUserId ? approvedAt : null,
+    },
+    // Carried, not a column: a CRM table may not depend on a project FK
+    // (db-rules §6d). The association proper is written through
+    // `platform.associations`; this is the breadcrumb naming the surface the
+    // message was composed from.
     composed_from_project_id: association.projectId ?? null,
   } satisfies Json;
 }
@@ -113,24 +153,16 @@ export interface RecordGmailSendInput {
 }
 
 /**
- * Write the sent message onto the record's timeline.
- *
- * Never throws: the caller is past the point of no return and needs a result it
- * can SHOW, not an exception that unwinds a card whose message already left.
+ * Build the row. Exported so a test can assert what would be written without a
+ * database: the shape of a sent record is the thing that must not drift.
  */
-export async function recordGmailSendInteraction(
+export function gmailInteractionRow(
   input: RecordGmailSendInput,
-): Promise<GmailInteractionWriteResult> {
+  interactionId: string,
+  occurredAt: string,
+): InteractionInsert {
   const { receipt, association, draftedBy } = input;
-  const occurredAt = new Date().toISOString();
-
-  // Generated here, not returned by the insert: an INSERT…RETURNING on this
-  // table 42501s under the id-list std_select policy (the reason
-  // `crm/service.ts::logInteraction` has no `.select()` either). Minting the id
-  // client-side is how the caller gets a door to the row it just wrote.
-  const interactionId = crypto.randomUUID();
-
-  const base: InteractionInsertWithAuditPending = {
+  return {
     id: interactionId,
     party_id: association.partyId,
     // 🚨 Explicit, always. No resolver and no trigger picks an organization
@@ -151,61 +183,44 @@ export async function recordGmailSendInteraction(
     // connection id, not the address: an address can be aliased or renamed and
     // the record would then name a mailbox that no longer exists.
     provider_account_id: receipt.connectionId,
-    metadata: sendMetadata(receipt, association),
+    metadata: sendMetadata(
+      receipt,
+      association,
+      input.approvedByUserId,
+      occurredAt,
+      draftedBy,
+    ),
   };
-
-  const withAudit: InteractionInsertWithAuditPending = {
-    ...base,
-    drafted_by_agent_id: draftedBy?.agentId ?? null,
-    drafted_by_run_id: draftedBy?.runId ?? null,
-    drafted_by_label: draftedBy?.label ?? null,
-    approved_by: input.approvedByUserId,
-    // The CHECK is "a person AND a time, or neither".
-    approved_at: input.approvedByUserId ? occurredAt : null,
-    approval_assist_id: draftedBy?.assistId ?? null,
-  };
-
-  // No `.select()` anywhere below — see the id comment above.
-  const first = await supabase
-    .schema("crm")
-    .from("interaction")
-    .insert(withAudit);
-
-  if (!first.error) {
-    return { interactionId, auditTrailPending: false, failure: null };
-  }
-
-  if (!isMissingAuditColumn(first.error)) {
-    return {
-      interactionId: null,
-      auditTrailPending: false,
-      failure: describe(first.error),
-    };
-  }
-
-  // The columns are not there yet. Record the send anyway — a timeline missing
-  // the message entirely is far worse than one missing who approved it — and
-  // hand the caller the sentence it must show.
-  const retry = await supabase
-    .schema("crm")
-    .from("interaction")
-    .insert(base);
-
-  if (retry.error) {
-    return {
-      interactionId: null,
-      auditTrailPending: true,
-      failure: describe(retry.error),
-    };
-  }
-
-  return { interactionId, auditTrailPending: true, failure: null };
 }
 
 /**
- * The sentence a surface shows when the audit columns are not there yet.
- * One wording, every caller — a stand-in that announces itself (LAW 4).
+ * Write the sent message onto the record's timeline.
+ *
+ * Never throws: the caller is past the point of no return and needs a result it
+ * can SHOW, not an exception that unwinds a card whose message already left.
  */
-export const GMAIL_AUDIT_PENDING_MESSAGE =
-  `The message was sent and recorded on the timeline, but who drafted and approved it could not be stored: ` +
-  `${GMAIL_AUDIT_MIGRATION} has not been applied yet.`;
+export async function recordGmailSendInteraction(
+  input: RecordGmailSendInput,
+): Promise<GmailInteractionWriteResult> {
+  // Minted here, not returned by the insert: an INSERT…RETURNING on this table
+  // 42501s under the id-list std_select policy (the reason
+  // `crm/service.ts::logInteraction` has no `.select()` either). Minting it
+  // client-side is how the caller gets a door to the row it just wrote.
+  const interactionId = crypto.randomUUID();
+  const row = gmailInteractionRow(
+    input,
+    interactionId,
+    new Date().toISOString(),
+  );
+
+  // No `.select()` — see above.
+  const { error } = await supabase
+    .schema("crm")
+    .from("interaction")
+    .insert(row);
+
+  if (error) {
+    return { interactionId: null, failure: describe(error) };
+  }
+  return { interactionId, failure: null };
+}

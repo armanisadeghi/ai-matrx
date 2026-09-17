@@ -43,6 +43,29 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
+  /**
+   * 🚨 THE LAST GATE, RUN AGAINST WHAT IS ON THIS SCREEN.
+   *
+   * Every field here is editable and this card is what posts Send, so a caller
+   * that checked its own draft checked a message that may no longer exist: the
+   * recipient can be changed after the check passed. A caller with a gate
+   * (the CRM's unsubscribe / blocklist / sending-standing authority) passes it
+   * here, and it runs on the CURRENT to and cc immediately before the post.
+   *
+   * Return null to send; return a sentence to refuse — it is shown in place of
+   * a send, and nothing leaves. Throwing refuses too, with the thrown message:
+   * a gate that cannot be read is not a gate that said yes.
+   *
+   * Absent means there is no gate for this send (an agent asking to email an
+   * address nobody in the CRM holds), not that one was skipped.
+   */
+  preflight?: (draft: {
+    to: string;
+    cc: string[];
+    subject: string;
+    body: string;
+    connectionId: string;
+  }) => Promise<string | null>;
 }
 
 function parseAddressList(raw: string): string[] {
@@ -52,7 +75,7 @@ function parseAddressList(raw: string): string[] {
     .filter(Boolean);
 }
 
-export function GmailReviewCard({ ask }: GmailReviewCardProps) {
+export function GmailReviewCard({ ask, preflight }: GmailReviewCardProps) {
   const dispatch = useAppDispatch();
   const draft = ask.email;
   const inventory = useGoogleConnectionInventory();
@@ -111,6 +134,21 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
     setError(null);
     const ccList = parseAddressList(cc);
     try {
+      // THE GATE, on what is on screen right now, before anything is posted.
+      if (preflight) {
+        const refusal = await preflight({
+          to: to.trim(),
+          cc: ccList,
+          subject,
+          body,
+          connectionId: selectedMailbox.id,
+        });
+        if (refusal) {
+          setError(refusal);
+          setSending(false);
+          return;
+        }
+      }
       // The exact bytes on screen — not the agent's arguments.
       const messageId = await sendReviewedGmail({
         connectionId: selectedMailbox.id,
@@ -127,6 +165,12 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
           to: to.trim(),
           cc: ccList,
           subject,
+          // 🚨 THE BODY IS PART OF THE RECEIPT. Every field here is editable,
+          // so the caller's original draft is NOT what left — and a caller
+          // that writes a sent record (the CRM timeline) would otherwise
+          // store text nobody ever received. Added 2026-09-17 with
+          // `features/crm/gmail/`.
+          body,
           edited,
           from_email: selectedMailbox.account_email,
         },

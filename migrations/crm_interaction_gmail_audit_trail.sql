@@ -33,6 +33,16 @@
 --                           an address can be aliased or renamed).
 --   associated with       → `party_id` (required), `deal_id`, `contact_point_id`.
 --
+-- 🚨 THIS FILE PROMOTES; IT DOES NOT INTRODUCE. Because it is not applied yet
+-- and the typed Supabase client cannot name a column `types/database.types.ts`
+-- does not carry, `features/crm/gmail/service.ts` already stores the audit
+-- trail TODAY, in the row's own `metadata` under
+-- `__kind = 'crm_gmail_send_record'`, key `audit_trail`, with these exact
+-- column names. The backfill at the bottom copies every such row into the real
+-- columns, so applying this loses nothing and nobody has to hunt for the sends
+-- that happened in between. After it is applied: `pnpm db-types`, then the
+-- writer moves those six keys from `metadata` onto the insert.
+--
 -- What has NO home is the two-actor provenance, and it is not Gmail-specific:
 -- any interaction an agent drafts and a person approves — an SMS, a call
 -- script, a reviewed reply — needs the same five facts. So they are columns on
@@ -61,6 +71,31 @@ ALTER TABLE crm.interaction
   ADD COLUMN IF NOT EXISTS approved_by uuid,
   ADD COLUMN IF NOT EXISTS approved_at timestamptz,
   ADD COLUMN IF NOT EXISTS approval_assist_id uuid;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- THE BACKFILL — every send recorded before this file was applied.
+-- Runs BEFORE the constraints, so they are checked against filled rows.
+-- Only rows carrying the writer's own marker are touched, and only where the
+-- columns are still empty: re-applying this file changes nothing.
+-- ─────────────────────────────────────────────────────────────────────────
+UPDATE crm.interaction i
+SET
+  drafted_by_agent_id =
+    NULLIF(i.metadata #>> '{audit_trail,drafted_by_agent_id}', '')::uuid,
+  drafted_by_run_id =
+    NULLIF(i.metadata #>> '{audit_trail,drafted_by_run_id}', '')::uuid,
+  drafted_by_label =
+    NULLIF(i.metadata #>> '{audit_trail,drafted_by_label}', ''),
+  approved_by =
+    NULLIF(i.metadata #>> '{audit_trail,approved_by}', '')::uuid,
+  approved_at =
+    NULLIF(i.metadata #>> '{audit_trail,approved_at}', '')::timestamptz,
+  approval_assist_id =
+    NULLIF(i.metadata #>> '{audit_trail,approval_assist_id}', '')::uuid
+WHERE i.metadata ->> '__kind' = 'crm_gmail_send_record'
+  AND i.metadata ? 'audit_trail'
+  AND i.approved_by IS NULL
+  AND i.drafted_by_agent_id IS NULL;
 
 -- The approver is a person in this database, exactly like `performed_by`.
 ALTER TABLE crm.interaction

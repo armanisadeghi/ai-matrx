@@ -33,7 +33,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { checkSendEligibility } from "@/features/crm/compliance/service";
 import {
-  GMAIL_AUDIT_PENDING_MESSAGE,
+  narrowGmailSendReceipt,
   recordGmailSendInteraction,
 } from "@/features/crm/gmail/service";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
@@ -176,33 +176,37 @@ async function recordProposalOnTimeline(
     );
     return;
   }
-  const messageId =
-    responseData && typeof responseData === "object"
-      ? (responseData as { message_id?: unknown }).message_id
-      : null;
-  if (typeof messageId !== "string") {
+  // 🚨 WHAT THE CARD SENT, never the proposal's draft. Every field on that card
+  // is editable up to the click, so a record built from the payload can attest
+  // to a message nobody received (Bugbot HIGH #1, 2026-09-17).
+  const receipt = narrowGmailSendReceipt(responseData, payload.connectionId);
+  if (!receipt) {
     toast.error(
       "The message was sent but Gmail's message id did not come back, so it could not be recorded on the timeline.",
     );
     return;
   }
 
+  // The proposal's contact point describes the address the proposal named. If
+  // the approver changed it, that association is about somebody else — it is
+  // dropped rather than attached to the wrong recipient, and said out loud.
+  const sameRecipient =
+    receipt.to.trim().toLocaleLowerCase() ===
+    payload.to.trim().toLocaleLowerCase();
+  if (!sameRecipient) {
+    toast.warning(
+      "You changed the recipient before sending, so the message is recorded without a contact point and the unsubscribe and blocklist checks did not cover the new address.",
+    );
+  }
+
   const result = await recordGmailSendInteraction({
-    receipt: {
-      messageId,
-      connectionId: payload.connectionId,
-      fromEmail: payload.fromEmail,
-      to: payload.to,
-      cc: payload.cc,
-      subject: payload.subject,
-      body: payload.body,
-    },
+    receipt,
     association: {
       partyId: payload.partyId,
       organizationId: payload.organizationId,
       dealId: payload.dealId ?? null,
-      contactPointId: payload.contactPointId ?? null,
-      mediumId: payload.recipientMediumId ?? null,
+      contactPointId: sameRecipient ? (payload.contactPointId ?? null) : null,
+      mediumId: sameRecipient ? (payload.recipientMediumId ?? null) : null,
     },
     approvedByUserId: approverId,
     draftedBy: {
@@ -219,8 +223,6 @@ async function recordProposalOnTimeline(
       "The message was sent, but it could not be recorded on the record's timeline. Log it by hand so the history is true.",
       { description: result.failure },
     );
-  } else if (result.auditTrailPending) {
-    toast.warning(GMAIL_AUDIT_PENDING_MESSAGE);
   }
 }
 
@@ -319,7 +321,37 @@ function GmailApprovalBody({
     },
   };
 
-  return <GmailReviewCard ask={ask} />;
+  return (
+    <GmailReviewCard
+      ask={ask}
+      /* THE LAST GATE, at Send time, on the card's own recipient. The queue
+         checked the address the PROPOSAL named; the approver can change it
+         before pressing Send, and a suppressed address must not slip in that
+         way. Same medium -> re-check and fail closed; a different address has
+         no contact point to look up and is reported on the record instead. */
+      preflight={async (draft) => {
+        const unchanged =
+          draft.to.trim().toLocaleLowerCase() ===
+          payload.to.trim().toLocaleLowerCase();
+        if (!unchanged || !payload.recipientMediumId) return null;
+        try {
+          const verdict = await checkSendEligibility({
+            mediumId: payload.recipientMediumId,
+            listId: payload.listId ?? null,
+            identityId: payload.identityId ?? null,
+          });
+          if (verdict.allowed) return null;
+          return verdict.blocks
+            .map((block) => `${block.message} ${block.fix}`.trim())
+            .join(" ");
+        } catch (error) {
+          return `The outbound checks could not be read. ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+        }
+      }}
+    />
+  );
 }
 
 /** The spine's verdict, rendered as its own sentences and fixes. */
