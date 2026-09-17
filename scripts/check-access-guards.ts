@@ -268,7 +268,6 @@ function detectLowestTierDefault(allow: Allowlist) {
 // update/delete query in the same function body as an active-org selector read.
 
 const ACTIVE_ORG_SELECTORS = [
-  "selectEffectiveOrganizationId",
   "selectActiveOrganizationId",
   "selectOrganizationId",
   "selectHasExplicitOrganization",

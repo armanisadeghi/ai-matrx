@@ -56,7 +56,7 @@
     "check:session-first-reads:self-test": "tsx scripts/check-session-first-reads.ts --self-test",
     "check:org-refusal-honesty": "tsx scripts/check-org-refusal-honesty.ts",
     "check:org-refusal-honesty:self-test": "tsx scripts/check-org-refusal-honesty.ts --self-test",
-    "check:organization-context": "tsx scripts/check-org-header-lanes.ts && tsx scripts/check-org-refusal-honesty.ts && node scripts/check-note-content-source-constructors.mjs && jest organization-context features/marketing/data/organization-scope.test.ts features/agent-shortcuts/resolveShortcutWriteScope.test.ts --runInBand --no-coverage",
+    "check:organization-context": "tsx scripts/check-org-fallback-shapes.ts && tsx scripts/check-org-header-lanes.ts && tsx scripts/check-org-refusal-honesty.ts && node scripts/check-note-content-source-constructors.mjs && jest organization-context features/marketing/data/organization-scope.test.ts features/agent-shortcuts/resolveShortcutWriteScope.test.ts --runInBand --no-coverage",
     "clean": "rimraf .next node_modules/.cache",
     "clean:turbo": "rimraf .next/dev/cache/turbopack",
     "clean:deep": "rimraf .next .turbo node_modules/.cache tsconfig.tsbuildinfo",

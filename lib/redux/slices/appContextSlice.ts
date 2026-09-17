@@ -361,17 +361,6 @@ export const selectPersonalOrganizationId = (
 ): string | null => state.appContext.personal_organization_id;
 
 /**
- * Legacy effective-org selector for direct data surfaces that have not yet
- * migrated to explicit organization input. Backend transports and new writes
- * must use `selectOrganizationId` or a durable entity's organization and fail
- * closed when neither exists. Every remaining consumer is migration debt.
- */
-export const selectEffectiveOrganizationId = (
-  state: StateWithAppContext,
-): string | null =>
-  state.appContext.organization_id ?? state.appContext.personal_organization_id;
-
-/**
  * True when the user has EXPLICITLY chosen an active org. False means compute
  * requests are blocked unless the caller supplies a durable entity org; the UI
  * surfaces this as a reminder so the user can pick one.
