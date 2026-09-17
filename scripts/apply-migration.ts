@@ -709,6 +709,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   let guard: { feature: string; key: string } | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
   let chairStep: { why: string; reasons: string[] } | null = null;
+  let customDataInserts: string[] = [];
   let chairStepConfirmed: string | null = null;
   let headerNamesProduction = false;
   try {
@@ -718,7 +719,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT, branchRefPath);
-    ({ guard, revokeExemption, chairStep } = assertHeaderAgreesWithFlag({
+    ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
       basedOnNames: basedOnFunctionNames(sql),
       filename,
       flagTarget: target,
@@ -743,6 +744,21 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     );
     for (const st of revokeExemption.statements) {
       console.log(`       ${C.dim}${st.text}${C.reset}`);
+    }
+  }
+
+  // The same rule for the custom-data INSERT: a shape that puts ROWS on production is
+  // announced with the statements it admitted, or it is not bounded.
+  if (customDataInserts.length) {
+    console.log(
+      `${TAG.ok}custom-data insert ${C.bold}schema custom${C.reset} ` +
+        `${C.dim}— ${customDataInserts.length} row-writing statement(s) admitted under ` +
+        `-- guard: ${guard ? `${guard.feature}/${guard.key}` : "(none)"}; schema custom is revoked ` +
+        `from every client role and absent from pgrst.db_schemas, and the file's inverse removes ` +
+        `them${C.reset}`,
+    );
+    for (const st of customDataInserts) {
+      console.log(`       ${C.dim}${st.slice(0, 200)}${st.length > 200 ? " …" : ""}${C.reset}`);
     }
   }
 
@@ -1784,6 +1800,7 @@ function judgeOnly(paths: readonly string[]): number {
           chair_step: Boolean(verdict.chairStep),
           excused: verdict.chairStep ? verdict.chairStep.reasons.length : 0,
           revoke_exemption: verdict.revokeExemption ? verdict.revokeExemption.schema : null,
+          custom_inserts: verdict.customDataInserts.length,
         };
       } catch (err) {
         if (!(err instanceof TargetRefusal)) throw err;
