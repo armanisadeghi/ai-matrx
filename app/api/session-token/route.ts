@@ -15,8 +15,21 @@
 // (https://www.aimatrx.com/api/session-token). The apex/other hosts won't send
 // the host-scoped cookie.
 
+// 🚨 A NAVIGATION NEVER GETS A TOKEN (2026-09-17). This route used to answer a
+// top-level browser navigation exactly as it answers the bridge's fetch(), so
+// opening the URL in a signed-in browser RENDERED a live admin JWT as page
+// text — and it landed in an agent transcript that way. The `Sec-Fetch-*`
+// guard below is the whole fix; the reasoning, the alternatives rejected, and
+// the reason non-browser callers are still served live in
+// `lib/api/credential-door.ts`, and the guard is `route.test.ts`.
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import {
+  BRIDGE_HEADER,
+  documentRequestRefusal,
+  isDocumentRequest,
+} from "@/lib/api/credential-door";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +73,7 @@ function corsHeaders(origin: string | null): Headers {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Credentials", "true");
     headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    headers.set("Access-Control-Allow-Headers", "Content-Type");
+    headers.set("Access-Control-Allow-Headers", `Content-Type, ${BRIDGE_HEADER}`);
     headers.set("Access-Control-Max-Age", "600");
   }
   return headers;
@@ -76,6 +89,16 @@ export async function OPTIONS(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
+  // A credential is never painted onto a page. This comes FIRST — before the
+  // session is even looked at — so a navigation cannot learn anything from the
+  // shape of the answer either.
+  headers.set("Cache-Control", "no-store");
+  if (isDocumentRequest(req.headers)) {
+    return NextResponse.json(
+      documentRequestRefusal("/api/session-token"),
+      { status: 400, headers },
+    );
+  }
 
   // Reject disallowed origins outright (no token leakage to unknown callers).
   if (origin && !headers.has("Access-Control-Allow-Origin")) {
@@ -114,13 +137,7 @@ export async function GET(req: NextRequest) {
         expires_at: session.expires_at ?? null,
         user_id: session.user?.id ?? null,
       },
-      {
-        status: 200,
-        headers: (() => {
-          headers.set("Cache-Control", "no-store");
-          return headers;
-        })(),
-      },
+      { status: 200, headers },
     );
   } catch (err) {
     console.error("[session-token] failed to resolve session", err);
