@@ -49,6 +49,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import { getIdentity } from "@/lib/sync/identity";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
+import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
@@ -519,22 +520,46 @@ export const appContextPolicy = definePolicy<AppContextState>({
   staleAfter: 5 * 60_000, // reconcile against default-pref / membership after 5 min idle
   remote: {
     fetch: async ({ identity, signal }) => {
-      if (identity.type !== "auth") return null; // guests have no server org
+      // 🚨 EVERY EXIT ANSWERS THE QUESTION. Three of the four ways out of this
+      // function used to `return null`, and a null return dispatches nothing —
+      // so `orgBootstrapResolved` stayed false and ~20 surfaces that render
+      // only once `bootstrapResolved && !organizationId` is decidable sat on a
+      // permanent skeleton with no error and no picker (2026-09-17). "Nobody
+      // looked" and "nobody has an organization" are different facts, but a
+      // screen that waits forever states NEITHER.
+      const answered = <T>(value: T): T => {
+        markOrgBootstrapResolved();
+        return value;
+      };
+      if (identity.type !== "auth") {
+        // Guests have no server org, and never will — that IS the answer.
+        return answered({
+          orgBootstrapResolved: true,
+        } satisfies Partial<AppContextState>);
+      }
       // Cold reconciliation is useful but not render-critical. Let the page
       // load and paint before spending network/CPU on memberships and the
       // default-org preference. Stale/manual refreshes pass through instantly
       // once the session's one-time idle gate has completed.
       const { whenPageIdle } = await import("@ai-matrx/kit/idle-scheduler");
-      if (!(await whenPageIdle(signal))) return null;
+      if (!(await whenPageIdle(signal))) {
+        return answered({
+          orgBootstrapResolved: true,
+        } satisfies Partial<AppContextState>);
+      }
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"
       );
       const resolved = await resolveActiveOrgContext(identity.userId);
-      if (signal.aborted || !resolved) return null;
-      return {
+      if (signal.aborted || !resolved) {
+        return answered({
+          orgBootstrapResolved: true,
+        } satisfies Partial<AppContextState>);
+      }
+      return answered({
         ...resolved,
         orgBootstrapResolved: true,
-      } satisfies Partial<AppContextState>;
+      } satisfies Partial<AppContextState>);
     },
     // A cached appContext record with NO org in it is not an answer — it is
     // the absence of one, and `ensureOrgId` screams (and pays a personal-org

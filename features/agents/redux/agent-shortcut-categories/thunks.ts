@@ -146,9 +146,11 @@ export interface DuplicateCategoryInput {
 
 /**
  * Duplicates a category row. Ownership (`user_id`/`organization_id`/
- * `project_id`/`task_id`) on the copy exactly matches the source row, so
- * admins duplicating global categories get global copies and users stay in
- * their own scope.
+ * `project_id`/`task_id`) on the copy matches the source row, EXCEPT that a
+ * platform-global (system-org) source duplicated by a non-super-admin lands in
+ * the caller's admitted organization as their own row — minting a second
+ * global row is admin-only, the same rule `applyScopeToInsertPayload` enforces
+ * on create. Admins duplicating global categories still get global copies.
  */
 export const duplicateCategory = createAsyncThunk<
   AgentShortcutCategoryDef,
@@ -170,7 +172,13 @@ export const duplicateCategory = createAsyncThunk<
     {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      // The route ADMITS the organization from this header. A non-admin
+      // duplicating a platform-global category gets the copy in the
+      // organization they are working in, so the header is required, not
+      // decorative (app/api/agent-shortcut-categories/[id]/duplicate/route.ts).
+      headers: applyOrganizationContextHeader({
+        "Content-Type": "application/json",
+      }),
       body: JSON.stringify(body),
     },
   );

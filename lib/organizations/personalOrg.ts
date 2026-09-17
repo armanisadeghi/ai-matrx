@@ -49,6 +49,12 @@ import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 // Cycle-free leaf (same constraint as activeOrg.ts) — never `@/lib/redux/store`.
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
+// The ONE "has the organization question been answered yet?" promise, settled
+// by the boot path (activeOrgBootstrap + appContextPolicy.remote.fetch).
+import {
+  isOrgBootstrapResolved,
+  whenOrgBootstrapResolved,
+} from "@/lib/organizations/orgBootstrapGate";
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -108,10 +114,13 @@ export async function resolvePersonalOrgId(): Promise<string> {
  *   2. the organization the user SELECTED (`getActiveOrgId`, i.e. Redux
  *      `appContext.organization_id`), after joining the store's bootstrap
  *      hydration so a write racing boot is not mistaken for a missing one;
- *   3. otherwise THROW. There is no third rung: a personal-organization
- *      backstop files the person's work in a workspace they never chose, and
- *      does it silently. Boot explicitly SELECTS the personal workspace when
- *      nothing else applies, so if we get here nothing is selected at all.
+ *   3. on a COLD boot, where neither of those can have an answer yet, wait for
+ *      the boot path's own remote resolution (`orgBootstrapGate`) and read the
+ *      selection again — refusing before anyone has looked is a false refusal;
+ *   4. otherwise THROW. There is no personal-organization rung: a backstop
+ *      files the person's work in a workspace they never chose, and does it
+ *      silently. Boot explicitly SELECTS the personal workspace when nothing
+ *      else applies, so if we get here nothing is selected at all.
  *
  * The throw is the same `OrganizationContextError` every transport raises, so
  * a surface that already renders `OrganizationRequiredNotice` on
@@ -138,6 +147,24 @@ export async function ensureOrgId(
   await store?._sync?.boot();
   activeOrgId = getActiveOrgId();
   if (activeOrgId) return activeOrgId;
+
+  // 🚨 "NOBODY HAS LOOKED YET" IS NOT "THERE IS NONE". The warm-cache boot
+  // above answers a RETURNING session, where the last organization comes back
+  // out of IndexedDB. On a FIRST-EVER session there is no local record and no
+  // apex cookie, so the only answer comes from `appContextPolicy.remote.fetch`
+  // → `resolveActiveOrgContext`, which deliberately waits for `whenPageIdle`
+  // before spending the network. Every write made in that window — an
+  // autosave, a first note, a canvas score — was refused with "Select an
+  // organization" although the person HAS one and the app was seconds from
+  // finding it. A false refusal is as dishonest as a false success, so join
+  // the answer the boot path is already fetching. This starts nothing: it
+  // waits on the one promise the boot settles (bounded, so it can never hang),
+  // and there is no second fetch anywhere.
+  if (!isOrgBootstrapResolved()) {
+    await whenOrgBootstrapResolved();
+    activeOrgId = getActiveOrgId();
+    if (activeOrgId) return activeOrgId;
+  }
 
   throw new OrganizationContextError(
     "organization_context_required",
