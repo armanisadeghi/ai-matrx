@@ -130,6 +130,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-17 — Removed a double `decodeURIComponent` on the catch-all `path` param** in `app/(core)/files/all/[[...path]]/layout.tsx` — the App Router already decodes each catch-all folder segment, so a folder name carrying a literal `%` threw `URIError` on the second decode (`.map(decodeURIComponent)`). Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - **2026-09-17 — Shared block images honor authenticated blob transport.**
   `useBlockMediaSource` now sends a `transport: "blob"` resolution through
   `useMediaBlob` instead of binding the durable `/files/{id}/download` endpoint to an `<img>`.

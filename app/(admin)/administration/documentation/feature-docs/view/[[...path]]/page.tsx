@@ -36,7 +36,9 @@ export default async function FeatureDocViewPage({
     notFound();
   }
 
-  const relPath = segments.map(decodeURIComponent).join("/");
+  // The App Router already decodes each catch-all segment — decoding again
+  // double-decodes a literal `%` in a doc path.
+  const relPath = segments.join("/");
   if (!relPath.endsWith(".md") && !relPath.endsWith(".MD")) {
     notFound();
   }

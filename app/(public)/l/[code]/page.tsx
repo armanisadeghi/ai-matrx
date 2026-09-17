@@ -41,7 +41,9 @@ export default async function LabelResolverPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const value = decodeURIComponent(code).trim();
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the printed code.
+  const value = code.trim();
 
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) {

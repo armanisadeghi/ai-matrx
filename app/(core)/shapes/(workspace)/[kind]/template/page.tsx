@@ -13,7 +13,9 @@ interface PageProps {
 
 export default async function ShapeTemplatePage({ params }: PageProps) {
   const { kind } = await params;
-  const detail = await getShapeDetail(decodeURIComponent(kind));
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the kind name.
+  const detail = await getShapeDetail(kind);
   if (!detail) notFound();
 
   return (

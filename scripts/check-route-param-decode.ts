@@ -1,0 +1,359 @@
+#!/usr/bin/env npx tsx
+/**
+ * check:route-param-decode — a dynamic route file may never re-decode a
+ * value the App Router already decoded.
+ *
+ * THE CLASS. Next.js hands `page.tsx` / `layout.tsx` / `route.ts` params
+ * ALREADY percent-decoded — `await params` (or, in a Client Component,
+ * `useParams()`) returns the segment's real value, not its wire encoding.
+ * A second `decodeURIComponent(...)` on that value is a no-op for an
+ * ordinary segment and a crash for one that legitimately contains a
+ * literal `%` (an id/key/token whose real value is, say, `%25` reaches
+ * the page as `%25`; decoding it a SECOND time throws `URIError: URI
+ * malformed`, and the whole route 500s). Lane F-28 found and fixed the
+ * first instance of this — `app/(core)/detail/[type]/[id]/page.tsx`,
+ * commit 19c5cce8 — and named ~10 siblings it did not fix. Lane F-29's
+ * census (2026-09-17) found the true count was 27 files / ~30 call sites,
+ * including a 14-file cluster this route-file guard now watches for good:
+ * every `app/(core)/shapes/(workspace)/[kind]/**` page and layout.
+ *
+ * WHAT IT FAILS ON — a call `decodeURIComponent(x)` (or `arr.map(decodeURIComponent)`
+ * / `arr.map((s) => decodeURIComponent(s))`) where `x` (or `arr`) is TAINTED
+ * by a route param: bound from `await params`, from a bare `params.foo` /
+ * `(await params).foo` access, or from `useParams()` — in ANY file that sits
+ * under `app/` in a directory carrying a `[param]`, `[...param]`, or
+ * `[[...param]]` segment. This is a route-file guard, not a general
+ * decodeURIComponent ban — decoding a COOKIE value, a query string, or a
+ * pasted URL elsewhere in the app is normal and untouched.
+ *
+ * WHAT IT DELIBERATELY DOES NOT FAIL ON
+ *   • decodeURIComponent applied to anything that did not come from `params`
+ *     or `useParams()` — cookies, searchParams, request bodies, filenames.
+ *   • A route file that never touches its dynamic segment's value.
+ *   • Files outside `app/` (this is the App Router param contract, not a
+ *     general JS rule — matrx-frontend has no other production consumer of
+ *     router-decoded params).
+ *
+ * WHAT IT CANNOT SEE
+ *   • A decode reached indirectly through a helper this file imports (an
+ *     `features/**` function that itself double-decodes what the page
+ *     handed it undecoded already) — the census that produced this guard
+ *     checked those call sites by hand and found none; a future one needs
+ *     the same manual check.
+ *   • Renaming `params` to something else in a NON-standard way this file's
+ *     taint tracker cannot follow (e.g. reassigning it through an unrelated
+ *     object literal). Every real route file in this repo uses the literal
+ *     names `params` / `searchParams` / `useParams()`, so this is a
+ *     theoretical gap, not a live one.
+ *
+ * Usage:
+ *   pnpm check:route-param-decode             # report; exit 0
+ *   pnpm check:route-param-decode:strict      # exit 1 on findings
+ *   pnpm check:route-param-decode:self-test   # prove the guard can still fail
+ */
+
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
+import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
+
+const REPO_ROOT = resolve(__dirname, "..");
+const SCANNED_DIR = "app";
+// A file lives on a dynamic route only if some ancestor directory (up to
+// `app/`) carries a bracketed segment.
+const HAS_DYNAMIC_SEGMENT = /\[[^/]*\]/;
+
+interface Finding {
+  file: string;
+  line: number;
+  snippet: string;
+}
+
+function isDynamicRouteFile(relPath: string): boolean {
+  const dir = relPath.slice(0, relPath.lastIndexOf("/"));
+  return HAS_DYNAMIC_SEGMENT.test(dir);
+}
+
+function unwrap(node: ts.Expression): ts.Expression {
+  let n: ts.Expression = node;
+  while (
+    ts.isParenthesizedExpression(n) ||
+    ts.isAsExpression(n) ||
+    ts.isNonNullExpression(n) ||
+    ts.isAwaitExpression(n)
+  ) {
+    n = ts.isAwaitExpression(n) ? n.expression : (n as ts.Expression & { expression: ts.Expression }).expression;
+  }
+  return n;
+}
+
+/** True if `expr` (already unwrapped of await/paren/as) is rooted at an
+ * identifier in `tainted` — either the identifier itself, or a
+ * property/element access chain whose base is. */
+function isTaintedExpr(expr: ts.Expression, tainted: Set<string>): boolean {
+  const e = unwrap(expr);
+  if (ts.isIdentifier(e)) return tainted.has(e.text);
+  if (ts.isPropertyAccessExpression(e)) return isTaintedExpr(e.expression, tainted);
+  if (ts.isElementAccessExpression(e)) return isTaintedExpr(e.expression, tainted);
+  // React's `use(params)` (the sync-in-a-Client-Component unwrap of the
+  // params Promise) is the same value `await params` is.
+  if (
+    ts.isCallExpression(e) &&
+    ts.isIdentifier(e.expression) &&
+    e.expression.text === "use" &&
+    e.arguments[0]
+  ) {
+    return isTaintedExpr(e.arguments[0], tainted);
+  }
+  // `(path ?? [])` / `(path || [])` — a fallback-defaulted catch-all array
+  // is still the tainted value on its left side.
+  if (ts.isBinaryExpression(e) && (e.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken || e.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+    return isTaintedExpr(e.left, tainted);
+  }
+  return false;
+}
+
+function addBindingNames(name: ts.BindingName, tainted: Set<string>): void {
+  if (ts.isIdentifier(name)) {
+    tainted.add(name.text);
+    return;
+  }
+  if (ts.isObjectBindingPattern(name)) {
+    for (const el of name.elements) {
+      if (ts.isBindingElement(el)) addBindingNames(el.name, tainted);
+    }
+  }
+}
+
+function scanFile(absPath: string, relPath: string): Finding[] {
+  const raw = readFileSync(absPath, "utf8");
+  if (!/decodeURIComponent/.test(raw)) return [];
+
+  const sf = ts.createSourceFile(
+    absPath,
+    raw,
+    ts.ScriptTarget.Latest,
+    false,
+    absPath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+
+  // Seed the taint set with the two conventional router-param identifiers.
+  const tainted = new Set<string>(["params"]);
+  const lineOf = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+
+  // Pass 1: grow the taint set — a variable initialized from `await params`,
+  // a bare `params`, a property/element access rooted at `params`, or a
+  // direct `useParams()` call is a route-param value.
+  const walkTaint = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && node.initializer) {
+      const init = node.initializer;
+      const isUseParamsCall =
+        ts.isCallExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        init.expression.text === "useParams";
+      if (isUseParamsCall || isTaintedExpr(init, tainted)) {
+        addBindingNames(node.name, tainted);
+      }
+    }
+    ts.forEachChild(node, walkTaint);
+  };
+  walkTaint(sf);
+  // Params can be destructured in a second pass that depends on names the
+  // first pass only just added (e.g. a `useParams()` alias destructured
+  // later in the same file) — one more pass closes that.
+  walkTaint(sf);
+
+  const findings: Finding[] = [];
+  const flag = (node: ts.Node) => {
+    const line = lineOf(node.getStart(sf));
+    const snippet = raw.split("\n")[line - 1]?.trim() ?? "";
+    findings.push({ file: relPath, line, snippet });
+  };
+
+  const walkCalls = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+
+      // decodeURIComponent(x)
+      if (ts.isIdentifier(callee) && callee.text === "decodeURIComponent") {
+        const arg = node.arguments[0];
+        if (arg && isTaintedExpr(arg, tainted)) flag(node);
+      }
+
+      // x.map(decodeURIComponent)  /  x.map((s) => decodeURIComponent(s))
+      if (
+        ts.isPropertyAccessExpression(callee) &&
+        callee.name.text === "map" &&
+        isTaintedExpr(callee.expression, tainted)
+      ) {
+        const mapArg = node.arguments[0];
+        if (mapArg) {
+          const isBareDecode =
+            ts.isIdentifier(mapArg) && mapArg.text === "decodeURIComponent";
+          const isArrowDecode =
+            (ts.isArrowFunction(mapArg) || ts.isFunctionExpression(mapArg)) &&
+            ts.isBlock(mapArg.body) === false &&
+            ts.isCallExpression(mapArg.body) &&
+            ts.isIdentifier(mapArg.body.expression) &&
+            mapArg.body.expression.text === "decodeURIComponent";
+          if (isBareDecode || isArrowDecode) flag(node);
+        }
+      }
+    }
+    ts.forEachChild(node, walkCalls);
+  };
+  walkCalls(sf);
+
+  return findings;
+}
+
+function listFiles(root: string): string[] {
+  const out = execFileSync(
+    "git",
+    [
+      "-C",
+      root,
+      "ls-files",
+      "--cached",
+      "--others",
+      "--exclude-standard",
+      `${SCANNED_DIR}/**/*.ts`,
+      `${SCANNED_DIR}/**/*.tsx`,
+    ],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return out
+    .split("\n")
+    .filter(Boolean)
+    .filter((f) => !/__tests__|\.test\.|\.spec\./.test(f))
+    .filter(isDynamicRouteFile);
+}
+
+function run(root: string): Finding[] {
+  const findings: Finding[] = [];
+  for (const rel of listFiles(root)) {
+    findings.push(...scanFile(join(root, rel), rel));
+  }
+  return findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+}
+
+/** Prove the guard can still fail (red), then that the same tree with the
+ * decode removed passes (green) — the exact before/after this lane's fix
+ * produced on every real site. */
+function selfTest(): number {
+  const dir = mkdtempSync(join(tmpdir(), "route-param-decode-selftest-"));
+  const routeDir = join(dir, "app", "(core)", "planted", "[id]");
+  execFileSync("mkdir", ["-p", routeDir]);
+  execFileSync("git", ["-C", dir, "init", "-q"]);
+
+  const pagePath = join(routeDir, "page.tsx");
+  const redVersion = [
+    "export default async function PlantedPage({",
+    "  params,",
+    "}: {",
+    "  params: Promise<{ id: string }>;",
+    "}) {",
+    "  const { id } = await params;",
+    "  const decoded = decodeURIComponent(id);",
+    "  return <div>{decoded}</div>;",
+    "}",
+    "",
+  ].join("\n");
+  const greenVersion = [
+    "export default async function PlantedPage({",
+    "  params,",
+    "}: {",
+    "  params: Promise<{ id: string }>;",
+    "}) {",
+    "  const { id } = await params;",
+    "  return <div>{id}</div>;",
+    "}",
+    "",
+  ].join("\n");
+
+  writeFileSync(pagePath, redVersion, "utf8");
+  const redFindings = run(dir);
+  const redCaught = redFindings.some(
+    (f) => f.file.endsWith("planted/[id]/page.tsx") && f.snippet.includes("decodeURIComponent(id)"),
+  );
+
+  writeFileSync(pagePath, greenVersion, "utf8");
+  const greenFindings = run(dir);
+  const stillClean = greenFindings.length === 0;
+
+  // A non-route file (no `[param]` ancestor) doing the exact same decode
+  // must NOT be flagged — the guard is route-file-scoped, not a blanket ban.
+  const staticDir = join(dir, "app", "(core)", "static-not-dynamic");
+  execFileSync("mkdir", ["-p", staticDir]);
+  writeFileSync(
+    join(staticDir, "page.tsx"),
+    [
+      "export default function StaticPage({ searchParams }: { searchParams: { q?: string } }) {",
+      "  const q = decodeURIComponent(searchParams.q ?? \"\");",
+      "  return <div>{q}</div>;",
+      "}",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const staticFindings = run(dir).filter((f) => f.file.includes("static-not-dynamic"));
+
+  rmSync(dir, { recursive: true, force: true });
+
+  if (!redCaught) {
+    console.error(
+      "SELF-TEST FAILED — the guard did not catch a planted double-decode of a destructured route param.",
+    );
+    return 1;
+  }
+  if (!stillClean) {
+    console.error(
+      `SELF-TEST FAILED — after removing the decode the guard still reported: ${JSON.stringify(greenFindings)}`,
+    );
+    return 1;
+  }
+  if (staticFindings.length > 0) {
+    console.error(
+      "SELF-TEST FAILED — the guard flagged a decode outside any [param] directory (searchParams, not a route param).",
+    );
+    return 1;
+  }
+  console.log(
+    "SELF-TEST PASSED — red: a planted decodeURIComponent(id) on a destructured `params` value was caught; " +
+      "green: the same file with the decode removed reads clean; a decode outside any [param] directory is left alone.",
+  );
+  return 0;
+}
+
+function main(): number {
+  const argv = process.argv.slice(2);
+  if (argv.includes("--self-test")) return selfTest();
+  const strict = argv.includes("--strict");
+
+  const findings = run(REPO_ROOT);
+  if (findings.length === 0) {
+    console.log(
+      "OK — no dynamic route file re-decodes a value the App Router already decoded.",
+    );
+    return 0;
+  }
+
+  console.error(
+    `\nDOUBLE-DECODED ROUTE PARAM — ${findings.length} finding${findings.length === 1 ? "" : "s"}:\n`,
+  );
+  for (const f of findings) {
+    console.error(`  ${relative(REPO_ROOT, join(REPO_ROOT, f.file))}:${f.line}  ${f.snippet}`);
+  }
+  console.error(
+    "\nNext.js hands page/layout/route files an ALREADY-DECODED param (App Router\n" +
+      "router-decoded contract). A second decodeURIComponent is a no-op for an\n" +
+      "ordinary segment and throws URIError for one carrying a literal `%`. Remove\n" +
+      "the second decode; if the value is used raw downstream, the CALLER already\n" +
+      "has the real value. See lib/detail/FEATURE.md and CLAUDE.md.\n",
+  );
+  return strict ? 1 : 0;
+}
+
+exitAfterDrain(main());

@@ -19,8 +19,10 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the kind name.
   const { kind } = await params;
-  const slug = decodeURIComponent(kind);
+  const slug = kind;
   return {
     title: `${slug} — Kind Registry`,
     description: `Preview, edit component code, inspect the gate, schema, and asset status for the "${slug}" kind.`,
@@ -32,7 +34,7 @@ export default async function KindDetailPage({
   searchParams,
 }: PageProps) {
   const [{ kind }, sp] = await Promise.all([params, searchParams]);
-  const detail = await gatherKindDetail(decodeURIComponent(kind));
+  const detail = await gatherKindDetail(kind);
   if (!detail) notFound();
 
   const initialTab = typeof sp.tab === "string" ? sp.tab : undefined;
