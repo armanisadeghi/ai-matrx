@@ -69849,6 +69849,24 @@
               "type": "string",
               "title": "Definition Id"
             }
+          },
+          {
+            "name": "selected_node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name.",
+              "title": "Selected Node Id"
+            },
+            "description": "The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name."
           }
         ],
         "responses": {
@@ -124853,6 +124871,12 @@
           "open_plan_count": {
             "type": "integer",
             "title": "Open Plan Count"
+          },
+          "apply_mode": {
+            "type": "string",
+            "title": "Apply Mode",
+            "description": "The organization's `workflow.conductor.apply_mode` knob: `auto` — the Conductor's writes land on the canvas as they are saved; `review` — the canvas holds still and the chat offers Apply / Take it back.",
+            "default": "auto"
           },
           "conversation_id": {
             "type": "string",
