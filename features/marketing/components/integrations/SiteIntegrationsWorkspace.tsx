@@ -89,6 +89,7 @@ import {
   discoveredDomainProperty,
   isSiteDomainProperty,
   preferredGscProperty,
+  preflightGscProperty,
 } from "@/features/marketing/google/gsc-property";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -293,9 +294,30 @@ function SiteIntegrationsEditor({
       resources: googleInventory.data.resources,
     });
   }, [draft.googleAnalytics4, googleInventory.data]);
+  // THE PRE-FLIGHT, enforcement half: a property-type mismatch is a
+  // configuration issue, so Save is refused until it is resolved. Binding
+  // `https://example.com/` to a site at `https://www.example.com/` returns 200
+  // with zero rows forever, and nothing downstream can tell that apart from a
+  // quiet site.
+  const gscPreflight = useMemo(() => {
+    const gsc = draft.googleSearchConsole;
+    if (!gsc.enabled || !gsc.resourceRef) return null;
+    return preflightGscProperty(gsc.resourceRef, {
+      root_url: site.root_url,
+      domain: site.domain,
+    });
+  }, [draft.googleSearchConsole, site.root_url, site.domain]);
   const issues = useMemo(
     () => [
       ...validateSiteIntegrations(draft),
+      ...(gscPreflight?.verdict === "mismatch"
+        ? [
+            {
+              field: "googleSearchConsole.resourceRef",
+              message: `${gscPreflight.headline} ${gscPreflight.detail}`,
+            },
+          ]
+        : []),
       ...(ga4BindingDiagnosis?.blocking
         ? [
             {
@@ -305,7 +327,7 @@ function SiteIntegrationsEditor({
           ]
         : []),
     ],
-    [draft, ga4BindingDiagnosis],
+    [draft, ga4BindingDiagnosis, gscPreflight],
   );
   const visibleIssues = reviewMode
     ? issues.filter((issue) => issue.field.startsWith("googleAnalytics4"))
@@ -1078,6 +1100,7 @@ function SiteIntegrationsEditor({
                 }
                 value={draft[key]}
                 siteDomain={site.domain}
+                siteRootUrl={site.root_url}
                 connections={googleInventory.data?.connections ?? []}
                 resources={googleInventory.data?.resources ?? []}
                 dirty={
@@ -1526,6 +1549,7 @@ function BuiltInProviderCard({
   icon: typeof SearchCheck;
   value: ProviderIntegrationDraft;
   siteDomain: string;
+  siteRootUrl: string | null;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   dirty: boolean;
@@ -1587,6 +1611,7 @@ function BuiltInProviderCard({
           providerKey={providerKey}
           value={value}
           siteDomain={siteDomain}
+          siteRootUrl={siteRootUrl}
           connections={connections}
           resources={resources}
           resourceLabel={resourceLabel}
@@ -1858,6 +1883,7 @@ function ProviderReferenceFields({
   providerKey,
   value,
   siteDomain,
+  siteRootUrl,
   connections,
   resources,
   resourceLabel,
@@ -1867,6 +1893,7 @@ function ProviderReferenceFields({
   providerKey: BuiltInProviderKey;
   value: ProviderIntegrationDraft;
   siteDomain: string;
+  siteRootUrl: string | null;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   resourceLabel?: string;
@@ -1914,6 +1941,21 @@ function ProviderReferenceFields({
       value.resourceRef &&
       value.resourceRef !== domainProperty.resource_ref,
   );
+  // THE PRE-FLIGHT. Search Console only: GA4 properties are numeric ids with
+  // no URL shape to compare against a site.
+  const preflight =
+    providerKey === "googleSearchConsole" && value.enabled && value.resourceRef
+      ? preflightGscProperty(value.resourceRef, {
+          root_url: siteRootUrl,
+          domain: siteDomain,
+        })
+      : null;
+  const preflightFix =
+    preflight && preflight.verdict === "mismatch" && preflight.suggestedRef
+      ? (unorderedResources.find(
+          (resource) => resource.resource_ref === preflight.suggestedRef,
+        ) ?? null)
+      : null;
   // One entry per Google identity: a personal + an org connection to the
   // same Google account are the same authorization — never two choices.
   const pickerConnections = dedupeGoogleConnectionsForPicker(
@@ -1999,6 +2041,38 @@ function ProviderReferenceFields({
               ))}
             </SelectContent>
           </Select>
+          {preflight && preflight.verdict !== "ok" ? (
+            // THE PRE-FLIGHT (google-native PLAN §4.8): a property-type
+            // mismatch is named here, at the moment of choosing, with the
+            // property to pick instead. Saving a mismatch is refused by the
+            // configuration-issue list above the Save button.
+            <div
+              className={
+                preflight.verdict === "mismatch"
+                  ? "space-y-1.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5"
+                  : "space-y-1.5 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5"
+              }
+            >
+              <p className="text-[10px] font-medium leading-4 text-foreground">
+                {preflight.headline}
+              </p>
+              <p className="text-[10px] leading-4 text-muted-foreground">
+                {preflight.detail}
+              </p>
+              {preflightFix ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() =>
+                    onChange({ ...value, resourceRef: preflightFix.resource_ref })
+                  }
+                >
+                  Use {preflightFix.resource_ref}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           {nonDomainChosen && domainProperty ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5">
               <p className="min-w-0 flex-1 text-[10px] leading-4 text-foreground">

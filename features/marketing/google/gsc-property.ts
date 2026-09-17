@@ -150,3 +150,175 @@ export function classifyGscAccessFailure(
       "Reconnect Google (re-approve access when Google asks) and confirm the site's Search Console property binding.",
   };
 }
+
+// ---------------------------------------------------------------------------
+// Connect-time PRE-FLIGHT: the property type vs the site's canonical URL
+// ---------------------------------------------------------------------------
+
+/**
+ * THE PRE-FLIGHT (google-native PLAN §4.8, the Search Console champion gap:
+ * "nobody pre-flights property-type mismatch — domain vs URL-prefix vs www —
+ * at connect time").
+ *
+ * Search Console treats `https://example.com/`, `https://www.example.com/`,
+ * `http://example.com/` and `sc-domain:example.com` as FOUR different
+ * properties. Binding the wrong one is silent: the API answers 200 with zeros
+ * or with a fraction of the traffic, and every screen downstream reports a
+ * healthy connection and a dead site. So the mismatch is named HERE, at the
+ * moment of choosing, with the exact property to pick instead.
+ *
+ * This is deliberately NOT a second copy of THE DOMAIN-PROPERTY RULE above: a
+ * domain property that covers this site is always `ok` here — never nudged
+ * toward a URL version, which that rule forbids (Arman, 2026-08-29). What this
+ * adds is the four refusals the rule never covered: a www/non-www swap, a
+ * scheme swap, a path prefix that excludes the site, and an unrelated host.
+ */
+
+export type GscPreflightVerdict = "ok" | "advisory" | "mismatch";
+
+export interface GscPropertyPreflight {
+  verdict: GscPreflightVerdict;
+  /** One sentence naming BOTH sides — the site and the property picked. */
+  headline: string;
+  /** What to pick instead, or why this choice is still fine. */
+  detail: string;
+  /** The property ref this site should bind, when we can name it. */
+  suggestedRef: string | null;
+}
+
+function normalizeHost(host: string): string {
+  return host.trim().toLowerCase().replace(/\.$/, "");
+}
+
+function bareDomain(host: string): string {
+  return normalizeHost(host).replace(/^www\./, "");
+}
+
+/** The site's canonical origin, from `root_url` when it parses, else `domain`. */
+export function siteCanonicalUrl(site: {
+  root_url?: string | null;
+  domain: string;
+}): { origin: string; host: string; path: string; display: string } {
+  const raw = (site.root_url ?? "").trim();
+  try {
+    const url = new URL(raw);
+    return {
+      origin: url.origin.toLowerCase(),
+      host: normalizeHost(url.hostname),
+      path: url.pathname === "/" ? "/" : url.pathname.replace(/\/+$/, "/"),
+      display: `${url.origin}${url.pathname === "/" ? "/" : url.pathname}`,
+    };
+  } catch {
+    const host = normalizeHost(site.domain);
+    return {
+      origin: `https://${host}`,
+      host,
+      path: "/",
+      display: `https://${host}/`,
+    };
+  }
+}
+
+/**
+ * Judge one property choice against the site it is about to be bound to.
+ * `null` is never returned: an unparseable ref is itself a mismatch.
+ */
+export function preflightGscProperty(
+  resourceRef: string,
+  site: { root_url?: string | null; domain: string },
+): GscPropertyPreflight {
+  const ref = resourceRef.trim();
+  const canonical = siteCanonicalUrl(site);
+  const siteBare = bareDomain(canonical.host);
+  const domainRef = gscDomainPropertyRef(siteBare);
+
+  if (!ref) {
+    return {
+      verdict: "mismatch",
+      headline: `No Search Console property is picked for ${canonical.display}.`,
+      detail: `Pick ${domainRef} if you own the whole domain in Search Console, or the URL-prefix property that matches this site exactly (${canonical.display}).`,
+      suggestedRef: domainRef,
+    };
+  }
+
+  if (isGscDomainProperty(ref)) {
+    const picked = bareDomain(ref.slice("sc-domain:".length));
+    if (picked === siteBare) {
+      return {
+        verdict: "ok",
+        headline: `${ref} covers ${canonical.display}.`,
+        detail:
+          "A domain property covers every version of the domain — http and https, www and non-www — so no traffic can hide in a version this site is not bound to.",
+        suggestedRef: ref,
+      };
+    }
+    if (siteBare.endsWith(`.${picked}`)) {
+      return {
+        verdict: "advisory",
+        headline: `${ref} is the whole domain, and this site is only ${canonical.host}.`,
+        detail: `Every subdomain of ${picked} reports into ${ref}, so this site's numbers will include traffic that belongs to other subdomains. Bind it only if that is what you want; otherwise pick the URL-prefix property ${canonical.display}.`,
+        suggestedRef: ref,
+      };
+    }
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked the domain property ${picked}, which is a different domain.`,
+      detail: `${ref} reports on ${picked} and will never contain a single row for ${canonical.host}. Pick ${domainRef} if you own ${siteBare} in Search Console, or the URL-prefix property ${canonical.display}.`,
+      suggestedRef: domainRef,
+    };
+  }
+
+  let picked: URL;
+  try {
+    picked = new URL(ref);
+  } catch {
+    return {
+      verdict: "mismatch",
+      headline: `“${ref}” is not a Search Console property.`,
+      detail: `A property is either a domain property (${domainRef}) or a full URL prefix (${canonical.display}). Pick one of those.`,
+      suggestedRef: domainRef,
+    };
+  }
+
+  const pickedHost = normalizeHost(picked.hostname);
+  if (bareDomain(pickedHost) !== siteBare) {
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked ${ref}, which is a different site.`,
+      detail: `Search Console will answer for ${pickedHost} and report nothing about ${canonical.host}. Pick ${domainRef} if you own the whole domain, or the URL-prefix property ${canonical.display}.`,
+      suggestedRef: domainRef,
+    };
+  }
+  if (pickedHost !== canonical.host) {
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked ${ref}, and Search Console treats www and non-www as two separate properties.`,
+      detail: `${ref} will report nothing for ${canonical.host} pages. Pick ${domainRef}, which covers both, or the URL-prefix property ${canonical.display}.`,
+      suggestedRef: domainRef,
+    };
+  }
+  if (picked.protocol.replace(":", "") !== canonical.origin.split(":")[0]) {
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked ${ref}, and Search Console treats http and https as two separate properties.`,
+      detail: `${ref} will report nothing for ${canonical.origin} pages. Pick ${domainRef}, which covers both schemes, or the URL-prefix property ${canonical.display}.`,
+      suggestedRef: domainRef,
+    };
+  }
+  const pickedPath = picked.pathname === "/" ? "/" : picked.pathname.replace(/\/+$/, "/");
+  if (pickedPath !== "/" && !canonical.path.startsWith(pickedPath)) {
+    return {
+      verdict: "mismatch",
+      headline: `This site starts at ${canonical.display}; you picked ${ref}, which only covers URLs under ${pickedPath}.`,
+      detail: `A URL-prefix property reports only on pages beneath its own path, so this site's pages fall outside it. Pick ${domainRef}, or the URL-prefix property ${canonical.display}.`,
+      suggestedRef: domainRef,
+    };
+  }
+  return {
+    verdict: "ok",
+    headline: `${ref} matches ${canonical.display}.`,
+    detail:
+      "A URL-prefix property reports only on this exact scheme and host. If Google also offers you the domain property, that one covers every version of the domain.",
+    suggestedRef: ref,
+  };
+}

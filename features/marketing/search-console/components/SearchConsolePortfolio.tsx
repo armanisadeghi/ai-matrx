@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { DataFreshnessLine } from "@/features/marketing/components/shared/DataFreshnessLine";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { listSites } from "@/features/marketing/data/service";
@@ -445,6 +446,15 @@ export function SearchConsolePortfolio({
             )
           ) : null}
         </div>
+        {/* THE FRESHNESS LINE. The verdict above says how old the DATA is; this
+            says when we last asked Google and what Google's own lag is, which is
+            the difference between "we are behind" and "Google is behind"
+            (google-native PLAN §4.8). ONE component owns the wording. */}
+        <DataFreshnessLine
+          provider="search_console"
+          dataThrough={site.gsc_latest_date?.slice(0, 10) ?? null}
+          pulledAt={site.gsc_synced_at}
+        />
       </div>
     );
   };

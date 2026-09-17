@@ -963,9 +963,9 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/analytics",
       label: "Analytics",
       description:
-        "RESERVED — renders <MarketingComingSoon comingSoonId=\"marketing.analytics\">; the URL is permanent.",
+        "BrandAnalyticsWorkspace — this client's websites with their 28-day Google Analytics headline numbers, each opening the canonical SiteAnalyticsPanel in the siteAnalyticsWindow. Reads seo.web_analytics_daily directly, deduped to the newest collection run per day. The unbuilt cross-channel join is printed under the live panel (coming-soon id marketing.analytics.cross-channel).",
       filePath: "app/(core)/marketing/[brandId]/analytics/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/marketing/[brandId]/planning",
@@ -1291,6 +1291,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
         "Keyword Intelligence — the canonical per-keyword dossier (market, classification, relationships, site performance, rankings, SERP, research). Registered agent surface matrx-user/keyword-intelligence.",
     },
     {
+      overlayId: "siteAnalyticsWindow",
+      description:
+        "Google Analytics for one site, beside whatever the reader was looking at. The window is the frame only: it wraps the canonical SiteAnalyticsPanel (the same component the brand Analytics route and the site's Google Analytics settings section mount). Opened via useOpenSiteAnalyticsWindow.",
+    },
+    {
       overlayId: "gscDrilldownWindow",
       description:
         "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from Search Console rows and Keyword Value topic rows via useOpenGscDrilldownWindow.",
@@ -1303,6 +1308,13 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       description:
         "The G9 doors on marketing surfaces: 'Start outreach' on a reputation case (pitch / request_update / correct / respond) and on a referring-domain prospect (toxic refuses with the reason), plus the auto|manual|off CRM fold control rendered on site settings AND beside the prospect/case lists — one record, two renders. Components live in features/crm/ because the CRM owns the enrollment and the send gate; marketing only mounts them.",
       tier: "internal",
+    },
+    {
+      name: "SiteAnalyticsPanel / AnalyticsTrendChart / DataFreshnessLine",
+      filePath: "features/marketing/analytics/components/SiteAnalyticsPanel.tsx",
+      description:
+        "THE site Analytics panel — the one component behind the brand Analytics route, the site's Google Analytics settings section and the siteAnalyticsWindow. Reads seo.web_analytics_daily through features/marketing/analytics/window.ts (winning-run dedup per day; users are summed and say so), prints only the caveats Google actually reported (analytics/caveats.ts over extras.ga4_collection_metadata), and turns quota exhaustion or a refused grant into a named state with the site's one Reconnect door (analytics/failures.ts). The trend is hand-drawn SVG, not recharts (the panel mounts inside statically imported chrome). DataFreshnessLine is the ONE freshness line, shared with the Search Console header and portfolio cards.",
+      tier: "official",
     },
     {
       name: "MarketingReportsWorkspace",
