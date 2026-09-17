@@ -92279,6 +92279,7 @@ export type Database = {
           p_facet_key: string
           p_map_id: string
           p_slug: string
+          p_source: string
           p_value_slug: string
         }
         Returns: Json
@@ -92288,7 +92289,12 @@ export type Database = {
         Returns: Json
       }
       set_page_map_facet: {
-        Args: { p_facet_key: string; p_page_id: string; p_value_slug: string }
+        Args: {
+          p_facet_key: string
+          p_page_id: string
+          p_source: string
+          p_value_slug: string
+        }
         Returns: Json
       }
       set_page_map_topics: {

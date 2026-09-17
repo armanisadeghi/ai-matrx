@@ -664,7 +664,7 @@ export function useSplitMapTopic(mapId: string) {
   });
 }
 
-/** `seo.set_map_topic_facet` — a null value slug CLEARS the facet. */
+/** `seo.set_map_topic_facet` — a null value slug still CLEARS the facet; the frontend always writes as `human`. */
 export function useSetMapTopicFacet(mapId: string) {
   const invalidate = useInvalidateMap(mapId);
   return useMutation({
@@ -684,7 +684,7 @@ export function useSetMapTopicFacet(mapId: string) {
   });
 }
 
-/** `seo.set_page_map_facet` — the same, on a page. */
+/** `seo.set_page_map_facet` — the same, on a page; the frontend always writes as `human`. */
 export function useSetPageMapFacet(mapId: string) {
   const invalidate = useInvalidateMap(mapId);
   return useMutation({

@@ -287,12 +287,12 @@ export async function splitMapTopic(mapId: string, slug: string, children: MapTo
 }
 
 export async function setMapTopicFacet(mapId: string, slug: string, facetKey: string, valueSlug: string | null): Promise<MapMutationResult> {
-  const response = await (await seoDb()).rpc("set_map_topic_facet", { p_map_id: mapId, p_slug: slug, p_facet_key: facetKey, p_value_slug: valueSlug as unknown as string });
+  const response = await (await seoDb()).rpc("set_map_topic_facet", { p_map_id: mapId, p_slug: slug, p_facet_key: facetKey, p_value_slug: valueSlug as unknown as string, p_source: "human" });
   return assertData(response.data as unknown as MapMutationResult, response.error);
 }
 
 export async function setPageMapFacet(pageId: string, facetKey: string, valueSlug: string | null): Promise<MapMutationResult> {
-  const response = await (await seoDb()).rpc("set_page_map_facet", { p_page_id: pageId, p_facet_key: facetKey, p_value_slug: valueSlug as unknown as string });
+  const response = await (await seoDb()).rpc("set_page_map_facet", { p_page_id: pageId, p_facet_key: facetKey, p_value_slug: valueSlug as unknown as string, p_source: "human" });
   return assertData(response.data as unknown as MapMutationResult, response.error);
 }
 
