@@ -194,6 +194,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         kind: "preexisting",
         why: "Live HR v1 reader of platform.custom_field_definition / custom_field_target — shipped and in use before this campaign. Gating it would switch OFF a working feature.",
     },
+    {
+        id: "gate-corpus-identity-shell-test",
+        file: "scripts/__tests__/gate-corpus-identity-shell.test.ts",
+        kind: "tooling",
+        why: "Jest proof of restore-graph.ts's auth.users id-only-shell and auth-wide secret deny-list checks (the chair's 2026-09-16 ruling). No database, no credential; never part of a served request.",
+    },
 ];
 
 /**
