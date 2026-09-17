@@ -15,6 +15,7 @@
 // lie that trains people to ignore the number.
 
 import { useState } from "react";
+import { resolveColumnMarker } from "@ai-matrx/design-system/data-table";
 import { useScrollFade } from "@ai-matrx/design-system";
 import { SlidersHorizontal, RotateCcw, Star, ArrowUpDown } from "lucide-react";
 import {
@@ -62,7 +63,6 @@ const EXTRA_SORTS: { value: SortKey; label: string }[] = [
   { value: "created-desc", label: "Recently created" },
 ];
 
-
 /**
  * "A→Z" is a lie on a date column. A column declares its own words with
  * `sortWords`; a date column is recognised by its filter options and needs no
@@ -73,6 +73,10 @@ function sortWordsFor<TRow>(c: EntityColumnSpec<TRow>): {
   desc: string;
 } {
   if (c.sortWords) return c.sortWords;
+  const marker = resolveColumnMarker(c.column);
+  if (marker === "favorite")
+    return { asc: "Favorites last", desc: "Favorites first" };
+  if (marker === "pin") return { asc: "Pins last", desc: "Pins first" };
   if (c.column.filterOptions === DATE_FILTER_OPTIONS) return DATE_SORT_WORDS;
   return { asc: "A→Z", desc: "Z→A" };
 }
@@ -162,7 +166,10 @@ export function EntityFilterPanel<TRow>({
       .flatMap((c) => {
         const words = sortWordsFor(c);
         return [
-          { value: `${c.id}-asc` as SortKey, label: `${c.label} (${words.asc})` },
+          {
+            value: `${c.id}-asc` as SortKey,
+            label: `${c.label} (${words.asc})`,
+          },
           {
             value: `${c.id}-desc` as SortKey,
             label: `${c.label} (${words.desc})`,
