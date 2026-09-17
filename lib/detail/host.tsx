@@ -181,6 +181,15 @@ export interface DetailHostPorts {
     RefCell: ComponentType<{ value: string; label: string; token: string }>;
     tokenFromColumnName: (column: string) => string | null;
     isUuidValue: (value: unknown) => value is string;
+    /**
+     * 🚨 NEW-17 (VERIFY-U-P1-R4) — WHETHER THIS RECORD REALLY OPENS ANYWHERE.
+     * `RecordDoors` renders nothing when the token has no route and no peek, so
+     * the honest absent state promised "the controls above still open it where it
+     * lives" beside a header that carried no such control — for `session`, and for
+     * every unregistered type. The body's sentence is derived from this answer,
+     * never fixed.
+     */
+    hasDoor: (token: string, id: string) => boolean;
   };
   associations: {
     /** Tokens shown when a registration does not name its own. */
@@ -196,6 +205,15 @@ export interface DetailHostPorts {
     success: (message: string) => void;
   };
   copyText: (text: string) => Promise<boolean>;
+  /**
+   * 🚨 PLAN §5.3 — THE SAME RECONNECT THE CONNECTOR ROWS SHOW. A synced record
+   * whose grant has expired, been revoked or lost a scope offers exactly the
+   * repair the connector surface offers, from the record's own health strip, so a
+   * person never has to go and find the connections screen. Optional: a host that
+   * cannot open a consent flow binds nothing and the strip states the problem
+   * without offering a control that would not help (law 4).
+   */
+  reconnectSource?: (ref: DetailRef, source: string) => void;
 }
 
 const DetailHostContext = createContext<Partial<DetailHostPorts> | null>(null);

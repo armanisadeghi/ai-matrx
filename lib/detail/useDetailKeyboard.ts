@@ -41,6 +41,13 @@ export interface DetailKeyboardHandlers {
   onClose?: (() => void) | null;
   onPrev?: (() => void) | null;
   onNext?: (() => void) | null;
+  /**
+   * 🚨 NEW-22 (VERIFY-U-P1-R4) — CMD+ENTER NEVER VANISHES. The chord is one of
+   * the three bindings the primitive promises, and nothing is registered to save
+   * unless a section with an editor is open, so the keystroke was swallowed in
+   * silence on every read-only record. A deliberate keystroke gets an answer.
+   */
+  onSaveUnavailable?: (() => void) | null;
 }
 
 export interface DetailKeyboard {
@@ -169,11 +176,10 @@ export function useDetailKeyboard(handlers: DetailKeyboardHandlers): DetailKeybo
     const h = handlersRef.current;
     const meta = event.metaKey || event.ctrlKey;
     if (meta && event.key === "Enter") {
-      if (saveRef.current) {
-        event.preventDefault();
-        event.stopPropagation();
-        void saveRef.current();
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (saveRef.current) void saveRef.current();
+      else h.onSaveUnavailable?.();
       return;
     }
     if (event.key === "Escape") {

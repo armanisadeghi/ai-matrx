@@ -14,12 +14,13 @@
 
 import {
   detailListToUrlArgs,
+  finalPanelUrlLength,
   detailListFromUrlArgs,
   encodePanelArgValue,
   decodePanelArgValue,
 } from "@/lib/detail/presentation";
 import { parseParams, serializeParams } from "../../url-sync/UrlPanelManager";
-import { DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES } from "@/lib/detail/types";
+import { DETAIL_URL_BUDGET_BYTES } from "@/lib/detail/types";
 
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({
@@ -71,11 +72,17 @@ describe("the window's deep link", () => {
     expect(back?.index).toBe(5);
   });
 
-  it("stays inside the same byte budget the page URL obeys", () => {
-    const args = detailListToUrlArgs({ items: refs(5000), index: 2500 }, 5000);
-    expect((args.l ?? "").length).toBeLessThanOrEqual(
-      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
-    );
+  it("stays inside the same budget the page URL obeys — measured on the FINAL address", () => {
+    // 🚨 NEW-19 (VERIFY-U-P1-R4): the token's own escaping is not the last one.
+    // `UrlPanelManager` writes the whole value through `URLSearchParams`, which
+    // escapes every `%` again, so the budget is checked on what the browser
+    // really carries.
+    const args = detailListToUrlArgs({ items: refs(5000), index: 2500 }, 5000, {
+      reservedBytes: "/dashboard".length,
+    });
+    expect(
+      finalPanelUrlLength("/dashboard", "detail:file.x:as-window", args),
+    ).toBeLessThanOrEqual(DETAIL_URL_BUDGET_BYTES);
     expect(detailListFromUrlArgs(args)?.trimmedFrom).toBe(5000);
   });
 });

@@ -67,6 +67,7 @@ import {
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
 import { encodeListQuery } from "./detailOverlayData";
@@ -86,9 +87,15 @@ export function detailPageHref(
   ref: { type: string; id: string },
   extra?: { list?: DetailListContext | null },
 ): string {
+  const path = `/detail/${encodeURIComponent(ref.type)}/${encodeURIComponent(ref.id)}`;
+  // 🚨 NEW-19 — the path is part of the request line the budget belongs to, so
+  // it is RESERVED rather than ignored: the list gets what is left of the 8 KB,
+  // never an allowance of its own.
   return (
-    `/detail/${encodeURIComponent(ref.type)}/${encodeURIComponent(ref.id)}` +
-    encodeListQuery(extra?.list ?? null, resolvedListContextMax())
+    path +
+    encodeListQuery(extra?.list ?? null, resolvedListContextMax(), {
+      reservedBytes: path.length,
+    })
   );
 }
 
@@ -266,6 +273,7 @@ export function DetailHost({ children }: { children: ReactNode }) {
   const openDocked = useOpenDetailDocked();
   const closeWindow = useCloseDetailWindow();
   const closeDocked = useCloseDetailDocked();
+  const openGoogleConnect = useOpenGoogleConnectWindow();
 
   const ports: Omit<DetailHostPorts, "shells" | "resolveType"> = {
     usePresentationSetting,
@@ -305,7 +313,19 @@ export function DetailHost({ children }: { children: ReactNode }) {
       canGoBack: pageWasPushedInThisTab,
       toRecordHome: (ref, entityToken) => router.replace(recordHomeHref(ref, entityToken)),
     },
-    doors: { RecordDoors, RefCell, tokenFromColumnName, isUuidValue },
+    doors: {
+      RecordDoors,
+      RefCell,
+      tokenFromColumnName,
+      isUuidValue,
+      // 🚨 NEW-17 — whether this record OPENS anywhere: the same answer
+      // `EntityDoorControls` renders from, so the body's absent-state sentence
+      // can never promise a control the header does not show.
+      hasDoor: (token, id) => {
+        const doors = resolveEntityDoors(token, id);
+        return Boolean(doors.href) || doors.canPeek;
+      },
+    },
     associations: {
       defaultTokens: ["task", "note", "file", "project"],
       canAnchor: (token) => ANCHOR_TOKENS.has(token),
@@ -316,6 +336,15 @@ export function DetailHost({ children }: { children: ReactNode }) {
       success: (message) => toast.success(message),
     },
     copyText: (text) => copyToClipboard(text, { formatJson: false }),
+    // 🚨 PLAN §5.3 — THE SAME RECONNECT THE CONNECTOR ROWS SHOW, from the
+    // record's own health strip. The Google connect window IS that surface (it
+    // runs incremental consent for only the missing scopes), so a refusal on a
+    // synced record is one press from repair instead of a trip to settings.
+    reconnectSource: (ref, source) => {
+      openGoogleConnect({
+        reason: `to keep this ${ref.type.replace(/_/g, " ")} refreshing from ${source}`,
+      });
+    },
   };
 
   return <DetailHostProvider ports={ports}>{children}</DetailHostProvider>;

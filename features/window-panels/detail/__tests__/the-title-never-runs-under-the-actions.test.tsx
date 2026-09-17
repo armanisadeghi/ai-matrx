@@ -23,8 +23,13 @@
 
 import * as React from "react";
 import { act } from "react";
-import { readFileSync } from "node:fs";
 import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+
+import windowManager from "@/lib/redux/slices/windowManagerSlice";
+import adminDebug from "@/lib/redux/preferences/adminDebugSlice";
+import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 import { PanelHeader } from "@/features/overlays/surfaces/SidePanelSurface";
 import { DetailActions, DetailTitle } from "@/lib/detail/core/DetailHeader";
@@ -38,26 +43,104 @@ import {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-describe("the window header's title layer", () => {
-  const source = readFileSync("features/window-panels/WindowPanel.tsx", "utf8");
+// `useIsMobile` reads `matchMedia`, which jsdom does not implement — the same
+// wall the round-4 verifier's own probe hit. Desktop, because these are the
+// DESKTOP presentations' headers.
+window.matchMedia = ((query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener() {},
+  removeListener() {},
+  addEventListener() {},
+  removeEventListener() {},
+  dispatchEvent: () => false,
+})) as unknown as typeof window.matchMedia;
 
-  it("lays an OPEN window's title out in flow, never absolutely across the whole bar", () => {
-    // The minimized branch keeps its absolute layer on purpose: a minimized
-    // window draws no action cluster, so there is nothing to run under.
-    // The JSX only — the comment above it quotes the classes the fix removed.
-    const marker = source.indexOf("Open titles stay in flow");
-    expect(marker).toBeGreaterThan(0);
-    const openTitleLayer = source.slice(
-      source.indexOf("{!isMinimized && (", marker),
-      source.indexOf("{/* Right action zone */}", marker),
+/**
+ * 🚨 VERIFY-U-P1-R4 (the tests section) — THIS IS A RENDERED ASSERTION NOW.
+ * It used to read `WindowPanel.tsx` as TEXT and anchor on a COMMENT string
+ * ("Open titles stay in flow"), so rewording a comment failed it while a layout
+ * regression that kept the class names passed it. A comment is not evidence. The
+ * window chrome is mounted for real (two reducers and a `matchMedia` stub are all
+ * it needs in jsdom) and the assertions read the ELEMENTS the browser would get.
+ *
+ * 🚨 STILL NOT PIXELS. jsdom computes no layout, so this proves the structure
+ * that made the overlap possible is gone — the title is a flex child in flow with
+ * the action zones, not an absolute layer across the whole bar — and not that the
+ * boxes do not intersect on a real screen.
+ */
+function mountWindowChrome(titleNode: React.ReactNode) {
+  const store = configureStore({ reducer: { windowManager, adminDebug } });
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(
+      <Provider store={store}>
+        <WindowPanel
+          id="detail-window-test"
+          title="Q3 partnership agreement — signed copy.pdf"
+          titleNode={titleNode}
+          actionsRight={<span data-window-actions>actions</span>}
+          onClose={() => {}}
+        >
+          <div>body</div>
+        </WindowPanel>
+      </Provider>,
     );
-    expect(openTitleLayer.length).toBeGreaterThan(200);
-    expect(openTitleLayer).not.toContain("inset-x-0");
-    expect(openTitleLayer).toContain("min-w-0");
-    expect(openTitleLayer).toContain("truncate");
-    // `px-16` was the reservation that pretended to keep the title clear of the
-    // traffic lights and the icons; a flex row reserves the real widths.
-    expect(openTitleLayer).not.toContain("px-16");
+  });
+  return {
+    container,
+    unmount: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+}
+
+describe("the window header's title layer, as rendered", () => {
+  it("lays an OPEN window's title out in flow, never absolutely across the whole bar", () => {
+    const m = mountWindowChrome(<span data-window-title-node>the record</span>);
+    const titleNode = document.querySelector("[data-window-title-node]") as HTMLElement;
+    expect(titleNode).not.toBeNull();
+    const actions = document.querySelector("[data-window-actions]") as HTMLElement;
+    expect(actions).not.toBeNull();
+
+    // Every ancestor between the title and the header row is in FLOW: the
+    // absolute layer with `px-16` standing in for the action zones is what drew
+    // the name underneath the icons (D4).
+    let node: HTMLElement | null = titleNode;
+    const climbed: string[] = [];
+    while (node && node !== document.body) {
+      climbed.push(node.className || "");
+      if (node.contains(actions)) break;
+      node = node.parentElement;
+    }
+    const upToTheSharedRow = climbed.join(" ");
+    expect(upToTheSharedRow).not.toContain("absolute");
+    expect(upToTheSharedRow).not.toContain("inset-x-0");
+    expect(upToTheSharedRow).not.toContain("px-16");
+    // …and it yields rather than overlaps.
+    expect(upToTheSharedRow).toContain("min-w-0");
+
+    // The title and the actions really do share ONE row, in that order.
+    const sharedRow = node as HTMLElement;
+    expect(sharedRow.contains(titleNode)).toBe(true);
+    expect(sharedRow.contains(actions)).toBe(true);
+    expect(
+      titleNode.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    m.unmount();
+  });
+
+  it("declares the container the detail header's own breakpoint reads, in the rendered chrome", () => {
+    const m = mountWindowChrome(<span data-window-title-node>the record</span>);
+    const declared = Array.from(document.querySelectorAll<HTMLElement>("[class]")).some((el) =>
+      el.className.includes(DETAIL_HEADER_CONTAINER),
+    );
+    expect(declared).toBe(true);
+    m.unmount();
   });
 });
 
@@ -131,12 +214,6 @@ describe("the docked panel's header on a phone", () => {
 // narrow. The window's header declares the container the query reads, so the
 // breakpoint answers the window's width and never the screen's.
 describe("the detail header at a narrow window width", () => {
-  const source = readFileSync("features/window-panels/WindowPanel.tsx", "utf8");
-
-  it("declares the container the detail header's own breakpoint reads", () => {
-    expect(source).toContain(DETAIL_HEADER_CONTAINER);
-  });
-
   function Bar() {
     const core = useDetailCore(
       instance({

@@ -123,18 +123,25 @@ already wraps its canonical views and is not on this list.)
 ## Not done (honest)
 
 - **The npm package.** See above: the boundary holds, the publish is owed.
-- **The per-record-type override is implemented but its knob row is not applied.**
-  `ui.detail.presentation_by_type` (a json map, organization → user, read before the default)
-  is read by `DetailHost`, written by `DetailPresentationPane` and covered by tests;
-  `migrations/detail_presentation_by_type_knob.sql` has not been applied, because the session
-  that wrote it had no database egress. Until it is, `knob_resolve` raises for the key, the
-  host catches it and warns once naming the file, and every type opens as
-  `default_presentation` says. (The platform's own `table` rung stays unusable from a browser:
-  it is keyed by a `platform.entity_types` row id and that table is admin-only by a restrictive
-  policy.)
-- The source health strip is a rendered slot with a full contract; no registration feeds it
-  yet (the synced-record primitive, U-P3, is the first).
-- **An editable record body.** Cmd/Ctrl+Enter now saves — `DetailPresentationPane` registers
-  it — but the thing it saves is the detail's own presentation setting, because no record type
-  on this branch has an editable body. The first registration that ships an editor registers
-  its own save the same way and takes the chord over.
+- **The per-record-type override is DONE, and its knob row is live.** (This paragraph said the
+  opposite through rounds 2, 3 and 4 — NEW-16, then NEW-21.) `ui.detail.presentation_by_type`
+  (a json map, organization → user, read before the default) is read by `DetailHost`, written by
+  `DetailPresentationPane`, covered by tests, and its row was applied through the sanctioned path
+  on 2026-09-17 16:15:19Z — read live from `platform.feature_knob` on 2026-09-17 by fix lane F-31.
+  Were the row ever missing, `knob_resolve` raises for the key, the host catches it and warns once
+  naming the file, and every type opens as `default_presentation` says. (The platform's own `table`
+  rung stays unusable from a browser: it is keyed by a `platform.entity_types` row id and that
+  table is admin-only by a restrictive policy.)
+- **The source health strip HAS a producer now** (F-31, 2026-09-17): the record-spec contract
+  carries `health` as a sync-or-async producer the HOST wires, `resolveItemDetailType` attaches
+  `sourceHealthProducerFor(type)` to every registration, and that producer derives the strip from
+  the connectors' own `productHealth` over the server's recorded `capability_health` — one reader,
+  never a second. A row that is not a mirror of a provider answers `null` and the strip stays
+  absent. Pinned by `features/item-presentation/__tests__/a-synced-record-shows-its-refusal.test.tsx`,
+  which drives the live column shape a refused `gmail.send` leaves behind. **Still unseen on a
+  screen**, and no synced TABLE exists yet — U-P3 ships the first one, and it needs no change here.
+- **An editable record body.** Cmd/Ctrl+Enter saves — `DetailPresentationPane` registers it —
+  but the thing it saves is the detail's own presentation setting, because no record type on
+  this branch has an editable body. The first registration that ships an editor registers its
+  own save the same way and takes the chord over. Since F-31 the chord never does nothing in
+  silence: with no save registered it says there is nothing to save here (NEW-22).

@@ -168,6 +168,21 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
 
 // ─── Fields ─────────────────────────────────────────────────────────────────
 
+/**
+ * 🚨 NEW-17 (VERIFY-U-P1-R4) — THE SENTENCE IS DERIVED FROM THE CONTROLS THAT
+ * RENDERED, NEVER A FIXED STRING. "The controls above still open it where it
+ * lives, and copy its id" was printed for `session` — a registered type with no
+ * `entityToken`, whose header therefore shows no door at all — and for every
+ * unregistered type. The copy control is unconditional in `DetailActions`, so
+ * that half is always true; the open half is claimed only when the record really
+ * has a door (`core.canOpenElsewhere`).
+ */
+function whatTheControlsDo(core: DetailCore): string {
+  return core.canOpenElsewhere
+    ? "The controls above still open it where it lives, and copy its id."
+    : "The controls above copy its id, so you can find it wherever it came from.";
+}
+
 function FieldsSection({ core }: { core: DetailCore }) {
   const host = useDetailHost();
   const RefCell = host.doors.RefCell;
@@ -180,7 +195,7 @@ function FieldsSection({ core }: { core: DetailCore }) {
     return (
       <Notice tone="warn">
         {`This is a ${core.ref.type} record. Nothing more about it is stored here yet, so there is ` +
-          "nothing else to show — the controls above still open it where it lives, and copy its id."}
+          `nothing else to show. ${whatTheControlsDo(core)}`}
       </Notice>
     );
   }
@@ -208,8 +223,8 @@ function FieldsSection({ core }: { core: DetailCore }) {
     // latter under an invented title (VERIFY-U-P1-R2).
     return (
       <Notice tone="muted">
-        {`Nothing more about this ${label} is stored here, so there is nothing else to show. The ` +
-          "controls above still open it where it lives, and copy its id."}
+        {`Nothing more about this ${label} is stored here, so there is nothing else to show. ` +
+          whatTheControlsDo(core)}
       </Notice>
     );
   }
@@ -294,6 +309,13 @@ function AssociationsSection({ core }: { core: DetailCore }) {
 
 // ─── History ────────────────────────────────────────────────────────────────
 
+/**
+ * The columns a change's author is spelled as, in the order the map is asked.
+ * `version_list` returns `actor_id`; the others are what sibling history shapes
+ * on this platform carry.
+ */
+const ACTOR_COLUMNS = ["actor_id", "user_id", "person_id", "created_by_id"] as const;
+
 type HistoryState =
   | { status: "loading" }
   | { status: "ready"; entries: DetailHistoryEntry[] }
@@ -334,7 +356,17 @@ function HistorySection({ core }: { core: DetailCore }) {
 
   if (!wanted || !token) return null;
   const ActorCell = host.doors.RefCell;
-  const actorToken = host.doors.tokenFromColumnName("actor_id");
+  // 🚨 NEW-23 (VERIFY-U-P1-R4) — WHO MADE THE CHANGE IS NEVER DROPPED. The row
+  // was rendered only when `tokenFromColumnName("actor_id")` named a token, and
+  // it names none (no `actor` or `user` token has a door in this platform's
+  // registry today), so every history row silently threw away the id
+  // `version_list` hands over. The map is asked for each column an actor is
+  // spelled as — the first that has a door wins — and when none does the value is
+  // shown as itself under an honest label, because an identity the data names is
+  // never nothing (law 4 + the no-dead-ends class).
+  const actorToken = ACTOR_COLUMNS.map((column) => host.doors.tokenFromColumnName(column)).find(
+    (candidate): candidate is string => Boolean(candidate),
+  );
 
   return (
     <section className="space-y-2" data-detail-section="history">
@@ -367,9 +399,22 @@ function HistorySection({ core }: { core: DetailCore }) {
               {entry.isCurrent ? (
                 <span className="text-[10px] uppercase tracking-wide text-primary">current</span>
               ) : null}
-              {entry.actorId && actorToken ? (
-                <ActorCell value={entry.actorId} label="Changed by" token={actorToken} />
-              ) : null}
+              {entry.actorId ? (
+                actorToken ? (
+                  <span className="inline-flex items-center" data-detail-history-actor>
+                    <ActorCell value={entry.actorId} label="Changed by" token={actorToken} />
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground" data-detail-history-actor-raw>
+                    Changed by{" "}
+                    <span className="font-mono text-[10px]">{entry.actorId}</span>
+                  </span>
+                )
+              ) : (
+                <span className="text-muted-foreground" data-detail-history-actor-absent>
+                  No person recorded for this change
+                </span>
+              )}
             </li>
           ))}
         </ol>

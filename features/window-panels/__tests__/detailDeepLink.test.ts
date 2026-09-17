@@ -70,6 +70,8 @@ describe("detail deep link", () => {
       seedAbout: null,
       listItems: null,
       listIndex: null,
+      // NEW-13: the trim travels with the record, so the payload always names it.
+      listTrimmedFrom: null,
     });
 
     const docked = configureStore({ reducer: { overlays } });

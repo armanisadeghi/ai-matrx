@@ -10,6 +10,7 @@
 import { useEffect } from "react";
 
 import { requireResolveType, useDetailHost } from "../host";
+import { useDetailHealth } from "../useDetailHealth";
 import { useDetailKeyboard, type DetailKeyboard } from "../useDetailKeyboard";
 import { useDetailRecord } from "../useDetailRecord";
 import type {
@@ -46,10 +47,22 @@ export interface DetailCore {
    * which is why a type with no source became a named dead end.
    */
   doorsAvailable: boolean;
+  /**
+   * 🚨 NEW-17 — WHETHER A CONTROL THAT OPENS THIS RECORD SOMEWHERE ELSE IS
+   * ACTUALLY ON THE SCREEN (the token resolves to a route or a peek). The body's
+   * absent-state sentence is derived from this; it used to promise a door for
+   * every type, including the ones whose header shows none.
+   */
+  canOpenElsewhere: boolean;
   /** Human label for the record type ("File"), for a header that must say what this is. */
   typeLabel: string;
   about: string | null;
   fields: DetailField[];
+  /**
+   * The source health strip's content — `null` for a record the platform owns
+   * outright, or while a producer that reads it from the host is still
+   * answering. See `useDetailHealth`.
+   */
   health: DetailSourceHealth | null;
   /** The entity token doors / associations / history key off; null = none. */
   entityToken: string | null;
@@ -152,10 +165,27 @@ export function useDetailCore(
     entityTokenOf(recordType) !== null &&
     state.status !== "not-found" &&
     state.status !== "error";
+  // 🚨 NEW-17 — and a door the host can actually open. `RecordDoors` renders
+  // nothing for a token with no route and no peek, so a screen that says "the
+  // controls above still open it where it lives" must ask.
+  const canOpenElsewhere =
+    doorsAvailable &&
+    entityTokenOf(recordType) !== null &&
+    host.doors.hasDoor(entityTokenOf(recordType) as string, data.id);
   const about = data.seed?.about?.trim() || null;
   const fields: DetailField[] =
     row && recordType ? recordType.fields(row) : [];
-  const health = row && recordType?.health ? recordType.health(row) : null;
+  // 🚨 PLAN §4 / §5.3 — THE GOOGLE HEALTH STRIP HAS A PRODUCER. The producer is
+  // a field on the registration the HOST wires (it may read the connector's
+  // recorded capability health, which is an async read), so it is resolved here
+  // through one hook rather than called inline — and a producer that fails says
+  // so on the strip instead of leaving the record silent.
+  const health = useDetailHealth({
+    recordType,
+    row,
+    ref,
+    reconnect: host.reconnectSource ?? null,
+  });
   const entityToken = entityTokenOf(recordType);
 
   const frameCtx: DetailFrameContext | null = recordType
@@ -205,7 +235,18 @@ export function useDetailCore(
   const openNeighbour = (delta: 1 | -1) => {
     const target = neighbour(data.list, delta);
     if (!target || !data.list) return;
-    const list: DetailListContext = { items: data.list.items, index: data.list.index + delta };
+    // 🚨 NEW-18 (VERIFY-U-P1-R4) — THE WHOLE LIST CONTEXT TRAVELS, `trimmedFrom`
+    // INCLUDED. This rebuilt the context from `items` and `index` only, so the
+    // FIRST arrow press turned "stepping through 139 of the 500 records in the
+    // list this was opened from" into silence — in the window's payload and in
+    // the page URL's `lt=` alike — and the next record presented the trimmed
+    // window as the whole list. The arrows are the primary binding, so the
+    // honesty NEW-7 and NEW-13 bought lasted exactly one keystroke.
+    const list: DetailListContext = {
+      ...data.list,
+      items: data.list.items,
+      index: data.list.index + delta,
+    };
     const next: DetailInstanceData = { ...target, seed: null, list };
     if (presentation === "page") {
       // 🚨 NEW-14 — one history entry for the whole detail visit: moving to a
@@ -273,6 +314,13 @@ export function useDetailCore(
     onClose: close,
     onPrev: hasPrev ? () => openNeighbour(-1) : null,
     onNext: hasNext ? () => openNeighbour(1) : null,
+    // 🚨 NEW-22 — Cmd+Enter is one of the three promised bindings; on a record
+    // with no editor open it ANSWERS rather than doing nothing in silence.
+    onSaveUnavailable: () =>
+      host.notify.error(
+        `There is nothing to save on this ${typeLabel.toLowerCase()} — nothing here is being ` +
+          "edited. Changes to the record are made where it lives.",
+      ),
   });
 
   return {
@@ -286,6 +334,7 @@ export function useDetailCore(
     title,
     titleIsStandIn,
     doorsAvailable,
+    canOpenElsewhere,
     typeLabel,
     about,
     fields,

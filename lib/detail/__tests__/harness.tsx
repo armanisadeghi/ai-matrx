@@ -94,6 +94,8 @@ export function makePorts(overrides: Partial<DetailHostPorts> = {}): StubPorts {
       RefCell: ({ value }: { value: string }) => <span>{value}</span>,
       tokenFromColumnName: () => null,
       isUuidValue: (value: unknown): value is string => typeof value === "string",
+      // NEW-17: the stub answers for the tokens the stub's own doors render.
+      hasDoor: (token: string) => token === "file",
     },
     associations: { defaultTokens: [], canAnchor: () => false },
     history: { list: jest.fn(async () => []) },

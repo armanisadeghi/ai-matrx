@@ -6,8 +6,7 @@
 // nothing in the primitive bounded it. A page that cannot load is not a
 // presentation.
 //
-// The cap is a knob (`ui.detail.list_context_max_ids`, default 200,
-// org-overridable) because it is a ceiling, and every ceiling here is a knob an
+// The cap is a knob (`ui.detail.list_context_max_ids`, org-overridable) because it is a ceiling, and every ceiling here is a knob an
 // admin owns. Beyond it the URL carries the WINDOW around the current record —
 // the neighbours the arrows can actually reach — and the detail SAYS the list
 // was trimmed rather than quietly pretending the list was that short.
@@ -18,8 +17,9 @@ import { DetailActions, DetailRecordMeta } from "../core/DetailHeader";
 import { useDetailCore } from "../core/useDetailCore";
 import { trimListContext, listQueryBytes } from "../listContext";
 import {
+  DEFAULT_DETAIL_LIST_CONTEXT_MAX,
   DETAIL_LIST_CONTEXT_MAX_IDS_CEILING,
-  DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+  DETAIL_URL_BUDGET_BYTES,
   detailListContextMax,
 } from "../types";
 import {
@@ -70,17 +70,17 @@ describe("the page href", () => {
     // (The only difference between the two is the digits of `lt`.)
     const bigger = encodeListQuery({ items: refs(5000), index: 250 }, 200);
     expect(bigger.length - query.length).toBeLessThan(3);
-    // Bounded by the BYTE budget, which bites before the knob's 200 records do
-    // for uuid entries (NEW-12): 200 × ~42 characters is 8.4 KB, over budget.
+    // Bounded by the FINAL URL's budget, which bites before a large knob value
+    // does for uuid entries (NEW-12, NEW-19).
     expect(new URLSearchParams(query).get("l")!.length).toBeLessThanOrEqual(
-      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+      DETAIL_URL_BUDGET_BYTES,
     );
     const decoded = decodeListQuery(
       new URLSearchParams(query).get("l"),
       new URLSearchParams(query).get("i"),
       new URLSearchParams(query).get("lt"),
     );
-    expect(decoded?.items.length).toBeGreaterThan(100);
+    expect(decoded?.items.length).toBeGreaterThan(50);
     expect(decoded?.items.length).toBeLessThanOrEqual(200);
     expect(decoded?.trimmedFrom).toBe(500);
     expect(decoded?.items[decoded.index].id).toBe(refs(500)[250].id);
@@ -144,7 +144,7 @@ describe("the byte budget", () => {
     const trimmed = trimListContext({ items: fatRefs(2000), index: 1000 }, 2000);
     expect(trimmed).not.toBeNull();
     expect(listQueryBytes(trimmed!.items)).toBeLessThanOrEqual(
-      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+      DETAIL_URL_BUDGET_BYTES,
     );
     // And it still says what it cut.
     expect(trimmed!.trimmedFrom).toBe(2000);
@@ -156,7 +156,7 @@ describe("the byte budget", () => {
     expect(trimmed!.items.length).toBeLessThan(200);
     expect(trimmed!.trimmedFrom).toBe(200);
     expect(listQueryBytes(trimmed!.items)).toBeLessThanOrEqual(
-      DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+      DETAIL_URL_BUDGET_BYTES,
     );
   });
 
@@ -167,7 +167,7 @@ describe("the byte budget", () => {
         detailListContextMax(knobValue),
       );
       expect(new URLSearchParams(query).get("l")!.length).toBeLessThanOrEqual(
-        DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+        DETAIL_URL_BUDGET_BYTES,
       );
     }
   });
@@ -177,6 +177,6 @@ describe("the byte budget", () => {
     expect(detailListContextMax(100000)).toBe(DETAIL_LIST_CONTEXT_MAX_IDS_CEILING);
     // Inside the ceiling the knob still decides.
     expect(detailListContextMax(50)).toBe(50);
-    expect(detailListContextMax(undefined)).toBe(200);
+    expect(detailListContextMax(undefined)).toBe(DEFAULT_DETAIL_LIST_CONTEXT_MAX);
   });
 });

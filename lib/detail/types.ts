@@ -54,38 +54,54 @@ export const DETAIL_LIST_CONTEXT_MAX_KNOB = "ui.detail.list_context_max_ids";
 
 /**
  * The cap when the knob has not answered yet (a cold cache, a signed-out
- * render, a host that binds no settings ladder). 200 uuid `type.id` pairs is
- * ~8.4 KB of query string; the BYTE budget below is what actually bounds the
- * URL, and 200 is far more neighbours than a person arrows through in one
- * sitting.
+ * render, a host that binds no settings ladder). 100 `type.id` pairs with uuid
+ * ids is the most the strictest presentation's FINAL URL can carry inside the
+ * budget below, and it is far more neighbours than a person arrows through in
+ * one sitting.
  */
-export const DEFAULT_DETAIL_LIST_CONTEXT_MAX = 200;
+export const DEFAULT_DETAIL_LIST_CONTEXT_MAX = 100;
 
 /**
- * 🚨 NEW-12 (VERIFY-U-P1-R3) — THE REAL BUDGET IS BYTES, AND IT IS THIS ONE.
+ * 🚨 NEW-19 (VERIFY-U-P1-R4) — THE BUDGET BELONGS TO THE FINAL URL, ONCE.
  *
- * The id cap alone measured the wrong thing: a 30-character type token at the
- * default 200 gave a 13.6 KB query string (past nginx's 8 KB request line), and
- * the knob's own former `max_value` of 2000 gave 84 KB — four times the >20 KB
- * href the cap was written to prevent (measured, VERIFY-U-P1-R3 break attempt 7).
+ * It used to be 6,000 characters measured on the list VALUE, one escaping layer
+ * too early, and nothing bounded the whole address:
  *
- * 6000 characters is the budget for the list value itself. The strictest edge in
- * front of this platform takes an 8 KB request line, and the method, the path,
- * the `?panels=` token and every other parameter share it — so the list gets
- * 6 KB and ~2 KB is left for the rest of the URL. `trimListContext` trims until
- * the encoded value fits and SAYS what it cut (`trimmedFrom`); no caller may
- * skip it.
+ *   * a detail window's deep link measured 5,992 against that 6,000 and reached
+ *     the address bar at 7,416, because `UrlPanelManager` writes the `?panels=`
+ *     token through `new URLSearchParams(...).toString()`, which re-escapes
+ *     every `%` the token's own escaping already produced (a uuid's `-` goes
+ *     `-` → `%2D` → `%252D`);
+ *   * a detail PAGE that also carried an open window was 13,433 characters —
+ *     its own `?l=` plus the merged `panels=` — past the 8 KB request line, so
+ *     the edge answers 414 and the link is dead (VERIFY-U-P1-R4, NEW-19).
+ *
+ * 8,000 characters is the strictest edge in front of this platform (an 8 KB
+ * request line), and the method, the path, every other parameter and the
+ * token's own non-list args share it: a caller passes what the rest of the URL
+ * already costs as `reservedBytes` and `trimListContext` measures the FINAL
+ * serialized form. No caller may skip it, and the record SAYS what was cut
+ * (`trimmedFrom`).
  */
-export const DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES = 6000;
+export const DETAIL_URL_BUDGET_BYTES = 8000;
 
 /**
- * The hard ceiling on the knob. Above this the byte budget always trims first,
- * so a larger value would be the setting promising records the URL can never
- * carry — the exact dishonesty NEW-12 named. The knob decides everything below
- * it; `migrations/detail_list_context_max_ceiling.sql` lowers `max_value` to the
- * same number so the settings screen cannot offer more either.
+ * The hard ceiling on the knob — the number of records the final URL can really
+ * carry in EVERY presentation, so a value below it always changes what travels.
+ *
+ * 🚨 NEW-20 (VERIFY-U-P1-R4). The ceiling was 500 while the byte budget stopped
+ * a uuid list at 139, so every value an administrator could set from 139 to 500
+ * behaved identically and the knob's own live basis text told them 200 records
+ * would travel. Measured against the final URL: 100 uuid entries under a short
+ * type token cost ~6.7 KB in the window's `?panels=` token (the strictest
+ * spelling) and ~4.3 KB in the page query, both inside the budget above; 150
+ * costs ~10 KB in the token and does not fit. `migrations/
+ * detail_list_context_max_deliverable.sql` lowers the knob's own `max_value`
+ * and default to the same number and rewrites its basis text, so the settings
+ * screen cannot offer records the URL can never carry. A longer type token
+ * still trims below the cap — and still says so.
  */
-export const DETAIL_LIST_CONTEXT_MAX_IDS_CEILING = 500;
+export const DETAIL_LIST_CONTEXT_MAX_IDS_CEILING = 100;
 
 /**
  * The knob's value as a usable cap; the default for anything that is not one,
@@ -200,6 +216,23 @@ export interface DetailSourceHealth {
   onRefresh?: (() => void | Promise<void>) | null;
 }
 
+/** What a `health` producer is told about the record it is answering for. */
+export interface DetailHealthContext {
+  ref: DetailRef;
+  /** Aborted when the record changes or the detail closes. */
+  signal: AbortSignal;
+}
+
+/**
+ * The health producer: sync or async, and free to answer `null` for a record
+ * that is not synced. A throw or a rejection is rendered as an honest "we could
+ * not check the connection" strip, never as silence (`useDetailHealth`).
+ */
+export type DetailHealthProducer<Row extends DetailRow = DetailRow> = (
+  row: Row,
+  ctx: DetailHealthContext,
+) => DetailSourceHealth | null | Promise<DetailSourceHealth | null>;
+
 /** An extra section a record type adds under the fixed ones. */
 export interface DetailSection {
   id: string;
@@ -247,8 +280,21 @@ export interface DetailRecordType<Row extends DetailRow = DetailRow> {
   title: (row: Row | null, seed: DetailSeed | null) => string;
   /** The field list for the fields section. */
   fields: (row: Row) => DetailField[];
-  /** Source health for synced records. Omit / return null for owned records. */
-  health?: ((row: Row) => DetailSourceHealth | null) | null;
+  /**
+   * 🚨 PLAN §4 — THE SOURCE HEALTH STRIP'S PRODUCER. Source health for a SYNCED
+   * record; omit it, or answer `null`, for a record the platform owns outright.
+   *
+   * It may be ASYNC, because whether the grant behind a synced record still works
+   * is not in the row — it is the connector's recorded per-capability health, read
+   * from the server. The host wires this field when it registers the record type
+   * (in matrx-frontend, `resolveItemDetailType`, from the connectors' own
+   * `productHealth`; never a second reader of `capability_health`), and
+   * `useDetailHealth` resolves it. Until 2026-09-17 nothing set it, so the strip
+   * could not render on any record and the §5.3 promise — a refusal anywhere shows
+   * on every dependent record with the same Reconnect — had no witness
+   * (VERIFY-U-P1-R4).
+   */
+  health?: DetailHealthProducer<Row> | null;
   /**
    * Tokens the associations section shows. `null` hides the section.
    * Omitted → the host's default set minus this record's own token.

@@ -11,30 +11,66 @@
 // request-line limit (VERIFY-U-P1-R2, break attempt 5).
 //
 // The record cap is a KNOB, not a constant: every ceiling on this platform is a
-// row an admin can change (`ui.detail.list_context_max_ids`, default 200,
-// organization-overridable). But a record count is not a length: at 2000 — the
-// value the knob's own `max_value` used to permit — the query was 84 KB, and even
-// at 200 a 30-character type token gave 13.6 KB (VERIFY-U-P1-R3, NEW-12). So the
-// trim obeys BOTH: the knob's record cap, and
-// `DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES` measured on the encoded value. Whichever
-// bites first, the result carries the WINDOW AROUND THE CURRENT RECORD — the far
-// ends of a long list are not what the arrows are for — and says the list was
-// trimmed (`trimmedFrom`) rather than presenting the window as the whole thing.
+// row an admin can change (`ui.detail.list_context_max_ids`, organization-
+// overridable). But a record count is not a length: at 2000 — the value the
+// knob's own `max_value` used to permit — the query was 84 KB, and even at 200 a
+// 30-character type token gave 13.6 KB (VERIFY-U-P1-R3, NEW-12). So the trim
+// obeys BOTH: the knob's record cap, and `DETAIL_URL_BUDGET_BYTES` measured on
+// the FINAL SERIALIZED URL. Whichever bites first, the result carries the WINDOW
+// AROUND THE CURRENT RECORD — the far ends of a long list are not what the arrows
+// are for — and says the list was trimmed (`trimmedFrom`) rather than presenting
+// the window as the whole thing.
+//
+// 🚨 NEW-19 (VERIFY-U-P1-R4) — AND THE BUDGET IS THE WHOLE URL'S, AFTER THE LAST
+// ESCAPING. It used to be a 6,000-character allowance for the list VALUE alone,
+// measured before `URLSearchParams` re-escaped it: a window deep link that
+// measured 5,992 arrived in the address bar at 7,416, and a detail PAGE that also
+// carried an open window was 13,433 characters — past the 8 KB request line, so
+// the edge answers 414 and the link is dead. A caller now passes what the rest of
+// the address already costs (`reservedBytes`) and a `measure` that returns the
+// FINAL serialized length of the list as that URL will carry it.
 //
 // Nothing here talks to the settings ladder: the host resolves the knob and
 // passes the number in, so the module stays package-shaped.
 
 import {
-  DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES,
+  DETAIL_URL_BUDGET_BYTES,
   type DetailListContext,
   type DetailRef,
 } from "./types";
 
+/**
+ * 🚨 NEW-25 (VERIFY-U-P1-R4) — THE SEPARATOR IS ESCAPED, SO THE SPLIT IS NEVER A
+ * GUESS. `encodeURIComponent` leaves `.` alone and every spelling of a record in
+ * a URL splits on the FIRST dot, so `{type: "gr.ant", id: "x.y"}` came back as
+ * `{type: "gr", id: "ant.x.y"}` — a DIFFERENT record, silently, in the page query
+ * and in the `?panels=` token alike. `:` is the panel grammar's own separator and
+ * `sc-domain:example.com` is already a real Search Console identifier, so both
+ * characters are escaped here, on encode, by the ONE encoder — which is what
+ * makes the decode unambiguous rather than lucky.
+ */
+const REF_PART_SEPARATORS = /[.:,]/g;
+
+/** One half of a `type.id` pair, carrying no character the decoders split on. */
+export function encodeRefPart(value: string): string {
+  return encodeURIComponent(value).replace(
+    REF_PART_SEPARATORS,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+/** Inverse of `encodeRefPart`; a hand-edited value comes back as its own text. */
+export function decodeRefPart(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 /** `type.id,type.id` — the ONE spelling of a list in a URL, page or panel token. */
 export function encodeListItems(items: readonly DetailRef[]): string {
-  return items
-    .map((r) => `${encodeURIComponent(r.type)}.${encodeURIComponent(r.id)}`)
-    .join(",");
+  return items.map((r) => `${encodeRefPart(r.type)}.${encodeRefPart(r.id)}`).join(",");
 }
 
 /** Inverse of `encodeListItems`; entries that do not name a record are dropped. */
@@ -45,8 +81,8 @@ export function decodeListItems(value: string | null | undefined): DetailRef[] {
     const dot = key.indexOf(".");
     if (dot <= 0 || dot === key.length - 1) continue;
     items.push({
-      type: decodeURIComponent(key.slice(0, dot)),
-      id: decodeURIComponent(key.slice(dot + 1)),
+      type: decodeRefPart(key.slice(0, dot)),
+      id: decodeRefPart(key.slice(dot + 1)),
     });
   }
   return items;
@@ -58,12 +94,22 @@ export function listQueryBytes(items: readonly DetailRef[]): number {
 }
 
 export interface TrimListContextOptions {
-  /** The character budget for the encoded list. Defaults to the platform budget. */
+  /**
+   * The character budget for the whole URL. Defaults to the platform's request
+   * line (`DETAIL_URL_BUDGET_BYTES`).
+   */
   budgetBytes?: number;
   /**
-   * How the caller will encode these records, when it is not the page query's
-   * spelling — the `?panels=` token escapes every separator, so its value is
-   * longer for the same records (NEW-15).
+   * What the rest of the FINAL address already costs — the path, the query it is
+   * being merged into, the token's own non-list args. The list gets what is
+   * left, never a private allowance of its own (NEW-19).
+   */
+  reservedBytes?: number;
+  /**
+   * How many characters these records cost IN THE FINAL URL. The `?panels=`
+   * token escapes every separator and `URLSearchParams` escapes the result
+   * again, so the same records cost about 1.6× there what they cost in the page
+   * query (NEW-15, NEW-19).
    */
   measure?: (items: readonly DetailRef[]) => number;
 }
@@ -78,7 +124,8 @@ export function trimListContext(
   options: TrimListContextOptions = {},
 ): DetailListContext | null {
   if (!list || list.items.length === 0) return null;
-  const budget = options.budgetBytes ?? DETAIL_LIST_CONTEXT_URL_BUDGET_BYTES;
+  const budget =
+    (options.budgetBytes ?? DETAIL_URL_BUDGET_BYTES) - (options.reservedBytes ?? 0);
   const measure = options.measure ?? listQueryBytes;
   const total = list.items.length;
   const index = list.index >= 0 && list.index < total ? list.index : 0;

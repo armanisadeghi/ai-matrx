@@ -17,6 +17,45 @@ import { detailInstanceKey } from "./presentation";
 import type { DetailInstanceData } from "./types";
 
 /**
+ * 🚨 NEW-22 (VERIFY-U-P1-R4) — THE KEYBOARD MODEL IS BOUND ON EVERY SLOT THE
+ * PRESENTATION FILLS, NOT ONLY THE BODY.
+ *
+ * `titleNode` and `actions` are handed to the SHELL and render outside the body's
+ * root, and no shell in this app handles a keystroke: with focus on the copy-id
+ * button, a presentation icon, a previous/next chevron or the overflow trigger,
+ * Escape closed nothing in all three desktop presentations (reproduced in each).
+ * On a phone the docked and window presentations are a `vaul` Drawer, which
+ * handles Escape itself — which is why it hid. The header is part of the detail,
+ * so the same handler answers from it.
+ *
+ * Capture phase on each slot, so two open details never answer one keystroke.
+ */
+function KeyboardSlot({ core, children }: { core: DetailCore; children: ReactNode }) {
+  return (
+    <div
+      onKeyDownCapture={core.keyboard.rootProps.onKeyDownCapture}
+      className="flex min-w-0 flex-1 items-center"
+      data-detail-keyboard-slot
+    >
+      {children}
+    </div>
+  );
+}
+
+/** The same, for the actions cluster — which must not grow or stretch. */
+function KeyboardActionsSlot({ core, children }: { core: DetailCore; children: ReactNode }) {
+  return (
+    <div
+      onKeyDownCapture={core.keyboard.rootProps.onKeyDownCapture}
+      className="flex shrink-0 items-center"
+      data-detail-keyboard-slot="actions"
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
  * The keyboard-owning root. Focus lands here on open (and on every record
  * change) so Escape / [ / ] answer immediately, the way a peek does in Linear.
  */
@@ -59,8 +98,16 @@ export function DetailWindowPresentation({ data, onClose }: DetailPresentationPr
       target={core.ref}
       list={core.list.context}
       title={core.title}
-      titleNode={<DetailTitle core={core} />}
-      actions={<DetailActions core={core} />}
+      titleNode={
+        <KeyboardSlot core={core}>
+          <DetailTitle core={core} />
+        </KeyboardSlot>
+      }
+      actions={
+        <KeyboardActionsSlot core={core}>
+          <DetailActions core={core} />
+        </KeyboardActionsSlot>
+      }
       onClose={core.close}
     >
       <KeyboardRoot core={core}>
@@ -79,8 +126,16 @@ export function DetailDockedPresentation({ data, onClose }: DetailPresentationPr
       instanceKey={detailInstanceKey(core.ref)}
       target={core.ref}
       title={core.title}
-      titleNode={<DetailTitle core={core} />}
-      actions={<DetailActions core={core} />}
+      titleNode={
+        <KeyboardSlot core={core}>
+          <DetailTitle core={core} />
+        </KeyboardSlot>
+      }
+      actions={
+        <KeyboardActionsSlot core={core}>
+          <DetailActions core={core} />
+        </KeyboardActionsSlot>
+      }
       onClose={core.close}
     >
       <KeyboardRoot core={core}>
@@ -106,8 +161,16 @@ export function DetailPagePresentation({ data }: { data: DetailInstanceData }) {
     <Shell
       target={core.ref}
       title={core.title}
-      titleNode={<DetailTitle core={core} />}
-      actions={<DetailActions core={core} />}
+      titleNode={
+        <KeyboardSlot core={core}>
+          <DetailTitle core={core} />
+        </KeyboardSlot>
+      }
+      actions={
+        <KeyboardActionsSlot core={core}>
+          <DetailActions core={core} />
+        </KeyboardActionsSlot>
+      }
       onClose={core.close}
       onBack={core.leave}
     >

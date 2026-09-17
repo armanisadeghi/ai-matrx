@@ -31,6 +31,7 @@ import { isUuidValue, tokenFromColumnName } from "@/components/official/entity-r
 
 import { entityTokenForItemType, getItemConfig, type ItemTypeConfig } from "./registry";
 import { ItemDetailFrame } from "./ItemDetailFrame";
+import { sourceHealthProducerFor } from "./sourceHealth";
 
 const DOORS = { tokenFromColumnName, isUuidValue };
 
@@ -97,6 +98,14 @@ export function resolveItemDetailType(type: string): DetailRecordType | null {
     load: detailSource ? makeLoader(detailSource) : null,
     title: titleFor(config),
     fields: (row) => fieldsFromRow(row, DOORS),
+    // 🚨 PLAN §4 / §5.3 — THE SOURCE HEALTH STRIP'S PRODUCER. Every registration
+    // carries it; it answers null for a row that is not a mirror of a provider,
+    // which is every platform-owned record, and for a SYNCED row it derives the
+    // strip from the connectors' own `productHealth` over the server's recorded
+    // `capability_health` — one reader, so a record and the connectors screen can
+    // never disagree about the same grant. Until 2026-09-17 nothing set this
+    // field, so no record could render the strip at all (VERIFY-U-P1-R4).
+    health: sourceHealthProducerFor(type),
     Frame: ItemDetailFrame,
   };
   cache.set(type, recordType);

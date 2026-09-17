@@ -18,8 +18,15 @@ import {
   DETAIL_URL_AS_ARG,
   DETAIL_URL_TYPE_KEY,
   detailListToUrlArgs,
+  panelUrlReserveBytes,
 } from "@/lib/detail/presentation";
 import { resolvedListContextMax } from "../listContextCap";
+
+/** What the address this window's token joins already costs (NEW-19). */
+function currentAddressCost(): number | undefined {
+  if (typeof window === "undefined") return undefined;
+  return panelUrlReserveBytes(`${window.location.pathname}${window.location.search}`);
+}
 
 export function DetailWindowShell({
   instanceKey,
@@ -47,10 +54,17 @@ export function DetailWindowShell({
       urlSyncId={instanceKey}
       /* 🚨 NEW-15 — the token carries the LIST too, under the same cap and byte
          budget the page URL obeys, so a refresh keeps the previous / next
-         controls and the counter instead of losing them in silence. */
+         controls and the counter instead of losing them in silence.
+         🚨 NEW-19 — and the budget is measured on the FINAL address: this token
+         is merged into the query the person is already on (a detail PAGE carries
+         its own capped list), so what that address costs after re-serialization
+         is RESERVED. Without it, a window opened from a detail page produced a
+         13,433-character URL the edge refuses. */
       urlSyncArgs={{
         [DETAIL_URL_AS_ARG]: "window",
-        ...detailListToUrlArgs(list, resolvedListContextMax()),
+        ...detailListToUrlArgs(list, resolvedListContextMax(), {
+          reservedBytes: currentAddressCost(),
+        }),
       }}
     >
       {children}

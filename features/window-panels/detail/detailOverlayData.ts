@@ -86,17 +86,29 @@ export function toDetailInstanceData(data: DetailOverlayData): DetailInstanceDat
 // only when the list was TRIMMED to fit the URL (NEW-7): it is the length of the
 // list the window was cut from, so the detail can say so.
 
+/** `?l=`, `&i=`, `&lt=` and their values — what the query costs beside the list. */
+const PAGE_QUERY_FIXED_BYTES = 40;
+
 /**
  * 🚨 NEW-7 — CAPPED, ALWAYS. `max` is the resolved
  * `ui.detail.list_context_max_ids` knob; the default is used when the host has
  * no answer yet, never "no cap". A 500-row list uncapped produced a >20 KB href
  * no server accepts (VERIFY-U-P1-R2).
+ *
+ * 🚨 NEW-19 (VERIFY-U-P1-R4) — AND THE BUDGET IS THE WHOLE URL'S. The path this
+ * query hangs off is part of the request line, so the caller passes what it
+ * costs (`reservedBytes`) and the list gets what is left. Measuring the list
+ * alone is how a detail page reached 8,464 characters while the code claimed a
+ * 2 KB margin.
  */
 export function encodeListQuery(
   list: DetailListContext | null | undefined,
   max: number = DEFAULT_DETAIL_LIST_CONTEXT_MAX,
+  options: { reservedBytes?: number } = {},
 ): string {
-  const capped = trimListContext(list, max);
+  const capped = trimListContext(list, max, {
+    reservedBytes: (options.reservedBytes ?? 0) + PAGE_QUERY_FIXED_BYTES,
+  });
   if (!capped) return "";
   // Each `type.id` is encoded, the separators are not: a comma is legal in a
   // query value, and `%2C` × 200 was 400 bytes of nothing.
