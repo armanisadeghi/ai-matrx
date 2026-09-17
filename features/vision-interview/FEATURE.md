@@ -16,7 +16,7 @@ doc, the deferred tail and every naming caveat all live in that STATE.md. The ba
 | Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` — RouteHeader + THREE resizable panels (cookie `vision-interview-room-layout-v3`): `QuestionsPanel` (~22%) · `RoomChatPane` (~50%) · `ExpertFeedPanel` (~28%); mobile switches panes (Questions · Room · Feed) |
 | One expert's room | `components/RoomChatPane.tsx` — `StageTabs` + the CANONICAL `ChatRoomClient` for the active role, plus the Scribe's document/deliverables and the answer-append rider |
 | Stage tabs | `components/StageTabs.tsx` — one substantial button per stage primary (icon disc + role name + stage label together) |
-| **Finish (the guided run)** | `components/RoomHeader.tsx` → `components/FinishInterviewDialog.tsx` — the ONE door to the workflow run, and therefore to `interview.finalize` and the three deliverables. Starts the run, sends `done` when it hands back, shows the gate's answer, and opens each document the moment it exists |
+| **Finish (the guided run)** | `components/RoomHeader.tsx` → `components/FinishInterviewDialog.tsx` — the ONE door to the workflow run, and therefore to `interview.finalize` and the three deliverables. **ONE press**: `useInterviewRun.finish` starts the run when none is waiting and sends `done` the instant it hands back, so the person never performs the server's two journeys themselves. The dialog names what the room still has open BEFORE the press, and opens each document the moment it exists |
 | New interview | `components/NewInterviewDialog.tsx` (direct Supabase insert → routes into the room) |
 
 ## Data flow
@@ -273,6 +273,28 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
   and a poll that settles the run aborts the read; a seventeenth guard case
   covers exactly that feed. Live proof, before and after, in
   `common-docs/projects/masterwork-methods-census/fix-evidence/`.
+
+- **2026-09-16** — **A Finish click finishes. It never runs another
+  conversation round** (third cold walk, finding 3 — the identical defect the
+  second cold walk had filed one walk earlier, reproduced byte for byte). The
+  terminal control was two server journeys wearing one button: in any phase but
+  `waiting_human` the dialog's confirm called `onStart`, which starts a run
+  whose first act is a live interview round; only in `waiting_human` did it
+  send `done`. The button renamed itself between presses to cover the seam
+  ("Finish the interview" → "Write the documents" → "Finish anyway"), and the
+  server compounded it by REFUSING the first `done` and looping back into the
+  router. A first-time Expert pressed Finish twice, watched the round counter
+  go 3 → 4 → 5 and the open-question count go 5 → 8, and never received a
+  Vision document, a Requirements document or a cleaned transcript. Both halves
+  are closed: `useInterviewRun.finish` arms the intent and spends it the moment
+  the run interrupts (one press, one label, `onStartRun` gone from `RoomHeader`
+  entirely), and aidream's `routing.done_decision` always converges, recording
+  what was left open instead of refusing. The second-chance consent moved to
+  where a person can read it — the dialog now says what the room still has open
+  BEFORE anything is sent, and it never blocks the control. Forcing guards:
+  `__tests__/a-finish-click-finishes.test.tsx` here (red against the pre-fix
+  dialog in `idle`, `complete` and `error`, and on the renaming label) and
+  `aidream/services/vision_interview/tests/test_a_finish_finishes.py` there.
 
 - **2026-09-15** — **The room can no longer sit on "Working…" over a run that
   does not exist (wall W9).** `handleInlineEvent` returned on every non-`data`

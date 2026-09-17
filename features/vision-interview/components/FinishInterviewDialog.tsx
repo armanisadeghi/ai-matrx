@@ -16,16 +16,32 @@
 // tabs render. That is a dead end, so the run moved here, behind the room
 // header's Finish control.
 //
-// WHAT THIS ACTUALLY DOES — stated honestly on screen, because it is not one
-// click on the server:
-//   1. Start the run. The room's experts take one guided round together
-//      (their words land in the expert feed as `interview.turn` rows, NOT in
-//      the person's chat tabs — the run uses fresh conversations), and the
-//      run then waits on the human.
-//   2. Send `done`. The gate answers the FIRST done with what is still open
-//      and runs another round; a REPEATED done is honored as the person's
-//      call (aidream `interview_actions.interview_gate`). This dialog shows
-//      that answer verbatim, so "Finish anyway" is an informed choice.
+// 🚨 ONE PRESS FINISHES IT, AND THE CHOICE IS INFORMED BEFORE THE PRESS
+// (cold walks 2 and 3 of the Masterwork pipeline, 2026-09-15 and -16).
+//
+// This dialog used to make the person perform the server's two journeys
+// themselves, under two different labels: "Finish the interview" started the
+// run, and "Write the documents" sent `done` — and the gate then answered
+// that first `done` by running ANOTHER interview round. Two independent cold
+// walks pressed Finish twice, watched the round counter climb and the
+// open-question count go from five to eight, and never received a Vision
+// document, a Requirements document or a cleaned transcript. The room the
+// product is named after could not be finished by the button labelled to
+// finish it.
+//
+// Both halves now live behind one press (`useInterviewRun.finish`), and the
+// server honours the first `done` (aidream `routing.done_decision`). The
+// second-chance consent that used to hide behind the click is now IN FRONT of
+// it: this dialog names what the room still wants — open questions, open
+// holes — before anything is sent, which is where a confirmation a person can
+// actually read belongs.
+//
+// WHAT HAPPENS, stated honestly on screen:
+//   1. The guided run starts if it is not already waiting. The room's experts
+//      take one round together (their words land in the expert feed as
+//      `interview.turn` rows, NOT in the person's chat tabs — the run uses
+//      fresh conversations).
+//   2. The moment the run hands back, `done` is sent for them.
 //   3. The gate converges → `interview.finalize` writes the three documents
 //      server-side. They arrive here through the session-row realtime
 //      subscription, and this dialog opens them (invariant: no dead ends).
@@ -51,6 +67,8 @@ import {
   selectActiveSpeaker,
   selectPendingInterrupt,
   selectRoomSession,
+  selectOpenHoleCount,
+  selectOpenQuestionCount,
   selectRunError,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
@@ -66,16 +84,16 @@ interface DeliverableRow {
 export interface FinishInterviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Start the guided run — the only path that reaches finalize. */
-  onStart: () => Promise<boolean>;
-  /** Tell the waiting run the interview is done (resume payload `done`). */
+  /**
+   * Finish the interview — start the guided run if none is waiting and send
+   * `done`, as one action. See `useInterviewRun.finish`.
+   */
   onFinish: () => Promise<boolean>;
 }
 
 export function FinishInterviewDialog({
   open,
   onOpenChange,
-  onStart,
   onFinish,
 }: FinishInterviewDialogProps) {
   const dispatch = useAppDispatch();
@@ -85,12 +103,25 @@ export function FinishInterviewDialog({
   const interrupt = useAppSelector(selectPendingInterrupt);
   const speaker = useAppSelector(selectActiveSpeaker);
   const [busy, setBusy] = useState(false);
-  // Did WE already tell this run the interview is done? The gate answers the
-  // first done with what is still open and runs another round, so coming back
-  // to `waiting_human` after a done IS the refusal — that, not the presence of
-  // a prompt (every interrupt carries one), is what makes the next click
-  // "Finish anyway".
-  const [doneSent, setDoneSent] = useState(false);
+  // What the room still wants, read from the SAME state the room's own
+  // Questions panel renders. This is the second chance that used to hide
+  // behind the click as an extra interview round: the person reads it, then
+  // decides. It is never a reason the control refuses — Finish always
+  // finishes.
+  const openQuestions = useAppSelector(selectOpenQuestionCount);
+  const openHoles = useAppSelector(selectOpenHoleCount);
+
+  // Said the way a person says it, not as two counts in a row.
+  const stillOpen = [
+    openQuestions > 0
+      ? `${openQuestions} question${openQuestions === 1 ? "" : "s"} it has not had an answer to`
+      : null,
+    openHoles > 0
+      ? `${openHoles} gap${openHoles === 1 ? "" : "s"} it wanted to close`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" and ");
 
   const waiting = runPhase === "waiting_human";
   const working = runPhase === "starting" || runPhase === "running";
@@ -123,52 +154,39 @@ export function FinishInterviewDialog({
     onOpenChange(false);
   };
 
-  const title = waiting
-    ? "Finish this interview"
-    : working
-      ? "The room is working"
-      : failed
-        ? "The room couldn't finish the interview"
-        : finalizedAt
-          ? "Write the documents again"
-          : "Finish this interview";
+  const title = working
+    ? "The room is working"
+    : failed
+      ? "The room couldn't finish the interview"
+      : finalizedAt
+        ? "Write the documents again"
+        : "Finish this interview";
 
-  const description = waiting
-    ? doneSent
-      ? "You said you were finished and the room came back with what it still wants to cover. Saying it again is your call, and the room will honour it."
-      : "The room has handed the interview back to you — this is what it just said. Finish now and it closes the interview and writes the documents."
-    : working
-      ? `${speaker ? `${ROLES[speaker].name} is speaking. ` : ""}You can close this window — the run continues on the server, and the Finish control will be waiting when the room hands back.`
-      : failed
-        ? "Nothing you have said is lost — the whole interview lives in the room's own records. You can try again right now."
-        : finalizedAt
-          ? "Your documents were written once already. Running this again takes everything said since then into account and rewrites all three."
-          : "Everything you have told your experts is already saved. Finishing hands the interview to the guided run: your experts take one round together, and then the room writes the documents from the whole record.";
+  const description = working
+    ? `${speaker ? `${ROLES[speaker].name} is speaking. ` : ""}You can close this window — the run continues on the server, and your documents will be here when it lands.`
+    : failed
+      ? "Nothing you have said is lost — the whole interview lives in the room's own records. You can try again right now."
+      : finalizedAt
+        ? "Your documents were written once already. Running this again takes everything said since then into account and rewrites all three."
+        : "Everything you have told your experts is already saved. Finishing closes the interview and writes your Vision document, your Requirements document and a cleaned transcript from the whole record.";
 
-  const confirmLabel = waiting
-    ? doneSent
-      ? "Finish anyway"
-      : "Write the documents"
-    : working
-      ? "Working…"
-      : failed
-        ? "Try again"
-        : finalizedAt
-          ? "Write them again"
-          : "Finish the interview";
+  // ONE LABEL, ONE MEANING. The button used to change its own name between
+  // presses — "Finish the interview", then "Write the documents", then
+  // "Finish anyway" — because each press did a different thing on the server.
+  // Only the room's own state changes it now.
+  const confirmLabel = working
+    ? "Working…"
+    : failed
+      ? "Try again"
+      : finalizedAt
+        ? "Write them again"
+        : "Finish and write the documents";
 
   const act = async () => {
     if (busy || working) return;
     setBusy(true);
     try {
-      // Waiting on the human → the `done` directive rides the resume payload
-      // (invariant 5). Otherwise there is no run to answer — start one.
-      if (waiting) {
-        if (await onFinish()) setDoneSent(true);
-      } else {
-        await onStart();
-        setDoneSent(false);
-      }
+      await onFinish();
     } finally {
       setBusy(false);
     }
@@ -186,6 +204,18 @@ export function FinishInterviewDialog({
       onConfirm={act}
       content={
         <div className="space-y-3 text-sm">
+          {/* THE SECOND CHANCE, IN FRONT OF THE CLICK. This used to be an
+              extra interview round the person never asked for; it is now a
+              sentence they can read before deciding. It never blocks the
+              button — it informs it. */}
+          {!working && !failed && stillOpen ? (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+              The room still has {stillOpen} on the table. Finishing now closes
+              the interview anyway and writes the documents from everything
+              said so far — nothing you have told it is lost, and you can
+              always come back and write them again.
+            </p>
+          ) : null}
           {waiting && interrupt?.prompt && (
             <div className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               {interrupt.prompt}
@@ -201,7 +231,7 @@ export function FinishInterviewDialog({
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
               {runPhase === "starting"
                 ? "Handing the interview to the room…"
-                : "The guided round is running. It ends by asking you whether you are finished."}
+                : "The room is taking its last round together, and then it writes your documents. You do not have to do anything else."}
             </p>
           )}
 

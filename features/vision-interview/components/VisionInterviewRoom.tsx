@@ -62,7 +62,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   // Stamps dictation audio (already durably saved) onto the human turn the
   // server creates — v2 §13.1 raw-audio capture.
   useTurnAudioAttachment(sessionId);
-  const { start, resume } = useInterviewRun(sessionId);
+  const { resume, finish } = useInterviewRun(sessionId);
   const dispatch = useAppDispatch();
   const openQuestions = useAppSelector(selectOpenQuestionCount);
   const hydrated = useAppSelector(selectRoomHydrated);
@@ -87,11 +87,14 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
 
   // The guided run's ONE door is the header's Finish control: in v3 the
   // person holds the conversation themselves, so the run exists only to reach
-  // `interview.finalize` (the Vision + Requirements documents). Both halves of
-  // that journey live here — start the run, then tell the waiting run the
-  // interview is done. See FinishInterviewDialog.
-  const startInterview = () => start();
-  const finishInterview = () => resume({ message: "", done: true });
+  // `interview.finalize` (the Vision + Requirements documents).
+  //
+  // Both halves of that journey — starting the run and telling it the
+  // interview is over — now live behind ONE press inside `useInterviewRun`,
+  // because a person who presses Finish has said what they want and should
+  // not have to say it again in different words. See the comment on `finish`
+  // and FinishInterviewDialog.
+  const finishInterview = () => finish();
 
   const conversation = (
     <RoomChatPane
@@ -103,11 +106,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
 
   return (
     <>
-      <RoomHeader
-        onAdvanceStage={advanceStage}
-        onStartRun={startInterview}
-        onFinishRun={finishInterview}
-      />
+      <RoomHeader onAdvanceStage={advanceStage} onFinishRun={finishInterview} />
       <div
         className="matrx-touch-targets flex h-full flex-col overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}

@@ -40,15 +40,16 @@ import { FinishInterviewDialog } from "./FinishInterviewDialog";
 
 interface RoomHeaderProps {
   onAdvanceStage: () => Promise<void>;
-  /** Start the guided run — the only path to the final documents. */
-  onStartRun: () => Promise<boolean>;
-  /** Tell the waiting run the interview is done (resume payload `done`). */
+  /**
+   * Finish the interview: ONE action that starts the guided run when none is
+   * waiting and tells it the interview is done, in either order, without the
+   * person pressing twice. See `useInterviewRun.finish`.
+   */
   onFinishRun: () => Promise<boolean>;
 }
 
 export function RoomHeader({
   onAdvanceStage,
-  onStartRun,
   onFinishRun,
 }: RoomHeaderProps) {
   const dispatch = useAppDispatch();
@@ -63,16 +64,16 @@ export function RoomHeader({
   const stage = session ? STAGES[normalizeStage(session.stage)] : null;
   const canAdvance =
     runPhase === "waiting_human" && stage != null && stage.next !== null;
-  // The run is waiting on the person — one click from the documents.
-  const finishReady = runPhase === "waiting_human";
+  // Finish is ALWAYS one press from the documents — it starts the guided run
+  // itself when none is waiting (see `useInterviewRun.finish`). The only
+  // state that changes it is a run already in flight.
   const finishRunning = runPhase === "starting" || runPhase === "running";
-  const finishTitle = finishReady
-    ? "The room is waiting on you — finish the interview and write the documents"
-    : finishRunning
-      ? "The room is working — open to see where the guided run is"
-      : session?.finalized_at
-        ? "Write the Vision and Requirements documents again from everything said since"
-        : "Finish the interview — the room writes your Vision and Requirements documents";
+  const finishReady = !finishRunning;
+  const finishTitle = finishRunning
+    ? "The room is working — open to see where the guided run is"
+    : session?.finalized_at
+      ? "Write the Vision and Requirements documents again from everything said since"
+      : "Finish the interview — the room writes your Vision and Requirements documents";
 
   const commitRename = async () => {
     if (!session) return;
@@ -101,7 +102,6 @@ export function RoomHeader({
       <FinishInterviewDialog
         open={finishOpen}
         onOpenChange={setFinishOpen}
-        onStart={onStartRun}
         onFinish={onFinishRun}
       />
       <RouteHeader

@@ -510,5 +510,57 @@ export function useInterviewRun(sessionId: string) {
     return accepted;
   };
 
-  return { runPhase, runId, pendingInterrupt, start, resume };
+  /**
+   * 🚨 A FINISH IS ONE PRESS, AND IT NEVER ASKS ANOTHER QUESTION.
+   *
+   * Three cold walks of this room reported the same thing: the control
+   * labelled Finish did not finish. The reason was that finishing was really
+   * TWO server journeys wearing one button — start a run, then tell the
+   * waiting run it is done — and the dialog made the person perform both,
+   * under two different labels ("Finish the interview", then "Write the
+   * documents"), with a live interview round running between them. The
+   * third walk pressed it twice, watched the round counter climb and the
+   * open-question count go from five to eight, and never received a document.
+   *
+   * Both halves of that journey belong behind one press. The intent is armed
+   * here and spent the instant the run hands back, so the machinery stays
+   * machinery: the person says finish once, and the next thing they see is
+   * their documents.
+   *
+   * Returns true when the finish is under way (not when it has completed —
+   * the documents arrive through the session row's realtime subscription).
+   */
+  const finishArmedRef = useRef(false);
+  const finish = async (): Promise<boolean> => {
+    if (runPhase === "waiting_human" && pendingInterrupt?.checkpointId) {
+      finishArmedRef.current = false;
+      return resume({ message: "", done: true });
+    }
+    // Nothing is waiting, so the finish run does not exist yet. Arm the
+    // intent and start it; the effect below spends the arm the moment the
+    // run interrupts.
+    finishArmedRef.current = true;
+    const started = await start();
+    if (!started) finishArmedRef.current = false;
+    return started;
+  };
+
+  useEffect(() => {
+    if (!finishArmedRef.current) return;
+    // A run that died on the way never gets a done sent into the void — the
+    // arm is dropped and the dialog's error state is what the person sees.
+    if (runPhase === "error" || runPhase === "complete") {
+      finishArmedRef.current = false;
+      return;
+    }
+    if (runPhase !== "waiting_human") return;
+    if (!pendingInterrupt?.checkpointId) return;
+    // Spent BEFORE the await: this effect can re-run while the resume is in
+    // flight, and a second done would be a second finish.
+    finishArmedRef.current = false;
+    void resume({ message: "", done: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `resume` is a render-scoped helper over stable refs; the arm ref, not the dependency list, is what makes this fire exactly once
+  }, [runPhase, pendingInterrupt?.checkpointId]);
+
+  return { runPhase, runId, pendingInterrupt, start, resume, finish };
 }
