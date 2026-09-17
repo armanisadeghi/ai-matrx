@@ -74,7 +74,9 @@ function GoogleAgentToolsSectionContent() {
   const [agentUnavailable, setAgentUnavailable] = useState(false);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const googleReadTool = tools.find((tool) => tool.name === "google_read");
+  const googleMarketingTool = tools.find(
+    (tool) => tool.name === "google_marketing",
+  );
   const googleWorkspaceTool = tools.find(
     (tool) => tool.name === "google_workspace",
   );
@@ -101,8 +103,9 @@ function GoogleAgentToolsSectionContent() {
       ? resolveModelControls([model], modelId).normalizedControls
       : null;
   const modelSupportsTools = supportsTools(modelControls);
-  const hasGoogleRead = Boolean(
-    googleReadTool && selectedAgent?.tools?.includes(googleReadTool.id),
+  const hasGoogleMarketing = Boolean(
+    googleMarketingTool &&
+    selectedAgent?.tools?.includes(googleMarketingTool.id),
   );
   const hasGoogleWorkspace = Boolean(
     googleWorkspaceTool &&
@@ -214,19 +217,20 @@ function GoogleAgentToolsSectionContent() {
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
           </Button>
         </div>
-      ) : !googleReadTool ? (
+      ) : !googleMarketingTool ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Google data access is being prepared. This assignment is available
-          when the registered Google read tool is active.
+          when the registered Google marketing tool is active.
         </p>
       ) : (
         <div className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="gap-1.5">
-              <Wrench className="h-3.5 w-3.5" /> Read connected Google data
+              <Wrench className="h-3.5 w-3.5" /> Read Google marketing data
             </Badge>
             <span className="text-xs text-muted-foreground">
-              Read-only access across connected Google services.
+              Read-only: Search Console, Analytics, Tag Manager and YouTube
+              for your sites and channels.
             </span>
           </div>
 
@@ -258,10 +262,13 @@ function GoogleAgentToolsSectionContent() {
               modelError={modelError}
               saving={saving}
               assignmentError={assignmentError}
-              hasGoogleRead={hasGoogleRead}
+              hasGoogleMarketing={hasGoogleMarketing}
               hasGoogleWorkspace={hasGoogleWorkspace}
-              onToggleGoogleRead={() =>
-                void applyToolChange(googleReadTool.id, !hasGoogleRead)
+              onToggleGoogleMarketing={() =>
+                void applyToolChange(
+                  googleMarketingTool.id,
+                  !hasGoogleMarketing,
+                )
               }
               onRetryLoad={() => {
                 setAgentLoadError(null);
@@ -318,9 +325,9 @@ function AgentToolAssignment({
   modelError,
   saving,
   assignmentError,
-  hasGoogleRead,
+  hasGoogleMarketing,
   hasGoogleWorkspace,
-  onToggleGoogleRead,
+  onToggleGoogleMarketing,
   onToggleGoogleWorkspace,
   onRetryLoad,
   onRetryModel,
@@ -336,9 +343,9 @@ function AgentToolAssignment({
   modelError: string | null;
   saving: boolean;
   assignmentError: string | null;
-  hasGoogleRead: boolean;
+  hasGoogleMarketing: boolean;
   hasGoogleWorkspace: boolean;
-  onToggleGoogleRead: () => void;
+  onToggleGoogleMarketing: () => void;
   onToggleGoogleWorkspace?: () => void;
   onRetryLoad: () => void;
   onRetryModel: () => void;
@@ -386,7 +393,8 @@ function AgentToolAssignment({
         <div>
           <p className="text-sm font-medium text-foreground">{agentName}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Read connected Google data across services your account can access.
+            Read-only: Search Console, Analytics, Tag Manager and YouTube for
+            your sites and channels.
           </p>
           {additionBlocker ? (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -409,18 +417,20 @@ function AgentToolAssignment({
         </div>
         <Button
           size="sm"
-          variant={hasGoogleRead ? "outline" : "default"}
-          disabled={saving || (!hasGoogleRead && additionBlocker !== null)}
-          onClick={onToggleGoogleRead}
+          variant={hasGoogleMarketing ? "outline" : "default"}
+          disabled={
+            saving || (!hasGoogleMarketing && additionBlocker !== null)
+          }
+          onClick={onToggleGoogleMarketing}
         >
           {saving ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : hasGoogleRead ? (
+          ) : hasGoogleMarketing ? (
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
           ) : null}
-          {hasGoogleRead
-            ? "Remove Google read access"
-            : "Add Google read access"}
+          {hasGoogleMarketing
+            ? "Remove Google marketing access"
+            : "Add Google marketing access"}
         </Button>
       </div>
       {onToggleGoogleWorkspace ? (
