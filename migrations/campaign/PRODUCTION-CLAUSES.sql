@@ -106,10 +106,26 @@ from (
            where attrelid = 'platform.associations'::regclass and attnum > 0 and not attisdropped
              and attname in ('payload_kind', 'payload')) = 2
   union all
-  -- W1-TIER
+  -- W1-TIER — REWRITTEN 2026-09-17 BY THE LANE, to the names its plan actually gives
+  -- these objects (rule 14: "a clause that names an object CLASS rather than a NAME is
+  -- rewritten at dispatch to the names the lane's plan gives them"). It used to name
+  -- `custom.tier_stub`, which no file in this campaign ever creates, so it could never
+  -- have been true and could never have been informative either. Every predicate below is
+  -- a CATALOGUE read — nothing references `custom.external_source` statically, because a
+  -- clause that fails to PARSE on a production where schema `custom` does not yet exist
+  -- reports nothing at all. Measured on production 2026-09-17 16:28 UTC, SELECT-only:
+  -- schema `custom` itself does not exist there (W1-STORE / W1-PROV are attended steps),
+  -- so this clause is FALSE today and turns true only when this lane's own files land.
   select 'W1-TIER',
-         'the tier stub table and the opt-in column exist',
-         to_regclass('custom.tier_stub') is not null
+         'the stub table custom.external_link, the source registry custom.external_source with its writes_enabled opt-in defaulting FALSE, and the private schema custom_external all exist',
+         to_regclass('custom.external_link') is not null
+           and to_regclass('custom.external_source') is not null
+           and to_regnamespace('custom_external') is not null
+           and (select count(*) from pg_attribute a
+                  join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+                 where a.attrelid = to_regclass('custom.external_source')
+                   and a.attname = 'writes_enabled' and a.attnotnull
+                   and pg_get_expr(d.adbin, d.adrelid) = 'false') = 1
   union all
   -- W2-VIS — the derivation function
   select 'W2-VIS',

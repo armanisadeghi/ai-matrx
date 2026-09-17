@@ -30,7 +30,7 @@ create or replace function custom.external_rows(p_organization_id uuid, p_source
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'pg_catalog'
-AS $function$;
+AS $function$
 declare
   v_src custom.external_source%rowtype;
   v_rel regclass;
@@ -70,7 +70,7 @@ create or replace function custom.external_foreign_table_findings()
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'pg_catalog'
-AS $function$;
+AS $function$
 select format('foreign table %s.%s is outside the private schema custom_external (DOOR-N-6)', ns.nspname, c.relname)
   from pg_class c
   join pg_namespace ns on ns.oid = c.relnamespace
