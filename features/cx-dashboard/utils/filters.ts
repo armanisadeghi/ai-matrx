@@ -97,9 +97,11 @@ export function hasActiveCxSourceFilters(params: URLSearchParams): boolean {
 }
 
 /** Clear both query layers in one navigation, preserving sorting and view settings. */
-export function clearCxTableFilters(params: URLSearchParams, tableId: string): URLSearchParams {
+export function clearCxTableFilters(params: URLSearchParams, tableId?: string): URLSearchParams {
   const next = new URLSearchParams(params);
   for (const key of ["timeframe", "start_date", "end_date", "user_id", "model_id", "provider", "status", "search", "page"]) next.delete(key);
-  for (const key of ["p", "q", "match", "scope", "any", "lf", "f"]) next.delete(`table.${tableId}.${key}`);
+  if (tableId) {
+    for (const key of ["p", "q", "match", "scope", "any", "lf", "f"]) next.delete(`table.${tableId}.${key}`);
+  }
   return next;
 }

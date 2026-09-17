@@ -7,6 +7,13 @@ describe("CX source and canonical table filter reset", () => {
     expect(hasActiveCxSourceFilters(new URLSearchParams("status=active"))).toBe(true);
   });
 
+  it("source-only clear preserves the local table query and view", () => {
+    const result = clearCxTableFilters(new URLSearchParams("status=active&table.cx-conversations.q=keep&active=all"));
+    expect(result.has("status")).toBe(false);
+    expect(result.get("table.cx-conversations.q")).toBe("keep");
+    expect(result.get("active")).toBe("all");
+  });
+
   it.each(["cx-conversations", "cx-requests"])("clears both query layers for %s without losing view settings", (id) => {
     const params = new URLSearchParams(`status=error&timeframe=week&search=test&page=3&per_page=50&sort_by=created_at&table.${id}.q=needle&table.${id}.f=%7B%7D&table.${id}.p=2&table.${id}.ps=100&table.${id}.sort=title.asc&table.other.q=keep&active=all`);
     const result = clearCxTableFilters(params, id);

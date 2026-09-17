@@ -13,6 +13,8 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Search, X } from "lucide-react";
 import {
+  clearCxTableFilters,
+  hasActiveCxSourceFilters,
   filtersFromSearchParams,
   filtersToSearchParams,
 } from "../utils/filters";
@@ -58,11 +60,13 @@ export function CxFiltersBar({
 
   const clearFilters = useCallback(() => {
     startTransition(() => {
-      router.push(pathname);
+      const params = clearCxTableFilters(new URLSearchParams(window.location.search));
+      const query = params.toString();
+      router.push(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
     });
   }, [pathname, router]);
 
-  const hasActiveFilters = searchParams.toString().length > 0;
+  const hasActiveFilters = hasActiveCxSourceFilters(new URLSearchParams(searchParams));
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
