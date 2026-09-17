@@ -28,8 +28,10 @@ import {
   DurableRunStopped,
 } from "@/lib/durable-run/DurableRunStop";
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
-import { useTextDraft } from "@/lib/drafts/useTextDraft";
 import { AgentCredit } from "../AgentCredit";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import { recordPastedSource } from "../../record/pastedSource";
@@ -111,6 +113,33 @@ const MIN_WORK_CHARS = 120;
 
 /** The not-yet-saved selection, marked in the work like a real correction. */
 const PENDING_ID = "__pending__";
+
+/**
+ * THE RED-PEN SITTING — the whole markup session, not just the pasted text.
+ *
+ * Cold walk 6 (2026-09-17, finding 4): an Expert pasted a piece of work, saved
+ * a correction against it, left the deep link and came back — and the dialog
+ * was on its blank first step with the work AND the correction gone, no
+ * warning before the loss and nothing to recover it. The lane did keep the
+ * pasted text through `useTextDraft`, which covers ONE field: the title and
+ * every saved correction were never kept at all, and the text itself was only
+ * kept above that primitive's 40-character floor. What an Expert loses here is
+ * the SESSION, so the session is what is kept.
+ */
+interface RedPenSitting extends SittingBase {
+  workText: string;
+  workTitle: string;
+  corrections: Correction[];
+  marking: boolean;
+}
+
+const redPenSittings = createSittingStore<RedPenSitting>({
+  keyPrefix: "matrx.masterwork.red-pen.v1:",
+  isUsable: (sitting) =>
+    typeof sitting.workText === "string" &&
+    (sitting.workText.trim().length > 0 ||
+      (Array.isArray(sitting.corrections) && sitting.corrections.length > 0)),
+});
 
 /**
  * What can be dropped in as the work piece. DELIBERATELY NARROW AND HONEST:
@@ -235,14 +264,32 @@ export function RedPenDialog({
   const running = run.running;
   const summary = run.result ? describeIngest(run.result) : null;
 
-  // A DIALOG NEVER LOSES TYPED TEXT (the same net every other paste lane has):
-  // the work piece survives a reload, a crash or a stray click.
-  const draft = useTextDraft(
-    `red-pen-work:${rulebook.id}`,
-    workText,
-    setWorkText,
-    open,
-  );
+  // A LANE NEVER LOSES IN-PROGRESS WORK. The pasted work, what it is called,
+  // every correction already saved against it, and which step she was on —
+  // kept together, put back together, and announced on screen when they are.
+  const sitting = useDialogSitting<RedPenSitting>({
+    store: redPenSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { workText, workTitle, corrections, marking },
+    isWorthKeeping: (s) =>
+      s.workText.trim().length > 0 || s.corrections.length > 0,
+    apply: (kept) => {
+      setWorkText(kept.workText);
+      setWorkTitle(kept.workTitle);
+      setCorrections(kept.corrections ?? []);
+      setMarking(Boolean(kept.marking) && kept.workText.trim().length > 0);
+    },
+    clearScreen: () => {
+      setWorkText("");
+      setWorkTitle("");
+      setCorrections([]);
+      setMarking(false);
+      setPending(null);
+      setComment("");
+      setSpoke(false);
+    },
+  });
 
   const reset = useCallback(() => {
     run.reset();
@@ -252,7 +299,8 @@ export function RedPenDialog({
   }, [run]);
 
   useRunResultOnce(run, () => {
-    draft.forget();
+    // The lane finished for real — there is nothing left in progress to keep.
+    sitting.forget();
     onIngested?.();
   });
 
@@ -413,6 +461,14 @@ export function RedPenDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the work you were marking up, and the corrections you had already saved"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
+
         <DurableRunFailure
           error={run.error}
           retry={run.retry}
@@ -427,6 +483,7 @@ export function RedPenDialog({
               size="sm"
               onClick={() => {
                 reset();
+                sitting.forget();
                 setCorrections([]);
                 setWorkText("");
                 setWorkTitle("");

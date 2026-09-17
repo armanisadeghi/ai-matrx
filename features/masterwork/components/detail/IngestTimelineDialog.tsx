@@ -234,6 +234,24 @@ export function buildTimelineRequest(input: {
   };
 }
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+
+interface TimelineSitting extends SittingBase {
+  title: string;
+  text: string;
+  licence: string;
+  url: string;
+  published: string;
+  externalId: string;
+}
+
+const unfoldingSittings = createSittingStore<TimelineSitting>({
+  keyPrefix: "matrx.masterwork.unfolding.v1:",
+  isUsable: (sitting) => (sitting.text ?? "").trim().length > 0 || (sitting.title ?? "").trim().length > 0,
+});
+
 export function IngestTimelineDialog({
   open,
   onOpenChange,
@@ -252,6 +270,32 @@ export function IngestTimelineDialog({
   const [url, setUrl] = useState("");
   const [published, setPublished] = useState("");
   const [externalId, setExternalId] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<TimelineSitting>({
+    store: unfoldingSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { title, text, licence, url, published, externalId },
+    isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.title ?? "").trim().length > 0,
+    apply: (kept) => {
+      setTitle(kept.title ?? "");
+      setText(kept.text ?? "");
+      setLicence(kept.licence ?? "");
+      setUrl(kept.url ?? "");
+      setPublished(kept.published ?? "");
+      setExternalId(kept.externalId ?? "");
+    },
+    clearScreen: () => {
+      setTitle("");
+      setText("");
+      setLicence("");
+      setUrl("");
+      setPublished("");
+      setExternalId("");
+    },
+  });
+
 
   const run = useMasterworkRun<TimelineIngestSummary>({
     // 🚨 `unfolding`, NOT `timeline` (Bugbot, 2026-09-13). `IngestSourceDialog`
@@ -275,7 +319,10 @@ export function IngestTimelineDialog({
   // reach the page behind this dialog — ONCE per completed run, never once per
   // render (the host passes a new inline callback every time, and the reload
   // it starts re-renders this dialog). See `useRunResultOnce`.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -353,6 +400,14 @@ export function IngestTimelineDialog({
             you did next. That order is the part the other ways throw away.
           </DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the case you were writing out"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {summary ? (
           <div className="space-y-3">

@@ -128,6 +128,20 @@ const BODY_OF_WORK_DESCRIPTION =
   "follow are worked out from the whole body of work. Everything lands as " +
   "drafts for you to approve; nothing goes live without you.";
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+
+interface BodyOfWorkSitting extends SittingBase {
+  urlsText: string;
+  sourceNote: string;
+}
+
+const bodyOfWorkSittings = createSittingStore<BodyOfWorkSitting>({
+  keyPrefix: "matrx.masterwork.body-of-work.v1:",
+  isUsable: (sitting) => (sitting.urlsText ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function BodyOfWorkDialog({
   open,
   onOpenChange,
@@ -147,6 +161,24 @@ export function BodyOfWorkDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [urlsText, setUrlsText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<BodyOfWorkSitting>({
+    store: bodyOfWorkSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { urlsText, sourceNote },
+    isWorthKeeping: (s) => (s.urlsText ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0,
+    apply: (kept) => {
+      setUrlsText(kept.urlsText ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+    },
+    clearScreen: () => {
+      setUrlsText("");
+      setSourceNote("");
+    },
+  });
+
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [board, setBoard] = useState<CorpusPieceRow[]>([]);
@@ -336,6 +368,16 @@ export function BodyOfWorkDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE, NOT TO THE DIALOG CHROME. This
+          surface renders as a dialog AND as its own page; putting the notice
+          under <DialogHeader> meant the page half restored work in silence. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the links you had listed, and what you called them"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -634,6 +676,7 @@ export function BodyOfWorkDialog({
           </DialogTitle>
           <DialogDescription>{BODY_OF_WORK_DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
         {content}
       </DialogContent>
     </Dialog>

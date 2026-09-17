@@ -157,3 +157,39 @@ export function settleInFlightSaves<S extends { kind: string }>(
 export function countInFlight(saveStates: Record<string, { kind: string }>): number {
   return Object.values(saveStates).filter((state) => state.kind === "saving").length;
 }
+
+/**
+ * A sitting that holds a DIALOG's in-progress work rather than a dealt round.
+ *
+ * ## Why this shape exists (cold walk 6, 2026-09-17)
+ *
+ * Walk 4 found the class in the Triad, walk 5 in the Sorting Table, walk 6 in
+ * the Red-Pen lane and the Daily Drip — and the census run for walk 6 then
+ * showed it was never those four: EVERY capture dialog on the Rulebook page
+ * lost typed work on a reload. Red-Pen, the Prediction Ledger, all four ingest
+ * lanes, "Everything you've published", Shadow-the-inbox and the unfolding
+ * case each took a real sentence, survived nothing, and said nothing about it.
+ *
+ * The round-shaped `createSittingStore` above already held the rule; what was
+ * missing was a shape a DIALOG could adopt in one call. `useTextDraft`
+ * (`lib/drafts/useTextDraft.ts`) covers ONE plain text field and is still the
+ * right tool for that; this covers a whole lane's working state — the pasted
+ * work AND its title AND the corrections already saved against it — which is
+ * the thing an Expert actually loses when a laptop lid closes.
+ *
+ * THE ANNOUNCEMENT IS PART OF THE PRIMITIVE. A silent restore is its own kind
+ * of lie: `resumed` is true exactly when work was put back, and the lane must
+ * say so on screen with a way to throw it away (`discard`).
+ */
+export interface DialogSitting {
+  /** Work was put back on screen just now — SAY SO, with a way to discard. */
+  resumed: boolean;
+  /** The person has read the notice; keep the work, drop the notice. */
+  acknowledge: () => void;
+  /** Throw the kept work away and start clean. */
+  discard: () => void;
+  /** The lane finished for real — forget it. Never call this on a close. */
+  forget: () => void;
+  /** False when this browser refuses storage: the lane must say drafts are off. */
+  available: boolean;
+}
