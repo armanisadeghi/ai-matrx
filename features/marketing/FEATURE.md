@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-09-15
+**Last updated:** 2026-09-17
 
 Supporting-keyword chips in the Page Workspace may wrap their label and
 metadata, but keep their action buttons together and inside the phone viewport.
@@ -773,6 +773,8 @@ availability, this site's worth in points, and nothing from `seo.topic`.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-17 — Codex: **Brand media byte ingestion is bound to the brand's organization, never the shell's ambient organization.** `UploadOpts.organizationId` is now the explicit ownership input for file creation while existing scope metadata remains intact. Brand Library uploads, Brand Asset Editor replacements, Stock Sources imports, and Marketing Media imports all pass the target brand organization, preventing cross-organization `brand_asset_file_org_fkey` failures when an admin opens a brand outside the active workspace.
 
 - 2026-09-15 — Codex: the agency-plane Marketing sidebar now resolves one most-specific route owner before applying the shared blue selected treatment, so `/marketing/reports/ranks` selects Rank Roll-up without also faking Reports as active.
 
