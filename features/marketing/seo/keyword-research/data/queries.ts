@@ -56,10 +56,40 @@ async function seoDb() {
   return supabase.schema("seo");
 }
 
+/**
+ * Keywords THIS organization has archived from its library (AD248 / aidream
+ * migration 0840). `seo.keyword` is a shared catalogue — 229,200 of its rows
+ * belong to the platform and every signed-in account can read them — so
+ * "Archive from library" on a catalogue row no longer soft-deletes the row for
+ * everybody. It writes one `(organization)-[archived]->(seo_keyword)` edge on
+ * `platform.associations`, which RLS already scopes to the caller's own
+ * organizations. A keyword the caller holds editor on (their own row) is still
+ * soft-deleted the old way and is excluded by the `deleted_at` filter. This
+ * read is what makes the archived row actually disappear from the list; the
+ * RPC alone records the choice.
+ */
+async function hiddenKeywordIds(signal?: AbortSignal): Promise<string[]> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("platform")
+    .from("associations")
+    .select("target_id")
+    .eq("source_type", "organization")
+    .eq("target_type", "seo_keyword")
+    .eq("role", "archived")
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  return (response.data ?? []).map((row) => row.target_id as string);
+}
+
 async function contentIrDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("content_ir");
 }
+
+/** Past this many archived ids the URL filter is skipped and the client filter alone applies. */
+const HIDDEN_FILTER_CAP = 1000;
 
 function cleanSearch(value: string): string {
   return value.trim().replace(/[(),"'\\%]/g, " ").trim();
@@ -76,12 +106,22 @@ export async function listKeywordsWithMarket(options: {
   signal?: AbortSignal;
 }): Promise<KeywordWithMarket[]> {
   const { search, limit = 200, signal } = options;
+  const hidden = await hiddenKeywordIds(signal);
   let query = (await seoDb())
     .from("keyword")
     .select("*, keyword_market(*)")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (hidden.length > 0) {
+    // The organization's own archive list. Pushed into the query so the page
+    // stays full; the client-side filter below covers the tail past the cap.
+    query = query.not(
+      "id",
+      "in",
+      `(${hidden.slice(0, HIDDEN_FILTER_CAP).join(",")})`,
+    );
+  }
   const cleaned = search ? cleanSearch(search) : "";
   if (cleaned) {
     query = query.ilike("normalized_phrase", `%${cleaned.toLowerCase()}%`);
@@ -90,9 +130,12 @@ export async function listKeywordsWithMarket(options: {
     signal ?? new AbortController().signal,
   );
   if (response.error) throw response.error;
+  const hiddenSet = new Set(hidden);
   return attachUniversalFacets(
     supabase,
-    (response.data ?? []) as KeywordWithMarketBeforeFacets[],
+    ((response.data ?? []) as KeywordWithMarketBeforeFacets[]).filter(
+      (row) => !hiddenSet.has(row.id),
+    ),
   );
 }
 
@@ -112,9 +155,12 @@ export async function listKeywordsWithMarketByPhrases(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
+  const hiddenSet = new Set(await hiddenKeywordIds(signal));
   return attachUniversalFacets(
     supabase,
-    (response.data ?? []) as KeywordWithMarketBeforeFacets[],
+    ((response.data ?? []) as KeywordWithMarketBeforeFacets[]).filter(
+      (row) => !hiddenSet.has(row.id),
+    ),
   );
 }
 

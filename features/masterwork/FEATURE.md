@@ -150,6 +150,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `kept-sources/` — **WHAT THE RULEBOOK KEPT: the Expert's own words, still readable.**
+  Until 2026-09-17 every capture lane parsed its source in memory, wrote draft rules and threw
+  the source away, so a rule could quote a sentence with nowhere on the platform to read the
+  paragraph it came from. The server now keeps one `platform.masterwork_source` row per captured
+  source (aidream `raw_material.py`), and this is its screen: the list
+  (`/masterwork/[id]/sources/kept`, `EntityListPage` + `listConfig.tsx`) and the reader
+  (`/masterwork/[id]/sources/kept/[sourceKey]`, `KeptSourcePanel` -> `KeptSourceReader`).
+  🚨 **It is NOT `components/detail/RulebookSourcesPanel.tsx`** — that panel is the dump lane's
+  capture desk (what is ABOUT to be read); this is the record of what WAS read. Keeping them
+  separate is why "12 sources" means one thing per screen.
+  **THE JOIN** is `source_ref.source` == `masterwork_source.source_key`, counted in exactly one
+  place (`sourceSections.ts::countRulesForSource`, which the capture panel now also calls, so the
+  two screens cannot disagree). **THE JUMP** is `RulePassageLink` on an expanded rule ->
+  `…/kept/<source_key>?rule=<rule_id>`, which lights the rule's own quotes with
+  `components/text/HighlightedText` (THE one matcher) — no new anchoring, because the server
+  verifies every quote verbatim against the stored material at ingestion. The link renders only
+  when the material was really kept; every rule older than this system points at discarded words,
+  and the reader says so in those words rather than showing an empty panel.
+
 - `capture-plan/` — **THE CAPTURE PLAN** (`capture_plan`, `?plan=1`, page
   `/masterwork/[id]/plan`). A PROGRAM over the other Approaches: the Expert says what they want
   covered and how much time they can give, and the planner picks the next method from the LIVE
@@ -464,6 +483,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   silently twice when the Univer facade was gone, swallowing every save while
   the page still said "Editing" and took keystrokes — says so out loud with the
   only remedy that saves the words.
+- 2026-09-17 (kept material) — **THE RAW MATERIAL IS READABLE.** New `kept-sources/` feature,
+  two routes under `/masterwork/[id]/sources/kept`, a door to them from the capture panel's
+  header, and `RulePassageLink` on every expanded rule whose source was kept. Three honest
+  states are stated on the reader's face rather than implied: a capped copy says so and names
+  where the rest is, an upload whose text was never extracted says so and opens the file, and a
+  rule whose source predates the Source system says the words are not recoverable — never an
+  empty panel and never a dead link. `RulebookSourcesPanel` changed in exactly one way: its
+  per-source rule count now calls the shared `countRulesForSource` instead of its own inline
+  filter. Read direct from `platform.masterwork_source` under RLS (viewer access on the parent
+  Rulebook via `iam.accessible_entity_ids`); adopted `@ai-matrx/associations` 0.9.23, which
+  carries the new `masterwork_source` entity token.
+- 2026-09-17 (sitting adoption) — the census's four remaining surfaces (the Audition
+  dialog, Compare Two, Run the Bench, and the Build window) now call the shared
+  `createSittingStore`/`useDialogSitting` primitive (`features/masterwork/sitting/`) and
+  render `SittingResumed`, closing the class the census in the entry above named.
 
 - 2026-09-17 (doors to Libraries) — **A WHOLE YOUTUBE CHANNEL IS NOW REACHABLE
   FROM MASTERWORK.** The Media Source Catalog (`/libraries`) catalogues a whole

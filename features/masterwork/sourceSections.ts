@@ -39,6 +39,46 @@ export interface SourceSectionYield {
   secondPass: boolean;
 }
 
+/**
+ * 🚨 THE ONE JOIN between a rule and the source it came from.
+ *
+ * A rule's `source_ref.source` is the string identity the server stamps from
+ * `source_identity.py`, and it is byte-equal to the kept source row's
+ * `masterwork_source.source_key`. Plain string equality is the whole join —
+ * there is no fuzzy match, no id lookup, no association hop (the
+ * `kept_source` edge exists, but the ROW is the authority).
+ *
+ * It lives here, next to the key BUILDERS, because three surfaces ask the same
+ * question and were each answering it with their own inline filter: the
+ * per-part yields below, the dump panel's "N rules so far" line, and (2026-09-17)
+ * the kept-Sources list's rule count. Three copies of one predicate is how a
+ * source silently stops counting on one screen and keeps counting on another.
+ */
+export function ruleMatchesSource(
+  rule: Pick<RulebookRule, "source_ref">,
+  sourceKey: string,
+): boolean {
+  if (!sourceKey) return false;
+  return rule.source_ref?.source === sourceKey;
+}
+
+/** Every rule this source produced, in Rulebook order. */
+export function rulesForSource(
+  rules: RulebookRule[] | undefined,
+  sourceKey: string,
+): RulebookRule[] {
+  if (!sourceKey) return [];
+  return (rules ?? []).filter((rule) => ruleMatchesSource(rule, sourceKey));
+}
+
+/** How many rules this source produced. */
+export function countRulesForSource(
+  rules: RulebookRule[] | undefined,
+  sourceKey: string,
+): number {
+  return rulesForSource(rules, sourceKey).length;
+}
+
 /** Mirrors `source_identity.url_source_key` (aidream). */
 export function urlSourceKey(url: string): string {
   let raw = (url ?? "").trim();
@@ -85,9 +125,9 @@ export function sourceSectionYields(
 ): SourceSectionYield[] {
   if (!sourceKey) return [];
   const byIndex = new Map<number, SourceSectionYield>();
-  for (const rule of rules ?? []) {
+  for (const rule of rulesForSource(rules, sourceKey)) {
     const ref = rule.source_ref;
-    if (!ref || ref.source !== sourceKey) continue;
+    if (!ref) continue;
     const index = ref.section_index;
     if (typeof index !== "number" || index < 1) continue;
     const row = byIndex.get(index) ?? {

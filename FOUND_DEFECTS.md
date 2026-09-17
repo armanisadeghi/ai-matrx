@@ -15,6 +15,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+
 ### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
 
 **Status:** open · **Priority:** P2
@@ -3417,6 +3418,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
 
 - **D327 — the server read the merged payload where it meant the Expert's words, and the orchestrator's own notices were indistinguishable from her turns.** Both halves closed in aidream `23fa31d6b`. Reader: `masterwork_corpus/corpus.py` now selects `role` + `user_content` and projects through the platform's ONE rule (`matrx_ai.config.human_authored_text`), so the Scout's seeded cue is neither quoted nor counted, and a row with nothing human in it is not a turn. Writer: the four orchestrator gates build their injected turns through the new `host_authored_user_turn()` (empty `user_content` + `authored_by: host`), never NULL; `dynamic_drain` stamps both of its halves. Siblings moved onto the same projection: the chat-import distiller, the coding-session title, `vision_interview.transcript_message_text`. Guards proven failing then passing: `packages/matrx-ai/tests/test_host_authored_user_turns.py` (5) and `aidream/services/masterwork_corpus/tests/test_corpus_reads_the_humans_words.py` (4). Backfill after a read-only census — 89 provable historical gate notices stamped, 8 ambiguous rows deliberately untouched (`db/migrations/ai_085_host_authored_user_turns_are_stamped.sql`, applied and verified live). **Open remainder, filed not fixed:** matrx-rag's `sources.py` indexes `content` for every role, so RAG-retrieved text can still carry an agent-seeded template as the human's turn — matrx-rag sits below matrx-ai and cannot import the projection, so closing it needs its own injected seam. 2026-09-16.
 
