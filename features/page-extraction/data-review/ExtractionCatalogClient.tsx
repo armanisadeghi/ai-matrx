@@ -18,7 +18,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowUpDown,
   FileText,
   Filter,
   Loader2,
@@ -52,12 +51,11 @@ import {
 import { listExtractionCatalog, type ExtractionCatalogEntry } from "./data";
 import { CatalogRowActions } from "./CatalogRowActions";
 import { EXTRACTION_ENTITY_TYPE } from "./constants";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 type SortKey = "updated" | "name" | "rows" | "source";
 
@@ -166,6 +164,15 @@ export function ExtractionCatalogClient() {
     },
     [router],
   );
+
+  const tableColumns: MatrxColumnDef<ExtractionCatalogEntry>[] = [
+    { id: "name", header: "Dataset", accessorKey: "name", cell: (row) => <div className="flex items-center gap-2"><Table2 className="h-4 w-4 shrink-0 text-muted-foreground" /><span className="min-w-0 font-medium">{row.name}</span>{row.kind === "validation" ? <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">validation</span> : null}</div> },
+    { id: "source", header: "Source", accessorKey: "sourceName", cell: (row) => <div className="flex items-center gap-1.5 text-muted-foreground"><FileText className="h-3.5 w-3.5 shrink-0" /><span className="truncate max-w-[220px]">{row.sourceName}</span></div> },
+    { id: "rows", header: "Rows", accessorKey: "rowCount", align: "right", cell: (row) => <span className="tabular-nums">{row.rowCount.toLocaleString()}</span> },
+    { id: "status", header: "Status", accessorFn: (row) => row.latestRunStatus ?? "", cell: (row) => row.latestRunStatus ? <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium capitalize", STATUS_STYLES[row.latestRunStatus] ?? STATUS_STYLES.cancelled)}>{row.latestRunStatus}</span> : <span className="text-xs text-muted-foreground">—</span> },
+    { id: "updated", header: "Updated", accessorKey: "updatedAt", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatRelativeTime(row.updatedAt)}</span> },
+    { id: "context", header: "Context", filter: false, sortable: false, align: "center", cell: (row) => <ContextStatusButton knownScopeCount={(scopesByJob[row.jobId] ?? []).length} subject={{ entityType: EXTRACTION_ENTITY_TYPE, entityId: row.jobId, title: row.name, subtitle: row.sourceName, icon: Table2 }} onSaved={(result) => { if (result.ok) { setRowScopes(EXTRACTION_ENTITY_TYPE, row.jobId, result.selection.scopeIds); setScopesByJob((previous) => ({ ...previous, [row.jobId]: result.selection.scopeIds })); toast.success("Context updated"); } }} /> },
+  ];
 
   return (
     <>
@@ -280,195 +287,12 @@ export function ExtractionCatalogClient() {
                 };
               }}
             >
-            <table className={cn("text-sm", MOBILE_TABLE)}>
-              <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <Th
-                    onClick={() => toggleSort("name")}
-                    active={sortKey === "name"}
-                    // No `whitespace-nowrap` here (unlike every other
-                    // header): with `white-space: nowrap` the whole dataset
-                    // name is one unbreakable run, so table-layout:auto's
-                    // min-content for this column IS the longest name in the
-                    // list — hundreds of px, swallowing the viewport. Letting
-                    // this cell wrap drops the min-content to its longest
-                    // WORD, so `min-w` (not `max-w` — unlayered
-                    // `* { max-width: 100% }` in globals.css nullifies any
-                    // `max-w-*` utility) can hold it to a sane column width
-                    // and long names wrap to 2 lines instead.
-                    className="max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:min-w-[140px] max-sm:bg-muted"
-                  >
-                    Dataset
-                  </Th>
-                  <Th
-                    onClick={() => toggleSort("source")}
-                    active={sortKey === "source"}
-                    className="max-sm:whitespace-nowrap"
-                  >
-                    Source
-                  </Th>
-                  <Th
-                    onClick={() => toggleSort("rows")}
-                    active={sortKey === "rows"}
-                    className="text-right max-sm:whitespace-nowrap"
-                  >
-                    Rows
-                  </Th>
-                  <th className="px-3 py-2 font-medium max-sm:whitespace-nowrap">
-                    Status
-                  </th>
-                  <Th
-                    onClick={() => toggleSort("updated")}
-                    active={sortKey === "updated"}
-                    className="max-sm:whitespace-nowrap"
-                  >
-                    Updated
-                  </Th>
-                  <th className="px-3 py-2 font-medium text-center max-sm:whitespace-nowrap">
-                    Context
-                  </th>
-                  <th className="px-2 py-2 font-medium text-right w-10 max-sm:whitespace-nowrap">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((e) => {
-                  const tags = scopesByJob[e.jobId] ?? [];
-                  const isNav = navigatingId === e.jobId && isPending;
-                  return (
-                    <tr
-                      key={e.jobId}
-                      data-row-id={e.jobId}
-                      onClick={() => open(e.jobId)}
-                      className="group cursor-pointer border-b border-border/60 bg-card transition-colors max-sm:whitespace-nowrap sm:bg-transparent sm:hover:bg-accent/50"
-                    >
-                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-[140px] max-sm:bg-inherit max-sm:whitespace-normal px-3 py-2 max-sm:align-top">
-                        <div className="flex items-center gap-2 max-sm:items-start">
-                          {isNav ? (
-                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-                          ) : (
-                            <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          )}
-                          <span className="min-w-0 font-medium max-sm:break-words">
-                            {e.name}
-                          </span>
-                          {e.kind === "validation" && (
-                            <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
-                              validation
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate max-w-[220px]">
-                            {e.sourceName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {e.rowCount.toLocaleString()}
-                      </td>
-                      <td className="px-3 py-2">
-                        {e.latestRunStatus ? (
-                          <span
-                            className={cn(
-                              "rounded px-1.5 py-0.5 text-[11px] font-medium capitalize",
-                              STATUS_STYLES[e.latestRunStatus] ??
-                                STATUS_STYLES.cancelled,
-                            )}
-                          >
-                            {e.latestRunStatus}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                        {formatRelativeTime(e.updatedAt)}
-                      </td>
-                      <td
-                        className="px-3 py-2 text-center"
-                        onClick={(ev) => ev.stopPropagation()}
-                      >
-                        <ContextStatusButton
-                          knownScopeCount={tags.length}
-                          subject={{
-                            entityType: EXTRACTION_ENTITY_TYPE,
-                            entityId: e.jobId,
-                            title: e.name,
-                            subtitle: e.sourceName,
-                            icon: Table2,
-                          }}
-                          onSaved={(r) => {
-                            if (r.ok) {
-                              setRowScopes(
-                                EXTRACTION_ENTITY_TYPE,
-                                e.jobId,
-                                r.selection.scopeIds,
-                              );
-                              setScopesByJob((prev) => ({
-                                ...prev,
-                                [e.jobId]: r.selection.scopeIds,
-                              }));
-                              toast.success("Context updated");
-                            }
-                          }}
-                        />
-                      </td>
-                      <td
-                        className="px-2 py-2 text-right"
-                        onClick={(ev) => ev.stopPropagation()}
-                      >
-                        <CatalogRowActions
-                          jobId={e.jobId}
-                          rowCount={e.rowCount}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <MatrxDataTable data={visible} columns={tableColumns} getRowId={(row) => row.jobId} pageSize={0} hidePagination hideToolbar onRowOpen={(row) => open(row.jobId)} rowActions={(row) => <CatalogRowActions jobId={row.jobId} rowCount={row.rowCount} />} />
             </NonEditableContextMenu>
           )}
         </div>
       </div>
     </>
-  );
-}
-
-function Th({
-  children,
-  onClick,
-  active,
-  className,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  active: boolean;
-  className?: string;
-}) {
-  return (
-    <th
-      onClick={onClick}
-      className={cn(
-        "cursor-pointer select-none px-3 py-2 font-medium hover:text-foreground",
-        active && "text-foreground",
-        className,
-      )}
-    >
-      <span className="inline-flex items-center gap-1">
-        {children}
-        <ArrowUpDown
-          className={cn("h-3 w-3", active ? "opacity-100" : "opacity-30")}
-        />
-      </span>
-    </th>
   );
 }
 

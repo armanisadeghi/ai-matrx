@@ -30,6 +30,8 @@ import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { DynamicIcon } from "@ai-matrx/icons";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -50,12 +52,6 @@ import type {
   OrgNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_CELL,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
 
 /** Reasonable cap on context-item columns so wide catalogs don't explode
  *  the table; overflow is announced in the header ("+N more"). */
@@ -303,6 +299,25 @@ function ScopeTypeTable({
 
   const columns = items.slice(0, MAX_ITEM_COLUMNS);
   const hiddenCount = items.length - columns.length;
+  const tableColumns: MatrxColumnDef<ScopeTypeNode["scopes"][number]>[] = [
+    {
+      id: "scope",
+      header: type.label_singular,
+      accessorKey: "name",
+      cell: (scope) => (
+        <EntityRef token="scope" id={scope.id} name={scope.name} href={`${typeHref}/${scope.id}`} showIcon={false} className={cn("font-medium", activeScopeIds.has(scope.id) && "font-semibold")} />
+      ),
+    },
+    ...columns.map((item): MatrxColumnDef<ScopeTypeNode["scopes"][number]> => ({
+      id: item.id,
+      header: item.display_name,
+      accessorFn: (scope) => summarizeContextCell(valuesByScope[scope.id]?.[item.id]) ?? "",
+      cell: (scope) => {
+        const summary = summarizeContextCell(valuesByScope[scope.id]?.[item.id]);
+        return summary ? <span className="block truncate text-foreground/90" title={summary}>{summary}</span> : <span className="text-muted-foreground/50">{cellsStatus === "loading" ? "…" : "—"}</span>;
+      },
+    })),
+  ];
 
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden">
@@ -361,101 +376,16 @@ function ScopeTypeTable({
           No {type.label_plural.toLowerCase()} yet.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table
-            className={cn(
-              "text-sm border-collapse",
-              MOBILE_TABLE,
-              isPending && "opacity-60 pointer-events-none",
-            )}
-          >
-            <thead>
-              <tr className="border-b border-border/50 text-left">
-                <th className={cn("px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>
-                  {type.label_singular}
-                </th>
-                {columns.map((item) => (
-                  <th
-                    key={item.id}
-                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap sm:max-w-[16rem] sm:truncate"
-                    title={item.description || item.display_name}
-                  >
-                    {item.display_name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {type.scopes.map((scope) => {
-                const isActive = activeScopeIds.has(scope.id);
-                const cells = valuesByScope[scope.id];
-                return (
-                  <tr
-                    key={scope.id}
-                    onClick={() =>
-                      startTransition(() =>
-                        router.push(`${typeHref}/${scope.id}`),
-                      )
-                    }
-                    className={cn(
-                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-accent/60",
-                      isActive && "bg-primary/5",
-                    )}
-                    style={
-                      isActive
-                        ? { boxShadow: `inset 2px 0 0 ${type.color}` }
-                        : undefined
-                    }
-                  >
-                    {/* Main added the mobile frozen-cell class; this branch
-                        made the name a door. Both survive: the name is a real
-                        anchor (cmd/middle-click, keyboard, screen readers) with
-                        peek + new-tab, inside the frozen first column. */}
-                    <td
-                      className={cn(
-                        "px-3 sm:px-4 py-2 whitespace-nowrap",
-                        MOBILE_TABLE_FROZEN_CELL,
-                      )}
-                    >
-                      <EntityRef
-                        token="scope"
-                        id={scope.id}
-                        name={scope.name}
-                        href={`${typeHref}/${scope.id}`}
-                        showIcon={false}
-                        className={cn(
-                          "font-medium",
-                          isActive && "font-semibold",
-                        )}
-                      />
-                    </td>
-                    {columns.map((item) => {
-                      const cell = cells?.[item.id];
-                      const summary = cell ? summarizeContextCell(cell) : null;
-                      return (
-                        <td
-                          key={item.id}
-                          className={cn("px-3 py-2 sm:max-w-[18rem]", MOBILE_TABLE_CELL)}
-                          title={summary ?? undefined}
-                        >
-                          {summary ? (
-                            <span className="block truncate text-foreground/90">
-                              {summary}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50">
-                              {cellsStatus === "loading" ? "…" : "—"}
-                            </span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable
+          data={type.scopes}
+          columns={tableColumns}
+          getRowId={(scope) => scope.id}
+          pageSize={0}
+          hidePagination
+          hideToolbar
+          onRowOpen={(scope) => startTransition(() => router.push(`${typeHref}/${scope.id}`))}
+          rowClassName={(scope) => cn(isPending && "pointer-events-none opacity-60", activeScopeIds.has(scope.id) && "bg-primary/5")}
+        />
       )}
     </section>
   );

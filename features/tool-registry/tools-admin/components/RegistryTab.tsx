@@ -15,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,14 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { addToolBinding } from "@/features/tool-registry/shared/toolBindings.service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -113,6 +107,79 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
+}
+
+function bindingColumns(
+  onToggleActive: (row: ToolBindingRow, isActive: boolean) => Promise<void>,
+): MatrxColumnDef<ToolBindingRow>[] {
+  return [
+    {
+      accessorKey: "executor_name",
+      header: "Executor",
+      cell: (row) => (
+        <span className="inline-flex items-center gap-2 font-mono text-xs">
+          <Server className="h-3 w-3 text-muted-foreground" />
+          {row.executor_name}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 120,
+      cell: (row) => (
+        <Switch
+          checked={row.is_active}
+          onCheckedChange={(value) => void onToggleActive(row, value)}
+        />
+      ),
+    },
+  ];
+}
+
+function membershipColumns(): MatrxColumnDef<BundleMembership>[] {
+  return [
+    {
+      id: "bundle",
+      header: "Bundle",
+      accessorFn: (row) => row.bundle.name,
+      cell: (row) => (
+        <a
+          href={`/administration/agents/bundles?b=${row.bundle.id}`}
+          className="font-mono text-foreground hover:text-primary"
+        >
+          {row.bundle.name}
+        </a>
+      ),
+    },
+    {
+      id: "type",
+      header: "Type",
+      accessorFn: (row) => (row.bundle.is_system ? "system" : "personal"),
+      width: 100,
+      cell: (row) => (
+        <Badge variant={row.bundle.is_system ? "default" : "secondary"}>
+          {row.bundle.is_system ? "system" : "personal"}
+        </Badge>
+      ),
+    },
+    {
+      id: "local_alias",
+      header: "Local alias",
+      accessorFn: (row) => row.member.local_alias,
+      cell: (row) => (
+        <span className="font-mono text-xs">{row.member.local_alias}</span>
+      ),
+    },
+    {
+      id: "sort_order",
+      header: "Sort",
+      accessorFn: (row) => row.member.sort_order,
+      align: "right",
+      width: 80,
+    },
+  ];
 }
 
 function ErrorBox({ msg }: { msg: string }) {
@@ -238,49 +305,23 @@ function BindingsSection({ toolId }: { toolId: string }) {
         </EmptyHint>
       )}
       {rows.length > 0 && (
-        <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Executor</TableHead>
-                <TableHead className="w-[120px]">Active</TableHead>
-                <TableHead className="w-[80px] text-right">—</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  key={`${row.tool_id}-${row.executor_name}`}
-                  className={row.is_active ? "" : "opacity-50"}
-                >
-                  <TableCell data-phone="lead" className="font-mono text-xs">
-                    <div className="flex items-center gap-2">
-                      <Server className="h-3 w-3 text-muted-foreground" />
-                      {row.executor_name}
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Active" data-phone="inline">
-                    <Switch
-                      checked={row.is_active}
-                      onCheckedChange={(v) => void onToggleActive(row, v)}
-                    />
-                  </TableCell>
-                  <TableCell data-phone="actions">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void onRemove(row)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      aria-label="Unbind"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <MatrxDataTable<ToolBindingRow>
+          data={rows}
+          columns={bindingColumns(onToggleActive)}
+          getRowId={(row) => `${row.tool_id}-${row.executor_name}`}
+          rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
+          toolbar={{ search: true, refresh: { onRefresh: load } }}
+          rowActions={(row) => (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void onRemove(row)}
+              aria-label="Unbind"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        />
       )}
       <div className="flex flex-wrap items-end gap-2 pt-1">
         <div className="space-y-1">
@@ -361,7 +402,9 @@ function SurfacesSection({ toolId }: { toolId: string }) {
   // Only direct (always_include_tools) inclusions are editable here; bundle
   // inclusions are managed from the bundle, not the tool.
   const directlyIncludedNames = new Set(
-    rows.filter((r) => r.via === "always_include_tools").map((r) => r.surface_name),
+    rows
+      .filter((r) => r.via === "always_include_tools")
+      .map((r) => r.surface_name),
   );
   const available = allSurfaces.filter((s) => !directlyIncludedNames.has(s));
 
@@ -423,7 +466,9 @@ function SurfacesSection({ toolId }: { toolId: string }) {
           {rows.map((row, idx) => (
             <Badge
               key={`${row.surface_name}-${row.via}-${row.bundle_name ?? idx}`}
-              variant={row.via === "always_include_tools" ? "secondary" : "outline"}
+              variant={
+                row.via === "always_include_tools" ? "secondary" : "outline"
+              }
               className="text-[11px] gap-1 pr-1 font-mono"
               title={
                 row.via === "always_include_bundles"
@@ -536,46 +581,12 @@ function BundlesSection({ toolId }: { toolId: string }) {
         <EmptyHint>This tool is not in any bundle.</EmptyHint>
       )}
       {rows.length > 0 && (
-        <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bundle</TableHead>
-                <TableHead className="w-[100px]">Type</TableHead>
-                <TableHead>Local alias</TableHead>
-                <TableHead className="w-[80px] text-right">Sort</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map(({ member, bundle }) => (
-                <TableRow key={`${member.bundle_id}-${member.tool_id}`}>
-                  <TableCell data-phone="lead" className="text-xs">
-                    <a
-                      href={`/administration/agents/bundles?b=${bundle.id}`}
-                      className="font-mono text-foreground hover:text-primary "
-                    >
-                      {bundle.name}
-                    </a>
-                    {bundle.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {bundle.description}
-                      </p>
-                    )}
-                  </TableCell>
-                  <TableCell data-phone="inline">
-                    <Badge variant={bundle.is_system ? "default" : "secondary"} className="text-[10px]">
-                      {bundle.is_system ? "system" : "personal"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell data-label="Local alias" data-phone="inline" className="font-mono text-xs">{member.local_alias}</TableCell>
-                  <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">
-                    {member.sort_order}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <MatrxDataTable<BundleMembership>
+          data={rows}
+          columns={membershipColumns()}
+          getRowId={(row) => `${row.member.bundle_id}-${row.member.tool_id}`}
+          toolbar={{ search: true, refresh: { onRefresh: load } }}
+        />
       )}
     </section>
   );
@@ -614,7 +625,9 @@ function GatingSection({
   toolId: string;
   initialGating: unknown;
 }) {
-  const [gates, setGates] = useState<ToolGateEntry[]>(parseGating(initialGating));
+  const [gates, setGates] = useState<ToolGateEntry[]>(
+    parseGating(initialGating),
+  );
   const [argsJson, setArgsJson] = useState<string[]>(
     parseGating(initialGating).map((g) => JSON.stringify(g.args, null, 2)),
   );
@@ -643,7 +656,9 @@ function GatingSection({
     try {
       const parsed = gates.map((g, i) => ({
         gate: g.gate,
-        args: argsJson[i] ? (JSON.parse(argsJson[i]) as Record<string, unknown>) : {},
+        args: argsJson[i]
+          ? (JSON.parse(argsJson[i]) as Record<string, unknown>)
+          : {},
       }));
       await setToolGating(toolId, parsed);
       toast.success("Gating saved");
@@ -668,22 +683,33 @@ function GatingSection({
         description="Named gate functions that must pass at dispatch time. ALL must pass (AND). Gates live in matrx-ai code (matrx_ai.tools.gates.*)."
         action={
           <Button size="sm" onClick={() => void onSave()} disabled={busy}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save gating"}
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Save gating"
+            )}
           </Button>
         }
       />
       {error && <ErrorBox msg={error} />}
-      {gates.length === 0 && <EmptyHint>No gating — this tool is unrestricted.</EmptyHint>}
+      {gates.length === 0 && (
+        <EmptyHint>No gating — this tool is unrestricted.</EmptyHint>
+      )}
       <div className="space-y-2">
         {gates.map((g, idx) => {
           const meta = KNOWN_GATE_NAMES.find((m) => m.name === g.gate);
           return (
-            <div key={idx} className="rounded-md border border-border bg-card p-3 space-y-2">
+            <div
+              key={idx}
+              className="rounded-md border border-border bg-card p-3 space-y-2"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="font-mono text-xs">{g.gate}</div>
                   {meta?.description && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{meta.description}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {meta.description}
+                    </p>
                   )}
                 </div>
                 <Button
@@ -697,11 +723,15 @@ function GatingSection({
                 </Button>
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">args (JSON)</Label>
+                <Label className="text-[11px] text-muted-foreground">
+                  args (JSON)
+                </Label>
                 <Textarea
                   value={argsJson[idx] ?? "{}"}
                   onChange={(e) =>
-                    setArgsJson((prev) => prev.map((v, i) => (i === idx ? e.target.value : v)))
+                    setArgsJson((prev) =>
+                      prev.map((v, i) => (i === idx ? e.target.value : v)),
+                    )
                   }
                   rows={3}
                   className="font-mono text-xs"
@@ -716,7 +746,9 @@ function GatingSection({
         {available.length > 0 && (
           <div className="flex items-end gap-2">
             <div className="space-y-1 flex-1 max-w-md">
-              <Label className="text-[11px] text-muted-foreground">Add known gate</Label>
+              <Label className="text-[11px] text-muted-foreground">
+                Add known gate
+              </Label>
               <Select onValueChange={(v) => onAdd(v)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Pick a gate to add…" />
@@ -740,7 +772,8 @@ function GatingSection({
         <div className="flex items-end gap-2">
           <div className="space-y-1 flex-1 max-w-md">
             <Label className="text-[11px] text-muted-foreground">
-              Or add custom gate name (must match a gate function in matrx_ai.tools.gates)
+              Or add custom gate name (must match a gate function in
+              matrx_ai.tools.gates)
             </Label>
             <Input
               value={customGate}

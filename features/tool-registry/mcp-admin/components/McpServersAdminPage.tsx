@@ -20,18 +20,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -87,10 +81,7 @@ import {
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import {
-  csvExportItem,
-  jsonExportItem,
-} from "@/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   configSummary,
   serverBrief,
@@ -272,7 +263,7 @@ export function McpServersAdminPage() {
       if ("name" in patch) {
         if (typeof patch.name !== "string" || !patch.name.trim())
           throw new Error(
-            "new_server_draft.name expects a non-empty string — the server's display name (e.g. \"Linear\").",
+            'new_server_draft.name expects a non-empty string — the server\'s display name (e.g. "Linear").',
           );
         staged.name = patch.name;
       }
@@ -280,7 +271,7 @@ export function McpServersAdminPage() {
       if ("vendor" in patch) {
         if (typeof patch.vendor !== "string" || !patch.vendor.trim())
           throw new Error(
-            "new_server_draft.vendor expects a non-empty string — who publishes the server (e.g. \"Linear Orbit, Inc.\").",
+            'new_server_draft.vendor expects a non-empty string — who publishes the server (e.g. "Linear Orbit, Inc.").',
           );
         staged.vendor = patch.vendor;
       }
@@ -320,208 +311,208 @@ export function McpServersAdminPage() {
       getScope={buildSurfaceScope}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-    <div className="min-h-dvh flex flex-col">
-      <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
-        <Server className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Tool Registry · MCP Servers</h1>
-        <Badge
-          variant="outline"
-          className="text-[10px]"
-          data-surface-value="mcp_server_count"
-        >
-          {servers.length}
-        </Badge>
-        {loading && (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-        )}
-        {servers.length > 0 && (
-          <div className="ml-auto flex items-center">
-            <CopyButtons
-              size="icon"
-              label="MCP servers"
-              human={() => serversListSummary(servers)}
-              json={() => servers.map(serverMeta)}
-              agent={() => ({
-                kind: "mcp-servers",
-                location: PAGE_LOCATION,
-                description:
-                  "All registered MCP servers in the tool registry (sanitized — no endpoint URLs or OAuth ids).",
-                data: servers.map(serverMeta),
-                attributes: { count: servers.length },
-                context: {
-                  search: search.trim() || undefined,
-                  visible: filtered.length,
-                },
-              })}
-              aiVariants={[
-                {
-                  id: "summary",
-                  label: "Summary",
-                  hint: "Slug, vendor, status, transport, sync per server",
-                  build: () => ({
-                    kind: "mcp-servers",
-                    location: PAGE_LOCATION,
-                    description:
-                      "Compact digest of all registered MCP servers.",
-                    data: servers.map(serverBrief),
-                    attributes: { count: servers.length },
-                    summary: serversListSummary(servers),
-                  }),
-                },
-              ]}
-              export={{
-                items: [
-                  jsonExportItem(() => servers.map(serverMeta)),
-                  csvExportItem(
-                    () =>
-                      servers.map(serverBrief) as unknown as Array<
-                        Record<string, unknown>
-                      >,
-                    "CSV (server summary)",
-                  ),
-                ],
-              }}
-            />
-          </div>
-        )}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => void load()}
-          className={`h-7 gap-1.5 text-xs ${servers.length > 0 ? "" : "ml-auto"}`}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh list
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setAdding(true)}
-          className="h-7 gap-1.5 text-xs"
-          title="Provision a new MCP server (server + executor kind + system bundle + lister tool, atomically)"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add server
-        </Button>
-      </div>
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-[360px_1fr] min-h-0">
-        <aside className="border-r border-border bg-card flex flex-col">
-          <div className="p-3 border-b border-border">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search servers…"
-                className="pl-7 h-8 text-xs"
-                style={{ fontSize: "16px" }}
-                data-surface-value="mcp_search"
+      <div className="min-h-dvh flex flex-col">
+        <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
+          <Server className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium">Tool Registry · MCP Servers</h1>
+          <Badge
+            variant="outline"
+            className="text-[10px]"
+            data-surface-value="mcp_server_count"
+          >
+            {servers.length}
+          </Badge>
+          {loading && (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          )}
+          {servers.length > 0 && (
+            <div className="ml-auto flex items-center">
+              <CopyButtons
+                size="icon"
+                label="MCP servers"
+                human={() => serversListSummary(servers)}
+                json={() => servers.map(serverMeta)}
+                agent={() => ({
+                  kind: "mcp-servers",
+                  location: PAGE_LOCATION,
+                  description:
+                    "All registered MCP servers in the tool registry (sanitized — no endpoint URLs or OAuth ids).",
+                  data: servers.map(serverMeta),
+                  attributes: { count: servers.length },
+                  context: {
+                    search: search.trim() || undefined,
+                    visible: filtered.length,
+                  },
+                })}
+                aiVariants={[
+                  {
+                    id: "summary",
+                    label: "Summary",
+                    hint: "Slug, vendor, status, transport, sync per server",
+                    build: () => ({
+                      kind: "mcp-servers",
+                      location: PAGE_LOCATION,
+                      description:
+                        "Compact digest of all registered MCP servers.",
+                      data: servers.map(serverBrief),
+                      attributes: { count: servers.length },
+                      summary: serversListSummary(servers),
+                    }),
+                  },
+                ]}
+                export={{
+                  items: [
+                    jsonExportItem(() => servers.map(serverMeta)),
+                    csvExportItem(
+                      () =>
+                        servers.map(serverBrief) as unknown as Array<
+                          Record<string, unknown>
+                        >,
+                      "CSV (server summary)",
+                    ),
+                  ],
+                }}
               />
             </div>
-          </div>
-          {error && (
-            <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {error}
-            </div>
           )}
-          <div className="flex-1 overflow-auto">
-            {filtered.length === 0 && !loading && (
-              <div className="px-3 py-8 text-center text-xs text-muted-foreground">
-                No servers match.
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => void load()}
+            className={`h-7 gap-1.5 text-xs ${servers.length > 0 ? "" : "ml-auto"}`}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh list
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setAdding(true)}
+            className="h-7 gap-1.5 text-xs"
+            title="Provision a new MCP server (server + executor kind + system bundle + lister tool, atomically)"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add server
+          </Button>
+        </div>
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[360px_1fr] min-h-0">
+          <aside className="border-r border-border bg-card flex flex-col">
+            <div className="p-3 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search servers…"
+                  className="pl-7 h-8 text-xs"
+                  style={{ fontSize: "16px" }}
+                  data-surface-value="mcp_search"
+                />
+              </div>
+            </div>
+            {error && (
+              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {error}
               </div>
             )}
-            <ul data-surface-value="mcp_servers_list">
-              {filtered.map((s) => {
-                const fresh = computeFreshness(s);
-                const isSel = s.slug === selected?.slug;
-                return (
-                  <li key={s.slug} className="relative group/srv">
-                    {/* Sibling overlay, not a child of the row button — nested
+            <div className="flex-1 overflow-auto">
+              {filtered.length === 0 && !loading && (
+                <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+                  No servers match.
+                </div>
+              )}
+              <ul data-surface-value="mcp_servers_list">
+                {filtered.map((s) => {
+                  const fresh = computeFreshness(s);
+                  const isSel = s.slug === selected?.slug;
+                  return (
+                    <li key={s.slug} className="relative group/srv">
+                      {/* Sibling overlay, not a child of the row button — nested
                         buttons are invalid HTML. */}
-                    <CopyButtons
-                      size="xs"
-                      label={`Server ${s.slug}`}
-                      className="absolute right-1.5 bottom-1 z-10 rounded border border-border bg-card opacity-0 group-hover/srv:opacity-100 focus-within:opacity-100"
-                      human={() => serverSummary(s)}
-                      json={() => serverMeta(s)}
-                      agent={() => ({
-                        kind: "mcp-server",
-                        location: PAGE_LOCATION,
-                        description:
-                          "One registered MCP server (sanitized row).",
-                        data: serverMeta(s),
-                        summary: serverSummary(s),
-                        attributes: { slug: s.slug, status: s.status },
-                      })}
-                    />
-                    <button
-                      onClick={() => selectServer(s.slug)}
-                      className={`w-full text-left py-2 pl-3 pr-20 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-xs truncate flex-1">
-                          {s.slug}
-                        </span>
-                        <FreshnessBadge fresh={fresh} compact />
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                        <span className="truncate">{s.name}</span>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] flex-shrink-0"
-                        >
-                          {s.status}
-                        </Badge>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                      <CopyButtons
+                        size="xs"
+                        label={`Server ${s.slug}`}
+                        className="absolute right-1.5 bottom-1 z-10 rounded border border-border bg-card opacity-0 group-hover/srv:opacity-100 focus-within:opacity-100"
+                        human={() => serverSummary(s)}
+                        json={() => serverMeta(s)}
+                        agent={() => ({
+                          kind: "mcp-server",
+                          location: PAGE_LOCATION,
+                          description:
+                            "One registered MCP server (sanitized row).",
+                          data: serverMeta(s),
+                          summary: serverSummary(s),
+                          attributes: { slug: s.slug, status: s.status },
+                        })}
+                      />
+                      <button
+                        onClick={() => selectServer(s.slug)}
+                        className={`w-full text-left py-2 pl-3 pr-20 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-xs truncate flex-1">
+                            {s.slug}
+                          </span>
+                          <FreshnessBadge fresh={fresh} compact />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                          <span className="truncate">{s.name}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] flex-shrink-0"
+                          >
+                            {s.status}
+                          </Badge>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </aside>
+          <div className="overflow-auto">
+            {selected ? (
+              <ServerDetail
+                key={selected.slug}
+                server={selected}
+                onRefreshed={() => void load()}
+                onScope={publishDetail}
+              />
+            ) : deepLinkUnresolved ? (
+              <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
+                <AlertCircle className="h-5 w-5 text-warning" />
+                <p className="text-xs text-muted-foreground">
+                  No registered MCP server matches{" "}
+                  <code className="font-mono">{deepLink}</code>
+                  {loading ? " yet — still loading the list." : "."}
+                </p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
+                Pick a server to view configs, connected users, and tools.
+              </div>
+            )}
           </div>
-        </aside>
-        <div className="overflow-auto">
-          {selected ? (
-            <ServerDetail
-              key={selected.slug}
-              server={selected}
-              onRefreshed={() => void load()}
-              onScope={publishDetail}
-            />
-          ) : deepLinkUnresolved ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <p className="text-xs text-muted-foreground">
-                No registered MCP server matches{" "}
-                <code className="font-mono">{deepLink}</code>
-                {loading ? " yet — still loading the list." : "."}
-              </p>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
-              Pick a server to view configs, connected users, and tools.
-            </div>
-          )}
         </div>
+        {adding && (
+          <AddMcpServerDialog
+            organizationId={organizationId}
+            existingSlugs={new Set(servers.map((s) => s.slug))}
+            draft={newServerDraft}
+            onDraftChange={patchNewServerDraft}
+            busy={provisioning}
+            onBusyChange={setProvisioning}
+            onClose={() => setAdding(false)}
+            onCreated={(slug) => {
+              setAdding(false);
+              // The server exists now — the draft that produced it is spent.
+              setNewServerDraft(EMPTY_SERVER_DRAFT);
+              void load().then(() => selectServer(slug));
+            }}
+          />
+        )}
       </div>
-      {adding && (
-        <AddMcpServerDialog
-          organizationId={organizationId}
-          existingSlugs={new Set(servers.map((s) => s.slug))}
-          draft={newServerDraft}
-          onDraftChange={patchNewServerDraft}
-          busy={provisioning}
-          onBusyChange={setProvisioning}
-          onClose={() => setAdding(false)}
-          onCreated={(slug) => {
-            setAdding(false);
-            // The server exists now — the draft that produced it is spent.
-            setNewServerDraft(EMPTY_SERVER_DRAFT);
-            void load().then(() => selectServer(slug));
-          }}
-        />
-      )}
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
@@ -830,127 +821,128 @@ function ToolsTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = async () => {
     setLoading(true);
     setError(null);
+    try {
+      const rows = await listServerTools(serverId);
+      setTools(rows);
+      onLoaded(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load tools");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     // `listServerTools` filters `tool.definition.managed_by_server_id` — a
     // uuid. This passed the SLUG (a leftover from the pre-2026 `${slug}:%`
     // name-pattern signature), so the tab could only ever error or come back
     // empty. Caught while wiring `server_tools`: a value that cannot load
     // cannot be emitted honestly either.
-    void listServerTools(serverId)
-      .then((rows) => {
-        setTools(rows);
-        onLoaded(rows);
-      })
-      .catch((e) =>
-        setError(e instanceof Error ? e.message : "Failed to load tools"),
-      )
-      .finally(() => setLoading(false));
+    void load();
     // `onLoaded` is a stable setState; the fetch keys off the server.
   }, [serverId]);
 
-  if (loading) return <InlineLoading />;
-  if (error) return <ErrorBox msg={error} />;
-  if (tools.length === 0) {
-    return (
-      <EmptyHint>
-        No tools registered for this server (yet — try Refresh sync).
-      </EmptyHint>
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-end gap-1">
-        <CopyButtons
-          size="icon"
-          label={`Tools of ${slug}`}
-          human={() => tools.map(serverToolSummary).join("\n")}
-          json={() => tools}
-          agent={() => ({
-            kind: "mcp-server-tools",
-            location: PAGE_LOCATION,
-            description: `All tools registered under the MCP server "${slug}".`,
-            data: tools,
-            attributes: { server: slug, count: tools.length },
-          })}
-          export={{
-            items: [
-              jsonExportItem(() => tools),
-              csvExportItem(
-                () => tools as unknown as Array<Record<string, unknown>>,
-                "CSV",
-              ),
-            ],
-          }}
-        />
-      </div>
-      <div
-        className="rounded-md border border-border bg-card overflow-hidden"
-        data-surface-value="server_tools"
-      >
-        <Table wrapperClassName="phone-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Canonical name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-[80px]">Active</TableHead>
-              <TableHead className="w-[56px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tools.map((t) => (
-              <TableRow
-                key={t.id}
-                className={`group/tool ${t.is_active === false ? "opacity-60" : ""}`}
-              >
-                <TableCell data-phone="lead" className="font-mono text-xs">
-                  {/* Was a raw <a> — a full page load, no new-tab control and
-                      no preview. EntityRef adds both from the registries
-                      (`tool` → tool.definition, title column `name`). */}
-                  <EntityRef
-                    token="tool"
-                    id={t.id}
-                    name={t.name}
-                    href={toolHref(t.id)}
-                    showIcon={false}
-                    className="font-mono"
-                  />
-                </TableCell>
-                <TableCell data-label="Description" data-phone="inline" className="text-xs">{t.description}</TableCell>
-                <TableCell data-label="Active" data-phone="inline">
-                  <Badge
-                    variant={t.is_active ? "default" : "secondary"}
-                    className="text-[10px]"
-                  >
-                    {t.is_active ? "active" : "inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell data-phone="actions">
-                  <CopyButtons
-                    size="xs"
-                    label={`Tool ${t.name}`}
-                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100 max-md:opacity-100"
-                    human={() => serverToolSummary(t)}
-                    json={() => t}
-                    agent={() => ({
-                      kind: "mcp-server-tool",
-                      location: PAGE_LOCATION,
-                      description: `One tool registered under the MCP server "${slug}".`,
-                      data: t,
-                      summary: serverToolSummary(t),
-                      attributes: { server: slug, name: t.name },
-                    })}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    <div className="space-y-2" data-surface-value="server_tools">
+      {error && <ErrorBox msg={error} />}
+      <MatrxDataTable<ServerToolRow>
+        data={tools}
+        columns={serverToolColumns()}
+        getRowId={(row) => row.id}
+        isLoading={loading}
+        rowClassName={(row) => (row.is_active ? undefined : "opacity-60")}
+        toolbar={{
+          title: `Tools of ${slug}`,
+          search: true,
+          refresh: { onRefresh: load },
+          actions: (
+            <CopyButtons
+              size="icon"
+              label={`Tools of ${slug}`}
+              human={() => tools.map(serverToolSummary).join("\n")}
+              json={() => tools}
+              agent={() => ({
+                kind: "mcp-server-tools",
+                location: PAGE_LOCATION,
+                description: `All tools registered under the MCP server "${slug}".`,
+                data: tools,
+                attributes: { server: slug, count: tools.length },
+              })}
+              export={{
+                items: [
+                  jsonExportItem(() => tools),
+                  csvExportItem(
+                    () => tools as unknown as Array<Record<string, unknown>>,
+                    "CSV",
+                  ),
+                ],
+              }}
+            />
+          ),
+        }}
+        copy={{
+          label: `Tools of ${slug}`,
+          location: PAGE_LOCATION,
+          rowKind: "mcp-server-tool",
+          listKind: "mcp-server-tools",
+          rowDescription: `One tool registered under the MCP server "${slug}".`,
+          listDescription: `All tools registered under the MCP server "${slug}".`,
+          humanRow: serverToolSummary,
+          listAttributes: (visible) => ({
+            server: slug,
+            count: visible.length,
+          }),
+          rowAttributes: (row) => ({ server: slug, name: row.name }),
+          agentRow: (row) => row,
+        }}
+        emptyState={{
+          title: "No tools registered for this server",
+          description: "Try Refresh sync to retrieve its current tools.",
+        }}
+      />
     </div>
   );
+}
+
+function serverToolColumns(): MatrxColumnDef<ServerToolRow>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Canonical name",
+      cell: (row) => (
+        <EntityRef
+          token="tool"
+          id={row.id}
+          name={row.name}
+          href={toolHref(row.id)}
+          showIcon={false}
+          className="font-mono"
+        />
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: (row) => row.description || "—",
+    },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 80,
+      cell: (row) => (
+        <Badge
+          variant={row.is_active ? "default" : "secondary"}
+          className="text-[10px]"
+        >
+          {row.is_active ? "active" : "inactive"}
+        </Badge>
+      ),
+    },
+  ];
 }
 
 function ConfigsTab({
