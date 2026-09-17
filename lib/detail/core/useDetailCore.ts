@@ -36,6 +36,10 @@ export interface DetailCore {
   errorMessage: string | null;
   row: DetailRow | null;
   title: string;
+  /** The title is a stand-in (loading / not found / failed), not a record's name. */
+  titleIsStandIn: boolean;
+  /** Human label for the record type ("File"), for a header that must say what this is. */
+  typeLabel: string;
   about: string | null;
   fields: DetailField[];
   health: DetailSourceHealth | null;
@@ -73,10 +77,27 @@ export function useDetailCore(
   const state = useDetailRecord(recordType, data.id);
 
   const row = state.status === "ready" ? state.row : null;
-  const title =
-    recordType?.title(row, data.seed) ??
-    data.seed?.name?.trim() ??
-    `Untitled ${data.type}`;
+  const typeLabel = recordType?.label ?? data.type;
+  const seedName = data.seed?.name?.trim() || null;
+  // 🚨 D5 — A FAILED OR UNFINISHED LOAD NEVER CLAIMS A RECORD. The
+  // registration's `title()` answers `Untitled <Label>` when it has no row,
+  // which read as a real, unnamed record sitting above its own error notice
+  // (VERIFY-U-P1, D5). A title is invented ONLY from something that exists:
+  // the loaded row, or the name the opener already knew (the seed). With
+  // neither, the header says what is actually happening and marks itself a
+  // stand-in so the presentations can render it as one.
+  const loadedTitle =
+    (state.status === "ready" || state.status === "none") && recordType
+      ? recordType.title(row, data.seed)
+      : null;
+  const standInTitle =
+    state.status === "not-found"
+      ? `This ${typeLabel.toLowerCase()} could not be found`
+      : state.status === "error"
+        ? `This ${typeLabel.toLowerCase()} could not be loaded`
+        : `Loading this ${typeLabel.toLowerCase()}…`;
+  const titleIsStandIn = !loadedTitle && !seedName;
+  const title = loadedTitle ?? seedName ?? standInTitle;
   const about = data.seed?.about?.trim() || null;
   const fields: DetailField[] =
     row && recordType ? recordType.fields(row) : [];
@@ -124,11 +145,19 @@ export function useDetailCore(
       return;
     }
     host.open({ presentation: target, data });
-    if (presentation === "page") {
-      host.navigate.back();
-    } else {
+    if (presentation !== "page") {
       host.close(presentation);
+      return;
     }
+    // 🚨 D1 — THE PAGE IS LEFT FOR A REAL DESTINATION, NEVER `back()` BLINDLY.
+    // `/detail/<type>/<id>` is reached by a shared deep link as often as by an
+    // in-app push, and a tab opened straight onto it has NO history entry
+    // behind it: `back()` there left the person on `about:blank` with the app
+    // gone (VERIFY-U-P1, D1). The window is already open by this line, so the
+    // page must go somewhere that exists — back only when this tab actually
+    // came from somewhere, otherwise the record's own home.
+    if (host.navigate.canGoBack(ref)) host.navigate.back();
+    else host.navigate.toRecordHome(ref, entityToken);
   };
 
   const hasPrev = neighbour(data.list, -1) !== null;
@@ -149,6 +178,8 @@ export function useDetailCore(
     errorMessage: state.status === "error" ? state.message : null,
     row,
     title,
+    titleIsStandIn,
+    typeLabel,
     about,
     fields,
     health,

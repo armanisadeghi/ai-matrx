@@ -80,6 +80,20 @@ export interface DetailHostPorts {
   resolvePresentation: (type: string) => Promise<DetailPresentation>;
   /** Warm the cache so the click path is synchronous. */
   warmPresentation: (type: string) => void;
+  /**
+   * Write the person's presentation setting from inside a detail (the ONE
+   * screen that writes `ui.detail.default_presentation`). `forType` non-null
+   * writes the PER-RECORD-TYPE override instead of the default.
+   *
+   * Optional: a host that can only READ the setting binds nothing and the pane
+   * is absent — never a disabled-looking control. A refusal comes back as
+   * `{ ok: false, reason }` (the settings ladder's reasons are sentences and
+   * the surface renders them), never as a thrown error.
+   */
+  savePresentation?: (args: {
+    presentation: DetailPresentation;
+    forType: string | null;
+  }) => Promise<{ ok: true } | { ok: false; reason: string }>;
   /** Open an in-place presentation (window / docked). Page goes through `navigate`. */
   open: (args: {
     presentation: Exclude<DetailPresentation, "page">;
@@ -93,6 +107,20 @@ export interface DetailHostPorts {
       extra?: { seed?: DetailSeed | null; list?: DetailListContext | null },
     ) => void;
     back: () => void;
+    /**
+     * 🚨 D1. Whether THIS tab reached the detail page from inside the app, so
+     * `back()` lands on a screen the person was actually on. A deep link
+     * opened in a fresh tab has NOTHING behind it: `back()` there leaves the
+     * tab on `about:blank` with the whole app gone (measured 2026-09-17).
+     * A host answers `false` whenever it is not certain.
+     */
+    canGoBack: (ref: DetailRef) => boolean;
+    /**
+     * Where the page goes when there is nothing behind it: the record's own
+     * home (its canonical route), or the host's home when the type has none.
+     * REPLACES the detail page — it is being left, not stacked on.
+     */
+    toRecordHome: (ref: DetailRef, entityToken: string | null) => void;
   };
   shells: DetailShells;
   doors: {

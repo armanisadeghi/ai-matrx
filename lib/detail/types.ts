@@ -21,6 +21,33 @@ export type DetailPresentation = (typeof DETAIL_PRESENTATIONS)[number];
  */
 export const DETAIL_PRESENTATION_KNOB = "ui.detail.default_presentation";
 
+/**
+ * The PER-RECORD-TYPE override of the setting above (`platform.feature_knob`,
+ * feature `ui.detail`, key `presentation_by_type`): a json object keyed by
+ * record type token, e.g. `{"file": "docked"}`. Nearest wins over
+ * `default_presentation` for the type it names, and the same organization →
+ * user ladder resolves it, so an organization can set "contracts open as a
+ * page" and a person can still choose otherwise for themselves.
+ *
+ * WHY A SECOND KEY AND NOT THE `table` RUNG. The platform's per-table rung
+ * (DD-131, precedence 50) is keyed by a `platform.entity_types` ROW ID, and
+ * that table is admin-only by a restrictive policy — a browser cannot read the
+ * id, so a `table` rung would be a setting the screen offers and the reader
+ * never honours. One json key on the ladder the client already has is the
+ * override the settings platform supports today.
+ */
+export const DETAIL_PRESENTATION_BY_TYPE_KNOB = "ui.detail.presentation_by_type";
+
+/** The per-type entry for `type`, when the map holds a usable one. */
+export function presentationForTypeFromMap(
+  raw: unknown,
+  type: string,
+): DetailPresentation | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = (raw as Record<string, unknown>)[type];
+  return isDetailPresentation(value) ? value : undefined;
+}
+
 export function isDetailPresentation(value: unknown): value is DetailPresentation {
   return (
     typeof value === "string" &&

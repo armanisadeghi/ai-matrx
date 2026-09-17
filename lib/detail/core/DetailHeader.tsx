@@ -3,8 +3,26 @@
 // The header's two halves, filled into whichever shell is showing the record:
 //   <DetailTitle>   icon · name · type chip · the record's own doors
 //   <DetailActions> previous / next · open-as (window / docked / page) · copy id
-// Compact on purpose: a WindowPanel centres its title across the whole bar and
-// a wide action cluster overlaps it.
+//
+// 🚨 TWO RULES THIS FILE EXISTS TO HOLD (VERIFY-U-P1, D2 and D4):
+//
+// 1. THE NAME IS THE ONE THING THE HEADER ALWAYS SHOWS. At 390px the page
+//    header used to reduce to icon + type chip + icons, with the record's name
+//    gone and the id chip colliding with the shell's own right-hand cluster —
+//    a person could not tell WHICH record they were looking at. The type chip
+//    and the record's doors now step aside below `sm` and reappear in the
+//    body's meta line (`DetailRecordMeta`), which is where "below or into
+//    overflow" lands. The name never steps aside.
+//
+// 2. THE ACTION CLUSTER IS ICONS ONLY, AT EVERY WIDTH. A `WindowPanel` centres
+//    its title across the whole bar, so a wide action cluster is drawn on top
+//    of it. The old copy control carried the full uuid behind a `sm:` class —
+//    and `sm:` answers the VIEWPORT, not the 540px window, so on a 1440px
+//    screen the id text was always there and always overlapped. The id lives
+//    in the body meta line instead; up here it is one copy icon.
+//
+// 3. A stand-in title (loading / not found / failed) is rendered AS a stand-in:
+//    muted, with no doors beside it, because there is no record to open.
 
 "use client";
 
@@ -29,6 +47,9 @@ const ICON_BUTTON =
   "hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
   "disabled:opacity-40 disabled:hover:bg-transparent pointer-coarse:h-10 pointer-coarse:w-10";
 
+const TYPE_CHIP =
+  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset";
+
 const PRESENTATIONS: {
   value: DetailPresentation;
   label: string;
@@ -39,32 +60,80 @@ const PRESENTATIONS: {
   { value: "page", label: "Open as page", Icon: Expand },
 ];
 
+function TypeChip({ core, className }: { core: DetailCore; className?: string }) {
+  const accent = core.recordType?.accent ?? null;
+  return (
+    <span
+      className={cn(
+        TYPE_CHIP,
+        accent?.bg ?? "bg-muted",
+        accent?.text ?? "text-muted-foreground",
+        accent?.ring ?? "ring-border",
+        className,
+      )}
+      data-detail-type-chip
+    >
+      {core.typeLabel}
+    </span>
+  );
+}
+
 export function DetailTitle({ core }: { core: DetailCore }) {
   const host = useDetailHost();
   const Icon = core.recordType?.icon ?? null;
   const accent = core.recordType?.accent ?? null;
-  const label = core.recordType?.label ?? core.ref.type;
   const RecordDoors = host.doors.RecordDoors;
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
       {Icon ? <Icon className={cn("h-4 w-4 shrink-0", accent?.text)} /> : null}
-      <span className="truncate text-sm font-medium text-foreground">{core.title}</span>
+      {/* The name. Never hidden, never truncated away to nothing. */}
       <span
         className={cn(
-          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset",
-          accent?.bg ?? "bg-muted",
-          accent?.text ?? "text-muted-foreground",
-          accent?.ring ?? "ring-border",
+          "min-w-0 flex-1 truncate text-sm font-medium",
+          core.titleIsStandIn ? "text-muted-foreground" : "text-foreground",
         )}
+        data-detail-title
+        data-detail-title-standin={core.titleIsStandIn ? "true" : undefined}
       >
-        {label}
+        {core.title}
       </span>
+      {/* Type chip: desktop only — `DetailRecordMeta` carries it on a phone. */}
+      <TypeChip core={core} className="hidden sm:inline-block" />
       {/* The record's own doors — a SIBLING of the title, never inside a button.
+          Absent while the title is a stand-in: there is no record to open yet.
           The host's control renders nothing when the token has no route and no
-          peek, so an unregistered type keeps the copy chip and nothing else. */}
-      {core.entityToken ? (
-        <RecordDoors token={core.entityToken} id={core.ref.id} name={core.title} />
+          peek, so an unregistered type keeps the name and nothing else. */}
+      {core.entityToken && !core.titleIsStandIn ? (
+        <span className="hidden shrink-0 sm:inline-flex">
+          <RecordDoors token={core.entityToken} id={core.ref.id} name={core.title} />
+        </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The type, the id and the record's doors, in the BODY — where the header
+ * hands them off below `sm`, and where the id lives at every width now that
+ * the header cluster is icons only.
+ */
+export function DetailRecordMeta({ core }: { core: DetailCore }) {
+  const host = useDetailHost();
+  const RecordDoors = host.doors.RecordDoors;
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2"
+      data-detail-record-meta
+    >
+      <TypeChip core={core} className="sm:hidden" />
+      {core.entityToken && !core.titleIsStandIn ? (
+        <span className="inline-flex sm:hidden">
+          <RecordDoors token={core.entityToken} id={core.ref.id} name={core.title} />
+        </span>
+      ) : null}
+      <span className="truncate font-mono text-[10px] text-muted-foreground" data-detail-id>
+        {core.ref.id}
+      </span>
     </div>
   );
 }
@@ -86,7 +155,7 @@ export function DetailActions({ core }: { core: DetailCore }) {
   const list = core.list;
 
   return (
-    <div className="flex items-center gap-0.5" data-detail-actions>
+    <div className="flex shrink-0 items-center gap-0.5" data-detail-actions>
       {list.context ? (
         <>
           <button
@@ -94,8 +163,8 @@ export function DetailActions({ core }: { core: DetailCore }) {
             className={ICON_BUTTON}
             onClick={list.prev}
             disabled={!list.hasPrev}
-            aria-label="Previous record ( [ )"
-            title="Previous record  [ "
+            aria-label="Previous record (Up arrow)"
+            title="Previous record  ↑"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -107,8 +176,8 @@ export function DetailActions({ core }: { core: DetailCore }) {
             className={ICON_BUTTON}
             onClick={list.next}
             disabled={!list.hasNext}
-            aria-label="Next record ( ] )"
-            title="Next record  ] "
+            aria-label="Next record (Down arrow)"
+            title="Next record  ↓"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -129,15 +198,20 @@ export function DetailActions({ core }: { core: DetailCore }) {
         </button>
       ))}
 
+      {/* Icons only: the id itself is in the body meta line (see rule 2). */}
       <button
         type="button"
         onClick={() => void copyId()}
-        className="ml-1 inline-flex h-7 max-w-[160px] items-center gap-1 rounded-md bg-muted px-2 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-10"
+        className={ICON_BUTTON}
         aria-label="Copy record id"
         title="Copy record id"
+        data-detail-copy-id
       >
-        {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
-        <span className="hidden truncate sm:inline">{core.ref.id}</span>
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
       </button>
     </div>
   );

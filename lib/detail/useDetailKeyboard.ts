@@ -1,9 +1,16 @@
 // lib/detail/useDetailKeyboard.ts
 //
 // The keyboard model, once, for all three presentations (Linear's bones):
-//   Escape            → close
-//   [ / ]             → previous / next record in the list it was opened from
-//   Cmd/Ctrl + Enter  → save, when a section registered a save handler
+//   Escape                        → close
+//   ArrowUp / ArrowDown           → previous / next record in the list it was
+//   ArrowLeft / ArrowRight          opened from; `[` / `]` are aliases
+//   Cmd/Ctrl + Enter              → save, when a section registered a save handler
+//
+// ARROWS ARE THE PRIMARY BINDING (Arman, 2026-09-17: "Escape closes, ARROWS
+// move between records, Cmd+Enter saves"). `[` / `]` stay as aliases because
+// Linear and Notion both carry them and muscle memory is cheap to honour.
+// Every movement key is read only when focus is NOT in an editable — in a
+// field an arrow moves the caret, which is what the person meant.
 //
 // Keys are read on the presentation's own root (capture phase), so two open
 // details never answer one keystroke and a key typed into a field inside the
@@ -30,6 +37,11 @@ export interface DetailKeyboard {
   /** Whether anything is registered — the switcher shows the hint only then. */
   hasSave: () => boolean;
 }
+
+/** Previous record. Arrows are the binding Arman asked for; brackets are aliases. */
+const PREV_KEYS: ReadonlySet<string> = new Set(["ArrowUp", "ArrowLeft", "["]);
+/** Next record. Same order: arrow first, bracket as the alias. */
+const NEXT_KEYS: ReadonlySet<string> = new Set(["ArrowDown", "ArrowRight", "]"]);
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -61,12 +73,14 @@ export function useDetailKeyboard(handlers: DetailKeyboardHandlers): DetailKeybo
       h.onClose();
       return;
     }
-    if (event.key === "[" && h.onPrev) {
+    // A modified arrow belongs to the browser (word jump, history, zoom).
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (PREV_KEYS.has(event.key) && h.onPrev) {
       event.preventDefault();
       h.onPrev();
       return;
     }
-    if (event.key === "]" && h.onNext) {
+    if (NEXT_KEYS.has(event.key) && h.onNext) {
       event.preventDefault();
       h.onNext();
     }

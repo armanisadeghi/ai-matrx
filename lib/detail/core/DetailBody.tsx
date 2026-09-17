@@ -28,8 +28,36 @@ import { AssociationCardGrid, PrimaryEntityProvider } from "@ai-matrx/associatio
 
 import { useDetailHost } from "../host";
 import { formatWhen } from "../format";
+import { DetailRecordMeta } from "./DetailHeader";
+import { DetailPresentationPane } from "./DetailPresentationPane";
 import type { DetailHistoryEntry, DetailSection, DetailSourceHealth } from "../types";
 import type { DetailCore } from "./useDetailCore";
+
+/**
+ * 🚨 D5 — THE SKELETON HAS A BOUNDED WAIT. A load that never answers used to
+ * shimmer for ~20 seconds and then drop an error, with nothing in between
+ * saying anything was wrong. After this many milliseconds the skeleton says,
+ * in plain words, that it is still waiting — the stand-in announcing itself
+ * (law 4) rather than pretending progress. A patience threshold, not a ceiling
+ * or a quota: it buys nothing and spends nothing, so it is a constant here and
+ * not a knob.
+ */
+const SLOW_LOAD_NOTICE_MS = 6000;
+
+/** True once a load has been running longer than a person expects to wait. */
+function useSlowLoadNotice(active: boolean, key: string): boolean {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setSlow(false);
+      return undefined;
+    }
+    setSlow(false);
+    const timer = setTimeout(() => setSlow(true), SLOW_LOAD_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [active, key]);
+  return slow;
+}
 
 function SectionHeading({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   return (
@@ -153,16 +181,7 @@ function FieldsSection({ core }: { core: DetailCore }) {
     );
   }
   if (core.status === "loading") {
-    return (
-      <div className="space-y-3" aria-busy="true" aria-label={`Loading ${label} details`}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="space-y-1.5">
-            <Skeleton className="h-2.5 w-20" />
-            <Skeleton className={cn("h-4", i % 2 ? "w-3/4" : "w-1/2")} />
-          </div>
-        ))}
-      </div>
-    );
+    return <LoadingFields core={core} label={label} />;
   }
   if (core.status === "not-found") {
     return (
@@ -217,6 +236,28 @@ function FieldsSection({ core }: { core: DetailCore }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+/** The skeleton, plus the honest line once the wait has gone long (D5). */
+function LoadingFields({ core, label }: { core: DetailCore; label: string }) {
+  const slow = useSlowLoadNotice(true, `${core.ref.type}:${core.ref.id}`);
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label={`Loading ${label} details`}>
+      {slow ? (
+        <p className="text-xs text-muted-foreground" data-detail-slow-load>
+          Still loading this {label} — the read has been running for more than{" "}
+          {Math.round(SLOW_LOAD_NOTICE_MS / 1000)} seconds. If nothing appears, the record may be
+          unreachable from here; closing and reopening it starts a fresh read.
+        </p>
+      ) : null}
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="space-y-1.5">
+          <Skeleton className="h-2.5 w-20" />
+          <Skeleton className={cn("h-4", i % 2 ? "w-3/4" : "w-1/2")} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -343,6 +384,7 @@ export function DetailBody({ core }: { core: DetailCore }) {
     // `min-h-full` so a Frame's right-click menu answers anywhere in the body,
     // not only on the rows — a short dossier otherwise leaves a dead band.
     <div className="flex min-h-full flex-col">
+      <DetailRecordMeta core={core} />
       {core.health ? <HealthStrip health={core.health} /> : null}
       {core.about ? (
         <p className="line-clamp-3 border-b border-border/60 p-4 text-xs leading-snug text-muted-foreground">
@@ -363,6 +405,10 @@ export function DetailBody({ core }: { core: DetailCore }) {
             ))}
           </>
         ) : null}
+        {/* Last, quiet, and on every load state: how details open is a setting
+            the person can change from right here (and the one caller of the
+            keyboard model's `registerSave`). */}
+        <DetailPresentationPane core={core} />
       </div>
     </div>
   );
