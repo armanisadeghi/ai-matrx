@@ -23,6 +23,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseToField } from "./mailbox";
+import { recipientsOfSend } from "./preflight";
 
 const CORPUS_PATH = join(
   __dirname,
@@ -65,6 +66,22 @@ function clientVerdict(value: string): "accepted" | "refused" {
   return parsed.mailboxes.length === 1 ? "accepted" : "refused";
 }
 
+/**
+ * The SAME question asked of the real send path.
+ *
+ * 🚨 A GUARD OVER A FUNCTION THE SEND DOES NOT CALL PROVES NOTHING. Every Gmail
+ * send from a record goes through `recipientsOfSend` (inside
+ * `preflightGmailRecipients`, which both the compose panel and the approval
+ * queue hand the review card), so the corpus is driven through THAT too: a
+ * refactor that stopped routing the `To` field through `parseToField` would leave
+ * the leg above green while the server refused real sends again (R4 V1).
+ */
+function sendPathVerdict(value: string): "accepted" | "refused" {
+  const parsed = recipientsOfSend(value, []);
+  if (!parsed.ok) return "refused";
+  return parsed.mailboxes.length === 1 ? "accepted" : "refused";
+}
+
 describe("the client's To-field parser agrees with the server's corpus", () => {
   const cases = readCorpus();
 
@@ -86,9 +103,31 @@ describe("the client's To-field parser agrees with the server's corpus", () => {
     expect(cases.length).toBeGreaterThanOrEqual(8);
   });
 
+  /**
+   * 🚨 AGREEING ON THE VERDICT IS NOT ENOUGH — THE PERSON READS THE REMEDY.
+   *
+   * `a@x.com, b@y.com` in `To` is the case R4 V1 was raised for, and the server's
+   * own answer names what to do: one message goes to one recipient, put the
+   * others in Cc where each is checked on its own. A client that refuses it for
+   * some OTHER reason ("that is not an email address") sends the person hunting a
+   * typo that is not there, so the refusal is asserted, not just the verdict.
+   */
+  it("refuses a two-address To with the server's own remedy, on the send path", () => {
+    const parsed = recipientsOfSend("a@x.com, b@y.com", []);
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) return;
+    expect(parsed.reason).toMatch(/one recipient in to; add others in cc/i);
+    expect(parsed.reason).toContain("a@x.com");
+    expect(parsed.reason).toContain("b@y.com");
+    // And it is NOT the unreadable-syntax remedy, which would contradict it.
+    expect(parsed.reason).not.toMatch(/separate multiple recipients with commas/i);
+  });
+
   for (const testCase of cases) {
     it(`${testCase.verdict}: ${JSON.stringify(testCase.value)} — ${testCase.rule || testCase.why.slice(0, 60)}`, () => {
       expect(clientVerdict(testCase.value)).toBe(testCase.verdict);
+      // …and the path a real send actually takes agrees with the same corpus.
+      expect(sendPathVerdict(testCase.value)).toBe(testCase.verdict);
     });
   }
 });

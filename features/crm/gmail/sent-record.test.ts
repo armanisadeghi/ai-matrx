@@ -3,11 +3,14 @@
 // THE THREE THINGS BUGBOT FOUND ON 2026-09-17, each written RED first against
 // the shipped code and kept here so they cannot come back.
 //
-//  1. HIGH — the timeline recorded the DRAFT, not what was sent. Both writers
-//     snapshotted to/cc/subject/body when review opened, and the review card
-//     lets every one of them change before Send. `narrowGmailSendReceipt` is
-//     the answer: the card's own receipt is the only lawful source for a sent
-//     record, and `gmailInteractionRow` must be built from it.
+//  1. HIGH — the timeline recorded the DRAFT, not what was sent. THAT HALF MOVED
+//     TO THE SERVER (aidream `4dbffdffb`): the browser no longer writes the
+//     `crm.interaction` row at all, so what is recorded is what the send request
+//     carried and what the provider answered. The honesty of that request — the
+//     record context decided from the fields on screen at the click, and every
+//     gap the server reports being SHOWN — lives in
+//     `./the-client-writes-no-sent-record.test.ts` and
+//     `./reviewed-send-contract.test.ts`.
 //  2. MEDIUM — review edits skipped the send gate. The compose step checked the
 //     address in ITS To field; the card then let the recipient change and
 //     posted Send itself. `preflightGmailRecipients` runs at Send time, over
@@ -28,7 +31,6 @@ import {
   preflightGmailRecipients,
   recipientsOfSend,
 } from "./preflight";
-import { gmailInteractionRow, narrowGmailSendReceipt } from "./service";
 
 let seq = 0;
 function emailPoint(value: string): ContactPoint {
@@ -104,123 +106,6 @@ function verdict(allowed: boolean): EligibilityVerdict {
     },
   };
 }
-
-// ── 1. The sent record is the CARD's receipt ────────────────────────────────
-
-describe("narrowGmailSendReceipt", () => {
-  it("takes every field the card reported, including the edited body", () => {
-    const receipt = narrowGmailSendReceipt(
-      {
-        message_id: "gmail-123",
-        to: "edited@example.com",
-        cc: ["cc@example.com", 7],
-        subject: "Edited subject",
-        body: "Edited body",
-        from_email: "me@example.com",
-        edited: true,
-      },
-      "connection-1",
-    );
-    expect(receipt).toEqual({
-      messageId: "gmail-123",
-      connectionId: "connection-1",
-      fromEmail: "me@example.com",
-      to: "edited@example.com",
-      cc: ["cc@example.com"],
-      subject: "Edited subject",
-      body: "Edited body",
-    });
-  });
-
-  it("returns null when the card named no message id", () => {
-    expect(narrowGmailSendReceipt({ to: "a@b.com" }, "c")).toBeNull();
-    expect(narrowGmailSendReceipt(null, "c")).toBeNull();
-    expect(narrowGmailSendReceipt("sent", "c")).toBeNull();
-  });
-});
-
-describe("gmailInteractionRow", () => {
-  const receipt = {
-    messageId: "gmail-999",
-    connectionId: "connection-9",
-    fromEmail: "me@example.com",
-    to: "edited@example.com",
-    cc: [],
-    subject: "What actually went",
-    body: "What actually went out",
-  };
-
-  it("records what was sent, associated with the record, org explicit", () => {
-    const row = gmailInteractionRow(
-      {
-        receipt,
-        association: {
-          partyId: "party-1",
-          organizationId: "org-1",
-          dealId: "deal-1",
-          contactPointId: "point-1",
-        },
-        approvedByUserId: "user-1",
-      },
-      "interaction-1",
-      "2026-09-17T10:00:00.000Z",
-    );
-    expect(row.subject).toBe("What actually went");
-    expect(row.body).toBe("What actually went out");
-    expect(row.channel_code).toBe("email");
-    expect(row.provider).toBe("gmail");
-    // The external message id and the account it went out through.
-    expect(row.provider_interaction_id).toBe("gmail-999");
-    expect(row.provider_account_id).toBe("connection-9");
-    expect(row.organization_id).toBe("org-1");
-    expect(row.deal_id).toBe("deal-1");
-    expect(row.direction).toBe("outbound");
-  });
-
-  it("carries the audit trail in the shape the migration backfills", () => {
-    const row = gmailInteractionRow(
-      {
-        receipt,
-        association: { partyId: "party-1", organizationId: "org-1" },
-        approvedByUserId: "user-1",
-        draftedBy: {
-          agentId: "agent-1",
-          runId: "run-1",
-          label: "Follow-up writer",
-          assistId: "assist-1",
-        },
-      },
-      "interaction-2",
-      "2026-09-17T10:00:00.000Z",
-    );
-    const metadata = row.metadata as Record<string, unknown>;
-    expect(metadata.__kind).toBe("crm_gmail_send_record");
-    expect(metadata.audit_trail).toEqual({
-      drafted_by_agent_id: "agent-1",
-      drafted_by_run_id: "run-1",
-      drafted_by_label: "Follow-up writer",
-      approval_assist_id: "assist-1",
-      approved_by: "user-1",
-      approved_at: "2026-09-17T10:00:00.000Z",
-    });
-  });
-
-  it("writes an approver and a time together, or neither", () => {
-    const row = gmailInteractionRow(
-      {
-        receipt,
-        association: { partyId: "party-1", organizationId: "org-1" },
-        approvedByUserId: null,
-      },
-      "interaction-3",
-      "2026-09-17T10:00:00.000Z",
-    );
-    const trail = (row.metadata as { audit_trail: Record<string, unknown> })
-      .audit_trail;
-    expect(trail.approved_by).toBeNull();
-    expect(trail.approved_at).toBeNull();
-  });
-});
 
 // ── 2. The gate runs on what is about to be sent ────────────────────────────
 

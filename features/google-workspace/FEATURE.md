@@ -78,14 +78,32 @@ GOT.** Its Cc goes through `splitMailboxField` from `features/crm/gmail/mailbox.
 that cut on every comma, so `"Doe, John" <john@x.com>` reached the Send-time gate
 as two unreadable pieces and the gate, which fails closed, refused the message in
 words that blamed the person's own address. And `sendReviewedGmail` returns a
-`ReviewedGmailReceipt`: the server answers the addresses its own parser DELIVERED
-to (aidream lane B-10, `/projects/google-native/VERIFY-B1-B2-R2.md` N2), the card
-resolves its ask with those, and the CRM therefore records the sent message
-against the Person who actually holds the address — `Ada Lovelace
+`ReviewedGmailSendOutcome`: the server answers the addresses its own parser
+DELIVERED to (aidream lane B-10, `/projects/google-native/VERIFY-B1-B2-R2.md` N2),
+the card resolves its ask with those, and the row the SERVER writes is therefore
+filed against the Person who actually holds the address — `Ada Lovelace
 <ada@example.com>` used to be judged as a string no Person holds. A server that
-answers no addresses is older than that change: the typed field stands in and says
-so in the console. Guard:
+answers no addresses is older than that change: the typed field stands in and the
+stand-in says so ON SCREEN. Guard:
 `agent/the-card-sends-and-reports-real-addresses.test.tsx`.
+
+🚨 **THE SERVER WRITES THE SENT RECORD, AND THIS CARD IS WHERE ITS ANSWER IS
+SHOWN** (since 2026-09-17, aidream `4dbffdffb`). `POST /gmail/send-reviewed` gates
+every recipient through the CRM's one send authority, sends, then writes the
+`crm.interaction` row, its association edges and the `crm.sending_event` — so
+`organization_id` is REQUIRED on the request (422 without it) and the record half
+rides it. A caller with a record passes the `plan` prop, which the card calls with
+the recipients on its own screen immediately before the post; a caller without one
+(an agent emailing an address nobody in the CRM holds, the admin bench) passes
+none and the transport resolves the viewer's own organization context through the
+ONE fail-closed kernel. Whatever the answer reports — `record_failure`,
+`sending_event_gap`, a refused association edge, a recipient warning — the card
+says out loud, because it is on every send path and the message cannot be unsent.
+A refused recipient is HTTP 409 `gmail_send_refused`: nothing was sent, and the
+card renders the authority's sentence plus any block fix the sentence does not
+already carry. The wire contract, and the two exact reasons `pnpm sync-types`
+could not regenerate it, are in
+`features/crm/gmail/reviewed-send-contract.ts`.
 
 ## The in-app half — `export/sendToGoogle.ts`
 
@@ -222,6 +240,30 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- `2026-09-17` — **F-37: the reviewed send carries the record, and the server
+  writes it.** `sendReviewedGmail` now posts the whole reviewed-send contract
+  (required `organization_id`, the party/deal/project/contact-point/medium/list/
+  identity fields, `cc_attribution`, `account_email` and the drafted-by hints) and
+  returns the narrowed `ReviewedGmailSendOutcome` — the row, the edges, the
+  sending event, the compliance envelope and the warnings the server reported.
+  `ReviewedGmailDraft` gained a required `context`; `ReviewedGmailReceipt` is gone
+  (no legacy). `GmailReviewCard` gained a `plan` prop (the record context, decided
+  from its own recipients at the click), raises every gap the answer names, and
+  renders the 409 `gmail_send_refused` sentence with its block fixes over a send
+  that never happened. The organization is the record's own, or — for a send with
+  no record — the viewer's context through `requireOrganizationContext`, the same
+  value `postGoogleBackend` puts in the org-context header, so body and header can
+  never disagree. The shape lives in `features/crm/gmail/reviewed-send-contract.ts`
+  because `pnpm sync-types` cannot run without database environment (its header
+  carries both exact errors) and a generated file is never hand-edited; a
+  cross-repo census test measures every field against the server's Pydantic
+  models. Guards: four new cases in
+  `agent/the-card-sends-and-reports-real-addresses.test.tsx` (the record failure
+  and the sending-event gap reaching the person, a refused edge and a warning as
+  their own sentences, an unattributed recipient sending NO record fields, a
+  delivered/filed address disagreement) plus two for the 409, each proven red by
+  swallowing the notices and the refusal; `npx jest features/crm/gmail
+  features/approvals features/google-workspace` = 38 suites / 297 tests green.
 - `2026-09-17` — **The Picker now OFFERS every file type the buttons name (Bugbot
   round 21 on PR 228).** Deriving the button copy from the record fixed the words
   and left the door shut: `lib/googlePicker.ts` carried its own pair of MIME
@@ -267,10 +309,11 @@ attachment it cannot open. Server half:
   this can read". The card now uses `splitMailboxField` from
   `features/crm/gmail/mailbox.ts`, the ONE parser, and a genuinely unreadable
   field still refuses: the parse got better, not laxer. And `sendReviewedGmail`
-  returns a `ReviewedGmailReceipt` (`messageId` + the `to`/`cc` the server's own
-  parser delivered to, `null` from an older server) which the card reports in its
-  ask, so the CRM's sent record, its contact point, its Cc attribution and its
-  metadata are all judged against what Google got rather than what was typed;
+  returns the narrowed outcome (`messageId` + the `to`/`cc` the server's own
+  parser delivered to, `null` from an older server; since F-37 the whole sent
+  record with it) which the card reports in its ask, so the sent record, its
+  contact point, its Cc attribution and its metadata are all judged against what
+  Google got rather than what was typed;
   `GoogleWorkspaceReviewWorkspace`'s toast names the delivered address too. Guard:
   `agent/the-card-sends-and-reports-real-addresses.test.tsx` (5 cases, red first —
   the RED was the refusal sentence above).

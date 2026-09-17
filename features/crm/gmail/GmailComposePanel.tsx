@@ -22,10 +22,15 @@
  * recipient never reaches step 2, because the card's Send posts straight to the
  * reviewed-send endpoint and cannot be gated from outside it.
  *
- * When it resolves sent, `recordGmailSendInteraction` puts the message on the
- * record's timeline — associated with the Person, and with the deal when the
- * panel was opened from one (HubSpot's "Associated with", which is the whole
- * point of sending from a record instead of from Gmail).
+ * 🚨 THIS PANEL WRITES NOTHING EITHER. The SERVER puts the message on the
+ * record's timeline — associated with the Person, and with the deal or project
+ * the panel was opened from (HubSpot's "Associated with", which is the whole
+ * point of sending from a record instead of from Gmail) — inside the same
+ * reviewed-send request that sends it. What this panel owns is the PLAN: which
+ * Person the row belongs to, which contact point, and whose address each Cc is,
+ * decided from the recipients on the card at the click (`planSend`). The card
+ * shows every gap the server reports; this panel claims a timeline row only when
+ * the answer named one.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -61,9 +66,9 @@ import {
 } from "./recipients";
 import { addressOfMailbox, splitMailboxField } from "./mailbox";
 import {
-  narrowGmailSendReceipt,
-  recordGmailSendInteraction,
-} from "./service";
+  interactionIdOfSendData,
+  type ReviewedGmailSendPlan,
+} from "./reviewed-send-contract";
 import { preflightGmailRecipients } from "./preflight";
 import { assessGmailRecipientIntegrity } from "./recipient-integrity";
 import type { GmailDraftedBy } from "./types";
@@ -165,7 +170,6 @@ export function GmailComposePanel({
   const [connectionId, setConnectionId] = useState<string | null>(() =>
     preferredGoogleConnectionId("gmail-send"),
   );
-  const [recording, setRecording] = useState(false);
   const [seeded, setSeeded] = useState(Boolean(initialTo?.trim()));
 
   /**
@@ -185,7 +189,6 @@ export function GmailComposePanel({
     setCc("");
     setSubject(initialSubject ?? "");
     setBody(initialBody ?? "");
-    setRecording(false);
     setSeeded(Boolean(initialTo?.trim()));
   }
 
@@ -286,6 +289,58 @@ export function GmailComposePanel({
       }
     : null;
 
+  /**
+   * 🚨 WHERE THE SERVER FILES THE ROW, DECIDED AT THE CLICK — never from this
+   * panel's draft. The card's fields are editable up to Send, so the Person the
+   * row belongs to, the contact point, and whose address each Cc is, are all
+   * decided from what is on the card at that moment. Before the server owned the
+   * record, this ran AFTER the send on the reported receipt; it now runs just
+   * before the post, over the same parsed addresses (the two parsers agree case
+   * by case — `./mailbox-agreement.test.ts`).
+   */
+  function planSend(sent: { to: string; cc: string[] }): ReviewedGmailSendPlan {
+    const integrity = assessGmailRecipientIntegrity({
+      sentTo: sent.to,
+      // A Cc is a recipient: it is attributed onto the row so the timeline can
+      // say whose address it is (N9).
+      sentCc: sent.cc,
+      source: { kind: "record", heldAddresses: optionsRef.current },
+    });
+    if (!integrity.recordOnRecord) {
+      /**
+       * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
+       * OTHERWISE (`./recipient-integrity.ts`, the ONE primitive both send paths
+       * consume). The message still goes — it is a legitimate message — but NO
+       * record fields go with it, so the server files nothing, and the refusal
+       * sentence (which names the address) is shown afterwards. Until 2026-09-17
+       * this panel recorded such a send on the open record and said "Sent, and
+       * recorded on Ada's timeline" — a row on a customer's history for a message
+       * she never received (VERIFY-B1-B2 D1).
+       */
+      return {
+        context: { organizationId: recordOrganizationId || null },
+        attributedAddress: null,
+        unattributed: integrity.refusal,
+      };
+    }
+    return {
+      context: {
+        // 🚨 THE PARTY'S OWN ORGANIZATION WINS: `crm._inherit_parent_org` RAISES
+        // when the request's organization differs from the party's (D8).
+        organizationId: recordOrganizationId || null,
+        partyId,
+        dealId: dealId ?? null,
+        projectId: projectId ?? null,
+        contactPointId: integrity.contactPointId,
+        mediumId: integrity.mediumId,
+        ccAttribution: integrity.cc,
+        draftedBy: draftedBy ?? null,
+      },
+      attributedAddress: integrity.attributedAddress,
+      unattributed: null,
+    };
+  }
+
   useEffect(() => {
     if (step !== "review" || !mailbox) return;
     registerAskResolver(callId, (response) => {
@@ -294,88 +349,25 @@ export function GmailComposePanel({
         setStep("compose");
         return;
       }
-      // 🚨 WHAT THE CARD SENT, never what this panel drafted. Every field on
-      // that card is editable right up to the click (Bugbot HIGH #1).
-      const receipt = narrowGmailSendReceipt(response.data, mailbox.id);
-      if (!receipt) {
-        // The message went out but the card did not name it. Say so — the
-        // record cannot carry an external id it was never given.
-        toast.error(
-          "The message was sent but Gmail's message id did not come back, so it could not be recorded on the timeline.",
-        );
-        onClose();
-        return;
-      }
       /**
-       * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
-       * OTHERWISE — decided by the ONE primitive both send paths consume
-       * (`./recipient-integrity.ts`; the approval queue's `gmail_send` kind
-       * calls the same function). Until 2026-09-17 this panel resolved the
-       * contact point, found none, and recorded the row on the open record
-       * anyway with the toast "Sent, and recorded on Ada's timeline" — a row on
-       * a customer's history saying we emailed her a message she never received
-       * (VERIFY-B1-B2 D1).
+       * 🚨 THE SERVER WROTE THE ROW, OR SAID WHY IT DID NOT — and the card has
+       * already shown every one of those sentences (a record that did not land, a
+       * missing sending event, a refused association edge, a recipient warning).
+       * This panel therefore claims a timeline row ONLY when the server named
+       * one, and never repeats what the card already said.
        */
-      const integrity = assessGmailRecipientIntegrity({
-        sentTo: receipt.to,
-        // A Cc is a recipient: it is attributed onto the row so the timeline can
-        // say whose address it is (N9).
-        sentCc: receipt.cc,
-        source: { kind: "record", heldAddresses: optionsRef.current },
-      });
-      if (!integrity.recordOnRecord) {
-        // Recorded on NO Person, and the toast says so with the address, so it
-        // can be logged on the right record by hand.
-        toast.warning(integrity.refusal);
-        onSent?.(null);
-        onClose();
-        return;
+      const interactionId = interactionIdOfSendData(response.data);
+      if (interactionId) {
+        // This sentence NAMES A RECORD, so it is raised through `recordToast`
+        // with its identity: dismissed if the record is renamed, deleted, or
+        // simply left behind (lib/toast.ts, FIX-R17).
+        recordToast.success(
+          { type: "party", id: partyId, title: partyLabel },
+          `Sent, and recorded on ${partyLabel}'s timeline.`,
+        );
       }
-      setRecording(true);
-      void (async () => {
-        const result = await recordGmailSendInteraction({
-          receipt,
-          association: {
-            partyId,
-            // 🚨 THE PARTY'S OWN ORGANIZATION WINS. `crm._inherit_parent_org`
-            // RAISES when the explicit org differs from the party's, and the row
-            // belongs to the Person's timeline — so an opener that knows only
-            // the Person (the chat entrance) may pass none at all (D8).
-            organizationId: recordOrganizationId,
-            dealId: dealId ?? null,
-            projectId: projectId ?? null,
-            contactPointId: integrity.contactPointId,
-            mediumId: integrity.mediumId,
-            ccAttribution: integrity.cc,
-          },
-          approvedByUserId: viewerId ?? null,
-          draftedBy: draftedBy ?? null,
-        });
-        setRecording(false);
-        // These sentences NAME A RECORD, so they are raised through
-        // `recordToast` with its identity: the toast is dismissed if the record
-        // is renamed, deleted, or simply left behind (lib/toast.ts, FIX-R17).
-        const ref = { type: "party", id: partyId, title: partyLabel };
-        if (result.failure) {
-          // The message HAS LEFT. Never a silent failure and never a retry the
-          // person did not ask for — a second attempt could send it twice.
-          // The writer already turned the database's refusal into a sentence
-          // with its remedy — raw Postgres text never reaches a person here.
-          recordToast.error(ref, result.failure);
-        } else {
-          recordToast.success(
-            ref,
-            `Sent, and recorded on ${partyLabel}'s timeline.`,
-          );
-          // The row is true even when a link is missing, so this is its own,
-          // quieter sentence rather than a failure.
-          for (const missing of result.associationFailures) {
-            toast.warning(missing);
-          }
-        }
-        onSent?.(result.interactionId);
-        onClose();
-      })();
+      onSent?.(interactionId);
+      onClose();
     });
   }, [step, mailbox?.id, callId]);
 
@@ -431,16 +423,10 @@ export function GmailComposePanel({
             variant="ghost"
             size="sm"
             onClick={() => setStep("compose")}
-            disabled={recording}
           >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to editing
           </Button>
-          {recording ? (
-            <span className="text-xs text-muted-foreground">
-              Recording it on the timeline…
-            </span>
-          ) : null}
         </div>
         {/* THE CONSEQUENCE, before the click that causes it. */}
         <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs text-foreground">
@@ -467,6 +453,9 @@ export function GmailComposePanel({
               organizationId: recordOrganizationId || null,
             })
           }
+          /* WHERE THE SERVER FILES THE ROW — decided from the card's own
+             recipients at the click, not from this panel's draft. */
+          plan={planSend}
         />
       </div>
     );

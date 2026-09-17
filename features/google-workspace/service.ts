@@ -4,9 +4,16 @@ import type {
   GoogleDocumentContent,
   GoogleSheetValues,
   ReviewedGmailDraft,
-  ReviewedGmailReceipt,
   SelectedGoogleFile,
 } from "@/features/google-workspace/types";
+import {
+  narrowReviewedSendOutcome,
+  reviewedSendRequestBody,
+  type ReviewedGmailSendOutcome,
+} from "@/features/crm/gmail/reviewed-send-contract";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { isGoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 
 export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
@@ -85,7 +92,8 @@ export interface GoogleWriteProposed {
 }
 
 export type GoogleWriteOutcome<T> =
-  { proposed: false; result: T } | GoogleWriteProposed;
+  | { proposed: false; result: T }
+  | GoogleWriteProposed;
 
 /** The door to the queued proposal. One place builds it. */
 export function approvalQueueHref(assistId: string): string {
@@ -282,45 +290,51 @@ export async function writeGoogleSheet(
 }
 
 /**
- * Send exactly the reviewed bytes, and report WHO THE SERVER SAYS IT REACHED.
+ * Send exactly the reviewed bytes, and report WHAT THE SERVER DID WITH THEM.
  *
- * 🚨 THE DELIVERED ADDRESSES ARE PART OF THE ANSWER (aidream lane B-10,
- * `/projects/google-native/VERIFY-B1-B2-R2.md` N2). `POST /gmail/send-reviewed`
- * answers `to` and `cc` as its ONE recipient parser read them — bare addresses,
- * display names stripped — because the CRM records the sent message against the
- * Person holding the DELIVERED address. `Ada <ada@example.com>` was delivered to
- * `ada@example.com` while the record was judged against the typed string, so a
- * message to the open record's own address was recorded against nobody.
+ * 🚨 THE SERVER OWNS THE SENT RECORD (aidream `4dbffdffb`). It gates every
+ * recipient through the ONE send authority, sends, then writes the
+ * `crm.interaction` row, its association edges and the `crm.sending_event` —
+ * and answers with all of it. The browser writes NONE of it any more: two
+ * writers meant an ungated caller could mail an unsubscribed person and no
+ * `sending_event` existed to correlate the bounce (VERIFY-B1-B2-R4 V4 / A8).
  *
- * A server that answers no addresses (one older than that change) returns them
- * `null`, and the caller stands in the field the person typed — announcing the
- * stand-in, never silently reintroducing the defect.
+ * 🚨 THE DELIVERED ADDRESSES ARE STILL PART OF THE ANSWER (lane B-10, R2 N2):
+ * `to` / `cc` come back as the server's ONE parser read them — bare addresses,
+ * display names stripped — so a surface can check the row was filed against the
+ * person who actually received it.
+ *
+ * 🚨 `organization_id` IS REQUIRED (422 without it), and the record's own
+ * organization is what a CRM caller passes: suppression lives on that
+ * organization's `crm.contact_medium` rows, and `crm._inherit_parent_org` refuses
+ * any other value. A send with no record — an agent asking to email an address
+ * nobody in the CRM holds, the admin bench — carries the viewer's own
+ * organization context, resolved through the ONE fail-closed kernel, which is
+ * the SAME value `postGoogleBackend` puts in the org-context header. Nothing is
+ * defaulted: with no organization selected this throws
+ * `OrganizationContextError` with its select-an-organization remedy, before any
+ * networking.
+ *
+ * A 409 `gmail_send_refused` propagates as the canonical `BackendApiError` with
+ * the authority's blocks in `details` — read it with
+ * `reviewedSendRefusalOf(error)`; nothing was sent.
  */
 export async function sendReviewedGmail(
   draft: ReviewedGmailDraft,
-): Promise<ReviewedGmailReceipt> {
+): Promise<ReviewedGmailSendOutcome> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    draft.context.organizationId ??
+      (store ? selectOrganizationId(store.getState()) : null),
+  );
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/send-reviewed",
-    {
-      connection_id: draft.connectionId,
-      to: draft.to,
-      cc: draft.cc,
-      subject: draft.subject,
-      body: draft.body,
-      user_confirmed: true,
-    },
+    reviewedSendRequestBody({
+      ...draft,
+      context: { ...draft.context, organizationId },
+    }),
     "Unable to send the reviewed Gmail message.",
+    organizationId,
   );
-  const record = await responseRecord(response);
-  const cc = Array.isArray(record.cc)
-    ? record.cc.filter((entry): entry is string => typeof entry === "string")
-    : null;
-  return {
-    messageId: requiredString(record, "message_id"),
-    to:
-      typeof record.to === "string" && record.to.trim().length > 0
-        ? record.to
-        : null,
-    cc,
-  };
+  return narrowReviewedSendOutcome(await responseRecord(response));
 }

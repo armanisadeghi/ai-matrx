@@ -17,7 +17,7 @@
 //
 // Pure: no React, no Supabase.
 
-import { GMAIL_SEND_ASSOCIATION_ROLE } from "./associations";
+import { GMAIL_SEND_ASSOCIATION_ROLE } from "./types";
 
 /** The edge shape this reads — the association package's, narrowed. */
 export interface SentRecordEdgeLike {

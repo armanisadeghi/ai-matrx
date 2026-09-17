@@ -4,15 +4,15 @@
  * GmailSentRecordDetails — what a SENT Gmail message shows on a timeline.
  *
  * 🚨 A SENT RECORD THAT RENDERS NONE OF ITS FACTS IS NOT A SENT RECORD. The row
- * `features/crm/gmail/service.ts` writes carries the provider, the address it
+ * the reviewed-send endpoint writes carries the provider, the address it
  * actually went to, the account it went out through, Gmail's message id, who
  * drafted it (an agent and its run) and who approved it and when — and until
  * 2026-09-17 `InteractionTimeline` rendered a subject and a date, so the entire
  * point of the unit was invisible (VERIFY-B1-B2 A4/D6).
  *
  * Every fact comes from the ONE accessor (`./sent-record-facts.ts`), which reads
- * the column when the row has one and the row's own jsonb copy while the
- * generated types still lack the six audit columns. Nothing here knows which.
+ * the six audit COLUMNS and falls back to the row's own jsonb copy for rows
+ * written before they existed. Nothing here knows which.
  *
  * THE DOOR LAW: every record named here opens — the Person, the deal, the
  * project and the agent through `EntityRef`, the run id as a copyable identity

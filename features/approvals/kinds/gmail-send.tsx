@@ -32,10 +32,7 @@ import { useEffect } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { checkSendEligibility } from "@/features/crm/compliance/service";
-import {
-  narrowGmailSendReceipt,
-  recordGmailSendInteraction,
-} from "@/features/crm/gmail/service";
+import type { ReviewedGmailSendPlan } from "@/features/crm/gmail/reviewed-send-contract";
 import { preflightGmailRecipients } from "@/features/crm/gmail/preflight";
 import { assessGmailRecipientIntegrity } from "@/features/crm/gmail/recipient-integrity";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
@@ -224,63 +221,60 @@ export function gmailApprovalCallId(
 }
 
 /**
- * Put the approved message on the CRM record's timeline.
+ * WHERE THE SERVER FILES THE APPROVED MESSAGE, decided at the click.
  *
- * Calls the ONE writer (`features/crm/gmail/service.ts`) — the same one the
- * compose window uses — so an agent's sent message and a person's sent message
- * are the same kind of row, with the same fields, on the same timeline. The
- * difference is only what this path can fill in: who drafted it, which run,
- * and which queue row the approval was recorded in.
+ * 🚨 THE BROWSER NO LONGER WRITES THE ROW. `send-reviewed` gates every recipient,
+ * sends, then writes the `crm.interaction` row, its association edges and the
+ * `crm.sending_event` from what this request carries (aidream `4dbffdffb`) — so
+ * an agent's approved message and a person's own message are the same kind of
+ * row, written once, by one writer. What this path uniquely knows is WHO DRAFTED
+ * IT: the proposer, its run, and the queue row the approval was recorded in. The
+ * server re-reads that off the approval row itself and OVERRULES a disagreeing
+ * claim, so what is sent here is a hint, never an assertion.
  *
- * A proposal that names no party is NOT recorded silently. The queue says so,
- * because the alternative is a message that left with no trace in the CRM.
+ * A proposal that names no party (or no organization) sends with no record
+ * fields: the server then records nothing and SAYS so in `record_failure`, which
+ * the card shows. A message that left with a silent absence of history is the
+ * anti-pattern the plan names by name.
  */
-async function recordProposalOnTimeline(
+function planApprovedSend(
   payload: GmailSendPayload,
   proposal: ApprovalProposal,
-  responseData: unknown,
-  approverId: string | null,
-): Promise<void> {
+  sent: { to: string; cc: string[] },
+): ReviewedGmailSendPlan {
+  const draftedBy = {
+    agentId: proposal.proposerAgentId,
+    runId: proposal.proposerRunId,
+    label: proposal.proposerLabel,
+    assistId: proposal.assist.id,
+  };
   if (!payload.partyId || !payload.organizationId) {
-    toast.warning(
-      "The message was sent, but the draft did not say which record it belongs to, so nothing was added to a timeline. Log it by hand.",
-    );
-    return;
+    return {
+      context: {
+        organizationId: payload.organizationId ?? null,
+        outreachListId: payload.listId ?? null,
+        identityId: payload.identityId ?? null,
+        draftedBy,
+      },
+      attributedAddress: null,
+      unattributed:
+        "The message was sent, but the draft did not say which record it " +
+        "belongs to, so nothing was added to a timeline. Log it by hand.",
+    };
   }
-  // 🚨 WHAT THE CARD SENT, never the proposal's draft. Every field on that card
-  // is editable up to the click, so a record built from the payload can attest
-  // to a message nobody received (Bugbot HIGH #1, 2026-09-17).
-  const receipt = narrowGmailSendReceipt(responseData, payload.connectionId);
-  if (!receipt) {
-    toast.error(
-      "The message was sent but Gmail's message id did not come back, so it could not be recorded on the timeline.",
-    );
-    return;
-  }
-
   /**
    * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
-   * OTHERWISE (Bugbot MEDIUM, frontend PR 228).
-   *
-   * The rule, the comparison and the sentence all live in ONE primitive —
-   * `features/crm/gmail/recipient-integrity.ts` — because this path had the
-   * guard and the compose panel did not, and the compose panel therefore
-   * recorded a stranger's message on the open record's timeline (VERIFY-B1-B2
-   * D1). This file's private copy is deleted; both consumers call the same
-   * function, so the two paths cannot drift again.
-   *
-   * The proposal's `partyId` is the party the PROPOSED address belonged to, so
-   * the proposed address is what authorizes the row. Written to no timeline is a
-   * loss a person can repair (the toast says so and carries the address); a
-   * false row on a customer's history is a loss nobody can see to repair.
+   * OTHERWISE — the ONE primitive both send paths consume
+   * (`features/crm/gmail/recipient-integrity.ts`). The proposal's `partyId` is
+   * the party the PROPOSED address belonged to, so the proposed address is what
+   * authorizes the row; the approver can edit the recipient right up to the
+   * click. Recorded on no timeline is a loss a person can repair; a false row on
+   * a customer's history is not.
    */
   const integrity = assessGmailRecipientIntegrity({
-    sentTo: receipt.to,
-    // 🚨 A Cc IS A RECIPIENT HERE TOO. The compose panel attributed every
-    // copied-to address onto the row (VERIFY-B1-B2-R2 N9 / break D) and this path
-    // passed none, so an agent-proposed send could put a second customer's
-    // address on a Person's timeline with nothing saying whose it was.
-    sentCc: receipt.cc,
+    sentTo: sent.to,
+    // A Cc is a recipient here too, attributed onto the row (R2 N9 / break D).
+    sentCc: sent.cc,
     source: {
       kind: "proposal",
       proposedAddress: payload.to,
@@ -289,39 +283,32 @@ async function recordProposalOnTimeline(
     },
   });
   if (!integrity.recordOnRecord) {
-    toast.warning(integrity.refusal);
-    return;
+    return {
+      context: {
+        organizationId: payload.organizationId,
+        outreachListId: payload.listId ?? null,
+        identityId: payload.identityId ?? null,
+        draftedBy,
+      },
+      attributedAddress: null,
+      unattributed: integrity.refusal,
+    };
   }
-
-  const result = await recordGmailSendInteraction({
-    receipt,
-    association: {
-      partyId: payload.partyId,
+  return {
+    context: {
       organizationId: payload.organizationId,
+      partyId: payload.partyId,
       dealId: payload.dealId ?? null,
       contactPointId: integrity.contactPointId,
       mediumId: integrity.mediumId,
+      outreachListId: payload.listId ?? null,
+      identityId: payload.identityId ?? null,
       ccAttribution: integrity.cc,
+      draftedBy,
     },
-    approvedByUserId: approverId,
-    draftedBy: {
-      agentId: proposal.proposerAgentId,
-      runId: proposal.proposerRunId,
-      label: proposal.proposerLabel,
-      assistId: proposal.assist.id,
-    },
-  });
-
-  if (result.failure) {
-    // The message HAS LEFT. Never swallowed, never retried on its own — and the
-    // writer already turned the database's refusal into a sentence with its
-    // remedy, so no raw Postgres text reaches a person here.
-    toast.error(result.failure);
-  }
-  // The row is true even when one of its "Associated with" edges did not land.
-  for (const missing of result.associationFailures) {
-    toast.warning(missing);
-  }
+    attributedAddress: integrity.attributedAddress,
+    unattributed: null,
+  };
 }
 
 /**
@@ -342,8 +329,12 @@ function GmailApprovalBody({
   payload: GmailSendPayload;
   onDecided: () => void;
 }) {
-  const approverId = useAppSelector(selectUserId);
   /**
+   * 🚨 WHO APPROVED IT IS NOT A VALUE THIS SCREEN SENDS. The server stamps
+   * `approved_by` from the authenticated caller — the review card IS the
+   * authorization — and its request model does not accept the field at all, so
+   * there is no viewer id to read here.
+   *
    * 🚨 WHICH DRAFT THIS CARD IS REVIEWING — the identity the effect and the
    * host's `key` both use (Bugbot MEDIUM, frontend PR 228).
    *
@@ -377,18 +368,12 @@ function GmailApprovalBody({
               null,
               receipt,
             );
+            // 🚨 AND ONTO THE RECORD'S TIMELINE — which the SERVER did, inside
+            // the same request that sent it, and reported back. The card has
+            // already shown every gap it named (a row that did not land, a
+            // missing sending event, a refused edge), so this says only what
+            // this path owns: the queue row is decided.
             toast.success("Sent, and recorded as approved by you.");
-            // 🚨 AND ONTO THE RECORD'S TIMELINE, through the ONE writer the
-            // compose window uses (`features/crm/gmail/service.ts`). An agent
-            // draft that leaves without a sent record is the anti-pattern the
-            // plan names by name: the message exists and the CRM never heard
-            // of it.
-            await recordProposalOnTimeline(
-              payload,
-              proposal,
-              response.data,
-              approverId ?? null,
-            );
           } else if (response.confirmed === false) {
             await recordApprovalDecision(
               proposal.assist.id,
@@ -492,6 +477,9 @@ function GmailApprovalBody({
           identityId: payload.identityId ?? null,
         })
       }
+      /* WHERE THE SERVER FILES THE ROW — decided from the card's own recipients
+         at the click, carrying who drafted this proposal. */
+      plan={(draft) => planApprovedSend(payload, proposal, draft)}
     />
   );
 }

@@ -12,7 +12,7 @@
 import { gmailRecipientOptions } from "./recipients";
 import { preflightGmailRecipients, recipientsOfSend } from "./preflight";
 import { assessGmailRecipientIntegrity } from "./recipient-integrity";
-import { gmailInteractionRow } from "./service";
+import { reviewedSendRequestBody } from "./reviewed-send-contract";
 import { parseMailboxField, parseRecipientFields } from "./mailbox";
 import type { ContactPoint } from "@/features/crm/types";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
@@ -294,38 +294,37 @@ describe("recipient integrity reads a display-name address as the record's own",
   });
 });
 
-describe("the sent row carries the Cc attribution", () => {
-  it("names each Cc and whether this record holds it", () => {
-    const row = gmailInteractionRow(
-      {
-        receipt: {
-          messageId: "gmail-1",
-          connectionId: "conn-1",
-          fromEmail: "me@work.com",
-          to: "ada@example.com",
-          cc: ["Bo <bo@other-company.com>"],
-          subject: "Hello",
-          body: "Body",
-        },
-        association: {
-          partyId: "party-1",
-          organizationId: "org-1",
-          ccAttribution: [
-            {
-              address: "bo@other-company.com",
-              contactPointId: null,
-              mediumId: null,
-              heldByThisRecord: false,
-            },
-          ],
-        },
-        approvedByUserId: "user-1",
+describe("the SEND REQUEST carries the Cc attribution", () => {
+  it("names each Cc and whether this record holds it, in the server's spelling", () => {
+    // The browser no longer writes the row: the attribution travels ON THE
+    // REQUEST and the server stores it verbatim (it does not re-decide it and
+    // does not invent it). So this asserts the wire body, which is what a Cc on
+    // a Person's timeline is actually built from (R2 N9 / break D).
+    const integrity = assessGmailRecipientIntegrity({
+      sentTo: "ada@example.com",
+      sentCc: ["Bo <bo@other-company.com>"],
+      source: {
+        kind: "record",
+        heldAddresses: gmailRecipientOptions([emailPoint("ada@example.com")]),
       },
-      "interaction-1",
-      "2026-09-17T00:00:00.000Z",
-    );
-    const metadata = row.metadata as Record<string, unknown>;
-    expect(metadata.cc_attribution).toEqual([
+    });
+    expect(integrity.recordOnRecord).toBe(true);
+    if (!integrity.recordOnRecord) return;
+    const body = reviewedSendRequestBody({
+      connectionId: "conn-1",
+      to: "ada@example.com",
+      cc: ["Bo <bo@other-company.com>"],
+      subject: "Hello",
+      body: "Body",
+      context: {
+        organizationId: "org-1",
+        partyId: "party-1",
+        contactPointId: integrity.contactPointId,
+        mediumId: integrity.mediumId,
+        ccAttribution: integrity.cc,
+      },
+    });
+    expect(body.cc_attribution).toEqual([
       {
         address: "bo@other-company.com",
         contact_point_id: null,
@@ -333,5 +332,8 @@ describe("the sent row carries the Cc attribution", () => {
         held_by_this_record: false,
       },
     ]);
+    // And the row lands on the record, under the record's own organization.
+    expect(body.party_id).toBe("party-1");
+    expect(body.organization_id).toBe("org-1");
   });
 });

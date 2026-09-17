@@ -2,16 +2,19 @@
 //
 // The shapes the Gmail-from-a-record path speaks.
 //
-// No stand-in types live here. An earlier draft declared a `*Pending` mirror of
-// the six audit columns `migrations/crm_interaction_gmail_audit_trail.sql`
-// adds, so the writer could name them on a typed insert. It could not: the
-// typed Supabase client refuses a column `types/database.types.ts` does not
-// carry, and a generated file is never hand-edited. Those columns ARE live in the
-// database; the generated types are what lag (`pnpm db-types` is owed to a
-// session with DB env). Until then the audit trail is stored in the row's own
-// `metadata` under the column names - written by `./service.ts` (`sendMetadata`)
-// and read by `./sent-record-facts.ts`, the ONE accessor, so the move to columns
-// is a one-line change.
+// 🚨 NOTHING HERE WRITES. The `crm.interaction` row, its association edges and
+// the `crm.sending_event` are written by the SERVER, on the reviewed-send
+// endpoint (aidream `4dbffdffb`): two writers meant an ungated caller could mail
+// an unsubscribed person and no sending event existed to correlate the bounce
+// (VERIFY-B1-B2-R4 V4 / A8). The browser's own writer and its association writer
+// are DELETED — the wire contract is `./reviewed-send-contract.ts` and the
+// transport is `features/google-workspace/service.ts::sendReviewedGmail`.
+//
+// These shapes are what a SURFACE holds: what a compose window was opened with,
+// who drafted it, and the constants a READER recognises a sent row by. The audit
+// trail is on the row's own six columns AND mirrored in `metadata.audit_trail`
+// (the server writes both from the same values, in the same statement), read
+// through `./sent-record-facts.ts` — the ONE accessor.
 
 import type { GmailCcAttribution } from "./recipient-integrity";
 
@@ -35,6 +38,17 @@ export const GMAIL_INTERACTION_PROVIDER = "gmail" as const;
  */
 export const GMAIL_SEND_METADATA_KIND = "crm_gmail_send_record";
 
+/**
+ * The role every Gmail-send association edge carries, so the reverse read —
+ * "everything associated with this Person" — is one query.
+ *
+ * Identical to the server's own `GMAIL_SEND_ASSOCIATION_ROLE`
+ * (`aidream/services/outreach_single_send/reviewed_send.py`), which is what
+ * WRITES the edges now. Two spellings would be two sets of edges, and the reader
+ * would see half of them.
+ */
+export const GMAIL_SEND_ASSOCIATION_ROLE = "gmail_send";
+
 /** Who wrote the draft, when it was not the person sending it. */
 export interface GmailDraftedBy {
   agentId: string | null;
@@ -51,8 +65,12 @@ export interface GmailDraftedBy {
  *
  * `projectId` is carried but is NOT a column: a CRM table may not depend on a
  * project FK (db-rules §6d), so a message composed from a project associates
- * through `platform.associations`. It is in this shape so the writer can say
- * plainly that it did not store it, rather than dropping it in silence.
+ * through `platform.associations` — an EDGE the server writes, and reports back
+ * per target so a refused link is a sentence rather than a silence.
+ *
+ * `organizationId` is the PARTY's own organization: it is what the send request
+ * files the row under, and `crm._inherit_parent_org` RAISES on any other value
+ * (VERIFY-B1-B2 D8).
  */
 export interface GmailSendAssociation {
   partyId: string;
@@ -70,35 +88,6 @@ export interface GmailSendAssociation {
    * address it is instead of appearing there unattributed (N9).
    */
   ccAttribution?: GmailCcAttribution[];
-}
-
-/** The exact bytes that left, as the review card reported them. */
-export interface GmailSendReceipt {
-  /** Gmail's own message id — the external message id on the record. */
-  messageId: string;
-  /** The Google connection the message was sent from (sent_via_account). */
-  connectionId: string;
-  fromEmail: string | null;
-  to: string;
-  cc: string[];
-  subject: string;
-  body: string;
-}
-
-/** What the writer did, in the words a surface can show. */
-export interface GmailInteractionWriteResult {
-  interactionId: string | null;
-  /**
-   * Set when the message went out but the record did not — already a SENTENCE
-   * with the remedy, never raw database text. The send is NOT reversible, so
-   * this is never swallowed and never retried silently.
-   */
-  failure: string | null;
-  /**
-   * The row landed but one of its "Associated with" edges did not. Separate from
-   * `failure` because the history IS true — only a link is missing.
-   */
-  associationFailures: string[];
 }
 
 /** What a compose window is opened with. */

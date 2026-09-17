@@ -84,6 +84,16 @@ export type GmailRecipientIntegrityVerdict =
       contactPointId: string | null;
       mediumId: string | null;
       /**
+       * THE ADDRESS THE ROW IS FILED AGAINST, bare and lowercased.
+       *
+       * 🚨 The caller needs it because the browser no longer writes the row: the
+       * server does, from the party this verdict authorized, and the only way to
+       * notice that it delivered to a DIFFERENT address than the one attributed
+       * is to compare the two afterwards (`./reviewed-send-contract.ts`
+       * → `deliveredAddressDisagreement`).
+       */
+      attributedAddress: string;
+      /**
        * Every OTHER address that received a copy — the Cc, plus any further To
        * address beyond the one this row is attributed to — each marked with
        * whether this record holds it.
@@ -198,6 +208,7 @@ export function assessGmailRecipientIntegrity(
         recordOnRecord: true,
         contactPointId: input.source.contactPointId ?? null,
         mediumId: input.source.mediumId ?? null,
+        attributedAddress: match,
         cc: attributeCopies([...toAddresses, ...ccAddresses], held, match),
       };
     }
@@ -217,6 +228,7 @@ export function assessGmailRecipientIntegrity(
       recordOnRecord: true,
       contactPointId: holder?.contactPointId ?? null,
       mediumId: holder?.mediumId ?? null,
+      attributedAddress: attributed,
       cc: attributeCopies(
         [...toAddresses, ...ccAddresses],
         heldAddresses,

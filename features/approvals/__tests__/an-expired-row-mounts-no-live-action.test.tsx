@@ -81,10 +81,6 @@ jest.mock("../data", () => ({
 jest.mock("@/features/crm/compliance/service", () => ({
   checkSendEligibility: async () => ({ allowed: true, blocks: [] }),
 }));
-jest.mock("@/features/crm/gmail/service", () => ({
-  narrowGmailSendReceipt: () => null,
-  recordGmailSendInteraction: async () => ({ failure: null }),
-}));
 jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: () => undefined,
   resolveAskByCallId: () => undefined,
@@ -100,7 +96,22 @@ jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => 
  * whether the queue mounts it. Its label is "Send", from the card itself.
  */
 jest.mock("@/features/google-workspace/service", () => ({
-  sendReviewedGmail: jest.fn(async () => ({ id: "sent-1" })),
+  // The narrowed outcome the transport answers with — the server writes the sent
+  // record and reports it (aidream `4dbffdffb`); nothing in the browser does.
+  sendReviewedGmail: jest.fn(async () => ({
+    messageId: "sent-1",
+    to: "sam@example.com",
+    cc: [],
+    interactionId: "interaction-1",
+    recordFailure: null,
+    associationsWritten: [],
+    associationFailures: [],
+    sendingEventId: null,
+    sendingEventGap: null,
+    compliance: null,
+    warnings: [],
+    auditColumnsWritten: [],
+  })),
 }));
 /**
  * The ONE component swapped inside the real card, and it is not a control: the

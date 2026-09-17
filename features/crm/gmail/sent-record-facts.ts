@@ -1,24 +1,25 @@
 // features/crm/gmail/sent-record-facts.ts
 //
-// 🚨 THE ONE ACCESSOR FOR A SENT MESSAGE'S FACTS, AND THE ONE PLACE THE MOVE
-// FROM `metadata` TO COLUMNS HAPPENS.
+// 🚨 THE ONE ACCESSOR FOR A SENT MESSAGE'S FACTS.
 //
-// `crm.interaction` carries six audit columns LIVE in the database
-// (`drafted_by_agent_id`, `drafted_by_run_id`, `drafted_by_label`,
-// `approved_by`, `approved_at`, `approval_assist_id` — applied by
-// `migrations/crm_interaction_gmail_audit_trail.sql`), but
-// `types/database.types.ts` does not carry them yet: regenerating it needs a
-// session with DB env (`pnpm db-types`), which this one did not have. The typed
-// Supabase client therefore cannot NAME them on an insert, so `./service.ts`
-// writes the same six keys into `metadata.audit_trail`, in the migration's own
-// column spelling.
+// `crm.interaction` carries six audit columns (`drafted_by_agent_id`,
+// `drafted_by_run_id`, `drafted_by_label`, `approved_by`, `approved_at`,
+// `approval_assist_id` — `migrations/crm_interaction_gmail_audit_trail.sql`), and
+// `types/database.types.ts` now carries them too, so they are read as ordinary
+// typed columns. The earlier header here, and in `./types.ts`, claimed the
+// generated file lagged and that the facts therefore lived only in `metadata`:
+// that was true when it was written and is FALSE now (verified against the
+// generated row type, 2026-09-17).
 //
-// This module is the seam that makes that a one-line change rather than a sweep:
-// every reader — the timeline, any future "everything this agent sent" report —
-// reads the facts from HERE, and here reads the column when the row carries one
-// and falls back to `metadata.audit_trail` when it does not. When the types are
-// regenerated, `columnValue` below becomes a direct property read and nothing
-// else in the repo changes.
+// The `metadata.audit_trail` copy is still read as a FALLBACK, and that is not
+// legacy: the server writes both halves from the same values in the same
+// statement (`gmail_interaction_metadata` in
+// `aidream/services/outreach_single_send/reviewed_send.py`), and rows written
+// before the columns existed carry only the jsonb. A column wins whenever the row
+// has one.
+//
+// 🚨 NOTHING IN THIS FEATURE WRITES THE ROW ANY MORE — the server does, inside
+// the reviewed-send request (aidream `4dbffdffb`). This module reads.
 //
 // Pure: no React, no Supabase.
 
@@ -84,17 +85,15 @@ function text(source: Record<string, unknown> | null, key: string): string | nul
 }
 
 /**
- * Read one audit key: the COLUMN when the row already carries it, else the
- * `metadata.audit_trail` copy written in the same spelling.
+ * Read one audit key: the COLUMN when the row carries it, else the
+ * `metadata.audit_trail` copy written in the same spelling by the same statement.
  *
- * The cast is the whole reason this function exists and is the ONLY one: the
- * generated row type predates the columns, so a reader that named them directly
- * would not compile, and a reader that only read `metadata` would go blind the
- * day the types catch up.
+ * Typed straight off the generated row — no cast: the generated file carries all
+ * six columns (it did not when this was written, which is what the old header
+ * described). The jsonb leg stays for rows written before the columns existed.
  */
 function auditValue(row: InteractionRow, key: GmailAuditKey): string | null {
-  const asRecord = row as unknown as Record<string, unknown>;
-  const fromColumn = asRecord[key];
+  const fromColumn = row[key];
   if (typeof fromColumn === "string" && fromColumn.trim()) return fromColumn;
   const trail = jsonObject(jsonObject(row.metadata)?.audit_trail);
   return text(trail, key);

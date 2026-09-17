@@ -1,60 +1,81 @@
 // features/crm/gmail/sent-record-facts.test.ts
 //
 // A4/D6 (VERIFY-B1-B2): the sent row's facts are LIVE in the row and were
-// rendered by nothing, and the six audit values live in `metadata.audit_trail`
-// until the generated types catch up with the columns. These assertions pin both
-// halves of the ONE accessor, including the part that makes the eventual
-// `pnpm db-types` a one-line change: a row that ALREADY carries the column is
-// read from the column.
+// rendered by nothing. These assertions pin the ONE accessor — the six audit
+// COLUMNS, the `metadata.audit_trail` fallback for rows written before they
+// existed, and the Cc attribution.
 //
 // Red on the pre-fix bytes: `features/crm/gmail/sent-record-facts.ts` did not
 // exist, and `InteractionTimeline.tsx` referenced none of these fields.
+//
+// 🚨 THE FIXTURE IS THE SERVER'S ROW, NOT OURS. The browser no longer writes this
+// row (aidream `4dbffdffb`), so the fixture below is written by hand in the shape
+// `record_reviewed_send` / `gmail_interaction_metadata` write — the six columns
+// AND the same six keys mirrored into `metadata.audit_trail`, from the same
+// values in the same statement. That hand shape is only trustworthy because
+// `./reviewed-send-contract-is-the-servers.test.ts` measures those metadata keys
+// against the server's own source; without that leg this would be a test feeding
+// its author's own guess to its author's own reader.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { InteractionRow } from "@/features/crm/types";
-import { gmailInteractionRow } from "./service";
 import { gmailSentRecordFacts, isGmailSentRecord } from "./sent-record-facts";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
+const AUDIT = {
+  drafted_by_agent_id: "agent-1",
+  drafted_by_run_id: "run-1",
+  drafted_by_label: "the CRM follow-up agent",
+  approved_by: "user-approver",
+  approved_at: "2026-09-17T10:00:00Z",
+  approval_assist_id: "assist-1",
+} as const;
+
 function row(overrides: Partial<InteractionRow> = {}): InteractionRow {
-  const written = gmailInteractionRow(
-    {
-      receipt: {
-        messageId: "gmail-msg-1",
-        connectionId: "conn-1",
-        fromEmail: "me@ourcompany.com",
-        to: "ada@example.com",
-        cc: ["bo@example.com"],
-        subject: "Following up",
-        body: "As promised.",
-      },
-      association: {
-        partyId: "party-ada",
-        organizationId: "org-1",
-        dealId: "deal-1",
-        projectId: "project-1",
-        contactPointId: "point-1",
-        mediumId: "medium-1",
-      },
-      approvedByUserId: "user-approver",
-      draftedBy: {
-        agentId: "agent-1",
-        runId: "run-1",
-        label: "the CRM follow-up agent",
-        assistId: "assist-1",
-      },
-    },
-    "interaction-1",
-    "2026-09-17T10:00:00Z",
-  );
   return {
-    ...(written as unknown as InteractionRow),
+    id: "interaction-1",
+    party_id: "party-ada",
+    organization_id: "org-1",
+    deal_id: "deal-1",
+    contact_point_id: "point-1",
+    channel_code: "email",
+    direction: "outbound",
+    status: "completed",
+    occurred_at: "2026-09-17T10:00:00Z",
+    subject: "Following up",
+    body: "As promised.",
+    provider: "gmail",
+    provider_interaction_id: "gmail-msg-1",
+    provider_account_id: "conn-1",
+    // The six columns, exactly as the server writes them…
+    ...AUDIT,
+    metadata: {
+      __kind: "crm_gmail_send_record",
+      to: "ada@example.com",
+      cc: ["bo@example.com"],
+      sent_via_account: {
+        connection_id: "conn-1",
+        account_email: "me@ourcompany.com",
+      },
+      // …and the same values mirrored in the row's own jsonb, which is what a
+      // row written before the columns existed carries alone.
+      audit_trail: { ...AUDIT },
+      cc_attribution: [
+        {
+          address: "bo@example.com",
+          contact_point_id: null,
+          medium_id: null,
+          held_by_this_record: false,
+        },
+      ],
+      composed_from_project_id: "project-1",
+    },
     created_at: "2026-09-17T10:00:00Z",
     updated_at: "2026-09-17T10:00:00Z",
     ...overrides,
-  };
+  } as unknown as InteractionRow;
 }
 
 describe("isGmailSentRecord", () => {
@@ -78,7 +99,7 @@ describe("gmailSentRecordFacts", () => {
     expect(facts.composedFromProjectId).toBe("project-1");
   });
 
-  it("reads the audit trail from `metadata` while the types lack the columns", () => {
+  it("reads every audit fact off the row", () => {
     const facts = gmailSentRecordFacts(row());
     expect(facts.draftedByAgentId).toBe("agent-1");
     expect(facts.draftedByRunId).toBe("run-1");
@@ -88,22 +109,35 @@ describe("gmailSentRecordFacts", () => {
     expect(facts.approvalAssistId).toBe("assist-1");
   });
 
-  it("prefers the COLUMN the moment a row carries one", () => {
-    // Exactly what `pnpm db-types` + the promoted write will produce.
-    const promoted = {
-      ...row(),
+  it("prefers the COLUMN over the jsonb copy when the two disagree", () => {
+    const promoted = row({
       approved_by: "user-from-column",
       drafted_by_agent_id: "agent-from-column",
-    } as unknown as InteractionRow;
+    });
     const facts = gmailSentRecordFacts(promoted);
     expect(facts.approvedBy).toBe("user-from-column");
     expect(facts.draftedByAgentId).toBe("agent-from-column");
-    // And the keys the column does not yet carry still come from the jsonb.
-    expect(facts.draftedByRunId).toBe("run-1");
+    // The jsonb still answers for the keys the column does not carry — which is
+    // every key, on a row written before the columns existed.
+    const legacy = row({
+      drafted_by_run_id: null,
+      approved_by: null,
+    });
+    expect(gmailSentRecordFacts(legacy).draftedByRunId).toBe("run-1");
+    expect(gmailSentRecordFacts(legacy).approvedBy).toBe("user-approver");
   });
 
   it("says nothing it was not told", () => {
-    const bare = { ...row(), metadata: {}, provider: "gmail" } as InteractionRow;
+    const bare = row({
+      metadata: {},
+      provider: "gmail",
+      drafted_by_agent_id: null,
+      drafted_by_run_id: null,
+      drafted_by_label: null,
+      approved_by: null,
+      approved_at: null,
+      approval_assist_id: null,
+    });
     const facts = gmailSentRecordFacts(bare);
     expect(facts.approvedBy).toBeNull();
     expect(facts.draftedByLabel).toBeNull();

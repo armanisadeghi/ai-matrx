@@ -64,6 +64,7 @@ import {
   sendReviewedGmail,
   writeGoogleSheet,
 } from "@/features/google-workspace/service";
+import { reviewedSendNotices } from "@/features/crm/gmail/reviewed-send-contract";
 import {
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
@@ -390,7 +391,7 @@ export function GoogleWorkspaceReviewWorkspace({
     if (!activeConnection || !emailConfirmed) return;
     void run("send-email", async () => {
       rememberGoogleConnection("gmail-send", activeConnection.id);
-      const receipt = await sendReviewedGmail({
+      const outcome = await sendReviewedGmail({
         connectionId: activeConnection.id,
         to: emailTo,
         cc: emailCc
@@ -399,12 +400,24 @@ export function GoogleWorkspaceReviewWorkspace({
           .filter(Boolean),
         subject: emailSubject,
         body: emailBody,
+        // This bench is not a CRM record: it names no party, so the server files
+        // no timeline row and says so in `record_failure` below. The organization
+        // is the viewer's own context, resolved by the transport through the ONE
+        // fail-closed kernel — this bench never picks one.
+        context: { organizationId: null },
       });
       setEmailConfirmed(false);
       // The server says who it reached; this bench shows it, because "sent" with
       // no recipient is exactly the claim lane B-10 made checkable.
-      const reached = receipt.to ?? emailTo;
-      toast.success(`Gmail sent to ${reached} (message ${receipt.messageId}).`);
+      const reached = outcome.to ?? emailTo;
+      toast.success(`Gmail sent to ${reached} (message ${outcome.messageId}).`);
+      // 🚨 AND EVERY GAP IT REPORTED, on the bench too: this surface exists to
+      // show what the send path actually did, so a row that was not written or a
+      // sending event that does not exist is shown, never swallowed.
+      for (const notice of reviewedSendNotices(outcome)) {
+        if (notice.level === "error") toast.error(notice.sentence);
+        else toast.warning(notice.sentence);
+      }
     });
   };
 
@@ -1013,6 +1026,7 @@ export function GoogleWorkspaceReviewWorkspace({
     </div>
   );
 }
+
 /**
  * A connected file this client has no reader for — today, a Google Slides deck.
  *

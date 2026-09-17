@@ -3,10 +3,17 @@
  * PR 228. Both drive the REAL kind (`../kinds/gmail-send`); only the network
  * seams, the review card and Redux are stood in for.
  *
+ * 🚨 WHAT THE KIND DOES WITH THE RECORD CHANGED, THE RULE DID NOT. The server now
+ * writes the `crm.interaction` row, its edges and the sending event (aidream
+ * `4dbffdffb`), so this kind no longer calls a browser writer: it hands the card
+ * a PLAN — the record context that goes ON THE REQUEST — decided from the
+ * recipients on the card at the click. So these tests drive that plan, which is
+ * the thing the row is now built from.
+ *
  * 1. A CHANGED RECIPIENT IS RECORDED ON NO PERSON. The approver can edit `to`
- *    right up to Send. The write used to drop only the contact point and still
- *    stamp the sent record onto the PROPOSAL's `partyId` — a row on a
- *    customer's timeline saying we emailed her a message she never received.
+ *    right up to Send. The plan used to drop only the contact point and still
+ *    name the PROPOSAL's `partyId` — a row on a customer's timeline saying we
+ *    emailed her a message she never received.
  * 2. THE CARD ALWAYS REVIEWS THE CURRENT DRAFT. A re-proposal replaces the
  *    payload under the same assist id; the card was keyed on the id alone, so
  *    it kept the first draft (and the resolver's closure kept the first
@@ -24,24 +31,28 @@ type Resolver = (response: {
 }) => void;
 
 const resolvers = new Map<string, Resolver>();
-/** The one argument the kind passes `recordGmailSendInteraction`, as far as
- * these tests read it. Typed so `mock.calls` is typed too — a cast there is how
- * a test starts asserting about a shape the code does not pass. */
-type RecordInteractionArgs = {
-  association: {
-    partyId: string;
-    contactPointId: string | null;
+/**
+ * The `plan` each mounted card was handed, by ask id. Calling it is exactly what
+ * the real card does immediately before it posts, with the fields on its own
+ * screen — so a test asks the kind the same question the send does.
+ */
+const plans = new Map<string, PlanFor>();
+type PlanFor = (draft: { to: string; cc: string[] }) => {
+  context: {
+    organizationId: string | null;
+    partyId?: string | null;
+    contactPointId?: string | null;
     ccAttribution?: {
       address: string;
       contactPointId: string | null;
       mediumId: string | null;
       heldByThisRecord: boolean;
     }[];
+    draftedBy?: { agentId: string | null; assistId: string | null } | null;
   };
+  attributedAddress: string | null;
+  unattributed: string | null;
 };
-const mockRecordInteraction = jest.fn(
-  async (_args: RecordInteractionArgs) => ({ failure: null }),
-);
 const warnings: string[] = [];
 let proposalPayload: Record<string, unknown>;
 
@@ -77,36 +88,23 @@ jest.mock("../data", () => ({
 jest.mock("@/features/crm/compliance/service", () => ({
   checkSendEligibility: async () => ({ allowed: true, blocks: [] }),
 }));
-jest.mock("@/features/crm/gmail/service", () => ({
-  narrowGmailSendReceipt: (data: unknown, connectionId: string) => {
-    const row = data as Record<string, unknown>;
-    return {
-      messageId: String(row.message_id),
-      connectionId,
-      to: String(row.to),
-      // The card reports every address the SERVER says it delivered to, Cc
-      // included, so the stand-in carries them instead of dropping them.
-      cc: Array.isArray(row.cc)
-        ? row.cc.filter((entry): entry is string => typeof entry === "string")
-        : [],
-      subject: "s",
-      body: "b",
-      fromEmail: null,
-      sentAt: "2026-09-17T10:05:00Z",
-    };
-  },
-  recordGmailSendInteraction: (...args: unknown[]) =>
-    mockRecordInteraction(...(args as [RecordInteractionArgs])),
-}));
+
 jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: (callId: string, resolver: Resolver) => {
     resolvers.set(callId, resolver);
   },
 }));
 jest.mock("@/features/google-workspace/agent/GmailReviewCard", () => ({
-  GmailReviewCard: ({ ask }: { ask: { email: { to: string } } }) => (
-    <div>CARD to {ask.email.to}</div>
-  ),
+  GmailReviewCard: ({
+    ask,
+    plan,
+  }: {
+    ask: { callId: string; email: { to: string } };
+    plan?: PlanFor;
+  }) => {
+    if (plan) plans.set(ask.callId, plan);
+    return <div>CARD to {ask.email.to}</div>;
+  },
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: () => null,
@@ -196,8 +194,8 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
       globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true;
     resolvers.clear();
+    plans.clear();
     warnings.length = 0;
-    mockRecordInteraction.mockClear();
     proposalPayload = payload();
     latest = [];
     container = document.createElement("div");
@@ -228,24 +226,23 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
     await flush();
   };
 
-  it("writes the sent record when the approver sent it to the proposed address", async () => {
+  it("files the record on the proposal's party when the approver sent it there", async () => {
     await render();
-    const resolve = resolvers.get(currentCallId());
-    expect(resolve).toBeDefined();
+    const callId = currentCallId();
+    expect(resolvers.get(callId)).toBeDefined();
+    const plan = plans.get(callId);
+    expect(plan).toBeDefined();
 
-    await act(async () => {
-      resolve?.({
-        confirmed: true,
-        data: { message_id: "m1", to: "sam@example.com" },
-      });
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    await flush();
-
-    expect(mockRecordInteraction).toHaveBeenCalledTimes(1);
-    const call = mockRecordInteraction.mock.calls[0]?.[0];
-    expect(call?.association.partyId).toBe("party-1");
-    expect(call?.association.contactPointId).toBe("cp-1");
+    const planned = plan!({ to: "sam@example.com", cc: [] });
+    expect(planned.unattributed).toBeNull();
+    expect(planned.context.partyId).toBe("party-1");
+    expect(planned.context.contactPointId).toBe("cp-1");
+    expect(planned.context.organizationId).toBe("org-1");
+    expect(planned.attributedAddress).toBe("sam@example.com");
+    // WHO DRAFTED IT is what this path uniquely knows — carried as a hint the
+    // server re-reads off the approval row and overrules if it disagrees.
+    expect(planned.context.draftedBy?.agentId).toBe("a1");
+    expect(planned.context.draftedBy?.assistId).toBe("assist-1");
   });
 
   /**
@@ -255,25 +252,13 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
    * customer's address on a Person's timeline with nothing saying whose it was.
    * One primitive, both paths, same answer.
    */
-  it("attributes every Cc the card reported, held or not", async () => {
+  it("attributes every Cc on the card, held or not", async () => {
     await render();
-    const resolve = resolvers.get(currentCallId());
-
-    await act(async () => {
-      resolve?.({
-        confirmed: true,
-        data: {
-          message_id: "m3",
-          to: "sam@example.com",
-          cc: ["stranger@elsewhere.com"],
-        },
-      });
-      await new Promise((r) => setTimeout(r, 0));
+    const planned = plans.get(currentCallId())!({
+      to: "sam@example.com",
+      cc: ["stranger@elsewhere.com"],
     });
-    await flush();
-
-    const call = mockRecordInteraction.mock.calls[0]?.[0];
-    expect(call?.association.ccAttribution).toEqual([
+    expect(planned.context.ccAttribution).toEqual([
       {
         address: "stranger@elsewhere.com",
         contactPointId: null,
@@ -283,25 +268,20 @@ describe("gmail_send: the recipient on the card is the recipient of the record",
     ]);
   });
 
-  it("records a changed recipient on NO record, and says so with the address", async () => {
+  it("sends NO record fields for a changed recipient, and says so with the address", async () => {
     await render();
-    const resolve = resolvers.get(currentCallId());
-
-    await act(async () => {
-      // The approver retyped `to` on the card before pressing Send.
-      resolve?.({
-        confirmed: true,
-        data: { message_id: "m2", to: "someone.else@example.com" },
-      });
-      await new Promise((r) => setTimeout(r, 0));
+    // The approver retyped `to` on the card before pressing Send.
+    const planned = plans.get(currentCallId())!({
+      to: "someone.else@example.com",
+      cc: [],
     });
-    await flush();
-
-    expect(mockRecordInteraction).not.toHaveBeenCalled();
-    const said = warnings.join(" ");
-    expect(said).toContain("someone.else@example.com");
-    expect(said).toContain("not added to any record's timeline");
-    expect(said).toContain("by hand");
+    // 🚨 No party on the wire means the server files nothing — and the sentence
+    // the card shows names the address so a human can log it in the right place.
+    expect(planned.context.partyId).toBeUndefined();
+    expect(planned.attributedAddress).toBeNull();
+    expect(planned.unattributed).toContain("someone.else@example.com");
+    expect(planned.unattributed).toContain("not added to any record's timeline");
+    expect(planned.unattributed).toContain("by hand");
   });
 
   it("gives the card a new identity when the same proposal is re-proposed", async () => {
@@ -350,8 +330,8 @@ describe("gmail_send: one ask identity per proposal VERSION", () => {
       globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true;
     resolvers.clear();
+    plans.clear();
     warnings.length = 0;
-    mockRecordInteraction.mockClear();
     proposalPayload = payload();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -408,7 +388,9 @@ describe("gmail_send: one ask identity per proposal VERSION", () => {
     });
     await flush();
 
-    expect(mockRecordInteraction).not.toHaveBeenCalled();
+    // The superseded version records NOTHING and says so — and the plan the
+    // replaced card was holding is gone with it, so no record context could be
+    // built from it either.
     const said = warnings.join(" ");
     expect(said).toContain("since replaced");
     expect(said).toContain("by hand");
