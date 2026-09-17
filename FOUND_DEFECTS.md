@@ -4290,3 +4290,37 @@ conversation key while the alias record is released → reload → empty box, no
 Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
 `ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
 cheap half of this job and would need its own design.
+
+---
+
+## `callApi` stops type-checking a request body the moment the path has a path parameter (2026-09-17, Claude Fable 5.1, found while building `features/source-library`)
+
+**Every `callApi` call whose `path` contains a `{param}` segment has an UNCHECKED request body.**
+`ApiCallConfig.body` is typed `OperationRequestBody<PathOperation<P, M>>`, and with `pathParams`
+present in the same object literal, `P` fails to infer from the `path` literal and falls back to its
+constraint `keyof paths`. `PathOperation<keyof paths, M>` then resolves to `never`, so `body?: never`
+— i.e. `undefined` — and TypeScript reports the perfectly correct body as
+`Type '…' is not assignable to type 'undefined'`.
+
+It is not a corner case: **about 100 of this repo's ~157 `tsc` errors are this one shape**, including
+nine inside `lib/api/call-api.ts`'s own convenience wrappers (`callAgentStart` line 1550,
+`callPromptStart` line 1769, and seven others). Because the slot collapses to `undefined`, no body
+passed on one of those paths is checked against the generated schema at all — a probe with
+explicit type arguments on `/ai/agents/{agent_id}` immediately surfaced a real one
+(`client_tools` is not a property of that request body, and the repo passes it).
+
+**The likely fix is one word:** make `pathParams` a non-inferring position, so `P` can only come
+from `path`:
+
+```ts
+pathParams?: NoInfer<ExtractPathParams<P & string>>;   // TS 5.4+, and this repo is on TS 6
+```
+
+**Why it was not done here.** Closing it un-hides ~100 previously-unchecked bodies at once, some of
+which are genuinely wrong (see `client_tools`), across features this lane does not own. That is a
+repo-wide repair with its own verification, not a side effect of a feature branch.
+
+**What this lane did instead:** `features/source-library/api.ts` passes explicit type arguments on
+its five path-parameterised calls (`callApi<"/media/libraries/{library_id}", "PATCH">({…})`), which
+restores real checking at those call sites — no cast, no suppression. Anyone writing a new
+`callApi` call with `pathParams` and a body should do the same until the primitive is fixed.
