@@ -537,6 +537,19 @@ export type SetPagesMapTopicsItem =
   | { page_id: string; url?: string; topics: PageMapTopicsInput[] }
   | { page_id?: undefined; url: string; topics: PageMapTopicsInput[] };
 
+/**
+ * One slug a `map_pages` write left alone because a HIGHER source (migration
+ * 23's precedence, human > agent > mapper) already held that pair. This is not
+ * an error and not silence: the pair is unchanged, byte for byte, and `kept_existing`
+ * names who holds it. Kept means that source's decision stands; it is settled —
+ * never retry it and never report it as failed.
+ */
+export interface KeptTopicCoverage {
+  slug: string;
+  /** human | agent | mapper | null (a legacy, pre-payload row) — who holds this pair. */
+  kept_existing: string | null;
+}
+
 /** One page that was mapped. Carries seo.set_page_map_topics' own report. */
 export interface SetPagesMapTopicsSuccess {
   ok: true;
@@ -554,6 +567,11 @@ export interface SetPagesMapTopicsSuccess {
    * the two cases on the wire.
    */
   unknown_slugs: string[];
+  /**
+   * 🚨 MIGRATION 23. Pairs a HIGHER source already held — left alone, never
+   * overwritten. Absent (never `[]`) when nothing was kept.
+   */
+  kept_existing?: KeptTopicCoverage[];
 }
 
 /** One page that could not be mapped. The batch keeps going. */
@@ -767,11 +785,24 @@ export type SetPageIntentsItem = PageIntentTarget &
     note?: string;
   };
 
+/**
+ * Who holds a page's intent edge when `set_page_intents` left it alone —
+ * migration 23's precedence (human > agent > mapper), or an edge already
+ * `accepted`/`done` that no non-human write may replace. Kept means that
+ * decision stands; it is settled — never retry it and never report it as failed.
+ */
+export interface KeptIntent {
+  source: string | null;
+  state: string | null;
+}
+
 /** One page whose intent was written. `url` is echoed; absent when the page was named by id. */
 export interface SetPageIntentsSuccess {
   ok: true;
   page_id: string;
   url?: string;
+  /** 🚨 MIGRATION 23: present only when this item was KEPT, not written — see {@link KeptIntent}. */
+  kept_existing?: KeptIntent;
 }
 
 /**
@@ -794,6 +825,13 @@ export interface SetPageIntentsResult {
   /** The map the site uses — the call raises P0002 when it uses none. */
   map_id: string;
   set: number;
+  /**
+   * 🚨 MIGRATION 23: how many items were left alone because a higher source
+   * (human > agent > mapper) already held the edge, or it was already
+   * accepted/done. Kept is settled, never a failure — it does not count toward
+   * `failed` and must never be reported as one.
+   */
+  kept: number;
   failed: number;
   results: SetPageIntentsRow[];
 }

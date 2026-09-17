@@ -81,6 +81,30 @@ The test is `redux/pageTopicState.test.ts`, run against **recorded server bytes*
 transaction on the live database, the way the shipped door contract does it. A hand-made
 fixture would only prove the selector agrees with whoever wrote it.
 
+## Round 23 — a person's edge is never overwritten by a robot's
+
+Migration `20260918100000_seo_topical_map_23_a_persons_edge_is_never_overwritten` (live
+2026-09-18) added precedence to `set_page_map_topics`, `set_pages_map_topics` and
+`set_page_intents`: **human > agent > mapper**. A write from a lower source never
+overwrites, deletes or replaces an edge a higher source already holds for that
+page — it is reported back as **kept**, not silently dropped and not treated as
+a failure.
+
+- **`setPagesMapTopics` / `SetPagesMapTopicsSuccess.kept_existing`** — a page's
+  own row can now carry `kept_existing: [{slug, kept_existing: <source>}]`
+  naming the pairs a higher source held and left untouched. See
+  {@link KeptTopicCoverage} in `types.ts`.
+- **`setPageIntents` / `SetPageIntentsResult.kept`** — the batch result gains a
+  `kept` count; a kept row is `{ok: true, page_id, url?, kept_existing: {source, state}}`
+  (see {@link KeptIntent}). An intent already `accepted`/`done` is never
+  replaced by a non-human write either, whoever wrote it originally.
+- **Kept means settled, not failed.** Any caller that summarizes a bulk write
+  (toast, report) must show a kept item honestly — "kept, a person already
+  decided this page" — and must never count it toward `failed`, never retry
+  it, and never claim it was written. No screen in this feature does that
+  summarizing today (map-author / hooks consumers are still placeholder); the
+  rule binds the first one that does.
+
 ## Knobs
 
 `platform.feature_knob`, feature `seo.topical_map`, 27 keys, all overridable by organization,

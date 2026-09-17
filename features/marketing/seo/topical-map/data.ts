@@ -490,6 +490,11 @@ export async function searchMapTopics(mapId: string, query: string, limit?: numb
  * `ok: false` and a message, and the result's own `ok` is true only when
  * `failed` is 0. A null or bad `source`, and a null `items`, are rejected
  * once, up front, as SQLSTATE 22023.
+ *
+ * 🚨 MIGRATION 23: precedence is human > agent > mapper. A pair a HIGHER
+ * source already holds is left alone, not overwritten — that row carries
+ * `kept_existing` (see {@link SetPagesMapTopicsSuccess}) instead of an error.
+ * Kept means that source's decision stands; it is settled, never retry it.
  */
 export async function setPagesMapTopics(
   siteId: string,
@@ -638,6 +643,12 @@ export async function listMapHistory(
  *
  * Rehearse a batch without writing it with {@link mapDryRun}
  * (`"set_page_intents"`).
+ *
+ * 🚨 MIGRATION 23: precedence is human > agent > mapper, and an intent already
+ * `accepted`/`done` is never replaced by a non-human write either way. A kept
+ * item carries `kept_existing` (see {@link SetPageIntentsSuccess}) instead of
+ * being written, and the result's `kept` count rises. Kept means that
+ * decision stands; it is settled — never retry it and never report it as failed.
  */
 export async function setPageIntents(
   siteId: string,

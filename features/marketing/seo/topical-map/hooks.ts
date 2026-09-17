@@ -843,6 +843,12 @@ export function useRetireMapTopics(mapId: string) {
  * `seo.set_pages_map_topics` — coverage for many pages of ONE site.
  * `siteId` is required; per-page failures come back as rows with `ok: false`
  * and the batch's own `ok` is true only when `failed` is 0.
+ *
+ * 🚨 MIGRATION 23: a row can also carry `kept_existing` — pairs a HIGHER
+ * source (human > agent > mapper) already held, left untouched rather than
+ * overwritten. A caller that summarizes this result (toast, bulk-write report)
+ * must show a kept item honestly ("kept — a person already decided this
+ * page"), never lump it into `failed` and never silently count it as written.
  */
 export function useSetPagesMapTopics(mapId: string) {
   const invalidate = useInvalidateMap(mapId);
@@ -904,6 +910,13 @@ export function useRejectMapTopics(mapId: string) {
 /**
  * `seo.set_page_intents` — where pages are GOING, in bulk. ONE INTENT PER PAGE:
  * each item REPLACES the page's existing intent edge.
+ *
+ * 🚨 MIGRATION 23: an intent a HIGHER source (human > agent > mapper) already
+ * holds, or one already `accepted`/`done`, is left alone rather than
+ * replaced — the result's `kept` count rises and that item carries
+ * `kept_existing`. A caller that summarizes this result (toast, bulk-write
+ * report) must show a kept item honestly ("kept — a person already decided
+ * this page"), never lump it into `failed` and never silently count it as set.
  */
 export function useSetPageIntents(mapId: string) {
   const invalidate = useInvalidateMap(mapId);
