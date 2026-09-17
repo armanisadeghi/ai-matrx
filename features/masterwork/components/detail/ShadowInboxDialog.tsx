@@ -36,6 +36,7 @@ import { SittingResumed } from "../../sitting/SittingResumed";
 import { useScrollIntoViewOnAppear } from "@/lib/durable-run/useScrollIntoViewOnAppear";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
+import { VoicePicker, type VoiceRow } from "./VoicePicker";
 import {
   describeIngest,
   parseIngestSummary,
@@ -138,6 +139,15 @@ interface ThreadRow {
   hasGivenDraft: boolean;
   nothingToShadow: string | null;
   yourWords: number;
+  /** Every voice in the thread — what the picker offers when we must ask. */
+  voices: VoiceRow[];
+  /**
+   * 🚨 UNSURE IS A QUESTION, NEVER A REFUSAL (cold walk 8, 2026-09-17). True
+   * when the thread plainly holds more than one voice and nothing in it proves
+   * which is the Expert's. The row asks instead of saying there is nothing of
+   * theirs in a thread they just pasted their own answer into.
+   */
+  needsVoicePick: boolean;
 }
 
 interface ConnectionState {
@@ -205,6 +215,8 @@ export function ShadowInboxDialog({
   const [preparing, setPreparing] = useState(false);
   const [rows, setRows] = useState<ThreadRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  /** Which voices the Expert says are theirs (the picker's answer). */
+  const [myVoices, setMyVoices] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState<string[]>([]);
   const [connection, setConnection] = useState<ConnectionState | null>(null);
 
@@ -251,6 +263,7 @@ export function ShadowInboxDialog({
   const resetPicker = () => {
     setRows(null);
     setSelected(new Set());
+    setMyVoices(new Set());
     setNotes([]);
     setFileId(null);
   };
@@ -372,6 +385,15 @@ export function ShadowInboxDialog({
             has_given_draft?: boolean;
             nothing_to_shadow?: string | null;
             your_words?: number;
+            voices?: {
+              key: string;
+              name: string;
+              address?: string;
+              messages?: number;
+              words?: number;
+              is_you?: boolean;
+            }[];
+            needs_voice_pick?: boolean;
           }[];
           expert_email?: string;
           notes?: string[];
@@ -395,6 +417,15 @@ export function ShadowInboxDialog({
       hasGivenDraft: Boolean(t.has_given_draft),
       nothingToShadow: t.nothing_to_shadow ?? null,
       yourWords: t.your_words ?? 0,
+      voices: (t.voices ?? []).map((v) => ({
+        key: v.key,
+        name: v.name,
+        address: v.address ?? "",
+        count: v.messages ?? 0,
+        words: v.words ?? 0,
+        isYou: Boolean(v.is_you),
+      })),
+      needsVoicePick: Boolean(t.needs_voice_pick),
     }));
     setRows(mapped);
     // Only the threads there is actually something to shadow in are selected —
@@ -406,6 +437,7 @@ export function ShadowInboxDialog({
 
   const sourceBody = (): Record<string, unknown> => ({
     ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
+    ...(myVoices.size ? { voice_keys: [...myVoices] } : {}),
     own_replies_only: ownRepliesOnly,
   });
 
@@ -449,6 +481,55 @@ export function ShadowInboxDialog({
     }
   };
 
+  /**
+   * ANSWERING THE QUESTION HAS TO CHANGE THE ANSWER. The picker's whole
+   * purpose is that the rows re-read themselves with the Expert's voice known,
+   * so a thread that said "we can't tell which of these is you" becomes a
+   * thread with their reply in it, selected and ready — not a control that
+   * moves and changes nothing on screen (law 4).
+   */
+  const reReadWithVoices = async (keys: Set<string>) => {
+    const body: Record<string, unknown> = {
+      ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
+      ...(keys.size ? { voice_keys: [...keys] } : {}),
+      own_replies_only: ownRepliesOnly,
+      ...(fileId ? { file_id: fileId } : { text }),
+    };
+    setPreparing(true);
+    try {
+      await previewSource(body);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not re-read that thread.",
+      );
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const toggleVoice = (key: string) => {
+    const next = new Set(myVoices);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setMyVoices(next);
+    void reReadWithVoices(next);
+  };
+
+  /**
+   * The voices to offer, from the threads that could not tell. Deduped by key,
+   * because one correspondent runs through several threads of one export.
+   */
+  const voicesToPick: VoiceRow[] = (() => {
+    const seen = new Map<string, VoiceRow>();
+    for (const row of rows ?? []) {
+      if (!row.needsVoicePick) continue;
+      for (const voice of row.voices) {
+        if (!seen.has(voice.key)) seen.set(voice.key, voice);
+      }
+    }
+    return [...seen.values()];
+  })();
+
   // ── launch ───────────────────────────────────────────────────────────────
 
   const distill = async () => {
@@ -470,6 +551,9 @@ export function ShadowInboxDialog({
       source_note: sourceNote.trim() || undefined,
       own_replies_only: ownRepliesOnly,
       ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
+      // The answer to "which of these is you?" — the picker's whole point is
+      // that it reaches the run, not just the preview.
+      ...(myVoices.size ? { voice_keys: [...myVoices] } : {}),
     };
     if (door === "connected" && connection?.connectionId) {
       await run.launch(
@@ -657,7 +741,9 @@ export function ShadowInboxDialog({
                   ) : null}
                   {row.nothingToShadow ? (
                     <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-                      Nothing to shadow — {row.nothingToShadow}.
+                      {row.needsVoicePick
+                        ? `${row.nothingToShadow} — pick your voice below.`
+                        : `Nothing to shadow — ${row.nothingToShadow}.`}
                     </p>
                   ) : null}
                   {row.snippet ? (
@@ -669,6 +755,21 @@ export function ShadowInboxDialog({
               </label>
             ))}
           </div>
+          {voicesToPick.length ? (
+            <VoicePicker
+              voices={voicesToPick}
+              selected={myVoices}
+              onToggle={toggleVoice}
+              disabled={preparing || running}
+              title="Which of these is you?"
+              blurb={
+                "We could not tell which message in this thread is yours — a mail " +
+                "app often copies your own reply with no address on it at all. " +
+                "Point at your voice and we will read the thread again."
+              }
+              countNoun="messages"
+            />
+          ) : null}
           {notes.map((note, i) => (
             <p key={i} className="text-xs text-muted-foreground">
               {note}
@@ -847,17 +948,13 @@ export function ShadowInboxDialog({
             </div>
           ) : null}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="shadow-inbox-email">
-              Which address is yours? (optional)
-            </Label>
-            <Input
-              id="shadow-inbox-email"
-              value={expertEmail}
-              onChange={(e) => setExpertEmail(e.target.value)}
-              placeholder="Leave blank to use the address you signed in with"
-            />
-          </div>
+          {/* 🚨 THE FREE-TEXT "Which address is yours?" IS GONE (cold walk 8,
+              2026-09-17). It could not answer the question it asked: a mail
+              client copies your own message labelled "me", with no address on
+              it anywhere, so there was nothing to type that would have
+              helped. We read the thread first, and on the one occasion we
+              genuinely cannot tell, we show you the voices in it and ask —
+              the same picker the Meeting Scavenger already uses. */}
 
           <label className="flex items-center gap-2.5 rounded-md border border-border bg-card p-2.5">
             <Switch

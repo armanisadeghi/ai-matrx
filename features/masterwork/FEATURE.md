@@ -602,6 +602,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   lane whose own doors expect many threads over time. `DurableRunAgain` is the
   shared affordance and every repeatable source lane now carries it. Guard:
   `__tests__/a-finished-lane-offers-another-go.test.tsx`.
+- 2026-09-17 (eighth cold walk) — **SHADOW-THE-INBOX ASKS WHICH VOICE IS YOU
+  INSTEAD OF REFUSING.** A walker pasted a thread the way Outlook hands it over
+  — a `From:/Sent:/To:/Subject:` block, then the reply labelled `My reply:` /
+  `From: me` — and the lane answered "you never replied in it", about a paste
+  whose second half was visibly her own answer. The parser half is fixed on the
+  server (`aidream/services/distillation/FEATURE.md`, same date). The screen
+  half was this: the only control the dialog offered was a free-text "Which
+  address is yours? (optional)", which cannot help at all when a mail client
+  copies your own message labelled "me" with no address on it anywhere. That
+  field is GONE. The preview now returns the VOICES in each thread and says when
+  it could not tell which is the Expert's (`needs_voice_pick`), and the dialog
+  asks with the Meeting Scavenger's own picker — lifted into
+  `components/detail/VoicePicker.tsx` so the two lanes ask one question one way
+  (the Meeting Scavenger's inline copy should be repointed at it by whoever next
+  touches that file). Answering re-reads the threads with `voice_keys`, so the
+  row that said "we can't tell which of these is you" becomes the row with your
+  reply in it — a control that changes nothing on screen is the refusal wearing a
+  checkbox. Guard: `__tests__/the-inbox-asks-which-voice-is-you.test.tsx`, which
+  drives the real dialog and was red against the pre-fix tree.
 - 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
   SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
   `/masterwork/new`, went to look at the catalog and came back; the textarea
