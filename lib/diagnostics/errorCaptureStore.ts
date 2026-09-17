@@ -107,6 +107,14 @@ export type CapturedErrorSource =
    */
   | "media"
   /**
+   * A media render DIED on its primary lane and the heal ladder served it
+   * anyway (`@ai-matrx/media` 0.6 `phase: "heal", healed: true`). Its own
+   * family on purpose: a render that fixes itself is still an incident to be
+   * counted and burned down — never the quiet norm. `code` carries the named
+   * root cause (`healed:<diagnosis>`), `raw.attempts` the whole ladder.
+   */
+  | "media-healed"
+  /**
    * `@ai-matrx/agents/catalog`'s errorSink fired — the ONE agent picker's
    * catalogue read, tier-2 search, favourite write, or mandate default-row
    * resolution failed, or a row arrived with no identity and was dropped.

@@ -157,13 +157,20 @@ export function useBlockMediaSource(
   // The ONE retry contract (session refresh → same-URL retry → terminal)
   // lives behind `MediaClient.recoverLoadError`. Placeholder data URIs and
   // foreign URLs come through `recoverable: false` and fail straight.
+  // `failureRef` is what the heal ladder heals BY (bearer byte fetch by file
+  // id); without it the package can only report, never heal.
   const recovery = useMediaLoadRecovery(
     needsBlob ? null : (resolution?.src ?? null),
-    { recoverable: resolution?.recoverable },
+    { recoverable: resolution?.recoverable, failureRef: mediaRef },
   );
 
   return {
     ...resolved,
+    // A healed (bearer-lane) object URL replaces a dead element src: the
+    // user sees the media, the incident row is written either way.
+    ...(recovery.healedSrc && resolved.status !== "loading"
+      ? { src: recovery.healedSrc, status: "ready" as const, isPlaceholder: false }
+      : {}),
     fileId: block?.origin === "matrx" ? block.fileId : null,
     posterUrl:
       block && block.kind === "video" ? (block.posterUrl ?? null) : null,

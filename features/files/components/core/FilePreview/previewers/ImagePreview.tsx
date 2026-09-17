@@ -45,9 +45,12 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
   // Media durability: an owned durable URL that fails to load gets the
   // client's ONE retry contract (session refresh → same-URL retry once →
   // terminal) instead of an immediate dead end. Foreign URLs fail straight.
-  const { retryKey, onLoadError, failed } = useMediaLoadRecovery(url, {
+  const { retryKey, onLoadError, failed, healedSrc } = useMediaLoadRecovery(url, {
     recoverable: !!url && recognizeOurFileUrl(url) !== null,
+    failureRef: url ? { url } : null,
   });
+  // A healed (bearer-lane) object URL replaces a dead element src.
+  const renderUrl = healedSrc ?? url ?? undefined;
 
   if (!url) {
     return (
@@ -90,7 +93,7 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={retryKey}
-          src={url}
+          src={renderUrl}
           alt={fileName}
           className="max-h-full max-w-full object-contain"
           onError={onLoadError}
@@ -147,7 +150,7 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={retryKey}
-          src={url}
+          src={renderUrl}
           alt={fileName}
           draggable={false}
           className={cn("select-none", isFit ? "object-contain" : "")}

@@ -72,6 +72,7 @@ describe("useBlockMediaSource private image transport", () => {
     // failure class.
     expect(useMediaLoadRecovery).toHaveBeenCalledWith(null, {
       recoverable: true,
+      failureRef: { url: ENDPOINT, mime_type: undefined },
     });
     await hook.unmount();
   });

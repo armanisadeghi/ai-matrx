@@ -112,11 +112,17 @@ export function AssistantMessage({
   ).audioMimeType;
   // A TTS audio response is one of our own files — on a load failure the
   // primitive refreshes the file-session cookie and retries the durable URL.
-  const audioSrc = audioUrl ?? "";
-  const { retryKey: audioRetryKey, onLoadError: handleAudioError } =
-    useMediaLoadRecovery(audioUrl ?? null, {
-      recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
-    });
+  const {
+    retryKey: audioRetryKey,
+    onLoadError: handleAudioError,
+    healedSrc: healedAudioSrc,
+  } = useMediaLoadRecovery(audioUrl ?? null, {
+    recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
+    // The ref the heal ladder heals BY (bearer byte fetch on our file id).
+    failureRef: audioUrl ? { url: audioUrl } : null,
+  });
+  // A healed (bearer-lane) object URL replaces a dead element src.
+  const audioSrc = healedAudioSrc ?? audioUrl ?? "";
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;

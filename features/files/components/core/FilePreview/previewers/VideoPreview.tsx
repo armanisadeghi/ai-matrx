@@ -42,9 +42,12 @@ export function VideoPreview({
   // Media durability: an owned durable URL that fails to load gets the
   // client's ONE retry contract (session refresh → same-URL retry once →
   // terminal). Foreign URLs fail straight.
-  const { retryKey, onLoadError, failed } = useMediaLoadRecovery(url, {
+  const { retryKey, onLoadError, failed, healedSrc } = useMediaLoadRecovery(url, {
     recoverable: !!url && recognizeOurFileUrl(url) !== null,
+    failureRef: url ? { url } : null,
   });
+  // A healed (bearer-lane) object URL replaces a dead element src.
+  const renderUrl = healedSrc ?? url ?? undefined;
   if (!url) {
     return (
       <div
@@ -81,7 +84,7 @@ export function VideoPreview({
         key={retryKey}
         ref={elementRef}
         controls
-        src={url}
+        src={renderUrl}
         className="max-h-full max-w-full"
         preload="metadata"
         onPlay={() => setIsPlaying(true)}
@@ -89,7 +92,7 @@ export function VideoPreview({
         onEnded={() => setIsPlaying(false)}
         onError={onLoadError}
       >
-        <source src={url} type={mimeType ?? undefined} />
+        <source src={renderUrl} type={mimeType ?? undefined} />
       </video>
     </div>
   );
