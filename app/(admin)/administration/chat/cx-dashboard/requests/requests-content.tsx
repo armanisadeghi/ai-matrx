@@ -5,11 +5,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { AlertTriangle, Wrench } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useCxTableFilters } from "@/features/cx-dashboard/components/useCxTableFilters";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
@@ -52,7 +52,15 @@ const requestDuration = (r: CxUserRequest) =>
 
 export function RequestsContent({ result }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const sourceFilter = useCxTableFilters("cx-requests");
+
+  const updateSourcePage = (page: number, perPage = result.per_page) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", String(page));
+    params.set("per_page", String(perPage));
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const rowMenu = useCxRowMenu({
     rows: () => result.data,
@@ -94,18 +102,23 @@ export function RequestsContent({ result }: Props) {
         href: (r) => detailHref(r.id),
         width: 260,
         cell: (r) => (
-          <div className="min-w-0">
-            <p className="max-w-[250px] truncate">
-              {r.conversation_title || (
-                <span className="italic text-muted-foreground">Untitled</span>
-              )}
-            </p>
-            {r.model_name && (
-              <p className="text-[10px] text-muted-foreground">
-                {r.model_name}
-              </p>
+          <span className="block max-w-[250px] truncate">
+            {r.conversation_title || (
+              <span className="italic text-muted-foreground">Untitled</span>
             )}
-          </div>
+          </span>
+        ),
+      },
+      {
+        id: "model",
+        header: "Model",
+        accessorFn: (r) => r.model_name ?? "",
+        filter: "select",
+        width: 180,
+        cell: (r) => (
+          <span className="block max-w-[170px] truncate text-xs">
+            {r.model_name ?? "—"}
+          </span>
         ),
       },
       {
@@ -196,15 +209,47 @@ export function RequestsContent({ result }: Props) {
         accessorKey: "total_tokens",
         header: "Tokens",
         align: "right",
-        width: 120,
+        width: 90,
         cell: (r) => (
-          <div className="text-right font-mono">
-            <div>{formatTokens(r.total_tokens)}</div>
-            <div className="text-[10px] text-muted-foreground">
-              {formatTokens(r.total_input_tokens)} in /{" "}
-              {formatTokens(r.total_output_tokens)} out
-            </div>
-          </div>
+          <span className="block truncate font-mono">
+            {formatTokens(r.total_tokens)}
+          </span>
+        ),
+      },
+      {
+        id: "total_input_tokens",
+        accessorKey: "total_input_tokens",
+        header: "Input",
+        align: "right",
+        width: 90,
+        cell: (r) => (
+          <span className="block truncate font-mono">
+            {formatTokens(r.total_input_tokens)}
+          </span>
+        ),
+      },
+      {
+        id: "total_output_tokens",
+        accessorKey: "total_output_tokens",
+        header: "Output",
+        align: "right",
+        width: 90,
+        cell: (r) => (
+          <span className="block truncate font-mono">
+            {formatTokens(r.total_output_tokens)}
+          </span>
+        ),
+      },
+      {
+        id: "total_cached_tokens",
+        accessorKey: "total_cached_tokens",
+        header: "Cached",
+        align: "right",
+        width: 90,
+        cell: (r) => (
+          <span className="block truncate font-mono">
+            {formatTokens(r.total_cached_tokens)}
+          </span>
         ),
       },
       {
@@ -212,9 +257,11 @@ export function RequestsContent({ result }: Props) {
         header: "Cost",
         accessorFn: (r) => Number(r.total_cost ?? 0),
         align: "right",
-        width: 90,
+        width: 110,
         cell: (r) => (
-          <span className="font-mono">{formatCost(Number(r.total_cost))}</span>
+          <span className="block truncate font-mono">
+            {formatCost(Number(r.total_cost))}
+          </span>
         ),
       },
       {
@@ -285,13 +332,6 @@ export function RequestsContent({ result }: Props) {
       isEditable={false}
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-        <h2 className="text-sm font-semibold">
-          User Requests
-          <span className="ml-2 font-normal text-muted-foreground">
-            {result.total} total
-          </span>
-        </h2>
-
         <div className="min-h-0 flex-1">
           <NonEditableContextMenu
             sourceFeature="admin"
@@ -306,8 +346,10 @@ export function RequestsContent({ result }: Props) {
             columns={columns}
             getRowId={(r) => r.id}
             pageSize={0}
+            hidePagination
             emptyState={{ title: "No requests match" }}
             toolbar={{
+              title: "User Requests",
               refresh: { onRefresh: () => router.refresh() },
               search: true,
               searchPlaceholder: "Filter fetched page…",
@@ -356,40 +398,23 @@ export function RequestsContent({ result }: Props) {
           </NonEditableContextMenu>
         </div>
 
-        {/* Server-side pagination over the full result set (table shows one fetched page) */}
-        {result.total_pages > 1 && (
-          <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
-            <span>
-              Page {result.page} of {result.total_pages}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                disabled={result.page <= 1}
-                onClick={() => {
-                  const params = new URLSearchParams(window.location.search);
-                  params.set("page", String(result.page - 1));
-                  router.push(`?${params.toString()}`);
-                }}
-              >
-                Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                disabled={result.page >= result.total_pages}
-                onClick={() => {
-                  const params = new URLSearchParams(window.location.search);
-                  params.set("page", String(result.page + 1));
-                  router.push(`?${params.toString()}`);
-                }}
-              >
-                Next
-              </Button>
-            </div>
+        {result.total > 0 && (
+          <div className="shrink-0 border-t bg-card">
+            <GenericTablePagination
+              totalItems={result.total}
+              itemsPerPage={result.per_page}
+              currentPage={result.page}
+              onPageChange={(page) => updateSourcePage(page)}
+              onItemsPerPageChange={(perPage) => updateSourcePage(1, perPage)}
+              pageSizeOptions={[25, 50, 100]}
+              showAllOption={false}
+              compact
+              layoutType="flex"
+              containerClassName="border-t-0"
+              labelFormat={(start, end, total) =>
+                `Source rows ${start}–${end} of ${total}`
+              }
+            />
           </div>
         )}
       </div>
