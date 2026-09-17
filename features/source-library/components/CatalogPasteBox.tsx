@@ -28,25 +28,23 @@ import { formatCompactNumber } from "../format";
 import type { ResolveResult } from "../types";
 
 /**
- * WHAT THIS BOX HONESTLY ACCEPTS TODAY — named once, used everywhere below.
+ * WHAT THIS BOX ACCEPTS — named once, used everywhere below.
  *
- * 🚨 THIS LIST IS NOT A WISH. The server registers four source adapters
- * (youtube, podcast_rss, blog_feed, slide_deck), but two of them cannot yet be
- * SAVED: `media.source_library`'s adapter CHECK does not admit blog_feed or
- * slide_deck until aidream migration 0871 runs, and 0871 is a chair step that
- * needs a person at a terminal. Advertising a blog here before then would invite
- * a paste that resolves and then fails at insert — a screen promising something
- * it cannot do, which is the one thing this feature's rules forbid.
+ * All four source adapters now work end to end. aidream migration 0874 widened
+ * `media.source_library`'s adapter CHECK to admit blog_feed and slide_deck, so the
+ * two that could previously resolve-but-not-save now save. Verified live on
+ * 2026-09-17 before this copy changed: The Tim Ferriss Show, 886 episodes; Seth's
+ * Blog, 10,563 posts.
  *
- * So podcasts are advertised (they work end to end — 886 episodes of The Tim
- * Ferriss Show, verified live 2026-09-17) and blogs and decks are not, YET.
- * WHEN 0871 LANDS this is the only edit: add "a blog, Substack or Medium
- * address, or a SlideShare or Speaker Deck profile" to both strings.
+ * 🚨 THIS LIST IS NOT A WISH. Nothing is named here that the server cannot
+ * actually catalogue — a paste that resolves and then fails at insert is the
+ * screen promising something it cannot do. If an adapter is ever taken out of
+ * service, its words come out of these two strings in the same change.
  */
 const ACCEPTED_INPUTS_LABEL =
-    "YouTube channel, handle, playlist or video link, or a podcast name, Apple Podcasts link or RSS feed";
+    "YouTube channel, handle, playlist or video link; a podcast name, Apple Podcasts link or RSS feed; a blog, Substack or Medium address; or a SlideShare or Speaker Deck profile";
 const ACCEPTED_INPUTS_PLACEHOLDER =
-    "Paste a YouTube channel, @handle or video link — or a podcast name, Apple link or RSS feed";
+    "Paste a YouTube channel, a podcast name or feed, a blog or Substack, or a SlideShare profile";
 
 type Stage =
     | { kind: "idle" }
@@ -107,6 +105,20 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 adapter: resolved.adapter,
                 name: resolved.title,
             });
+            // NEVER NAVIGATE TO AN ID WE DO NOT HAVE. A response shape that
+            // drifts (an envelope where a row was promised) used to send people
+            // to `/libraries/undefined`, which is a 404 wearing the costume of
+            // a Library. If the id is missing the Library may well exist, so
+            // say exactly that and send them to the list rather than pretending
+            // nothing was created.
+            if (!library?.id) {
+                setStage({
+                    kind: "failed",
+                    message: `${resolved.title} was sent to the server, but it did not return an address for the new Library, so we cannot open it. Reload this page — if it is in your list, it was saved.`,
+                    remedy: null,
+                });
+                return;
+            }
             // `sync=1` starts the enumeration on the Library page itself, so the
             // rows appear where the person is going to read them.
             router.push(`/libraries/${library.id}?sync=1`);
@@ -194,8 +206,8 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
             <div className="mt-2 min-h-[1.5rem] px-1 text-sm" aria-live="polite">
                 {stage.kind === "idle" && (
                     <span className="text-muted-foreground">
-                        Everything in it lists in seconds — videos split into long,
-                        Shorts and live; podcasts into every episode with its length.
+                        Everything in it lists in seconds — every video, episode,
+                        post or deck, with its dates and lengths.
                     </span>
                 )}
 
