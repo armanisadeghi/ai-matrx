@@ -309,6 +309,7 @@ export function RequestsContent({ result }: Props) {
             pageSize={0}
             emptyState={{ title: "No requests match" }}
             toolbar={{
+              refresh: { onRefresh: () => router.refresh() },
               search: true,
               searchPlaceholder: "Filter fetched page…",
               facets: [
@@ -318,16 +319,12 @@ export function RequestsContent({ result }: Props) {
                   filter: sourceFilter,
                   render: () => (
                     <CxFiltersBar
+                      hideClear
                       showSearch={false}
                       showStatusFilter
                       statusOptions={["completed", "pending", "error"]}
-                      onRefresh={() => router.refresh()}
-                      onExportCSV={() =>
-                        exportToCSV(exportData, "user-requests")
-                      }
-                      onExportJSON={() =>
-                        exportToJSON(exportData, "user-requests")
-                      }
+                      onExportCSV={() => exportToCSV(exportData, "user-requests")}
+                      onExportJSON={() => exportToJSON(exportData, "user-requests")}
                     />
                   ),
                 },

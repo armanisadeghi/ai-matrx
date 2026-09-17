@@ -21,6 +21,8 @@ import {
 import type { CxFilters } from "../types/cxDashboardTypes";
 
 type Props = {
+  /** Hide the local Clear action when the canonical table owns it. */
+  hideClear?: boolean;
   showSearch?: boolean;
   showStatusFilter?: boolean;
   showProviderFilter?: boolean;
@@ -32,6 +34,7 @@ type Props = {
 };
 
 export function CxFiltersBar({
+  hideClear = false,
   showSearch = true,
   showStatusFilter = true,
   showProviderFilter = false,
@@ -152,7 +155,7 @@ export function CxFiltersBar({
       )}
 
       <div className="flex items-center gap-1 ml-auto">
-        {hasActiveFilters && (
+        {!hideClear && hasActiveFilters && (
           <Button
             variant="ghost"
             size="sm"
