@@ -122,6 +122,13 @@ export interface ContactImportOutcomePending {
   kept_manual_fields: string[];
   /** Values with no provenance stamp: kept as they are, and NOT called edits. */
   unrecorded_fields?: string[];
+  /**
+   * 🚨 FIELDS THE PLAN PROMISED AND THE ROW REFUSED — locked on the Person
+   * between the review and the save (aidream lane B-10, `refused_fields`). Empty
+   * on every ordinary import, and never silent when it is not: the outcome card
+   * names each one by LABEL with the remedy.
+   */
+  refused_fields?: string[];
   contact_points_added: number;
   /** True when this contact matched more than one Person — nothing was written. */
   choice_required?: boolean;
@@ -143,6 +150,16 @@ export interface ContactFieldChoicePending {
   key: string;
   include: boolean;
   value?: string | string[] | null;
+  /**
+   * 🚨 THE PERSON'S EXPLICIT "take Google's value here" over a value this import
+   * did not write (`kept_manual` / `unrecorded`). Nothing else overwrites one:
+   * the server's `_explicit_choice` is `include && (override_manual || value is
+   * not None)`, so before this existed a tick with nothing retyped was sent and
+   * silently discarded while the row said "will replace yours" (aidream lane
+   * B-10, `/projects/google-native/VERIFY-B1-B2-R2.md` N1). Built in one place:
+   * `./contract.ts` → `contactFieldChoice`.
+   */
+  override_manual?: boolean;
 }
 
 export interface TaskCandidatePending {

@@ -44,6 +44,8 @@ import {
 } from "./field-labels";
 import {
   UNKNOWN_ACTION_SENTENCE,
+  contactFieldChoice,
+  contactRefusalSentence,
   decideContactField,
   narrowContactMatchState,
 } from "./contract";
@@ -125,7 +127,15 @@ export function GoogleContactsImportPanel({
   const [plans, setPlans] = useState<ContactImportOutcomePending[]>([]);
   const [edits, setEdits] = useState<EditMap>({});
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<ContactImportOutcomePending[] | null>(null);
+  /**
+   * The saved reply — the outcomes AND the warnings that came with them, because
+   * a refused field's whole sentence (with its remedy) is one of those warnings
+   * and the card shows the SERVER's words, not a second wording of them.
+   */
+  const [done, setDone] = useState<{
+    results: ContactImportOutcomePending[];
+    warnings: string[];
+  } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(
@@ -211,16 +221,21 @@ export function GoogleContactsImportPanel({
         dryRun: false,
         contacts: plans.map((plan) => ({
           externalId: plan.external_id,
-          fields: Object.entries(edits[plan.external_id] ?? {}).map(
-            ([key, edit]) => ({
-              key,
-              include: edit.include,
-              value: edit.value,
-            }),
+          // 🚨 ONE BUILDER FOR THE WIRE CHOICE (`./contract.ts`), so a tick on a
+          // locked row carries `override_manual` — the server's own test for "the
+          // person said so about THIS field". Without it the tick was sent and
+          // discarded while the row read "will replace yours" (aidream lane B-10
+          // N1). The row's own plan decides, so the payload cannot disagree with
+          // the words that were on screen.
+          fields: Object.entries(edits[plan.external_id] ?? {}).flatMap(
+            ([key, edit]) => {
+              const field = plan.fields.find((candidate) => candidate.key === key);
+              return field ? [contactFieldChoice(field, edit)] : [];
+            },
           ),
         })),
       });
-      setDone(result.results);
+      setDone({ results: result.results, warnings: result.warnings });
       result.warnings.forEach((warning) => toast.warning(warning));
       const people = result.results
         .map((outcome) => outcome.person_id)
@@ -268,6 +283,8 @@ export function GoogleContactsImportPanel({
   }
 
   if (done) {
+    const refusal = (outcome: ContactImportOutcomePending) =>
+      contactRefusalSentence(outcome, done.warnings, importFieldLabel);
     return (
       <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -275,7 +292,7 @@ export function GoogleContactsImportPanel({
           Saved. Google Contacts was not changed.
         </div>
         <ul className="flex flex-col gap-2">
-          {done.map((outcome) => (
+          {done.results.map((outcome) => (
             <li
               key={outcome.external_id}
               className="rounded-md border border-border bg-card p-3"
@@ -302,6 +319,18 @@ export function GoogleContactsImportPanel({
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{outcome.note}</p>
+              {/* 🚨 A PROMISE THE SAVE COULD NOT KEEP IS NEVER SILENT. A field
+                  locked on the Person between the review and the save comes back
+                  in `refused_fields` (aidream lane B-10, BREAK K) — named by its
+                  LABEL, with the remedy, in the server's own sentence when the
+                  reply carried one. Before this the card said only "Enriched"
+                  over a value the review had offered to write. */}
+              {refusal(outcome) ? (
+                <p className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                  <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {refusal(outcome)}
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

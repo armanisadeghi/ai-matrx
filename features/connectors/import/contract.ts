@@ -27,7 +27,9 @@
 
 import type {
   ContactFieldActionPending,
+  ContactFieldChoicePending,
   ContactFieldPlanPending,
+  ContactImportOutcomePending,
   ContactMatchStatePending,
 } from "./types";
 
@@ -137,4 +139,71 @@ export function decideContactField(
     choosable: true,
     localWins: false,
   };
+}
+
+/**
+ * 🚨 THE ONE PLACE A FIELD ROW BECOMES A WIRE CHOICE — and the one place a tick
+ * on a locked row becomes the instruction the server can act on.
+ *
+ * The server's `_explicit_choice` is `include && (override_manual || value is not
+ * None)`: a default must never overwrite what a Person already says, so an
+ * included row alone is NOT an instruction. The panel sends `value: null` for a
+ * row nobody retyped, which is exactly the shape that was ignored — so a tick on
+ * a `kept_manual` (or `unrecorded`) row was sent, discarded, and the row said
+ * "will replace yours" while nothing replaced anything (aidream lane B-10,
+ * `/projects/google-native/VERIFY-B1-B2-R2.md` N1).
+ *
+ * `override_manual` is set from the SAME decision the row was rendered with
+ * (`decideContactField(...).localWins`), so the payload cannot disagree with the
+ * words the person read. An untouched or unticked row carries no override: the
+ * default always keeps the Person's own value.
+ */
+export function contactFieldChoice(
+  plan: Pick<ContactFieldPlanPending, "key" | "action" | "explanation">,
+  edit: { include: boolean; value: string | null },
+): ContactFieldChoicePending {
+  const choice: ContactFieldChoicePending = {
+    key: plan.key,
+    include: edit.include,
+    value: edit.value,
+  };
+  if (edit.include && decideContactField(plan).localWins) {
+    return { ...choice, override_manual: true };
+  }
+  return choice;
+}
+
+/**
+ * WHAT A PERSON READS when the save could not keep a promise the review made.
+ *
+ * THE SERVER'S SENTENCE FIRST: aidream puts the whole refusal (field labels, the
+ * Person, the remedy) in `ContactImportResult.warnings`, so when one of those
+ * lines is about THIS outcome it is shown verbatim — a second wording of one
+ * event is how two producers start disagreeing. A derived line is the fallback
+ * for a reply that carried none, and it says the same three things: which fields,
+ * that they are locked, and what to do.
+ */
+export function contactRefusalSentence(
+  outcome: Pick<
+    ContactImportOutcomePending,
+    "refused_fields" | "display_name" | "person_name"
+  >,
+  warnings: readonly string[],
+  labelFor: (key: string) => string,
+): string | null {
+  const refused = outcome.refused_fields ?? [];
+  if (refused.length === 0) return null;
+  const who = outcome.person_name ?? outcome.display_name;
+  const fromServer = warnings.find(
+    (warning) => warning.includes(who) && /locked/i.test(warning),
+  );
+  if (fromServer) return fromServer;
+  const labels = refused.map(labelFor);
+  const many = labels.length > 1;
+  return (
+    `${labels.join(", ")} on ${who} ${many ? "are" : "is"} locked, so the import ` +
+    `left ${many ? "them" : "it"} as ${many ? "they are" : "it is"} — even though ` +
+    `the review offered to write ${many ? "them" : "it"}. Unlock the field on the ` +
+    "Person and import again."
+  );
 }

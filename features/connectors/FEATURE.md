@@ -159,6 +159,23 @@ existing dedupe resolver, so a match enriches instead of duplicating.
   forced off, so a person who WANTED Google's value could not have it
   (VERIFY-B1-B2 B2). An `unrecorded` value — one nothing ever stamped — is
   offered ticked and is never called a local edit.
+- 🚨 **AND THE TICK IS SENT AS AN INSTRUCTION, not as an included row.** The
+  server's `_explicit_choice` is `include && (override_manual || value is not
+  None)`, so a tick with nothing retyped — which is what this panel sends for a
+  row nobody edited — was received and silently discarded while the row said "will
+  replace yours" (aidream lane B-10, VERIFY-B1-B2-R2 N1). `contactFieldChoice` in
+  `import/contract.ts` is the ONE builder of a wire choice and sets
+  `override_manual: true` from the same decision the row was RENDERED with, so the
+  payload cannot disagree with the words the person read. An untouched or unticked
+  row carries no override.
+- 🚨 **A PROMISE THE SAVE COULD NOT KEEP IS NEVER SILENT.** A field locked on the
+  Person between the review and the save comes back in the outcome's
+  `refused_fields` (aidream lane B-10, VERIFY-B1-B2-R2 BREAK K), and the saved
+  card names each one by its LABEL with the remedy — the server's own warning
+  sentence when the reply carried one, a derived line saying the same three things
+  when it did not (`contactRefusalSentence`). Before this the card said only
+  "Enriched" over a value the review had offered to write. Guard:
+  `import/override-and-refusal.test.tsx`.
 - **Per-field provenance** ("This Person's job title is from Google Contacts,
   imported 12 Sep 2026") renders from `source_ref` / `imported_at`, and when the
   server recorded nothing it says exactly that. It NEVER invents a date: the
@@ -257,6 +274,24 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — F-25, adopting aidream lane B-10's Contacts-import contract
+  (`/projects/google-native/VERIFY-B1-B2-R2.md` N1 + BREAK K). (1) A ticked
+  `kept_manual` row now reaches the server as an explicit `override_manual: true`
+  — built once in `import/contract.ts` (`contactFieldChoice`) from the same
+  decision that rendered the row, because the panel's `value: null` shape was
+  exactly the one the server's explicitness test ignored, so the tick was sent,
+  dropped, and the row's "will replace yours" was a promise nothing kept. (2) The
+  saved card states every `refused_fields` entry by field LABEL with the remedy,
+  preferring the server's own warning sentence for that Person
+  (`contactRefusalSentence`); a lock added between the review and the save used to
+  read as a plain "Enriched". Stand-in types grew `override_manual` and
+  `refused_fields` with the reason. Guard:
+  `import/override-and-refusal.test.tsx` (7 cases, red before and green after —
+  the RED payload was captured as `{key: "job_title", include: true, value:
+  null}`). **Still owed, and not this container's to do:** `pnpm sync-types` could
+  not run here (see the lane's hand-back), so these paths still ride the
+  `*Pending` stand-ins.
 
 - `2026-09-17` — F-23, closing aidream lane B-9's cross-repo half (this
   client's census was RED the moment aidream `ea0161993` landed): added
