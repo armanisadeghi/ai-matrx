@@ -44,15 +44,25 @@ function visibilityForQuery(query: EntityListQuery): LibraryVisibility[] {
 }
 
 /**
- * A refusal the shell can classify. `retryable` decides whether the banner
- * offers Retry at all — a 404 from a server that has not shipped this surface
- * yet is not something a person can retry into existence.
+ * A refusal the shell can classify.
+ *
+ * 🚨 A 404 HERE IS NOT A PERMISSION REFUSAL. The shell prints one of two empty
+ * states, and the "refused" one says "choose a tab you have access to, or ask an
+ * administrator" — which is a confident wrong answer when the truth is that this
+ * server build does not carry the Media Source Catalog endpoints yet. Measured
+ * live on 2026-09-17 against a server without them. So a 404 is classified as a
+ * BREAKAGE with its own sentence and a working Retry, and only a real refusal
+ * (401/403) is classified as one.
  */
 function rethrowForList(error: unknown): never {
     if (error instanceof MediaApiError) {
-        throw Object.assign(new Error(error.message), {
-            refused: !error.retryable,
-            retryable: error.retryable,
+        const missingEndpoint = error.status === 404 && !error.hasServerSentence;
+        const message = missingEndpoint
+            ? "This server does not answer at the Libraries address yet, so no Library can be listed or created. It arrives with the Media Source Catalog server release; nothing you did caused this."
+            : error.message;
+        throw Object.assign(new Error(message), {
+            refused: error.status === 401 || error.status === 403,
+            retryable: missingEndpoint || error.retryable,
             code: error.code,
         });
     }

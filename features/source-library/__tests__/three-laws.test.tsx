@@ -109,6 +109,7 @@ jest.mock("../components/RulebookParamPicker", () => ({
 }));
 
 import sourceLibraryReducer from "../redux/sourceLibrarySlice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { useActionRunner } from "../hooks/useActionRunner";
 import { useActionRegistry } from "../hooks/useActionRegistry";
 import { useJob } from "../hooks/useJob";
@@ -123,7 +124,12 @@ import type { VideoRow } from "../types";
 
 function makeStore() {
     return configureStore({
-        reducer: { sourceLibrary: sourceLibraryReducer },
+        // `appContext` is here because every read in this feature names the
+        // active organization as a dependency — see hooks/useActionRegistry.ts.
+        reducer: {
+            sourceLibrary: sourceLibraryReducer,
+            appContext: appContextReducer,
+        },
         middleware: (getDefault) => getDefault({ serializableCheck: false }),
     });
 }

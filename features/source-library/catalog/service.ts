@@ -116,11 +116,16 @@ export function toVideoQuery(
     return out;
 }
 
+/** See browse/service.ts: a 404 is a missing endpoint, never a refusal. */
 function rethrow(error: unknown): never {
     if (error instanceof MediaApiError) {
-        throw Object.assign(new Error(error.message), {
-            refused: !error.retryable,
-            retryable: error.retryable,
+        const missingEndpoint = error.status === 404 && !error.hasServerSentence;
+        const message = missingEndpoint
+            ? "This server does not answer at this Library's address yet, so its Sources cannot be listed. It arrives with the Media Source Catalog server release."
+            : error.message;
+        throw Object.assign(new Error(message), {
+            refused: error.status === 401 || error.status === 403,
+            retryable: missingEndpoint || error.retryable,
             code: error.code,
         });
     }

@@ -21,7 +21,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Settings2 } from "lucide-react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
@@ -145,6 +146,10 @@ function SettingsSkeleton() {
 
 export default function SourceLibrarySettingsTab() {
     const dispatch = useAppDispatch();
+    // The active organization resolves AFTER the first render and every call is
+    // refused until it does, so it is named as a dependency of the read — see
+    // hooks/useActionRegistry.ts for the measured defect this closes.
+    const organizationId = useAppSelector(selectOrganizationId);
 
     const [response, setResponse] = useState<MediaSettingsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -177,7 +182,8 @@ export default function SourceLibrarySettingsTab() {
 
     useEffect(() => {
         void load();
-    }, [load]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [load, organizationId]);
 
     /**
      * Write one knob at the organization scope and re-render from the answer.

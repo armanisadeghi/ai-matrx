@@ -22,6 +22,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, RefreshCw } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -74,6 +75,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const router = useRouter();
     const params = useSearchParams();
     const live = useAppSelector((state) => selectLibraryLive(state, libraryId));
+    const organizationId = useAppSelector(selectOrganizationId);
 
     const [loadError, setLoadError] = useState<string | null>(null);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
@@ -83,6 +85,9 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
 
     const registry = useActionRegistry();
 
+    // Both mount reads name `organizationId` as a dependency for the reason in
+    // hooks/useActionRegistry.ts: it resolves after the first render and every
+    // server call is refused until it does.
     const refreshMetrics = useCallback(async () => {
         try {
             const metrics = await getLibraryMetrics(dispatch, libraryId);
@@ -91,7 +96,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             // The header keeps whatever the stream gave it and says it is stale
             // rather than blanking numbers that were true a moment ago.
         }
-    }, [dispatch, libraryId]);
+    }, [dispatch, libraryId, organizationId]);
 
     const sync = useLibrarySync(libraryId, () => {
         void refreshMetrics();
@@ -109,9 +114,15 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 setLoadError(null);
             } catch (error) {
                 if (cancelled) return;
+                // A 404 with no sentence of its own means the endpoint is not
+                // on this server build — not that the Library is missing. The
+                // platform's generic "the server has nothing at that address"
+                // is true but tells a person nothing they can act on.
                 setLoadError(
                     error instanceof MediaApiError
-                        ? error.message
+                        ? error.status === 404 && !error.hasServerSentence
+                            ? "This server does not answer at the Libraries address yet, so this Library cannot be read. It arrives with the Media Source Catalog server release; nothing you did caused this."
+                            : error.message
                         : "This Library could not be read from the server.",
                 );
             }
@@ -120,7 +131,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, libraryId, refreshMetrics]);
+    }, [dispatch, libraryId, organizationId, refreshMetrics]);
 
     // Jobs this device started, restored so a reload lands back on the panel.
     useEffect(() => {
@@ -157,13 +168,14 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             createCatalogListConfig({
                 dispatch,
                 libraryId,
+                organizationId,
                 bulkActions: runner.bulkActions,
                 onOpenRow: setOpenVideo,
             }),
         // `listGeneration` forces a fresh service identity after a sync lands
         // rows, so the list re-asks instead of showing what it held before.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [dispatch, libraryId, runner.bulkActions, listGeneration],
+        [dispatch, libraryId, organizationId, runner.bulkActions, listGeneration],
     );
 
     const library = live?.library ?? null;

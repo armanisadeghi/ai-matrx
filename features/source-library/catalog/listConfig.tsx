@@ -27,10 +27,13 @@ import type { VideoRow } from "../types";
 export function createCatalogListConfig(options: {
     dispatch: AppDispatch;
     libraryId: string;
+    /** The active organization — part of what this service was built FROM, so a
+     *  list built before it resolved re-asks the moment it lands. */
+    organizationId: string | null;
     bulkActions: EntityBulkAction<VideoRow>[];
     onOpenRow: (row: VideoRow) => void;
 }): EntityListConfig<VideoRow> {
-    const { dispatch, libraryId, bulkActions, onOpenRow } = options;
+    const { dispatch, libraryId, organizationId, bulkActions, onOpenRow } = options;
 
     function useCatalogRowActions(
         _list: EntityListController<VideoRow>,
@@ -75,7 +78,7 @@ export function createCatalogListConfig(options: {
         // No scope tabs: the Library IS the scope. See ./service.ts.
         scopes: [],
         service: createCatalogService(dispatch, libraryId),
-        serviceKey: `media-catalog:${libraryId}`,
+        serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}`,
         columns: CATALOG_COLUMNS,
         prefsVersion: 1,
         getRowId: (row) => row.id,

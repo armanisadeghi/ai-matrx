@@ -222,10 +222,10 @@ function useLibraryRowActions(
 /**
  * Built per mount rather than as a module constant, because the service needs
  * the store's dispatch (the ONE door to the server owns auth and base URL).
- * `serviceKey` is constant because dispatch is stable for the store's life.
  */
 export function createLibraryListConfig(
     dispatch: AppDispatch,
+    organizationId: string | null,
 ): EntityListConfig<LibraryRow> {
     return {
         surfaceKey: "source-libraries-browse",
@@ -233,7 +233,14 @@ export function createLibraryListConfig(
         sourceFeature: "transcription",
         scopes: LIBRARY_LIST_SCOPES,
         service: createLibraryListService(dispatch),
-        serviceKey: "media-libraries",
+        // 🚨 THE ACTIVE ORGANIZATION IS PART OF WHAT THIS SERVICE WAS BUILT
+        // FROM. It resolves AFTER the first render (cookie → default → personal,
+        // see lib/organizations/resolveActiveOrgContext.ts), and every call to
+        // the server carries it — so a constant key here means the list asks
+        // once, org-less, is refused with "Select an organization before
+        // sending this request", and never asks again. Measured on the live
+        // page before this line existed.
+        serviceKey: `media-libraries:${organizationId ?? "none"}`,
         columns: LIBRARY_COLUMNS,
         prefsVersion: 1,
         getRowId: (row) => row.id,
