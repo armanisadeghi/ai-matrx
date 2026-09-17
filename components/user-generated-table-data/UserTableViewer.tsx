@@ -4102,7 +4102,17 @@ const UserTableViewer = ({
                         // different utility group, so the two genuinely survive
                         // together the way the comment below always claimed.
                         className={cn(
-                          "group relative max-w-[70vw] py-2 md:max-w-0 md:py-3",
+                          // `overflow-hidden`: past FIXED_LAYOUT_MAX_COLUMNS the
+                          // table is `table-auto`, where `max-w-0` caps the
+                          // column's width but NOT the content's paint — a long
+                          // email was drawn straight across the phone number
+                          // beside it (clientWidth 150, scrollWidth 192; found
+                          // on independent review 2026-09-15). Clipping at the
+                          // cell is what lets the inner `truncate` end in an
+                          // ellipsis, the way Sheets and Airtable clip. The
+                          // selection ring is inset and the wash is `inset-0`,
+                          // so neither is cut.
+                          "group relative max-w-[70vw] overflow-hidden py-2 md:max-w-0 md:py-3",
                           "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
                           // A computed cell keeps the default cursor: the
                           // text-cursor is a promise that you can type here,
