@@ -20990,9 +20990,6 @@ export type Database = {
       interaction: {
         Row: {
           address_id: string | null
-          approval_assist_id: string | null
-          approved_at: string | null
-          approved_by: string | null
           assigned_to: string | null
           attempt_number: number | null
           attributes: Json
@@ -21005,9 +21002,6 @@ export type Database = {
           deal_id: string | null
           deleted_at: string | null
           direction: string
-          drafted_by_agent_id: string | null
-          drafted_by_label: string | null
-          drafted_by_run_id: string | null
           duration_seconds: number | null
           id: string
           in_reply_to: string | null
@@ -21048,9 +21042,6 @@ export type Database = {
         }
         Insert: {
           address_id?: string | null
-          approval_assist_id?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           assigned_to?: string | null
           attempt_number?: number | null
           attributes?: Json
@@ -21063,9 +21054,6 @@ export type Database = {
           deal_id?: string | null
           deleted_at?: string | null
           direction: string
-          drafted_by_agent_id?: string | null
-          drafted_by_label?: string | null
-          drafted_by_run_id?: string | null
           duration_seconds?: number | null
           id?: string
           in_reply_to?: string | null
@@ -21106,9 +21094,6 @@ export type Database = {
         }
         Update: {
           address_id?: string | null
-          approval_assist_id?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           assigned_to?: string | null
           attempt_number?: number | null
           attributes?: Json
@@ -21121,9 +21106,6 @@ export type Database = {
           deal_id?: string | null
           deleted_at?: string | null
           direction?: string
-          drafted_by_agent_id?: string | null
-          drafted_by_label?: string | null
-          drafted_by_run_id?: string | null
           duration_seconds?: number | null
           id?: string
           in_reply_to?: string | null
@@ -86677,63 +86659,6 @@ export type Database = {
           },
         ]
       }
-      page_mapping_queue: {
-        Row: {
-          attempts: number
-          claimed_at: string | null
-          completed_at: string | null
-          demand_as_of: string
-          demand_window_days: number
-          enqueued_at: string
-          last_error: string | null
-          mapping_source: string | null
-          page_id: string
-          priority_clicks: number
-          priority_impressions: number
-          site_id: string
-          status: string
-          suggested_reason: string | null
-          suggested_topic_name: string | null
-          updated_at: string
-        }
-        Insert: {
-          attempts?: number
-          claimed_at?: string | null
-          completed_at?: string | null
-          demand_as_of: string
-          demand_window_days: number
-          enqueued_at?: string
-          last_error?: string | null
-          mapping_source?: string | null
-          page_id: string
-          priority_clicks?: number
-          priority_impressions?: number
-          site_id: string
-          status?: string
-          suggested_reason?: string | null
-          suggested_topic_name?: string | null
-          updated_at?: string
-        }
-        Update: {
-          attempts?: number
-          claimed_at?: string | null
-          completed_at?: string | null
-          demand_as_of?: string
-          demand_window_days?: number
-          enqueued_at?: string
-          last_error?: string | null
-          mapping_source?: string | null
-          page_id?: string
-          priority_clicks?: number
-          priority_impressions?: number
-          site_id?: string
-          status?: string
-          suggested_reason?: string | null
-          suggested_topic_name?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       page_measurement_health: {
         Row: {
           consecutive_terminal_failures: number
@@ -89636,10 +89561,6 @@ export type Database = {
         }
         Returns: number
       }
-      _tm_live_topic_id: {
-        Args: { p_map_id: string; p_slug: string }
-        Returns: string
-      }
       _tm_map: {
         Args: {
           p_level: Database["public"]["Enums"]["permission_level"]
@@ -90017,26 +89938,6 @@ export type Database = {
           priority_impressions: number
         }[]
       }
-      fn_claim_page_mapping_batch: {
-        Args: {
-          p_limit: number
-          p_max_attempts: number
-          p_site_id: string
-          p_stale_claim_minutes: number
-        }
-        Returns: {
-          crawled: boolean
-          headings: Json
-          meta_description: string
-          page_id: string
-          path: string
-          priority_clicks: number
-          priority_impressions: number
-          title: string
-          url: string
-          word_count: number
-        }[]
-      }
       fn_claim_topic_placement_batch: {
         Args: {
           p_limit: number
@@ -90061,22 +89962,6 @@ export type Database = {
         }
         Returns: {
           marked_done: number
-          marked_pending: number
-          quarantined: number
-        }[]
-      }
-      fn_complete_page_mapping_batch: {
-        Args: {
-          p_batch_failed: boolean
-          p_error: string
-          p_max_attempts: number
-          p_no_topic: Json
-          p_page_ids: string[]
-          p_site_id: string
-        }
-        Returns: {
-          marked_done: number
-          marked_no_topic: number
           marked_pending: number
           quarantined: number
         }[]
@@ -90155,29 +90040,6 @@ export type Database = {
       }
       fn_merge_monthly: { Args: { p_new: Json; p_old: Json }; Returns: Json }
       fn_normalize_phrase: { Args: { p: string }; Returns: string }
-      fn_page_mapping_counts: {
-        Args: { p_site_id: string }
-        Returns: {
-          pending_clicks: number
-          placed_by_human: number
-          placed_by_mapper: number
-          queue_done: number
-          queue_failed: number
-          queue_no_topic: number
-          queue_pending: number
-          queue_running: number
-        }[]
-      }
-      fn_page_mapping_placed_source: {
-        Args: { p_page_id: string }
-        Returns: string
-      }
-      fn_page_mapping_settled_since: {
-        Args: { p_since: string; p_site_id: string }
-        Returns: {
-          mapped: number
-        }[]
-      }
       fn_reconcile_site_offering_facts: {
         Args: { p_site_id: string }
         Returns: {
@@ -90197,16 +90059,6 @@ export type Database = {
           now_done: number
           now_pending: number
           scanned: number
-        }[]
-      }
-      fn_refresh_page_mapping_queue: {
-        Args: { p_site_id: string; p_window_days: number }
-        Returns: {
-          now_done: number
-          now_pending: number
-          scanned: number
-          skipped_missing: number
-          skipped_planned: number
         }[]
       }
       fn_refresh_topic_placement_queue: {
@@ -92104,43 +91956,6 @@ export type Database = {
         Args: { p_default: number; p_key: string }
         Returns: number
       }
-      page_mapping_status: {
-        Args: { p_site_id: string }
-        Returns: {
-          clicks: number
-          clicks_mapped: number
-          demand_as_of: string
-          demand_window_days: number
-          impressions: number
-          impressions_mapped: number
-          last_error: string
-          last_mapped_at: string
-          next_url: string
-          pages: number
-          pages_mapped: number
-          pending_clicks: number
-          placed_by_agent: number
-          placed_by_human: number
-          placed_by_mapper: number
-          queue_failed: number
-          queue_no_topic: number
-          queue_pending: number
-          queue_refreshed_at: string
-          queue_running: number
-          wanted_topics: number
-        }[]
-      }
-      page_mapping_wanted_topics: {
-        Args: { p_limit?: number; p_site_id: string }
-        Returns: {
-          clicks: number
-          example_reason: string
-          example_urls: string[]
-          impressions: number
-          pages: number
-          suggested_topic_name: string
-        }[]
-      }
       patch_map_topics: {
         Args: { p_edits: Json; p_map_id: string }
         Returns: Json
@@ -92304,18 +92119,6 @@ export type Database = {
       set_pages_map_topics: {
         Args: { p_items: Json; p_site_id: string; p_source?: string }
         Returns: Json
-      }
-      set_site_keyword_map_home: {
-        Args: { p_keyword_ids: string[]; p_site_id: string }
-        Returns: {
-          created: number
-          homed: number
-          kept: number
-          kept_human: number
-          moved: number
-          no_map: number
-          no_offering: number
-        }[]
       }
       set_site_map: {
         Args: { p_map_id: string; p_site_id: string }

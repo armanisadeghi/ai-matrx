@@ -51,7 +51,6 @@ import {
 } from "@/lib/durable-run/DurableRunStop";
 import {
   durableRunDialogOnOpenChange,
-  shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
 
 /**
@@ -289,18 +288,24 @@ export function ShadowInboxDialog({
   // A run picked back up after a reload must be VISIBLE — rejoining behind a
   // closed dialog reads as "nothing happened", which is the defect durability
   // exists to kill. The latch is per RUN, not per mount.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
-  const dismissedRunIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
-    if (!shouldReopenForRun(run.runId, dismissedRunIdRef.current)) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   // ── the connected door: ask, then obey the answer ────────────────────────
   //
@@ -973,7 +978,9 @@ export function ShadowInboxDialog({
       running,
       reset,
       onOpenChange: (value) => {
-        if (!value && running) dismissedRunIdRef.current = run.runId;
+        // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!value) run.dismiss();
         onOpenChange(value);
       },
       runLabel: "Shadowing your inbox",

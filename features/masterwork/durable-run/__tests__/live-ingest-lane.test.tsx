@@ -108,7 +108,7 @@ const cancelSpy = jest.fn(async () => {});
  * `setState` that sets `status: "rejoining"` (lib/durable-run/useDurableRun.ts),
  * so `running === true` with a null `runId` never happens on the path these
  * cases describe. When `6d424b231d` made the close honest, the reopen latch
- * started asking `shouldReopenForRun(run.runId, dismissed)` — which correctly
+ * started asking whether the run was identified at all — which correctly
  * refuses to reopen for a run it cannot identify — and seven cases went red
  * against the FAKE's impossible state, not against the product. Every one of
  * those seven assertions was right; none of them encoded the old bug.
@@ -129,12 +129,28 @@ const FAKE_RESULT: IngestSummary = {
   alreadyDistilled: 0,
 };
 
+/**
+ * Which surfaces' runs the Expert has closed away from.
+ *
+ * The real handle keeps this ON THE RECEIPT (`RunPointer.dismissed`) rather
+ * than in the mount, which is the whole of cold walk 7's finding 3 — so the
+ * fake keeps it outside `fakeRun` too, where a remount cannot forget it.
+ */
+const dismissedSurfaces = new Set<string>();
+
 function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
   const running = Array.isArray(runningSurface)
     ? runningSurface.includes(surface)
     : surface === runningSurface;
   const settled = surface === settledSurface;
+  const dismissed = dismissedSurfaces.has(surface);
   return {
+    // A surface pulls itself open only for a live run the person has not
+    // already closed away from — never for `"rejoining"` alone.
+    surfacing: running && !dismissed,
+    dismiss: () => {
+      dismissedSurfaces.add(surface);
+    },
     // A run that is in flight or holding an answer HAS an identity — that is
     // what the durable pointer is. `writePointer` in this file stores the same
     // id, so the fake and the storage the probe reads agree.
@@ -203,6 +219,7 @@ beforeEach(() => {
   runningSurface = null;
   settledSurface = null;
   cancelSpy.mockClear();
+  dismissedSurfaces.clear();
   lastTimelineOpen = false;
   lastReady = false;
 });
@@ -716,7 +733,7 @@ describe("the Rulebook page after a refresh", () => {
     // And it survives the state this dialog's user was actually in: the live
     // view drops and comes back ("Reconnecting…"), so `running` flickers and
     // the latch re-arms. The SAME run must still not reopen over her close —
-    // that is what `shouldReopenForRun` remembers the dismissed run id for.
+    // that is what the receipt's own `dismissed` flag is for.
     runningSurface = null;
     await renderPage(null, RULEBOOK_ID);
     runningSurface = "timeline";

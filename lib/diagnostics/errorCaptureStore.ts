@@ -153,14 +153,6 @@ export type CapturedErrorSource =
    */
   | "topical-map-rpc"
   /**
-   * A `platform.feature_knob` enum row answered with a value outside the
-   * vocabulary this build knows — an admin (or a migration) chose something no
-   * screen implements. The reader falls back to the row's own `default_value`
-   * and the screen keeps working; this capture is how anyone finds out, and it
-   * carries the knob address and the offending value so the fix is one line.
-   */
-  | "feature-knob-vocabulary"
-  /**
    * A user-facing `toast.error(...)`. Showing a failure to the user describes
    * handling, not severity; these stay red unless a specific downgrade rule
    * proves that exact toast is expected noise.

@@ -381,8 +381,6 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
-- 2026-09-17 — **New source `feature-knob-vocabulary`: an enum knob set to a value this build does not implement.** Captured inline by `features/marketing/seo/topical-map/knobs.ts`'s `enumKnob`, carrying the knob address as `relation`, the offending value and its row's `allowed_values` in `raw`, and `code=knob_value_not_implemented`. It exists because that reader used to THROW, which blanked every map screen over one legal admin choice; it now falls back to the row's own `default_value` and screams here instead. Red tier, so it also reaches `public.system_error`.
-
 - 2026-09-17 — **Missing surface registration is captured once as a structured recovery error.** `SurfaceRegistrationError` records `source=surface-registration`, `code=SURFACE_NOT_REGISTERED`, `relation=ui_surface`, and the action/call site before a binding mutation starts, with a sync-and-verify recovery hint. Its serialized `captured` receipt survives RTK rejection; the Redux middleware then leaves that already-recorded incident alone, and callers use `toastErrorAlreadyCaptured`, preventing a generic `redux-rejected` row or duplicate toast. This makes a missing runtime mirror actionable without concealing the refusal.
 
 - 2026-09-15 — **Explicit diagnostic organizations are exact.** A non-null
