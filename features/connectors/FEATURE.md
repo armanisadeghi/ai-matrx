@@ -258,6 +258,22 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — F-20: **two machine values and one impossible number, out of the
+  import reviews** (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` D9 and
+  break K; each reproduced RED first in
+  `features/connectors/import/human-sentences.test.ts`). The Contacts review said
+  `Will update Ada (matched by external_id:google_contacts)` — a column name and a
+  provider slug at a non-technical expert; it now says *recognised by its Google
+  Contacts id* through `importMatchKeyWords`, the client twin of the server's own
+  `_match_key_words`. The Tasks review printed `Due 2026-10-01` from
+  `task.due_at.slice(0, 10)`, in the same file whose helper exists so a date is
+  never an ISO string; it goes through `importDateText`. And the count line is now
+  worded by `importTaskCountLine` from the payload's own `total` /
+  `already_imported` instead of the server's prose, because that prose could say
+  "import the other **-2**" and a screen that cannot check the arithmetic it
+  prints cannot be accountable for it — the remainder is clamped and the noun
+  agrees.
+
 - `2026-09-17` — **Six client honesty defects from the third hostile round**
   (lane F-19, from `common-docs/projects/google-native/VERIFY-U-P2-R3.md`), each
   reproduced RED on head before the fix:

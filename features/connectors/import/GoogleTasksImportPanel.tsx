@@ -9,8 +9,13 @@
  * 8"). Import creates real AI Matrx tasks; importing again updates title, due
  * date and notes only where Google changed them and nobody changed them here.
  *
- * The count line is the SERVER's sentence, not one this file composes — two
- * places computing "how many are new" is two answers to it.
+ * The count line is worded from the payload's own NUMBERS (`total`,
+ * `already_imported`) through `importTaskCountLine`, the one place that wording
+ * lives — not from the server's prose. It was the server's sentence, rendered
+ * verbatim, until that sentence could say "import the other -2" (R2 break K): a
+ * screen that cannot check the arithmetic it prints cannot be accountable for it,
+ * and the numbers it clamps are right here. The server keeps `count_line` for its
+ * own callers; this panel does not read it.
  * Read-only toward Google.
  */
 
@@ -33,6 +38,7 @@ import {
   importDateText,
   importFieldList,
   importProvenanceSentence,
+  importTaskCountLine,
 } from "./field-labels";
 import type {
   TaskImportResultPending,
@@ -297,7 +303,20 @@ export function GoogleTasksImportPanel({
             <Loader2 className="h-3 w-3 animate-spin" /> Reading Google Tasks…
           </span>
         ) : active ? (
-          <p className="text-xs text-foreground">{active.count_line}</p>
+          <p className="text-xs text-foreground">
+            {/* 🚨 THE PANEL WORDS ITS OWN COUNTS. It used to render the server's
+                `count_line` verbatim, and that sentence could say "import the
+                other -2" when the already-here count exceeded the tasks one read
+                covers (R2 break K) — prose a screen cannot check is prose it
+                cannot be accountable for. `importTaskCountLine` clamps the
+                remainder and agrees with the noun, from the numbers this payload
+                carries. */}
+            {importTaskCountLine({
+              title: active.title,
+              total: active.total,
+              alreadyHere: active.already_imported,
+            })}
+          </p>
         ) : null}
       </div>
       {error ? (
@@ -354,7 +373,14 @@ export function GoogleTasksImportPanel({
                 </div>
                 {task.due_at || task.notes ? (
                   <p className="truncate text-xs text-muted-foreground">
-                    {[task.due_at ? `Due ${task.due_at.slice(0, 10)}` : null, task.notes]
+                    {/* A date is never an ISO string at a person — the same
+                        helper the badges use (R2 D9). */}
+                    {[
+                      importDateText(task.due_at)
+                        ? `Due ${importDateText(task.due_at)}`
+                        : null,
+                      task.notes,
+                    ]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>

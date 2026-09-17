@@ -39,6 +39,7 @@ import {
   IMPORT_PROVENANCE_UNRECORDED,
   importDateText,
   importFieldLabel,
+  importMatchKeyWords,
   importProvenanceSentence,
 } from "./field-labels";
 import {
@@ -396,7 +397,13 @@ export function GoogleContactsImportPanel({
                           recognised them (D4). */}
                       Will update{" "}
                       {plan.person_name ?? "the Person already here"}
-                      {plan.matched_by ? ` (matched by ${plan.matched_by})` : ""}
+                      {/* HOW it was recognised, in words: the key used to reach a
+                          person raw — `matched by external_id:google_contacts`
+                          (R2 D9). `importMatchKeyWords` is the client twin of the
+                          server's own `_match_key_words`. */}
+                      {plan.matched_by
+                        ? ` (recognised by ${importMatchKeyWords(plan.matched_by)})`
+                        : ""}
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-[11px]">
@@ -638,7 +645,7 @@ export function GoogleContactsImportPanel({
                     <Badge variant="secondary" className="text-[11px]">
                       Will update {contact.person_name ?? "an existing Person"}
                       {contact.matched_by
-                        ? ` (matched by ${contact.matched_by})`
+                        ? ` (recognised by ${importMatchKeyWords(contact.matched_by)})`
                         : ""}
                     </Badge>
                   ) : null}

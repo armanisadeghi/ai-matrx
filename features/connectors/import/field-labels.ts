@@ -87,6 +87,57 @@ export function importDateText(value: string | null | undefined): string | null 
   });
 }
 
+/**
+ * How a Person was RECOGNISED, in words.
+ *
+ * The Contacts review printed the server's own key — `Will update Ada (matched
+ * by external_id:google_contacts)` — a column name and a provider slug at a
+ * non-technical expert (VERIFY-B1-B2-R2 D9, the survivor of the first D9 sweep).
+ * The server has `_match_key_words` for exactly this; this is its client twin,
+ * and the two must keep saying the same thing about the same key.
+ */
+export function importMatchKeyWords(matchedBy: string): string {
+  const key = (matchedBy ?? "").trim();
+  if (!key) return "something it already holds";
+  if (key === "email") return "its email address";
+  if (key === "phone") return "its phone number";
+  if (key.startsWith("external_id")) return "its Google Contacts id";
+  return `its ${key.replace(/[_:]/g, " ").trim()}`;
+}
+
+/**
+ * The count line over one Google task list — "12 tasks in My Tasks, 4 already
+ * here, import the other 8."
+ *
+ * 🚨 THE REMAINDER IS CLAMPED. The server's `_count_line` subtracts and could
+ * print "import the other **-2**" when the already-here count exceeded the tasks
+ * one read covers (VERIFY-B1-B2-R2 break K), and the panel rendered the server's
+ * sentence verbatim — so a number no arithmetic can justify reached a person
+ * through a screen that could not check it. The panel words the counts itself
+ * now, from the numbers the payload carries, and this is the one place that
+ * wording lives. `already` is clamped to `total` because it is counted from the
+ * tasks that were read: it can never legitimately exceed them.
+ */
+export function importTaskCountLine(input: {
+  title: string;
+  total: number;
+  alreadyHere: number;
+}): string {
+  const total = Math.max(0, Math.trunc(input.total));
+  const already = Math.min(total, Math.max(0, Math.trunc(input.alreadyHere)));
+  const remaining = total - already;
+  const noun = total === 1 ? "task" : "tasks";
+  if (total === 0) return `No tasks in ${input.title}.`;
+  if (remaining === 0) {
+    return total === 1
+      ? `1 task in ${input.title}, and it is already here.`
+      : `${total} ${noun} in ${input.title}, and all ${total} are already here.`;
+  }
+  const alreadyWords = already === 0 ? "none already here" : `${already} already here`;
+  const verb = remaining === 1 && total === 1 ? "import it" : `import the other ${remaining}`;
+  return `${total} ${noun} in ${input.title}, ${alreadyWords}, ${verb}.`;
+}
+
 export interface ImportProvenanceInput {
   /** Where the value came from, as the server names it (e.g. a resource name). */
   sourceRef?: string | null;
