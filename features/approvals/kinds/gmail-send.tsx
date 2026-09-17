@@ -153,6 +153,20 @@ export function narrowGmailSendPayload(
 }
 
 /**
+ * THE DRAFT'S IDENTITY — every field the review card and the timeline write
+ * read, in one comparable string.
+ *
+ * It is what makes a re-proposal a NEW card: the host keys
+ * `GmailApprovalBody` on it, so React remounts instead of leaving a card whose
+ * editable state was seeded from a draft that no longer exists. Derived from
+ * the narrowed payload (fixed key order), never a hand-listed subset — a field
+ * a future proposer adds is in the identity the moment it exists.
+ */
+export function gmailPayloadFingerprint(payload: GmailSendPayload): string {
+  return JSON.stringify(payload);
+}
+
+/**
  * Put the approved message on the CRM record's timeline.
  *
  * Calls the ONE writer (`features/crm/gmail/service.ts`) — the same one the
@@ -187,16 +201,30 @@ async function recordProposalOnTimeline(
     return;
   }
 
-  // The proposal's contact point describes the address the proposal named. If
-  // the approver changed it, that association is about somebody else — it is
-  // dropped rather than attached to the wrong recipient, and said out loud.
+  /**
+   * 🚨 A CHANGED RECIPIENT IS A DIFFERENT PERSON UNTIL SOMETHING PROVES
+   * OTHERWISE (Bugbot MEDIUM, frontend PR 228).
+   *
+   * The proposal's `partyId` is the party the PROPOSED address belonged to.
+   * When the approver typed a different address before Send, nothing here knows
+   * whose it is — the platform holds no address→party resolver to ask — so the
+   * message is recorded on NO record rather than stamped onto the original
+   * Person's timeline, where it would read as "we emailed her" about a message
+   * she never received. Dropping only the contact point and keeping the party
+   * was the quiet version of the same lie.
+   *
+   * Written to no timeline is a loss a person can repair (the toast says so and
+   * carries the address). A false row on a customer's history is a loss nobody
+   * can see to repair.
+   */
   const sameRecipient =
     receipt.to.trim().toLocaleLowerCase() ===
     payload.to.trim().toLocaleLowerCase();
   if (!sameRecipient) {
     toast.warning(
-      "You changed the recipient before sending, so the message is recorded without a contact point and the unsubscribe and blocklist checks did not cover the new address.",
+      `The message was sent to ${receipt.to}, not the address this draft proposed, so it was not added to any record's timeline — we cannot tell whose address that is. Log it on the right record by hand. The unsubscribe and blocklist checks did not cover that address either.`,
     );
+    return;
   }
 
   const result = await recordGmailSendInteraction({
@@ -205,8 +233,8 @@ async function recordProposalOnTimeline(
       partyId: payload.partyId,
       organizationId: payload.organizationId,
       dealId: payload.dealId ?? null,
-      contactPointId: sameRecipient ? (payload.contactPointId ?? null) : null,
-      mediumId: sameRecipient ? (payload.recipientMediumId ?? null) : null,
+      contactPointId: payload.contactPointId ?? null,
+      mediumId: payload.recipientMediumId ?? null,
     },
     approvedByUserId: approverId,
     draftedBy: {
@@ -246,6 +274,17 @@ function GmailApprovalBody({
 }) {
   const callId = `approval:${proposal.assist.id}`;
   const approverId = useAppSelector(selectUserId);
+  /**
+   * 🚨 WHICH DRAFT THIS CARD IS REVIEWING — the identity the effect and the
+   * host's `key` both use (Bugbot MEDIUM, frontend PR 228).
+   *
+   * A re-proposal under the same dedupe key REPLACES the payload on the same
+   * assist id. Keyed on the id alone, the row headline updated from the new
+   * draft while this card kept the first one in its own editable state and the
+   * resolver closed over the first payload: Send could post a message the queue
+   * was no longer showing, and record it against the superseded draft.
+   */
+  const payloadFingerprint = gmailPayloadFingerprint(payload);
 
   useEffect(() => {
     registerAskResolver(callId, (response) => {
@@ -299,7 +338,9 @@ function GmailApprovalBody({
       // Unmounting is not a decision; drop the resolver without resolving it.
       // (`resolveAskByCallId` is the only other exit and the card owns it.)
     };
-  }, [callId, proposal.assist.id]);
+    // The fingerprint is a dependency, not a decoration: the resolver closes
+    // over `payload`, and a stale closure records the wrong draft.
+  }, [callId, proposal.assist.id, payloadFingerprint]);
 
   const ask: PendingAsk = {
     callId,
@@ -490,6 +531,9 @@ function useSource(scope: ApprovalScope): ApprovalSource {
           },
           individualReview: (
             <GmailApprovalBody
+              // A re-proposal under the same id is a DIFFERENT draft: a new key
+              // remounts the card instead of reviewing the superseded one.
+              key={`${proposal.assist.id}:${gmailPayloadFingerprint(payload)}`}
               proposal={proposal}
               payload={payload}
               onDecided={refetch}
@@ -568,7 +612,14 @@ function useSource(scope: ApprovalScope): ApprovalSource {
               badge: "Not a known contact",
             }),
         individualReview: (
-          <div className="space-y-1.5">
+          // A re-proposal under the same id is a DIFFERENT draft, and the KEY IS
+          // THE REMOUNT — on the node the host actually renders. Keyed only on
+          // the inner card, the wrapper stayed put and nothing observable
+          // changed identity (Bugbot MEDIUM, frontend PR 228).
+          <div
+            key={`${proposal.assist.id}:${gmailPayloadFingerprint(payload)}`}
+            className="space-y-1.5"
+          >
             {payload.recipientMediumId ? null : (
               <p className="break-words text-[11px] text-warning">
                 This address is not a contact point we hold, so the unsubscribe

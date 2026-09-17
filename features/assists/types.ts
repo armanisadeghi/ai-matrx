@@ -17,7 +17,10 @@ import {
   isSourceFeature,
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
-import type { AutonomyMode as ApprovalAutonomyMode } from "@/features/approvals/types";
+import {
+  AUTONOMY_MODES,
+  type AutonomyMode as ApprovalAutonomyMode,
+} from "@/features/approvals/types";
 import {
   toKeywordMeaningProposal,
   toKeywordMeaningProvenance,
@@ -553,7 +556,13 @@ function narrowEvidence(value: Json): AssistEvidence | null {
   };
 }
 
-function narrowAction(value: Json): AssistAction | null {
+/**
+ * Row `action` → the typed union, or null. EXPORTED because it is THE
+ * definition of "a row this client can act on": the approvals badge counts the
+ * rows the queue would show by running this over them, rather than counting in
+ * SQL and disagreeing with the screen (Bugbot HIGH, frontend PR 228).
+ */
+export function narrowAction(value: Json): AssistAction | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const obj = value as Record<string, Json | undefined>;
   const kind = obj.kind;
@@ -647,6 +656,67 @@ function narrowAction(value: Json): AssistAction | null {
       provenance: toKeywordMeaningProvenance(obj.provenance),
       payloadHash:
         typeof obj.payloadHash === "string" ? obj.payloadHash : "",
+    };
+  }
+  if (kind === "approval_proposal") {
+    /**
+     * 🚨 EVERY ACTION KIND A PRODUCER WRITES HAS A BRANCH HERE, OR THE ROWS
+     * DO NOT EXIST.
+     *
+     * `toAssist` drops a row whose action will not narrow, so a missing branch
+     * is not a rendering gap — it is total silence: the queue reads 0 of the
+     * live proposals, a deep link reports "unconfirmed", and the header badge
+     * (counted in SQL) disagrees with the empty screen. That is exactly what
+     * happened to `approval_proposal` between the kind's addition to the union
+     * above and 2026-09-17 (Bugbot HIGH, frontend PR 228): the type existed,
+     * the producer wrote it (`aidream/services/google_workspace/approvals.py`),
+     * and nothing could read it back.
+     *
+     * The shape is the producer's, verbatim: `proposalKind`, `mode`, `payload`,
+     * `proposerLabel`, optional `proposerAgentId` / `proposerRunId`,
+     * `operatorUserId`. `payload` is passed through UNTOUCHED — its `__kind`
+     * marker is part of the data and the kind's own module narrows it (THE
+     * KIND-MARKER LAW).
+     */
+    const proposalKind = obj.proposalKind;
+    const mode = obj.mode;
+    if (typeof proposalKind !== "string" || proposalKind.length === 0) {
+      return null;
+    }
+    // A mode this build does not know is NOT coerced to a safe-looking one: the
+    // mode decides whether a person must click, so a guess is unacceptable.
+    if (
+      typeof mode !== "string" ||
+      !AUTONOMY_MODES.includes(mode as ApprovalAutonomyMode)
+    ) {
+      return null;
+    }
+    const blockedRecord =
+      obj.blocked && typeof obj.blocked === "object" && !Array.isArray(obj.blocked)
+        ? (obj.blocked as Record<string, Json | undefined>)
+        : null;
+    const blocked =
+      blockedRecord &&
+      typeof blockedRecord.reason === "string" &&
+      typeof blockedRecord.whoCan === "string"
+        ? { reason: blockedRecord.reason, whoCan: blockedRecord.whoCan }
+        : undefined;
+    return {
+      kind,
+      proposalKind,
+      mode: mode as ApprovalAutonomyMode,
+      payload: obj.payload ?? null,
+      proposerLabel:
+        typeof obj.proposerLabel === "string" ? obj.proposerLabel : undefined,
+      proposerAgentId:
+        typeof obj.proposerAgentId === "string"
+          ? obj.proposerAgentId
+          : undefined,
+      proposerRunId:
+        typeof obj.proposerRunId === "string" ? obj.proposerRunId : undefined,
+      operatorUserId:
+        typeof obj.operatorUserId === "string" ? obj.operatorUserId : undefined,
+      ...(blocked ? { blocked } : {}),
     };
   }
   if (kind === "surface_write" && typeof obj.target === "string") {

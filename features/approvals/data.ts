@@ -21,13 +21,19 @@
  * says "approved" for a change that did not happen.
  */
 
+import { readAllRows } from "@ai-matrx/data/db";
 import {
   decideAssist,
   emitAssist,
   getAssistById,
   queryAssists,
 } from "@/features/assists/service";
-import type { Assist, AssistAction } from "@/features/assists/types";
+import {
+  narrowAction,
+  type Assist,
+  type AssistAction,
+} from "@/features/assists/types";
+import { createClient } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { AutonomyMode } from "./types";
 
@@ -41,6 +47,27 @@ export const APPROVAL_SURFACE = "matrx-user/approval-queue";
 
 /** One page of proposals is bounded on purpose; the queue shows the total. */
 export const APPROVAL_PAGE_SIZE = 50;
+
+/**
+ * THE ASSIST ACTION KINDS THIS QUEUE'S REGISTERED KINDS READ.
+ *
+ * Every kind in `./registry.ts` reads rows of exactly one of these two shapes:
+ * the seven platform/Google kinds read `approval_proposal` (this module), and
+ * the three keyword kinds read `apply_keyword_meaning` (`./kinds/seo/*`, whose
+ * rows are keyed on the record rather than on this surface).
+ *
+ * It exists so a read BY ID can say "that id is not an approval-queue row at
+ * all" instead of reporting any pending assist of the viewer's as a proposal
+ * waiting beyond page one — which is what `?item=<a keyword-meaning chip's id>`
+ * used to be told (Bugbot MEDIUM, frontend PR 228). A kind added with a third
+ * action shape adds it here; the census guard in
+ * `__tests__/proposal-reads.test.ts` scans every module under `features/approvals`
+ * for `action.kind === "…"` comparisons and fails until it does.
+ */
+export const APPROVAL_ASSIST_ACTION_KINDS: readonly AssistAction["kind"][] = [
+  "approval_proposal",
+  "apply_keyword_meaning",
+];
 
 /**
  * The source key one kind's rows carry. It is what makes a per-kind read a
@@ -149,7 +176,12 @@ export async function listPendingProposals(
  * answer here, and the surface says so rather than inventing a verdict
  * (Bugbot MEDIUM #2, 2026-09-17).
  */
-export type ApprovalProposalStatus = "pending" | "decided" | "unknown";
+export type ApprovalProposalStatus =
+  | "pending"
+  | "decided"
+  /** The id names an assist, but not one any approval kind can show. */
+  | "not_a_proposal"
+  | "unknown";
 
 export async function readProposalStatus(
   userId: string | null | undefined,
@@ -159,6 +191,12 @@ export async function readProposalStatus(
   try {
     const assist = await getAssistById(userId, proposalId);
     if (!assist) return "unknown";
+    // An id that names one of this person's OTHER assists is not an approval
+    // item, and calling it one would send the reader hunting through a queue it
+    // was never in.
+    if (!APPROVAL_ASSIST_ACTION_KINDS.includes(assist.action.kind)) {
+      return "not_a_proposal";
+    }
     return assist.status === "pending" ? "pending" : "decided";
   } catch (error) {
     // Loud for developers, honest on screen: the caller reports "unconfirmed".
@@ -169,6 +207,50 @@ export async function readProposalStatus(
     );
     return "unknown";
   }
+}
+
+/**
+ * HOW MANY PROPOSALS ARE WAITING ON THIS PERSON — the shell badge's count.
+ *
+ * 🚨 IT RUNS THE SAME NARROWING THE QUEUE DOES. A head-only `count` in SQL
+ * counted every pending row on this surface, including rows whose `action` this
+ * build cannot read — so the badge could say "3 waiting" over a screen showing
+ * nothing, which is the badge lying about work nobody can see (Bugbot HIGH,
+ * frontend PR 228). It therefore reads `id, action` (two small columns, no
+ * payloads on the wire) through `readAllRows` — a count treated as complete is
+ * never a bare `.select()` — and counts the rows that narrow.
+ *
+ * A row that does NOT narrow is loud in the console rather than counted: the
+ * badge agrees with the screen, and the defect is a developer's to fix.
+ */
+export async function countPendingProposals(userId: string): Promise<number> {
+  const supabase = createClient();
+  const rows = await readAllRows<{ id: string; action: Json }>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("assists")
+        .select("id, action", { count: "exact" })
+        .eq("user_id", userId)
+        .eq("surface_name", APPROVAL_SURFACE)
+        .eq("status", "pending")
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "platform.assists pending approvals" },
+  );
+  let count = 0;
+  for (const row of rows) {
+    const action = narrowAction(row.action);
+    if (action && APPROVAL_ASSIST_ACTION_KINDS.includes(action.kind)) {
+      count += 1;
+      continue;
+    }
+    console.warn(
+      `[approvals] pending row ${row.id} is on the approval surface but its action does not narrow to a proposal this build can show — not counted`,
+    );
+  }
+  return count;
 }
 
 /**

@@ -15,6 +15,7 @@
  */
 
 import { CheckCircle2 } from "lucide-react";
+import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -39,10 +40,23 @@ export function ApprovalsWorkspace({
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   const [summary, setSummary] = useState<ApprovalQueueSummary | null>(null);
-  // `null` = not answered yet; the rest are the queue's evidence-backed
-  // verdicts on the row a link named.
-  const [focusResolution, setFocusResolution] =
-    useState<ApprovalFocusResolution | null>(null);
+  /**
+   * The queue's evidence-backed verdict AND THE ID IT IS ABOUT. `null` = not
+   * answered yet.
+   *
+   * 🚨 The pair is stored together and rendered only when the id still matches
+   * `focusItemId`. Keeping the verdict alone meant a new `?item=` inherited the
+   * previous row's banner — "already decided" over a row that is waiting —
+   * until the next read settled (Bugbot MEDIUM, frontend PR 228).
+   */
+  const [focus, setFocus] = useState<{
+    itemId: string;
+    resolution: ApprovalFocusResolution;
+  } | null>(null);
+  const focusResolution =
+    focus && focusItemId && focus.itemId === focusItemId
+      ? focus.resolution
+      : null;
 
   if (!userId) {
     return (
@@ -63,9 +77,11 @@ export function ApprovalsWorkspace({
       ? "The item that link points to has already been decided — it was approved or rejected. Everything still waiting on you is above."
       : focusResolution === "pending_elsewhere"
         ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
-        : focusResolution === "unconfirmed"
-          ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
-          : null;
+        : focusResolution === "not_an_approval"
+          ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
+          : focusResolution === "unconfirmed"
+            ? "The item that link points to is not in the list above, and we could not confirm what became of it. Everything still waiting on you is above."
+            : null;
 
   const settled = summary !== null && !summary.loading;
   const empty = settled && summary.count === 0 && summary.errors === 0;
@@ -81,7 +97,9 @@ export function ApprovalsWorkspace({
         hideWhenEmpty={false}
         onSummary={(_scopeKey, next) => setSummary(next)}
         focusItemId={focusItemId}
-        onFocusResolved={setFocusResolution}
+        onFocusResolved={(itemId, resolution) =>
+          setFocus({ itemId, resolution })
+        }
       />
       {/* A link that points at a row nobody can find gets an ANSWER, not a
           silent list the person has to search (THE NO-SILENT-FAILURE LAW) —
@@ -91,6 +109,21 @@ export function ApprovalsWorkspace({
       {focusItemId && focusMessage ? (
         <p className="mt-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground">
           {focusMessage}
+          {/* THE DOOR LAW: the item exists, so the sentence that says it is not
+              an approval also says where it IS. */}
+          {focusResolution === "not_an_approval" ? (
+            <>
+              {" "}
+              <AppLink
+                /* `/assists` reads no `?item=` today — linking one would be a
+                   deep link that silently lands nowhere in particular. */
+                href="/assists"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Open it with everything else the system flagged for you
+              </AppLink>
+            </>
+          ) : null}
         </p>
       ) : null}
       {empty ? (

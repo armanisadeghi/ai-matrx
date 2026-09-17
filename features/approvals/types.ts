@@ -238,6 +238,13 @@ export type ApprovalFocusResolution =
   | "shown"
   | "decided"
   | "pending_elsewhere"
+  /**
+   * The id names one of this person's assists, but not an approval item — a
+   * keyword chip, a recovery notice, anything else on the ledger. Saying
+   * "waiting beyond page one" about it sent the reader hunting through a queue
+   * it was never in (Bugbot MEDIUM, frontend PR 228).
+   */
+  | "not_an_approval"
   | "unconfirmed";
 
 /**

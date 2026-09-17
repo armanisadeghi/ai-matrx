@@ -226,11 +226,21 @@ export function ApprovalQueue({
   focusItemId?: string | null;
   /**
    * Told what became of that row once it is known — shown, decided, still
-   * pending but outside this page, or unconfirmed. A host that asked for one
-   * must SAY which of those it is rather than showing a list and letting the
-   * person hunt, and must never call a row decided on its absence alone.
+   * pending but outside this page, not an approval item at all, or unconfirmed.
+   * A host that asked for one must SAY which of those it is rather than showing
+   * a list and letting the person hunt, and must never call a row decided on
+   * its absence alone.
+   *
+   * 🚨 IT REPORTS THE ID IT IS ANSWERING ABOUT. A verdict with no id attached
+   * outlives the question: `?item=` changed, the next read took a moment, and
+   * the banner kept labelling the NEW row with the previous row's verdict
+   * (Bugbot MEDIUM, frontend PR 228). The host renders a verdict only while its
+   * id is still the one it is asking about.
    */
-  onFocusResolved?: (resolution: ApprovalFocusResolution) => void;
+  onFocusResolved?: (
+    itemId: string,
+    resolution: ApprovalFocusResolution,
+  ) => void;
   className?: string;
 }) {
   const all = registry ?? APPROVAL_KINDS;
@@ -425,7 +435,7 @@ export function ApprovalQueue({
   useEffect(() => {
     if (!focusItemId) return;
     if (focusedKey) {
-      onFocusResolved?.("shown");
+      onFocusResolved?.(focusItemId, "shown");
       return;
     }
     // Only once the read has settled is "not here" a question worth asking.
@@ -439,8 +449,10 @@ export function ApprovalQueue({
           ? "pending_elsewhere"
           : status === "decided"
             ? "decided"
-            : "unconfirmed";
-      onFocusResolved?.(resolution);
+            : status === "not_a_proposal"
+              ? "not_an_approval"
+              : "unconfirmed";
+      onFocusResolved?.(focusItemId, resolution);
     })();
     return () => {
       cancelled = true;
