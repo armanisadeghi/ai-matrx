@@ -65938,6 +65938,17 @@ export type Database = {
         Args: { p_src: string }
         Returns: boolean
       }
+      definer_two_id_population: {
+        Args: never
+        Returns: {
+          function_name: string
+          id_arguments: string[]
+          object_ref: string
+          schema_name: string
+          unchecked_id_arguments: string[]
+          unruled_id_arguments: string[]
+        }[]
+      }
       demote_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: Json
