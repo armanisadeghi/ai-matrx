@@ -66,6 +66,7 @@ import { MenuPresenceProvider } from "./menu-presence";
 
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
+import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -218,6 +219,8 @@ export function ContextMenuV3({
   // during render to build the effective scope (a ref read in render is banned).
   const [resolvedContext, setResolvedContext] =
     useState<ResolvedContextMenuContext | null>(null);
+  const [resolvedExtraSections, setResolvedExtraSections] =
+    useState<typeof extraSections>(undefined);
   /**
    * The entity read straight off the right-clicked element's `data-entity-*`
    * attributes (Phase 0, 2026-08-25). State for the same reason as
@@ -408,9 +411,11 @@ export function ContextMenuV3({
   // right-click path (mousedown then contextmenu) is deliberate — re-resolving
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
+    const rowMenu = resolveTableRowMenuDescriptor(target);
     setResolvedContext(
-      resolveContextOnOpen ? resolveContextOnOpen(target) : null,
+      rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null),
     );
+    setResolvedExtraSections(rowMenu?.extraSections);
     setSniffedEntity(sniffEntityFromDom(target));
   };
 
@@ -623,7 +628,11 @@ export function ContextMenuV3({
     sourceFeature,
     surfaceName,
     menuVersion,
-    getApplicationScope,
+    // A row descriptor owns this invocation's values. Preserve page-level live
+    // values for empty space, but never let them overwrite the clicked row.
+    getApplicationScope: resolvedContext
+      ? () => ({ ...(getApplicationScope?.() ?? {}), ...getEffectiveContextData() })
+      : getApplicationScope,
     contextData: getEffectiveContextData(),
     contentSource,
     entity: effectiveEntity,
@@ -635,7 +644,7 @@ export function ContextMenuV3({
     placementMode,
     scope,
     scopeId,
-    extraSections,
+    extraSections: resolvedExtraSections ?? extraSections,
     menuLayout,
     menuDensity,
     isEditable,

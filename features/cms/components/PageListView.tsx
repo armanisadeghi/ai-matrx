@@ -20,6 +20,8 @@ import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/Su
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+import { buildDefaultTableRowMenuDescriptor, createTableRowMenuDescriptor } from "@/features/context-menu-v3/table-row-context-registry";
 import { buildCmsPageMenu } from "@/features/cms/actions/buildCmsPageMenu";
 import {
   CmsPageAiActionDialog,
@@ -323,6 +325,19 @@ export default function PageListView({
     );
   }
 
+  const pageMenu = (page: ClientPageSummary) => buildCmsPageMenu({
+    page,
+    editorHref: cmsPageEditorHref(site.id, page.id),
+    previewHref: clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true, previewToken: sitePreviewToken(site) }),
+    liveHref: page.is_published ? clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: activeSiteDomain(site) }) : null,
+    planHref: site.web_site_id && page.plan_node_id ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}` : null,
+    measureHref: page.web_page_id ? cmsPageEditorHref(site.id, page.id, "measure") : null,
+    onAi: () => setAiTarget({ page, intent: "build-edit" }),
+    onReview: () => setAiTarget({ page, intent: "review" }),
+    onPublish: () => setPublishTarget(page),
+    onDelete: () => setDeleteTarget(page),
+  });
+
   return (
     <div data-matrx-table-page className="py-4 space-y-4">
       <MatrxDataTable<ClientPageSummary>
@@ -332,6 +347,18 @@ export default function PageListView({
         getRowId={(page) => page.id}
         defaultSort={{ id: "sort_order", direction: "asc" }}
         rowCopyPlacement="menu"
+        contextMenu={{
+          resolveRowContext: (page, controls) => {
+            const base = buildDefaultTableRowMenuDescriptor(page, controls);
+            return createTableRowMenuDescriptor({
+              context: {
+                ...base.context,
+                ...(page.web_page_id ? { __entity: { type: "web_page" as const, id: page.web_page_id, title: page.title, resourceType: "web_page" as const } } : {}),
+              },
+              extraSections: [...base.extraSections, ...itemMenuConfigToExtraSections(pageMenu(page))],
+            });
+          },
+        }}
         detail={{ enabled: false }}
         onRowOpen={(page) => onOpenPage(page.id)}
         isLoading={isLoading && pages.length === 0}
@@ -373,52 +400,11 @@ export default function PageListView({
             : row
         }
         rowActions={(page) => {
-          const editorHref = cmsPageEditorHref(site.id, page.id);
-          const previewHref = clientPageUrl({
-            siteSlug: site.slug,
-            slug: page.slug,
-            route: page.route,
-            category: page.category,
-            preview: true,
-            previewToken: sitePreviewToken(site),
-          });
-          const liveHref = page.is_published
-            ? clientPageUrl({
-                siteSlug: site.slug,
-                slug: page.slug,
-                route: page.route,
-                category: page.category,
-                domain: activeSiteDomain(site),
-              })
-            : null;
-          const planHref =
-            site.web_site_id && page.plan_node_id
-              ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}`
-              : null;
-          // The page's AFTER: measured pages open the editor's Measure
-          // tab (the join is web_page_id, already on the summary row).
-          const measureHref = page.web_page_id
-            ? cmsPageEditorHref(site.id, page.id, "measure")
-            : null;
-
           return (
             <ItemMenu
               align="end"
               contentMinWidth="15rem"
-              config={() =>
-                buildCmsPageMenu({
-                  page,
-                  editorHref,
-                  previewHref,
-                  liveHref,
-                  planHref,
-                  measureHref,
-                  onAi: () => setAiTarget({ page, intent: "build-edit" }),
-                  onReview: () => setAiTarget({ page, intent: "review" }),
-                  onPublish: () => setPublishTarget(page),
-                  onDelete: () => setDeleteTarget(page),
-                })
-              }
+              config={() => pageMenu(page)}
             >
               <MoreHorizontalTapButton
                 variant="transparent"

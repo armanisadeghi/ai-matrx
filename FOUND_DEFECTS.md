@@ -15,7 +15,43 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D329 — the surface-manifest registry imports a module that does not exist (2026-09-17)
+### D328 — `str(ctx.organization_id or …)` turns a missing org into the literal `"None"` at 13 aidream call sites (2026-09-17)
+
+**Status:** open · **Priority:** P3 (latent — near-unreachable today) · **Repo:** aidream (filed here because it was found during this repo's cold-walk-8 round; aidream should take it as an `AD<n>` remainder)
+
+Every distillation lane calls `claim_sources(organization_id=str(ctx.organization_id or rulebook.organization_id))`.
+When both are `None`, `str()` produces the four-character string `"None"`, which PASSES
+`raw_material.keep`'s truthy guard (`aidream/services/distillation/raw_material.py` ~L236-241) and
+then fails on the uuid column — inside a bare `except Exception` that swallows it. The lane reports
+success and the Source is silently never kept.
+
+The 13 sites, all `aidream/aidream/services/distillation/`: `ingest.py:582`, `chat_import.py:347`,
+`sort_ingest.py:917`, `markup_ingest.py:359`, `timeline_ingest.py:438`, `teach_back.py:702`,
+`probe.py:389`, `triad_ingest.py:564`, `file_ingest.py:146`, `prediction_ingest.py:472`,
+`drip_ingest.py:325`, `meeting_ingest.py:681`, `inbox_ingest.py:961`. The correct shape already
+exists one file over — `inbox_ingest.py:623` uses `... or "") or None`.
+
+**Why it is only P3:** `rulebook.organization_id` is NOT NULL, so the `None`/`None` path is
+near-unreachable in practice. It was investigated as the cause of zero `masterwork_source` rows on
+2026-09-17 and ruled out — the likelier cause there was that `raw_material.py` was not yet live.
+
+**Fix:** the `or "") or None` shape at all 13, plus a guard that fails on a stringified `None`
+reaching `keep`. Not done in this round only because a concurrent agent owned `*_ingest.py`
+(the `material=` raw-material capture) and the brief forbade fighting its edits.
+
+### D329 — `policy-rule-surface.test.tsx` fails on an incomplete `next/navigation` mock (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+Both tests in `features/masterwork/__tests__/policy-rule-surface.test.tsx` fail with
+`TypeError: (0 , navigation_1.useParams) is not a function`. `RulePassageLink`
+(`features/masterwork/kept-sources/…`, ~L30) calls `useParams()`, and this test's `next/navigation`
+mock does not provide it. Pre-existing and unrelated to the cold-walk-8 round — confirmed by cause,
+not by assumption (the test imports nothing that round touched). **Fix:** add `useParams` to that
+test's navigation mock, returning the rulebook id the card expects.
+
+
+### D331 — the surface-manifest registry imports a module that does not exist (2026-09-17)
 
 **Status:** open · **Priority:** P2
 
@@ -37,7 +73,7 @@ an unreferenced-looking manifest is unfinished work, not dead work
 (`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
 says someone meant to write it.
 
-### D328 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
+### D330 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
 
 **Status:** open · **Priority:** P3
 

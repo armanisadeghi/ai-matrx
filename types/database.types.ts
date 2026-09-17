@@ -49195,58 +49195,111 @@ export type Database = {
         Args: { p_employment_id: string; p_manager_employment_id: string }
         Returns: boolean
       }
-      _leave_policy_at: {
-        Args: { p_leave_policy_id: string }
-        Returns: {
-          accrual_method: string
-          accrual_per_units: number | null
-          accrual_rate: number | null
-          accrual_starts: string
-          accrual_unit: string | null
-          annual_accrual_cap: number | null
-          balance_cap: number | null
-          blackout_rules: Json
-          carryover_allowed: boolean
-          carryover_cap: number | null
-          carryover_expires_after_days: number | null
-          category_id: string | null
-          created_at: string
-          created_by: string | null
-          custom: Json
-          deleted_at: string | null
-          documentation_required_after_days: number | null
-          earning_code_id: string | null
-          id: string
-          increment_minutes: number
-          is_active: boolean
-          leave_kind: string
-          mandated_uses: Json
-          metadata: Json
-          name: string
-          negative_balance_allowed: boolean
-          negative_balance_floor: number | null
-          organization_id: string
-          payout_on_termination: string
-          reinstate_on_rehire_within_days: number | null
-          requires_approval: boolean
-          schedule_class_scope: string[]
-          statutory_basis_rule_class: string | null
-          statutory_jurisdiction_id: string | null
-          updated_at: string
-          updated_by: string | null
-          usable_after_days: number
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-          waiting_period_days: number
-          worker_class_scope: string[]
-        }
-        SetofOptions: {
-          from: "*"
-          to: "leave_policy"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      _leave_policy_at:
+        | {
+            Args: { p_leave_policy_id: string }
+            Returns: {
+              accrual_method: string
+              accrual_per_units: number | null
+              accrual_rate: number | null
+              accrual_starts: string
+              accrual_unit: string | null
+              annual_accrual_cap: number | null
+              balance_cap: number | null
+              blackout_rules: Json
+              carryover_allowed: boolean
+              carryover_cap: number | null
+              carryover_expires_after_days: number | null
+              category_id: string | null
+              created_at: string
+              created_by: string | null
+              custom: Json
+              deleted_at: string | null
+              documentation_required_after_days: number | null
+              earning_code_id: string | null
+              id: string
+              increment_minutes: number
+              is_active: boolean
+              leave_kind: string
+              mandated_uses: Json
+              metadata: Json
+              name: string
+              negative_balance_allowed: boolean
+              negative_balance_floor: number | null
+              organization_id: string
+              payout_on_termination: string
+              reinstate_on_rehire_within_days: number | null
+              requires_approval: boolean
+              schedule_class_scope: string[]
+              statutory_basis_rule_class: string | null
+              statutory_jurisdiction_id: string | null
+              updated_at: string
+              updated_by: string | null
+              usable_after_days: number
+              version: number
+              visibility: Database["platform"]["Enums"]["visibility"]
+              waiting_period_days: number
+              worker_class_scope: string[]
+            }
+            SetofOptions: {
+              from: "*"
+              to: "leave_policy"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { p_employment_id: string; p_leave_policy_id: string }
+            Returns: {
+              accrual_method: string
+              accrual_per_units: number | null
+              accrual_rate: number | null
+              accrual_starts: string
+              accrual_unit: string | null
+              annual_accrual_cap: number | null
+              balance_cap: number | null
+              blackout_rules: Json
+              carryover_allowed: boolean
+              carryover_cap: number | null
+              carryover_expires_after_days: number | null
+              category_id: string | null
+              created_at: string
+              created_by: string | null
+              custom: Json
+              deleted_at: string | null
+              documentation_required_after_days: number | null
+              earning_code_id: string | null
+              id: string
+              increment_minutes: number
+              is_active: boolean
+              leave_kind: string
+              mandated_uses: Json
+              metadata: Json
+              name: string
+              negative_balance_allowed: boolean
+              negative_balance_floor: number | null
+              organization_id: string
+              payout_on_termination: string
+              reinstate_on_rehire_within_days: number | null
+              requires_approval: boolean
+              schedule_class_scope: string[]
+              statutory_basis_rule_class: string | null
+              statutory_jurisdiction_id: string | null
+              updated_at: string
+              updated_by: string | null
+              usable_after_days: number
+              version: number
+              visibility: Database["platform"]["Enums"]["visibility"]
+              waiting_period_days: number
+              worker_class_scope: string[]
+            }
+            SetofOptions: {
+              from: "*"
+              to: "leave_policy"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       _leave_policy_constraint_violation: {
         Args: { p_constraint: string; p_payload: Json }
         Returns: Json

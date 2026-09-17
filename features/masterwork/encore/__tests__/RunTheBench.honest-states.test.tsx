@@ -291,7 +291,12 @@ describe("the Bench door never lies about what it can do", () => {
       (host.querySelector("button") as HTMLButtonElement).click();
     });
     runStub.running = true;
+    // The real handle sets BOTH in one update (`lib/durable-run/useDurableRun.ts`:
+    // `stage: line, stages: [...prev.stages, line]`), so a stub that moves only
+    // `stage` is a mock that cannot happen. The assertion below is unchanged —
+    // the promise under test is still "the line the server sent is on screen".
     runStub.stage = "Judging arm A2 against the rules.";
+    runStub.stages = [...runStub.stages, "Judging arm A2 against the rules."];
     act(() => {
       runStub.onDomainEvent?.("masterwork_bench_arm", {
         type: "masterwork_bench_arm",

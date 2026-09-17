@@ -7,7 +7,7 @@ export default function ScopesIndexPage() {
   return (
     <>
       <ScopesHubHeader />
-      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)] scroll-pt-[var(--shell-header-h)]">
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div data-matrx-table-page className="py-4">
           <ScopesHub />
         </div>
