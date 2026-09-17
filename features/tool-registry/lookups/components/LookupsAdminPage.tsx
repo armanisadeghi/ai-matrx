@@ -595,40 +595,6 @@ function UiSurfaceCrud() {
             surface scale our system needs.
           </span>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-medium">UI Surfaces</h2>
-            <Badge variant="outline" className="text-[10px]">
-              {visible.length}
-            </Badge>
-            {loading && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={filterClient} onValueChange={setFilterClient}>
-              <SelectTrigger className="h-8 w-[200px] text-xs">
-                <SelectValue placeholder="Filter by client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All clients</SelectItem>
-                {clients.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              onClick={() => setCreating(true)}
-              className="gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New
-            </Button>
-          </div>
-        </div>
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5" />
@@ -643,11 +609,26 @@ function UiSurfaceCrud() {
           isLoading={loading}
           rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
           toolbar={{
+            title: "UI Surfaces",
             search: true,
             searchPlaceholder: "Search UI surfaces…",
             refresh: { onRefresh: load },
             add: { onAdd: () => setCreating(true) },
-            leading: <Badge variant="outline">{visible.length}</Badge>,
+            leading: (
+              <Select value={filterClient} onValueChange={setFilterClient}>
+                <SelectTrigger className="h-8 w-[200px] text-xs">
+                  <SelectValue placeholder="Filter by client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All clients</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.name} value={client.name}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ),
           }}
           rowActions={(row) => (
             <PencilTapButton
