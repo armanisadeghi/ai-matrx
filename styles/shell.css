@@ -1558,6 +1558,15 @@ button.shell-nav-flyout-item {
   scroll-padding-bottom: var(--shell-fixed-alert-clearance);
 }
 
+/* A full-page route may own vertical scrolling instead of .shell-main. The
+   shell still owns the clearance for document-sticky content inside it: table
+   headers and anchor targets must settle below the entire header scrim. */
+.shell-root:not([data-pathname^="/administration"]) .shell-main,
+.shell-root:not([data-pathname^="/administration"])
+  .shell-main > :is(.overflow-y-auto, .overflow-auto) {
+  scroll-padding-top: var(--shell-header-clearance);
+}
+
 /* Padding on an overflow owner is absorbed by border-box sizing when a route
    child is min-height:100%, so it does not reliably create scroll range. A
    real final flow item does: even full-viewport route children can scroll
