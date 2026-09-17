@@ -441,6 +441,30 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (the registry learns about doors) — **A LANE REGISTRY CANNOT SEE A
+  DOOR OUT OF ITSELF.** Cold walk 8 typed several paragraphs of real expert
+  material into the Rulebook's "New document" resource and found a blank page
+  after a reload; the document row it created has ZERO rows in
+  `udt_document_snapshots`, so not one save was ever attempted. The lane
+  registry (`sitting/lanePersistence.ts`) could never have caught it — that
+  door leaves masterwork entirely for the platform document editor at
+  `/documents/<id>`. So there is now a second registry keyed by FILE rather
+  than by lane: `sitting/textEntrySurfaces.ts`, whose guard
+  (`sitting/__tests__/every-text-entry-surface-keeps-its-work.test.ts`) walks
+  `features/masterwork/**` itself and fails on any `.tsx` that renders a text
+  field and has no answer — including a `door` answer, which must name the
+  module it opens and is checked against THAT module's source. The census it
+  forced found four more surfaces an Expert pastes real work into that kept
+  nothing at all: the Audition dialog, Compare Two, Run the Bench (three long
+  fields retyped immediately before a run that spends real money across six
+  arms) and the Build window. The document editor itself
+  (`features/data-tables/components/DocumentEditor.tsx`) now flushes its 2.5s
+  autosave debounce on `pagehide`/`visibilitychange` and on unmount, warns
+  before an unload that would outrun the flush, and — where it used to return
+  silently twice when the Univer facade was gone, swallowing every save while
+  the page still said "Editing" and took keystrokes — says so out loud with the
+  only remedy that saves the words.
+
 - 2026-09-17 (doors to Libraries) — **A WHOLE YOUTUBE CHANNEL IS NOW REACHABLE
   FROM MASTERWORK.** The Media Source Catalog (`/libraries`) catalogues a whole
   channel/playlist into a Library of Sources, and Masterwork had no door to it:

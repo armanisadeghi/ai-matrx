@@ -273,7 +273,22 @@ export default function DocumentEditor({
 
     return () => {
       cancelled = true;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      // LEAVING THE PAGE IS NOT A REASON TO LOSE THE LAST SENTENCE. A
+      // client-side route change (clicking Back) fires no `pagehide`, so the
+      // 2.5s debounce window's keystrokes used to die here. `performSave`
+      // reads the facade and takes the snapshot synchronously before its
+      // first await, so firing it BEFORE the teardown below captures the work
+      // even though the write itself lands after this component is gone.
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        if (
+          editableRef.current &&
+          !(collabRef.current && !collabIsHostRef.current)
+        ) {
+          void performSave("autosave");
+        }
+      }
       collabSessionRef.current?.stop();
       collabSessionRef.current = null;
       const univer = univerRef.current;
@@ -377,14 +392,40 @@ export default function DocumentEditor({
     await session.start();
   }, [documentId]);
 
+  /**
+   * NOTHING FAILS SILENTLY. Both of these used to be a bare `return`, so an
+   * editor whose Univer facade had gone away swallowed every save — autosave
+   * AND the toolbar button — while the page still said "Editing" and took
+   * keystrokes. Cold walk 8 (2026-09-17) reported typing several paragraphs
+   * into a new document and finding it blank after a reload, and the document
+   * it wrote has ZERO rows in `udt_document_snapshots`: not one save was ever
+   * attempted. A silent early return is indistinguishable from that, so it is
+   * now a loud failure with the only remedy that actually saves the person's
+   * words — copy them out of the page before reloading.
+   */
+  const announceUnsaveable = useCallback((why: string) => {
+    setSaveStatus("error");
+    toast({
+      title: "This document cannot be saved right now",
+      description: `${why} Your text is still on screen — copy it somewhere safe before you reload or leave, then reload this page to reconnect the editor.`,
+      variant: "destructive",
+    });
+  }, []);
+
   const performSave = useCallback(
     async (origin: "autosave" | "manual" = "autosave") => {
-      if (!apiRef.current) return;
+      if (!apiRef.current) {
+        announceUnsaveable("The editor lost its connection to the document.");
+        return;
+      }
       const fb = apiRef.current as unknown as {
         getActiveDocument?: () => { getSnapshot(): IDocumentData } | null;
       };
       const doc = fb.getActiveDocument?.();
-      if (!doc) return;
+      if (!doc) {
+        announceUnsaveable("The editor could not read the open document.");
+        return;
+      }
       const snapshot = doc.getSnapshot();
       setSaveStatus("saving");
 
@@ -416,6 +457,53 @@ export default function DocumentEditor({
     },
     [documentId],
   );
+
+  /**
+   * TYPED WORK NEVER LEAVES THE PAGE UNWRITTEN.
+   *
+   * Autosave is debounced 2.5s after the last edit, so every reload, tab close
+   * or navigation inside that window used to drop whatever had just been
+   * typed, silently and with nothing on screen to warn anybody. Cold walk 8
+   * reported exactly that outcome on a brand-new document.
+   *
+   * Two mechanisms, because neither is sufficient alone:
+   *   - `pagehide` / `visibilitychange` flush the pending debounce immediately,
+   *     which is what actually saves the words in the overwhelmingly common
+   *     case (a reload, a tab switch, a route change).
+   *   - `beforeunload` warns when work is still unwritten after that, because
+   *     a flush is a request, not a guarantee — an in-flight save can lose the
+   *     race with the unload, and the person gets to decide rather than
+   *     discovering the loss afterwards.
+   */
+  useEffect(() => {
+    const flush = () => {
+      if (!editableRef.current) return;
+      if (saveStatus !== "dirty") return;
+      if (collabRef.current && !collabIsHostRef.current) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      void performSave("autosave");
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!editableRef.current) return;
+      if (saveStatus !== "dirty" && saveStatus !== "saving") return;
+      flush();
+      event.preventDefault();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [saveStatus, performSave]);
 
   const handleSaveNow = useCallback(() => {
     if (saveTimerRef.current) {
@@ -458,9 +546,11 @@ export default function DocumentEditor({
             />
           )}
           {bootState === "ready" && saveStatus !== "idle" && (
-            <div
-              className={`hidden sm:flex items-center gap-1 border border-green-500 ${statusPill.className}`}
-            >
+            /* Save state is the one thing on this bar a person must be able
+               to trust, so it is not hidden on a phone and it no longer wears
+               a hardcoded green border while saying "Unsaved changes" in
+               amber. */
+            <div className={`flex items-center gap-1 ${statusPill.className}`}>
               {statusPill.icon}
               <span>{statusPill.text}</span>
             </div>
