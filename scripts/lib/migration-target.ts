@@ -975,6 +975,21 @@ export function nonAdditiveReasons(
  * STATIC check: the feature and the key must both appear in the body that replaces a
  * live definition or creates a policy. It cannot prove the read is on the right branch;
  * it can prove the body never mentions the thing that is supposed to hold it OFF.
+ *
+ * 🚨 A `CREATE OR REPLACE FUNCTION | PROCEDURE | VIEW` IN SCHEMA `custom` IS EXEMPT, exactly
+ * as `triggerOnLiveTableUnguardedBy` already exempts a trigger there, and for the same
+ * stated reason: the whole schema is this campaign's own new namespace —
+ * revoked from PUBLIC, `anon`, `authenticated` and `service_role`, absent from
+ * `pgrst.db_schemas`, absent from the ORM's `generate:` blocks — so nothing reads it until
+ * the switch and replacing a body there cannot change a live path. Without this, a wave-1
+ * lane extending an EARLIER WAVE-1 LANE's function (`W1-VAL` extending `W1-FIELD`'s
+ * `custom.record_values` so it does not return the new reserved keys as if they were the
+ * record's own values) is refused unless it writes a knob read into a pure projection
+ * function that has no business reading one — which buys nothing and teaches the next
+ * author that the guard line is a formality to be satisfied with a mention. The defect
+ * this check closes is a replacement of a body a live path executes; in `custom` there is
+ * no live path to execute one. An UNQUALIFIED name is treated as OUTSIDE `custom`, because
+ * `search_path` decides it at execution time and nothing static can prove where it lands.
  */
 export function guardUnreadBy(
   guard: { feature: string; key: string } | null,
@@ -982,9 +997,11 @@ export function guardUnreadBy(
 ): string | null {
   if (!guard) return null;
   const body = strippedSql.toLowerCase();
-  const gates = topLevelStatements(strippedSql).filter((s) =>
-    /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
-  );
+  const gates = topLevelStatements(strippedSql)
+    .filter((s) =>
+      /^create\s+or\s+replace\s+(?:function|procedure|view|trigger)\b|^create\s+policy\b/i.test(s),
+    )
+    .filter((s) => replacedObjectSchema(s) !== "custom");
   if (gates.length === 0) return null;
   if (body.includes(guard.feature.toLowerCase()) && body.includes(guard.key.toLowerCase())) return null;
   return (
@@ -994,6 +1011,28 @@ export function guardUnreadBy(
   );
 }
 
+
+/**
+ * The schema a `CREATE OR REPLACE FUNCTION | PROCEDURE | VIEW` REPLACES A BODY IN, or null
+ * for every other shape and for an unqualified name (which `search_path` settles at
+ * execution time, so nothing static can prove where it lands).
+ *
+ * 🚨 DELIBERATELY NOT triggers and NOT policies, although both are in `guardUnreadBy`'s
+ * gate set. This function exists to answer one question — "could this statement replace a
+ * body a live path already executes?" — and only a function, procedure or view body can.
+ * A `CREATE POLICY` decides row access the moment the switch flips, and
+ * `migrations/judgment-corpus/a6-13-guard-unread-by-policy.sql` already fixes the verdict
+ * for one on a `custom` table at `refuse:guard-unread`; a `CREATE OR REPLACE TRIGGER` binds
+ * behaviour rather than replacing a body. Neither is narrowed here, so no existing verdict
+ * moves.
+ */
+export function replacedObjectSchema(stmt: string): string | null {
+  const one = stmt.replace(/\s+/g, " ").trim();
+  const own = /^create\s+or\s+replace\s+(?:function|procedure|view)\s+([a-z0-9_."]+)/i.exec(one);
+  if (!own) return null;
+  const bare = own[1]!.replace(/"/g, "").toLowerCase();
+  return bare.includes(".") ? bare.split(".")[0]! : null;
+}
 
 /**
  * A NEW TRIGGER ON A LIVE TABLE MUST NAME ITS GUARD (ATTACK-7 finding 3, first half).
