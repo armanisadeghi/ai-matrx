@@ -40,6 +40,10 @@ import type {
   ConnectorCapabilityRollout,
 } from "./health";
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
+import {
+  googleActivityByProduct,
+  parseGoogleCapabilityHealth,
+} from "./google-capability-health";
 
 /**
  * GOOGLE'S ADMISSION CODES, IN PLAIN ENGLISH — and the codes are the SERVER's,
@@ -101,9 +105,15 @@ export function admissionLanguage(
   );
 }
 
-/** `users.integration_connections` row → the generic account shape. */
+/**
+ * `users.integration_connections` row → the generic account shape, INCLUDING
+ * the per-product call record the hub writes to `capability_health`. The
+ * capability keys are folded into product keys here, so nothing downstream sees
+ * a Google key (`google-capability-health.ts` does the folding).
+ */
 export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
   const diagnosis = diagnoseGoogleConnection(row);
+  const recorded = parseGoogleCapabilityHealth(row.capability_health);
   return {
     id: row.id,
     label: row.account_email || row.account_name || "Google account",
@@ -117,6 +127,7 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     statusRemedy: diagnosis.remedy,
     lastVerifiedAt: row.last_verified_at,
     lastError: row.last_error,
+    activity: googleActivityByProduct(GOOGLE_CONNECTOR_PROVIDER, recorded),
   };
 }
 

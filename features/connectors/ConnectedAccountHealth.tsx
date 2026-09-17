@@ -52,6 +52,7 @@ const STATE_STYLE: Record<
     icon: AlertTriangle,
   },
   not_connected: { chip: "bg-muted text-muted-foreground", icon: null },
+  refused: { chip: "bg-warning/15 text-warning", icon: AlertTriangle },
   pending_rollout: { chip: "bg-muted text-muted-foreground", icon: Clock },
 };
 
@@ -206,6 +207,14 @@ export function ConnectedAccountHealth({
                       {row.remedy}
                     </p>
                   ) : null}
+                  {/* A refusal that clears by itself gets its sentence and NO
+                      button — pressing something that cannot help is worse than
+                      waiting, and the row must not pretend to be broken. */}
+                  {row.activityNote ? (
+                    <p className="mt-0.5 text-xs text-warning">
+                      {row.activityNote}
+                    </p>
+                  ) : null}
 
                   <ProductPermissionsDisclosure
                     providerName={provider.name}
@@ -216,10 +225,21 @@ export function ConnectedAccountHealth({
                       phone a hover-only explanation is no explanation. */}
                   {row.actionLabel ? (
                     <p className="text-[11px] text-muted-foreground">
-                      {row.actionLabel} asks {provider.name} for only what is
-                      missing: {row.missingScopes.length} permission
-                      {row.missingScopes.length === 1 ? "" : "s"}. Everything you
-                      already granted, and every file you picked, stays.
+                      {row.missingScopes.length > 0 ? (
+                        <>
+                          {row.actionLabel} asks {provider.name} for only what is
+                          missing: {row.missingScopes.length} permission
+                          {row.missingScopes.length === 1 ? "" : "s"}. Everything
+                          you already granted, and every file you picked, stays.
+                        </>
+                      ) : (
+                        <>
+                          {row.actionLabel} asks {provider.name} to renew this
+                          account&apos;s permission for {row.product.name}. No
+                          new permission is requested, and everything you already
+                          granted — every file you picked included — stays.
+                        </>
+                      )}
                     </p>
                   ) : null}
                 </div>

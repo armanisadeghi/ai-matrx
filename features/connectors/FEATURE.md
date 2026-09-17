@@ -26,8 +26,9 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **The connector primitive** (generic; the provider is a config, never a component)
 
 - `features/connectors/provider-config.ts` — `ConnectorProviderConfig` + `GOOGLE_CONNECTOR_PROVIDER`. Nine Google product rows, two groups, one FINAL user-facing sentence each, each row's grant bundle, its server capability keys, and its attachable resource types. **Rollout state is not here** — it comes from the server catalog at request time (PLAN §2: it flips with no rebuild).
-- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` is the single place "Connect" and "Reconnect" are decided.
-- `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for, what is blocked and why) and `consentOutcomes` (per-row truth read back from the account after the exchange).
+- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` is the single place "Connect" and "Reconnect" are decided, and `CONNECTOR_REFUSAL_CODES` / `refusalDisposition` are the single place a provider's refusal code becomes an expectation (reconnect · heals itself · ours to repair · retry).
+- `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for, what is blocked and why — including `renewProductKeys`, the products whose GRANT must be renewed although no scope is missing) and `consentOutcomes` (per-row truth read back from the account after the exchange).
+- `features/connectors/google-capability-health.ts` — part of the Google adapter: reads `users.integration_connections.capability_health` (the server's per-capability call record) through a `__kind` runtime guard and folds the capability keys into the provider-agnostic per-PRODUCT `activity` map `health.ts` takes. No component ever sees a capability key or a Google shape.
 - `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes) and `useGoogleConsentRunner` (one GIS window, one `/exchange`).
 - `features/connectors/ConnectorPromptCard.tsx` — the dismissible offer card, plus `shouldShowConnectorPrompt` (pure). `ConnectorPromptHost.tsx` is its wired form.
 - `features/connectors/ProductPermissions.tsx` — **the ONE permission disclosure**, mounted by both the consent dialog and the health rows: the provider's own scope strings with plain words beside them, the rollout sentence, and this product's last success / last refusal. A real `<button>` with `aria-expanded`, because the tooltip it replaced could not be opened by a finger. Never write a second one.
@@ -71,7 +72,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 
 ## Data model
 
-No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
+No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. That read now also selects **`capability_health`** — the jsonb column the hub's recording seam writes one object per capability key into (`{last_success:{at,action}, last_refusal:{at,action,code,sentence,http_status}}`, under the `__kind` marker `google_connection_capability_health`). `types/database.types.ts` predates the column, so the query is typed with `.returns<ConnectionRow[]>()` over the hand-declared `CapabilityHealthPending` stand-in (`features/marketing/google/types.ts`) and TWO compile-time guards in `service.ts`: one asserts every other selected column still exists on the generated row, the other FAILS the type-check the moment `pnpm db-types` adds the column — which is the remedy and the end of the stand-in. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
 
 **Key types** (`types.ts`)
 
@@ -188,7 +189,8 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - 🚨 **ROLLOUT STATE IS THE SERVER'S, NEVER A CLIENT CONSTANT.** A row still behind our gate shows its sentence, no toggle, and "Turns on automatically when ready for your account", from `/api/google-integrations/capabilities` (`rollout_phase` + `eligible` + `admission_error`). `admission_error` is a CODE and is never shown — `google-adapter.ts` maps it to a sentence. A super admin sees `phase: "pending"` with `eligible: true` and CAN switch the row on; that combination is the internal-test lane and must keep working.
 - 🚨 **THE REQUEST ASKS FOR EXACTLY WHAT WAS SWITCHED ON, PLUS WHAT THE ACCOUNT ALREADY HOLDS.** Asking for more is how a production Google authorization was rejected outright (`lib/googleScopes.ts`, the `GOOGLE_OUTREACH_INBOX_SCOPES` header); asking for less is what the hub refuses as "this authorization would remove existing Google access" — and if it ever stopped refusing, a grant would be dropped and every picked file stranded. Guard: `__tests__/consent-asks-for-exactly-what-was-switched-on.test.ts`.
 - **The prompt card is a normal block ABOVE `ConnectorStrip`, never inside it.** The strip is one 16px line under a composer and its geometry is load-bearing; a card inside it would double the composer footprint on every surface that mounts it. The card is mounted by `NewChatGreeting` (the `/chat/new` screen) and by the settings panel — NOT by `SmartAgentInput`, because an account-wide offer under every composer on the platform is the exact defect `ChatConnectionsStrip` was built to end (2026-09-15).
-- **A per-product "last successful call" does not exist yet, and is not faked.** `users.integration_connections` carries ONE `last_verified_at` and ONE `last_error` for the whole account and no per-capability call log (verified live 2026-09-17). `health.ts` returns `lastSuccessAt: null` and the UI labels the two timestamps it does have as account-level.
+- 🚨 **THE PER-PRODUCT CALL FACTS ARE THE SERVER'S RECORD, AND ABSENT MEANS ABSENT.** The hub records, per capability, the last call Google answered and the last call it refused, with a classified code and a person-facing sentence (`aidream/services/google_integrations/call_health.py` → `capability_health`). A product row shows the most recent fact across the capabilities behind it and NEVER the account's `last_verified_at` / `last_error`, which stay on the account line labelled account-level. A product with nothing recorded says "no calls recorded yet" — never a blank and never a green line. On 2026-09-17 every one of the eleven live Google connections was still at the column's bare default, so that is what the screen says today. Guard: `__tests__/the-health-row-shows-the-real-last-call.test.ts`.
+- 🚨 **A STANDING REFUSAL OUTRANKS A GREEN BADGE, AND EVERY REFUSAL CLASS GETS THE ACTION IT DESERVES.** When a product's newest recorded fact is a refusal (no later success answered it), the row stops saying Connected: `scope_missing`, `grant_expired_or_revoked` and `provider_denied` become **Not working** with the server's sentence and the ONE Reconnect — which, when no scope is missing, asks for exactly the scopes the account already holds so the GRANT is renewed (`renewProductKeys`; without it the press would answer "there is nothing left to approve", a dead control). `platform_configuration` is **Not working** with NO button, because reconnecting cannot help and the fault is ours. `quota_exhausted` and `provider_unavailable` keep the row's state and add the self-healing sentence — offering a button there would waste the person's time. The code itself is a technical detail shown inside the permission disclosure beside the provider's own scope strings, never on the row (D6). Guards: `__tests__/the-health-row-shows-the-real-last-call.test.ts`, `__tests__/refusal-codes-are-the-servers-codes.test.ts` (the client's code list is re-read from the server file and must match).
 - **Which organizations an account serves is NOT a setting.** A personal connection has `organization_id` NULL and is reachable by its owner wherever they work; an organization-owned one is reachable by that organization's members, and the two resolve identically for the same provider login. The whole mechanism is the dialog's "Connect for <org>" switch (chair ruling, 2026-09-17) — never a served-organizations editor, which would be a second, weaker copy of the access rule.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
@@ -219,6 +221,43 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — **D2 is closed: the health rows now show the REAL last success
+  and last refusal, per product** (lane F-7 of the google-native build). The
+  server side landed first (aidream `b4119fabf`, `5a7e1a3e3`, migration
+  `0777_google_per_capability_call_health.sql`): every Google provider call runs
+  inside one recording seam that writes, per capability key, the last call
+  Google answered and the last call it refused — with a classified code, a
+  sentence written for the person, and the HTTP status — into
+  `users.integration_connections.capability_health`. This half reads it:
+  - `CONNECTION_SELECT` takes the column; because `types/database.types.ts` was
+    regenerated before the migration and cannot be regenerated here, the query is
+    typed with `.returns<ConnectionRow[]>()` over the hand-declared
+    `CapabilityHealthPending` stand-in, under two compile-time guards — one that
+    keeps the other columns generation-checked, one that FAILS the type-check the
+    day `pnpm db-types` runs, so the stand-in cannot outlive its reason. No cast,
+    no hand edit to a generated file.
+  - `google-capability-health.ts` narrows the jsonb through its `__kind` marker
+    (carried through, never stripped), drops a fact it cannot vouch for rather
+    than rendering half of one, and folds capability keys into the product rows
+    the person sees — most recent success and most recent refusal across the
+    capabilities behind each product.
+  - A standing refusal now outranks the badge: the row says **Not working** with
+    the server's own sentence and offers the ONE Reconnect for the three codes
+    only the person can clear — including when no scope is missing, where the
+    request renews the grant (`renewProductKeys`) instead of dead-ending on
+    "there is nothing left to approve". `platform_configuration` says it is ours
+    to repair and offers nothing; `quota_exhausted` and `provider_unavailable`
+    say they clear by themselves and offer nothing.
+  - The disclosure's old sentence — "we do not keep a per-product record of
+    Google calls on this account" — was TRUE when it was written and is now
+    false; it reads "no calls recorded yet", which is what all eleven live
+    connections still show (read live 2026-09-17: every row is at the column's
+    bare `__kind` default, because the recording server had not yet deployed).
+  - New guards: `__tests__/the-health-row-shows-the-real-last-call.test.ts`
+    (fixtures are the live default row and the exact object the seam writes) and
+    `__tests__/refusal-codes-are-the-servers-codes.test.ts` (the client's code
+    list is read back from `call_health.py` and must match).
 
 - `2026-09-17` — **The zero-authorship verification REOPENED this, and seven of
   its eight defects are closed here** (`common-docs/projects/google-native/

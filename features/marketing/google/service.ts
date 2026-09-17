@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/client";
 import { BackendApiError, parseHttpError } from "@/lib/api/errors";
+import type { Database } from "@/types/database.types";
 import type {
+  CapabilityHealthPending,
   GoogleConnectionResource,
   GoogleConnectionSummary,
   GoogleConnectionInventory,
@@ -156,6 +158,22 @@ export function filterGoogleConnectionInventoryForUser(
 // credential item id or vault key name.
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_present, credential_stable";
+
+/**
+ * 🚨 THE ONE COLUMN THE GENERATED TYPES DO NOT KNOW YET.
+ * `capability_health` is live in the database (migration
+ * `0777_google_per_capability_call_health.sql`) and carries the per-product
+ * call record the connector health rows show. `types/database.types.ts` was
+ * regenerated on main BEFORE that migration, so postgrest-js cannot parse the
+ * column out of the select string and the query is typed with `.returns<>()`
+ * instead — the same mechanism this repo already uses wherever postgrest-js
+ * cannot infer a shape, and NOT a cast (`type-safety` skill).
+ *
+ * REMEDY: `pnpm db-types`. The guard below fails the type-check the moment the
+ * generated row gains the column, so this arrangement cannot quietly survive
+ * its own reason.
+ */
+const CONNECTION_PENDING_SELECT = "capability_health";
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata";
 
@@ -165,7 +183,35 @@ function recordValue(value: unknown): Record<string, unknown> {
     : {};
 }
 
-type ConnectionRow = {
+type GeneratedConnectionRow =
+  Database["users"]["Tables"]["integration_connections"]["Row"];
+
+/**
+ * Every column named in `CONNECTION_SELECT` still exists on the generated row.
+ * Losing the select string's own inference to `.returns<>()` must not mean
+ * losing the generation check, so it is asserted here instead.
+ */
+type _ColumnsStillExist = Exclude<
+  keyof Omit<ConnectionRow, "capability_health">,
+  keyof GeneratedConnectionRow
+> extends never
+  ? true
+  : false;
+declare const _columnsStillExist: _ColumnsStillExist;
+true satisfies typeof _columnsStillExist;
+
+/**
+ * And the stand-in announces its own end: once `pnpm db-types` has run, this
+ * guard is `false`, the type-check fails here, and the remedy is to delete
+ * `CONNECTION_PENDING_SELECT`, `CapabilityHealthPending` and `.returns<>()`
+ * and let the generated row type the query again.
+ */
+type _CapabilityHealthStillUngenerated =
+  "capability_health" extends keyof GeneratedConnectionRow ? false : true;
+declare const _capabilityHealthStillUngenerated: _CapabilityHealthStillUngenerated;
+true satisfies typeof _capabilityHealthStillUngenerated;
+
+type ConnectionRow = CapabilityHealthPending & {
   id: string;
   owner_type: string;
   owner_user_id: string | null;
@@ -254,11 +300,12 @@ export async function listGoogleConnectionInventory(
   const connections = await supabase
     .schema("users")
     .from("integration_connections")
-    .select(CONNECTION_SELECT)
+    .select(`${CONNECTION_SELECT}, ${CONNECTION_PENDING_SELECT}`)
     .eq("provider", "google")
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(signal ?? new AbortController().signal)
+    .returns<ConnectionRow[]>();
   if (connections.error) {
     throw operationFailed("load your Google connections", connections.error);
   }

@@ -15,9 +15,12 @@
  *        on the admin seat it opened on `arman26@gmail.com` and said "Docs,
  *        Sheets & Drive files — not connected" while Docs was connected on the
  *        account beside it.
- *   D2 — PLAN §5.3 asks for a per-product last success and last refusal. The
- *        server records neither yet, so the row must MODEL both, carry null
- *        honestly, and start showing them the moment an adapter supplies them.
+ *   D2 — PLAN §5.3 asks for a per-product last success and last refusal. When
+ *        this suite was written the server recorded neither, so the row modelled
+ *        both and carried null honestly. It records both now (lane F-7): what a
+ *        REAL record does to a row lives in
+ *        `the-health-row-shows-the-real-last-call.test.ts`; what an EMPTY one
+ *        must still never borrow is pinned below.
  *
  * The four accounts below are the admin's real rows as the verifier read them
  * live on 2026-09-17 (VERIFY-U-P2 § Live rows this report is judged against).
@@ -324,9 +327,17 @@ describe("D2 — per-product last success and last refusal are modelled, never f
     expect(files.lastSuccessAt).toBe("2026-09-16T10:00:00Z");
     expect(files.lastRefusal).toBeNull();
     expect(gmail.lastSuccessAt).toBeNull();
+    // An adapter that supplies no classification still produces a usable fact:
+    // the sentence and the time are the truth, and the code, HTTP status and
+    // disposition are explicitly absent rather than guessed. What a CLASSIFIED
+    // refusal does to a row is pinned in
+    // `the-health-row-shows-the-real-last-call.test.ts`.
     expect(gmail.lastRefusal).toEqual({
       message: "Google refused: the grant was revoked in your account.",
       at: "2026-09-16T11:00:00Z",
+      code: null,
+      httpStatus: null,
+      disposition: null,
     });
   });
 });

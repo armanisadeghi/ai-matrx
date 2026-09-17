@@ -14,21 +14,31 @@
 // the capability is available to this account. Any other combination gets its
 // own sentence and the one action that fixes it.
 //
-// 🚨 WHAT THE SERVER DOES NOT YET RECORD, and is therefore NOT shown as if it
-// did: there is no per-capability call log. `users.integration_connections`
-// carries ONE `last_verified_at` and ONE `last_error` for the whole account
-// (verified live 2026-09-17: metadata keys are `granted_scopes`, `discovery`,
-// `discovery_errors`, `discovery_warning_count`, `oauth_client_id` — no
-// per-capability timestamps). Inventing a per-product timestamp from the
-// account's would be exactly the lie this file exists to prevent.
+// 🚨 PER-PRODUCT CALL FACTS ARE REAL NOW, AND STILL NEVER BORROWED. The server
+// records, per capability, the last call the provider ANSWERED and the last
+// call it REFUSED — with a classified code, a person-facing sentence and the
+// HTTP status (aidream `services/google_integrations/call_health.py`, column
+// `users.integration_connections.capability_health`). An adapter folds that
+// record into `activity`, keyed by product; this file derives from it and
+// never from the ACCOUNT's `last_verified_at` / `last_error`, which stay on the
+// account line labelled as account-level.
 //
-// So the two PLAN §5.3 fields are MODELLED and OPTIONAL, not faked: a product
-// row carries `lastSuccessAt` and `lastRefusal`, an adapter may supply them per
-// product through `activity`, and today Google's adapter supplies neither — the
-// row renders "Not recorded yet" in its own words rather than a blank or a
-// borrowed timestamp (law 4: every stand-in announces itself). The day the hub
-// records a per-capability call log the adapter fills `activity` and the two
-// lines start showing, with no change to any component.
+// Absent still means ABSENT: a product with no recorded call carries null in
+// both fields and the row says "No calls recorded yet" in its own words — never
+// a blank, never a borrowed timestamp, never a green line nothing supports
+// (law 4: every stand-in announces itself). On 2026-09-17 every one of the
+// eleven live Google connections was still at the column's bare default, so
+// that sentence is what the screen shows today.
+//
+// A RECORDED REFUSAL CHANGES WHAT THE ROW MAY CLAIM. "Connected" is never a
+// boolean that lies, and a product whose last provider call was refused is not
+// connected just because its scopes are all present: when the newest fact for a
+// product is a refusal the person must act on (`scope_missing`,
+// `grant_expired_or_revoked`, `provider_denied`), the row goes to `refused`,
+// states the server's sentence, and offers the ONE Reconnect that asks for only
+// what is missing. A refusal that fixes ITSELF (`quota_exhausted`,
+// `provider_unavailable`) or that is OURS to repair (`platform_configuration`)
+// never offers a button that would not help — it says so instead.
 
 import type {
   ConnectorProduct,
@@ -59,6 +69,12 @@ export interface ConnectorAccount {
   lastVerifiedAt: string | null;
   /** Account-level: the last refusal the server recorded, verbatim. */
   lastError: string | null;
+  /**
+   * What the provider RECORDED for this account, per product key. Supplied by
+   * the provider adapter from the server's own call record; absent means the
+   * server records nothing for this account, never that nothing happened.
+   */
+  activity?: ConnectorActivityByProduct;
 }
 
 /** What the SERVER says about one capability for this caller, right now. */
@@ -83,6 +99,12 @@ export type ConnectorProductState =
   | "account_unusable"
   /** Never switched on. */
   | "not_connected"
+  /**
+   * Every scope is present and the account is usable, but the provider's own
+   * last word on this product is a refusal the person must act on. The row
+   * carries that sentence and the one action that fixes it.
+   */
+  | "refused"
   /** Behind our rollout gate — it turns on by itself. No toggle. */
   | "pending_rollout";
 
@@ -95,7 +117,89 @@ export interface ConnectorProductActivity {
   /** ISO timestamp of the last call this product completed. */
   lastSuccessAt?: string | null;
   /** The last refusal for this product, in the provider's own words. */
-  lastRefusal?: { message: string; at?: string | null } | null;
+  lastRefusal?: ConnectorRefusalInput | null;
+}
+
+/** What an adapter hands over for one recorded refusal. */
+export interface ConnectorRefusalInput {
+  /** The provider-classified sentence a person can act on. Never a code. */
+  message: string;
+  at?: string | null;
+  /** The classified reason, when the provider classifies its refusals. */
+  code?: ConnectorRefusalCode | null;
+  /** The provider's HTTP status, when it recorded one. */
+  httpStatus?: number | null;
+}
+
+/**
+ * THE REFUSAL VOCABULARY — the exact set the recording seam emits
+ * (`aidream/aidream/services/google_integrations/call_health.py::RefusalCode`).
+ * `__tests__/refusal-codes-are-the-servers-codes.test.ts` re-reads that file and
+ * fails when the two disagree, so a server code cannot ship without a
+ * disposition here and a code here cannot outlive the server's.
+ */
+export const CONNECTOR_REFUSAL_CODES = [
+  "scope_missing",
+  "grant_expired_or_revoked",
+  "platform_configuration",
+  "provider_denied",
+  "resource_unavailable",
+  "quota_exhausted",
+  "provider_unavailable",
+  "call_failed",
+] as const;
+
+export type ConnectorRefusalCode = (typeof CONNECTOR_REFUSAL_CODES)[number];
+
+export function isConnectorRefusalCode(
+  value: unknown,
+): value is ConnectorRefusalCode {
+  return (
+    typeof value === "string" &&
+    (CONNECTOR_REFUSAL_CODES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * WHAT A REFUSAL MEANS FOR THE PERSON — the one place a code becomes an
+ * expectation, so no component branches on a code:
+ *
+ * - `reconnect`    — only the person can fix it, with one reconnect.
+ * - `self_healing` — it clears by itself; nothing about the connection is
+ *                    broken, so offering a reconnect would waste their time.
+ * - `ours`         — our own configuration; a reconnect cannot help.
+ * - `retry`        — the one call failed; the connection is intact.
+ */
+export type ConnectorRefusalDisposition =
+  | "reconnect"
+  | "self_healing"
+  | "ours"
+  | "retry";
+
+const REFUSAL_DISPOSITION: Record<
+  ConnectorRefusalCode,
+  ConnectorRefusalDisposition
+> = {
+  scope_missing: "reconnect",
+  grant_expired_or_revoked: "reconnect",
+  // The server's own sentence for a 401/403 tells the person to reconnect, so
+  // the row must carry the button that sentence promises — a sentence saying
+  // "reconnect it" beside no control is the dead end this primitive exists to
+  // end. Cost if this is wrong: a person presses Reconnect on a denial a
+  // reconnect cannot clear, re-approves the same scopes, and the row keeps its
+  // refusal — no data moves, and the fact on screen stays true.
+  provider_denied: "reconnect",
+  platform_configuration: "ours",
+  quota_exhausted: "self_healing",
+  provider_unavailable: "self_healing",
+  resource_unavailable: "retry",
+  call_failed: "retry",
+};
+
+export function refusalDisposition(
+  code: ConnectorRefusalCode | null,
+): ConnectorRefusalDisposition | null {
+  return code ? REFUSAL_DISPOSITION[code] : null;
 }
 
 /** Per-product activity keyed by `ConnectorProduct.key`. */
@@ -108,6 +212,16 @@ export interface ConnectorRefusalFact {
   message: string;
   /** When it happened, when the server records that too. */
   at: string | null;
+  /**
+   * The provider's classified reason. A technical detail: it is shown inside
+   * the permission disclosure beside the provider's own scope strings, never on
+   * the row itself, where the person reads the sentence (D6).
+   */
+  code: ConnectorRefusalCode | null;
+  /** The provider's HTTP status, when it recorded one. */
+  httpStatus: number | null;
+  /** What this refusal means for the person. Null when the code is unknown. */
+  disposition: ConnectorRefusalDisposition | null;
 }
 
 export interface ConnectorScopeFact {
@@ -134,16 +248,23 @@ export interface ConnectorProductHealth {
   rollout: ConnectorCapabilityRollout[];
   /**
    * When the provider last succeeded for THIS product. Null whenever the
-   * server records no per-capability call — never the account's timestamp
-   * wearing a product's label. Rendered as "Not recorded yet", never blank.
+   * server records no call for it — never the account's timestamp wearing a
+   * product's label. Rendered as "No calls recorded yet", never blank.
    */
   lastSuccessAt: string | null;
   /**
    * The last refusal for THIS product, in the provider's own words. Null
-   * whenever the server records no per-capability refusal — the account-level
-   * refusal stays on the account line and is never re-labelled per product.
+   * whenever the server records no refusal for it — the account-level refusal
+   * stays on the account line and is never re-labelled per product.
    */
   lastRefusal: ConnectorRefusalFact | null;
+  /**
+   * One extra sentence about what the provider last did to this product, for
+   * the states where the row is NOT broken and must not offer a button: a
+   * quota or an outage that clears by itself, or a call that simply failed.
+   * Null when there is nothing honest to add.
+   */
+  activityNote: string | null;
   /** True when the person may switch this row on in the consent dialog. */
   togglable: boolean;
   /**
@@ -232,14 +353,46 @@ export function productHealth({
     granted: granted.has(scope),
   }));
 
-  const recorded = activity?.[product.key];
+  // The adapter may hand activity in directly (the pure call sites and the
+  // tests) or leave it on the account it read it from. One resolution, so no
+  // component has to remember to pass it through.
+  const recorded = (activity ?? account?.activity)?.[product.key];
   const lastSuccessAt = recorded?.lastSuccessAt ?? null;
   const lastRefusal: ConnectorRefusalFact | null = recorded?.lastRefusal
     ? {
         message: recorded.lastRefusal.message,
         at: recorded.lastRefusal.at ?? null,
+        code: recorded.lastRefusal.code ?? null,
+        httpStatus: recorded.lastRefusal.httpStatus ?? null,
+        disposition: refusalDisposition(recorded.lastRefusal.code ?? null),
       }
     : null;
+
+  /**
+   * Is the refusal the provider's LAST word on this product? A refusal older
+   * than the last success has already been overtaken by a call that worked, so
+   * it stays visible in the disclosure and changes nothing about the row.
+   *
+   * Cost if this reading is wrong: a person who repaired the grant elsewhere
+   * sees "Not working" until the next call for that product runs. The record is
+   * the only evidence there is, and showing "Connected" over a refusal nothing
+   * has answered is the lie this file exists to prevent.
+   */
+  const refusalStands = Boolean(
+    lastRefusal &&
+      (!lastSuccessAt ||
+        Date.parse(lastRefusal.at ?? "") > Date.parse(lastSuccessAt)),
+  );
+  const standingRefusal = refusalStands ? lastRefusal : null;
+  const refusalNeedsReconnect =
+    standingRefusal?.disposition === "reconnect";
+  const activityNote =
+    standingRefusal &&
+    (standingRefusal.disposition === "self_healing" ||
+      standingRefusal.disposition === "retry" ||
+      standingRefusal.disposition === null)
+      ? standingRefusal.message
+      : null;
 
   /**
    * Everything common to every state, so a new state can never forget one of
@@ -258,14 +411,20 @@ export function productHealth({
     rollout: rows,
     lastSuccessAt,
     lastRefusal,
+    activityNote,
     // D3: the verb is the truth about this account, not about the button.
     // Nothing to ask for, or nothing the person may ask for → no action at all.
-    actionLabel:
-      missingScopes.length > 0 && part.togglable
+    // A standing refusal only the person can clear earns a Reconnect even when
+    // every scope is present: the grant itself is what has to be renewed.
+    actionLabel: !part.togglable
+      ? null
+      : missingScopes.length > 0
         ? held
           ? "Reconnect"
           : "Connect"
-        : null,
+        : refusalNeedsReconnect
+          ? "Reconnect"
+          : null,
   });
 
   const pending = rows.find((r) => r.phase === "pending" && !r.eligible);
@@ -312,6 +471,27 @@ export function productHealth({
         .map((scope) => scopeLanguage(provider, scope).toLowerCase())
         .join(", ")}.`,
       remedy: `Reconnect and approve just that — nothing you already granted is asked for again.`,
+      togglable: eligible,
+    });
+  }
+
+  // The provider's own last word outranks a green badge: a product whose newest
+  // recorded fact is a refusal the person must act on, or one that is ours to
+  // repair, is not "Connected" (D2 + "connected is never a boolean that lies").
+  if (
+    standingRefusal &&
+    (standingRefusal.disposition === "reconnect" ||
+      standingRefusal.disposition === "ours")
+  ) {
+    return row({
+      state: "refused",
+      label: "Not working",
+      // The server's sentence, verbatim: it was written for this person.
+      reason: standingRefusal.message,
+      remedy:
+        standingRefusal.disposition === "reconnect"
+          ? `Reconnect ${account.label} and approve ${product.name} — nothing you already granted is asked for again.`
+          : null,
       togglable: eligible,
     });
   }

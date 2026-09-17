@@ -86,15 +86,24 @@ function ProviderConnectorsPanel({
     // The row's own verb, so the confirmation matches the button that was
     // pressed: a product this account never granted says Connect, not
     // Reconnect (VERIFY-U-P2 D3).
-    const verb =
-      accountHealth({ provider, account, rollout: state.rollout }).find(
-        (row) => row.product.key === productKey,
-      )?.actionLabel ?? "Connect";
+    const pressed = accountHealth({
+      provider,
+      account,
+      rollout: state.rollout,
+    }).find((row) => row.product.key === productKey);
+    const verb = pressed?.actionLabel ?? "Connect";
     const plan = buildConsentPlan({
       provider,
       selectedProductKeys: [productKey],
       account,
       rollout: state.rollout,
+      // A row offering Reconnect with nothing missing is a row the provider
+      // refused on a grant it will not honour any more: the request renews that
+      // grant instead of asking for a scope (see `consent-plan.ts`).
+      renewProductKeys:
+        pressed?.actionLabel && pressed.missingScopes.length === 0
+          ? [productKey]
+          : [],
     });
     if (!plan.request) {
       // Never a silent no-op: say why the click did nothing.

@@ -75,13 +75,25 @@ export function buildConsentPlan({
   selectedProductKeys,
   account,
   rollout,
+  renewProductKeys,
 }: {
   provider: ConnectorProviderConfig;
   selectedProductKeys: readonly string[];
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
+  /**
+   * Products whose GRANT must be renewed even though no scope is missing — the
+   * account holds every scope, and the provider refused the call anyway
+   * (`grant_expired_or_revoked`, `provider_denied`). Without this the plan would
+   * be empty and the row's Reconnect button would answer "there is nothing left
+   * to approve", which is a dead control on the one screen that must never have
+   * one. The request then adds no scope: it asks the provider for exactly what
+   * the account already holds, which is what mints a fresh grant.
+   */
+  renewProductKeys?: readonly string[];
 }): ConsentPlan {
   const granted = new Set(account?.grantedScopes ?? []);
+  const renewing = new Set(renewProductKeys ?? []);
 
   const selected = selectedProductKeys
     .map((key) => productByKey(provider, key))
@@ -106,7 +118,7 @@ export function buildConsentPlan({
     const missing = requiredScopesFor(provider, product, rollout).filter(
       (scope) => !granted.has(scope),
     );
-    if (missing.length === 0) {
+    if (missing.length === 0 && !renewing.has(product.key)) {
       alreadyGranted.push(product);
       continue;
     }

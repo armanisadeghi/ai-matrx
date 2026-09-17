@@ -4,8 +4,9 @@
 //
 // THE ONE PERMISSION DISCLOSURE for a connector product row — the provider's
 // own scope strings, what each one lets us do in plain words, the rollout state
-// as a sentence, and (when the server records them) this product's last
-// successful call and last refusal.
+// as a sentence, and this product's last successful call and last refusal as
+// the server recorded them (its classified code included, as a technical detail
+// beside the scope strings — never on the row itself).
 //
 // 🚨 WHY THIS FILE EXISTS: until 2026-09-17 there were TWO disclosures. The
 // health rows had this expander, which works on hover, focus, click and touch
@@ -150,8 +151,10 @@ export function ProductPermissionsDisclosure({
                 >
                   {/* Never a blank and never the account's timestamp wearing a
                       product's label: say plainly that nothing is recorded. */}
-                  {lastSuccess ??
-                    `not recorded yet — we do not keep a per-product record of ${providerName} calls on this account.`}
+                  {/* Never a blank and never the account's timestamp wearing a
+                      product's label. The server records this per product now;
+                      when it has recorded nothing, the row says exactly that. */}
+                  {lastSuccess ?? "no calls recorded yet."}
                 </dd>
               </div>
               <div className="flex items-start gap-1.5">
@@ -167,13 +170,29 @@ export function ProductPermissionsDisclosure({
                       : "text-muted-foreground",
                   )}
                 >
-                  {health.lastRefusal
-                    ? `${health.lastRefusal.message}${
-                        relativeTime(health.lastRefusal.at)
-                          ? ` (${relativeTime(health.lastRefusal.at)})`
-                          : ""
-                      }`
-                    : "none recorded yet for this product."}
+                  {health.lastRefusal ? (
+                    <>
+                      {health.lastRefusal.message}
+                      {relativeTime(health.lastRefusal.at)
+                        ? ` (${relativeTime(health.lastRefusal.at)})`
+                        : ""}
+                      {/* The classified reason is a TECHNICAL detail, shown
+                          here beside the provider's own scope strings and never
+                          on the row, where the person reads the sentence (D6).
+                          It is what a support conversation needs to be about
+                          the same refusal the person is looking at. */}
+                      {health.lastRefusal.code ? (
+                        <span className="mt-0.5 block break-all font-mono text-[10px] text-muted-foreground">
+                          {health.lastRefusal.code}
+                          {health.lastRefusal.httpStatus
+                            ? ` · HTTP ${health.lastRefusal.httpStatus}`
+                            : ""}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    "none recorded yet for this product."
+                  )}
                 </dd>
               </div>
             </dl>

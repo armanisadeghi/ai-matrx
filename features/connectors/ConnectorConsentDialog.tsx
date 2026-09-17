@@ -112,7 +112,13 @@ export function emptyPlanAnswer(selectedCount: number): string {
 function initialSelection(health: readonly ConnectorProductHealth[]): string[] {
   return health
     .filter(
-      (row) => row.state === "connected" || row.state === "scope_missing",
+      (row) =>
+        row.state === "connected" ||
+        row.state === "scope_missing" ||
+        // A product the provider is currently REFUSING is still one this
+        // account has; starting it switched off would read as "you never
+        // connected this", which is the opposite of what happened.
+        row.state === "refused",
     )
     .map((row) => row.product.key);
 }
@@ -170,6 +176,11 @@ function ProductRow({
             <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
               <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
               Partly connected
+            </span>
+          ) : health.state === "refused" ? (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
+              <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
+              Not working
             </span>
           ) : null}
         </div>
