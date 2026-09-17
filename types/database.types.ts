@@ -89878,6 +89878,7 @@ export type Database = {
       }
     }
     Functions: {
+      _archive_tenant: { Args: { p_organization_id: string }; Returns: string }
       _ensure_site_dimension: {
         Args: {
           p_description: string
