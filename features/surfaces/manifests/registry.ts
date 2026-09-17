@@ -122,6 +122,7 @@ import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
+import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
 import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
@@ -342,6 +343,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationManifest,
   educationTutorManifest,
   educationFlashcardsManifest,
+  educationFlashcardSetManifest,
   educationFlashcardEditorManifest,
   educationFastfireManifest,
   educationAssessmentManifest,

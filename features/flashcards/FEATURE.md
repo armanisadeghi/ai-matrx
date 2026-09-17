@@ -168,6 +168,17 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-16` — **Flashcard set detail is now a real agent surface, not a
+  library fallback.** `/education/flashcards/[setId]` had no
+  `SurfaceRuntimeProvider`; route resolution therefore named the library
+  surface while the Agents menu launched with no live values — zero of the
+  title, 50 cards, detail layers, or study signal reached the agent. The
+  dedicated `matrx-user/education-flashcard-set` manifest, exact dynamic-leaf
+  route resolver, and detail-page runtime now supply the loaded deck at launch.
+  The regression test pins the library/detail/editor split: never let a broad
+  prefix claim a child route whose vocabulary it cannot emit. Study-mode routes
+  remain intentionally separate until each has its own complete contract.
+
 - `2026-09-16` — Flashcard generation previews now use the same `MarkdownStream`
   path and the same shared `max-w-3xl` reading column as an assistant message.
   Both topic and source generation inherit the repair; the old direct

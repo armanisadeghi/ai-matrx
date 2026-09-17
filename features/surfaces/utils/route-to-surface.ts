@@ -491,8 +491,7 @@ function resolveMarketingSurface(stripped: string): string | null {
     }
 
     return (
-      resolveMarketingBrandSection(section, sub) ??
-      "matrx-user/marketing-brand"
+      resolveMarketingBrandSection(section, sub) ?? "matrx-user/marketing-brand"
     );
   }
 
@@ -621,13 +620,19 @@ export function surfaceFromPathname(
     return "matrx-user/analysis-studio";
   }
 
-  // The flashcard set EDITOR is `/education/flashcards/[setId]/edit` — a
-  // dynamic segment mid-path, so the `/education/flashcards` prefix below
-  // cannot tell it apart from the library list. It is its own surface (ONE set
-  // and its cards, and agent-WRITABLE), so it must not fall through to the
-  // list surface, whose vocabulary this page shares nothing with.
+  // Flashcard set detail and editor pages sit beneath the library prefix but
+  // have a different live vocabulary. Resolve the editor first, then the
+  // exact detail leaf; study modes remain their own future surfaces rather
+  // than inheriting a deck-detail contract they cannot fully emit.
   if (/^\/education\/flashcards\/[^/]+\/edit(?:\/|$)/.test(stripped)) {
     return "matrx-user/education-flashcard-editor";
+  }
+  if (
+    /^\/education\/flashcards\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
+      stripped,
+    )
+  ) {
+    return "matrx-user/education-flashcard-set";
   }
 
   // Study-guide AUTHORING is `/education/learn/admin`, which sits under the
