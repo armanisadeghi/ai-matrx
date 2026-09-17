@@ -441,6 +441,25 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (doors to Libraries) — **A WHOLE YOUTUBE CHANNEL IS NOW REACHABLE
+  FROM MASTERWORK.** The Media Source Catalog (`/libraries`) catalogues a whole
+  channel/playlist into a Library of Sources, and Masterwork had no door to it:
+  the Sources panel offered one link at a time, and step 2 of `/masterwork/new`
+  offered only registry Approaches. Two doors added, both plain navigation, no
+  new capture flow: `components/detail/RulebookSourcesPanel.tsx` gains a third
+  sibling in the capture toolbar's `extraActions` — "Bring a whole channel"
+  (`Library` icon), linking to `/libraries?from=rulebook&rulebook_id=<id>`,
+  deliberately WITHOUT `aria-expanded`/`aria-pressed` since nothing opens below
+  the row; and `intake/NewRulebookFlow.tsx` step 2 gains a dashed panel beside
+  the Approach cards ("Already have a YouTube channel in mind?") linking to
+  `/libraries?from=rulebook` — no id, because nothing is created until Start,
+  and the wizard draft restores the typed answers on return. It is NOT an
+  Approach card: the cards stay the registry's rows. The receiving end
+  (`features/source-library/components/LibrariesFrontDoor.tsx`) reads
+  `?from=rulebook` and says in one sentence that the channel is catalogued
+  first and its videos can then be sent to the Rulebook, with a "Back to the
+  Rulebook" door when a valid id came along.
+
 - 2026-09-17 (phone width, the class) — **EVERY MASTERWORK SURFACE AND LANE
   CARRIES THE 44px TOUCH FLOOR.** Measured at 390×844 as `admin@admin.com`:
   `/masterwork/<rulebook>` rendered 84 controls, 59 of them under the floor, and

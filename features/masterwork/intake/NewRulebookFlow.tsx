@@ -49,6 +49,7 @@ import {
   MessagesSquare,
   Lightbulb,
   Inbox,
+  Library,
   Video,
   Network,
   Puzzle,
@@ -951,6 +952,33 @@ export function NewRulebookFlow() {
 
             </div>
           )}
+
+          {/* A WHOLE CHANNEL IS A WAY TO START TOO — AND IT HAS A DOOR.
+              Step 2 is where the Expert says what this Rulebook will learn
+              from, and for a creator that answer is often "everything on my
+              channel". No Approach carries a channel, so without this the only
+              honest move was to start the Rulebook, find the Sources panel and
+              discover Libraries there. This is not an Approach card (the cards
+              are the registry's rows, never a hardcoded one) — it is a plain
+              door beside them. Nothing is created yet, so it carries no
+              rulebook id; the answers typed above are kept in the saved draft
+              and restored when the Expert comes back. */}
+          <div className="rounded-xl border border-dashed border-border bg-card/50 p-4">
+            <h2 className="text-sm font-semibold text-foreground">
+              Already have a YouTube channel in mind?
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Catalogue the whole channel first — every video becomes a Source
+              you can hand to this Rulebook once you start it. Your answers are
+              saved; come straight back.
+            </p>
+            <Button asChild variant="outline" className="mt-3 min-h-[44px] gap-2">
+              <Link href="/libraries?from=rulebook">
+                <Library className="h-4 w-4" />
+                Bring a whole YouTube channel
+              </Link>
+            </Button>
+          </div>
 
           {/* THE ACTION IS ALWAYS ON SCREEN (census defect D1, fixed
               2026-09-12). Start used to be the LAST element on the page,

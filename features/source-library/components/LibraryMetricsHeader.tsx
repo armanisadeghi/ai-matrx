@@ -1,0 +1,661 @@
+"use client";
+
+/**
+ * The head of a Library: what this catalogue IS, in numbers, while it is still
+ * being enumerated.
+ *
+ * 🚨 IT FILLS IN, IT DOES NOT POP IN. Every tile, the cadence chart and the
+ * top-by-views slots are rendered at their FINAL size on the very first frame —
+ * before a Library row exists, before a single metric exists. A value that is
+ * not known yet is a skeleton of the size the number will be, never an absent
+ * element, never a collapsed row. So a person watching a 1,000-video channel
+ * enumerate sees numbers APPEAR IN PLACE; nothing under their cursor moves.
+ * That is why every container here carries an explicit height and the grid
+ * carries a fixed slot count instead of `metrics.length`.
+ *
+ * THE PROVIDER'S COUNT IS ADVISORY (contract §4.1). `expected_total` is what
+ * YouTube claims, it is frequently wrong, and it may be null. So it is never
+ * printed as the truth: the moving number is what we have actually enumerated
+ * ("412 listed"), the provider's claim appears only as "of about 500", and one
+ * muted sentence says plainly whose number that is. The progress bar exists
+ * only when there is an advisory number to draw it from, and says it is
+ * approximate.
+ *
+ * THE TERMINAL STATES ARE HONEST. `unavailable` prints the server's sentence,
+ * its remedy, and what the client still holds; `failed` prints the sentence and
+ * offers a retry ONLY when the server said the failure is retryable — a retry
+ * control on a non-retryable failure is a lie shaped like a button. `stale`
+ * metrics say, in words, that the numbers predate the newest rows.
+ *
+ * NO SCHEDULE UI, EVER. Bringing a Library up to date is a manual act. There is
+ * one button and it is the only way a sync starts from this screen.
+ */
+
+import { useState, type ReactNode } from "react";
+import {
+    AlertTriangle,
+    ChevronRight,
+    CircleAlert,
+    Clock,
+    Eye,
+    FileText,
+    Hourglass,
+    Loader2,
+    RefreshCw,
+    Timer,
+} from "lucide-react";
+
+import { Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+    formatCompactNumber,
+    formatCount,
+    formatDateRange,
+    formatDuration,
+    formatElapsed,
+    formatHours,
+    formatMonthPeriod,
+    mediaKindLabel,
+} from "../format";
+import type { LibraryMetrics, LibraryRow } from "../types";
+import type { SyncState } from "../redux/sourceLibrarySlice";
+
+/** Fixed number of "top by views" slots, so the list never changes height. */
+const TOP_SLOTS = 5;
+
+/** Fixed number of metric tiles. Never derived from the data. */
+interface Tile {
+    key: string;
+    label: string;
+    /** null = not known yet → a skeleton of the final size. */
+    value: string | null;
+    hint: string;
+    wide?: boolean;
+}
+
+/**
+ * Seconds with one decimal, always — the clock a person watches while a sync
+ * runs. `formatElapsed` drops the decimal above ten seconds, which makes a live
+ * clock look frozen, so the live clock is its own function and the FINAL number
+ * (which the server reports) still goes through `formatElapsed`.
+ */
+function formatLiveClock(ms: number | null | undefined): string {
+    if (ms == null || !Number.isFinite(ms) || ms < 0) return "0.0s";
+    const seconds = ms / 1000;
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return `${minutes}m ${rest.toFixed(1).padStart(4, "0")}s`;
+}
+
+function buildTiles(metrics: LibraryMetrics | null): Tile[] {
+    const kinds = metrics?.counts_by_kind;
+    const captions = metrics?.caption_coverage;
+    const transcripts = metrics?.transcripts;
+    return [
+        {
+            key: "total",
+            label: "Sources",
+            value: metrics ? formatCount(metrics.total) : null,
+            hint: "Catalogued in this Library",
+        },
+        {
+            key: "long",
+            label: `${mediaKindLabel("long")} videos`,
+            value: kinds ? formatCount(kinds.long) : null,
+            hint: metrics
+                ? `${formatDuration(metrics.length_by_kind.long?.median_seconds ?? null)} median`
+                : "Median length",
+        },
+        {
+            key: "short",
+            label: "Shorts",
+            value: kinds ? formatCount(kinds.short) : null,
+            hint: metrics
+                ? `${formatDuration(metrics.length_by_kind.short?.median_seconds ?? null)} median`
+                : "Median length",
+        },
+        {
+            key: "live",
+            label: "Live",
+            value: kinds ? formatCount(kinds.live) : null,
+            hint: "Broadcasts, live or upcoming",
+        },
+        {
+            key: "unknown",
+            label: mediaKindLabel("unknown"),
+            value: kinds ? formatCount(kinds.unknown) : null,
+            hint: "Nothing has classified these yet",
+        },
+        {
+            key: "range",
+            label: "Published across",
+            value: metrics
+                ? formatDateRange(metrics.date_range.earliest, metrics.date_range.latest)
+                : null,
+            hint: metrics?.date_range.span_days != null
+                ? `${formatCount(metrics.date_range.span_days)} days end to end`
+                : "First to most recent",
+        },
+        {
+            key: "hours",
+            label: "Total length",
+            value: metrics ? formatHours(metrics.length.total_seconds) : null,
+            hint: metrics
+                ? `${formatDuration(metrics.length.mean_seconds)} mean per video`
+                : "Every Source added up",
+        },
+        {
+            key: "median",
+            label: "Median length",
+            value: metrics ? formatDuration(metrics.length.median_seconds) : null,
+            hint: metrics
+                ? `${formatDuration(metrics.length.p90_seconds)} at the 90th percentile`
+                : "Half are shorter than this",
+        },
+        {
+            key: "captions",
+            label: "Caption coverage",
+            value: captions ? `${captions.coverage_percent.toFixed(1)}%` : null,
+            hint: captions
+                ? `${formatCount(captions.with_captions)} with, ${formatCount(
+                      captions.without_captions,
+                  )} without, ${formatCount(captions.unknown)} unchecked`
+                : "How many carry a caption track",
+        },
+        {
+            key: "transcripts",
+            label: "Transcripts ready",
+            value: transcripts ? formatCount(transcripts.ready) : null,
+            hint: transcripts
+                ? `${formatCount(transcripts.running)} running, ${formatCount(
+                      transcripts.queued,
+                  )} queued, ${formatCount(transcripts.failed)} failed, ${formatCount(
+                      transcripts.none,
+                  )} not transcribed`
+                : "Ready, running, queued, failed, none",
+            wide: true,
+        },
+    ];
+}
+
+function MetricTile({ tile }: { tile: Tile }): ReactNode {
+    return (
+        <div
+            className={cn(
+                "flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border bg-card px-3 py-2",
+                tile.wide && "col-span-2",
+            )}
+        >
+            <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tile.label}
+            </span>
+            <span className="flex h-7 items-center text-xl font-semibold tabular-nums text-foreground">
+                {tile.value === null ? (
+                    <Skeleton className="h-5 w-16 rounded" />
+                ) : (
+                    <span className="truncate">{tile.value}</span>
+                )}
+            </span>
+            <span className="truncate text-[11px] text-muted-foreground" title={tile.hint}>
+                {tile.hint}
+            </span>
+        </div>
+    );
+}
+
+/**
+ * The cadence chart. An inline SVG — no chart library — that is correct at 0, 1,
+ * 2 and 300 periods, legible in both themes because every fill is a semantic
+ * token, and readable by a screen reader because the chart carries a sentence
+ * naming its range and its peak and every bar carries its own sentence.
+ */
+function CadenceChart({
+    periods,
+    loading,
+}: {
+    periods: LibraryMetrics["cadence_per_month"];
+    loading: boolean;
+}): ReactNode {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+    const max = periods.reduce((acc, p) => Math.max(acc, p.count), 0);
+    const peak = periods.reduce<LibraryMetrics["cadence_per_month"][number] | null>(
+        (best, p) => (best === null || p.count > best.count ? p : best),
+        null,
+    );
+    const active = activeIndex != null ? periods[activeIndex] ?? null : null;
+
+    const describe = (p: LibraryMetrics["cadence_per_month"][number]) =>
+        `${formatMonthPeriod(p.period)} — ${formatCount(p.count)} ${
+            p.count === 1 ? "video" : "videos"
+        }, ${formatHours(p.seconds)}`;
+
+    const summary =
+        periods.length === 0
+            ? "No months to chart yet."
+            : `Videos per month, ${formatMonthPeriod(periods[0].period)} to ${formatMonthPeriod(
+                  periods[periods.length - 1].period,
+              )}. Busiest month ${peak ? describe(peak) : "—"}.`;
+
+    return (
+        <section className="flex h-[276px] flex-col rounded-lg border border-border bg-card px-3 py-2">
+            <div className="flex h-5 items-center justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Publishing cadence, by month
+                </span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {loading ? "" : `${formatCount(periods.length)} months`}
+                </span>
+            </div>
+
+            <div className="relative mt-1 min-h-0 w-full flex-1">
+                {loading ? (
+                    <div className="flex h-full w-full items-end gap-[2px]" aria-hidden="true">
+                        {Array.from({ length: 24 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="flex-1 animate-pulse rounded-sm bg-muted"
+                                style={{ height: `${25 + ((i * 37) % 70)}%` }}
+                            />
+                        ))}
+                    </div>
+                ) : periods.length === 0 ? (
+                    <div className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+                        Nothing has been catalogued yet, so there is no cadence to chart.
+                    </div>
+                ) : (
+                    <svg
+                        viewBox={`0 0 ${periods.length} 100`}
+                        preserveAspectRatio="none"
+                        className="h-full w-full overflow-visible"
+                        role="img"
+                        aria-label={summary}
+                    >
+                        {periods.map((p, i) => {
+                            const ratio = max > 0 ? p.count / max : 0;
+                            const height = p.count > 0 ? Math.max(3, ratio * 100) : 1.5;
+                            const isActive = i === activeIndex;
+                            return (
+                                <g key={p.period}>
+                                    <rect
+                                        x={i + 0.12}
+                                        y={100 - height}
+                                        width={0.76}
+                                        height={height}
+                                        className={
+                                            isActive
+                                                ? "fill-primary"
+                                                : "fill-primary/45"
+                                        }
+                                    />
+                                    <rect
+                                        x={i}
+                                        y={0}
+                                        width={1}
+                                        height={100}
+                                        className={cn(
+                                            "cursor-default fill-transparent outline-none",
+                                            isActive && "fill-accent/30",
+                                        )}
+                                        tabIndex={0}
+                                        role="img"
+                                        aria-label={describe(p)}
+                                        onMouseEnter={() => setActiveIndex(i)}
+                                        onMouseLeave={() =>
+                                            setActiveIndex((current) => (current === i ? null : current))
+                                        }
+                                        onFocus={() => setActiveIndex(i)}
+                                        onBlur={() =>
+                                            setActiveIndex((current) => (current === i ? null : current))
+                                        }
+                                    />
+                                </g>
+                            );
+                        })}
+                    </svg>
+                )}
+            </div>
+
+            <div className="mt-1 flex h-8 items-center">
+                {loading ? (
+                    <Skeleton className="h-4 w-56 rounded" />
+                ) : (
+                    <p className="truncate text-xs text-muted-foreground" title={active ? describe(active) : summary}>
+                        {active ? describe(active) : summary}
+                    </p>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function TopByViews({
+    metrics,
+    onOpenVideo,
+}: {
+    metrics: LibraryMetrics | null;
+    onOpenVideo: (videoId: string) => void;
+}): ReactNode {
+    const rows = (metrics?.top_by_views ?? []).slice(0, TOP_SLOTS);
+    return (
+        <section className="flex h-[276px] flex-col rounded-lg border border-border bg-card px-3 py-2">
+            <div className="flex h-5 items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Most watched
+                </span>
+            </div>
+            <ul className="mt-1 flex flex-1 flex-col gap-1">
+                {Array.from({ length: TOP_SLOTS }).map((_, index) => {
+                    const row = rows[index];
+                    if (!metrics) {
+                        return (
+                            <li key={index} className="flex h-11 items-center gap-2 px-1">
+                                <Skeleton className="h-4 flex-1 rounded" />
+                                <Skeleton className="h-4 w-12 rounded" />
+                            </li>
+                        );
+                    }
+                    if (!row) {
+                        return <li key={index} className="h-11" aria-hidden="true" />;
+                    }
+                    return (
+                        <li key={row.video_id}>
+                            <button
+                                type="button"
+                                onClick={() => onOpenVideo(row.video_id)}
+                                className="flex h-11 w-full items-center gap-2 rounded-md px-1 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                title={`Open ${row.title}`}
+                            >
+                                <span className="w-4 shrink-0 text-xs tabular-nums text-muted-foreground">
+                                    {index + 1}
+                                </span>
+                                <span className="flex-1 truncate text-sm text-foreground">
+                                    {row.title}
+                                </span>
+                                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                    {formatCompactNumber(row.view_count)}
+                                </span>
+                                <ChevronRight
+                                    className="h-4 w-4 shrink-0 text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        </li>
+                    );
+                })}
+            </ul>
+        </section>
+    );
+}
+
+/** The one strip that says what the sync is doing — always rendered, never absent. */
+function SyncStrip({
+    library,
+    sync,
+    elapsedMs,
+    onBringUpToDate,
+}: {
+    library: LibraryRow | null;
+    sync: SyncState;
+    elapsedMs: number;
+    onBringUpToDate: () => void;
+}): ReactNode {
+    const running = sync.phase === "starting" || sync.phase === "listing";
+
+    if (running) {
+        const listed = formatCount(sync.listed);
+        const expected = sync.expectedTotal;
+        const ratio =
+            expected != null && expected > 0 ? Math.min(1, sync.listed / expected) : null;
+        return (
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Loader2
+                        className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+                        aria-hidden="true"
+                    />
+                    <span className="text-sm font-medium tabular-nums text-foreground">
+                        {sync.phase === "starting"
+                            ? "Asking the provider for the list"
+                            : expected != null
+                              ? `${listed} of about ${formatCount(expected)} listed`
+                              : `${listed} listed so far`}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground">
+                        <Timer className="h-3.5 w-3.5" aria-hidden="true" />
+                        {formatLiveClock(elapsedMs)}
+                    </span>
+                </div>
+                {ratio != null && (
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-border">
+                        <div
+                            className="h-full rounded-full bg-primary transition-[width] duration-300"
+                            style={{ width: `${Math.round(ratio * 100)}%` }}
+                        />
+                    </div>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                    {expected != null
+                        ? "The provider claims that total; it is advisory and often disagrees with the real list. The moving number is what we have actually enumerated."
+                        : "The provider gave no total, so there is nothing to measure progress against — the moving number is what we have actually enumerated."}
+                </p>
+            </div>
+        );
+    }
+
+    if (sync.phase === "unavailable") {
+        return (
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                <div className="flex items-start gap-2">
+                    <AlertTriangle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        aria-hidden="true"
+                    />
+                    <p className="text-sm text-foreground">
+                        {sync.message ??
+                            "The provider stopped this run and gave no sentence for it."}
+                    </p>
+                </div>
+                {sync.remedy && (
+                    <p className="pl-6 text-xs text-muted-foreground">{sync.remedy}</p>
+                )}
+                <p className="pl-6 text-xs tabular-nums text-muted-foreground">
+                    {`This Library still holds ${formatCount(sync.partialTotal ?? 0)} Sources from this run.`}
+                </p>
+            </div>
+        );
+    }
+
+    if (sync.phase === "failed") {
+        return (
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
+                <div className="flex items-start gap-2">
+                    <CircleAlert
+                        className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                        aria-hidden="true"
+                    />
+                    <p className="text-sm text-foreground">
+                        {sync.message ?? "The run failed and the server gave no sentence for it."}
+                    </p>
+                </div>
+                <p className="pl-6 text-xs tabular-nums text-muted-foreground">
+                    {`This Library still holds ${formatCount(sync.partialTotal ?? 0)} Sources from this run.`}
+                </p>
+                <div className="flex h-8 items-center pl-6">
+                    {sync.retryable ? (
+                        <Button size="sm" variant="outline" onClick={onBringUpToDate}>
+                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                            Try again
+                        </Button>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">
+                            The server marked this failure as not retryable, so repeating it now
+                            would fail the same way.
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    if (sync.phase === "done") {
+        return (
+            <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <Clock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <p className="text-sm tabular-nums text-foreground">
+                    {`Up to date — ${formatCount(sync.listed)} Sources listed in ${formatElapsed(
+                        sync.finishedElapsedMs,
+                    )}.`}
+                </p>
+            </div>
+        );
+    }
+
+    // idle
+    return (
+        <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <Hourglass className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm text-foreground">
+                {library === null
+                    ? " "
+                    : library.last_synced_at
+                      ? `Last brought up to date ${new Date(
+                            library.last_synced_at,
+                        ).toLocaleString()}${
+                            library.last_sync_duration_ms != null
+                                ? `, in ${formatElapsed(library.last_sync_duration_ms)}`
+                                : ""
+                        }.`
+                      : "This Library has never been brought up to date."}
+            </p>
+        </div>
+    );
+}
+
+export function LibraryMetricsHeader(props: {
+    library: LibraryRow | null;
+    metrics: LibraryMetrics | null;
+    sync: SyncState;
+    elapsedMs: number;
+    onBringUpToDate: () => void;
+    onOpenVideo?: (videoId: string) => void;
+    bringUpToDateDisabled?: boolean;
+}): ReactNode {
+    const { library, metrics, sync, elapsedMs, onBringUpToDate, onOpenVideo } = props;
+    const running = sync.phase === "starting" || sync.phase === "listing";
+    const disabled = running || props.bringUpToDateDisabled === true;
+    const tiles = buildTiles(metrics);
+
+    return (
+        <header className="flex w-full flex-col gap-3">
+            {/* Identity + the one manual control. Fixed height on both halves. */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-col justify-center gap-1">
+                    <div className="flex h-7 items-center">
+                        {library === null ? (
+                            <Skeleton className="h-6 w-56 rounded" />
+                        ) : (
+                            <h1 className="truncate text-xl font-semibold text-foreground">
+                                {library.name}
+                            </h1>
+                        )}
+                    </div>
+                    <div className="flex h-5 items-center gap-2 text-xs text-muted-foreground">
+                        {library === null ? (
+                            <Skeleton className="h-3.5 w-40 rounded" />
+                        ) : (
+                            <>
+                                <span className="truncate">
+                                    {library.handle ?? library.external_id}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <a
+                                    href={library.canonical_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="truncate underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    {library.canonical_url}
+                                </a>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
+                    <Button
+                        type="button"
+                        onClick={onBringUpToDate}
+                        disabled={disabled}
+                        className="h-11 min-w-[168px]"
+                        title={
+                            running
+                                ? "A sync is running right now; this Library is already being brought up to date."
+                                : props.bringUpToDateDisabled === true
+                                  ? "This Library cannot be brought up to date from here right now."
+                                  : "Ask the provider for the current list and catalogue what changed."
+                        }
+                    >
+                        {running ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                                Bringing up to date
+                            </>
+                        ) : (
+                            <>
+                                <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                                Bring up to date
+                            </>
+                        )}
+                    </Button>
+                    <div className="flex h-5 items-center justify-end">
+                        {metrics?.stale === true && (
+                            <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                                These numbers predate the newest rows.
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <SyncStrip
+                library={library}
+                sync={sync}
+                elapsedMs={elapsedMs}
+                onBringUpToDate={onBringUpToDate}
+            />
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                {tiles.map((tile) => (
+                    <MetricTile key={tile.key} tile={tile} />
+                ))}
+            </div>
+
+            <div
+                className={cn(
+                    "grid gap-2",
+                    onOpenVideo ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" : "grid-cols-1",
+                )}
+            >
+                <CadenceChart
+                    periods={metrics?.cadence_per_month ?? []}
+                    loading={metrics === null}
+                />
+                {onOpenVideo && <TopByViews metrics={metrics} onOpenVideo={onOpenVideo} />}
+            </div>
+
+            <div className="flex h-4 items-center">
+                {metrics !== null && (
+                    <p className="text-[11px] text-muted-foreground">
+                        <FileText className="mr-1 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
+                        {`Computed by the server at ${new Date(metrics.computed_at).toLocaleString()}.`}
+                    </p>
+                )}
+            </div>
+        </header>
+    );
+}
