@@ -50,6 +50,30 @@ export const MARKER_VALUE = "campaign";
 
 export type Marker =
   | {
+      /**
+       * A predicate the COPY TABLE ITSELF declares, because the table's campaign
+       * ownership is a fact about its own key columns rather than about an
+       * `origin` column or about production's snapshot.
+       *
+       * `platform.feature_knob` is the case that forced it. Its campaign rows are
+       * `feature = 'custom'` — the guards every lane of this campaign lands, all
+       * of them OFF — and PRODUCTION HOLDS ROWS ON THOSE SAME PRIMARY KEYS. So
+       * both other markers get it wrong in the dangerous direction: there is no
+       * `origin` column, and "absent from production's snapshot" is FALSE for a
+       * campaign knob production also has, which means the upsert would write
+       * production's value over a campaign guard and turn it ON mid-rehearsal.
+       * A declared predicate is the only one of the three that can say "this row
+       * is ours" about a row production also holds.
+       *
+       * `{alias}` in the template is replaced with the alias the caller is using.
+       */
+      readonly kind: "declared-predicate";
+      /** Predicate template over one row, with `{alias}` for the table alias. */
+      readonly template: string;
+      /** Why this table declares one, in one sentence, printed and stored. */
+      readonly because: string;
+    }
+  | {
       readonly kind: "origin-column";
       /** The column that carries the marker. */
       readonly column: string;
@@ -74,7 +98,17 @@ export interface ClientLike {
  * resolution means the table that HAS the column gets §13's real predicate even
  * when its sibling does not.
  */
-export async function resolveMarker(client: ClientLike, qualified: string): Promise<Marker> {
+export async function resolveMarker(
+  client: ClientLike,
+  qualified: string,
+  declared?: { readonly template: string; readonly because: string },
+): Promise<Marker> {
+  // A table that declares its own ownership predicate wins over both of the
+  // inferred markers, and deliberately so: it is the only one that can protect a
+  // campaign row sitting on a primary key production ALSO holds.
+  if (declared) {
+    return { kind: "declared-predicate", template: declared.template, because: declared.because };
+  }
   const [schema, table] = qualified.split(".");
   const r = await client.query(
     `select a.atttypid::regtype::text as typ
@@ -114,12 +148,16 @@ export function markerLabel(marker: Marker): string {
  * was always false — or always true — is how a guard becomes decoration.
  */
 export function campaignOwnedPredicate(marker: Marker, alias: string): string | null {
+  if (marker.kind === "declared-predicate")
+    return `(${marker.template.replaceAll("{alias}", alias)})`;
   if (marker.kind !== "origin-column") return null;
   return `${alias}."${marker.column}" is not distinct from '${marker.value}'`;
 }
 
 /** The complement: TRUE for a row the merge is allowed to overwrite or delete. */
 export function notCampaignOwnedPredicate(marker: Marker, alias: string): string | null {
+  if (marker.kind === "declared-predicate")
+    return `not (${marker.template.replaceAll("{alias}", alias)})`;
   if (marker.kind !== "origin-column") return null;
   return `${alias}."${marker.column}" is distinct from '${marker.value}'`;
 }
@@ -293,7 +331,7 @@ export async function countSpared(
   keysTable: string,
   fallback: number,
 ): Promise<number> {
-  if (marker.kind !== "origin-column") return fallback;
+  if (marker.kind === "absent-from-production-snapshot") return fallback;
   const alias = table.split(".").pop()!;
   const pkJoin = await client.query(
     `select a.attname::text as c
@@ -306,10 +344,10 @@ export async function countSpared(
   );
   const pk = pkJoin.rows.map((r) => (r as { c: string }).c);
   const on = pk.map((c) => `k."${c}" is not distinct from ${alias}."${c}"`).join(" and ");
+  const owned = campaignOwnedPredicate(marker, alias)!;
   const r = await client.query(
     `select count(*)::text n from ${table} as ${alias}
-      where ${alias}."${marker.column}" is not distinct from '${marker.value}'
-        and not exists (select 1 from ${keysTable} k where ${on})`,
+      where ${owned} and not exists (select 1 from ${keysTable} k where ${on})`,
   );
   return Number((r.rows[0] as { n: string }).n);
 }
@@ -331,9 +369,11 @@ export async function countCampaignOwned(
   branchKeys: () => Promise<Set<string>>,
   snapshotKeys: Set<string>,
 ): Promise<number> {
-  if (marker.kind === "origin-column") {
+  if (marker.kind !== "absent-from-production-snapshot") {
+    const alias = table.split(".").pop()!;
+    const owned = campaignOwnedPredicate(marker, alias)!;
     const r = await client.query(
-      `select count(*)::text n from ${table} where "${marker.column}" is not distinct from '${marker.value}'`,
+      `select count(*)::text n from ${table} as ${alias} where ${owned}`,
     );
     return Number((r.rows[0] as { n: string }).n);
   }

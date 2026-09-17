@@ -257,6 +257,18 @@ interface CopyTable {
   readonly columnsNote?: string;
   /** Not owned by the connecting role. Proven at run time to need no owner right. */
   readonly notOurs?: boolean;
+  /**
+   * THE TABLE'S OWN CAMPAIGN-OWNERSHIP PREDICATE, for a REGISTRY whose campaign
+   * rows sit on primary keys PRODUCTION ALSO HOLDS.
+   *
+   * §13's `origin` column and the `absent-from-production-snapshot` fallback both
+   * answer "is this row ours?" — and both answer NO for a campaign knob whose
+   * `(feature, key)` production also carries, which is exactly the row whose
+   * value must not move. A table that declares this gets `declared-predicate`
+   * instead, and the merge's upsert, delete, spared-count and before/after counts
+   * all read it. `{alias}` is substituted with whatever alias the statement uses.
+   */
+  readonly campaignOwned?: { readonly template: string; readonly because: string };
 }
 
 const COPY_TABLES: readonly CopyTable[] = [
@@ -517,7 +529,54 @@ const COPY_TABLES: readonly CopyTable[] = [
    * `403 permission denied for function is_platform_admin` with the schema
    * exposed and every table grant in place — which is `W6-GRID`'s first act.
    */
-  { table: "platform.client_callable_door", policy: "upsert" },
+  {
+    table: "platform.client_callable_door",
+    policy: "upsert",
+    campaignOwned: {
+      template: "{alias}.schema_name = 'custom'",
+      because:
+        "the campaign's own doors are the ones in schema `custom` — today `custom.record_write`, " +
+        "W1-STORE's single write door. Production holds door rows of its own and will hold more; " +
+        "this predicate is about WHOSE row it is, not about whether production has heard of it.",
+    },
+  },
+  /**
+   * EVERY ORGANIZATION-CONFIGURABLE BEHAVIOUR ON THE PLATFORM, and without it the
+   * rehearsal answers knob questions the real system stopped asking.
+   *
+   * Measured 2026-09-17: production 769 rows, the branch TEN — all ten this
+   * campaign's own `custom/*` guards. So every knob read on the branch fell
+   * through to a compiled default, and a lane rehearsing a knob-gated path was
+   * rehearsing against a default production has already moved off.
+   *
+   * 🚨 AND IT IS THE REASON `campaignOwned` EXISTS. Production holds FOURTEEN
+   * `feature = 'custom'` rows — earlier lanes landed their guards there — so a
+   * plain upsert on the primary key `(feature, key)` would write production's
+   * value over this branch's campaign guards. Several of those guards are the OFF
+   * switch (§6). A refresh that turned them ON mid-run would not fail loudly; it
+   * would quietly make every OFF-path proof in the campaign false. The declared
+   * predicate keeps the campaign's knobs exactly as its lanes left them, and the
+   * four `custom` rows production has and the branch does not stay ABSENT — a
+   * lane's guard is its lane's to land, never the refresh's to import.
+   *
+   * No secret column: every production row was scanned for secret-shaped content
+   * and the only hits are the WORDS inside prose ("risk-", "kiosk", "token
+   * budget"). `updated_by` is synthesised to NULL anyway — it is a real person's
+   * user id, it has no foreign key, and who last turned a production knob is not
+   * a fact a rehearsal branch needs.
+   */
+  {
+    table: "platform.feature_knob",
+    policy: "upsert",
+    synthesize: { updated_by: "null::uuid" },
+    campaignOwned: {
+      template: "{alias}.feature = 'custom'",
+      because:
+        "this campaign's knobs are its `custom/*` guards, and production holds rows on those same " +
+        "(feature, key) keys — so neither `origin` nor absence-from-the-snapshot can protect them, " +
+        "and an unguarded upsert would turn the campaign's own OFF switch ON.",
+    },
+  },
   { table: "platform.entity_grants", policy: "upsert" },
   { table: "platform.rulebook", policy: "upsert" },
   { table: "seo.starter_pack", policy: "upsert" },
@@ -1424,7 +1483,11 @@ async function main(): Promise<number> {
               ),
             ),
           );
-          const marker = await resolveMarker(branch, t);
+          const marker = await resolveMarker(
+            branch,
+            t,
+            COPY_TABLES.find((c) => c.table === t)?.campaignOwned,
+          );
           markers.set(t, marker);
           campaignBefore[t] = await countCampaignOwned(
             branch,
@@ -1433,7 +1496,13 @@ async function main(): Promise<number> {
             () => branchKeysOf(branch, t),
             snapshotKeys.get(t)!,
           );
-          if (marker.kind === "origin-column")
+          if (marker.kind === "declared-predicate")
+            console.log(
+              `${OK}${t.padEnd(30)} marker ${C.bold}${marker.template.replaceAll("{alias}", t.split(".").pop()!)}${C.reset} ` +
+                `(the table's own) — ${campaignBefore[t]} campaign-owned row(s) before the merge, and ` +
+                `neither the upsert nor the delete may touch one. ${marker.because}`,
+            );
+          else if (marker.kind === "origin-column")
             console.log(
               `${OK}${t.padEnd(30)} marker ${C.bold}${marker.column} = '${marker.value}'${C.reset} ` +
                 `(§13's own) — ${campaignBefore[t]} campaign-owned row(s) before the merge, and ` +

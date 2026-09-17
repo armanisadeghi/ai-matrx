@@ -2,11 +2,11 @@
   "_README": [
     "EVERY ROW HERE IS A DELTA THE BRANCH IS ALLOWED TO CARRY, AND A REASON IT IS ALLOWED.",
     "pnpm check:branch-schema-drift compares production against the rehearsal branch for five",
-    "object kinds \u2014 event trigger, function, trigger, policy, table/view \u2014 and exits 1 on any",
+    "object kinds — event trigger, function, trigger, policy, table/view — and exits 1 on any",
     "object production has that the branch lacks. Campaign-owned namespaces (custom, corpus,",
     "campaign_watch, h2m, restore_graph, zz_*, the 25 named public scratch tables, realtime's",
     "daily message partitions) are excluded in CODE. Everything else is excluded HERE, by name,",
-    "with a sentence saying why \u2014 so 'the drift list is empty' means empty, and a NEW production",
+    "with a sentence saying why — so 'the drift list is empty' means empty, and a NEW production",
     "object tomorrow is a red rather than one more line in a list nobody reads.",
     "",
     "Measured 2026-09-17 by lane W0-SYNC. platform, iam and history carry ZERO entries and must",
@@ -19,7 +19,7 @@
   "exceptions": [
     {
       "schema": "auth",
-      "reason": "The four `auth.users` triggers are GoTrue-adjacent and deliberately absent: W0-DATA copies `auth.users` as ID-ONLY SHELL ROWS (\u00a71 W0-DATA), and a new-user trigger firing on a shell row would manufacture CRM parties and profiles the corpus never asked for. Excluded by design, not by drift.",
+      "reason": "The four `auth.users` triggers are GoTrue-adjacent and deliberately absent: W0-DATA copies `auth.users` as ID-ONLY SHELL ROWS (§1 W0-DATA), and a new-user trigger firing on a shell row would manufacture CRM parties and profiles the corpus never asked for. Excluded by design, not by drift.",
       "objects": [
         "trigger auth.users.on_auth_user_created",
         "trigger auth.users.on_auth_user_created_crm_party",
@@ -55,7 +55,7 @@
     },
     {
       "schema": "graveyard",
-      "reason": "The whole `graveyard` schema is absent from the branch. It is not time-drift: graveyard has existed on production since 2026-06-26 and the branch's transplant simply did not carry it. Nothing in this campaign reads graveyard \u2014 \u00a73 rule 4 forbids touching the old system at all \u2014 so it is excluded rather than rebuilt. Removing this entry is how a chair who decides to rebuild the branch proves the decision landed.",
+      "reason": "The whole `graveyard` schema is absent from the branch. It is not time-drift: graveyard has existed on production since 2026-06-26 and the branch's transplant simply did not carry it. Nothing in this campaign reads graveyard — §3 rule 4 forbids touching the old system at all — so it is excluded rather than rebuilt. Removing this entry is how a chair who decides to rebuild the branch proves the decision landed.",
       "objects": [
         "policy graveyard.iam_canonical_sweep.platform_admin_all",
         "policy graveyard.iam_canonical_sweep.platform_admin_only",
@@ -151,6 +151,7 @@
       "schema": "seo",
       "reason": "Production-only `seo.*` topical-map functions from the 2026-09-17 map migrations. No lane in this book touches schema `seo`.",
       "objects": [
+        "function seo._tm_live_topic_id(p_map_id uuid, p_slug text)",
         "function seo._tm_page_perf(p_page_ids uuid[], p_days integer)",
         "function seo._tm_perf_days(p_org uuid, p_site uuid)",
         "function seo._tm_ref(p_type text, p_id uuid)",

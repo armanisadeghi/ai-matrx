@@ -50,6 +50,32 @@
  * `--self-test` proves the check RED without touching either database's contents: it
  * re-runs the comparison with the FIRST exception entry removed and asserts the exit code
  * flips to 1 and that the objects that entry covered are the ones named.
+ *
+ * THE SECOND CLAUSE — GRANTS, AND IT RUNS THE OTHER WAY ROUND (lane W2-GRANTS, 2026-09-17)
+ * ----------------------------------------------------------------------------------------
+ * The schema clause above asks whether the branch is BEHIND. This one asks whether it is
+ * LOOSER, which for an ACCESS rehearsal is the dangerous direction: a branch that grants
+ * `anon` EXECUTE on a function production does not answers YES where production answers
+ * `42501`, and every access proof taken on it is worth nothing.
+ *
+ * Measured on 2026-09-17, before it was closed: the branch held 2,142 function EXECUTE
+ * grants production does not — `anon` among them, on `iam.apply_rls` and 592 others.
+ *
+ * SO: a function EXECUTE grant that the BRANCH has and PRODUCTION does not, for `anon`,
+ * `authenticated` or `service_role`, FAILS this check. Bounded the same way the drift
+ * clause is, and every bound is a rule in code rather than a silence:
+ *   · only functions BOTH databases hold, keyed by identity args, never by OID — a grant
+ *     cannot be compared on an object one side lacks, and that is the clause above's job.
+ *   · campaign-owned namespaces are the campaign's, exactly as above.
+ *   · Supabase-managed schemas are the platform image's, and the two databases run
+ *     different images.
+ *   · A GRANT THAT CHANGES NOTHING IS NOT DRIFT. Where PRODUCTION already grants EXECUTE
+ *     to `PUBLIC`, every role on earth can already call the function there, so an explicit
+ *     branch grant to `anon` is redundant rather than looser. That is the whole of the
+ *     residue this campaign left behind: 173 extension functions in `public` (vector,
+ *     dblink, pg_trgm, plpgsql_check, pg_prewarm), owned by `supabase_admin` — the newer
+ *     Supabase image grants the client roles explicitly on top of the `PUBLIC` grant both
+ *     images carry, and `postgres` cannot revoke them because it is not the grantor.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -281,6 +307,8 @@ function printVerdict(v: Verdict, label: string): void {
 async function measure(): Promise<{
   prod: Map<string, Obj>;
   branch: Map<string, Obj>;
+  prodGrants: GrantRow[];
+  branchGrants: GrantRow[];
 }> {
   const prodEnv = loadDbEnv();
   if ("missing" in prodEnv) {
@@ -317,23 +345,149 @@ async function measure(): Promise<{
     );
     const prod = await inventory(prodClient);
     const branch = await inventory(branchClient);
+    const prodGrants = await grants(prodClient);
+    const branchGrants = await grants(branchClient);
     console.log(
       `\ninventory: production ${prod.size} object(s) / branch ${branch.size} object(s)` +
         ` across ${KINDS.join(", ")}`,
     );
-    return { prod, branch };
+    console.log(
+      `grants:    production ${prodGrants.length} / branch ${branchGrants.length} function EXECUTE row(s)` +
+        ` for anon, authenticated, service_role and PUBLIC`,
+    );
+    return { prod, branch, prodGrants, branchGrants };
   } finally {
     await prodClient.end().catch(() => {});
     if (branchClient) await branchClient.end().catch(() => {});
   }
 }
 
+// ---------------------------------------------------------------------------
+// THE GRANTS CLAUSE — branch-only client EXECUTE, which is the looser direction.
+// ---------------------------------------------------------------------------
+
+/** The client roles a browser or a published key can actually become. */
+const CLIENT_ROLES = ["anon", "authenticated", "service_role"] as const;
+
+/**
+ * Schemas the Supabase platform image owns. The two databases run different
+ * images, so these differ legitimately and none of them is a door this campaign
+ * reaches.
+ */
+const SUPABASE_SCHEMAS = new Set([
+  "auth", "storage", "realtime", "graphql", "graphql_public", "extensions",
+  "pgsodium", "pgsodium_masks", "vault", "supabase_functions", "supabase_migrations",
+  "net", "cron", "pgbouncer", "partman",
+]);
+
+/**
+ * `function identity | grantee`, plus the `PUBLIC` rows, so the caller can tell a
+ * grant that WIDENS anything from one that is already implied.
+ */
+const GRANTS_SQL = `
+select s.nspname as schema,
+       s.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' as identity,
+       case when a.grantee = 0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end as grantee
+  from pg_proc p
+  join pg_namespace s on s.oid = p.pronamespace
+  cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+ where s.nspname not in ('pg_catalog','information_schema','pg_toast')
+   and s.nspname not like 'pg_%'
+   and a.privilege_type = 'EXECUTE'
+   and (a.grantee = 0 or pg_get_userbyid(a.grantee) in ('anon','authenticated','service_role'))
+`;
+
+interface GrantRow {
+  readonly schema: string;
+  readonly identity: string;
+  readonly grantee: string;
+}
+
+async function grants(client: pg.Client): Promise<GrantRow[]> {
+  await client.query("begin transaction read only");
+  try {
+    const { rows } = await client.query<GrantRow>(GRANTS_SQL);
+    return rows;
+  } finally {
+    await client.query("rollback");
+  }
+}
+
+interface GrantVerdict {
+  /** Branch-only client EXECUTE that actually widens the answer. */
+  readonly looser: readonly string[];
+  /** Branch-only, but production already grants PUBLIC — redundant, not looser. */
+  readonly redundant: number;
+  /** Skipped because the function is not on both databases. */
+  readonly notShared: number;
+}
+
+/**
+ * `prodFns` / `branchFns` come from the OBJECT INVENTORY, never from the grant rows.
+ * Deriving "does production have this function?" from production's own grant list is
+ * exactly wrong for the case that matters: a function production grants to NOBODY has no
+ * grant row at all, so it would look absent, and a branch grant of it to `anon` — which is
+ * `iam.apply_rls`, the defect this clause was written for — would be skipped as "not
+ * shared" instead of failed. Caught by the planted-grant RED on 2026-09-17.
+ */
+function judgeGrants(
+  prod: readonly GrantRow[],
+  branch: readonly GrantRow[],
+  prodFns: ReadonlySet<string>,
+  branchFns: ReadonlySet<string>,
+): GrantVerdict {
+  const key = (g: GrantRow) => `${g.identity}|${g.grantee}`;
+  const prodSet = new Set(prod.map(key));
+  const prodPublic = new Set(prod.filter((g) => g.grantee === "PUBLIC").map((g) => g.identity));
+  const looser: string[] = [];
+  let redundant = 0;
+  let notShared = 0;
+  for (const g of branch) {
+    if (!(CLIENT_ROLES as readonly string[]).includes(g.grantee)) continue;
+    if (prodSet.has(key(g))) continue;
+    if (CAMPAIGN_SCHEMAS.has(g.schema) || g.schema.startsWith("zz_")) continue;
+    if (SUPABASE_SCHEMAS.has(g.schema)) continue;
+    if (!prodFns.has(g.identity) || !branchFns.has(g.identity)) {
+      notShared += 1;
+      continue;
+    }
+    if (prodPublic.has(g.identity)) {
+      redundant += 1;
+      continue;
+    }
+    looser.push(`${g.identity} → ${g.grantee}`);
+  }
+  looser.sort();
+  return { looser, redundant, notShared };
+}
+
+function printGrantVerdict(v: GrantVerdict): void {
+  if (v.looser.length === 0) return;
+  console.log(
+    `\n${C.red}THE BRANCH GRANTS ${v.looser.length} FUNCTION EXECUTE(S) PRODUCTION DOES NOT${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}Each one lets a client role call something production answers 42501 for, so every\n` +
+      `  access proof taken over it is measuring a system that does not exist.${C.reset}`,
+  );
+  for (const l of v.looser.slice(0, 40)) console.log(`  ${C.red}LOOSER ${C.reset}${l}`);
+  if (v.looser.length > 40) console.log(`  ${C.dim}… and ${v.looser.length - 40} more${C.reset}`);
+}
+
 async function main(): Promise<number> {
   const selfTest = process.argv.includes("--self-test");
   const exceptions = loadExceptions();
-  const { prod, branch } = await measure();
+  const { prod, branch, prodGrants, branchGrants } = await measure();
 
   const real = judge(prod, branch, exceptions, new Set());
+  const fnIdentities = (m: Map<string, Obj>) =>
+    new Set([...m.values()].filter((o) => o.kind === "function").map((o) => o.identity));
+  const grantVerdict = judgeGrants(
+    prodGrants,
+    branchGrants,
+    fnIdentities(prod),
+    fnIdentities(branch),
+  );
 
   if (selfTest) {
     // RED, without touching a database: run the SAME comparison with the first
@@ -368,6 +522,20 @@ async function main(): Promise<number> {
   }
 
   printVerdict(real, "campaign-owned namespaces excluded in code; the rest by name");
+  printGrantVerdict(grantVerdict);
+
+  if (grantVerdict.looser.length > 0) {
+    console.log(
+      `\n${C.red}BRANCH GRANT DRIFT — ${grantVerdict.looser.length} client EXECUTE grant(s) the branch has and production does not.${C.reset}`,
+    );
+    console.log(
+      `  Level them with a catalog-derived file in migrations/rehearsal/ headed \`-- target: branch\`\n` +
+        `  (\`grant_surface_level_with_production.sql\` is the one that closed the first 2,142), then\n` +
+        `  re-run this check. Do NOT excuse one in the exceptions file — that file is about objects\n` +
+        `  the branch LACKS, and a grant it should not have is the opposite problem. Exit 1.`,
+    );
+    return 1;
+  }
 
   if (real.missing.length > 0) {
     console.log(
@@ -385,7 +553,14 @@ async function main(): Promise<number> {
   console.log(
     `\n${C.green}NO BRANCH SCHEMA DRIFT${C.reset} — production holds no event trigger, function, trigger,\n` +
       `  policy or table that the rehearsal branch lacks, beyond ${real.excused.length} named exception(s).\n` +
-      `  platform, iam and history carry NO exceptions at all. Exit 0.`,
+      `  platform, iam and history carry NO exceptions at all.`,
+  );
+  console.log(
+    `${C.green}NO BRANCH GRANT DRIFT${C.reset} — no function EXECUTE the branch gives anon, authenticated\n` +
+      `  or service_role that production withholds. ${grantVerdict.redundant} branch-only grant(s) were\n` +
+      `  counted and NOT failed because production already grants that function to PUBLIC, so they\n` +
+      `  widen nothing; ${grantVerdict.notShared} were skipped because the function is not on both\n` +
+      `  databases, which is the schema clause's subject. Exit 0.`,
   );
   return 0;
 }
