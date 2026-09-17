@@ -75,6 +75,8 @@ export const MARKETING_RESERVED_SEGMENTS: ReadonlySet<string> = new Set([
   "snapshots",
   "social",
   "socials",
+  // The topical map's id door — `/marketing/topical-maps/{id}`.
+  "topical-maps",
   "websites",
   "api",
   "s",

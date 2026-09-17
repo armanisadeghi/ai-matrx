@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1171,
+  "routeCount": 1188,
   "routes": [
     {
       "pattern": "/",
@@ -397,6 +397,11 @@
       "pattern": "/administration/applications/packages",
       "status": "live",
       "source": "app/(admin)/administration/applications/packages/page.tsx"
+    },
+    {
+      "pattern": "/administration/applications/sync",
+      "status": "live",
+      "source": "app/(admin)/administration/applications/sync/page.tsx"
     },
     {
       "pattern": "/administration/automation",
@@ -3321,6 +3326,41 @@
       "source": "app/(core)/marketing/[brandId]/content/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/content/map",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/graph",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/graph/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/history",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/history/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/pages",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/table",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/table/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/text",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/text/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/content/plan",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/content/plan/page.tsx"
@@ -4301,6 +4341,16 @@
       "source": "app/(core)/marketing/tools/youtube/videos/[videoId]/page.tsx"
     },
     {
+      "pattern": "/marketing/topical-maps/[mapId]",
+      "status": "live",
+      "source": "app/(core)/marketing/topical-maps/[mapId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/topical-maps/topics/[topicId]",
+      "status": "live",
+      "source": "app/(core)/marketing/topical-maps/topics/[topicId]/page.tsx"
+    },
+    {
       "pattern": "/masterwork",
       "status": "live",
       "source": "app/(core)/masterwork/page.tsx"
@@ -4321,9 +4371,19 @@
       "source": "app/(core)/masterwork/[id]/conduct/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/drip",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/drip/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/import",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/import/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/inbox",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/inbox/page.tsx"
     },
     {
       "pattern": "/masterwork/[id]/interview",
@@ -4336,14 +4396,39 @@
       "source": "app/(core)/masterwork/[id]/masterworks/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/plan",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/plan/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/probe",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/probe/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/record",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/record/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/sort",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sort/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/sources",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/sources/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/teach-back",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/teach-back/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/triad",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/triad/page.tsx"
     },
     {
       "pattern": "/masterwork/admin",

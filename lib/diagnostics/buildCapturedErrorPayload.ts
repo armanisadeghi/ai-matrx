@@ -86,6 +86,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
   "org-resolution": "Org resolution fallback",
+  "topical-map-rpc": "Topical map RPC refusal",
   "user-toast": "User-facing error toast",
   "marketing-crawler": "Marketing crawler",
   scraper: "Web scraper failure",

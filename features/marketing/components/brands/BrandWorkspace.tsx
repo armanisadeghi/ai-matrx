@@ -33,6 +33,8 @@ import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { marketingSeg } from "@/features/marketing/lib/keys";
+import { BrandTopicalMapCard } from "@/features/marketing/seo/topical-map/components/BrandTopicalMapCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -728,6 +730,15 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               title={`Search performance across ${current.name}`}
             />
           ) : null}
+
+          {/* The brand's topical map — which pages this client should have and
+              where they live. A map belongs to the BRAND, so it is a card here
+              rather than another row action on one site. */}
+          <BrandTopicalMapCard
+            brandId={current.id}
+            brandSeg={marketingSeg(current)}
+            organizationId={current.organization_id}
+          />
 
           <SectionCard
             title="Websites"
