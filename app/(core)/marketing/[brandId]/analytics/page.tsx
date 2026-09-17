@@ -21,7 +21,7 @@ export default async function BrandAnalyticsPage({
     return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   }
   return (
-    <div className="h-full overflow-y-auto p-3">
+    <div className="h-full overflow-y-auto p-3 pt-[calc(var(--shell-header-h)+0.75rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+1rem)]">
       <Suspense fallback={<LoadingSurface label="Loading this client's Analytics…" />}>
         <BrandAnalyticsWorkspace brandId={brand.id} />
       </Suspense>
