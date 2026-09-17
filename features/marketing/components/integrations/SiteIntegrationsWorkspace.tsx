@@ -1531,6 +1531,7 @@ function BuiltInProviderCard({
   icon: Icon,
   value,
   siteDomain,
+  siteRootUrl,
   connections,
   resources,
   dirty,
