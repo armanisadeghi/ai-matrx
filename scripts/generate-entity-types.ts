@@ -201,10 +201,12 @@ export function validateRequiredDisplayMaps(
   const failures: string[] = [];
   for (const schema of new Set(Object.values(metadata).map((meta) => meta.schema))) {
     const live = schemaRows.get(schema); const installed = schemaDisplay[schema];
+    if (live === undefined && installed === undefined) continue;
     if (!live || !installed || installed.label !== live.display_name || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`schema:${schema}`);
   }
   for (const category of new Set(Object.values(metadata).flatMap((meta) => meta.referenceCategory ? [meta.referenceCategory] : []))) {
     const live = categoryRows.get(category); const installed = categoryDisplay[category];
+    if (live === undefined && installed === undefined) continue;
     if (!live || !installed || installed.label !== live.label || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`reference-category:${category}`);
   }
   return failures;
@@ -355,12 +357,24 @@ async function selfTest(): Promise<void> {
     registryReadThrew = true;
   }
   if (!registryReadThrew) throw new Error("self-test: unreadable registry was accepted");
-  const displayFailures = validateRequiredDisplayMaps(
-    { installed: { schema: "public", referenceCategory: "required" } },
+  const fallbackDisplay = validateRequiredDisplayMaps(
+    { hr: { schema: "hr", referenceCategory: null }, seo: { schema: "seo", referenceCategory: null }, commerce: { schema: "commerce", referenceCategory: null } },
     [], [], {}, {},
   );
-  if (displayFailures.join(",") !== "schema:public,reference-category:required") throw new Error("self-test: missing required display metadata was accepted");
-  console.log("  ✓ entity vocabulary self-test passed: additive warning, removal, field drift, scratch, package pre-RPC unknown-token, and registry-read, and required-display paths are forced.");
+  if (fallbackDisplay.length) throw new Error("self-test: jointly absent fallback schema display was rejected");
+  const displayFailures = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: "required" } },
+    [{ schema_name: "public", display_name: "General", sort_order: 10, is_active: true }],
+    [{ slug: "required", label: "Required", sort_order: 10, is_active: true }], {}, {},
+  );
+  if (displayFailures.join(",") !== "schema:public,reference-category:required") throw new Error("self-test: one-sided required display metadata was accepted");
+  const changedDisplay = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: null } },
+    [{ schema_name: "public", display_name: "Changed", sort_order: 10, is_active: true }], [],
+    { public: { label: "General", sortOrder: 10, isActive: true } }, {},
+  );
+  if (changedDisplay.join(",") !== "schema:public") throw new Error("self-test: changed required display metadata was accepted");
+  console.log("  ✓ entity vocabulary self-test passed: additive warning, removal, field drift, scratch, package pre-RPC unknown-token, and registry-read, and fallback-display, one-sided-display, and changed-display paths are forced.");
 }
 
 if (process.argv.includes("--self-test")) {
