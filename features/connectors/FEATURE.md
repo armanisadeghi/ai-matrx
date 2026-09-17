@@ -26,7 +26,7 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **The connector primitive** (generic; the provider is a config, never a component)
 
 - `features/connectors/provider-config.ts` — `ConnectorProviderConfig` + `GOOGLE_CONNECTOR_PROVIDER`. Nine Google product rows, two groups, one FINAL user-facing sentence each, each row's grant bundle, its server capability keys, and its attachable resource types. **Rollout state is not here** — it comes from the server catalog at request time (PLAN §2: it flips with no rebuild).
-- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` **and its `actionScope`** are the single place "Connect" vs "Reconnect" and "this product" vs "this whole account" are decided (`grantNeedsRenewal` / `accountRenewalProductKeys` read them, so no surface re-derives a renewal), and `CONNECTOR_REFUSAL_CODES` / `refusalDisposition` are the single place a provider's refusal code becomes an expectation (reconnect · heals itself · ours to repair · retry).
+- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` **and its `actionScope`** are the single place "Connect" vs "Reconnect" and "this product" vs "this whole account" are decided (`grantNeedsRenewal` / `accountRenewalProductKeys` read them, so no surface re-derives a renewal), and `CONNECTOR_REFUSAL_CODES` / `refusalDisposition` are the single place a provider's refusal code becomes an expectation (reconnect · heals itself · ours to repair · retry · someone else must share it).
 - `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for; `renewals`, the products whose GRANT is renewed although no scope is missing — derived from the account's health, never passed in; and `blocked`, every switched-on product that cannot be asked for, with its own reason), `emptyPlanAnswer` (**the ONE sentence a press with nothing to send gets**, on every surface — it names the blocked rows first, so "already connected" can never print over a row reading Not working) and `consentOutcomes` (per-row truth read back from the account after the exchange).
 - `features/connectors/google-capability-health.ts` — part of the Google adapter: reads `users.integration_connections.capability_health` (the server's per-capability call record) through a `__kind` runtime guard and folds the capability keys into the provider-agnostic per-PRODUCT `activity` map `health.ts` takes. No component ever sees a capability key or a Google shape.
 - `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes), `useGoogleConsentRunner` (one GIS window, one `/exchange`), `ADMISSION_LANGUAGE` (a catalog code → a rollout sentence) and `GOOGLE_FAILURE_LANGUAGE` + `consentFailureAnswer` (**the ONE translation of a failed press**: our sentence per code the hub can raise, else one honest generic sentence, with the server's raw words carried separately for the disclosure and never inlined).
@@ -257,6 +257,36 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- `2026-09-17` — F-23, closing aidream lane B-9's cross-repo half (this
+  client's census was RED the moment aidream `ea0161993` landed): added
+  `resource_permission_denied` to `CONNECTOR_REFUSAL_CODES` with its own
+  disposition, `share_required` (never `reconnect` — the scopes are already
+  granted — and never `retry`, since Google will refuse the same item every
+  time until a different Google identity shares it); the `refused`/"Not
+  working" state census in `productHealth` now names it explicitly so it
+  cannot fall through to "Connected". Adopted `capability_health.<key>
+  .last_grant` (a consent grant is not a call, aidream N12): a new
+  `lastGrantAt` is folded per product in `google-capability-health.ts` and
+  `ProductPermissionsDisclosure` says "connected, no calls yet (granted …)"
+  rather than the borrowed "last successful use" line. Adopted
+  `metadata.discovery_outage` (aidream N15): `googleAccount` already left the
+  credential unflagged for it (the row stays `connected`), and the missing
+  piece — the server's own outage sentence — is now read in
+  `marketing/google/health.ts::googleDiscoveryOutageSentence` and shown once
+  on the account card with no Reconnect, while each affected capability's
+  transient `provider_unavailable`/`call_failed` refusal already renders,
+  unchanged, through the existing per-product `activityNote` path. Confirmed
+  `metadata.credential_failure.code` remains what the account-fault pipeline
+  prefers over text classification, for every one of B-9's seven declared
+  codes, with a new cross-repo census next to
+  `refusal-codes-are-the-servers-codes.test.ts` and
+  `admission-codes-are-the-servers-codes.test.ts`. Guards, each reproduced RED
+  first: `__tests__/a-resource-permission-denial-is-not-a-reconnect.test.ts`,
+  `__tests__/a-grant-is-not-a-successful-call.test.tsx`,
+  `__tests__/a-discovery-outage-gets-no-reconnect.test.tsx`, plus
+  `marketing/google/__tests__/a-discovery-outage-is-not-a-dead-credential.test.ts`
+  and `marketing/google/__tests__/credential-failure-codes-are-the-servers-codes.test.ts`.
 
 - `2026-09-17` — F-20: **two machine values and one impossible number, out of the
   import reviews** (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` D9 and

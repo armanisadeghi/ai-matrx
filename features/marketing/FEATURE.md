@@ -777,6 +777,59 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-17 — Claude (google-native lane F-23, closing aidream B-9's cross-repo
+  half): **the client's refusal vocabulary was RED against B-9's new
+  `resource_permission_denied`, and `metadata.discovery_outage` was unread.**
+  `features/connectors/__tests__/refusal-codes-are-the-servers-codes.test.ts`
+  failed on head the moment aidream `ea0161993` landed
+  `call_health.py::RefusalCode`'s eighth code — Google's property-level
+  PERMISSION_DENIED (a GA4 property, a Search Console site, a Tag Manager
+  container never shared with this account) — because `parseGoogleCapabilityHealth`
+  drops any refusal code `isConnectorRefusalCode` does not recognise, so a
+  denial like this rendered NO refusal at all. `health.ts` now declares the
+  code with a new disposition, `share_required` — never `reconnect` (the
+  scopes are already all present; re-approving them asks Google for nothing
+  new) and never `retry` (the denial will not clear on its own) — and the
+  `refused`/"Not working" state census now names it explicitly alongside
+  `reconnect`/`ours`, so the row states the server's own sentence (which
+  already names the remedy: ask the item's owner to share it, or choose
+  another item) and offers no button. Also adopted: `capability_health.<key>
+  .last_grant` (B-9's `record_consent_grants`, verifier N12) — a consent that
+  re-grants a capability's scopes no longer writes `last_success`, so
+  `google-capability-health.ts` now folds a `lastGrantAt` per product distinct
+  from `lastSuccessAt`, and `ProductPermissionsDisclosure` says "connected, no
+  calls yet (granted …)" rather than borrowing the "last successful use" label
+  for an approval that was never a call. And `metadata.discovery_outage` (B-9's
+  `google_discovery_health`, verifier N15) — a discovery outage during consent
+  keeps the connection `connected` with no `last_error`, so `googleAccount`
+  never flagged the credential for it to begin with; the missing half was the
+  server's own outage sentence, now read by
+  `marketing/google/health.ts::googleDiscoveryOutageSentence` and shown once on
+  the account card (`ConnectedAccountHealth`) with no Reconnect nearby, because
+  each affected capability already carries its own self-healing
+  `provider_unavailable`/`call_failed` refusal through the existing per-product
+  path. Confirmed unchanged and now censused: `metadata.credential_failure.code`
+  is what `googleAccountFault` prefers over `classifyGoogleAccountFault`'s text
+  match, for every one of B-9's seven `CredentialFailureCode`s — a new
+  `credential-failure-codes-are-the-servers-codes.test.ts` reads
+  `credential_failure.py`'s `Literal` from the sibling aidream checkout and
+  fails the same way `refusal-codes-are-the-servers-codes.test.ts` and
+  `admission-codes-are-the-servers-codes.test.ts` already do when a server code
+  the client does not know appears (falsified by hand: commenting out one
+  mapping breaks it). Guards, each reproduced RED first against the pre-fix
+  files:
+  `features/connectors/__tests__/a-resource-permission-denial-is-not-a-reconnect.test.ts`,
+  `a-grant-is-not-a-successful-call.test.tsx`,
+  `a-discovery-outage-gets-no-reconnect.test.tsx`,
+  `features/marketing/google/__tests__/a-discovery-outage-is-not-a-dead-credential.test.ts`,
+  `credential-failure-codes-are-the-servers-codes.test.ts`. Verified: the whole
+  `features/connectors` + `features/marketing/google` jest suite — 48 suites /
+  347 tests passed; `pnpm check:parse` OK; `pnpm check:kind-marker-law` OK; a
+  scoped `tsc --noEmit` shows zero errors on every file this lane touched (the
+  one error inside the two directories, `connectors/attachable-resources.ts:68`,
+  is pre-existing and untouched by this change). **Not verified on a screen:**
+  this sandbox cannot sign in or reach a live server.
+
 - 2026-09-17 — Claude (google-native lane F-24, retiring the `capability_health` stand-in): **the column is generated; the stand-in that named its own end is gone.** `types/database.types.ts` now carries `capability_health: Json` on `users.integration_connections`, so `CONNECTION_PENDING_SELECT`, `CapabilityHealthPending` and `service.ts`'s `.returns<ConnectionRow[]>()` cast — whose own comment said to delete them the moment the generated row gained the column — are deleted; the query's `select()` now names `capability_health` directly in `CONNECTION_SELECT` and `ConnectionRow` is a `Pick` off the generated row. Fixtures that predated the column on `GoogleConnectionSummary` (missing `capability_health` was already a required-property gap, not something this change introduced) now carry `capability_health: null`: `google-workspace/GoogleWorkspaceOverviewBody.test.tsx`, `google-workspace/connection.test.ts`, `marketing/google/service.test.ts` (4 fixtures). `marketing/google/service.auth.test.ts`'s query mock, which F-19 had made both Thenable and `.returns()`-able to survive either shape, is simplified back to a bare awaited builder now that the cast is gone. **Left alone (pre-existing, unrelated to the missing column):** `GoogleWorkspaceOverviewBody.tsx:532,542` (`boolean | undefined` vs `string` comparison) and `connectors/attachable-resources.ts:68` (`AttachableAvailability` extends mismatch on `attachable`) — both still error under a scoped `tsc` and neither traces to `capability_health`. Verified: scoped `tsc --noEmit` over `features/marketing/google`, `features/google-workspace`, `features/connectors` shows zero errors on every file touched here; `npx jest features/marketing/google features/google-workspace --no-coverage` — 18 suites / 141 tests passed; `pnpm check:parse` OK.
 - 2026-09-17 — Claude (google-native lane F-19, closing `VERIFY-U-P2-R3` N9 in this repo's half): **`google/health.ts` classifies `last_error`; it never speaks it.** The `needs_attention` branch returned the stored column verbatim, and the connector primitive carried it onto a person's card eleven times — the vault item's name, the connection UUID and a Python `KeyError` among them, past this repo's own rule that vault reference identifiers are not client-readable. The file now carries the one account-fault vocabulary (`GOOGLE_ACCOUNT_FAULT_CODES`, `classifyGoogleAccountFault`, `googleAccountFaultLanguage`, `googleAccountRefusalSentence`): the typed code aidream stamps in `metadata.credential_failure` is preferred, the recorded text is classified when there is no code, and anything unrecognised says "something on our side needs repair" and nothing more. `googleConnectionDiagnostics` still carries the raw column — its reader is an operator on the super-admin connections workspace. Reproduced RED first in `features/connectors/__tests__/the-account-fault-is-a-sentence-not-a-stack.test.tsx` over the nine reasons `service.py::_record_credential_failure` actually writes; `google/health.test.ts` swapped its "surfaces the server-recorded reason" case for the translation rule and the typed-code preference. Also repaired while here: `google/service.auth.test.ts` failed on head ("…returns is not a function") because its query mock stopped at `abortSignal` while the read ends `.returns<ConnectionRow[]>()`, so the client-safe-projection guard was proving nothing.
 - 2026-09-17 — Claude (google-native lane F-22, closing round-3 verdict `common-docs/projects/google-native/VERIFY-U-P4-U-M1-R3.md` Unit B, items B-N1…B-N6): **there is ONE comparison judge, it judges BOTH windows, and every refusal names what it refused.** (1) **B-N1 (HIGH, live on five sites)** — the Search Console 28-day delta was implemented three times (`trendPercent` in `components/sites/SiteKpiPeeks.tsx`, read by the managed-sites table, its phone card and `SitePeekWindowImpl`; a second `trendPercent` inside `search-console/components/SearchConsolePortfolio.tsx`; and that file's own inline `site.gsc_prev_days >= 21`), and all three judged the PREVIOUS window only with `21` typed in by hand. `gsc_cur_days` was already selected from `web.v_site_kpis` in `data/service.ts` and silently dropped in `mergeSiteListRow`. Live on 2026-09-17 five managed sites sat at **8 of 28 current days against 23 of 28 previous**, so those screens printed **−54.3% … −72.6%** while two of the sites had gone UP per collected day. New `analytics/gsc-delta.ts` composes the platform's one judge, `judgeAnalyticsComparison` — both windows' coverage, the 75% share and 3-day gap tolerance derived from `COMPARISON_COVERAGE_MIN_SHARE` / `COMPARISON_COVERAGE_TOLERANCE_DAYS`, never a literal — and every surface asks `siteKpiDelta(row, metric)`. `gsc_cur_days` is typed onto `SiteListRow` and carried through the merge. A refused pair now prints "no comparison · 8 of 28 days now vs 23 of 28" with the judge's whole sentence on hover, instead of a wrong percentage OR (when the old rule did suppress) nothing at all. The two duplicate implementations are deleted, and `judgeAnalyticsComparison` itself now refuses a short CURRENT window too. (2) **B-N2** — `preferredGscProperty`'s third rank returned the only discovered candidate without asking anything, so four of six inventories handed back a pick this file's own judge refuses, under a header claiming it could not; the rank is gone (nothing to bind is the honest answer) and the header says what the code does. (3) **B-N3** — `judgeGscBindingWrite` returned `allowed: true` early for an empty `site.domain` while `preflightGscProperty`, which judges off `root_url`, answered MISMATCH on the same pair (and the backfill gate therefore said start). The judge always asks the pre-flight now; only a row with neither a domain nor a parseable address is unjudgeable, and that is refused BY NAME. (4) **B-N4** — the URL-prefix `ok` branch echoed the ref verbatim, recommending `https://user:pw@example.com/` with the password, an uppercase host, and a query string — none of which Google holds. New `gscUrlPropertyRef` is the URL half of the ONE normalizer (`gscDomainPropertyRef` is the domain half) and every URL branch, `ok` included, recommends its output with each change named out loud. (5) **B-N5** — `sc-domain:` and `sc-domain:"   "` refused with an empty hole in the sentence ("the domain property , which is a different domain"); an empty tail is now named, and `sc-domain:example.com:443` / `sc-domain:https://example.com` are told they are not domain names rather than "a different domain". (6) **B-N6** — `judgeAnalyticsComparison` accepted `previous = 31` against a 28-day window as comparable with no caveat, and described `windowDays: 0` as "28 of 0 days collected"; an impossible coverage count and a zero-length window are both refused by name. Guards, each reproduced RED on the pre-fix bytes first: `analytics/gsc-delta.test.ts` (the five live rows, the per-collected-day direction, plus a class guard that fails on any hand-typed `prevDays >= n` or any re-declared `trendPercent` anywhere under `features/marketing/` — proven falsifiable with a probe file), `components/sites/site-list-presentation.test.tsx` (+3: the table cell and the phone card print no percentage and say why), `google/gsc-property.preflight.test.ts` (+11 across B-N2…B-N5), `analytics/window.test.ts` (+5 impossible-coverage cases). **Left alone deliberately:** the live binding of site `d7c4aeb1-…` to `http://bhrcenter.com/` — the judge refuses it correctly and `lib/site-status.test.ts` proves the site's GSC health chip says "Search Console property does not match this site — …" with `bhrcenter.com` named. **Not verified on a screen:** this container cannot sign in, so the refusal chip was proven through server-rendered markup, not a person's eye.

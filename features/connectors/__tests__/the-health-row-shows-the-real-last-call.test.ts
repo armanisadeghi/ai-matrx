@@ -164,6 +164,10 @@ describe("folding capabilities into the product the person sees", () => {
     );
     expect(activity.workspace_files).toEqual({
       lastSuccessAt: "2026-09-17T08:00:00Z",
+      // No consent grant is recorded in this fixture — a grant is not a call
+      // (F-23 / aidream N12), so the fold carries this as its own null fact
+      // rather than omitting it.
+      lastGrantAt: null,
       lastRefusal: {
         message: "Google is rate-limiting this account for Sheets.",
         at: "2026-09-17T09:30:00Z",

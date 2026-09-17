@@ -98,6 +98,16 @@ export interface ConnectorAccount {
    */
   lastRefusalSentence: string | null;
   /**
+   * A TRANSIENT outage while the server checked what this account can reach —
+   * never a broken credential. `usable` stays true and no product on the
+   * account gets flagged for it: the grant is fine, the server just could not
+   * confirm which products answer yet, and the sentence says to try again.
+   * Null when nothing of the kind is recorded. This is deliberately separate
+   * from `lastRefusalSentence`: a discovery outage is not a refusal on any one
+   * capability, it is the server unable to check several of them at once.
+   */
+  discoveryOutageSentence?: string | null;
+  /**
    * What the provider RECORDED for this account, per product key. Supplied by
    * the provider adapter from the server's own call record; absent means the
    * server records nothing for this account, never that nothing happened.
@@ -144,6 +154,13 @@ export type ConnectorProductState =
 export interface ConnectorProductActivity {
   /** ISO timestamp of the last call this product completed. */
   lastSuccessAt?: string | null;
+  /**
+   * ISO timestamp of the last CONSENT that (re-)granted this product's scopes.
+   * A grant is not a call (N12): a product with a grant and no success has
+   * never been used, only approved, and the row says exactly that rather than
+   * wearing the grant as a "last successful use" it never had.
+   */
+  lastGrantAt?: string | null;
   /** The last refusal for this product, in the provider's own words. */
   lastRefusal?: ConnectorRefusalInput | null;
   /**
@@ -181,6 +198,15 @@ export const CONNECTOR_REFUSAL_CODES = [
   "grant_expired_or_revoked",
   "platform_configuration",
   "provider_denied",
+  /**
+   * The credential is fine and the product is fine — THIS item (a GA4
+   * property, a Search Console site, a Tag Manager container) was never
+   * shared with the connected Google account. A reconnect re-approves the
+   * same scopes and lands in the same place, so this is never `reconnect`:
+   * the one fix is someone who already has access sharing the item, or the
+   * person choosing an item this account can already see.
+   */
+  "resource_permission_denied",
   "resource_unavailable",
   "quota_exhausted",
   "provider_unavailable",
@@ -202,17 +228,26 @@ export function isConnectorRefusalCode(
  * WHAT A REFUSAL MEANS FOR THE PERSON — the one place a code becomes an
  * expectation, so no component branches on a code:
  *
- * - `reconnect`    — only the person can fix it, with one reconnect.
- * - `self_healing` — it clears by itself; nothing about the connection is
- *                    broken, so offering a reconnect would waste their time.
- * - `ours`         — our own configuration; a reconnect cannot help.
- * - `retry`        — the one call failed; the connection is intact.
+ * - `reconnect`      — only the person can fix it, with one reconnect.
+ * - `self_healing`   — it clears by itself; nothing about the connection is
+ *                      broken, so offering a reconnect would waste their time.
+ * - `ours`           — our own configuration; a reconnect cannot help.
+ * - `retry`          — the one call failed; the connection is intact.
+ * - `share_required` — the credential and the scopes are both fine; a
+ *                      DIFFERENT Google identity — this item's owner — must
+ *                      share it before this account can read it. Reconnecting
+ *                      re-approves the same scopes and lands in the exact same
+ *                      refusal, so a Reconnect button here is the dead control
+ *                      this vocabulary exists to end (law 4): the row states
+ *                      the server's own sentence, which already names what to
+ *                      ask for, and offers no button that would change nothing.
  */
 export type ConnectorRefusalDisposition =
   | "reconnect"
   | "self_healing"
   | "ours"
-  | "retry";
+  | "retry"
+  | "share_required";
 
 const REFUSAL_DISPOSITION: Record<
   ConnectorRefusalCode,
@@ -228,6 +263,11 @@ const REFUSAL_DISPOSITION: Record<
   // refusal — no data moves, and the fact on screen stays true.
   provider_denied: "reconnect",
   platform_configuration: "ours",
+  // Neither `reconnect` (the credential and scopes are already fine — a fresh
+  // approval asks Google for nothing new) nor `retry` (the refusal will not
+  // clear on its own; it is Google's PERMISSION_DENIED on this exact item,
+  // every time, until someone else shares it).
+  resource_permission_denied: "share_required",
   quota_exhausted: "self_healing",
   provider_unavailable: "self_healing",
   resource_unavailable: "retry",
@@ -290,6 +330,12 @@ export interface ConnectorProductHealth {
    * product's label. Rendered as "No calls recorded yet", never blank.
    */
   lastSuccessAt: string | null;
+  /**
+   * When this product's grant was last (re-)approved. NEVER a substitute for
+   * `lastSuccessAt`: a grant is not a call, so a row with a grant and no
+   * success says "connected, no calls yet" — never "last successful use".
+   */
+  lastGrantAt: string | null;
   /**
    * The last refusal for THIS product, in the provider's own words. Null
    * whenever the server records no refusal for it — the account-level refusal
@@ -424,6 +470,7 @@ export function productHealth({
   // A timestamp that does not parse is not a timestamp (N14): a success nobody
   // can date must not silence a refusal, whatever an adapter handed over.
   const lastSuccessAt = parsableTimestamp(recorded?.lastSuccessAt ?? null);
+  const lastGrantAt = parsableTimestamp(recorded?.lastGrantAt ?? null);
   const lastRefusal: ConnectorRefusalFact | null = recorded?.lastRefusal
     ? {
         message: recorded.lastRefusal.message,
@@ -510,6 +557,7 @@ export function productHealth({
     missingScopes,
     rollout: rows,
     lastSuccessAt,
+    lastGrantAt,
     lastRefusal,
     activityNote,
     // D3: the verb is the truth about this account, not about the button.
@@ -567,17 +615,23 @@ export function productHealth({
   }
 
   // The provider's own last word outranks a green badge: a product whose newest
-  // recorded fact is a refusal the person must act on, or one that is ours to
-  // repair, is not "Connected" (D2 + "connected is never a boolean that lies").
+  // recorded fact is a refusal the person must act on, one that is ours to
+  // repair, or one only another Google identity can clear by sharing the item,
+  // is not "Connected" (D2 + "connected is never a boolean that lies"). Every
+  // disposition that is not self-healing lands here — census it by name so a
+  // new disposition can never fall through to "Connected" by omission.
   if (
     standingRefusal &&
     (standingRefusal.disposition === "reconnect" ||
-      standingRefusal.disposition === "ours")
+      standingRefusal.disposition === "ours" ||
+      standingRefusal.disposition === "share_required")
   ) {
     return row({
       state: "refused",
       label: "Not working",
-      // The server's sentence, verbatim: it was written for this person.
+      // The server's sentence, verbatim: it was written for this person, and
+      // for `share_required` it already names exactly what to ask for — a
+      // second, client-written remedy would only repeat it.
       reason: standingRefusal.message,
       remedy:
         standingRefusal.disposition === "reconnect"

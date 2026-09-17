@@ -47,6 +47,21 @@ export interface GoogleCapabilitySuccess {
   action: string;
 }
 
+/**
+ * One capability's last CONSENT that (re-)granted its scopes. A grant is not a
+ * call: the hub used to write a re-approval into `last_success`, so one
+ * minute after an account-level reconnect every product on it claimed a "last
+ * successful use" that never happened (aidream verifier N12). This slot keeps
+ * the approval as its own fact, so `lastSuccessAt` stays the property of a real
+ * provider call and a row that has never been CALLED — only granted — says so.
+ */
+export interface GoogleCapabilityGrant {
+  /** Null when the server wrote something that is not a timestamp (N14's rule
+   * applied to this slot too: an unreadable grant is not a grant). */
+  at: string | null;
+  action: string;
+}
+
 /** One capability's last refused call, classified by the server. */
 export interface GoogleCapabilityRefusal {
   /** Null when the server wrote something that is not a timestamp (N14). */
@@ -61,6 +76,7 @@ export interface GoogleCapabilityRefusal {
 export interface GoogleCapabilityRecord {
   lastSuccess: GoogleCapabilitySuccess | null;
   lastRefusal: GoogleCapabilityRefusal | null;
+  lastGrant: GoogleCapabilityGrant | null;
 }
 
 export interface GoogleConnectionCapabilityHealth {
@@ -115,6 +131,19 @@ function parseSuccess(raw: unknown): GoogleCapabilitySuccess | null {
   return { at, action: stringField(raw, "action") ?? "" };
 }
 
+/**
+ * A grant we cannot date is dropped rather than shown with a fabricated date —
+ * the record is still kept as "granted, no calls yet" (via `lastGrant` being
+ * non-null with `at: null`) rather than treated as never having happened,
+ * because the consent itself is not in doubt, only when it occurred.
+ */
+function parseGrant(raw: unknown): GoogleCapabilityGrant | null {
+  if (!isJsonObject(raw)) return null;
+  const action = stringField(raw, "action");
+  if (!action) return null;
+  return { at: timestampField(raw, "at"), action };
+}
+
 function parseRefusal(raw: unknown): GoogleCapabilityRefusal | null {
   if (!isJsonObject(raw)) return null;
   const at = stringField(raw, "at");
@@ -154,8 +183,11 @@ export function parseGoogleCapabilityHealth(
     const record: GoogleCapabilityRecord = {
       lastSuccess: parseSuccess(value.last_success),
       lastRefusal: parseRefusal(value.last_refusal),
+      lastGrant: parseGrant(value.last_grant),
     };
-    if (record.lastSuccess || record.lastRefusal) capabilities[key] = record;
+    if (record.lastSuccess || record.lastRefusal || record.lastGrant) {
+      capabilities[key] = record;
+    }
   }
   return { kind: GOOGLE_CAPABILITY_HEALTH_KIND, capabilities, recognized: true };
 }
@@ -198,6 +230,7 @@ export function googleActivityByProduct(
     let success: GoogleCapabilitySuccess | null = null;
     let refusal: GoogleCapabilityRefusal | null = null;
     let standing: GoogleCapabilityRefusal | null = null;
+    let grant: GoogleCapabilityGrant | null = null;
     for (const key of product.capabilityKeys) {
       const record = health.capabilities[key];
       if (!record) continue;
@@ -207,6 +240,15 @@ export function googleActivityByProduct(
       if (newer(record.lastRefusal?.at ?? null, refusal?.at ?? null)) {
         refusal = record.lastRefusal;
       }
+      // A GRANT IS NOT A CALL (N12): folded the same way as a success, but into
+      // its own slot, so a product that has only ever been GRANTED — never
+      // called — can say so honestly rather than borrowing the success label.
+      if (
+        record.lastGrant &&
+        (!grant || newer(record.lastGrant.at, grant.at))
+      ) {
+        grant = record.lastGrant;
+      }
       if (refusalStandsFor(record)) {
         // Undated refusals sort last by `newer`, so prefer whichever standing
         // refusal we can date, and otherwise keep the first one we saw.
@@ -215,7 +257,7 @@ export function googleActivityByProduct(
         }
       }
     }
-    if (!success && !refusal) continue;
+    if (!success && !refusal && !grant) continue;
     // A STANDING REFUSAL ON ANY CAPABILITY OWNS THE ROW (N11). Folding the
     // newest success and the newest refusal independently let a `drive_files`
     // success five minutes after a `docs` refusal render the product
@@ -225,6 +267,7 @@ export function googleActivityByProduct(
     const shown = standing ?? refusal;
     activity[product.key] = {
       lastSuccessAt: success?.at ?? null,
+      lastGrantAt: grant?.at ?? null,
       lastRefusal: shown
         ? {
             message: shown.sentence,

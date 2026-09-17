@@ -29,6 +29,7 @@ import {
 import {
   diagnoseGoogleConnection,
   googleAccountRefusalSentence,
+  googleDiscoveryOutageSentence,
 } from "@/features/marketing/google/health";
 import type {
   GoogleConnectionResource,
@@ -249,6 +250,9 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     // the generic shape has no field a raw provider string may travel in
     // (VERIFY-U-P2-R3, N9).
     lastRefusalSentence: googleAccountRefusalSentence(row),
+    // NOT a refusal, and never flags the credential (N15): the exchange
+    // succeeded, and Google simply did not answer some discovery calls yet.
+    discoveryOutageSentence: googleDiscoveryOutageSentence(row),
     activity: googleActivityByProduct(GOOGLE_CONNECTOR_PROVIDER, recorded),
   };
 }

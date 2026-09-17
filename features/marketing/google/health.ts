@@ -332,6 +332,32 @@ export function googleAccountRefusalSentence(
   ).reason;
 }
 
+/**
+ * THE DISCOVERY-OUTAGE SENTENCE, VERBATIM (aidream verifier N15). A discovery
+ * outage is NOT a dead credential: the exchange succeeded, the vault item is
+ * written, and Gmail send would work perfectly — Google simply did not answer
+ * when asked what this account can reach for some products. The server keeps
+ * `status = 'connected'` for it (only `_record_credential_failure` may write
+ * `needs_attention`) and records the fact in `metadata.discovery_outage`
+ * instead: `{products, sentence, at}`. Before this existed, the client read
+ * `needs_attention` for the same condition and every product on the account
+ * said "Needs reconnecting" beside a repair press that changed nothing — a
+ * five-minute Search Console blip presented as nine broken products.
+ *
+ * Returns null whenever nothing of the shape is recorded, and null on any
+ * value this reader does not recognise — never a guess at the server's words.
+ */
+export function googleDiscoveryOutageSentence(
+  connection: GoogleConnectionSummary,
+): string | null {
+  const outage = connection.metadata?.discovery_outage;
+  if (!outage || typeof outage !== "object" || Array.isArray(outage)) {
+    return null;
+  }
+  const sentence = (outage as Record<string, unknown>).sentence;
+  return typeof sentence === "string" && sentence.trim() ? sentence : null;
+}
+
 /** The fault on this connection: the server's typed code first, then its text. */
 export function googleAccountFault(
   connection: GoogleConnectionSummary,

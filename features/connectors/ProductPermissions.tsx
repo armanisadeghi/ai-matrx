@@ -78,6 +78,10 @@ export function ProductPermissionsDisclosure({
   const panelId = useId();
   const rollout = rolloutSentence(health);
   const lastSuccess = relativeTime(health.lastSuccessAt);
+  // A GRANT IS NOT A CALL (N12): a product with a grant and no success has
+  // never been used, only approved — the disclosure says exactly that, never
+  // "last successful use", which is a fact this product does not have yet.
+  const lastGrant = relativeTime(health.lastGrantAt);
 
   return (
     <div className={cn("min-w-0", className)}>
@@ -150,11 +154,14 @@ export function ProductPermissionsDisclosure({
                   )}
                 >
                   {/* Never a blank and never the account's timestamp wearing a
-                      product's label: say plainly that nothing is recorded. */}
-                  {/* Never a blank and never the account's timestamp wearing a
                       product's label. The server records this per product now;
                       when it has recorded nothing, the row says exactly that. */}
-                  {lastSuccess ?? "no calls recorded yet."}
+                  {lastSuccess ??
+                    // A grant alone is never shown as a successful call (N12):
+                    // the product has been approved but never yet used.
+                    (lastGrant
+                      ? `connected, no calls yet (granted ${lastGrant}).`
+                      : "no calls recorded yet.")}
                 </dd>
               </div>
               <div className="flex items-start gap-1.5">

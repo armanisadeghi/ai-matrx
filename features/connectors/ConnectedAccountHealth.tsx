@@ -193,6 +193,15 @@ export function ConnectedAccountHealth({
                 {account.statusRemedy ? ` ${account.statusRemedy}` : ""}
               </p>
             ) : null}
+            {/* A discovery outage is NOT a broken credential (N15): the account
+                stays usable, no product is flagged, and there is no Reconnect
+                here — the server's own sentence already says to try again. */}
+            {account.usable && account.discoveryOutageSentence ? (
+              <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Clock className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                {account.discoveryOutageSentence}
+              </p>
+            ) : null}
             {/* THE ONE REPAIR FOR A DEAD CREDENTIAL, beside the sentence that
                 asks for it. It states what one approval covers before it is
                 pressed (destructive-and-expensive-actions.md: an expensive
