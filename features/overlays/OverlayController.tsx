@@ -4619,6 +4619,7 @@ export default function OverlayController() {
             seedAbout={data.seedAbout}
             listItems={data.listItems}
             listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
           />
         );
       })()}
@@ -4679,6 +4680,7 @@ export default function OverlayController() {
             seedAbout={data.seedAbout}
             listItems={data.listItems}
             listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
           />
         );
       })()}

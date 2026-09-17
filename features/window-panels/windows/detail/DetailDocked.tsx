@@ -26,6 +26,8 @@ export interface DetailDockedProps {
   seedAbout: string | null;
   listItems: DetailRef[] | null;
   listIndex: number | null;
+  /** Length of the list this window was cut from, or null when nothing was cut (NEW-13). */
+  listTrimmedFrom: number | null;
 }
 
 const SHELLS = { Docked: DetailDockedShell };
@@ -39,9 +41,10 @@ export default function DetailDocked({
   seedAbout,
   listItems,
   listIndex,
+  listTrimmedFrom,
 }: DetailDockedProps) {
   if (!isOpen || !type || !id) return null;
-  const data = toDetailInstanceData({ type, id, seedName, seedAbout, listItems, listIndex });
+  const data = toDetailInstanceData({ type, id, seedName, seedAbout, listItems, listIndex, listTrimmedFrom });
   return (
     <DetailHostProvider ports={{ ...DETAIL_TYPE_BINDING, shells: SHELLS }}>
       <DetailDockedPresentation data={data} onClose={onClose} />
