@@ -106,8 +106,14 @@ describe("the receipt adapter reads the state aidream now writes", () => {
     expect(receipt.sentence).toBe(SERVER_SENTENCE);
   });
 
-  it("still calls a state this build does not know `unknown`", () => {
-    expect(readApprovalReceipt({ state: "quantum" }).state).toBe("unknown");
+  it("calls a state this build does not know `unrecognized`, and keeps the word", () => {
+    // Round-4 § V14-4: this used to be `unknown`, which rendered as an ordinary
+    // waiting row with a live Approve. An absent receipt is still `unknown`; a
+    // state we cannot place is its own state and no control is live over it.
+    const receipt = readApprovalReceipt({ state: "quantum" });
+    expect(receipt.state).toBe("unrecognized");
+    expect(receipt.rawState).toBe("quantum");
+    expect(readApprovalReceipt({}).state).toBe("unknown");
   });
 
   /**

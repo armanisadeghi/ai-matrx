@@ -157,10 +157,11 @@ function matches(filter: readonly string[] | undefined, item: ApprovalItem) {
 /**
  * 🚨 THE ONE ANSWER TO "MAY ANY CONTROL ON THIS ROW STILL DO SOMETHING?"
  *
- * Four row states mean no: the apply is IN FLIGHT on the server, this build
+ * Five row states mean no: the apply is IN FLIGHT on the server, this build
  * cannot read the row at all, the proposal is past the organization's review
- * window (the door answers 403), and the change already reached Google with the
- * answer lost (no retry, ever — an append is not idempotent).
+ * window (the door answers 403), the change already reached Google with the
+ * answer lost (no retry, ever — an append is not idempotent), and the last
+ * attempt is in a receipt state this build has never heard of (§ V14-4).
  *
  * It lives here, once, because the queue's generic Approve was not the only live
  * control: a kind's `individualReview` can carry its OWN action, and Gmail's does
@@ -185,6 +186,11 @@ function noDecisionControls(item: ApprovalItem): boolean {
   return (
     Boolean(item.inFlight) ||
     Boolean(item.unreadable) ||
+    // 🚨 A RECEIPT STATE THIS BUILD HAS NEVER HEARD OF (§ V14-4). It is not the
+    // same as no receipt: something was attempted and this build cannot say what
+    // happened, so neither door may be live — approving could duplicate a write
+    // and rejecting could deny a change that already landed.
+    Boolean(item.unknownState) ||
     item.lastAttempt?.state === "applied_unconfirmed"
   );
 }
@@ -358,6 +364,9 @@ export function ApprovalQueue({
       // A row this build cannot read cannot be decided in a batch either — its
       // effect cannot be listed in the confirm (§ A-N6).
       !item.unreadable &&
+      // …and neither can a row whose last attempt is in a state this build does
+      // not know: the confirm cannot state what Approve would do (§ V14-4).
+      !item.unknownState &&
       // An expired proposal cannot be approved at all (the door answers 403), so
       // it never joins a batch whose Approve would refuse it row by row. Its
       // Reject stays on the row itself (§ A-N7).
@@ -848,6 +857,18 @@ export function ApprovalQueue({
                                 {item.unreadable ? (
                                   <p className="break-words text-[11px] font-medium text-warning">
                                     {item.unreadable.sentence}
+                                  </p>
+                                ) : null}
+                                {/* 🚨 THE LAST ATTEMPT IS IN A STATE THIS BUILD
+                                    HAS NEVER HEARD OF (round-4 verification
+                                    § V14-4). aidream can add a receipt state at
+                                    any release; before this, such a row rendered
+                                    as an ordinary waiting row with a live
+                                    Approve on every kind. It now names the state
+                                    and offers nothing — honest, never dead. */}
+                                {item.unknownState ? (
+                                  <p className="break-words text-[11px] font-medium text-warning">
+                                    {item.unknownState.sentence}
                                   </p>
                                 ) : null}
                                 {/* 🚨 PAST THE ORGANIZATION'S REVIEW WINDOW. The

@@ -38,9 +38,18 @@
  * claimed, no door offers a retry, and the screen prints the server's own
  * sentence. Reading it as `unknown` would have put it in the bucket for shapes
  * this build cannot read; reading it as `failed` would have offered the "Try
- * again" that appends the same block twice. So the ladder below is a SWITCH with
- * a `never` default: the next state aidream adds fails `pnpm type-check` here
- * instead of quietly reading as applied or as failed.
+ * again" that appends the same block twice.
+ *
+ * 🚨 AND THE FORCING FUNCTION IS A CENSUS, NOT A `never` DEFAULT (round-4
+ * verification § V14-4). This file used to claim that "the next state aidream
+ * adds fails `pnpm type-check` here" — true only if a human first mirrored the
+ * new constant into the union below, and NOTHING compared the two repos. At run
+ * time an unheard-of state (`claimed`, `queued_for_retry`) read as `unknown` and
+ * left Approve live on every kind. Two things fixed it: the states are now
+ * MEASURED against aidream's own `RECEIPT_*` constants by
+ * `__tests__/receipt-states-are-the-servers-states.test.ts`, and a state this
+ * build cannot place is its own state — `unrecognized` — which every caller
+ * reports by NAME and over which no control is ever live.
  */
 
 import type { Json } from "@/types/database.types";
@@ -64,7 +73,17 @@ export type ApprovalReceiptState =
    */
   | "applied_unconfirmed"
   | "rejected"
-  /** No receipt, or one written in a shape this build does not recognise. */
+  /**
+   * 🚨 THE RECEIPT NAMES A STATE THIS BUILD HAS NEVER HEARD OF — a server ahead
+   * of this client (round-4 verification § V14-4). It is NOT `unknown`: the row
+   * says something happened and this build cannot say what, so it is neither an
+   * ordinary waiting row nor a failure to retry. `rawState` keeps the server's
+   * word so the row can name it, and `noLiveAction` refuses every control over
+   * it — a live Approve there could be a duplicate append or nothing at all.
+   */
+  | "unrecognized"
+  /** NO receipt at all, or one with no readable `state` key. An ordinary,
+   *  never-yet-approved row lands here, and it keeps its controls. */
   | "unknown";
 
 /**
@@ -72,7 +91,10 @@ export type ApprovalReceiptState =
  * without listing it here fails `pnpm type-check` instead of quietly widening
  * what this narrowing calls `unknown`.
  */
-const SERVER_STATES: Record<Exclude<ApprovalReceiptState, "unknown">, true> = {
+const SERVER_STATES: Record<
+  Exclude<ApprovalReceiptState, "unknown" | "unrecognized">,
+  true
+> = {
   applying: true,
   failed: true,
   applied: true,
@@ -80,7 +102,22 @@ const SERVER_STATES: Record<Exclude<ApprovalReceiptState, "unknown">, true> = {
   rejected: true,
 };
 
-const STATES: readonly string[] = Object.keys(SERVER_STATES);
+/**
+ * 🚨 EVERY STATE THE SERVER WRITES, AS DATA — and the census reads THIS.
+ *
+ * `features/approvals/__tests__/receipt-states-are-the-servers-states.test.ts`
+ * diffs it against aidream's own `RECEIPT_*` constants
+ * (`aidream/aidream/services/google_workspace/approvals.py` today; lane B-18
+ * moves them to their own module and the census reads that first). Before the
+ * census, this list was a HAND MIRROR and nothing compared the two repos, so the
+ * "type-check will catch the next state" claim in this file was false and a
+ * `claimed` receipt handed every kind a live Approve (§ V14-4).
+ */
+export const APPROVAL_RECEIPT_SERVER_STATES = Object.keys(
+  SERVER_STATES,
+) as ReadonlyArray<Exclude<ApprovalReceiptState, "unknown" | "unrecognized">>;
+
+const STATES: readonly string[] = APPROVAL_RECEIPT_SERVER_STATES;
 
 /** The two phases a replayable write has, as aidream names them. */
 export type ApprovalWritePhase =
@@ -88,6 +125,12 @@ export type ApprovalWritePhase =
 
 export interface ApprovalReceipt {
   state: ApprovalReceiptState;
+  /**
+   * The `state` string EXACTLY as the server wrote it, whenever there was one —
+   * so a state this build does not know can be named on the row instead of
+   * silently disappearing into a bucket (§ V14-4).
+   */
+  rawState: string | null;
   /** The refusal, verbatim from the server, when `state` is `failed`. */
   error: string | null;
   /** The action the door re-ran, when the receipt names it. */
@@ -125,13 +168,18 @@ export function readApprovalReceipt(
 ): ApprovalReceipt {
   const row = record(value);
   if (!row) return EMPTY_RECEIPT;
-  const state = row.state;
+  const rawState = text(row, "state");
   const phase = text(row, "phase");
   return {
+    // A KNOWN state is itself; a state we cannot place is `unrecognized` and
+    // keeps its word; NO state at all is `unknown` — the never-approved row.
     state:
-      typeof state === "string" && STATES.includes(state)
-        ? (state as ApprovalReceiptState)
-        : "unknown",
+      rawState === null
+        ? "unknown"
+        : STATES.includes(rawState)
+          ? (rawState as ApprovalReceiptState)
+          : "unrecognized",
+    rawState,
     error: text(row, "error"),
     action: text(row, "action"),
     phase:
@@ -145,6 +193,7 @@ export function readApprovalReceipt(
 
 const EMPTY_RECEIPT: ApprovalReceipt = {
   state: "unknown",
+  rawState: null,
   error: null,
   action: null,
   phase: null,
@@ -201,6 +250,30 @@ export function unconfirmedApplySentence(
   );
 }
 
+/**
+ * 🚨 THE SENTENCE FOR A STATE THIS BUILD CANNOT PLACE, and it never guesses.
+ *
+ * A server ahead of this client wrote a `state` nothing here answers for
+ * (§ V14-4). The row is real, something was attempted, and this build cannot
+ * say whether it landed — so the sentence NAMES the state, refuses to claim
+ * either outcome, and asks for the one thing that actually fixes it: a newer
+ * build. No retry is offered: over an append or a create, a guess costs the
+ * person a duplicate.
+ */
+export function unknownStateSentence(
+  state: string | null,
+  what?: string,
+): string {
+  const subject = what ? `"${what}": ` : "";
+  const named = state ? `\`${state}\`` : "an unnamed state";
+  return (
+    `${subject}the last attempt on this row is in a state this screen does not ` +
+    `know: ${named}. This build cannot tell whether anything happened in ` +
+    "Google, so it offers no button — refresh after the next release, and open " +
+    "the file in Google if you need to know now."
+  );
+}
+
 /** The sentence for a row whose apply is still running. No decision controls. */
 export function applyingSentence(what?: string): string {
   const subject = what ? `"${what}" is` : "This is";
@@ -225,6 +298,8 @@ export function receiptRowMarks(
     state: "failed" | "applied_unconfirmed";
     sentence: string;
   };
+  /** A state this build does not know — no control on the row may be live. */
+  unknownState?: { state: string; sentence: string };
 } {
   const receipt = readApprovalReceipt(value);
   switch (receipt.state) {
@@ -242,6 +317,15 @@ export function receiptRowMarks(
         lastAttempt: {
           state: "applied_unconfirmed",
           sentence: unconfirmedApplySentence(receipt),
+        },
+      };
+    case "unrecognized":
+      // 🚨 § V14-4: this used to fall in with `unknown` and render as an
+      // ordinary waiting row, Approve and all.
+      return {
+        unknownState: {
+          state: receipt.rawState ?? "",
+          sentence: unknownStateSentence(receipt.rawState),
         },
       };
     case "applied":
@@ -370,6 +454,14 @@ function deriveDecisionReply({
       return {
         bucket: "unconfirmed",
         message: unconfirmedApplySentence(receipt, what),
+      };
+    case "unrecognized":
+      // NOBODY KNOWS, and this build cannot even name the outcome — the same
+      // bucket as an unconfirmed write, because it is neither a success to count
+      // nor a failure to retry (§ V14-4).
+      return {
+        bucket: "unconfirmed",
+        message: unknownStateSentence(receipt.rawState, what),
       };
     // These three say nothing on their own about what THIS call did: `applied`
     // and `rejected` are read together with the status below, and `unknown` is

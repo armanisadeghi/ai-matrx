@@ -197,6 +197,15 @@ export interface ApprovalItem {
     sentence: string;
   } | null;
   /**
+   * 🚨 THE LAST ATTEMPT IS IN A STATE THIS BUILD HAS NEVER HEARD OF (round-4
+   * verification § V14-4 — the verifier put `claimed` and `queued_for_retry` on
+   * a row of every produced kind and both doors stayed live). The row prints the
+   * state by name and offers NO control at all: this build cannot say whether the
+   * change was made, and over an append or a create a guess costs a duplicate.
+   * Set once, for every kind, by `receipt.ts` → `receiptRowMarks`.
+   */
+  unknownState?: { state: string; sentence: string } | null;
+  /**
    * 🚨 THIS PROPOSAL HAS OUTLIVED THE ORGANIZATION'S REVIEW WINDOW
    * (`hitl.google.review_timeout_hours`). The apply door refuses it with 403
    * carrying this very sentence, so the row states it BEFORE the click and

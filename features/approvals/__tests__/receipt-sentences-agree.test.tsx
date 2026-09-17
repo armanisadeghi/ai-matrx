@@ -94,6 +94,8 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 
 // eslint-disable-next-line import/first -- after the mocks above
 import { documentAppendKind } from "../kinds/document-append";
+// eslint-disable-next-line import/first -- after the mocks above
+import { APPROVAL_RECEIPT_SERVER_STATES } from "../receipt";
 
 const SCOPE = { key: "user-1", organizationId: "org-1", userId: "user-1" };
 
@@ -162,6 +164,9 @@ function saidBy(outcome: ApprovalOutcome): string {
   return [
     ...outcome.failures.map((entry) => entry.message),
     ...(outcome.alreadyDecided ?? []).map((entry) => entry.message),
+    // The unconfirmed bucket is a sentence a person reads too — leaving it out
+    // is how a suite can "pass" over a row whose outcome nobody knows.
+    ...(outcome.unconfirmed ?? []).map((entry) => entry.message),
   ].join(" ");
 }
 
@@ -185,7 +190,16 @@ function facts(outcome: ApprovalOutcome): {
   };
 }
 
-/** The four receipts aidream's `apply_google_approval` can write. */
+/**
+ * 🚨 ONE RECEIPT PER STATE THE SERVER DECLARES — taken from the CENSUS, not from
+ * a hand list (round-4 verification § V14-4, which named this very block: *"it
+ * hand-lists 'the four receipts aidream can write', which is V14-4's missing
+ * census wearing a test costume"*). `APPROVAL_RECEIPT_SERVER_STATES` is diffed
+ * against aidream's own `RECEIPT_*` constants by
+ * `receipt-states-are-the-servers-states.test.ts`, and the last test in this
+ * file fails if a state from that census has no receipt here — so a state the
+ * server adds cannot pass through this suite unexercised.
+ */
 const RECEIPTS: Record<string, Json> = {
   applied: {
     __kind: "google_workspace_approval_receipt",
@@ -203,8 +217,26 @@ const RECEIPTS: Record<string, Json> = {
     state: "applying",
     started_at: "2026-09-17T00:00:00Z",
   } as unknown as Json,
-  // No state this build can read — a shape from a server older or newer than us.
+  applied_unconfirmed: {
+    __kind: "google_workspace_approval_receipt",
+    state: "applied_unconfirmed",
+    phase: "after_provider_write",
+    may_have_landed: "the block was appended to the document",
+    sentence:
+      "AI Matrx sent this change to Google and then lost the answer, so the change may have been made; check the document before retrying.",
+  } as unknown as Json,
+  rejected: {
+    __kind: "google_workspace_approval_receipt",
+    state: "rejected",
+  } as unknown as Json,
+  // NO state key at all — a receipt shape this build cannot read. Distinct from
+  // the next entry: nothing here says an attempt was ever made.
   unreadable: {} as unknown as Json,
+  // 🚨 A STATE FROM A SERVER AHEAD OF THIS BUILD (§ V14-4).
+  unrecognized: {
+    __kind: "google_workspace_approval_receipt",
+    state: "queued_for_retry",
+  } as unknown as Json,
 };
 
 async function bothPaths(receipt: Json) {
@@ -298,5 +330,35 @@ describe("the same receipt, read on both paths, says the same thing", () => {
     expect(outcome!.applied).toBe(1);
     expect(outcome!.failures).toHaveLength(0);
     expect(outcome!.alreadyDecided ?? []).toHaveLength(0);
+  });
+
+  it("UNCONFIRMED: both send the reader to the file, and neither offers a retry", async () => {
+    const { accepted, rejected } = await bothPaths(RECEIPTS.applied_unconfirmed!);
+    for (const outcome of [accepted, rejected]) {
+      // The server's own sentence, verbatim (§ A-N3), on both paths.
+      expect(saidBy(outcome)).toContain("lost the answer");
+      expect(facts(outcome).changeWasMade).toBe(false);
+      expect(facts(outcome).changeWasNotMade).toBe(false);
+      expect(saidBy(outcome)).not.toContain("Try again");
+      expect(facts(outcome).performed).toBe(0);
+    }
+  });
+
+  it("A STATE THIS BUILD DOES NOT KNOW: both name it, and neither guesses", async () => {
+    const { accepted, rejected } = await bothPaths(RECEIPTS.unrecognized!);
+    for (const outcome of [accepted, rejected]) {
+      expect(saidBy(outcome)).toContain("a state this screen does not know");
+      expect(saidBy(outcome)).toContain("queued_for_retry");
+      expect(facts(outcome).changeWasMade).toBe(false);
+      expect(facts(outcome).changeWasNotMade).toBe(false);
+      expect(saidBy(outcome)).not.toContain("Undo it where it landed");
+      expect(facts(outcome).performed).toBe(0);
+    }
+  });
+
+  it("exercises EVERY state the server declares — the census, not a hand list", () => {
+    for (const state of APPROVAL_RECEIPT_SERVER_STATES) {
+      expect(Object.keys(RECEIPTS)).toContain(state);
+    }
   });
 });

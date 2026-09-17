@@ -87,20 +87,76 @@ jest.mock("@/features/crm/gmail/service", () => ({
 }));
 jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: () => undefined,
+  resolveAskByCallId: () => undefined,
+  cancelAskByCallId: () => undefined,
 }));
-/** The real card is the thing under discussion: its Send is the live control. */
-jest.mock("@/features/google-workspace/agent/GmailReviewCard", () => ({
-  GmailReviewCard: () => (
-    <div>
-      <button type="button">Send email</button>
-    </div>
-  ),
+/**
+ * 🚨 THE REAL `GmailReviewCard` IS MOUNTED HERE (round-4 verification § V14-7,
+ * the manufactured-data finding: *"replaces the real `GmailReviewCard` with a
+ * stand-in `<button>Send email</button>`, so it proves the QUEUE's gate and not
+ * that the real card's control disappears"*). Only the card's two outside edges
+ * are stubbed — the reviewed-send POST and the Google connection inventory —
+ * because everything this suite is about is the card's own Send button and
+ * whether the queue mounts it. Its label is "Send", from the card itself.
+ */
+jest.mock("@/features/google-workspace/service", () => ({
+  sendReviewedGmail: jest.fn(async () => ({ id: "sent-1" })),
+}));
+/**
+ * The ONE component swapped inside the real card, and it is not a control: the
+ * body field. The shipped `ProTextarea` drags the voice-capture stack (mic device
+ * enumeration, the global recording provider, the transcription-cleanup agent
+ * hook) into a suite about whether a Send button is mounted, and jsdom has no
+ * media devices. A plain textarea keeps the card's own state, its own edits and
+ * its own Send exactly as shipped — the finding (§ V14-7) was that the CARD was
+ * a stand-in, not that its textarea was.
+ */
+jest.mock("@/components/official/ProTextarea", () => ({
+  ProTextarea: ({
+    value,
+    onChange,
+    ...rest
+  }: {
+    value?: string;
+    onChange?: (event: unknown) => void;
+  }) => <textarea value={value} onChange={onChange} {...rest} />,
+}));
+jest.mock("@/features/marketing/google/hooks", () => ({
+  useGoogleConnectionInventory: () => ({
+    data: {
+      connections: [
+        {
+          id: "conn-1",
+          provider: "google",
+          account_email: "me@example.com",
+          status: "connected",
+          scopes: ["https://www.googleapis.com/auth/gmail.send"],
+        },
+      ],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  }),
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: () => null,
 }));
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  // The real card mounts the real `ProTextarea`, which reaches the recordings
+  // slice through the global recording provider. There is no store here, so a
+  // selector over a slice this suite does not stand up reads as absent rather
+  // than throwing — the card's own state is what is under test.
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ recordings: {} }),
+  useAppDispatch: () => jest.fn(),
+  // The card's body field is the real `ProTextarea`, whose AI action reads the
+  // store. Nothing in this suite dispatches; the store is only consulted.
+  useAppStore: () => ({
+    getState: () => ({}),
+    dispatch: () => undefined,
+    subscribe: () => () => undefined,
+  }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "u1",
@@ -133,6 +189,31 @@ let root: Root;
 beforeAll(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
     true;
+  // The real card renders through `AgentCardShell`, which asks `useIsMobile()`;
+  // jsdom has no `matchMedia`. Desktop is the honest default for this assertion.
+  // …and the card's shell fades its scroll edges through a ResizeObserver.
+  if (!("ResizeObserver" in globalThis)) {
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+  if (!window.matchMedia) {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }),
+    });
+  }
 });
 
 beforeEach(() => {
@@ -183,14 +264,20 @@ describe("the real Gmail kind on an expired row", () => {
     expect(screen.text).toContain("sam@example.com");
     // The reason is on the row BEFORE any click (§ A-N7).
     expect(screen.text).toContain("can no longer be applied");
-    // 🚨 The finding: the review card — and with it Send — used to mount anyway.
-    expect(screen.labels).not.toContain("Send email");
+    // 🚨 The finding: the review card — and with it its Send — used to mount anyway.
+    expect(screen.labels).not.toContain("Send");
+    expect(screen.text).not.toContain("Nothing sends until you press Send");
   });
 
-  it("still mounts the card when the row is NOT expired", async () => {
+  it("still mounts the REAL card, with its own Send, when the row is NOT expired", async () => {
     expired = null;
     const screen = await renderQueue([gmailSendKind]);
-    expect(screen.labels).toContain("Send email");
+    // The real card's own words and its own control — proof that the assertion
+    // above measured the thing the person would have clicked.
+    expect(screen.text).toContain("Nothing sends until you press Send");
+    expect(screen.labels).toContain("Send");
+    // And what it would send is on screen and editable, as the card promises.
+    expect(screen.text).toContain("Following up");
   });
 });
 
@@ -236,6 +323,15 @@ describe("no kind can mount a live action on a row nobody may act on", () => {
     {
       name: "a row this build cannot read",
       mark: { unreadable: { sentence: "cannot be shown." } },
+    },
+    {
+      name: "a receipt state this build has never heard of",
+      mark: {
+        unknownState: {
+          state: "queued_for_retry",
+          sentence: "a state this screen does not know: `queued_for_retry`.",
+        },
+      },
     },
     {
       name: "an outcome that may have landed",
