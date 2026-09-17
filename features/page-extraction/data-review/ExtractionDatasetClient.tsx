@@ -22,41 +22,23 @@ import {
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowUpDown,
-  Columns3,
   Copy,
   ExternalLink,
   Eye,
-  GripVertical,
   Layers,
-  Loader2,
   Pencil,
   Trash2,
-  X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  horizontalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -115,7 +97,6 @@ import {
 } from "./constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
-import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -254,10 +235,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     [orderedColumns, hidden],
   );
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
   const persistColumnOrder = useCallback(
     async (nextKeys: string[]) => {
       if (!job) return;
@@ -275,52 +252,163 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     [job],
   );
 
-  const onColumnDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-      const fullKeys = orderedColumns.map((c) => c.key);
-      const from = fullKeys.indexOf(String(active.id));
-      const to = fullKeys.indexOf(String(over.id));
-      if (from < 0 || to < 0) return;
-      void persistColumnOrder(arrayMove(fullKeys, from, to));
-    },
-    [orderedColumns, persistColumnOrder],
+  const queryState = useMemo<MatrxDataTableQueryState>(
+    () => ({
+      page: pageIndex + 1,
+      pageSize,
+      search: query,
+      anyOf: "",
+      layeredFilters: [],
+      columnFilters: {},
+      sort: sortKey ? { id: sortKey, direction: sortDir } : null,
+    }),
+    [pageIndex, pageSize, query, sortDir, sortKey],
   );
 
-  // ── Search + sort ──────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return displayRows;
-    return displayRows.filter((row) =>
-      visibleColumns.some((c) =>
-        cellToString(cellValueFor(row, c)).toLowerCase().includes(q),
-      ),
-    );
-  }, [displayRows, query, visibleColumns]);
+  const onQueryStateChange = useCallback(
+    (next: MatrxDataTableQueryState) => {
+      const queryChanged = next.search !== query;
+      if (queryChanged) setSelected(new Set());
+      setQuery(next.search);
+      setPageIndex(next.page - 1);
+      setPageSize(next.pageSize);
+      setSortKey(next.sort?.id ?? null);
+      setSortDir(next.sort?.direction ?? "asc");
+    },
+    [query],
+  );
 
-  const sorted = useMemo(() => {
-    if (!sortKey) return filtered;
-    const col = columns.find((c) => c.key === sortKey);
-    if (!col) return filtered;
-    const dir = sortDir === "asc" ? 1 : -1;
-    return [...filtered].sort((a, b) => {
-      const av = cellToString(cellValueFor(a, col));
-      const bv = cellToString(cellValueFor(b, col));
-      const an = Number(av);
-      const bn = Number(bv);
-      if (!Number.isNaN(an) && !Number.isNaN(bn) && av !== "" && bv !== "") {
-        return (an - bn) * dir;
-      }
-      return av.localeCompare(bv) * dir;
-    });
-  }, [filtered, sortKey, sortDir, columns]);
+  // Preserve the dataset's established semantics: search only the columns the
+  // reviewer has made visible, then sort values numerically when both sides
+  // are numbers and lexically otherwise. MatrxDataTable owns the controls,
+  // paging and column chrome; this processor owns the dataset-specific rows.
+  const processRows = useCallback(
+    (rows: PageExtractionResult[], state: MatrxDataTableQueryState) => {
+      const q = state.search.trim().toLowerCase();
+      const filtered = q
+        ? rows.filter((row) =>
+            visibleColumns.some((column) =>
+              cellToString(cellValueFor(row, column)).toLowerCase().includes(q),
+            ),
+          )
+        : rows;
+      if (!state.sort) return filtered;
+      const column = columns.find(
+        (candidate) => candidate.key === state.sort?.id,
+      );
+      if (!column) return filtered;
+      const direction = state.sort.direction === "asc" ? 1 : -1;
+      return [...filtered].sort((a, b) => {
+        const av = cellToString(cellValueFor(a, column));
+        const bv = cellToString(cellValueFor(b, column));
+        const an = Number(av);
+        const bn = Number(bv);
+        if (!Number.isNaN(an) && !Number.isNaN(bn) && av !== "" && bv !== "") {
+          return (an - bn) * direction;
+        }
+        return av.localeCompare(bv) * direction;
+      });
+    },
+    [columns, visibleColumns],
+  );
 
-  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const safePage = Math.min(pageIndex, pageCount - 1);
-  const paged = useMemo(
-    () => sorted.slice(safePage * pageSize, safePage * pageSize + pageSize),
-    [sorted, safePage, pageSize],
+  const processedRows = useMemo(
+    () => processRows(displayRows, queryState),
+    [displayRows, processRows, queryState],
+  );
+
+  const tableColumns = useMemo<MatrxColumnDef<PageExtractionResult>[]>(
+    () => [
+      {
+        id: "page",
+        header: "Page",
+        label: "Page",
+        accessorFn: (row) =>
+          row.canonical_page ?? ((row.source_pages ?? []).join(",") || "—"),
+        sortable: false,
+        filter: false as const,
+        hideable: false,
+        width: 72,
+        cell: (row) => (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {row.canonical_page ?? ((row.source_pages ?? []).join(",") || "—")}
+          </span>
+        ),
+      },
+      ...columns.map((column, index) => ({
+        id: column.key,
+        header: column.label,
+        label: column.label,
+        accessorFn: (row: PageExtractionResult) => cellValueFor(row, column),
+        sortValue: (row: PageExtractionResult) => cellValueFor(row, column),
+        sortable: true,
+        filter: false as const,
+        width: 240,
+        headerClassName: "whitespace-nowrap",
+        cell: (row: PageExtractionResult) => {
+          const editable = COLUMN_SOURCE_META[column.source]?.editable;
+          const value = cellToString(cellValueFor(row, column));
+          const writeKey = editKeyFor(column);
+          const pageLabel =
+            row.canonical_page != null
+              ? String(row.canonical_page)
+              : (row.source_pages ?? []).join(",") || "—";
+          const openEditor = () => {
+            if (!editable || row.id.includes("#") || !writeKey) return;
+            openCellEditor({
+              rowId: row.id,
+              columnKey: column.key,
+              columnLabel: column.label,
+              pageLabel,
+              value,
+              writeKey,
+              currentPayload: (row.payload ?? {}) as Record<string, unknown>,
+            });
+          };
+          const mergedCount = mergedCountById.get(row.id) ?? 0;
+          return (
+            <div
+              className={cn(
+                "group/cell flex min-w-0 items-start gap-1",
+                editable &&
+                  !row.id.includes("#") &&
+                  "cursor-text hover:bg-primary/5",
+              )}
+              title={
+                editable && !row.id.includes("#")
+                  ? "Double-click to edit"
+                  : undefined
+              }
+              onDoubleClick={openEditor}
+            >
+              <span className="min-w-0 flex-1 whitespace-normal break-words [overflow-wrap:anywhere]">
+                <ExtractionCellDisplay value={value} />
+                {index === 0 && mergedCount > 0 ? (
+                  <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
+                    +{mergedCount} merged
+                  </span>
+                ) : null}
+              </span>
+              {editable && !row.id.includes("#") ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditor();
+                  }}
+                  className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent group-hover/cell:opacity-60"
+                  title="Edit cell"
+                  aria-label={`Edit ${column.label}`}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              ) : null}
+            </div>
+          );
+        },
+      })),
+    ],
+    [columns, mergedCountById, openCellEditor],
   );
 
   useEffect(() => {
@@ -336,12 +424,12 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   );
   const exportRows = useMemo(
     () =>
-      sorted.map((row) => {
+      processedRows.map((row) => {
         const out: Record<string, unknown> = {};
         for (const c of visibleColumns) out[c.key] = cellValueFor(row, c);
         return out;
       }),
-    [sorted, visibleColumns],
+    [processedRows, visibleColumns],
   );
 
   /**
@@ -356,13 +444,13 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
    */
   const surfaceRows = useMemo(
     () =>
-      sorted.map((row) => {
+      processedRows.map((row) => {
         const out: Record<string, unknown> = {};
         for (const c of visibleColumns) out[c.key] = cellValueFor(row, c);
         out.row_id = row.id;
         return out;
       }),
-    [sorted, visibleColumns],
+    [processedRows, visibleColumns],
   );
 
   // ── Surface scope (matrx-user/knowledge) ───────────────────────────────────
@@ -384,7 +472,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         extraction_run_id: selectedRunId ?? undefined,
         extraction_job:
           (job as unknown as Record<string, unknown>) ?? undefined,
-        extraction_row_count: sorted.length,
+        extraction_row_count: processedRows.length,
         extraction_columns: orderedColumns.map((c) => ({
           key: c.key,
           label: c.label,
@@ -407,7 +495,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       jobId,
       job,
       selectedRunId,
-      sorted,
+      processedRows,
       orderedColumns,
       hidden,
       surfaceRows,
@@ -576,17 +664,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   );
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  const toggleSort = useCallback(
-    (key: string) => {
-      if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-      else {
-        setSortKey(key);
-        setSortDir("asc");
-      }
-    },
-    [sortKey],
-  );
-
   const commitRename = useCallback(async () => {
     setRenaming(false);
     const next = nameDraft.trim();
@@ -668,18 +745,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       router.push(`/tools/pdf-extractor/${job.processed_document_id}`),
     );
   }, [job, router]);
-
-  // ── Selection helpers ──────────────────────────────────────────────────────
-  const allPageSelected =
-    paged.length > 0 && paged.every((r) => selected.has(r.id));
-  const togglePageSelection = useCallback(() => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (allPageSelected) paged.forEach((r) => next.delete(r.id));
-      else paged.forEach((r) => next.add(r.id));
-      return next;
-    });
-  }, [allPageSelected, paged]);
 
   // ── Surface write targets (matrx-user/knowledge) ───────────────────────────
   // The EXTRACTION mount's three. `extraction_dataset_name` is `mode:"entity"`
@@ -891,67 +956,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       </PageHeader>
 
       <div className="flex h-full w-full flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
-        {/* Sub-toolbar — search / columns / merge */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-          <div className="relative min-w-[180px] flex-1 max-w-sm">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search rows…"
-              className="h-8 text-base sm:text-sm"
-              style={{ fontSize: "16px" }}
-            />
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Columns3 className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  Columns ({visibleColumns.length}/{columns.length})
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="max-h-80 w-56 overflow-y-auto"
-            >
-              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
-              {columns.map((c) => (
-                <DropdownMenuCheckboxItem
-                  key={c.key}
-                  checked={!hidden.has(c.key)}
-                  onCheckedChange={(on) =>
-                    setHidden((prev) => {
-                      const next = new Set(prev);
-                      if (on) next.delete(c.key);
-                      else next.add(c.key);
-                      return next;
-                    })
-                  }
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  {c.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button
-            variant={merge ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMerge((v) => !v)}
-            title="Merge duplicate rows flagged by a validation pass"
-          >
-            <Layers className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Merge dupes</span>
-          </Button>
-
-          <div className="ml-auto text-xs text-muted-foreground">
-            {loading ? "Loading…" : `${sorted.length.toLocaleString()} rows`}
-          </div>
-        </div>
-
         {/* Recovery banner — loud if a wrapped payload reached the client */}
         {unwrappedCount > 0 && (
           <div className="flex items-start gap-2 border-b border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300">
@@ -965,254 +969,108 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           </div>
         )}
 
-        {/* Bulk action bar */}
-        {selected.size > 0 && (
-          <div className="flex items-center gap-2 border-b border-border bg-accent/40 px-3 py-1.5 text-sm">
-            <span className="font-medium">{selected.size} selected</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-destructive"
-              onClick={() => setConfirmKind("bulk")}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() => setSelected(new Set())}
-            >
-              <X className="mr-1.5 h-3.5 w-3.5" /> Clear
-            </Button>
-          </div>
-        )}
-
-        {/* Grid */}
-        <div className="flex-1 overflow-auto">
-          {loading ? (
-            <div className="flex h-40 items-center justify-center text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading rows…
-            </div>
-          ) : error ? (
+        <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
+          {error ? (
             <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
             </div>
-          ) : sorted.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 p-12 text-center text-muted-foreground">
-              <Eye className="h-8 w-8 opacity-50" />
-              <div className="text-sm font-medium">No rows to show</div>
-              <div className="text-xs">
-                {results.length === 0
-                  ? "This dataset has no extracted rows yet."
-                  : "No rows match your search."}
-              </div>
-            </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onColumnDragEnd}
-            >
-              <table className={cn("border-collapse text-sm", MOBILE_TABLE)}>
-                <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur">
-                  <tr className="text-left text-xs text-muted-foreground">
-                    <th className="w-8 px-2 py-2">
-                      <Checkbox
-                        checked={allPageSelected}
-                        onCheckedChange={togglePageSelection}
-                        aria-label="Select page"
-                      />
-                    </th>
-                    <th className="w-14 px-2 py-2 font-medium">Page</th>
-                    <SortableContext
-                      items={visibleColumns.map((c) => c.key)}
-                      strategy={horizontalListSortingStrategy}
-                    >
-                      {visibleColumns.map((c) => (
-                        <SortableHeaderCell
-                          key={c.key}
-                          column={c}
-                          active={sortKey === c.key}
-                          onToggleSort={toggleSort}
-                        />
-                      ))}
-                    </SortableContext>
-                    <th className="w-10 px-2 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.map((row) => {
-                    const mergedCount = mergedCountById.get(row.id) ?? 0;
-                    const isSel = selected.has(row.id);
-                    return (
-                      <tr
-                        key={row.id}
-                        className={cn(
-                          "group border-t border-border/50 hover:bg-accent/30",
-                          isSel && "bg-primary/5",
-                        )}
+            <MatrxDataTable<PageExtractionResult>
+              data={displayRows}
+              columns={tableColumns}
+              getRowId={(row) => row.id}
+              isLoading={loading}
+              density="condensed"
+              viewTabs={false}
+              query={{
+                mode: "controlled-local",
+                state: queryState,
+                onStateChange: onQueryStateChange,
+              }}
+              processLocalRows={processRows}
+              pageSize={pageSize}
+              pageSizeOptions={[...PAGE_SIZES]}
+              localPagination={{ mode: "progressive" }}
+              columnState={{
+                order: ["page", ...orderedColumns.map((column) => column.key)],
+                hidden: [...hidden],
+                onChange: ({ order, hidden: nextHidden }) => {
+                  setHidden(new Set(nextHidden));
+                  void persistColumnOrder(
+                    order.filter((key) => key !== "page"),
+                  );
+                },
+              }}
+              selection={{
+                selectedIds: [...selected],
+                onSelectedIdsChange: (ids) => setSelected(new Set(ids)),
+                noun: "row",
+                actions: (_rows, ids) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-destructive"
+                    onClick={() => {
+                      setSelected(new Set(ids));
+                      setConfirmKind("bulk");
+                    }}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                  </Button>
+                ),
+              }}
+              rowActions={(row) =>
+                row.id.includes("#") ? null : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Delete row"
+                    onClick={() => void deleteOneRow(row.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                )
+              }
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search rows…",
+                facets: [
+                  {
+                    type: "custom",
+                    id: "merge-duplicates",
+                    render: () => (
+                      <Button
+                        variant={merge ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setMerge((value) => !value)}
+                        title="Merge duplicate rows flagged by a validation pass"
                       >
-                        <td className="px-2 py-1.5 align-top">
-                          <Checkbox
-                            checked={isSel}
-                            onCheckedChange={(on) =>
-                              setSelected((prev) => {
-                                const next = new Set(prev);
-                                if (on) next.add(row.id);
-                                else next.delete(row.id);
-                                return next;
-                              })
-                            }
-                            aria-label="Select row"
-                          />
-                        </td>
-                        <td className="px-2 py-1.5 align-top text-xs text-muted-foreground tabular-nums">
-                          {row.canonical_page ??
-                            ((row.source_pages ?? []).join(",") || "—")}
-                        </td>
-                        {visibleColumns.map((c) => {
-                          const editable =
-                            COLUMN_SOURCE_META[c.source]?.editable;
-                          const value = cellToString(cellValueFor(row, c));
-                          const writeKey = editKeyFor(c);
-                          const pageLabel =
-                            row.canonical_page != null
-                              ? String(row.canonical_page)
-                              : (row.source_pages ?? []).join(",") || "—";
-                          const openEditor = () => {
-                            if (
-                              !editable ||
-                              row.id.includes("#") ||
-                              !writeKey
-                            ) {
-                              return;
-                            }
-                            openCellEditor({
-                              rowId: row.id,
-                              columnKey: c.key,
-                              columnLabel: c.label,
-                              pageLabel,
-                              value,
-                              writeKey,
-                              currentPayload: (row.payload ?? {}) as Record<
-                                string,
-                                unknown
-                              >,
-                            });
-                          };
-                          return (
-                            <td
-                              key={c.key}
-                              className={cn(
-                                "max-w-[360px] px-3 py-1.5 align-top",
-                                editable &&
-                                  !row.id.includes("#") &&
-                                  "cursor-text hover:bg-primary/5",
-                              )}
-                              title={
-                                editable && !row.id.includes("#")
-                                  ? "Double-click to edit"
-                                  : undefined
-                              }
-                              onDoubleClick={openEditor}
-                            >
-                              <div className="flex items-start gap-1">
-                                <span className="min-w-0 flex-1">
-                                  <ExtractionCellDisplay value={value} />
-                                  {c.key === visibleColumns[0]?.key &&
-                                    mergedCount > 0 && (
-                                      <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
-                                        +{mergedCount} merged
-                                      </span>
-                                    )}
-                                </span>
-                                {editable && !row.id.includes("#") && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openEditor();
-                                    }}
-                                    className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent group-hover:opacity-60"
-                                    title="Edit cell"
-                                    aria-label="Edit cell"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          );
-                        })}
-                        <td className="px-1 py-1.5 align-top">
-                          {!row.id.includes("#") && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                              title="Delete row"
-                              onClick={() => void deleteOneRow(row.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </DndContext>
+                        <Layers className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Merge dupes</span>
+                      </Button>
+                    ),
+                  },
+                ],
+                actions: (
+                  <span className="text-xs text-muted-foreground">
+                    {loading
+                      ? "Loading…"
+                      : `${processedRows.length.toLocaleString()} rows`}
+                  </span>
+                ),
+              }}
+              emptyState={{
+                icon: <Eye className="h-8 w-8 opacity-50" />,
+                title: "No rows to show",
+                description:
+                  results.length === 0
+                    ? "This dataset has no extracted rows yet."
+                    : "No rows match your search.",
+              }}
+            />
           )}
         </div>
-
-        {/* Pagination footer */}
-        {!loading && sorted.length > 0 && (
-          <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span>Rows per page</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="rounded border border-border bg-background px-1.5 py-0.5"
-              >
-                {PAGE_SIZES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>
-                {safePage * pageSize + 1}–
-                {Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
-                {sorted.length.toLocaleString()}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7"
-                disabled={safePage === 0}
-                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
-              >
-                Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7"
-                disabled={safePage >= pageCount - 1}
-                onClick={() =>
-                  setPageIndex((p) => Math.min(pageCount - 1, p + 1))
-                }
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
 
         <ConfirmDialog
           open={confirmKind !== null}
@@ -1240,70 +1098,5 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         />
       </div>
     </SurfaceRuntimeProvider>
-  );
-}
-
-/**
- * A draggable, sortable column header. The grip handle starts a reorder
- * drag; clicking the label still toggles the sort (a pure click never moves
- * far enough to trip the drag's 5px activation distance).
- */
-function SortableHeaderCell({
-  column,
-  active,
-  onToggleSort,
-}: {
-  column: ExtractionColumn;
-  active: boolean;
-  onToggleSort: (key: string) => void;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: column.key });
-
-  return (
-    <th
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={cn(
-        "select-none whitespace-nowrap px-3 py-2 font-medium",
-        isDragging ? "z-20 bg-muted opacity-90" : "",
-        active && "text-foreground",
-      )}
-      title={COLUMN_SOURCE_META[column.source]?.hint}
-    >
-      <span className="inline-flex items-center gap-1">
-        <button
-          type="button"
-          className="cursor-grab touch-none text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
-          aria-label={`Drag to reorder ${column.label}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onToggleSort(column.key)}
-          className="inline-flex cursor-pointer items-center gap-1 hover:text-foreground"
-        >
-          {column.label}
-          {COLUMN_SOURCE_META[column.source]?.editable && (
-            <Pencil className="h-2.5 w-2.5 opacity-40" />
-          )}
-          <ArrowUpDown
-            className={cn("h-3 w-3", active ? "opacity-100" : "opacity-30")}
-          />
-        </button>
-      </span>
-    </th>
   );
 }
