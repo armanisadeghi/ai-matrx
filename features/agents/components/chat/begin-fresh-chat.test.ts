@@ -6,7 +6,9 @@ import { resolveMandate } from "@/features/mandates/service";
 import type { RootState } from "@/lib/redux/store";
 import {
   beginFreshChat,
+  interceptChatAgentLink,
   parseChatPath,
+  stageChatAgentSwitch,
 } from "./begin-fresh-chat";
 
 const resolveMandateMock = jest.mocked(resolveMandate);
@@ -32,6 +34,140 @@ describe("parseChatPath", () => {
       activeConversationId: null,
       activeAgentId: "agent-id",
     });
+  });
+});
+
+describe("stageChatAgentSwitch", () => {
+  it("stages the exact visible chat before navigation", () => {
+    const dispatch = jest.fn();
+    const push = jest.fn();
+
+    stageChatAgentSwitch({
+      dispatch: dispatch as never,
+      router: { push } as never,
+      getState: () =>
+        ({
+          conversationFocus: {
+            lastSurfaceKey: "chat:unrelated-agent",
+            bySurface: {
+              "chat:unrelated-agent": {
+                input: "unrelated-conversation",
+                display: "unrelated-conversation",
+              },
+            },
+          },
+        }) as unknown as RootState,
+      sourceConversationId: "visible-conversation",
+      targetAgentId: "next-agent",
+    });
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {
+          sourceConversationId: "visible-conversation",
+          targetAgentId: "next-agent",
+        },
+      }),
+    );
+    expect(push).toHaveBeenCalledWith("/chat/a/next-agent");
+  });
+
+  it("uses the current agent surface instead of another mounted conversation", () => {
+    const dispatch = jest.fn();
+
+    stageChatAgentSwitch({
+      dispatch: dispatch as never,
+      router: { push: jest.fn() } as never,
+      getState: () =>
+        ({
+          conversationFocus: {
+            lastSurfaceKey: "agent-runner:other",
+            bySurface: {
+              "chat:current-agent": {
+                input: "current-input",
+                display: "current-display",
+              },
+              "chat:other-agent": {
+                input: "wrong-input",
+                display: "wrong-display",
+              },
+            },
+          },
+        }) as unknown as RootState,
+      sourceAgentId: "current-agent",
+      targetAgentId: "next-agent",
+    });
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {
+          sourceConversationId: "current-input",
+          targetAgentId: "next-agent",
+        },
+      }),
+    );
+  });
+
+  it("intercepts the picker detail-card chat link but leaves modifier clicks native", () => {
+    const dispatch = jest.fn();
+    const push = jest.fn();
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", "/chat/a/detail-agent");
+    const icon = document.createElement("span");
+    anchor.appendChild(icon);
+    const event = {
+      target: icon,
+      button: 0,
+      defaultPrevented: false,
+      metaKey: false,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+
+    interceptChatAgentLink(event as never, {
+      dispatch: dispatch as never,
+      router: { push } as never,
+      getState: () =>
+        ({
+          conversationFocus: { lastSurfaceKey: null, bySurface: {} },
+        }) as unknown as RootState,
+      sourceConversationId: "visible-conversation",
+    });
+
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {
+          sourceConversationId: "visible-conversation",
+          targetAgentId: "detail-agent",
+        },
+      }),
+    );
+    expect(push).toHaveBeenCalledWith("/chat/a/detail-agent");
+
+    event.metaKey = true;
+    event.preventDefault.mockClear();
+    event.stopPropagation.mockClear();
+    interceptChatAgentLink(event as never, {
+      dispatch: dispatch as never,
+      router: { push } as never,
+      getState: () => ({}) as RootState,
+    });
+    expect(event.preventDefault).not.toHaveBeenCalled();
+
+    event.metaKey = false;
+    event.shiftKey = true;
+    interceptChatAgentLink(event as never, {
+      dispatch: dispatch as never,
+      router: { push } as never,
+      getState: () => ({}) as RootState,
+    });
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalledTimes(1);
   });
 });
 

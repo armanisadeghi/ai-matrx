@@ -59,7 +59,7 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 - `ChatHistorySidebar.tsx` — **thin wrapper** over the canonical `ConversationHistorySidebar` (`features/agents/components/conversation-history/`) with `variant="consumer"` + `surfaceId="chat"` defaulted. The list rendering + scoped data pipeline + source filtering all live in that ONE primitive (shared with the dense `/code` + agent-app lists), so the consumer and dense surfaces never drift. New surfaces use `ConversationHistorySidebar` directly.
   - **Row-click navigates by default; self-contained surfaces pass `openInPlace`.** A plain click on a row routes to `/chat/<id>` via the `ItemRow` `<Link>` — correct for the **standalone `/chat` route** (`ChatSidebarMenu`) and the search popover (which navigates AND closes). Any surface that hosts the conversation ITSELF (the `QuickChatSheet` drawer, the `/code` history mandate, `ChatHistoryWindow`, agent-app shells) MUST pass `openInPlace` so a click calls `onOpenConversation` and PREVENTS navigation — the `href` is kept so modifier/middle-click still opens a new tab and "Copy link" works. Without it, `onOpenConversation` fires AND the page routes away (the in-place load is shadowed). `openInPlace` is the generic `ItemRow` flag (`components/official/item/`); presence of `onOpenConversation` does NOT imply it.
 - `ChatNewClient.tsx` — `/chat/new` landing (the mandate-resolved default agent + greeting; re-resolves client-side when SSR resolution failed).
-- `NewChatGreeting.tsx` — greeting + chips; every chip is a MANDATE (`chat.quick_*` in `chat-quick-actions.config.ts`, resolved in one pass by `useMandateSet`); chip click stashes a draft and pushes to `/chat/a/[resolvedAgentId]`; an unresolved chip renders disabled with the reason (no UUID fallback).
+- `NewChatGreeting.tsx` — greeting + chips; every chip is a MANDATE (`chat.quick_*` in `chat-quick-actions.config.ts`, resolved in one pass by `useMandateSet`); chip click stages the complete live request through `stageChatAgentSwitch` and pushes to `/chat/a/[resolvedAgentId]`; an unresolved chip renders disabled with the reason (no UUID fallback).
 - `agent-context/buildChatContextData.ts` — the `matrx-user/chat` surface emit contract: a PURE `buildChatContextData(args)` mapping live chat state → `createChatScope` (all manifest values across seven curated groups — conversation / active_message / thread / composer / session_state / context_documents / run_configuration; callers pass only what they can honestly source), plus `CHAT_CONTEXT_MENU_PROPS` (`sourceFeature: "chat-route"`, `surfaceName: "matrx-user/chat"`). Shared by every chat region so the composer + display emit one shape. `ChatRoomClient.getChatScope` is the full emitter: draft + selection, transcript family, attached resource chips (lean `{id, block_type, status}`), resolved `variable_values`, effective `model`, lean `working_document` / `scratchpad` refs (never the bodies — those are their own surfaces), and the `run_configuration` composite, all read off the store at trigger time with zero new subscriptions.
 - `agent-context/buildChatRunConfiguration.ts` — pure store-read of the `run_configuration` value (Chat Options customization: `added_tools` / `added_skills` / instance setting overrides / sandbox binding / tool-injection + surface + debug switches; null when the run is all defaults), plus `buildRunControlsApplicationScope` — the scope builder the run-controls panel (`RunControlsTabPanel`, `RunSettingsEditor`) uses for its canonical v3 menu + Pro fields. Reads the SAME slices Chat Options edits, so the emitted value can never disagree with the panel. The sandbox ref is the stored binding/seed, NOT liveness-checked.
 
@@ -76,7 +76,7 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 
 **Redux**
 
-- `conversationFocus` slice (`features/agents/redux/execution-system/conversation-focus/`) — `bySurface[surfaceKey].{input,display}`. The surface key is `chat-route:<agentId>`.
+- `conversationFocus` slice (`features/agents/redux/execution-system/conversation-focus/`) — `bySurface[surfaceKey].{input,display}`. The surface key is `chat:<agentId>` and is owned by `chatRouteSurfaceKey`.
 - `conversations` / execution-system slices — the live instance.
 - `conversationList` / `conversation-history` — sidebar data (history uses `fetchConversationHistory`, a different thunk from the global `conversationList`). The scoped `conversation-history` slice carries the per-scope source filter (`includeSourceApps` / `includeSourceFeatures` / `includeEmptySource`, set by `setScopeSourceFilter`) + the user-wide `sourceFacets` (RPC `get_cx_conversation_source_facets`) that power the filter tree.
 
@@ -102,6 +102,12 @@ first message is required.
 2. **Fresh-start guard** (runs on every agent/route change, before the launcher): `dispatch(clearFocus(surfaceKey))` — drops any stale per-agent focus so a previously-used agent can't revive its old conversation. NOT ref-guarded: `ChatRoomClient` is reused (not remounted) across chat navigations, so it must re-run on every agent switch / `+` click.
 3. `useAgentLauncher` (now `ready`) creates a fresh instance, sets focus to it.
 4. User submits → `messageCount >= 2` → **`waitForConversationPersisted` confirms the `chat.conversation` row is committed & readable** → `router.replace('/chat/[conversationId]')`. The launcher's `retainOnUnmount` keeps the live instance alive across this promotion. `record_reserved` only announces reserved UUIDs, NOT a commit — see the promotion invariant below.
+
+### Flow 1a — Change agents without changing the request
+
+1. **Every same-tab agent door uses `stageChatAgentSwitch`.** Header picker, quick-action chips, pinned rows, and Search Agents stage one in-memory `chatRoute.draftHandoff` before navigation. Modifier/new-tab clicks keep native link behavior and do not move the current tab's draft.
+2. The handoff stores identities only. `ChatRoomClient` copies the canonical live request after the destination instance is ready: exact text and message parts, variables and policies, resources, context, client tools, run settings, model overrides/removals, sandbox binding, and connector attachments. The destination agent keeps its own base model snapshot.
+3. **Every source stays pinned until transfer completion.** A rapid A → B → C switch copies B's latest request edits while retaining A as the root for resolver and connector completions. Pending lifecycle updates reconcile into C by stable identity without re-running the full copy, so neither B's edits nor new destination work is clobbered.
 
 ### Flow 2 — Open an existing conversation (`/chat/[conversationId]`)
 
@@ -299,6 +305,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-09-16` — codex: **changing agents preserves the complete unsent request, not only non-empty text.** Replaced the single-field `sessionStorage` bridge for same-tab agent changes with an in-memory handoff transaction that is shared by the header picker, picker detail-card door, mandate chips, pinned agents, and Search Agents. It copies structured composer parts, variables/policies, resources (including in-flight lifecycle updates), context, client tools, run settings, model overrides/removals, sandbox binding, and connector attachments; pins every source until pending work settles; and combines B's edits with A's async completions during rapid A → B → C switching. Guards: `begin-fresh-chat.test.ts`, `chat-route.slice.test.ts`, `abandoned-conversation-cleanup.test.ts`, `copy-instance-request-draft.chat-semantics.test.ts`, and `attachments-survive-the-new-chat-handoff.test.ts`.
 
 - `2026-09-15` — **The Sandbox pane survives a reload, and every composer
   control has a name.** A bound chat that also held an agent-created document

@@ -8,7 +8,6 @@
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
@@ -16,8 +15,10 @@ import { ConversationRecordsChip } from "./ConversationRecordsChip";
 import { ConversationAttachmentsChip } from "./ConversationAttachmentsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { ConversationPageMenu } from "./ConversationPageMenu";
-import { stashChatDraftTransfer } from "./chat-draft-transfer";
-import { chatRouteSurfaceKey } from "./begin-fresh-chat";
+import {
+  interceptChatAgentLink,
+  stageChatAgentSwitch,
+} from "./begin-fresh-chat";
 
 interface ChatRunHeaderProps {
   /**
@@ -60,26 +61,15 @@ export function ChatRunHeader({
 
   const handleAgentSelect = (id: string) => {
     if (id === activeAgentId) return;
-    // Carry any in-progress draft over to the newly-selected agent so switching
-    // agents never destroys what the user has typed. Mirrors the chip path in
-    // NewChatGreeting: snapshot the current surface's draft via getState (no
-    // per-keystroke subscription) and stash it for the destination route's
-    // consumeChatDraftTransfer in ChatRoomClient.
-    if (activeAgentId) {
-      const state = store.getState();
-      const sourceSurfaceKey = chatRouteSurfaceKey(activeAgentId);
-      const sourceConversationId =
-        state.conversationFocus.bySurface[sourceSurfaceKey]?.input ??
-        state.conversationFocus.bySurface[sourceSurfaceKey]?.display ??
-        null;
-      const draftText = sourceConversationId
-        ? selectUserInputText(sourceConversationId)(state)
-        : "";
-      if (draftText && draftText.trim().length > 0) {
-        stashChatDraftTransfer({ text: draftText, targetAgentId: id });
-      }
-    }
-    router.push(buildAgentHref(id));
+    stageChatAgentSwitch({
+      dispatch: store.dispatch,
+      router,
+      getState: store.getState,
+      targetAgentId: id,
+      sourceAgentId: activeAgentId,
+      sourceConversationId: conversationId,
+      href: buildAgentHref(id),
+    });
   };
 
   // Full-width bar with a hard left/right split at every breakpoint: agent +
@@ -88,7 +78,18 @@ export function ChatRunHeader({
   // shrink-wrapped cluster on mobile/tablet, which pushed controls into the
   // avatar and broke the layout.)
   return (
-    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+    <div
+      className="flex w-full min-w-0 items-center justify-between gap-2"
+      onClickCapture={(event) =>
+        interceptChatAgentLink(event, {
+          dispatch: store.dispatch,
+          router,
+          getState: store.getState,
+          sourceAgentId: activeAgentId,
+          sourceConversationId: conversationId,
+        })
+      }
+    >
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <div
           data-chat-agent-picker-trigger

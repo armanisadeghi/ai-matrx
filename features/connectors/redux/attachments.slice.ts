@@ -52,6 +52,10 @@ export interface ConversationAttachmentsEntry {
   busyKeys: string[];
   /** The last write that failed, with the server's own sentence. */
   writeError: string | null;
+  /** Keys inherited during an agent switch, retained as removal tombstones. */
+  handoffInheritedKeys: string[];
+  /** Inherited picks explicitly removed on this destination. */
+  handoffRemovedKeys: string[];
 }
 
 interface AttachmentsSliceState {
@@ -72,6 +76,8 @@ export const EMPTY_ATTACHMENTS_ENTRY: ConversationAttachmentsEntry = {
   error: null,
   busyKeys: [],
   writeError: null,
+  handoffInheritedKeys: [],
+  handoffRemovedKeys: [],
 };
 
 function entryFor(
@@ -85,6 +91,8 @@ function entryFor(
     rows: [],
     pending: [],
     busyKeys: [],
+    handoffInheritedKeys: [],
+    handoffRemovedKeys: [],
   };
   state.byConversationId[conversationId] = created;
   return created;
@@ -194,6 +202,12 @@ const attachmentsSlice = createSlice({
       entry.pending = entry.pending.filter(
         (pick) => attachmentKey(pick) !== action.payload.key,
       );
+      if (
+        entry.handoffInheritedKeys.includes(action.payload.key) &&
+        !entry.handoffRemovedKeys.includes(action.payload.key)
+      ) {
+        entry.handoffRemovedKeys.push(action.payload.key);
+      }
     },
     /** Clear a write failure the user has read. */
     clearAttachmentWriteError(
@@ -201,6 +215,65 @@ const attachmentsSlice = createSlice({
       action: PayloadAction<{ conversationId: string }>,
     ) {
       entryFor(state, action.payload.conversationId).writeError = null;
+    },
+    /** Copy selections as pending: association ids belong to the old chat. */
+    mergePendingAttachments(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        picks: PendingAttachment[];
+      }>,
+    ) {
+      const entry = entryFor(state, action.payload.conversationId);
+      for (const pick of action.payload.picks) {
+        const key = attachmentKey(pick);
+        if (!entry.handoffInheritedKeys.includes(key)) {
+          entry.handoffInheritedKeys.push(key);
+        }
+        if (
+          !entry.pending.some(
+            (candidate) => attachmentKey(candidate) === attachmentKey(pick),
+          ) &&
+          !entry.rows.some(
+            (candidate) => attachmentKey(candidate) === attachmentKey(pick),
+          )
+        ) {
+          entry.pending.push(pick);
+        }
+      }
+    },
+    /** Reconcile only inherited pending picks; destination-local picks stay. */
+    syncHandoffPendingAttachments(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        picks: PendingAttachment[];
+      }>,
+    ) {
+      const entry = entryFor(state, action.payload.conversationId);
+      const nextByKey = new Map(
+        action.payload.picks
+          .filter(
+            (pick) => !entry.handoffRemovedKeys.includes(attachmentKey(pick)),
+          )
+          .map((pick) => [attachmentKey(pick), pick]),
+      );
+      const inherited = new Set(entry.handoffInheritedKeys);
+      entry.pending = entry.pending.filter((pick) => {
+        const key = attachmentKey(pick);
+        return !inherited.has(key) || nextByKey.has(key);
+      });
+      for (const [key, pick] of nextByKey) {
+        if (
+          !entry.pending.some(
+            (candidate) => attachmentKey(candidate) === key,
+          ) &&
+          !entry.rows.some((candidate) => attachmentKey(candidate) === key)
+        ) {
+          entry.pending.push(pick);
+        }
+      }
+      entry.handoffInheritedKeys = Array.from(nextByKey.keys());
     },
     /** Forget a conversation entirely (instance destroyed). */
     forgetConversationAttachments(state, action: PayloadAction<string>) {
@@ -342,6 +415,8 @@ const attachmentsSlice = createSlice({
 export const {
   dropPendingAttachment,
   clearAttachmentWriteError,
+  mergePendingAttachments,
+  syncHandoffPendingAttachments,
   forgetConversationAttachments,
 } = attachmentsSlice.actions;
 

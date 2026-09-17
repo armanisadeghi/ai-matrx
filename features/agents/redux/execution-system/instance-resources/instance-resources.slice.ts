@@ -44,11 +44,17 @@ export interface InstanceResourcesState {
    * (pasted images, files), parallel to input-draft-protection.ts for text.
    */
   submittedIds: Record<string, string[]>;
+  /** Resource ids inherited through an agent handoff, retained as tombstones. */
+  handoffInheritedIds: Record<string, string[]>;
+  /** Inherited resources explicitly removed on this destination. */
+  handoffRemovedIds: Record<string, string[]>;
 }
 
 const initialState: InstanceResourcesState = {
   byConversationId: {},
   submittedIds: {},
+  handoffInheritedIds: {},
+  handoffRemovedIds: {},
 };
 
 // =============================================================================
@@ -79,6 +85,8 @@ const instanceResourcesSlice = createSlice({
     ) {
       state.byConversationId[action.payload.conversationId] = {};
       state.submittedIds[action.payload.conversationId] = [];
+      state.handoffInheritedIds[action.payload.conversationId] = [];
+      state.handoffRemovedIds[action.payload.conversationId] = [];
     },
 
     /**
@@ -232,6 +240,15 @@ const instanceResourcesSlice = createSlice({
       if (resources) {
         delete resources[resourceId];
       }
+      if (
+        state.handoffInheritedIds[conversationId]?.includes(resourceId) &&
+        !state.handoffRemovedIds[conversationId]?.includes(resourceId)
+      ) {
+        state.handoffRemovedIds[conversationId] = [
+          ...(state.handoffRemovedIds[conversationId] ?? []),
+          resourceId,
+        ];
+      }
     },
 
     /**
@@ -311,9 +328,20 @@ const instanceResourcesSlice = createSlice({
       state.submittedIds[action.payload] = [];
     },
 
+    setHandoffInheritedResourceIds(
+      state,
+      action: PayloadAction<{ conversationId: string; resourceIds: string[] }>,
+    ) {
+      state.handoffInheritedIds[action.payload.conversationId] = [
+        ...action.payload.resourceIds,
+      ];
+    },
+
     removeInstanceResources(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
       delete state.submittedIds[action.payload];
+      delete state.handoffInheritedIds[action.payload];
+      delete state.handoffRemovedIds[action.payload];
     },
   },
 
@@ -321,11 +349,15 @@ const instanceResourcesSlice = createSlice({
     builder.addCase(createInstanceFull, (state, action) => {
       state.byConversationId[action.payload.conversationId] = {};
       state.submittedIds[action.payload.conversationId] = [];
+      state.handoffInheritedIds[action.payload.conversationId] = [];
+      state.handoffRemovedIds[action.payload.conversationId] = [];
     });
 
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
       delete state.submittedIds[action.payload];
+      delete state.handoffInheritedIds[action.payload];
+      delete state.handoffRemovedIds[action.payload];
     });
   },
 });
@@ -343,6 +375,7 @@ export const {
   markResourcesSubmitted,
   clearSubmittedResources,
   clearAllResources,
+  setHandoffInheritedResourceIds,
   removeInstanceResources,
 } = instanceResourcesSlice.actions;
 

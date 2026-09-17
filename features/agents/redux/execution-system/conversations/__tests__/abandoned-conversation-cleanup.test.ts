@@ -7,6 +7,7 @@ const CONVERSATION_ID = "ambient-handoff";
 function stateWithInput(
   submissionPhase: "idle" | "pending" | "persisted",
   text: string,
+  handoffSourceConversationId?: string,
 ): RootState {
   return {
     conversations: {
@@ -33,16 +34,24 @@ function stateWithInput(
         },
       },
     },
+    chatRoute: {
+      freshSessionNonce: 0,
+      draftHandoff: handoffSourceConversationId
+        ? {
+            sourceConversationId: handoffSourceConversationId,
+            resourceSourceConversationId: handoffSourceConversationId,
+            connectorSourceConversationId: handoffSourceConversationId,
+            pinnedSourceConversationIds: [handoffSourceConversationId],
+            targetAgentId: "next-agent",
+          }
+        : null,
+    },
   } as unknown as RootState;
 }
 
 function runCleanup(state: RootState) {
   const dispatch = jest.fn() as unknown as AppDispatch;
-  destroyInstanceIfAbandoned(CONVERSATION_ID)(
-    dispatch,
-    () => state,
-    undefined,
-  );
+  destroyInstanceIfAbandoned(CONVERSATION_ID)(dispatch, () => state, undefined);
   return dispatch;
 }
 
@@ -64,5 +73,11 @@ describe("destroyInstanceIfAbandoned", () => {
 
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(destroyInstance(CONVERSATION_ID));
+  });
+
+  it("pins an otherwise empty source until its route handoff is acknowledged", () => {
+    const dispatch = runCleanup(stateWithInput("idle", "", CONVERSATION_ID));
+
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

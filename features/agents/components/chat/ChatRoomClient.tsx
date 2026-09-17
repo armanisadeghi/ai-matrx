@@ -2,6 +2,7 @@
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -18,12 +19,20 @@ import {
   setFocus,
   clearFocus,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import {
-  consumeChatDraftTransfer,
-} from "./chat-draft-transfer";
+import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
+import {
+  acknowledgeDraftHandoff,
+  selectChatDraftHandoff,
+} from "@/features/agents/redux/chat/chat-route.slice";
+import {
+  copyInstanceRequestDraft,
+  syncInstanceRequestDraftResources,
+} from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
+import { syncHandoffPendingAttachments } from "@/features/connectors/redux/attachments.slice";
+import { attachmentKey } from "@/features/connectors/attachable-resources";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { linkConversationDocumentThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
@@ -103,8 +112,7 @@ interface ChatRoomClientProps {
    * quick-action chips before the user submits their first message.
    */
   landingContent?:
-    | React.ReactNode
-    | ((conversationId: string) => React.ReactNode);
+    React.ReactNode | ((conversationId: string) => React.ReactNode);
   /**
    * Optional control pinned directly ABOVE the composer, receiving this
    * room's own conversation id. The voice route mounts its panel here so the
@@ -112,9 +120,7 @@ interface ChatRoomClientProps {
    * second launcher for the same agent would mean two conversations, and the
    * user would watch one answer render in two places.
    */
-  aboveInput?:
-    | React.ReactNode
-    | ((conversationId: string) => React.ReactNode);
+  aboveInput?: React.ReactNode | ((conversationId: string) => React.ReactNode);
   /**
    * Where this room promotes its URL once the conversation persists, and
    * where fork/retry/delete navigate. Defaults to `/chat/<id>`.
@@ -316,7 +322,6 @@ export function ChatRoomClient({
     );
   }, [conversationIdProp, dispatch, isIncognito, liveConversationId]);
 
-
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
   // THE canonical resume sequence lives in `useConversationResume` — the same
   // hook every other surface uses to continue a conversation (Masterwork's
@@ -353,11 +358,11 @@ export function ChatRoomClient({
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [pendingNavigation, router, dispatch, surfaceKey, buildConversationHref]);
 
-  // ── Draft transfer from /chat/new chip click ────────────────────────────
-  // When a chip on /chat/new is clicked, the source page stashes the user's
-  // in-progress draft in sessionStorage keyed to this agent's id. We apply it
-  // once the launcher has created the instance entry — `setUserInputText`
-  // requires `state.instanceUserInput.byConversationId[cid]` to exist.
+  // ── Fresh-instance transfer readiness ───────────────────────────────────
+  // Same-tab agent switches copy the live Redux request below. External
+  // prepared-content doors still use the identity-bound sessionStorage bridge
+  // farther down. Both must wait for the launcher-created input/resource
+  // entries before applying anything.
   // GOTCHA (fixed 2026-07-17): `liveConversationId` is a client UUID set
   // immediately, but the input ENTRY is created by `createInstanceFull` only
   // after the launcher's async agent fetch — and `setUserInputText` used to
@@ -378,9 +383,147 @@ export function ChatRoomClient({
         )
       : false,
   );
+  const draftHandoff = useAppSelector(selectChatDraftHandoff);
+  const handoffResourceSources = useAppSelector(
+    (state) =>
+      draftHandoff
+        ? draftHandoff.pinnedSourceConversationIds.map(
+            (conversationId) =>
+              state.instanceResources.byConversationId[conversationId] ?? {},
+          )
+        : [],
+    shallowEqual,
+  );
+  const draftSourceAttachments = useAppSelector((state) =>
+    draftHandoff
+      ? state.conversationAttachments.byConversationId[
+          draftHandoff.sourceConversationId
+        ]
+      : undefined,
+  );
+  const connectorSourceAttachments = useAppSelector((state) =>
+    draftHandoff
+      ? state.conversationAttachments.byConversationId[
+          draftHandoff.connectorSourceConversationId
+        ]
+      : undefined,
+  );
+  const handoffAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      conversationIdProp ||
+      !liveConversationId ||
+      !draftInputEntryReady ||
+      !resourcesEntryReady
+    )
+      return;
+    if (!draftHandoff || draftHandoff.targetAgentId !== agentId) return;
+    const transactionKey = `${draftHandoff.sourceConversationId}:${liveConversationId}`;
+    if (handoffAppliedRef.current === transactionKey) return;
+    handoffAppliedRef.current = transactionKey;
+    dispatch(
+      copyInstanceRequestDraft({
+        sourceConversationId: draftHandoff.sourceConversationId,
+        targetConversationId: liveConversationId,
+        chatSemantics: true,
+      }),
+    );
+  }, [
+    agentId,
+    conversationIdProp,
+    dispatch,
+    draftHandoff,
+    draftInputEntryReady,
+    liveConversationId,
+    resourcesEntryReady,
+  ]);
+
+  useEffect(() => {
+    if (
+      !draftHandoff ||
+      draftHandoff.targetAgentId !== agentId ||
+      !liveConversationId
+    )
+      return;
+    const transactionKey = `${draftHandoff.sourceConversationId}:${liveConversationId}`;
+    if (handoffAppliedRef.current !== transactionKey) return;
+    // Subsequent source completions are keyed resource upserts only. They never
+    // re-run the full copy, so typing/adding on the destination cannot be lost.
+    dispatch(
+      syncInstanceRequestDraftResources({
+        sourceConversationId: draftHandoff.resourceSourceConversationId,
+        draftSourceConversationId: draftHandoff.sourceConversationId,
+        targetConversationId: liveConversationId,
+      }),
+    );
+    const currentPicks = [
+      ...(draftSourceAttachments?.pending ?? []),
+      ...(draftSourceAttachments?.rows ?? []).map(
+        ({ association_id: _associationId, ...pick }) => pick,
+      ),
+    ];
+    const rootPicks = [
+      ...(connectorSourceAttachments?.pending ?? []),
+      ...(connectorSourceAttachments?.rows ?? []).map(
+        ({ association_id: _associationId, ...pick }) => pick,
+      ),
+    ];
+    const inheritedKeys = new Set(
+      draftSourceAttachments?.handoffInheritedKeys ?? [],
+    );
+    const currentKeys = new Set(currentPicks.map(attachmentKey));
+    const removedInheritedKeys = new Set(
+      [...inheritedKeys].filter((key) => !currentKeys.has(key)),
+    );
+    const desiredPicks = new Map(
+      rootPicks
+        .filter((pick) => !removedInheritedKeys.has(attachmentKey(pick)))
+        .map((pick) => [attachmentKey(pick), pick]),
+    );
+    for (const pick of currentPicks) {
+      if (!inheritedKeys.has(attachmentKey(pick))) {
+        desiredPicks.set(attachmentKey(pick), pick);
+      }
+    }
+    dispatch(
+      syncHandoffPendingAttachments({
+        conversationId: liveConversationId,
+        picks: [...desiredPicks.values()],
+      }),
+    );
+    const resourcesSettled = handoffResourceSources.every((resources) =>
+      Object.values(resources).every(
+        (resource) =>
+          resource.status === "ready" || resource.status === "error",
+      ),
+    );
+    const connectorSettled = [
+      draftSourceAttachments,
+      connectorSourceAttachments,
+    ].every(
+      (entry) =>
+        !entry || (entry.status !== "loading" && entry.busyKeys.length === 0),
+    );
+    if (resourcesSettled && connectorSettled) {
+      dispatch(acknowledgeDraftHandoff({ targetAgentId: agentId }));
+    }
+  }, [
+    agentId,
+    dispatch,
+    draftHandoff,
+    liveConversationId,
+    connectorSourceAttachments,
+    draftSourceAttachments,
+    handoffResourceSources,
+  ]);
   const attachResource = useAttachResource(liveConversationId ?? "");
   const draftAppliedRef = useRef<string | null>(null);
-  const [pendingTransfer, setPendingTransfer] = useState<(NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & { conversationId: string }) | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<
+    | (NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & {
+        conversationId: string;
+      })
+    | null
+  >(null);
   useEffect(() => {
     if (conversationIdProp) return; // existing conversation, not a chip target
     if (!liveConversationId || !draftInputEntryReady) return;
@@ -389,7 +532,11 @@ export function ChatRoomClient({
     try {
       transfer = consumeChatDraftTransfer(agentId, { userId, organizationId });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Prepared chat content could not be attached.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Prepared chat content could not be attached.",
+      );
       draftAppliedRef.current = liveConversationId;
       return;
     }
@@ -419,12 +566,20 @@ export function ChatRoomClient({
 
   // Recheck capture identity at attachment readiness, not only at storage consumption.
   usePreparedResourceSeed({
-    conversationId: !conversationIdProp && pendingTransfer?.conversationId === liveConversationId ? liveConversationId : null,
+    conversationId:
+      !conversationIdProp &&
+      pendingTransfer?.conversationId === liveConversationId
+        ? liveConversationId
+        : null,
     ready: resourcesEntryReady,
     resources: pendingTransfer?.resources,
-    expectedIdentity: pendingTransfer?.userId && pendingTransfer.organizationId
-      ? { userId: pendingTransfer.userId, organizationId: pendingTransfer.organizationId }
-      : null,
+    expectedIdentity:
+      pendingTransfer?.userId && pendingTransfer.organizationId
+        ? {
+            userId: pendingTransfer.userId,
+            organizationId: pendingTransfer.organizationId,
+          }
+        : null,
     currentIdentity: { userId, organizationId },
     attach: attachResource,
     reportError: toast.error,
@@ -568,18 +723,21 @@ export function ChatRoomClient({
     // Composer attachments, resolved variables, effective model, and lean
     // context-document refs — all plain ref-reads off the store at trigger
     // time (no subscriptions; this fn only runs when a launch is assembled).
-    const attachedResources = selectInstanceResources(conversationId)(state).map(
-      (r) => ({
-        id: r.resourceId,
-        block_type: r.blockType,
-        status: r.status,
-      }),
-    );
+    const attachedResources = selectInstanceResources(conversationId)(
+      state,
+    ).map((r) => ({
+      id: r.resourceId,
+      block_type: r.blockType,
+      status: r.status,
+    }));
     const variableValues = selectResolvedVariables(conversationId)(state);
     const settings = selectCurrentSettings(conversationId)(state);
     const model = typeof settings?.model === "string" ? settings.model : null;
 
-    const workingEntry = selectWorkingDocEntry(conversationId, "working")(state);
+    const workingEntry = selectWorkingDocEntry(
+      conversationId,
+      "working",
+    )(state);
     const workingDocument = workingEntry
       ? {
           enabled: workingEntry.enabled,
@@ -590,7 +748,10 @@ export function ChatRoomClient({
         }
       : null;
 
-    const scratchEntry = selectWorkingDocEntry(conversationId, "scratch")(state);
+    const scratchEntry = selectWorkingDocEntry(
+      conversationId,
+      "scratch",
+    )(state);
     const activeScratchpadId = selectActiveScratchpadId(state);
     const attachedScratchpadIds =
       selectAttachedScratchpadIds(conversationId)(state);
@@ -718,7 +879,8 @@ export function ChatRoomClient({
         throw new Error(
           `input_draft \`mode\` must be ${modes} when present, got ${JSON.stringify(writeMode)}.`,
         );
-      const current = selectUserInputText(conversationId)(store.getState()) ?? "";
+      const current =
+        selectUserInputText(conversationId)(store.getState()) ?? "";
       const next =
         writeMode === "append" && current.trim()
           ? `${current.trimEnd()}\n${text}`
@@ -746,32 +908,32 @@ export function ChatRoomClient({
             where the full-bleed sheet is still the right answer. */}
         <CanvasDock groupId="chat-canvas-dock" className="flex-1 min-h-0">
           <div className="h-full min-h-0 overflow-hidden flex">
-          <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
-          <AgentConversationColumn
-            conversationId={conversationId}
-            surfaceKey={surfaceKey}
-            audience={audience}
-            constrainWidth
-            edgeToEdgeScroll
-            deferColdMarkdown={!!conversationIdProp}
-            smartInputProps={{
-              sendButtonVariant: "blue",
-              // Lives in the Chat Options (+) → Preferences tab now.
-              showSubmitOnEnterToggle: false,
-              variablesPanelStyle,
-            }}
-            landingContent={
-              typeof landingContent === "function"
-                ? landingContent(conversationId)
-                : landingContent
-            }
-            aboveInput={
-              typeof aboveInput === "function"
-                ? aboveInput(conversationId)
-                : aboveInput
-            }
-          />
-          </div>
+            <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
+              <AgentConversationColumn
+                conversationId={conversationId}
+                surfaceKey={surfaceKey}
+                audience={audience}
+                constrainWidth
+                edgeToEdgeScroll
+                deferColdMarkdown={!!conversationIdProp}
+                smartInputProps={{
+                  sendButtonVariant: "blue",
+                  // Lives in the Chat Options (+) → Preferences tab now.
+                  showSubmitOnEnterToggle: false,
+                  variablesPanelStyle,
+                }}
+                landingContent={
+                  typeof landingContent === "function"
+                    ? landingContent(conversationId)
+                    : landingContent
+                }
+                aboveInput={
+                  typeof aboveInput === "function"
+                    ? aboveInput(conversationId)
+                    : aboveInput
+                }
+              />
+            </div>
           </div>
         </CanvasDock>
       </div>

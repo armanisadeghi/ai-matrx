@@ -66,7 +66,12 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
-import { beginFreshChat, parseChatPath } from "./begin-fresh-chat";
+import {
+  beginFreshChat,
+  interceptChatAgentLink,
+  parseChatPath,
+  stageChatAgentSwitch,
+} from "./begin-fresh-chat";
 
 /** Sidebar history list scope. Stable, owned by ChatSidebarMenu. */
 const CHAT_HISTORY_SCOPE = "chat-route";
@@ -117,7 +122,18 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`
     // gap so the chrome rows sit at the exact same rhythm as the main app
     // nav items.
-    <div className="flex flex-1 min-h-0 flex-col gap-0.5">
+    <div
+      className="flex flex-1 min-h-0 flex-col gap-0.5"
+      onClickCapture={(event) =>
+        interceptChatAgentLink(event, {
+          dispatch,
+          router,
+          getState: store.getState,
+          sourceAgentId: activeAgentId,
+          sourceConversationId: activeConversationId,
+        })
+      }
+    >
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
 
@@ -222,6 +238,16 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           rail (not over it). */}
       <AgentListDropdown
         navigateTo="/chat/a/{id}"
+        onSelect={(agentId) =>
+          stageChatAgentSwitch({
+            dispatch,
+            router,
+            getState: store.getState,
+            targetAgentId: agentId,
+            sourceAgentId: activeAgentId,
+            sourceConversationId: activeConversationId,
+          })
+        }
         contentSide="right"
         triggerSlot={
           <button

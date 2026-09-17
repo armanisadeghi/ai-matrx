@@ -48,6 +48,16 @@ export const destroyInstanceIfAbandoned =
   (conversationId: string): AppThunk =>
   (dispatch, getState) => {
     const state = getState();
+    // A chat agent switch copies this still-live instance after the target
+    // launcher is ready. It is work even when every visible composer field is
+    // empty (variables, connector picks, sandbox binding can be the draft).
+    if (
+      state.chatRoute?.draftHandoff?.pinnedSourceConversationIds.includes(
+        conversationId,
+      )
+    ) {
+      return;
+    }
     if (state.conversations.debugSessionActive) return;
     const messageCount =
       state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0;

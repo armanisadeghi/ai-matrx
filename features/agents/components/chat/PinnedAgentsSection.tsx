@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,8 @@ import {
 } from "@ai-matrx/agents/catalog/react";
 import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+import { useAppStore } from "@/lib/redux/hooks";
+import { stageChatAgentSwitch } from "./begin-fresh-chat";
 
 interface PinnedAgentsSectionProps {
   /** Currently active agentId — used to highlight the row when present. */
@@ -49,6 +52,8 @@ export function PinnedAgentsSection({
   activeAgentId,
 }: PinnedAgentsSectionProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const store = useAppStore();
 
   // Register a dedicated consumer for the chat sidebar's pinned view.
   // unregisterOnUnmount=false: the consumer slot is cheap and we want its
@@ -120,6 +125,24 @@ export function PinnedAgentsSection({
                     "text-foreground/90 hover:bg-accent/60",
                     isActive && "bg-accent/70",
                   )}
+                  onClick={(event) => {
+                    // Native link behavior owns modifier/new-tab navigation.
+                    if (
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.button !== 0
+                    )
+                      return;
+                    event.preventDefault();
+                    stageChatAgentSwitch({
+                      dispatch: store.dispatch,
+                      router,
+                      getState: store.getState,
+                      targetAgentId: agent.id,
+                      sourceAgentId: activeAgentId,
+                    });
+                  }}
                 >
                   <span className="min-w-0 flex-1 truncate">
                     {agent.name || "Untitled agent"}

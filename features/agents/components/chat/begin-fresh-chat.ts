@@ -1,11 +1,15 @@
 "use client";
 
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { RootState } from "@/lib/redux/store";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { resolveMandate } from "@/features/mandates/service";
-import { bumpFreshSession } from "@/features/agents/redux/chat/chat-route.slice";
+import {
+  bumpFreshSession,
+  stageDraftHandoff,
+} from "@/features/agents/redux/chat/chat-route.slice";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 /** Derive the active conversation + active agent from the chat URL. */
@@ -84,6 +88,86 @@ export function getFreshChatHref(
  */
 export function chatRouteSurfaceKey(agentId: string): string {
   return `chat:${agentId}`;
+}
+
+/**
+ * The only same-tab agent-switch door. The transaction keeps only instance
+ * identities in memory; the destination copies the canonical live draft after
+ * it initializes. Modifier-click/new-tab callers must not invoke this helper.
+ */
+export function stageChatAgentSwitch({
+  dispatch,
+  router,
+  getState,
+  targetAgentId,
+  sourceAgentId,
+  sourceConversationId,
+  href = `/chat/a/${encodeURIComponent(targetAgentId)}`,
+}: {
+  dispatch: AppDispatch;
+  router: AppRouterInstance;
+  getState: () => RootState;
+  targetAgentId: string;
+  sourceAgentId?: string;
+  sourceConversationId?: string | null;
+  href?: string;
+}): void {
+  const state = getState();
+  const sourceSurfaceKey = sourceAgentId
+    ? chatRouteSurfaceKey(sourceAgentId)
+    : state.conversationFocus.lastSurfaceKey?.startsWith("chat:")
+      ? state.conversationFocus.lastSurfaceKey
+      : null;
+  const sourceFocus = sourceSurfaceKey
+    ? state.conversationFocus.bySurface[sourceSurfaceKey]
+    : undefined;
+  const resolvedSourceConversationId =
+    sourceConversationId ?? sourceFocus?.input ?? sourceFocus?.display ?? null;
+  if (resolvedSourceConversationId) {
+    dispatch(
+      stageDraftHandoff({
+        sourceConversationId: resolvedSourceConversationId,
+        targetAgentId,
+      }),
+    );
+  }
+  router.push(href);
+}
+
+/** Catch package-owned chat links before they bypass the same-tab handoff. */
+export function interceptChatAgentLink(
+  event: ReactMouseEvent<HTMLElement>,
+  args: Omit<
+    Parameters<typeof stageChatAgentSwitch>[0],
+    "targetAgentId" | "href"
+  >,
+): void {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey
+  ) {
+    return;
+  }
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const href = target.closest("a[href]")?.getAttribute("href");
+  const match = href?.match(/^\/chat\/a\/([^/?#]+)\/?(?:[?#].*)?$/);
+  if (!href || !match) return;
+  if (event.shiftKey || event.altKey) {
+    // The package handles only cmd/ctrl itself. Stop its target handler while
+    // preserving the anchor's native modifier navigation.
+    event.stopPropagation();
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  stageChatAgentSwitch({
+    ...args,
+    targetAgentId: decodeURIComponent(match[1]),
+    href,
+  });
 }
 
 /** Start a brand-new chat: drop stale surface focus, bump the fresh-session

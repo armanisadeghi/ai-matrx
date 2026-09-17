@@ -4,14 +4,13 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserName } from "@/lib/redux/selectors/userSelectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
   type ChatQuickAction,
 } from "./chat-quick-actions.config";
 import { useMandateSet } from "@/features/mandates/useMandateSet";
-import { stashChatDraftTransfer } from "./chat-draft-transfer";
+import { stageChatAgentSwitch } from "./begin-fresh-chat";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { cn } from "@/lib/utils";
@@ -35,7 +34,7 @@ interface NewChatGreetingProps {
  *
  * Every chip is a MANDATE (`chat.quick_*`), resolved for this user in one pass
  * by `useMandateSet` (system default → their own binding). Clicking a chip
- * carries any in-progress draft to the RESOLVED agent via sessionStorage and
+ * carries the complete in-progress request to the resolved agent in memory and
  * routes to `/chat/a/[agentId]` — a navigation to the agent's fresh-chat
  * route, never a launch with a resolved id. A chip whose mandate cannot
  * resolve renders disabled with the reason as its title (the unresolved
@@ -79,15 +78,13 @@ export function NewChatGreeting({
   };
 
   const handleChipClick = (agentId: string) => {
-    // Snapshot the draft at click time via getState — no per-keystroke
-    // subscription, so typing never re-renders the chips.
-    const draftText = sourceConversationId
-      ? selectUserInputText(sourceConversationId)(store.getState())
-      : "";
-    if (draftText && draftText.trim().length > 0) {
-      stashChatDraftTransfer({ text: draftText, targetAgentId: agentId });
-    }
-    router.push(`/chat/a/${encodeURIComponent(agentId)}`);
+    stageChatAgentSwitch({
+      dispatch: store.dispatch,
+      router,
+      getState: store.getState,
+      targetAgentId: agentId,
+      sourceConversationId,
+    });
   };
 
   return (

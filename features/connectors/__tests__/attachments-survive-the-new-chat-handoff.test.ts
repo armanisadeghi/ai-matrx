@@ -29,8 +29,11 @@ import { configureStore } from "@reduxjs/toolkit";
 import attachmentsReducer, {
   attachResource,
   detachResource,
+  dropPendingAttachment,
   loadConversationAttachments,
   flushPendingAttachments,
+  mergePendingAttachments,
+  syncHandoffPendingAttachments,
   selectConversationAttachmentsEntry,
 } from "../redux/attachments.slice";
 import {
@@ -142,6 +145,77 @@ describe("attachments on an existing conversation", () => {
 });
 
 describe("the /chat/new handoff — picks made before the conversation existed", () => {
+  it("copies landed and pending picks to the next agent without carrying old association ids", () => {
+    const store = makeStore();
+    const landed = row(
+      "armanisadeghi/ai-matrx",
+      "armanisadeghi/ai-matrx",
+      "old-association",
+    );
+    store.dispatch(
+      mergePendingAttachments({
+        conversationId: CONVERSATION_ID,
+        picks: [
+          pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
+          pick("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream"),
+          // A landed source row is projected to this pending shape by the
+          // route handoff; this duplicate proves stable-key de-duplication.
+          (({ association_id: _associationId, ...pending }) => pending)(landed),
+        ],
+      }),
+    );
+
+    expect(entryOf(store).pending).toEqual([
+      pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
+      pick("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream"),
+    ]);
+    expect(entryOf(store).pending).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ association_id: expect.anything() }),
+      ]),
+    );
+  });
+
+  it("removes a detached inherited pick without deleting a destination-local pick", async () => {
+    const store = makeStore();
+    const inheritedA = pick("org/inherited-a", "Inherited A");
+    const inheritedB = pick("org/inherited-b", "Inherited B");
+    const local = pick("org/local", "Local");
+    store.dispatch(
+      mergePendingAttachments({
+        conversationId: CONVERSATION_ID,
+        picks: [inheritedA, inheritedB],
+      }),
+    );
+    await store.dispatch(
+      attachResource({
+        conversationId: CONVERSATION_ID,
+        pick: local,
+        conversationExists: false,
+      }),
+    );
+    store.dispatch(
+      dropPendingAttachment({
+        conversationId: CONVERSATION_ID,
+        key: "github\0org/inherited-b",
+      }),
+    );
+
+    store.dispatch(
+      syncHandoffPendingAttachments({
+        conversationId: CONVERSATION_ID,
+        // Upstream is still stale and offers B again; the destination removal
+        // tombstone must win until this handoff completes.
+        picks: [inheritedA, inheritedB],
+      }),
+    );
+
+    expect(entryOf(store).pending).toEqual([inheritedA, local]);
+    expect(entryOf(store).handoffInheritedKeys).toEqual([
+      "github\0org/inherited-a",
+    ]);
+  });
+
   it("holds a pick while there is no row, then carries it over once there is", async () => {
     const store = makeStore();
 
@@ -219,7 +293,9 @@ describe("the /chat/new handoff — picks made before the conversation existed",
       .mockResolvedValueOnce(
         row("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx", "assoc-1"),
       )
-      .mockRejectedValueOnce(new Error("AI Matrx is not installed on AI-Matrix-Engine"));
+      .mockRejectedValueOnce(
+        new Error("AI Matrx is not installed on AI-Matrix-Engine"),
+      );
     await store.dispatch(
       flushPendingAttachments({ conversationId: CONVERSATION_ID }),
     );
