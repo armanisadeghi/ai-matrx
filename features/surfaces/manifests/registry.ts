@@ -138,7 +138,6 @@ import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
-import { barcodePreviewManifest } from "./barcode-preview.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
@@ -242,7 +241,6 @@ import { quickDataManifest } from "./quick-data.manifest";
  * vocabulary in two. See THE FAMILY DOCTRINE in `.claude/skills/surface-authoring`.
  */
 export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
-  barcodePreviewManifest,
   agentShortcutsManifest,
   aiWorkManifest,
   aiWorkComposerManifest,

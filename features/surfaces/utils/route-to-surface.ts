@@ -290,6 +290,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/administration/ui/official-components",
     surface: "matrx-admin/official-components",
   },
+  { prefix: "/administration/applications/sync", surface: "matrx-admin/sync-fleet" },
+  { prefix: "/administration/compute/proof-runs", surface: "matrx-admin/proof-runs" },
   {
     prefix: "/administration/applications",
     surface: "matrx-admin/applications",
