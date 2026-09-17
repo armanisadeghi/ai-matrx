@@ -203,3 +203,37 @@ export function validateCaseBrief(caseBrief: string): string | null {
   }
   return null;
 }
+
+/**
+ * The rounds already answered, read back off the run's receipt.
+ *
+ * A probe session lives in mount-local state and the durable row carries only
+ * the round in flight, so a reload mid-round-2 used to lose round 1 entirely —
+ * the example, the Expert's own words about it, the lot (cold walk 6, finding
+ * 3, 2026-09-17). The launch now writes them onto the receipt and this reads
+ * them back. A receipt is untrusted input like anything else out of storage:
+ * anything that is not a well-formed list of rounds yields nothing rather than
+ * a half-built session, and the screen carries on with what the server sends.
+ */
+export function parsePriorRounds(raw: string): ProbeRound[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const rounds: ProbeRound[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    if (typeof row.example_body !== "string" || !row.example_body) return [];
+    rounds.push({
+      example_title: typeof row.example_title === "string" ? row.example_title : "",
+      example_body: row.example_body,
+      probe_label: typeof row.probe_label === "string" ? row.probe_label : "",
+      critique: typeof row.critique === "string" ? row.critique : "",
+    });
+  }
+  return rounds;
+}

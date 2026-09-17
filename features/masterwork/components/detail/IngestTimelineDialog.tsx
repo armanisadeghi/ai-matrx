@@ -58,6 +58,7 @@ import {
   durableRunDialogOnOpenChange,
   shouldReopenForRun,
 } from "@/lib/durable-run/durableRunDialogClose";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 
 /**
  * Served by `aidream/services/distillation/unfolding_ingest.py`.
@@ -354,6 +355,16 @@ export function IngestTimelineDialog({
 
   const reset = () => run.reset();
 
+  /**
+   * Back to this lane's own first step for the NEXT case — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const again = () => {
+    reset();
+    setTitle("");
+    setText("");
+  };
+
   const launch = async () => {
     const built = buildTimelineRequest({
       rulebookId: rulebook.id,
@@ -449,6 +460,10 @@ export function IngestTimelineDialog({
                   </Link>
                 </Button>
               )}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain label="Add another case" onAgain={again} />
             </div>
           </div>
         ) : running || run.stages.length > 0 ? (

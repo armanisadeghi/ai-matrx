@@ -33,6 +33,7 @@ import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -384,6 +385,19 @@ export function IngestSourceDialog({
     setRecordedSeconds(null);
   };
 
+  /**
+   * Back to this lane's own first step for the NEXT source — see
+   * `DurableRunAgain` and cold walk 6, finding 7. What already landed is
+   * untouched; only the box this lane types into is cleared.
+   */
+  const [addedSoFar, setAddedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setAddedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
+  };
+
   // A DIALOG NEVER LOSES IN-PROGRESS WORK. On 2026-09-15 a non-technical Expert
   // pasted an ~8,000-character transcript into this exact field and watched it
   // vanish twice when the dialog was torn down underneath her. The sibling key
@@ -677,6 +691,10 @@ export function IngestSourceDialog({
                   Interview me about the gaps
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain label="Add another source" onAgain={again} />
             </div>
           </div>
         ) : running || progress.length > 0 ? (

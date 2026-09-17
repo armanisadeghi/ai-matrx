@@ -39,6 +39,7 @@ import {
   type IngestSummary,
 } from "./IngestSourceDialog";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -213,6 +214,20 @@ export function ShadowInboxDialog({
     run.reset();
     resetPicker();
     setPreparing(false);
+  };
+
+  /**
+   * What the last thread produced, kept after the lane is sent back to its
+   * first step — so "Shadow another thread" is a continuation and not an
+   * erasure. See `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const [shadowedSoFar, setShadowedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setShadowedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   useRunResultOnce(run, onIngested);
@@ -431,6 +446,18 @@ export function ShadowInboxDialog({
 
   const content = (
     <>
+      {/* WHAT THIS SITTING HAS ALREADY DONE. A second thread starts on the same
+          blank first step as the first one did, so without this the screen
+          silently forgets the work the person just watched land. */}
+      {!summary && shadowedSoFar.length > 0 ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {shadowedSoFar.length === 1
+            ? "Already shadowed in this sitting: "
+            : `Already shadowed in this sitting (${shadowedSoFar.length} threads): `}
+          {shadowedSoFar[shadowedSoFar.length - 1]}
+        </p>
+      ) : null}
+
       {/* A failure STAYS on screen with its reason and a way out. */}
       <DurableRunFailure
         error={run.error}
@@ -466,6 +493,13 @@ export function ShadowInboxDialog({
                 Interview me about the gaps
               </Button>
             ) : null}
+            {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7). Both buttons above
+                LEAVE — this lane's own doors say "Paste a thread" / "Upload an
+                export", one at a time, and a person who has just watched it
+                work on one thread is the likeliest person in the product to
+                want a second. Before this, the only route to one was closing
+                the dialog and coming back in through the Rulebook. */}
+            <DurableRunAgain label="Shadow another thread" onAgain={again} />
           </div>
         </div>
       ) : run.running || run.stages.length > 0 ? (

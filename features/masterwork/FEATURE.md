@@ -441,6 +441,71 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 (sixth cold walk, the class) — **IN-PROGRESS WORK SURVIVES A
+  RELOAD IN EVERY CAPTURE LANE, AND THE REGISTRY NOW FORCES THE QUESTION.**
+  Walk 4 found the Triad erasing an answered round; walk 5 found it on the
+  Sorting Table; walk 6 found it on the Red-Pen lane and the Daily Drip. Each
+  was fixed where it was found, so the census walk 6 triggered asked every lane
+  the same question by driving it — type a real sentence, reload — and the
+  answer was the same everywhere: Red-Pen, the Prediction Ledger, all five
+  ingest lanes, "Everything you've published", the chat import, the Meeting
+  Scavenger, the unfolding case, Shadow-the-inbox and the Capture Plan's setup
+  form ALL swallowed the sentence and said nothing.
+  Two root causes, both closed as classes.
+  *Nothing kept the lane's working state.* The round-shaped `createSittingStore`
+  existed but had no shape a dialog could adopt, and `lib/drafts/useTextDraft`
+  covers ONE field with a 40-character floor — so a source's title and every
+  saved correction were never kept at all.
+  [`sitting/useDialogSitting.ts`](./sitting/useDialogSitting.ts) +
+  [`sitting/SittingResumed.tsx`](./sitting/SittingResumed.tsx) are that shape:
+  one call keeps the whole lane, puts it back, and SAYS SO with a "Start again"
+  beside it. Every lane above is on it.
+  *Seventeen deep links held a `useRef(false)` latch,* and `/masterwork/[id]` is
+  ONE component instance across client-side navigation — so a second visit to
+  `?drip=1` or `?red_pen=1` opened nothing and said nothing (walk 6 finding 5).
+  [`lib/deep-link/useDeepLinkArrival.ts`](../../lib/deep-link/useDeepLinkArrival.ts)
+  treats a deep link as an arrival that re-arms when the URL stops asking.
+  🚨 **A NEW LANE MUST ANSWER "what happens when she reloads?"**
+  [`sitting/lanePersistence.ts`](./sitting/lanePersistence.ts) holds the answer
+  per lane, and
+  [`sitting/__tests__/every-lane-keeps-its-work.test.ts`](./sitting/__tests__/every-lane-keeps-its-work.test.ts)
+  reads the live `platform.approach` registry, fails on any promised lane with
+  no answer, and reads each declared module from disk so a declaration cannot be
+  a sticker over a lane that keeps nothing. Both guards proven failing-then-
+  passing. NOT closed, and recorded in `FOUND_DEFECTS.md` with its reason: a
+  typed-but-unsent message in the interview and Conductor rooms, which lives in
+  the shared chat composer and is a platform-wide gap, not a Masterwork one.
+
+- 2026-09-17 (sixth cold walk, findings 3 / 6 / 7) — **A RESTORE THAT
+  CONTRADICTED ITSELF, TWO MOTIONLESS WAITS, AND A LANE WITH NO SECOND GO.**
+  *The probe's restore:* `restoring` on the shared durable-run handle was
+  cleared in the rejoin request's `.finally`, which is not the moment the mount
+  can describe what it holds — a rejoin routed to any worker but the executing
+  one answers at once with the durable ROW (`processing`) and hands the screen
+  nothing, and a rejoin that does not land answers even faster. Either way the
+  Bad Example Probe went back to offering "Write the first one" over a live,
+  paid round. Measured on a brand-new Rulebook (2026-09-17): 87 seconds of a
+  start button over round 2 being written, with the receipt itself deleted, so
+  no later reload could find the run again. Fixed in the PRIMITIVE
+  (`lib/durable-run/useDurableRun.ts`): `restoring` now ends only on a terminal
+  status, a fresh launch, or a pointer that turned out to be nothing; and an
+  unreachable rejoin for an unfinished run keeps its receipt and enters the
+  honest reconnect loop instead of resetting the surface. The probe's rounds
+  already answered now ride on the run's own receipt (`memo.prior_rounds`), so
+  the restored screen shows round 1's example and the Expert's own words rather
+  than a blank page. Guards: three new cases in
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`, red against the
+  pre-fix hook. *The motionless waits:* "Writing round N…" and "Writing your
+  cards…" were the same pixels at second 1 and second 61 (measured: 61 and 18
+  unbroken identical seconds). Both lanes now render `<WorkingNotice>`
+  (`lib/progress/`), which keeps the server's own sentence and adds a clock
+  that moves every second plus what this kind of work usually takes — never a
+  fabricated percentage. Guard:
+  `lib/progress/__tests__/a-waiting-screen-is-never-motionless.test.tsx`.
+  *The dead end:* Shadow-the-inbox's result screen offered only ways out, on a
+  lane whose own doors expect many threads over time. `DurableRunAgain` is the
+  shared affordance and every repeatable source lane now carries it. Guard:
+  `__tests__/a-finished-lane-offers-another-go.test.tsx`.
 - 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
   SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
   `/masterwork/new`, went to look at the catalog and came back; the textarea

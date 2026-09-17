@@ -154,6 +154,11 @@ function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
     requestId: null,
     waitMessage: running ? "Picking this back up" : null,
     elapsedMs: running ? 30_000 : 0,
+    // The clock a waiting surface renders from, and the promise it is allowed
+    // to make — both null/constant here because this suite is about the lane,
+    // not about the wait.
+    startedAt: running ? Date.now() - 30_000 : null,
+    expectedMs: 160_000,
     overdue: false,
     // Stop is offered exactly while something is actually in flight — the same
     // rule the real handle applies (`cancelPath && running && state.runId`).

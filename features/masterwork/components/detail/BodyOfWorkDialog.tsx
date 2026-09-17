@@ -31,6 +31,7 @@ import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -331,6 +332,16 @@ export function BodyOfWorkDialog({
     setUploadProgress(null);
   };
 
+  /**
+   * Back to this lane's own first step for the NEXT batch — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const again = () => {
+    reset();
+    setFiles([]);
+    setUrlsText("");
+  };
+
   const summary = run.result;
   const missingChunkSummary = summary
     ? describeMissingIngestParts(summary)
@@ -433,6 +444,13 @@ export function BodyOfWorkDialog({
                   Try the failed pieces again
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain
+                label="Add more of your work"
+                onAgain={again}
+              />
             </div>
           </div>
         ) : running || run.stages.length > 0 ? (
