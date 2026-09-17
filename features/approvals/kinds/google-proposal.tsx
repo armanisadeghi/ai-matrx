@@ -129,6 +129,13 @@ export interface GoogleProposalCopy {
   body: ReactNode;
   /** Doors for every identity the row names (the Google file, a Matrx record). */
   doors?: ReactNode;
+  /**
+   * Set when this row's Approve would do NOTHING — a task import naming no
+   * tasks, a contact carrying no fields, an append with no text. A click that
+   * would silently do nothing has to say so, so the row offers only Reject
+   * instead of a button whose receipt would read "changed 0 things".
+   */
+  blocked?: { reason: string; whoCan: string };
 }
 
 export interface GoogleKindContract {
@@ -218,6 +225,9 @@ export function useGoogleProposalSource(
         // the row stays selectable, so "approve all" remains a real choice.
         body: copy.body,
         ...(copy.doors ? { doors: copy.doors } : {}),
+        // The producer's own `blocked` (this is not yours to approve) outranks
+        // the kind's (this would do nothing): the first is about authority.
+        ...(proposal.blocked ? {} : copy.blocked ? { blocked: copy.blocked } : {}),
       } satisfies GoogleProposalItem;
     },
   );

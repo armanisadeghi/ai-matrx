@@ -110,6 +110,18 @@ const contract: GoogleKindContract = {
         "Leaves the document exactly as it is and records the proposal as rejected with your reason.",
       body: <AppendPreview payload={payload} />,
       doors: <OpenInGoogle href={link} label="Open the doc in Google" />,
+      // A click that would do nothing says so instead of reporting success
+      // over an empty write.
+      ...(text
+        ? {}
+        : {
+            blocked: {
+              reason:
+                "This proposal carries no text, so approving it would add nothing to the document.",
+              whoCan:
+                "Reject it and ask for the change again; the agent that proposed it needs fixing.",
+            },
+          }),
     };
   },
 };

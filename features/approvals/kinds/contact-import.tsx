@@ -149,6 +149,16 @@ const contract: GoogleKindContract = {
       rejectEffect:
         "Imports nothing and leaves your records exactly as they are, with your reason kept on the proposal.",
       body: <ContactFieldMap payload={payload} />,
+      ...(count > 0
+        ? {}
+        : {
+            blocked: {
+              reason:
+                "This proposal carries no fields to write, so approving it would import nothing.",
+              whoCan:
+                "Reject it and ask for the import again; the agent that proposed it needs fixing.",
+            },
+          }),
       // No door: which Person this becomes is decided by the resolver when the
       // import runs, so there is no record to open yet. Naming one now would be
       // a guess, and linking to a guess is worse than a missing link.

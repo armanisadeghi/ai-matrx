@@ -144,6 +144,18 @@ const contract: GoogleKindContract = {
       rejectEffect:
         "Imports nothing and leaves your tasks exactly as they are, with your reason kept on the proposal.",
       body: <TaskImportList payload={payload} />,
+      ...(toCreate > 0
+        ? {}
+        : {
+            blocked: {
+              reason:
+                rows.length === 0
+                  ? "This proposal names no tasks, so approving it would import nothing."
+                  : "Every task named here is already imported, so approving it would create nothing.",
+              whoCan:
+                "Reject it; nothing is lost, and the tasks that are already here stay exactly as they are.",
+            },
+          }),
       // Doors live on the rows themselves: each already-imported task opens.
     };
   },

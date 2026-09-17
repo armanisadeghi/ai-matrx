@@ -387,6 +387,28 @@ describe("the Google proposal kinds render the producer's dry run", () => {
     expect(text(node, "accept-effect")).toContain("Creates 1 task");
   });
 
+  it("an import that would create nothing is blocked, not offered", async () => {
+    mockPayload = {
+      __kind: "task_import_dry_run",
+      preview: {
+        tasks: [
+          {
+            task_id: "g1",
+            task_list_id: "list-1",
+            task_list: "Launch",
+            title: "Book the venue",
+            already_imported: true,
+            matrx_task_id: "11111111-1111-1111-1111-111111111111",
+          },
+        ],
+        already_imported: [{ task_id: "g1" }],
+      },
+      arguments: { task_list_id: "list-1", task_ids: ["g1"] },
+    } as unknown as Json;
+    const node = await mount(taskImportKind);
+    expect(text(node, "blocked")).toContain("already imported");
+  });
+
   it("a payload this build cannot read is SHOWN, blocked, never dropped", async () => {
     mockPayload = { __kind: "something_else", preview: {} } as unknown as Json;
     const node = await mount(documentAppendKind);
@@ -395,6 +417,70 @@ describe("the Google proposal kinds render the producer's dry run", () => {
     expect(text(node, "accept-effect")).toContain("Nothing");
   });
 });
+
+/**
+ * One READABLE payload per kind — the smallest preview each one accepts that
+ * still describes a real change. Deliberately not `{preview: {}}`: an empty
+ * preview is now a BLOCKED row (a click that would do nothing says so), and a
+ * batch test driven on blocked rows would prove the door is called for rows the
+ * queue never offers Approve on.
+ */
+const READABLE_PAYLOAD: Record<string, Json> = {
+  sheet_write: {
+    __kind: "sheet_write_dry_run",
+    connectionId: "conn-1",
+    fileId: "sheet-1",
+    fileLabel: "Payroll",
+    rangeA1: "Sheet1!A1:A1",
+    values: [["after"]],
+    before: [["before"]],
+  } as unknown as Json,
+  document_append: {
+    __kind: "document_append_dry_run",
+    preview: {
+      title: "Q3 retro",
+      total_chars: 10,
+      would_append: { after_char: 10, text: "More." },
+    },
+    arguments: { file_id: "doc-9", text: "More." },
+  } as unknown as Json,
+  document_create: {
+    __kind: "document_create_dry_run",
+    preview: { would_create: { title: "Plan", starting_chars: 4 } },
+    arguments: { title: "Plan", text: "Body" },
+  } as unknown as Json,
+  spreadsheet_create: {
+    __kind: "spreadsheet_create_dry_run",
+    preview: { would_create: { title: "Sheet", starting_rows: 1 } },
+    arguments: { title: "Sheet", rows: [["a"]] },
+  } as unknown as Json,
+  contact_import: {
+    __kind: "contact_import_dry_run",
+    preview: {
+      contacts: [{ name: "Dana Reed" }],
+      field_map: [
+        { person_field: "display_name", value: "Dana Reed", source: "google_contacts" },
+      ],
+    },
+    arguments: { contact: "dana@example.com" },
+  } as unknown as Json,
+  task_import: {
+    __kind: "task_import_dry_run",
+    preview: {
+      tasks: [
+        {
+          task_id: "g2",
+          task_list_id: "list-1",
+          task_list: "Launch",
+          title: "Order the badges",
+          already_imported: false,
+        },
+      ],
+      already_imported: [],
+    },
+    arguments: { task_list_id: "list-1", task_ids: ["g2"] },
+  } as unknown as Json,
+};
 
 describe("there is ONE approve path", () => {
   const googleKinds: ApprovalKind[] = [
@@ -409,11 +495,7 @@ describe("there is ONE approve path", () => {
   it.each(googleKinds.map((kind) => [kind.id, kind] as const))(
     "%s approves through the server door and writes nothing itself",
     async (_id, kind) => {
-      mockPayload = {
-        __kind: `${kind.id}_dry_run`,
-        preview: {},
-        arguments: {},
-      } as unknown as Json;
+      mockPayload = READABLE_PAYLOAD[kind.id];
       await mount(kind);
       const items = harness!.items;
       expect(items.length).toBe(1);
@@ -429,11 +511,7 @@ describe("there is ONE approve path", () => {
   );
 
   it("reject carries the person's reason to the door", async () => {
-    mockPayload = {
-      __kind: "document_append_dry_run",
-      preview: {},
-      arguments: {},
-    } as unknown as Json;
+    mockPayload = READABLE_PAYLOAD.document_append;
     await mount(documentAppendKind);
     await act(async () => {
       await harness!.reject(harness!.items, "not this quarter");
