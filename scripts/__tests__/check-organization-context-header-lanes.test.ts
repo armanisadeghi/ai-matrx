@@ -49,6 +49,15 @@ describe("organization-context header lanes", () => {
     expect(findings).toHaveLength(1);
   });
 
+  it("fires for a no-substitution template process.env backend key", () => {
+    const findings = findOrganizationHeaderViolations(`
+      async function request(token: string) {
+        return fetch(\`\${process.env[\`NEXT_PUBLIC_BACKEND_URL_CANARY\`]}/ai/run\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
   it("fires for a destructured process.env backend alias", () => {
     const findings = findOrganizationHeaderViolations(`
       const { NEXT_PUBLIC_BACKEND_URL_CANARY: canaryBase } = process.env;
@@ -86,6 +95,41 @@ describe("organization-context header lanes", () => {
       }
     `);
     expect(findings).toHaveLength(1);
+  });
+
+  it("resolves an outer backend alias captured by an inner request function", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function outer() {
+        async function request(token: string) {
+          return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+        }
+        return request("token");
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("does not let a sibling vendor binding hide a module stream endpoint", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://stream.aimatrx.com";
+      async function request(token: string, enabled: boolean) {
+        if (enabled) { const endpoint = "https://vendor.example"; void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toHaveLength(1);
+  });
+
+  it("does not let a sibling stream binding mark a module vendor endpoint internal", () => {
+    const findings = findOrganizationHeaderViolations(`
+      const endpoint = "https://vendor.example";
+      async function request(token: string, enabled: boolean) {
+        if (enabled) { const endpoint = "https://stream.aimatrx.com"; void endpoint; }
+        return fetch(\`\${endpoint}/claim\`, { headers: { Authorization: \`Bearer \${token}\` } });
+      }
+    `);
+    expect(findings).toEqual([]);
   });
 
   it("does not resolve a module endpoint through a shadowing local binding", () => {

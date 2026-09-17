@@ -80,7 +80,8 @@ function processEnvPropertyName(expression: ts.Expression): string | null {
     expression.expression.expression.text === "process" &&
     expression.expression.name.text === "env" &&
     expression.argumentExpression &&
-    ts.isStringLiteral(expression.argumentExpression)
+    (ts.isStringLiteral(expression.argumentExpression) ||
+      ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
   ) return expression.argumentExpression.text;
   return null;
 }
@@ -136,31 +137,37 @@ function functionBoundary(node: ts.Node): ts.Node {
   return node.getSourceFile();
 }
 
-function resolveBinding(name: string, scope: ts.Node): BindingResolution | null {
-  if (ts.isFunctionLike(scope)) {
-    for (const parameter of scope.parameters) {
+function isLexicalContainer(node: ts.Node): boolean {
+  return ts.isBlock(node) || ts.isSourceFile(node) || ts.isFunctionLike(node);
+}
+
+function bindingInContainer(
+  name: string,
+  container: ts.Node,
+  usePosition: number,
+): BindingResolution | null {
+  if (ts.isFunctionLike(container)) {
+    for (const parameter of container.parameters) {
       const resolved = bindingResolution(parameter, name);
       if (resolved) return resolved;
     }
+    return null;
   }
+
   let found: BindingResolution | null = null;
   const visit = (node: ts.Node) => {
-    if (found) return;
-    if (node !== scope && ts.isFunctionLike(node)) return;
-    if (ts.isVariableDeclaration(node)) {
+    if (found || (node !== container && isLexicalContainer(node))) return;
+    if (ts.isVariableDeclaration(node) && node.getStart() < usePosition) {
       found = bindingResolution(node, name);
       if (found) return;
     }
     ts.forEachChild(node, visit);
   };
-  visit(scope);
-  if (found) return found;
+  visit(container);
+  if (found || !ts.isSourceFile(container)) return found;
 
-  // A hand-written transport frequently shares a module-level endpoint constant
-  // with its local request function. Resolve that declaration without allowing
-  // unrelated imports or a sibling request to bless this fetch.
-  const source = scope.getSourceFile();
-  for (const statement of source.statements) {
+  for (const statement of container.statements) {
+    if (statement.getStart() >= usePosition) break;
     if (ts.isImportDeclaration(statement) && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)) {
       for (const element of statement.importClause.namedBindings.elements) {
         if (element.name.text !== name) continue;
@@ -168,17 +175,23 @@ function resolveBinding(name: string, scope: ts.Node): BindingResolution | null 
         return { initializer: null, backendIdentifier: isBackendIdentifier(imported) };
       }
     }
-    if (!ts.isVariableStatement(statement)) continue;
-    for (const declaration of statement.declarationList.declarations) {
-      const resolved = bindingResolution(declaration, name);
-      if (resolved) return resolved;
-    }
   }
   return null;
 }
 
-function variableInitializer(name: string, scope: ts.Node): ts.Expression | null {
-  return resolveBinding(name, scope)?.initializer ?? null;
+/** Resolve from the identifier's exact use site, walking its lexical ancestry. */
+function resolveBinding(name: string, useSite: ts.Node): BindingResolution | null {
+  const usePosition = useSite.getStart();
+  for (let current: ts.Node | undefined = useSite; current; current = current.parent) {
+    if (!isLexicalContainer(current)) continue;
+    const found = bindingInContainer(name, current, usePosition);
+    if (found) return found;
+  }
+  return null;
+}
+
+function variableInitializer(name: string, useSite: ts.Node): ts.Expression | null {
+  return resolveBinding(name, useSite)?.initializer ?? null;
 }
 
 function fetchHeaders(call: ts.CallExpression): ts.Expression | null {
@@ -191,12 +204,12 @@ function fetchHeaders(call: ts.CallExpression): ts.Expression | null {
   return headers?.initializer ?? null;
 }
 
-function expressionHasBearer(expression: ts.Expression, scope: ts.Node, seen = new Set<string>()): boolean {
+function expressionHasBearer(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
   if (ts.isIdentifier(expression)) {
     if (seen.has(expression.text)) return false;
     seen.add(expression.text);
-    const initializer = variableInitializer(expression.text, scope);
-    return initializer ? expressionHasBearer(initializer, scope, seen) : false;
+    const initializer = variableInitializer(expression.text, useSite);
+    return initializer ? expressionHasBearer(initializer, initializer, seen) : false;
   }
   let found = false;
   const visit = (node: ts.Node) => {
@@ -211,14 +224,14 @@ function expressionHasBearer(expression: ts.Expression, scope: ts.Node, seen = n
   return found;
 }
 
-function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node, seen = new Set<string>()): boolean {
+function expressionTargetsInternalHost(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
   if (ts.isIdentifier(expression)) {
     if (seen.has(expression.text)) return false;
     seen.add(expression.text);
-    const binding = resolveBinding(expression.text, scope);
+    const binding = resolveBinding(expression.text, useSite);
     if (binding?.backendIdentifier) return true;
     const initializer = binding?.initializer ?? null;
-    if (initializer && expressionTargetsInternalHost(initializer, scope, seen)) return true;
+    if (initializer && expressionTargetsInternalHost(initializer, initializer, seen)) return true;
     if (!binding && isBackendIdentifier(expression.text)) return true;
     // A URL object can be safely treated as the persistent-cloud-browser edge
     // only when its own boundary validates that exact object's hostname.
@@ -238,7 +251,7 @@ function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node
       }
       ts.forEachChild(node, validate);
     };
-    validate(scope);
+    validate(functionBoundary(useSite));
     return validatedHost;
   }
   if (isProcessEnvBackend(expression)) return true;
@@ -246,13 +259,13 @@ function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node
   const visit = (node: ts.Node) => {
     if (ts.isExpression(node) && isProcessEnvBackend(node)) found = true;
     if (ts.isIdentifier(node)) {
-      const binding = resolveBinding(node.text, scope);
+      const binding = resolveBinding(node.text, node);
       if (binding?.backendIdentifier || (!binding && isBackendIdentifier(node.text))) {
         found = true;
       } else if (!seen.has(node.text)) {
         seen.add(node.text);
         const initializer = binding?.initializer ?? null;
-        if (initializer && expressionTargetsInternalHost(initializer, scope, seen)) found = true;
+        if (initializer && expressionTargetsInternalHost(initializer, initializer, seen)) found = true;
       }
     }
     if (ts.isCallExpression(node) && isBackendIdentifier(nodeName(node.expression) ?? "")) found = true;
@@ -267,12 +280,12 @@ function expressionTargetsInternalHost(expression: ts.Expression, scope: ts.Node
   return found;
 }
 
-function expressionHasOrganizationCompliance(expression: ts.Expression, scope: ts.Node, seen = new Set<string>()): boolean {
+function expressionHasOrganizationCompliance(expression: ts.Expression, useSite: ts.Node, seen = new Set<string>()): boolean {
   if (ts.isIdentifier(expression)) {
     if (seen.has(expression.text)) return false;
     seen.add(expression.text);
-    const initializer = variableInitializer(expression.text, scope);
-    return initializer ? expressionHasOrganizationCompliance(initializer, scope, seen) : false;
+    const initializer = variableInitializer(expression.text, useSite);
+    return initializer ? expressionHasOrganizationCompliance(initializer, initializer, seen) : false;
   }
   let found = false;
   const visit = (node: ts.Node) => {
@@ -284,8 +297,8 @@ function expressionHasOrganizationCompliance(expression: ts.Expression, scope: t
       node.name.text === "headers" &&
       ts.isIdentifier(node.expression)
     ) {
-      const initializer = variableInitializer(node.expression.text, scope);
-      if (initializer && expressionHasOrganizationCompliance(initializer, scope, seen)) found = true;
+      const initializer = variableInitializer(node.expression.text, node.expression);
+      if (initializer && expressionHasOrganizationCompliance(initializer, initializer, seen)) found = true;
     }
     ts.forEachChild(node, visit);
   };
@@ -314,14 +327,13 @@ export function findOrganizationHeaderViolations(source: string, fileName = "sou
   const visit = (node: ts.Node) => {
     if (isFetch(node)) {
       inspectedFetch = true;
-      const scope = functionBoundary(node);
       const headers = fetchHeaders(node);
       const target = node.arguments[0];
       if (
         headers && target &&
-        expressionHasBearer(headers, scope) &&
-        expressionTargetsInternalHost(target, scope) &&
-        !expressionHasOrganizationCompliance(headers, scope)
+        expressionHasBearer(headers, node) &&
+        expressionTargetsInternalHost(target, node) &&
+        !expressionHasOrganizationCompliance(headers, node)
       ) {
         findings.push({
           line: parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1,
