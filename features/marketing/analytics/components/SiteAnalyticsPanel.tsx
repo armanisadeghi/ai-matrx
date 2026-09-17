@@ -532,7 +532,7 @@ export function SiteAnalyticsPanel({
             </ul>
           ) : null}
 
-          {data.daysWithData < range ? (
+          {data.daysWithData < range && !data.comparison.caveat ? (
             <p className="text-[11px] text-muted-foreground">
               {`${data.daysWithData} of the last ${range} days have stored rows — the rest were never collected, so they count as zero in the totals above.`}
             </p>
