@@ -30,6 +30,16 @@
 // eleven live Google connections was still at the column's bare default, so
 // that sentence is what the screen shows today.
 //
+// A DEAD CREDENTIAL IS A RENEWAL OF EVERYTHING THE ACCOUNT HOLDS. `usable` is
+// false when the provider will not authorize anything for this account any more
+// (revoked, no credential on file, `needs_attention`). Every product it still
+// holds the scopes for is then broken, and the ONE repair is a fresh grant — so
+// the verb here is "Reconnect" and its SCOPE is the account, not the product
+// (`actionScope`). Until 2026-09-17 the verb came from `missingScopes` and the
+// recorded refusal alone, so nine rows said "Reconnect probe@example.com."
+// beside no control at all and the consent dialog answered "everything you
+// switched on is already connected" (VERIFY-U-P2-R2, N2).
+//
 // A RECORDED REFUSAL CHANGES WHAT THE ROW MAY CLAIM. "Connected" is never a
 // boolean that lies, and a product whose last provider call was refused is not
 // connected just because its scopes are all present: when the newest fact for a
@@ -274,10 +284,26 @@ export interface ConnectorProductHealth {
    * account says "Connect".
    */
   actionLabel: ConnectorProductAction | null;
+  /**
+   * Whether that one action repairs this PRODUCT or the whole ACCOUNT. Null
+   * exactly when `actionLabel` is null. A surface renders one control per
+   * account for the account-scoped rows, and never a per-row press that a
+   * dead credential would make nine copies of.
+   */
+  actionScope: ConnectorActionScope | null;
 }
 
 /** The verb on a product row's action. Never both, never neither by accident. */
 export type ConnectorProductAction = "Connect" | "Reconnect";
+
+/**
+ * WHAT ONE PRESS REPAIRS. `product` is the ordinary case: the request asks for
+ * this product's scopes on this account. `account` is a dead credential — the
+ * provider will authorize nothing at all, so one approval renews every product
+ * the account already holds and a surface offers ONE control for the account
+ * rather than the same press once per row (the chair's ruling, 2026-09-17).
+ */
+export type ConnectorActionScope = "product" | "account";
 
 function rolloutFor(
   product: ConnectorProduct,
@@ -386,6 +412,13 @@ export function productHealth({
   const standingRefusal = refusalStands ? lastRefusal : null;
   const refusalNeedsReconnect =
     standingRefusal?.disposition === "reconnect";
+  /**
+   * The provider will authorize nothing for this account, and this product's
+   * grant is part of what died with the credential. One fresh approval renews
+   * it — and every other product this account holds, which is why the scope of
+   * the action is the ACCOUNT (N2).
+   */
+  const credentialIsDead = Boolean(account && !account.usable && held);
   const activityNote =
     standingRefusal &&
     (standingRefusal.disposition === "self_healing" ||
@@ -393,6 +426,31 @@ export function productHealth({
       standingRefusal.disposition === null)
       ? standingRefusal.message
       : null;
+
+  /**
+   * THE ONE ACTION, DECIDED ONCE — verb and scope together, because they answer
+   * the same question: what would one press ask the provider for?
+   *   • a scope is missing → this product's own Connect (never granted) or
+   *     Reconnect (partly granted);
+   *   • nothing missing, but the provider's last word is a refusal only a fresh
+   *     grant can clear → renew this product;
+   *   • the credential itself is dead → renew the ACCOUNT, which is every
+   *     product it holds, in one approval.
+   */
+  const action: {
+    label: ConnectorProductAction;
+    scope: ConnectorActionScope;
+  } | null =
+    missingScopes.length > 0
+      ? {
+          label: held ? "Reconnect" : "Connect",
+          scope: credentialIsDead ? "account" : "product",
+        }
+      : credentialIsDead
+        ? { label: "Reconnect", scope: "account" }
+        : refusalNeedsReconnect
+          ? { label: "Reconnect", scope: "product" }
+          : null;
 
   /**
    * Everything common to every state, so a new state can never forget one of
@@ -414,17 +472,8 @@ export function productHealth({
     activityNote,
     // D3: the verb is the truth about this account, not about the button.
     // Nothing to ask for, or nothing the person may ask for → no action at all.
-    // A standing refusal only the person can clear earns a Reconnect even when
-    // every scope is present: the grant itself is what has to be renewed.
-    actionLabel: !part.togglable
-      ? null
-      : missingScopes.length > 0
-        ? held
-          ? "Reconnect"
-          : "Connect"
-        : refusalNeedsReconnect
-          ? "Reconnect"
-          : null,
+    actionLabel: part.togglable ? (action?.label ?? null) : null,
+    actionScope: part.togglable ? (action?.scope ?? null) : null,
   });
 
   const pending = rows.find((r) => r.phase === "pending" && !r.eligible);
@@ -530,6 +579,10 @@ export function productHealth({
  * A refusal that is OURS to repair (`platform_configuration`) or that clears by
  * itself is deliberately NOT a renewal: re-approving the same scopes would not
  * help, and offering it would be the dead control this primitive exists to end.
+ *
+ * A DEAD CREDENTIAL IS ALSO A RENEWAL, of every product the account holds: the
+ * grant is intact and the thing that authorizes it is gone, so `actionLabel`
+ * says Reconnect and this answers true without the caller knowing why (N2).
  */
 export function grantNeedsRenewal({
   provider,
@@ -547,6 +600,30 @@ export function grantNeedsRenewal({
   if (!account) return false;
   const row = productHealth({ provider, product, account, rollout, activity });
   return row.missingScopes.length === 0 && row.actionLabel === "Reconnect";
+}
+
+/**
+ * EVERY PRODUCT ONE ACCOUNT-LEVEL PRESS MUST CARRY. Exactly the rows whose
+ * action is scoped to the account — a dead credential, where one approval renews
+ * the whole account and asking per product would be nine windows for one repair.
+ * The consent surfaces build their plan from this, so the "one Reconnect on the
+ * account" a person presses is the same request the dialog's default press makes
+ * (VERIFY-U-P2-R2, N2).
+ */
+export function accountRenewalProductKeys({
+  provider,
+  account,
+  rollout,
+  activity,
+}: {
+  provider: ConnectorProviderConfig;
+  account: ConnectorAccount | null;
+  rollout: readonly ConnectorCapabilityRollout[];
+  activity?: ConnectorActivityByProduct;
+}): string[] {
+  return accountHealth({ provider, account, rollout, activity })
+    .filter((row) => row.actionLabel !== null && row.actionScope === "account")
+    .map((row) => row.product.key);
 }
 
 /**

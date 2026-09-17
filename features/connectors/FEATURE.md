@@ -26,14 +26,15 @@ Google as the first provider config (`common-docs/projects/google-native/PLAN.md
 **The connector primitive** (generic; the provider is a config, never a component)
 
 - `features/connectors/provider-config.ts` — `ConnectorProviderConfig` + `GOOGLE_CONNECTOR_PROVIDER`. Nine Google product rows, two groups, one FINAL user-facing sentence each, each row's grant bundle, its server capability keys, and its attachable resource types. **Rollout state is not here** — it comes from the server catalog at request time (PLAN §2: it flips with no rebuild).
-- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` is the single place "Connect" and "Reconnect" are decided, and `CONNECTOR_REFUSAL_CODES` / `refusalDisposition` are the single place a provider's refusal code becomes an expectation (reconnect · heals itself · ours to repair · retry).
-- `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for, what is blocked and why — including `renewProductKeys`, the products whose GRANT must be renewed although no scope is missing) and `consentOutcomes` (per-row truth read back from the account after the exchange).
+- `features/connectors/health.ts` — pure derivation of the per-capability health row: `productHealth`, `accountHealth`, `requiredScopesFor`, `productIsEligible`, `revokeConsequence`, plus `rolloutSentence` (the rollout state in plain words — no capability key ever reaches a person) and `preferredAccountId` (which account a consent surface opens on: the one the surface names, else the usable account holding the most live products). Also the generic `ConnectorAccount` / `ConnectorCapabilityRollout` / `ConnectorProductActivity` shapes every provider adapter reports in; a row's `actionLabel` **and its `actionScope`** are the single place "Connect" vs "Reconnect" and "this product" vs "this whole account" are decided (`grantNeedsRenewal` / `accountRenewalProductKeys` read them, so no surface re-derives a renewal), and `CONNECTOR_REFUSAL_CODES` / `refusalDisposition` are the single place a provider's refusal code becomes an expectation (reconnect · heals itself · ours to repair · retry).
+- `features/connectors/consent-plan.ts` — pure: `buildConsentPlan` (what to ask for; `renewals`, the products whose GRANT is renewed although no scope is missing — derived from the account's health, never passed in; and `blocked`, every switched-on product that cannot be asked for, with its own reason), `emptyPlanAnswer` (**the ONE sentence a press with nothing to send gets**, on every surface — it names the blocked rows first, so "already connected" can never print over a row reading Not working) and `consentOutcomes` (per-row truth read back from the account after the exchange).
 - `features/connectors/google-capability-health.ts` — part of the Google adapter: reads `users.integration_connections.capability_health` (the server's per-capability call record) through a `__kind` runtime guard and folds the capability keys into the provider-agnostic per-PRODUCT `activity` map `health.ts` takes. No component ever sees a capability key or a Google shape.
-- `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes) and `useGoogleConsentRunner` (one GIS window, one `/exchange`).
+- `features/connectors/google-adapter.ts` — the ONE file in the primitive allowed to name Google: `useGoogleConnectorState` (inventory + capability catalog → generic shapes), `useGoogleConsentRunner` (one GIS window, one `/exchange`), `ADMISSION_LANGUAGE` (a catalog code → a rollout sentence) and `GOOGLE_FAILURE_LANGUAGE` + `consentFailureAnswer` (**the ONE translation of a failed press**: our sentence per code the hub can raise, else one honest generic sentence, with the server's raw words carried separately for the disclosure and never inlined).
 - `features/connectors/ConnectorPromptCard.tsx` — the dismissible offer card, plus `shouldShowConnectorPrompt` (pure). `ConnectorPromptHost.tsx` is its wired form.
 - `features/connectors/ProductPermissions.tsx` — **the ONE permission disclosure**, mounted by both the consent dialog and the health rows: the provider's own scope strings with plain words beside them, the rollout sentence, and this product's last success / last refusal. A real `<button>` with `aria-expanded`, because the tooltip it replaced could not be opened by a finger. Never write a second one.
-- `features/connectors/ConnectorConsentDialog.tsx` — `ConnectorConsentBody` (collapsible groups, the rows, toggles, the account select with "Use a different Google account", the org switch, the result view) and the `connectorConsentDialog` overlay around it. `emptyPlanAnswer` is the one sentence a press with nothing to send gets.
-- `features/connectors/ConnectedAccountHealth.tsx` — the per-account, per-product health rows with Reconnect and Disconnect.
+- `features/connectors/ConnectorConsentDialog.tsx` — `ConnectorConsentBody` (collapsible groups, the rows, toggles, the account select with "Use a different Google account", the org switch, the result view) and the `connectorConsentDialog` overlay around it. `newAccountChoiceDescription` / `newAccountFootnote` are the switcher's promises about what the hub will do with a login that is already connected.
+- `features/connectors/ConnectedAccountHealth.tsx` — the per-account, per-product health rows with Connect/Reconnect, Disconnect, and — when the account's CREDENTIAL is dead — ONE account-level Reconnect that renews every product it holds. `ConnectorBusyAction` (`accountId` + `productKey`) is the only way to say which press is running; the card checks the id against its own account.
+- `features/connectors/ConsentFailureNotice.tsx` — the ONE failure presentation for both consent surfaces: the sentence, and the server's raw words behind a real disclosure button (never a hover, never inline).
 - `features/connectors/ConnectorsSettingsPanel.tsx` — Settings → Connectors: the health cards plus the same consent body, and the only file in the panel path that names Google.
 - `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
 - `features/connectors/LiveIntegrationsList.tsx` — searchable, live-only provider list shared by the floating window. Every named provider has a real Connect, Configure, or Manage door.
@@ -190,7 +191,11 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - 🚨 **THE REQUEST ASKS FOR EXACTLY WHAT WAS SWITCHED ON, PLUS WHAT THE ACCOUNT ALREADY HOLDS.** Asking for more is how a production Google authorization was rejected outright (`lib/googleScopes.ts`, the `GOOGLE_OUTREACH_INBOX_SCOPES` header); asking for less is what the hub refuses as "this authorization would remove existing Google access" — and if it ever stopped refusing, a grant would be dropped and every picked file stranded. Guard: `__tests__/consent-asks-for-exactly-what-was-switched-on.test.ts`.
 - **The prompt card is a normal block ABOVE `ConnectorStrip`, never inside it.** The strip is one 16px line under a composer and its geometry is load-bearing; a card inside it would double the composer footprint on every surface that mounts it. The card is mounted by `NewChatGreeting` (the `/chat/new` screen) and by the settings panel — NOT by `SmartAgentInput`, because an account-wide offer under every composer on the platform is the exact defect `ChatConnectionsStrip` was built to end (2026-09-15).
 - 🚨 **THE PER-PRODUCT CALL FACTS ARE THE SERVER'S RECORD, AND ABSENT MEANS ABSENT.** The hub records, per capability, the last call Google answered and the last call it refused, with a classified code and a person-facing sentence (`aidream/services/google_integrations/call_health.py` → `capability_health`). A product row shows the most recent fact across the capabilities behind it and NEVER the account's `last_verified_at` / `last_error`, which stay on the account line labelled account-level. A product with nothing recorded says "no calls recorded yet" — never a blank and never a green line. On 2026-09-17 every one of the eleven live Google connections was still at the column's bare default, so that is what the screen says today. Guard: `__tests__/the-health-row-shows-the-real-last-call.test.ts`.
-- 🚨 **A STANDING REFUSAL OUTRANKS A GREEN BADGE, AND EVERY REFUSAL CLASS GETS THE ACTION IT DESERVES.** When a product's newest recorded fact is a refusal (no later success answered it), the row stops saying Connected: `scope_missing`, `grant_expired_or_revoked` and `provider_denied` become **Not working** with the server's sentence and the ONE Reconnect — which, when no scope is missing, asks for exactly the scopes the account already holds so the GRANT is renewed (`renewProductKeys`; without it the press would answer "there is nothing left to approve", a dead control). `platform_configuration` is **Not working** with NO button, because reconnecting cannot help and the fault is ours. `quota_exhausted` and `provider_unavailable` keep the row's state and add the self-healing sentence — offering a button there would waste the person's time. The code itself is a technical detail shown inside the permission disclosure beside the provider's own scope strings, never on the row (D6). Guards: `__tests__/the-health-row-shows-the-real-last-call.test.ts`, `__tests__/refusal-codes-are-the-servers-codes.test.ts` (the client's code list is re-read from the server file and must match).
+- 🚨 **A STANDING REFUSAL OUTRANKS A GREEN BADGE, AND EVERY REFUSAL CLASS GETS THE ACTION IT DESERVES.** When a product's newest recorded fact is a refusal (no later success answered it), the row stops saying Connected: `scope_missing`, `grant_expired_or_revoked` and `provider_denied` become **Not working** with the server's sentence and the ONE Reconnect — which, when no scope is missing, asks for exactly the scopes the account already holds so the GRANT is renewed (derived by `grantNeedsRenewal`; without it the press answers "there is nothing left to approve", a dead control). `platform_configuration` is **Not working** with NO button, because reconnecting cannot help and the fault is ours. `quota_exhausted` and `provider_unavailable` keep the row's state and add the self-healing sentence — offering a button there would waste the person's time. The code itself is a technical detail shown inside the permission disclosure beside the provider's own scope strings, never on the row (D6). Guards: `__tests__/the-health-row-shows-the-real-last-call.test.ts`, `__tests__/refusal-codes-are-the-servers-codes.test.ts` (the client's code list is re-read from the server file and must match).
+- 🚨 **A DEAD CREDENTIAL IS A RENEWAL OF EVERY PRODUCT THE ACCOUNT HOLDS, AND THE REPAIR IS OFFERED ONCE, ON THE ACCOUNT.** `usable: false` (revoked, no credential on file, `needs_attention`) with the grant intact is the 2026-07-25 shape and was live on nine rows: the products are all broken and one fresh approval fixes all of them. So `actionScope` is `account`, `accountRenewalProductKeys` is what one press carries, the dialog starts those rows switched ON, and the card shows a single Reconnect beside the sentence asking for it — never the same press repeated per row, and never (as until 2026-09-17) nine rows asking for a Reconnect that existed nowhere on the screen. Guard: `__tests__/a-dead-credential-is-one-reconnect.test.tsx`.
+- 🚨 **A PRESS THAT CAN ASK FOR NOTHING SAYS WHY — AND NEVER "ALREADY CONNECTED" OVER A BROKEN ROW.** A product refused for a reason a reconnect cannot clear (`platform_configuration`) or still behind the rollout gate is `blocked` with its own reason, and `emptyPlanAnswer` names it; only when nothing is blocked may the plan-empty sentence speak. Guard: `__tests__/a-refusal-we-must-repair-answers-honestly.test.tsx`.
+- 🚨 **A SERVER CODE NEVER REACHES THE SCREEN, KNOWN OR UNKNOWN.** Every press failure goes through `consentFailureAnswer`: a mapped sentence for a code the hub raises, one honest generic sentence otherwise, and text that looks machine-written (a snake_case token, a scope URL, a shouted error class) is never inlined even when the code IS mapped. The raw words live behind `ConsentFailureNotice`'s disclosure. The map is censused against `capabilities.py`, `read_only_product_admission.py` and `service.py`'s `error_code=` by `__tests__/admission-codes-are-the-servers-codes.test.ts`, and the census reads a code out of the conditional expression it may be written in. Guard: `__tests__/no-server-code-reaches-the-screen.test.tsx`.
+- **A second Google login is only a second account when it is new here.** The hub resolves the row it writes by `provider_subject` + owner and upserts, so signing in with an identity this owner already has connected REFRESHES that account. Never promise a second account unconditionally. Guard: `__tests__/a-second-login-is-described-truthfully.test.ts`.
 - **Which organizations an account serves is NOT a setting.** A personal connection has `organization_id` NULL and is reachable by its owner wherever they work; an organization-owned one is reachable by that organization's members, and the two resolve identically for the same provider login. The whole mechanism is the dialog's "Connect for <org>" switch (chair ruling, 2026-09-17) — never a served-organizations editor, which would be a second, weaker copy of the access rule.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
@@ -222,6 +227,71 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-17` — **A dead credential is a renewal of everything the account
+  holds, and the press always answers with the truth** (lane F-12, from
+  `common-docs/projects/google-native/VERIFY-U-P2-R2.md` — the second
+  zero-authorship attack on this primitive). Five frontend findings, each fixed
+  in the ONE derivation and pinned red-then-green:
+  - **N2 (the worst).** An account whose credential is dead (`usable: false` —
+    revoked, no credential on file, `needs_attention`; nine such rows were live)
+    with every scope still granted produced `actionLabel: null` on all nine rows,
+    because the verb was derived from `missingScopes` and the recorded refusal
+    alone and never from `account.usable`. So nine rows printed "Needs
+    reconnecting — Reconnect <account>." beside ZERO action buttons, and the
+    dialog answered "Everything you switched on is already connected." The
+    ruling (chair): a dead credential is a renewal of EVERY granted product on
+    that account — one Reconnect on the account, the plan carries all of them as
+    renewals, the press opens the provider window. `productHealth` now derives
+    the verb AND its `actionScope` (`product` | `account`) in one place, so
+    `grantNeedsRenewal` answers true for every held product, `buildConsentPlan`
+    plans them as renewals with no added scope, `accountRenewalProductKeys`
+    (new) is what the account-level press carries, and `initialSelection` starts
+    those rows switched on. `ConnectedAccountHealth` renders ONE Reconnect for
+    the account — never the same press nine times — stating what one approval
+    covers; the switcher no longer calls a held-but-unusable account empty.
+  - **N1.** A `platform_configuration` refusal (ours to repair) left the row
+    switched on, the plan empty, and the press answering "Everything you
+    switched on is already connected" directly under a row reading "Not
+    working" — the boolean that lies, in the one place the owner named.
+    `buildConsentPlan` now BLOCKS such a product with the server's sentence plus
+    "This one is ours to repair", and `emptyPlanAnswer` (moved into
+    `consent-plan.ts`, used by the dialog inline, its toast and the settings
+    row) names every blocked row first; the plan-empty sentence may speak only
+    when nothing is blocked. No fake button anywhere.
+  - **N6.** `ConnectorsSettingsPanel` held one `busyProductKey` and gave it to
+    every account, so a press on one account spun the same product's control on
+    the others. The prop is now `busy: ConnectorBusyAction` (`accountId` +
+    `productKey`, `null` = the account-level press) and the card compares the id
+    to its own account, so a caller cannot express "busy everywhere".
+  - **N4.** `google_products_rollout_conflict` had no client sentence (the
+    census regex only matched a code written as the first token of the raise, and
+    this one lives inside a conditional), and both surfaces rendered exchange
+    failures with `extractErrorMessage(cause)` verbatim — so capability keys and
+    codes reached the screen. Added the code, plus `GOOGLE_FAILURE_LANGUAGE`
+    (a sentence per code the hub can refuse a press with, censused against
+    `capabilities.py`, `read_only_product_admission.py` AND `service.py`'s
+    `error_code=`), `consentFailureAnswer` (the ONE translation: mapped sentence,
+    else one honest generic sentence — and machine-looking text is never inlined
+    even when the code is unknown) and `ConsentFailureNotice` (the sentence, with
+    the raw text behind a real button, never a hover).
+  - **N5 (copy).** "Use a different Google account … it becomes a second
+    connected account" was false when the person picks the identity already
+    connected: the hub resolves by `provider_subject` + owner and upserts, so
+    that account is REFRESHED. `newAccountChoiceDescription` /
+    `newAccountFootnote` say what actually happens.
+  Guards (each run red on the pre-fix bytes, then green):
+  `__tests__/a-dead-credential-is-one-reconnect.test.tsx`,
+  `a-refusal-we-must-repair-answers-honestly.test.tsx`,
+  `one-account-spins-alone.test.tsx`,
+  `no-server-code-reaches-the-screen.test.tsx`,
+  `a-second-login-is-described-truthfully.test.ts`, and the tightened server
+  census in `admission-codes-are-the-servers-codes.test.ts`. **Not fixed here,
+  and still open:** N3 (Analytics records no successful call at all, and Search
+  Console and Contacts record only refusals, so a refusal for those three stands
+  forever) and N7 (a successful renewal does not clear the recorded refusal, so
+  a row can read "Not working" and "Connected." at once) are server-side seams —
+  aidream's recording lane owns them; no frontend change can make those rows
+  tell the truth.
 - `2026-09-17` — **A standing refusal now renews the grant on EVERY consent
   surface, because the renew set is DERIVED, not passed in** (lane F-10; Cursor
   Bugbot on PR 228, `f514f3b7`). `initialSelection` starts a `refused` product

@@ -75,6 +75,13 @@ export const GOOGLE_ADMISSION_CODES = [
   "youtube_internal_test_required",
   "google_oauth_internal_test_required",
   "google_read_only_sweep_paused",
+  // Raised when NOTHING in a multi-product selection is admitted
+  // (`capabilities.py::resolve_google_product_selection`). It was missing until
+  // 2026-09-17 because the census only read a code written as the first token of
+  // the raise, and this one lives inside a conditional — so the hub's own
+  // message, which names capability keys AND codes, was the sentence the person
+  // got (VERIFY-U-P2-R2, N4).
+  "google_products_rollout_conflict",
 ] as const;
 
 export type GoogleAdmissionCode = (typeof GOOGLE_ADMISSION_CODES)[number];
@@ -89,6 +96,8 @@ export const ADMISSION_LANGUAGE: Record<GoogleAdmissionCode, string> = {
     "Turns on automatically when ready for your account.",
   google_read_only_sweep_paused:
     "This one is paused for everyone right now while we finish certifying it with Google. Nothing you have connected is affected.",
+  google_products_rollout_conflict:
+    "None of the products you switched on is available on your account yet. They turn on automatically when they are ready — nothing you have connected is affected.",
 };
 
 /**
@@ -103,6 +112,105 @@ export function admissionLanguage(
     ADMISSION_LANGUAGE[code as GoogleAdmissionCode] ??
     "Turns on automatically when ready for your account."
   );
+}
+
+/**
+ * WHY A PRESS FAILED, IN ONE SENTENCE PER CODE — the exchange's own policy
+ * refusals as well as the catalog's admission codes, because a press can be
+ * refused before Google is reached (admission) or after the window closes
+ * (policy). Read from the server on 2026-09-17:
+ * `service.py` raises `error_code=` `google_products_conflict`,
+ * `google_products_scope_conflict`, `google_capability_conflict`,
+ * `google_capability_scope_conflict`, `google_oauth_client_migration_required`
+ * and `google_reconnect_target_conflict`;
+ * `capabilities.py` + `read_only_product_admission.py` raise the admission set
+ * above. `__tests__/admission-codes-are-the-servers-codes.test.ts` censuses all
+ * three files and fails when a code here is missing or extinct.
+ */
+export const GOOGLE_FAILURE_LANGUAGE: Record<string, string> = {
+  unauthenticated: "Sign in again, then connect Google.",
+  google_analytics_internal_test_required:
+    "Analytics is not open on your account yet, so it was not connected. It turns on automatically when it is ready; anything else you approved is unaffected.",
+  youtube_internal_test_required:
+    "YouTube is not open on your account yet, so it was not connected. It turns on automatically when it is ready; anything else you approved is unaffected.",
+  google_oauth_internal_test_required:
+    "That one is not open on your account yet, so it was not connected. It turns on automatically when it is ready; anything else you approved is unaffected.",
+  google_read_only_sweep_paused:
+    "That one is paused for everyone right now while we finish certifying it with Google, so it was not connected. Nothing you already had is affected.",
+  google_products_rollout_conflict:
+    "None of the products you switched on is available on your account yet, so nothing was connected. They turn on automatically when they are ready, and nothing you already had changed.",
+  google_products_conflict:
+    "One of the products you switched on is not one we can ask Google for any more. Nothing changed — reload this page so the list is current, then try again.",
+  google_products_scope_conflict:
+    "Google did not return the permissions this connection needs, so nothing was changed. Try again and approve everything the Google window asks for.",
+  google_capability_conflict:
+    "That product is not one we can ask Google for on this account. Nothing was changed.",
+  google_capability_scope_conflict:
+    "Google did not return the permissions that product needs, so nothing was changed. Try again and approve everything the Google window asks for.",
+  google_oauth_client_migration_required:
+    "Our Google sign-in changed, so this account needs a fresh approval. Close the Google window, press Reconnect, and approve everything it asks for — nothing you picked is lost.",
+  google_reconnect_target_conflict:
+    "The Google window signed in as a different account, or for a different owner, than the one being reconnected. Nothing changed — try again and choose the account named on this screen.",
+};
+
+/**
+ * The one sentence for a failure we have no sentence for. It is honest about all
+ * three things that matter — it failed, nothing changed, and the detail is one
+ * click away — and it never carries the code (D6).
+ */
+export const GOOGLE_GENERIC_FAILURE_SENTENCE =
+  "Google did not finish connecting this, and nothing was changed. Try again; if it keeps happening, open the details below and send them to us.";
+
+/** What a consent surface shows after a failed press. */
+export interface ConsentFailureAnswer {
+  /** The sentence the person reads. Never a code, never machine text. */
+  sentence: string;
+  /** The raw server text, for the disclosure only. Null when there is none. */
+  details: string | null;
+}
+
+/**
+ * Does this text read as something written FOR a person? A machine token
+ * (`capability_key`, `google_oauth_internal_test_required`), a scope URL or a
+ * shouted error class means no — and no means the generic sentence plus a
+ * details disclosure, whatever the code was. This is what stops the NEXT
+ * unmapped code from reaching the screen the way `google_products_rollout_conflict`
+ * did (VERIFY-U-P2-R2, N4).
+ */
+function readsAsASentence(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return false;
+  if (/[a-z0-9]_[a-z0-9]/i.test(trimmed)) return false;
+  if (/https?:\/\//.test(trimmed)) return false;
+  if (/\b[A-Z]{3,}[0-9]*\b/.test(trimmed)) return false;
+  return /[.!?]$/.test(trimmed);
+}
+
+/**
+ * THE ONE TRANSLATION OF A FAILED PRESS, for every consent surface. Until
+ * 2026-09-17 both surfaces rendered `extractErrorMessage(cause)` verbatim, so
+ * the hub's "…: calendar (google_oauth_internal_test_required)" was the answer a
+ * person read (N4).
+ */
+export function consentFailureAnswer(cause: unknown): ConsentFailureAnswer {
+  if (multiProductConsentUnsupported(cause)) {
+    return {
+      sentence: MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE,
+      details: null,
+    };
+  }
+  const raw = extractErrorMessage(cause);
+  if (cause instanceof BackendApiError) {
+    const known = GOOGLE_FAILURE_LANGUAGE[cause.code];
+    return known
+      ? { sentence: known, details: raw }
+      : { sentence: GOOGLE_GENERIC_FAILURE_SENTENCE, details: raw };
+  }
+  // Our own thrown sentences (an unchosen organization, an already-open window)
+  // are written for the person; anything else goes behind the disclosure.
+  return readsAsASentence(raw)
+    ? { sentence: raw, details: null }
+    : { sentence: GOOGLE_GENERIC_FAILURE_SENTENCE, details: raw };
 }
 
 /**

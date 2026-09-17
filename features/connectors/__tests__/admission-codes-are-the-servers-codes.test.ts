@@ -25,6 +25,7 @@ import { join } from "node:path";
 import {
   ADMISSION_LANGUAGE,
   GOOGLE_ADMISSION_CODES,
+  GOOGLE_FAILURE_LANGUAGE,
   admissionLanguage,
 } from "../google-adapter";
 
@@ -39,17 +40,55 @@ const SERVICE_DIR = join(
 const SERVER_FILES = ["capabilities.py", "read_only_product_admission.py"].map(
   (name) => join(SERVICE_DIR, name),
 );
+/** Where the exchange's own policy refusals are raised. */
+const EXCHANGE_FILE = join(SERVICE_DIR, "service.py");
 
-/** Every code the two admission files can put on the wire. */
+/** Every `error_code=` the exchange path can put on the wire. */
+function exchangeCodesFromServer(): string[] {
+  const source = readFileSync(EXCHANGE_FILE, "utf8");
+  return [
+    ...new Set(
+      [...source.matchAll(/error_code="([a-z0-9_]+)"/g)].map(
+        (match) => match[1]!,
+      ),
+    ),
+  ].sort();
+}
+
+/**
+ * Every code the two admission files can put on the wire.
+ *
+ * 🚨 THE FIRST ARGUMENT IS AN EXPRESSION, NOT ALWAYS A LITERAL. The round-1
+ * version of this census matched only a code written as the first token of the
+ * raise, so it missed `resolve_google_product_selection`'s
+ * `GoogleCapabilityAdmissionError(refusals[0].error if len(refusals) == 1 else
+ * "google_products_rollout_conflict", …)` — the selection-wide refusal a press
+ * really produces — and the client had no sentence for it while this suite read
+ * green (VERIFY-U-P2-R2, N4). So the whole first argument is read, to its
+ * balanced closing paren, and every string literal in it counts.
+ */
 function codesFromServer(): string[] {
   const codes = new Set<string>();
   for (const file of SERVER_FILES) {
     const source = readFileSync(file, "utf8");
-    // `GoogleCapabilityAdmissionError("<code>", ...)` — the catalog's own raise.
-    for (const match of source.matchAll(
-      /GoogleCapabilityAdmissionError\(\s*\n?\s*"([a-z0-9_]+)"/g,
-    )) {
-      codes.add(match[1]!);
+    // `GoogleCapabilityAdmissionError(<expression>, …)` — the catalog's own raise.
+    const call = "GoogleCapabilityAdmissionError(";
+    for (let at = source.indexOf(call); at !== -1; at = source.indexOf(call, at + 1)) {
+      let depth = 1;
+      let cursor = at + call.length;
+      const start = cursor;
+      while (cursor < source.length && depth > 0) {
+        const char = source[cursor];
+        if (char === "(" || char === "[") depth += 1;
+        else if (char === ")" || char === "]") depth -= 1;
+        else if (char === "," && depth === 1) break;
+        cursor += 1;
+      }
+      for (const match of source
+        .slice(start, cursor)
+        .matchAll(/"([a-z0-9_]+)"/g)) {
+        codes.add(match[1]!);
+      }
     }
     // `error="<code>"` — the read-only admission dataclass's field.
     for (const match of source.matchAll(/\berror="([a-z0-9_]+)"/g)) {
@@ -126,3 +165,21 @@ it("says out loud when the cross-repo leg could not run", () => {
   }
   expect(true).toBe(true);
 });
+
+/**
+ * THE PRESS-FAILURE MAP IS THE SERVER'S CODES TOO. A press can fail with an
+ * admission code (the selection was refused before Google was reached) or with
+ * one of the exchange's own policy codes; either way the person must get a
+ * sentence, and the raw text belongs behind the details control (N4).
+ */
+(hasServer && existsSync(EXCHANGE_FILE) ? describe : describe.skip)(
+  "the press-failure map against the live aidream source",
+  () => {
+    it("has a sentence for every code the hub can refuse a press with", () => {
+      const server = [
+        ...new Set([...codesFromServer(), ...exchangeCodesFromServer()]),
+      ].sort();
+      expect(Object.keys(GOOGLE_FAILURE_LANGUAGE).sort()).toEqual(server);
+    });
+  },
+);

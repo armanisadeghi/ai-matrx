@@ -32,18 +32,26 @@ import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree"
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
 import { useDisconnectGoogle } from "@/features/marketing/google/hooks";
-import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
-import { ConnectedAccountHealth } from "./ConnectedAccountHealth";
+import {
+  ConnectedAccountHealth,
+  type ConnectorBusyAction,
+} from "./ConnectedAccountHealth";
+import { ConsentFailureNotice } from "./ConsentFailureNotice";
 import { ConnectorConsentBody } from "./ConnectorConsentDialog";
 import { ConnectorPromptCard } from "./ConnectorPromptCard";
-import { accountHealth, anyProductConnected, revokeConsequence } from "./health";
-import { buildConsentPlan } from "./consent-plan";
 import {
-  MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE,
-  multiProductConsentUnsupported,
+  accountHealth,
+  accountRenewalProductKeys,
+  anyProductConnected,
+  revokeConsequence,
+} from "./health";
+import { buildConsentPlan, emptyPlanAnswer } from "./consent-plan";
+import {
+  consentFailureAnswer,
   useGoogleConnectorState,
   useGoogleConsentRunner,
+  type ConsentFailureAnswer,
 } from "./google-adapter";
 import {
   GOOGLE_CONNECTOR_PROVIDER,
@@ -76,41 +84,54 @@ function ProviderConnectorsPanel({
   const runner = useGoogleConsentRunner();
   const disconnect = useDisconnectGoogle();
   const organizations = useAppSelector(selectOrganizationsList);
-  const [busyProduct, setBusyProduct] = useState<string | null>(null);
+  /**
+   * WHICH PRESS IS RUNNING, AND ON WHICH ACCOUNT. One bare product key here was
+   * handed to every account card, so a press on one account spun the same
+   * product's control on all the others (VERIFY-U-P2-R2, N6). The account id is
+   * part of the value now, and the card checks it against its own account.
+   */
+  const [busy, setBusy] = useState<ConnectorBusyAction | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
 
-  const reconnect = async (accountId: string, productKey: string) => {
+  /**
+   * ONE consent run for both presses a card can raise: a product's own
+   * Connect/Reconnect, and the account-level Reconnect a dead credential needs
+   * (`productKey: null`), which renews every product the account holds in one
+   * window. Both go through `buildConsentPlan`, so neither surface derives a
+   * renewal itself.
+   */
+  const runConsent = async (
+    accountId: string,
+    productKeys: string[],
+    pressed: ConnectorBusyAction,
+  ) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
-    // The row's own verb, so the confirmation matches the button that was
-    // pressed: a product this account never granted says Connect, not
-    // Reconnect (VERIFY-U-P2 D3).
-    const pressed = accountHealth({
-      provider,
-      account,
-      rollout: state.rollout,
-    }).find((row) => row.product.key === productKey);
-    const verb = pressed?.actionLabel ?? "Connect";
-    // A row offering Reconnect with nothing missing is a row the provider
-    // refused on a grant it will not honour any more; the plan reads that off
-    // the account itself and renews the grant instead of asking for a scope, on
-    // this surface and in the dialog alike (see `consent-plan.ts`).
+    const rows = accountHealth({ provider, account, rollout: state.rollout });
+    // The row's own verb, so the toast matches the button that was pressed: a
+    // product this account never granted says Connect, not Reconnect (D3).
+    const verb =
+      productKeys.length === 1
+        ? (rows.find((row) => row.product.key === productKeys[0])?.actionLabel ??
+          "Connect")
+        : "Reconnect";
     const plan = buildConsentPlan({
       provider,
-      selectedProductKeys: [productKey],
+      selectedProductKeys: productKeys,
       account,
       rollout: state.rollout,
     });
     if (!plan.request) {
-      // Never a silent no-op: say why the click did nothing.
-      setFailure(
-        plan.blocked[0]?.reason ??
-          "There is nothing left to approve for this one.",
-      );
+      // Never a silent no-op, and never "already connected" over a row that says
+      // otherwise: the ONE answer function names every blocked row (N1).
+      setFailure({
+        sentence: emptyPlanAnswer(plan, productKeys.length),
+        details: null,
+      });
       return;
     }
-    setBusyProduct(productKey);
+    setBusy(pressed);
     setFailure(null);
     try {
       await runner.run(plan.request, {
@@ -127,15 +148,34 @@ function ProviderConnectorsPanel({
         toast.info("Authorization cancelled — nothing changed.");
         return;
       }
-      setFailure(
-        multiProductConsentUnsupported(cause)
-          ? MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE
-          : extractErrorMessage(cause),
-      );
+      setFailure(consentFailureAnswer(cause));
       await state.refetch();
     } finally {
-      setBusyProduct(null);
+      setBusy(null);
     }
+  };
+
+  const reconnect = (accountId: string, productKey: string) =>
+    runConsent(accountId, [productKey], { accountId, productKey });
+
+  /**
+   * The account's own repair: every product whose action is scoped to the
+   * account (a dead credential), renewed in one approval. The keys come from
+   * the one derivation, so this press and the dialog's default press make the
+   * same request (N2).
+   */
+  const reconnectAccount = (accountId: string) => {
+    const account = state.accounts.find((row) => row.id === accountId);
+    if (!account) return;
+    void runConsent(
+      accountId,
+      accountRenewalProductKeys({
+        provider,
+        account,
+        rollout: state.rollout,
+      }),
+      { accountId, productKey: null },
+    );
   };
 
   const revoke = async (accountId: string) => {
@@ -166,7 +206,7 @@ function ProviderConnectorsPanel({
       await state.refetch();
       toast.success(`${account.label} disconnected.`);
     } catch (cause) {
-      setFailure(extractErrorMessage(cause));
+      setFailure(consentFailureAnswer(cause));
     } finally {
       setRevokingId(null);
     }
@@ -218,14 +258,7 @@ function ProviderConnectorsPanel({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      {failure ? (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {failure}
-        </div>
-      ) : null}
+      {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
       {state.accounts.length === 0 ? (
         <ConnectorPromptCard
@@ -253,8 +286,9 @@ function ProviderConnectorsPanel({
                 ?.name ?? null
             }
             onReconnect={(productKey) => void reconnect(account.id, productKey)}
+            onReconnectAccount={() => reconnectAccount(account.id)}
             onRevoke={() => void revoke(account.id)}
-            busyProductKey={busyProduct}
+            busy={busy}
             revoking={revokingId === account.id}
           />
         ))

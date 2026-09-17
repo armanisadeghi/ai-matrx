@@ -16,6 +16,10 @@
 //   • the scopes that are MISSING, and one action that asks for only those —
 //     "Connect" when this account never granted the product, "Reconnect" only
 //     when a grant exists and is incomplete (D3);
+//   • when the ACCOUNT's credential itself is dead, ONE Reconnect for the whole
+//     account instead of the same press repeated on every row, because one
+//     approval renews every product it holds (`actionScope`, VERIFY-U-P2-R2 N2:
+//     nine rows used to say "Reconnect <account>." beside no control at all);
 //   • when the ACCOUNT was last confirmed, and its last refusal verbatim,
 //     labelled as account-level because that is what the server records.
 
@@ -56,6 +60,20 @@ const STATE_STYLE: Record<
   pending_rollout: { chip: "bg-muted text-muted-foreground", icon: Clock },
 };
 
+/**
+ * WHICH PRESS IS RUNNING, and on WHICH account. A bare product key was the
+ * defect (VERIFY-U-P2-R2, N6): `ConnectorsSettingsPanel` held one string and
+ * gave it to every account, so a press on one account spun the same product's
+ * control on all the others while nothing was happening to them. The account id
+ * is part of the value, and the card compares it to its OWN account — a caller
+ * cannot express "busy everywhere" any more. `productKey: null` is the
+ * account-level press.
+ */
+export interface ConnectorBusyAction {
+  accountId: string;
+  productKey: string | null;
+}
+
 export interface ConnectedAccountHealthProps {
   provider: ConnectorProviderConfig;
   account: ConnectorAccount;
@@ -64,9 +82,16 @@ export interface ConnectedAccountHealthProps {
   organizationName?: string | null;
   /** Ask the provider for ONLY the missing scopes of one product. */
   onReconnect: (productKey: string) => void;
+  /**
+   * Renew the whole account in one approval — every product it holds. Offered
+   * only when the credential itself is dead, where a per-product press would be
+   * nine windows for one repair.
+   */
+  onReconnectAccount: () => void;
   /** Remove the account. The caller states the consequence before it runs. */
   onRevoke: () => void;
-  busyProductKey?: string | null;
+  /** The press that is running right now, anywhere in the panel, or null. */
+  busy?: ConnectorBusyAction | null;
   revoking?: boolean;
   className?: string;
 }
@@ -77,14 +102,21 @@ export function ConnectedAccountHealth({
   health,
   organizationName,
   onReconnect,
+  onReconnectAccount,
   onRevoke,
-  busyProductKey,
+  busy = null,
   revoking = false,
   className,
 }: ConnectedAccountHealthProps) {
   const connector = getConnector(provider.markConnectorId);
   const lastChecked = relativeTime(account.lastVerifiedAt);
   const live = health.filter((row) => row.state === "connected").length;
+  /** Rows one account-level approval repairs — see `actionScope` in health.ts. */
+  const accountScoped = health.filter(
+    (row) => row.actionLabel !== null && row.actionScope === "account",
+  );
+  const busyHere = busy?.accountId === account.id ? busy : null;
+  const accountBusy = busyHere?.productKey === null;
 
   return (
     <div
@@ -138,6 +170,36 @@ export function ConnectedAccountHealth({
                 {account.statusRemedy ? ` ${account.statusRemedy}` : ""}
               </p>
             ) : null}
+            {/* THE ONE REPAIR FOR A DEAD CREDENTIAL, beside the sentence that
+                asks for it. It states what one approval covers before it is
+                pressed (destructive-and-expensive-actions.md: an expensive
+                click names its consequence), and it is the only Reconnect on
+                this card — the rows it covers show no press of their own. */}
+            {accountScoped.length > 0 ? (
+              <div className="mt-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onReconnectAccount}
+                  disabled={accountBusy}
+                  className="h-11 text-sm sm:h-7 sm:text-xs"
+                >
+                  {accountBusy ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
+                  ) : (
+                    <RefreshCw className="mr-1 h-3 w-3" aria-hidden />
+                  )}
+                  Reconnect
+                </Button>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  One approval renews {provider.name}&apos;s permission for the{" "}
+                  {accountScoped.length} product
+                  {accountScoped.length === 1 ? "" : "s"} this account already
+                  has. No new permission is requested, and everything you picked
+                  stays.
+                </p>
+              </div>
+            ) : null}
             <p
               className={cn(
                 "mt-1 text-xs",
@@ -170,8 +232,12 @@ export function ConnectedAccountHealth({
           const style = STATE_STYLE[row.state];
           const StateIcon = style.icon;
           const Icon = row.product.icon;
-          const busy = busyProductKey === row.product.key;
-          const ActionIcon = row.actionLabel === "Connect" ? Plug : RefreshCw;
+          const busy = busyHere?.productKey === row.product.key;
+          // A dead credential is repaired once, on the account above: repeating
+          // the same press on every row would be nine windows for one repair.
+          const productAction =
+            row.actionScope === "product" ? row.actionLabel : null;
+          const ActionIcon = productAction === "Connect" ? Plug : RefreshCw;
           return (
             <li
               key={row.product.key}
@@ -223,18 +289,18 @@ export function ConnectedAccountHealth({
 
                   {/* The action's promise is VISIBLE text, not a tooltip: on a
                       phone a hover-only explanation is no explanation. */}
-                  {row.actionLabel ? (
+                  {productAction ? (
                     <p className="text-[11px] text-muted-foreground">
                       {row.missingScopes.length > 0 ? (
                         <>
-                          {row.actionLabel} asks {provider.name} for only what is
+                          {productAction} asks {provider.name} for only what is
                           missing: {row.missingScopes.length} permission
                           {row.missingScopes.length === 1 ? "" : "s"}. Everything
                           you already granted, and every file you picked, stays.
                         </>
                       ) : (
                         <>
-                          {row.actionLabel} asks {provider.name} to renew this
+                          {productAction} asks {provider.name} to renew this
                           account&apos;s permission for {row.product.name}. No
                           new permission is requested, and everything you already
                           granted — every file you picked included — stays.
@@ -244,7 +310,7 @@ export function ConnectedAccountHealth({
                   ) : null}
                 </div>
 
-                {row.actionLabel ? (
+                {productAction ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -260,7 +326,7 @@ export function ConnectedAccountHealth({
                     ) : (
                       <ActionIcon className="mr-1 h-3 w-3" aria-hidden />
                     )}
-                    {row.actionLabel}
+                    {productAction}
                   </Button>
                 ) : null}
               </div>

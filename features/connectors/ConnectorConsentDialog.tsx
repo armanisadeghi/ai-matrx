@@ -65,7 +65,6 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
-import { extractErrorMessage } from "@/utils/errors";
 import { ConnectorMark } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import {
@@ -84,30 +83,21 @@ import { ProductPermissionsDisclosure } from "./ProductPermissions";
 import {
   buildConsentPlan,
   consentOutcomes,
+  emptyPlanAnswer,
   type ConsentOutcome,
   type ConsentRequest,
 } from "./consent-plan";
 import {
-  MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE,
-  multiProductConsentUnsupported,
+  consentFailureAnswer,
   useGoogleConnectorState,
   useGoogleConsentRunner,
+  type ConsentFailureAnswer,
 } from "./google-adapter";
+import { ConsentFailureNotice } from "./ConsentFailureNotice";
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
 
 /** The sentinel account id meaning "a Google login not connected here yet". */
 const NEW_ACCOUNT = "__new_account__";
-
-/**
- * D8: the one sentence a press gets when the plan would ask the provider for
- * nothing. Used by the button's answer AND by the line under it, so the two can
- * never say different things.
- */
-export function emptyPlanAnswer(selectedCount: number): string {
-  return selectedCount === 0
-    ? "Nothing is switched on yet, so there is nothing to connect. Switch on what you want and press this again."
-    : "Everything you switched on is already connected — there is nothing to approve.";
-}
 
 /**
  * The line under the button, which must describe the request that is actually
@@ -146,9 +136,33 @@ function initialSelection(health: readonly ConnectorProductHealth[]): string[] {
         // A product the provider is currently REFUSING is still one this
         // account has; starting it switched off would read as "you never
         // connected this", which is the opposite of what happened.
-        row.state === "refused",
+        row.state === "refused" ||
+        // Same for an account whose CREDENTIAL is dead: every product it holds
+        // is broken and every one of them is renewed by the one approval this
+        // press makes. Leaving these off is how the dialog answered "nothing is
+        // switched on yet" on the one screen that could repair the account
+        // (VERIFY-U-P2-R2, N2).
+        row.state === "account_unusable",
     )
     .map((row) => row.product.key);
+}
+
+/**
+ * THE "A DIFFERENT ACCOUNT" COPY, in one place per line, because it makes a
+ * promise about what the SERVER will do. The hub resolves the row it is about to
+ * write by provider subject and owner and upserts it, so signing in with an
+ * identity this owner already has connected REFRESHES that account — it does not
+ * add a second one. The old line said "it becomes a second connected account",
+ * which was false in exactly the case a person is most likely to hit: picking
+ * the account they were already using (VERIFY-U-P2-R2, N5).
+ */
+export function newAccountChoiceDescription(providerName: string): string {
+  return `${providerName} asks you to sign in. A login that is new here is added as its own account; one that is already connected here is refreshed instead.`;
+}
+
+/** The footnote under the switcher when no account is selected yet. */
+export function newAccountFootnote(providerName: string): string {
+  return `Nothing you have already connected changes. A ${providerName} login that is new here becomes its own account; if you sign in with one that is already connected here, that account is refreshed instead — unless you switch it on for your organization below, which is its own account.`;
 }
 
 /** The one-line summary beside an account in the switcher: what it actually has. */
@@ -157,9 +171,19 @@ function accountSummary(
   account: ConnectorAccount,
   rollout: readonly ConnectorCapabilityRollout[],
 ): string {
-  const live = accountHealth({ provider, account, rollout })
+  const rows = accountHealth({ provider, account, rollout });
+  const live = rows
     .filter((row) => row.state === "connected")
     .map((row) => row.product.name);
+  // A dead credential holds its grant and can use none of it. "Nothing
+  // connected on this account yet" would read as "you never set this up", which
+  // is the opposite of what happened (the N2 shape, in the switcher).
+  if (!account.usable) {
+    const held = rows.filter((row) => row.state === "account_unusable").length;
+    return held === 0
+      ? "Needs reconnecting"
+      : `Needs reconnecting — ${held} product${held === 1 ? "" : "s"} it already has cannot be used`;
+  }
   if (live.length === 0) return "Nothing connected on this account yet";
   return live.join(", ");
 }
@@ -333,7 +357,7 @@ export function ConnectorConsentBody({
   const [busy, setBusy] = useState(false);
   /** True once a consent has been attempted — per-row results only exist after. */
   const [attempted, setAttempted] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
   /**
    * D8: the answer a press gets when the press would do nothing. The button
    * stays pressable (see the footer) and says why, instead of sitting there
@@ -389,7 +413,7 @@ export function ConnectorConsentBody({
       // The press is never swallowed: it says, in words, why there is nothing
       // to send to the provider — inline for the person reading the dialog and
       // in a toast for the person who was watching the button.
-      const sentence = emptyPlanAnswer(selected.length);
+      const sentence = emptyPlanAnswer(plan, selected.length);
       setAnswer(sentence);
       toast.info(sentence);
       return;
@@ -414,13 +438,10 @@ export function ConnectorConsentBody({
         setBusy(false);
         return;
       }
-      // The half-deployed case gets its own sentence; every other failure shows
-      // the server's own words, never "something went wrong".
-      setFailure(
-        multiProductConsentUnsupported(cause)
-          ? MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE
-          : extractErrorMessage(cause),
-      );
+      // ONE translation for every press failure: a sentence written for the
+      // person, with the server's own words behind the details control and never
+      // inline — a code or a capability key on this screen is the leak N4 found.
+      setFailure(consentFailureAnswer(cause));
       // Read the account back anyway: a partial grant must not be invisible.
       setAttempted(true);
       await refetch();
@@ -476,7 +497,7 @@ export function ConnectorConsentBody({
 
         {/* D4 + D7 — WHICH GOOGLE ACCOUNT THIS CONSENT LANDS ON.
             PLAN §2: "Connecting as arman@…, change", and "a different Google
-            login becomes a second connected account". Before this the line was
+            login is its own account". Before this the line was
             a full stop with no control, and every consent the dialog could
             start added to an account that already existed — there was no way to
             bring a second Google identity in at all. The alternatives were also
@@ -515,7 +536,7 @@ export function ConnectorConsentBody({
                 ))}
                 <SelectItem
                   value={NEW_ACCOUNT}
-                  description={`${provider.name} asks you to sign in; it becomes a second connected account.`}
+                  description={newAccountChoiceDescription(provider.name)}
                 >
                   Use a different {provider.name} account
                 </SelectItem>
@@ -525,7 +546,7 @@ export function ConnectorConsentBody({
           <p className="w-full text-xs text-muted-foreground">
             {account
               ? "Switching on another product adds it to this account. Nothing it already has is asked for again."
-              : `Nothing you have already connected changes — this adds a second ${provider.name} account.`}
+              : newAccountFootnote(provider.name)}
           </p>
         </div>
 
@@ -618,14 +639,7 @@ export function ConnectorConsentBody({
           </ul>
         ) : null}
 
-        {failure ? (
-          <div
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {failure}
-          </div>
-        ) : null}
+        {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
         {resultRows?.some((row) => row.state === "granted") ? (
           <div className="rounded-lg border border-success/30 bg-success/[0.06] px-3 py-2.5">
@@ -706,7 +720,7 @@ export function ConnectorConsentBody({
           </p>
         ) : plan.empty && !busy ? (
           <p className="text-right text-xs text-muted-foreground">
-            {emptyPlanAnswer(selected.length)}
+            {emptyPlanAnswer(plan, selected.length)}
           </p>
         ) : plan.request ? (
           <p className="text-right text-xs text-muted-foreground">

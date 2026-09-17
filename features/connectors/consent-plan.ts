@@ -44,12 +44,13 @@ import type {
 } from "./provider-config";
 import { productByKey } from "./provider-config";
 import {
-  grantNeedsRenewal,
+  productHealth,
   productIsEligible,
-  requiredScopesFor,
   type ConnectorAccount,
   type ConnectorCapabilityRollout,
+  type ConnectorProductHealth,
 } from "./health";
+import { requiredScopesFor } from "./health";
 
 export interface ConsentRequest {
   /** Catalog keys the hub validates the scope set against. */
@@ -125,16 +126,31 @@ export function buildConsentPlan({
       });
       continue;
     }
-    const missing = requiredScopesFor(provider, product, rollout).filter(
-      (scope) => !granted.has(scope),
-    );
-    const renewal = missing.length === 0 && grantNeedsRenewal({
+    // ONE derivation for this row, so "what is missing", "is this a renewal"
+    // and "why can this not be asked for" cannot disagree with the health row
+    // the person is looking at.
+    const row: ConnectorProductHealth = productHealth({
       provider,
       product,
       account,
       rollout,
     });
+    const missing = row.missingScopes;
+    const renewal = missing.length === 0 && row.actionLabel === "Reconnect";
     if (missing.length === 0 && !renewal) {
+      // A refusal that is OURS to repair leaves the row broken with nothing to
+      // approve. Calling that "already granted" is what produced the one
+      // sentence the owner named — "everything you switched on is already
+      // connected" under a row reading Not working (VERIFY-U-P2-R2, N1). It is
+      // BLOCKED, with the server's own sentence, and no press pretends to fix it.
+      if (row.state === "refused") {
+        blocked.push({
+          productKey: product.key,
+          productName: product.name,
+          reason: `${row.reason} This one is ours to repair — approving it again would not help, and we are on it.`,
+        });
+        continue;
+      }
       alreadyGranted.push(product);
       continue;
     }
@@ -173,6 +189,35 @@ export function buildConsentPlan({
     alreadyGranted,
     empty: false,
   };
+}
+
+/**
+ * THE ONE ANSWER A PRESS GETS WHEN IT WOULD ASK THE PROVIDER FOR NOTHING (D8).
+ * Every consent surface uses this — inline, in a toast, and as the settings
+ * row's failure line — so two surfaces cannot answer the same account
+ * differently.
+ *
+ * ORDER MATTERS. A blocked row is named FIRST, because "everything you switched
+ * on is already connected" is false the moment one of them is refused for a
+ * reason a reconnect cannot clear or is still behind our rollout gate — that
+ * sentence was being printed directly under a row reading "Not working"
+ * (VERIFY-U-P2-R2, N1). Only when nothing is blocked may the plan-empty
+ * sentence speak, and it still distinguishes "nothing switched on" from
+ * "everything switched on is already connected".
+ */
+export function emptyPlanAnswer(
+  plan: ConsentPlan,
+  selectedCount: number,
+): string {
+  if (plan.blocked.length > 0) {
+    const named = plan.blocked
+      .map((block) => `${block.productName} — ${block.reason}`)
+      .join(" ");
+    return `There is nothing to approve for what you switched on. ${named}`;
+  }
+  return selectedCount === 0
+    ? "Nothing is switched on yet, so there is nothing to connect. Switch on what you want and press this again."
+    : "Everything you switched on is already connected — there is nothing to approve.";
 }
 
 export type ConsentOutcomeState = "granted" | "refused" | "already_granted";
