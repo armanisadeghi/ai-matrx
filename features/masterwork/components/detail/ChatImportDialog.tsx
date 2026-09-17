@@ -39,6 +39,7 @@ import {
   type IngestSummary,
 } from "./IngestSourceDialog";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -141,6 +142,9 @@ interface ChatImportSitting extends SittingBase {
   text: string;
   sourceNote: string;
   topic: string;
+  /** The tab the work was being done on — restoring text onto the upload tab
+   *  would put it back somewhere the Expert cannot see it. */
+  tab: ChatTab;
 }
 
 const chatImportSittings = createSittingStore<ChatImportSitting>({
@@ -182,12 +186,13 @@ export function ChatImportDialog({
     store: chatImportSittings,
     scopeId: rulebook.id,
     active: open,
-    snapshot: { text, sourceNote, topic },
+    snapshot: { text, sourceNote, topic, tab },
     isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0 || (s.topic ?? "").trim().length > 0,
     apply: (kept) => {
       setText(kept.text ?? "");
       setSourceNote(kept.sourceNote ?? "");
       setTopic(kept.topic ?? "");
+      if (kept.tab) setTab(kept.tab);
     },
     clearScreen: () => {
       setText("");
@@ -232,6 +237,18 @@ export function ChatImportDialog({
     resetPicker();
     setPreparing(false);
     setShortlisting(false);
+  };
+
+  /**
+   * Back to this lane's own first step for the NEXT export — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const [addedSoFar, setAddedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setAddedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
   };
 
   // ONCE PER COMPLETED RUN, never once per render: the host passes a new
@@ -583,6 +600,13 @@ export function ChatImportDialog({
                   Interview me about the gaps
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain
+                label="Import another export"
+                onAgain={again}
+              />
             </div>
           </div>
         ) : run.running || run.stages.length > 0 ? (
