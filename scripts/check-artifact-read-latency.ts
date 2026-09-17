@@ -41,10 +41,28 @@
  * plan again, never the ceiling.
  *
  * `--self-test` proves the detector can go RED against the same live database by
- * replaying the read with the JSONB predicates the index cannot answer
- * (`metadata->>kind` matched by `like` instead of `eq`, which forces the old
- * full walk) and asserting that shape is measurably worse — slower, or outright
- * timing out. A guard nobody has seen fail is not a guard.
+ * replaying the read with an even wider shape (`metadata->>kind` matched by
+ * `like` instead of `eq`) and asserting it is measurably worse — slower, or
+ * outright timing out. A guard nobody has seen fail is not a guard. It has also
+ * been seen failing for real: 0 ok / 20 failed, 8,191 ms min, on 2026-09-17
+ * before anything was changed.
+ *
+ * WHY THIS CANNOT BE FIXED WITH AN INDEX ON THE JSONB PATHS — do not try again.
+ * `files.files` has RLS enabled, and PostgreSQL may not evaluate a qual whose
+ * operator is not LEAKPROOF before the security quals, so such a qual can never
+ * become an index condition. `jsonb_object_field_text` (`->>`) is not leakproof
+ * (`pg_proc.proleakproof = false`). Measured on the same statement and the same
+ * identity: as `postgres`, with RLS off, the expression index
+ * `files_coding_session_artifact_idx` is chosen, both equalities become Index
+ * Cond, 2.4 ms. As `authenticated`, with RLS on, that index is ignored, the
+ * planner walks `idx_cld_files_owner` in full and both equalities are demoted
+ * into Filter: cost 3,986,650, 29,147 ms. The control: the same read with a
+ * LEAKPROOF qual (`uuid_eq` on `created_by`, or a text range on `file_path`)
+ * DOES get an Index Cond under the identical policy and returns in 1.1 ms. So
+ * the read needs a leakproof, indexed predicate — a real column, or an
+ * RLS-bypassing lookup that hands the outer, RLS-applied select a list of ids.
+ * That choice is a platform read-path decision, not a patch; it is escalated,
+ * and this guard stays red until it lands.
  *
  * CREDENTIALS ABSENT = UNMEASURED = FAILURE, never a warn that reads as a pass
  * (the rule `check:kind-types` and `check:realtime-publication` follow).
@@ -419,8 +437,10 @@ async function main(): Promise<number> {
         `failed as ${creds.email} on the live database. First failure: HTTP ` +
         `${s.firstFailure?.status} after ${s.firstFailure?.ms} ms — ` +
         `${s.firstFailure?.body.slice(0, 200)}. A person opening this session's Files tab sees ` +
-        `"We couldn't load this session's artifacts" that often. Fix the PLAN (an index the two ` +
-        `JSONB equalities and the sort can use), never the statement timeout.`,
+        `"We couldn't load this session's artifacts" that often. Fix the PLAN, never the ` +
+        `statement timeout — and NOT with an expression index on the JSONB paths: that was ` +
+        `tried and cannot work (see the WHY THIS CANNOT BE FIXED WITH AN INDEX note in this ` +
+        `file's header). The read needs a LEAKPROOF, indexed predicate.`,
     );
     return 1;
   }
