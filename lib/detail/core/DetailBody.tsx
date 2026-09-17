@@ -19,7 +19,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn, Skeleton } from "@ai-matrx/design-system";
-import { isEntityTypeToken } from "@ai-matrx/associations";
+import {
+  ASSOCIATION_TARGET_TYPES,
+  isEntityTypeToken,
+  type AssociationTargetType,
+} from "@ai-matrx/associations";
 import { AssociationCardGrid, PrimaryEntityProvider } from "@ai-matrx/associations/react";
 
 import { useDetailHost } from "../host";
@@ -218,10 +222,14 @@ function FieldsSection({ core }: { core: DetailCore }) {
 
 // ─── Associations ───────────────────────────────────────────────────────────
 
+function isAssociationTarget(token: string): token is AssociationTargetType {
+  return (ASSOCIATION_TARGET_TYPES as readonly string[]).includes(token);
+}
+
 function AssociationsSection({ core }: { core: DetailCore }) {
   const host = useDetailHost();
   const token = core.entityToken;
-  if (!token || !isEntityTypeToken(token) || !host.associations.canAnchor(token)) return null;
+  if (!token || !isAssociationTarget(token) || !host.associations.canAnchor(token)) return null;
   if (core.recordType?.associationTokens === null) return null;
   const wanted = core.recordType?.associationTokens ?? host.associations.defaultTokens;
   const tokens = wanted.filter((t) => t !== token).filter(isEntityTypeToken);
