@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-import { DetailPrimitiveDemo } from "./DetailPrimitiveDemo";
+import { DetailShowcase } from "@/features/window-panels/detail/DetailShowcase";
 
 export const metadata = createRouteMetadata("/demos/detail-primitive", {
   title: "Detail primitive",
@@ -10,12 +10,17 @@ export const metadata = createRouteMetadata("/demos/detail-primitive", {
 });
 
 /**
- * /demos/detail-primitive — the feature-visibility surface for `lib/detail`.
+ * /demos/detail-primitive — the demos-deployment door to the Detail
+ * primitive's feature-visibility surface.
  *
- * Server shell only; the demo body is a client island because it opens
- * overlays and reads the person's presentation setting. The demos layout
- * already reserves the shell header's height for the whole tree.
+ * 🚨 THIS ROUTE IS NOT THE SURFACE. `(dev)` is compiled out of every profile
+ * but `full`, `user` and `demos`, and the preview server's default is `core` —
+ * so this path 307s to demos.aimatrx.com for the people who actually run the
+ * app (VERIFY-U-P1, D6). The surface itself is
+ * `features/window-panels/detail/DetailShowcase.tsx`, and `/detail` in `(core)`
+ * serves it in every profile. This entry stays so the demos deployment keeps
+ * its listing.
  */
 export default function DetailPrimitiveDemoPage() {
-  return <DetailPrimitiveDemo />;
+  return <DetailShowcase />;
 }

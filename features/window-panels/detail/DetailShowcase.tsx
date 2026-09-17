@@ -1,7 +1,19 @@
 "use client";
 
 /**
- * The Detail primitive, shown from the user's seat with a REAL record:
+ * THE FEATURE-VISIBILITY SURFACE for the Detail primitive, shown from the
+ * user's seat with a REAL record.
+ *
+ * 🚨 IT LIVES IN `features/`, NOT IN A ROUTE GROUP (VERIFY-U-P1, D6). It was a
+ * `(dev)` demo only, and `(dev)` is compiled out of every profile a developer
+ * or an agent actually runs (`core` — the preview server's default —  and the
+ * main Vercel project both set `includeDev: false`), so `/demos/detail-primitive`
+ * answered with a 307 to demos.aimatrx.com and nobody could open the page the
+ * docs pointed at. The body is a plain client component here, and TWO routes
+ * render it: `/detail` in `(core)`, which every profile serves, and
+ * `/demos/detail-primitive` in `(dev)`, which the demos deployment keeps.
+ * The profile mechanism is untouched.
+ *
  *
  *   - the five most recent files you can see (`files.files`, RLS) as the list
  *     context, so `[` / `]` and the previous / next controls do something;
@@ -16,6 +28,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AppWindow, Copy, Expand, PanelRight, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -71,18 +84,28 @@ const PRESENTATIONS: {
   },
 ];
 
-function deepLinkFor(ref: DetailRef, presentation: DetailPresentation): string {
+/**
+ * The deep link for a presentation, anchored to the route this surface is
+ * being served from — it renders at `/detail` and at `/demos/detail-primitive`,
+ * and a link that named the other one would open a page the person is not on.
+ */
+function deepLinkFor(
+  ref: DetailRef,
+  presentation: DetailPresentation,
+  here: string,
+): string {
   if (presentation === "page") return detailPageHref(ref);
-  return `/demos/detail-primitive?panels=detail:${detailInstanceKey(ref)}:as-${presentation}`;
+  return `${here}?panels=detail:${detailInstanceKey(ref)}:as-${presentation}`;
 }
 
-export function DetailPrimitiveDemo() {
+export function DetailShowcase() {
   const host = useDetailHost();
   const openDetail = useOpenDetail("file");
   const setting = host.usePresentationSetting("file");
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [selected, setSelected] = useState(0);
   const [isTop, setIsTop] = useState(false);
+  const here = usePathname() || "/detail";
 
   useEffect(() => {
     setIsTop(window.self === window.top);
@@ -213,7 +236,7 @@ export function DetailPrimitiveDemo() {
         {/* Three presentations side by side */}
         <section className="grid gap-3 md:grid-cols-3">
           {PRESENTATIONS.map(({ value, label, Icon, blurb }) => {
-            const link = ref ? deepLinkFor(ref, value) : null;
+            const link = ref ? deepLinkFor(ref, value, here) : null;
             return (
               <div key={value} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
                 <div className="flex items-center gap-2">
@@ -259,7 +282,7 @@ export function DetailPrimitiveDemo() {
             <div className="flex flex-wrap gap-4">
               {[
                 { title: "Page", src: detailPageHref(ref) },
-                { title: "Docked (sheet)", src: deepLinkFor(ref, "docked") },
+                { title: "Docked (sheet)", src: deepLinkFor(ref, "docked", here) },
               ].map((frame) => (
                 <figure key={frame.title} className="flex flex-col gap-1">
                   <figcaption className="text-[11px] font-medium text-muted-foreground">{frame.title}</figcaption>
