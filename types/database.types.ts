@@ -62362,6 +62362,129 @@ export type Database = {
         }
         Relationships: []
       }
+      masterwork_source: {
+        Row: {
+          approach_key: string
+          captured_at: string
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          file_id: string | null
+          id: string
+          label: string | null
+          medium: string
+          metadata: Json
+          organization_id: string
+          rulebook_id: string
+          run_id: string | null
+          source_key: string
+          source_meta: Json
+          speaker_count: number
+          transcript_id: string | null
+          truncated: boolean
+          turn_count: number
+          turns: Json
+          updated_at: string
+          updated_by: string | null
+          url: string | null
+          version: number
+          word_count: number
+        }
+        Insert: {
+          approach_key: string
+          captured_at?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id?: string | null
+          id?: string
+          label?: string | null
+          medium: string
+          metadata?: Json
+          organization_id: string
+          rulebook_id: string
+          run_id?: string | null
+          source_key: string
+          source_meta?: Json
+          speaker_count?: number
+          transcript_id?: string | null
+          truncated?: boolean
+          turn_count?: number
+          turns?: Json
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          version?: number
+          word_count?: number
+        }
+        Update: {
+          approach_key?: string
+          captured_at?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id?: string | null
+          id?: string
+          label?: string | null
+          medium?: string
+          metadata?: Json
+          organization_id?: string
+          rulebook_id?: string
+          run_id?: string | null
+          source_key?: string
+          source_meta?: Json
+          speaker_count?: number
+          transcript_id?: string | null
+          truncated?: boolean
+          turn_count?: number
+          turns?: Json
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          version?: number
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "masterwork_source_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_source_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_source_rulebook_id_fkey"
+            columns: ["rulebook_id"]
+            isOneToOne: false
+            referencedRelation: "rulebook"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_source_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_source_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matrx_action_ledger: {
         Row: {
           applied_at: string | null
