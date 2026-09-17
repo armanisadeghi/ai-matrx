@@ -59,6 +59,13 @@ export interface DetailPresentationSetting {
   /** `undefined` while unresolved; `error` names the failure — never both silent. */
   value: DetailPresentation | undefined;
   error: string | null;
+  /**
+   * The PER-RECORD-TYPE exception in effect for this type, when there is one
+   * (`undefined` = this type opens the way the default says). The pane offers
+   * "use the default for this type" only then — an offer to remove something
+   * that does not exist is a control that does nothing (NEW-2).
+   */
+  forType?: DetailPresentation | undefined;
 }
 
 export interface DetailShells {
@@ -85,6 +92,11 @@ export interface DetailHostPorts {
    * screen that writes `ui.detail.default_presentation`). `forType` non-null
    * writes the PER-RECORD-TYPE override instead of the default.
    *
+   * `clear` with a `forType` REMOVES that record type's exception instead of
+   * setting one, so an exception set from a record can be taken back from the
+   * same place (NEW-2). It is the same map-entry write with the key absent — a
+   * host never grows a second writer for it.
+   *
    * Optional: a host that can only READ the setting binds nothing and the pane
    * is absent — never a disabled-looking control. A refusal comes back as
    * `{ ok: false, reason }` (the settings ladder's reasons are sentences and
@@ -93,6 +105,7 @@ export interface DetailHostPorts {
   savePresentation?: (args: {
     presentation: DetailPresentation;
     forType: string | null;
+    clear?: boolean;
   }) => Promise<{ ok: true } | { ok: false; reason: string }>;
   /** Open an in-place presentation (window / docked). Page goes through `navigate`. */
   open: (args: {

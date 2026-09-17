@@ -12,20 +12,23 @@ import { DetailPageRoute } from "@/features/window-panels/detail/DetailPageRoute
 
 interface Props {
   params: Promise<{ type: string; id: string }>;
-  searchParams: Promise<{ l?: string; i?: string }>;
+  // `l` = the list the record was opened from, `i` = the index in it, `lt` = the
+  // length of the list that list is a capped WINDOW of (NEW-7).
+  searchParams: Promise<{ l?: string; i?: string; lt?: string }>;
 }
 
 export const metadata: Metadata = { title: "Record" };
 
 export default async function DetailPage({ params, searchParams }: Props) {
   const { type, id } = await params;
-  const { l, i } = await searchParams;
+  const { l, i, lt } = await searchParams;
   return (
     <DetailPageRoute
       type={decodeURIComponent(type)}
       id={decodeURIComponent(id)}
       list={l ?? null}
       index={i ?? null}
+      listTotal={lt ?? null}
     />
   );
 }

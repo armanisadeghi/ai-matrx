@@ -54,6 +54,8 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
   const effective = setting.value ?? core.presentation;
   const pending = choice ?? effective;
   const registerSave = core.keyboard.registerSave;
+  /** This record type has its own exception — so it can be taken back (NEW-2). */
+  const hasTypeException = setting.forType !== undefined;
 
   const commit = async () => {
     if (!save) return;
@@ -68,6 +70,27 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
         forThisType
           ? `Every ${core.typeLabel.toLowerCase()} now opens as ${WORD[pending]} for you.`
           : `Record details now open as ${WORD[pending]} for you.`,
+      );
+    } else {
+      setState({ status: "refused", reason: result.reason });
+    }
+  };
+
+  /**
+   * 🚨 NEW-2 — TAKING THE EXCEPTION BACK. Setting "only for file records" wrote
+   * one entry of a json map and nothing in the product removed it: the only
+   * escape was editing that json in the generic settings row. This clears the
+   * entry through the same write, so the type goes back to opening the way the
+   * person (or their organization) normally opens records.
+   */
+  const clearForType = async () => {
+    if (!save) return;
+    setState({ status: "saving" });
+    const result = await save({ presentation: pending, forType: core.ref.type, clear: true });
+    if (result.ok) {
+      setState({ status: "saved" });
+      host.notify.success(
+        `${core.typeLabel} records now open the way you normally open records.`,
       );
     } else {
       setState({ status: "refused", reason: result.reason });
@@ -139,6 +162,17 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
           </button>
         ))}
       </div>
+      {hasTypeException ? (
+        <button
+          type="button"
+          onClick={() => void clearForType()}
+          disabled={state.status === "saving"}
+          className="text-left text-[11px] text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+          data-detail-presentation-clear-type
+        >
+          {`Use the default for ${core.typeLabel.toLowerCase()} records`}
+        </button>
+      ) : null}
       <label className="flex items-center gap-2 text-xs text-muted-foreground">
         <input
           type="checkbox"

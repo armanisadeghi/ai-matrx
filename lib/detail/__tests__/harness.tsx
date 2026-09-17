@@ -13,7 +13,11 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { DetailHostProvider, type DetailHostPorts } from "../host";
+import {
+  DetailHostProvider,
+  type DetailHostPorts,
+  type DetailPageShellProps,
+} from "../host";
 import type { DetailInstanceData, DetailRecordType } from "../types";
 
 // React 19 wants this flag before `act` drives a concurrent root; without it
@@ -34,6 +38,29 @@ export const FILE_TYPE: DetailRecordType = {
     "Untitled File",
   fields: () => [],
 };
+
+/**
+ * A minimal PAGE shell: the two controls a person leaves the page with (the
+ * back chevron and, through the keyboard root, Escape) plus the slots. Enough
+ * to assert WHICH port the exit consults — which is where D1 lived, twice.
+ */
+export function StubPageShell({
+  titleNode,
+  actions,
+  onBack,
+  children,
+}: DetailPageShellProps) {
+  return (
+    <div data-stub-page-shell>
+      <button type="button" aria-label="Back" onClick={onBack}>
+        back
+      </button>
+      {titleNode}
+      {actions}
+      {children}
+    </div>
+  );
+}
 
 export type StubPorts = DetailHostPorts & {
   usePresentationSetting: jest.Mock;

@@ -89,16 +89,17 @@ export function DetailDockedPresentation({ data, onClose }: DetailPresentationPr
   );
 }
 
-export function DetailPagePresentation({
-  data,
-  onBack,
-}: {
-  data: DetailInstanceData;
-  /** Leaving the page — the page is the one presentation that changed the URL. */
-  onBack: () => void;
-}) {
+/**
+ * 🚨 D1 — THE PAGE OWNS ITS OWN EXIT. It takes no `onBack`: the back chevron,
+ * Escape and a presentation switch all leave through `core.leave`, the one
+ * guarded exit (`canGoBack` → `back()`, otherwise the record's own home). A
+ * route that passed its own `router.back()` in here is exactly how a pasted or
+ * bookmarked detail link still landed the tab on `about:blank` after round 1's
+ * fix (VERIFY-U-P1-R2, D1).
+ */
+export function DetailPagePresentation({ data }: { data: DetailInstanceData }) {
   const host = useDetailHost();
-  const core = useDetailCore(data, "page", { onClose: onBack });
+  const core = useDetailCore(data, "page", {});
   const Shell = requireShell(host.shells, "Page");
   return (
     <Shell
@@ -107,7 +108,7 @@ export function DetailPagePresentation({
       titleNode={<DetailTitle core={core} />}
       actions={<DetailActions core={core} />}
       onClose={core.close}
-      onBack={onBack}
+      onBack={core.leave}
     >
       <KeyboardRoot core={core}>
         <DetailBody core={core} />

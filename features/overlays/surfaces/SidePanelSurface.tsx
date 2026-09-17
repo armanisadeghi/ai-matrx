@@ -61,7 +61,22 @@ export interface SidePanelSurfaceProps {
 
 const ENTER_MS = 200;
 
-function PanelHeader({
+/**
+ * The drawer form's header (a docked panel on a phone). Exported so its layout
+ * can be asserted without booting the whole surface.
+ *
+ * 🚨 NEW-4 — THE NAME HAS PRIORITY, AND THE CLUSTER WRAPS. The title used to be
+ * `flex-1` beside a `shrink-0` action cluster: under `@media (pointer: coarse)`
+ * every action icon is 40px, so on a 390px phone a Detail panel's cluster (two
+ * presentation icons, copy, and previous/next with a list context) is roughly
+ * 300px and the record's name was left ~50px — D2's defect, in the presentation
+ * D2 was never measured in (VERIFY-U-P1-R2; geometric, NO SCREEN WAS SEEN). Now
+ * the row WRAPS: the name and the close control hold the first line at any width,
+ * and the cluster takes a second line when it does not fit beside them. On a
+ * wide viewport (`sm:`) everything sits on one line as before — and `sm:` is the
+ * right tool here, unlike inside a window, because this drawer IS the viewport.
+ */
+export function PanelHeader({
   title,
   headerActions,
   onRequestClose,
@@ -71,19 +86,29 @@ function PanelHeader({
   onRequestClose: () => void;
 }) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3">
-      <span className="flex-1 truncate text-sm font-semibold text-foreground">
+    <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-muted/40 px-3 py-1">
+      <span
+        className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground"
+        data-panel-title
+      >
         {title}
       </span>
-      {headerActions}
       <button
         type="button"
         onClick={onRequestClose}
         aria-label="Close panel"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="order-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:order-last pointer-coarse:h-10 pointer-coarse:w-10"
       >
         <X className="h-4 w-4" />
       </button>
+      {headerActions ? (
+        <div
+          className="order-last flex w-full min-w-0 items-center justify-end sm:order-none sm:w-auto sm:justify-start"
+          data-panel-header-actions
+        >
+          {headerActions}
+        </div>
+      ) : null}
     </div>
   );
 }

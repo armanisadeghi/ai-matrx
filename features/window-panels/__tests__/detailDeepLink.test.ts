@@ -7,7 +7,9 @@
  * the page route's list query.
  */
 
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { configureStore } from "@reduxjs/toolkit";
+
+import overlays, { selectOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   detailInstanceKey,
   parseDetailInstanceKey,
@@ -49,31 +51,38 @@ describe("detail deep link", () => {
     expect(presentationFromUrlArg(parsed.args?.[DETAIL_URL_AS_ARG])).toBe("docked");
   });
 
+  // The hydrator goes through `openDetailSingleton` (D8), so what is asserted is
+  // the STATE it leaves behind, not the action it dispatched — a stronger claim
+  // than the old one, which matched a literal payload and would have passed with
+  // the announcement missing.
   it("hydrates the window by default and the docked panel on as-docked", () => {
     const hydrator = getHydrator("detail");
     expect(hydrator).toBeDefined();
 
-    const dispatch = jest.fn();
-    hydrator?.(dispatch, detailInstanceKey(REF), {});
-    expect(dispatch).toHaveBeenCalledWith(
-      openOverlay({
-        overlayId: "detailWindow",
-        data: { type: REF.type, id: REF.id, seedName: null, seedAbout: null, listItems: null, listIndex: null },
-      }),
-    );
+    const store = configureStore({ reducer: { overlays } });
+    hydrator?.(store.dispatch as never, detailInstanceKey(REF), {});
+    const windowInstance = selectOverlay(store.getState(), "detailWindow");
+    expect(windowInstance.isOpen).toBe(true);
+    expect(windowInstance.data).toEqual({
+      type: REF.type,
+      id: REF.id,
+      seedName: null,
+      seedAbout: null,
+      listItems: null,
+      listIndex: null,
+    });
 
-    const dispatch2 = jest.fn();
-    hydrator?.(dispatch2, detailInstanceKey(REF), { as: "docked" });
-    expect(dispatch2).toHaveBeenCalledWith(
-      expect.objectContaining({ payload: expect.objectContaining({ overlayId: "detailDocked" }) }),
-    );
+    const docked = configureStore({ reducer: { overlays } });
+    hydrator?.(docked.dispatch as never, detailInstanceKey(REF), { as: "docked" });
+    expect(selectOverlay(docked.getState(), "detailDocked").isOpen).toBe(true);
+    expect(selectOverlay(docked.getState(), "detailWindow").isOpen).toBe(false);
   });
 
   it("refuses a token that names no record instead of opening an empty detail", () => {
     const hydrator = getHydrator("detail");
     const dispatch = jest.fn();
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
-    hydrator?.(dispatch, "not-a-record", {});
+    hydrator?.(dispatch as never, "not-a-record", {});
     expect(dispatch).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -99,7 +108,7 @@ describe("detail deep link", () => {
 
     const query = encodeListQuery(list);
     const params = new URLSearchParams(query);
-    expect(decodeListQuery(params.get("l"), params.get("i"))).toEqual(list);
+    expect(decodeListQuery(params.get("l"), params.get("i"), params.get("lt"))).toEqual(list);
     expect(decodeListQuery(null, null)).toBeNull();
   });
 });

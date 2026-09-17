@@ -139,6 +139,47 @@ describe("the presentation pane", () => {
     m.unmount();
   });
 
+  // 🚨 NEW-2 (VERIFY-U-P1-R2) — AN EXCEPTION CAN BE TAKEN BACK FROM HERE.
+  // The pane could SET a per-record-type exception and offered nothing to
+  // remove one: the only escape left was editing the raw json in the generic
+  // settings row, which for the person this platform is built for is no escape
+  // at all. A removal is the same map-entry write with the key absent.
+  it("offers to use the default for this type, and only when there is an exception", async () => {
+    const ports = makePorts();
+    ports.usePresentationSetting.mockReturnValue({
+      value: "page",
+      error: null,
+      forType: "page",
+    });
+    const m = mount(<Pane />, ports);
+    openThePane(m.container);
+
+    await act(async () => {
+      choose(m.container, "Use the default for file records");
+    });
+    expect(ports.savePresentation).toHaveBeenCalledWith({
+      presentation: "page",
+      forType: "file",
+      clear: true,
+    });
+    m.unmount();
+  });
+
+  it("hides that control when this type has no exception of its own", () => {
+    const ports = makePorts();
+    ports.usePresentationSetting.mockReturnValue({
+      value: "window",
+      error: null,
+      forType: undefined,
+    });
+    const m = mount(<Pane />, ports);
+    openThePane(m.container);
+    expect(
+      Array.from(m.container.querySelectorAll("button")).map((b) => b.textContent?.trim()),
+    ).not.toContain("Use the default for file records");
+    m.unmount();
+  });
+
   it("is absent — never disabled-looking — when the host cannot write the setting", () => {
     const ports = makePorts();
     // A host that only READS the setting binds no writer.

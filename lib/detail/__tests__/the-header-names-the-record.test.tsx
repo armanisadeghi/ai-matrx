@@ -116,6 +116,26 @@ describe("the detail header", () => {
     m.unmount();
   });
 
+  // 🚨 D5 / NEW-1 (VERIFY-U-P1-R2) — A TYPE WITH NO SOURCE IS THE ABSENT
+  // STATE, NOT A LOADED RECORD. `load: null` resolved to `status: "none"`,
+  // which round 1's fix treated as a successful load: the registration's
+  // `title()` answered "Untitled File" in foreground weight, the record's doors
+  // were hung beside it, and the body underneath said no details were
+  // available. Every unregistered type takes that path.
+  it("names the type and says no detail is registered, with no doors (NEW-1)", () => {
+    const sourceless: DetailRecordType = { ...FILE_TYPE, load: null };
+    const m = mount(<Bar />, seatedCore(sourceless));
+
+    const title = m.container.querySelector("[data-detail-title]");
+    const text = title?.textContent ?? "";
+    expect(text).not.toContain("Untitled");
+    expect(text.toLowerCase()).toContain("file");
+    expect(text.toLowerCase()).toContain("no detail");
+    expect(title?.getAttribute("data-detail-title-standin")).toBe("true");
+    expect(m.container.querySelector("[data-doors]")).toBeNull();
+    m.unmount();
+  });
+
   it("shows a seeded name rather than a stand-in while the record loads", () => {
     const slow: DetailRecordType = {
       ...FILE_TYPE,

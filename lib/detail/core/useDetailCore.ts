@@ -56,6 +56,12 @@ export interface DetailCore {
   };
   /** Re-open this record in another presentation and leave the current one. */
   switchTo: (presentation: DetailPresentation) => void;
+  /**
+   * 🚨 D1 — THE ONE EXIT FROM THE PAGE PRESENTATION. Back chevron, Escape and
+   * a switch that leaves the route all come here; no host, route or shell may
+   * call `back()` itself.
+   */
+  leave: () => void;
   close: () => void;
 }
 
@@ -69,7 +75,12 @@ function neighbour(list: DetailListContext | null, delta: 1 | -1): DetailRef | n
 export function useDetailCore(
   data: DetailInstanceData,
   presentation: DetailPresentation,
-  options: { onClose: () => void },
+  /**
+   * `onClose` is how an IN-PLACE presentation is dismissed (the overlay's
+   * close). The page presentation needs none: it is left through `leave`,
+   * which is the guarded exit — see `close` below.
+   */
+  options: { onClose?: () => void },
 ): DetailCore {
   const host = useDetailHost();
   const ref: DetailRef = { type: data.type, id: data.id };
@@ -86,16 +97,24 @@ export function useDetailCore(
   // the loaded row, or the name the opener already knew (the seed). With
   // neither, the header says what is actually happening and marks itself a
   // stand-in so the presentations can render it as one.
+  //
+  // 🚨 NEW-1 (VERIFY-U-P1-R2) — `none` IS NOT A LOADED ROW EITHER. A record
+  // type with no `detailSource` resolves to `status: "none"`, and treating that
+  // as a successful load put the registration's invented `Untitled <Label>` in
+  // the header, in foreground weight, with the record's DOORS beside it, above
+  // a body saying no details were available. Every unregistered type — the
+  // agent-emitted type the registry deliberately supports — landed there. Only
+  // `ready` is a loaded row; `none` gets the honest absent state below.
   const loadedTitle =
-    (state.status === "ready" || state.status === "none") && recordType
-      ? recordType.title(row, data.seed)
-      : null;
+    state.status === "ready" && recordType ? recordType.title(row, data.seed) : null;
   const standInTitle =
     state.status === "not-found"
       ? `This ${typeLabel.toLowerCase()} could not be found`
       : state.status === "error"
         ? `This ${typeLabel.toLowerCase()} could not be loaded`
-        : `Loading this ${typeLabel.toLowerCase()}…`;
+        : state.status === "none"
+          ? `No detail is registered for ${typeLabel.toLowerCase()} records`
+          : `Loading this ${typeLabel.toLowerCase()}…`;
   const titleIsStandIn = !loadedTitle && !seedName;
   const title = loadedTitle ?? seedName ?? standInTitle;
   const about = data.seed?.about?.trim() || null;
@@ -135,7 +154,37 @@ export function useDetailCore(
     }
   };
 
-  const close = () => options.onClose();
+  /**
+   * 🚨 D1 — LEAVING THE PAGE, ONCE, FOR A DESTINATION THAT EXISTS.
+   * `/detail/<type>/<id>` is reached by a shared deep link as often as by an
+   * in-app push, and a tab opened straight onto it has NO history entry behind
+   * it: `back()` there leaves the person on `about:blank` with the app gone
+   * (VERIFY-U-P1 D1). Round 1 guarded the presentation SWITCH only, and
+   * VERIFY-U-P1-R2 reproduced the same failure through the page header's Back
+   * chevron and through Escape, because the route handed the presentation a raw
+   * `router.back()`. The decision lives here now — the one place that knows the
+   * record and its token — so every control that leaves the page inherits it.
+   */
+  const leave = () => {
+    if (host.navigate.canGoBack(ref)) host.navigate.back();
+    else host.navigate.toRecordHome(ref, entityToken);
+  };
+
+  const close = () => {
+    if (presentation === "page") {
+      leave();
+      return;
+    }
+    if (!options.onClose) {
+      throw new Error(
+        "[detail] The " +
+          presentation +
+          " presentation was mounted without an `onClose`, so nothing can dismiss it. " +
+          "Pass the overlay's close from the presentation's entry.",
+      );
+    }
+    options.onClose();
+  };
 
   const switchTo = (target: DetailPresentation) => {
     if (target === presentation) return;
@@ -149,15 +198,9 @@ export function useDetailCore(
       host.close(presentation);
       return;
     }
-    // 🚨 D1 — THE PAGE IS LEFT FOR A REAL DESTINATION, NEVER `back()` BLINDLY.
-    // `/detail/<type>/<id>` is reached by a shared deep link as often as by an
-    // in-app push, and a tab opened straight onto it has NO history entry
-    // behind it: `back()` there left the person on `about:blank` with the app
-    // gone (VERIFY-U-P1, D1). The window is already open by this line, so the
-    // page must go somewhere that exists — back only when this tab actually
-    // came from somewhere, otherwise the record's own home.
-    if (host.navigate.canGoBack(ref)) host.navigate.back();
-    else host.navigate.toRecordHome(ref, entityToken);
+    // The new presentation is already open by this line, so the page must go
+    // somewhere that exists: the ONE guarded exit (D1).
+    leave();
   };
 
   const hasPrev = neighbour(data.list, -1) !== null;
@@ -194,6 +237,7 @@ export function useDetailCore(
       next: () => openNeighbour(1),
     },
     switchTo,
+    leave,
     close,
   };
 }

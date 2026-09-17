@@ -13,14 +13,10 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import {
-  closeOverlay,
-  openOverlay,
-  selectOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { dispatchThunk, useAppDispatch } from "@/lib/redux/hooks";
+import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { DetailInstanceData } from "@/lib/detail/types";
-import { announceSingletonReplacement } from "@/features/window-panels/detail/singletonReplacement";
+import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 
 const OVERLAY_ID = "detailWindow" as const;
 
@@ -32,39 +28,22 @@ export interface DetailWindowHandle {
 
 export function useOpenDetailWindow() {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
-  // 🚨 D8 — the singleton is kept, the silence is not. `announce` is false only
-  // for the Undo re-open, which the toast it came from already explained.
+  // 🚨 D8 — THE ANNOUNCEMENT IS NOT THIS HOOK'S JOB. Every open of this
+  // singleton goes through `openDetailSingleton`, which reads the record it is
+  // about to replace and names it. Round 1 put that logic in this hook and its
+  // sibling, and the `?panels=` hydrator — a third opener nobody remembered —
+  // replaced records in silence (VERIFY-U-P1-R2). One primitive, no exceptions.
   const open = useCallback(
     (opts: OpenDetailWindowOptions, announce = true): DetailWindowHandle => {
-      if (announce) {
-        const before = selectOverlay(store.getState(), OVERLAY_ID);
-        announceSingletonReplacement({
-          previousData: before.data,
-          previousWasOpen: before.isOpen,
-          next: opts,
-          surface: "window",
-          reopen: (data) => open(data, false),
-        });
-      }
-      dispatch(
-        openOverlay({
-          overlayId: OVERLAY_ID,
-          data: {
-            type: opts.type,
-            id: opts.id,
-            seedName: opts.seed?.name ?? null,
-            seedAbout: opts.seed?.about ?? null,
-            listItems: opts.list?.items ?? null,
-            listIndex: opts.list?.index ?? null,
-          },
-        }),
+      dispatchThunk(
+        dispatch,
+        openDetailSingleton({ presentation: "window", data: opts, announce }),
       );
       return {
         close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
       };
     },
-    [dispatch, store],
+    [dispatch],
   );
   return open;
 }

@@ -38,6 +38,36 @@ export const DETAIL_PRESENTATION_KNOB = "ui.detail.default_presentation";
  */
 export const DETAIL_PRESENTATION_BY_TYPE_KNOB = "ui.detail.presentation_by_type";
 
+/**
+ * How many records of the list a detail was opened FROM may ride the page
+ * presentation's URL (`platform.feature_knob`, feature `ui.detail`, key
+ * `list_context_max_ids`; seeded by
+ * `migrations/detail_list_context_max_knob.sql`). Organization-overridable.
+ *
+ * Why a knob and not a constant: it is a ceiling, and every ceiling here is a
+ * row an admin owns (`common-docs/policies/limits-are-knobs-agents-set-them.md`).
+ * Why it exists at all: uncapped, a 500-row list produced a >20 KB href no
+ * server accepts (NEW-7, VERIFY-U-P1-R2). Beyond the cap the URL carries the
+ * window around the current record and the detail says the list was trimmed.
+ */
+export const DETAIL_LIST_CONTEXT_MAX_KNOB = "ui.detail.list_context_max_ids";
+
+/**
+ * The cap when the knob has not answered yet (a cold cache, a signed-out
+ * render, a host that binds no settings ladder). 200 `type.id` pairs is ~9 KB of
+ * query string — inside every server's request-line limit with room for the rest
+ * of the URL, and far more neighbours than a person arrows through in one sitting.
+ */
+export const DEFAULT_DETAIL_LIST_CONTEXT_MAX = 200;
+
+/** The knob's value as a usable cap; the default for anything that is not one. */
+export function detailListContextMax(raw: unknown): number {
+  const value = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(value) && value >= 1
+    ? Math.floor(value)
+    : DEFAULT_DETAIL_LIST_CONTEXT_MAX;
+}
+
 /** The per-type entry for `type`, when the map holds a usable one. */
 export function presentationForTypeFromMap(
   raw: unknown,
@@ -75,6 +105,14 @@ export interface DetailSeed {
 export interface DetailListContext {
   items: DetailRef[];
   index: number;
+  /**
+   * Set when this list is a WINDOW cut out of a longer one (the page
+   * presentation carries the list in the URL and it is capped —
+   * `ui.detail.list_context_max_ids`): the length of the list it was cut from,
+   * so the detail can say the neighbours beyond it are not reachable from here
+   * instead of presenting the window as the whole list (NEW-7).
+   */
+  trimmedFrom?: number;
 }
 
 /** What `useOpenDetail` accepts. */

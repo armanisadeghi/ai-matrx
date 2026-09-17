@@ -120,6 +120,7 @@ export function DetailTitle({ core }: { core: DetailCore }) {
 export function DetailRecordMeta({ core }: { core: DetailCore }) {
   const host = useDetailHost();
   const RecordDoors = host.doors.RecordDoors;
+  const trimmedFrom = core.list.context?.trimmedFrom;
   return (
     <div
       className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2"
@@ -134,6 +135,16 @@ export function DetailRecordMeta({ core }: { core: DetailCore }) {
       <span className="truncate font-mono text-[10px] text-muted-foreground" data-detail-id>
         {core.ref.id}
       </span>
+      {/* 🚨 NEW-7 — A TRIMMED LIST SAYS SO. The page presentation carries its
+          list in the URL, capped by `ui.detail.list_context_max_ids`; beyond the
+          cap it holds the window around this record. Presenting that window as
+          the whole list would be the screen quietly lying about what the arrows
+          can reach. */}
+      {trimmedFrom ? (
+        <span className="w-full text-[10px] text-muted-foreground" data-detail-list-trimmed>
+          {`Stepping through ${core.list.context?.items.length} of the ${trimmedFrom} records in the list this was opened from — a link can only carry that many, so the rest are not reachable from here. Open the list again to reach them.`}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -163,8 +174,8 @@ export function DetailActions({ core }: { core: DetailCore }) {
             className={ICON_BUTTON}
             onClick={list.prev}
             disabled={!list.hasPrev}
-            aria-label="Previous record (Up arrow)"
-            title="Previous record  ↑"
+            aria-label="Previous record (Up arrow, or left bracket)"
+            title="Previous record  ↑ or ["
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -176,8 +187,8 @@ export function DetailActions({ core }: { core: DetailCore }) {
             className={ICON_BUTTON}
             onClick={list.next}
             disabled={!list.hasNext}
-            aria-label="Next record (Down arrow)"
-            title="Next record  ↓"
+            aria-label="Next record (Down arrow, or right bracket)"
+            title="Next record  ↓ or ]"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

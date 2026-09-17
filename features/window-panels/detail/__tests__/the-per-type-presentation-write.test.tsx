@@ -35,7 +35,11 @@ const USER = "22222222-2222-4222-8222-222222222222";
 type Call = { fn: string; args: Record<string, unknown> };
 
 function fakeLadder(initial: unknown) {
-  const state = { value: initial, resolveError: null as string | null };
+  const state = {
+    value: initial,
+    resolveError: null as string | null,
+    rungReadError: null as string | null,
+  };
   const calls: Call[] = [];
   const rpc = (fn: string, args: Record<string, unknown>) => {
     calls.push({ fn, args });
@@ -47,14 +51,37 @@ function fakeLadder(initial: unknown) {
       );
     }
     if (fn === "knob_override_set") {
-      state.value = args.p_value;
+      state.value = args.p_value === null ? null : args.p_value;
       return Promise.resolve({ data: { ok: true }, error: null });
     }
     throw new Error(`unexpected rpc ${fn}`);
   };
+  /**
+   * `platform.knob_override` — the person's OWN rung. The write reads THIS, not
+   * the effective ladder: merging the ladder and writing the result at the user
+   * rung froze the organization's exceptions into the person's row (NEW-3).
+   */
+  const from = (table: string) => {
+    calls.push({ fn: `from:${table}`, args: {} });
+    const result = () =>
+      state.rungReadError
+        ? { data: null, error: { message: state.rungReadError } }
+        : {
+            data:
+              state.value === null || state.value === undefined
+                ? []
+                : [{ scope_kind: "user", scope_id: USER, value: state.value }],
+            error: null,
+          };
+    const builder: Record<string, unknown> = {};
+    for (const method of ["select", "eq", "in"]) builder[method] = () => builder;
+    builder.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result()).then(resolve);
+    return builder;
+  };
   jest.mocked(createClient).mockReturnValue({
     rpc,
-    schema: () => ({ rpc }),
+    from,
+    schema: () => ({ rpc, from }),
   } as unknown as ReturnType<typeof createClient>);
   return { state, calls, writes: () => calls.filter((c) => c.fn === "knob_override_set") };
 }
@@ -109,7 +136,7 @@ beforeEach(() => {
 
 it("refuses the per-type save when the current map cannot be read, and shows the reason", async () => {
   const ladder = fakeLadder({ task: "page" });
-  ladder.state.resolveError = "knob ui.detail.presentation_by_type is not registered";
+  ladder.state.rungReadError = "permission denied for table knob_override";
   const ports = realPorts();
   const m = mount(<Pane />, ports);
 
@@ -170,5 +197,56 @@ it("writes the plain default without reading the per-type map at all", async () 
     p_scope_id: USER,
     p_value: "page",
   });
+  m.unmount();
+});
+
+// 🚨 NEW-2 — AND THE EXCEPTION CAN BE TAKEN BACK FROM THE SAME PANE, through the
+// REAL port: a removal is the same map-entry write with the key absent, and the
+// person's last exception clears the whole row so the ladder answers again.
+it("removes this type's exception through the same write", async () => {
+  const ladder = fakeLadder({ file: "docked", task: "page" });
+  const ports = makePorts({ savePresentation });
+  ports.usePresentationSetting.mockReturnValue({
+    value: "docked",
+    error: null,
+    forType: "docked",
+  });
+  const m = mount(<Pane />, ports);
+
+  click(m.container, "Change");
+  await act(async () => {
+    click(m.container, "Use the default for file records");
+  });
+
+  expect(m.container.querySelector("[data-detail-presentation-refusal]")).toBeNull();
+  expect(ladder.state.value).toEqual({ task: "page" });
+  expect(ports.notify.success).toHaveBeenCalledWith(
+    "File records now open the way you normally open records.",
+  );
+  m.unmount();
+});
+
+it("says so, and claims nothing, when the exception is the organization's", async () => {
+  // The person's own rung holds nothing: the exception they can see comes from
+  // the organization, and removing it is not theirs to do.
+  const ladder = fakeLadder(null);
+  const ports = makePorts({ savePresentation });
+  ports.usePresentationSetting.mockReturnValue({
+    value: "page",
+    error: null,
+    forType: "page",
+  });
+  const m = mount(<Pane />, ports);
+
+  click(m.container, "Change");
+  await act(async () => {
+    click(m.container, "Use the default for file records");
+  });
+
+  expect(
+    m.container.querySelector("[data-detail-presentation-refusal]")?.textContent,
+  ).toContain("no personal exception");
+  expect(ports.notify.success).not.toHaveBeenCalled();
+  expect(ladder.writes()).toHaveLength(0);
   m.unmount();
 });

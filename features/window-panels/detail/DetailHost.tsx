@@ -36,11 +36,14 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 import { DetailHostProvider, type DetailHostPorts, type DetailPresentationSetting } from "@/lib/detail/host";
 import {
+  DETAIL_LIST_CONTEXT_MAX_KNOB,
   DETAIL_PRESENTATION_BY_TYPE_KNOB,
   DETAIL_PRESENTATION_KNOB,
+  detailListContextMax,
   isDetailPresentation,
   presentationForTypeFromMap,
   type DetailHistoryEntry,
+  type DetailListContext,
   type DetailPresentation,
   type DetailRef,
 } from "@/lib/detail/types";
@@ -63,14 +66,22 @@ import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/o
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
 import { encodeListQuery } from "./detailOverlayData";
 
-/** `/detail/<type>/<id>` — the page presentation's route. */
+/**
+ * `/detail/<type>/<id>` — the page presentation's route.
+ *
+ * 🚨 NEW-7 — the list context is CAPPED by `ui.detail.list_context_max_ids`
+ * before it rides the query string (uncapped, a 500-row list produced a >20 KB
+ * href no server accepts). The read is the cached session knob, so this stays
+ * synchronous; a cold cache uses the knob's own default and warms itself for the
+ * next href, which is why `warmPresentation` asks for this key too.
+ */
 export function detailPageHref(
   ref: { type: string; id: string },
-  extra?: { list?: { items: { type: string; id: string }[]; index: number } | null },
+  extra?: { list?: DetailListContext | null },
 ): string {
   return (
     `/detail/${encodeURIComponent(ref.type)}/${encodeURIComponent(ref.id)}` +
-    encodeListQuery(extra?.list ?? null)
+    encodeListQuery(extra?.list ?? null, detailListContextMax(getSessionKnob(DETAIL_LIST_CONTEXT_MAX_KNOB)))
   );
 }
 
@@ -160,10 +171,12 @@ function usePresentationSetting(type: string): DetailPresentationSetting {
     };
   }, []);
   const forType = presentationForTypeFromMap(rawByType, type);
-  if (forType) return { value: forType, error: null };
-  if (raw === undefined) return { value: undefined, error };
-  if (!isDetailPresentation(raw)) return { value: undefined, error: describeSettingValue(raw) };
-  return { value: raw, error: null };
+  if (forType) return { value: forType, error: null, forType };
+  if (raw === undefined) return { value: undefined, error, forType: undefined };
+  if (!isDetailPresentation(raw)) {
+    return { value: undefined, error: describeSettingValue(raw), forType: undefined };
+  }
+  return { value: raw, error: null, forType: undefined };
 }
 
 async function resolvePresentation(type: string): Promise<DetailPresentation> {
@@ -182,6 +195,9 @@ async function resolvePresentation(type: string): Promise<DetailPresentation> {
 function warmPresentation(_type: string): void {
   void getSessionKnob(DETAIL_PRESENTATION_KNOB);
   void getSessionKnob(DETAIL_PRESENTATION_BY_TYPE_KNOB);
+  // The page href needs this one synchronously (NEW-7), so it is warmed with
+  // the others rather than read cold at click time.
+  void getSessionKnob(DETAIL_LIST_CONTEXT_MAX_KNOB);
 }
 
 // ─── The remaining ports ────────────────────────────────────────────────────

@@ -10,9 +10,11 @@
 // back to, and otherwise a real destination.
 
 import * as React from "react";
+import { act } from "react";
 
 import { useDetailCore, type DetailCore } from "../core/useDetailCore";
-import { clickByLabel, instance, makePorts, mount } from "./harness";
+import { DetailPagePresentation } from "../presentations";
+import { clickByLabel, instance, makePorts, mount, StubPageShell } from "./harness";
 
 function Harness({ core }: { core: (c: DetailCore) => void }) {
   const c = useDetailCore(instance(), "page", { onClose: () => {} });
@@ -77,6 +79,76 @@ describe("leaving the page presentation", () => {
     expect(ports.open).toHaveBeenCalledWith(expect.objectContaining({ presentation: "docked" }));
     expect(ports.close).toHaveBeenCalledWith("window");
     expect(ports.navigate.back).not.toHaveBeenCalled();
+    expect(ports.navigate.toRecordHome).not.toHaveBeenCalled();
+    m.unmount();
+  });
+});
+
+// 🚨 D1, ROUND 2 — THE CONTROLS A PERSON ACTUALLY USES TO LEAVE THE PAGE.
+//
+// Round 1's fix guarded `switchTo` only. VERIFY-U-P1-R2 reproduced the same
+// `about:blank` on a pasted / bookmarked `/detail/<type>/<id>` through the page
+// header's BACK CHEVRON and through ESCAPE: the route handed the presentation a
+// raw `router.back()` and the presentation wired it to both, so the guard was
+// never consulted. The page is now left through ONE exit inside the primitive.
+
+describe("the page's own Back chevron and Escape", () => {
+  function PageHarness() {
+    return <DetailPagePresentation data={instance()} />;
+  }
+
+  function mountPage(ports: ReturnType<typeof makePorts>) {
+    return mount(<PageHarness />, {
+      ...ports,
+      shells: { Page: StubPageShell },
+    } as unknown as typeof ports);
+  }
+
+  it("routes the Back chevron through the canGoBack guard", () => {
+    const ports = makePorts();
+    (ports.navigate.canGoBack as jest.Mock).mockReturnValue(false);
+    const m = mountPage(ports);
+
+    clickByLabel(m.container, "Back");
+
+    expect(ports.navigate.canGoBack).toHaveBeenCalledTimes(1);
+    expect(ports.navigate.back).not.toHaveBeenCalled();
+    expect(ports.navigate.toRecordHome).toHaveBeenCalledWith(
+      { type: "file", id: instance().id },
+      "file",
+    );
+    m.unmount();
+  });
+
+  it("routes Escape through the same guard", () => {
+    const ports = makePorts();
+    (ports.navigate.canGoBack as jest.Mock).mockReturnValue(false);
+    const m = mountPage(ports);
+    const root = m.container.querySelector("[data-detail-root]") as HTMLElement;
+
+    act(() => {
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+
+    expect(ports.navigate.canGoBack).toHaveBeenCalledTimes(1);
+    expect(ports.navigate.back).not.toHaveBeenCalled();
+    expect(ports.navigate.toRecordHome).toHaveBeenCalledTimes(1);
+    m.unmount();
+  });
+
+  it("goes back when this tab pushed the page, from either control", () => {
+    const ports = makePorts();
+    (ports.navigate.canGoBack as jest.Mock).mockReturnValue(true);
+    const m = mountPage(ports);
+
+    clickByLabel(m.container, "Back");
+    expect(ports.navigate.back).toHaveBeenCalledTimes(1);
+
+    const root = m.container.querySelector("[data-detail-root]") as HTMLElement;
+    act(() => {
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(ports.navigate.back).toHaveBeenCalledTimes(2);
     expect(ports.navigate.toRecordHome).not.toHaveBeenCalled();
     m.unmount();
   });

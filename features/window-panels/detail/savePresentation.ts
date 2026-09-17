@@ -40,6 +40,8 @@ export type SavePresentationResult = { ok: true } | { ok: false; reason: string 
 export async function savePresentation(args: {
   presentation: DetailPresentation;
   forType: string | null;
+  /** Remove this record type's exception instead of setting one (NEW-2). */
+  clear?: boolean;
 }): Promise<SavePresentationResult> {
   const { organizationId, userId } = sessionKnobPrincipals();
   if (!organizationId || !userId) {
@@ -50,17 +52,46 @@ export async function savePresentation(args: {
         "this session has not resolved both yet. Reload the page and try again.",
     };
   }
+  if (args.clear && !args.forType) {
+    // Clearing the person's DEFAULT is not this surface's job (the setting is
+    // the platform's, and "no answer" is not a presentation), and a silent
+    // no-op here would be the lying control this pane exists to avoid.
+    return {
+      ok: false,
+      reason:
+        "Nothing was saved: there is no record type to clear. Use one of the three choices to set " +
+        "how record details open for you.",
+    };
+  }
   try {
     if (args.forType) {
       const [feature, key] = splitKnobKey(DETAIL_PRESENTATION_BY_TYPE_KNOB);
-      return await setUserKnobMapEntry({
-        feature,
-        key,
-        entryKey: args.forType,
-        entryValue: args.presentation,
-        userId,
-        organizationId,
-      });
+      // A REMOVAL is this same write with the entry absent (NEW-2) — never a
+      // second writer, and never a raw json edit.
+      const result = await setUserKnobMapEntry(
+        args.clear
+          ? { feature, key, entryKey: args.forType, userId, organizationId }
+          : {
+              feature,
+              key,
+              entryKey: args.forType,
+              entryValue: args.presentation,
+              userId,
+              organizationId,
+            },
+      );
+      if (result.ok && args.clear && !result.changed) {
+        // The entry the person is looking at is not theirs — it is their
+        // organization's. Saying "saved" here would be a screen that lies.
+        return {
+          ok: false,
+          reason:
+            `Nothing was saved: you have no personal exception for this record type. The way these ` +
+            "records open is set for your whole organization, and an organization owner or admin " +
+            "changes it in Settings.",
+        };
+      }
+      return result;
     }
     const result = await setKnobOverride({
       feature: "ui.detail",

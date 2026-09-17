@@ -1,7 +1,15 @@
-import type { Dispatch, UnknownAction } from "@reduxjs/toolkit";
+import type { AppDispatch } from "@/lib/redux/store";
 
+/**
+ * A hydrator receives the app's own dispatch, THUNKS INCLUDED. It used to be
+ * typed as a bare `Dispatch<UnknownAction>`, which quietly said "a hydrator may
+ * only dispatch plain actions" — and that is how the `detail` hydrator came to
+ * dispatch `openOverlay` itself and bypass the singleton-replacement
+ * announcement every other opener goes through (VERIFY-U-P1-R2, D8). A hydrator
+ * restores a panel the same way the app opens it: through the one primitive.
+ */
 export type PanelHydrateCallback = (
-  dispatch: Dispatch<UnknownAction>,
+  dispatch: AppDispatch,
   instanceId: string,
   args: Record<string, string>,
 ) => void;

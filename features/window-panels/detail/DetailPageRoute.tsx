@@ -4,11 +4,11 @@
 // presentation that changes the URL. Binds the page shell (RouteHeader +
 // scroll body) right above the presentation and offers "open as window"
 // back through the header switcher. `?l=type.id,…&i=<n>` carries the list the
-// record was opened from so `[` / `]` keep working on the page.
+// record was opened from so the arrows and `[` / `]` keep working on the page.
+//
+// It binds NO exit: leaving the page is `core.leave` inside the primitive.
 
 "use client";
-
-import { useRouter } from "next/navigation";
 
 import { DetailHostProvider } from "@/lib/detail/host";
 import { DetailPagePresentation } from "@/lib/detail/presentations";
@@ -24,22 +24,30 @@ export function DetailPageRoute({
   id,
   list,
   index,
+  listTotal,
 }: {
   type: string;
   id: string;
   list: string | null;
   index: string | null;
+  /** `lt` — the length of the list this URL's window was cut from (NEW-7). */
+  listTotal?: string | null;
 }) {
-  const router = useRouter();
   const data: DetailInstanceData = {
     type,
     id,
     seed: null,
-    list: decodeListQuery(list, index),
+    list: decodeListQuery(list, index, listTotal),
   };
   return (
     <DetailHostProvider ports={{ ...DETAIL_TYPE_BINDING, shells: SHELLS }}>
-      <DetailPagePresentation data={data} onBack={() => router.back()} />
+      {/* 🚨 D1 — NO `onBack` HERE, EVER. The route hands over the record and
+          nothing else: leaving the page is the primitive's one guarded exit
+          (`core.leave` → `canGoBack` / `toRecordHome`, bound in DetailHost).
+          A raw `router.back()` passed in from here is what left a pasted or
+          bookmarked detail link on `about:blank` through the Back chevron and
+          Escape after round 1 had fixed the switch (VERIFY-U-P1-R2, D1). */}
+      <DetailPagePresentation data={data} />
     </DetailHostProvider>
   );
 }

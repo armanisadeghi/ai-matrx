@@ -198,11 +198,15 @@ function FieldsSection({ core }: { core: DetailCore }) {
     );
   }
   if (core.status === "none") {
+    // 🚨 NEW-1 — THE ABSENT STATE NAMES THE TYPE AND THE REMEDY. This branch is
+    // "nothing is registered to LOAD a record of this type", which is not the
+    // same as "this record has no extra fields", and it used to read as the
+    // latter under an invented title (VERIFY-U-P1-R2).
     return (
       <Notice tone="muted">
-        {core.about
-          ? "No additional details are available for this item yet."
-          : `A ${label} reference. No additional details are available yet.`}
+        {`No detail source is registered for ${label} records, so there is nothing to show beyond what the ` +
+          `list already knew. Give the type a \`detailSource\` in the item registry ` +
+          `(features/item-presentation/registry.tsx) and this detail fills itself in.`}
       </Notice>
     );
   }

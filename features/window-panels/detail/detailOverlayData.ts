@@ -4,7 +4,13 @@
 // write it flat (Redux data must be plain); the controller reads it back by
 // name; the page route builds it from its params. ONE spelling, here.
 
-import type { DetailInstanceData, DetailListContext, DetailRef } from "@/lib/detail/types";
+import { trimListContext } from "@/lib/detail/listContext";
+import {
+  DEFAULT_DETAIL_LIST_CONTEXT_MAX,
+  type DetailInstanceData,
+  type DetailListContext,
+  type DetailRef,
+} from "@/lib/detail/types";
 
 export interface DetailOverlayData {
   type: string;
@@ -51,18 +57,35 @@ export function toDetailInstanceData(data: DetailOverlayData): DetailInstanceDat
 }
 
 // ─── Page-route encoding of the list context ────────────────────────────────
-// `/detail/<type>/<id>?l=type.id,type.id&i=<index>` — the same `type.id`
-// instance key the `?panels=detail:` deep link uses.
+// `/detail/<type>/<id>?l=type.id,type.id&i=<index>&lt=<total>` — the same
+// `type.id` instance key the `?panels=detail:` deep link uses. `lt` is present
+// only when the list was TRIMMED to fit the URL (NEW-7): it is the length of the
+// list the window was cut from, so the detail can say so.
 
-export function encodeListQuery(list: DetailListContext | null | undefined): string {
-  if (!list || list.items.length === 0) return "";
-  const l = list.items.map((r) => `${r.type}.${r.id}`).join(",");
-  return `?l=${encodeURIComponent(l)}&i=${list.index}`;
+/**
+ * 🚨 NEW-7 — CAPPED, ALWAYS. `max` is the resolved
+ * `ui.detail.list_context_max_ids` knob; the default is used when the host has
+ * no answer yet, never "no cap". A 500-row list uncapped produced a >20 KB href
+ * no server accepts (VERIFY-U-P1-R2).
+ */
+export function encodeListQuery(
+  list: DetailListContext | null | undefined,
+  max: number = DEFAULT_DETAIL_LIST_CONTEXT_MAX,
+): string {
+  const capped = trimListContext(list, max);
+  if (!capped) return "";
+  // Each `type.id` is encoded, the separators are not: a comma is legal in a
+  // query value, and `%2C` × 200 was 400 bytes of nothing.
+  const l = capped.items.map((r) => `${encodeURIComponent(r.type)}.${encodeURIComponent(r.id)}`).join(",");
+  const trimmed = capped.trimmedFrom ? `&lt=${capped.trimmedFrom}` : "";
+  return `?l=${l}&i=${capped.index}${trimmed}`;
 }
 
 export function decodeListQuery(
   l: string | null | undefined,
   i: string | null | undefined,
+  /** `lt` — the length of the list this window was cut from, when it was. */
+  lt?: string | null | undefined,
 ): DetailListContext | null {
   if (!l) return null;
   const items: DetailRef[] = [];
@@ -73,8 +96,10 @@ export function decodeListQuery(
   }
   if (items.length === 0) return null;
   const index = Number.parseInt(i ?? "", 10);
+  const total = Number.parseInt(lt ?? "", 10);
   return {
     items,
     index: Number.isFinite(index) && index >= 0 && index < items.length ? index : 0,
+    ...(Number.isFinite(total) && total > items.length ? { trimmedFrom: total } : {}),
   };
 }
