@@ -296,7 +296,10 @@ async function renderPolicy(
   if (rows.length === 0) return [`-- UNSUPPORTED: policy ${schema}.${table}.${name} vanished.`, ""];
   const p = rows[0];
   const roles = (p.roles ?? ["public"]).map((r) => (r === "public" ? "public" : q(r))).join(", ");
+  // Same reason as the triggers: `iam.apply_rls`'s standard policy names can already be
+  // on a table the moment it exists, and a duplicate name aborts the file.
   const parts = [
+    `drop policy if exists ${q(name)} on ${q(schema)}.${q(table)};`,
     `create policy ${q(name)} on ${q(schema)}.${q(table)}`,
     `  as ${p.permissive} for ${p.cmd} to ${roles}`,
   ];
@@ -321,7 +324,21 @@ async function renderTrigger(
     [schema, table, name],
   );
   if (rows.length === 0) return [`-- UNSUPPORTED: trigger ${schema}.${table}.${name} vanished.`, ""];
-  return [`${rows[0].def};`, ""];
+  // IDEMPOTENT BY CONSTRUCTION. Creating the table can bring some of its own triggers
+  // with it — the branch's `platform.create_entity_table` lineage attaches the standard
+  // stamps — so a plain CREATE TRIGGER from production's catalog dies on
+  // "already exists" and takes the whole file with it. `CREATE OR REPLACE TRIGGER` lands
+  // production's definition whether or not one is already there. A CONSTRAINT trigger
+  // cannot be replaced, so it is dropped by name first.
+  const def = rows[0].def;
+  if (/^CREATE TRIGGER /.test(def)) {
+    return [`${def.replace(/^CREATE TRIGGER /, "CREATE OR REPLACE TRIGGER ")};`, ""];
+  }
+  return [
+    `drop trigger if exists ${q(name)} on ${q(schema)}.${q(table)};`,
+    `${def};`,
+    "",
+  ];
 }
 
 async function renderEventTrigger(client: pg.Client, name: string): Promise<string[]> {
@@ -452,14 +469,17 @@ export async function renderSyncPlan(
       const branchSet = new Set(branchGrantsByFn.get(identity) ?? []);
       for (const grantee of [...branchSet].sort()) {
         if (prodSet.has(grantee)) continue;
+        // ROUTINE, not FUNCTION: `pg_proc` holds procedures too, and
+        // `revoke execute on function iam.sweep_governance_guards(text)` fails with
+        // "is not a function" and takes the whole file with it. ROUTINE covers both.
         revokes.push(
-          `revoke execute on function ${target} from ${grantee === "PUBLIC" ? "public" : q(grantee)};`,
+          `revoke execute on routine ${target} from ${grantee === "PUBLIC" ? "public" : q(grantee)};`,
         );
       }
       for (const grantee of [...prodSet].sort()) {
         if (branchSet.has(grantee)) continue;
         grants.push(
-          `grant execute on function ${target} to ${grantee === "PUBLIC" ? "public" : q(grantee)};`,
+          `grant execute on routine ${target} to ${grantee === "PUBLIC" ? "public" : q(grantee)};`,
         );
       }
     }
