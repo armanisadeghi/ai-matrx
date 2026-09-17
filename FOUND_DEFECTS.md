@@ -4195,3 +4195,27 @@ carries `setDisplayNameOverride arrived … before its UI-state entry existed` f
 `… was created after 3 write(s) … they were replayed on top of the new entry`, and the hero reads
 "Your interviewer" — not "Ready to run". `setDisplayMode` hits the same race on that screen and is
 now kept as well.
+
+---
+
+## A typed-but-unsent chat message does not survive a reload (2026-09-17)
+
+Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now
+keeps its in-progress work through `features/masterwork/sitting/`, and the census that proves it
+turned up one lane it cannot reach: the Scout interview room and the Conductor room hold their
+in-progress work in the shared chat composer, and a message typed there and not yet sent is gone
+after a browser reload. Measured live on a brand-new Rulebook: 198 characters typed into the
+interview composer, reload, field empty, nothing said.
+
+`features/agents/redux/execution-system/instance-user-input/input-draft-protection.ts` is emphatic
+that this draft is "the single most valuable, irreplaceable piece of data in the app" and protects
+it against every in-session clear — but the slice is in-memory only, so the protection ends at the
+tab. The same is true of `/chat` and every other composer surface; this is not a Masterwork defect
+and must not be patched inside Masterwork.
+
+NOT FIXED HERE, deliberately: persisting that slice is a platform change touching every streaming
+surface in the product, and getting it wrong re-opens exactly the class that file exists to guard
+(a restore racing a submit could resurrect a message the user already sent). It needs its own
+session, with the composer's owners, and a forcing-function test that a restore can never
+re-submit. `features/masterwork/sitting/lanePersistence.ts` declares the two rooms `server-write`,
+which is true of the TURNS and is not a claim about the composer.
