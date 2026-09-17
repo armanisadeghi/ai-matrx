@@ -243,27 +243,39 @@ export function preflightGscProperty(
 
   if (isGscDomainProperty(ref)) {
     const picked = bareDomain(ref.slice("sc-domain:".length));
+    // NORMALIZATION, NAMED (2026-09-17): Google's own property refs are
+    // lowercase, so `SC-DOMAIN:EXAMPLE.COM` is not a ref the API accepts —
+    // recommending it verbatim would recommend a binding Google refuses. The
+    // ref is normalized here and the change is said out loud.
+    const normalizedRef = gscDomainPropertyRef(ref.slice("sc-domain:".length));
+    const caseNote =
+      normalizedRef === ref
+        ? ""
+        : ` Search Console's property refs are lowercase, so this binds as ${normalizedRef} — “${ref}” exactly as typed is not a ref Google accepts.`;
     if (picked === siteBare) {
       return {
         verdict: "ok",
-        headline: `${ref} covers ${canonical.display}.`,
+        headline: `${normalizedRef} covers ${canonical.display}.`,
         detail:
-          "A domain property covers every version of the domain — http and https, www and non-www — so no traffic can hide in a version this site is not bound to.",
-        suggestedRef: ref,
+          "A domain property covers every version of the domain — http and https, www and non-www — so no traffic can hide in a version this site is not bound to." +
+          caseNote,
+        suggestedRef: normalizedRef,
       };
     }
     if (siteBare.endsWith(`.${picked}`)) {
       return {
         verdict: "advisory",
-        headline: `${ref} is the whole domain, and this site is only ${canonical.host}.`,
-        detail: `Every subdomain of ${picked} reports into ${ref}, so this site's numbers will include traffic that belongs to other subdomains. Bind it only if that is what you want; otherwise pick the URL-prefix property ${canonical.display}.`,
-        suggestedRef: ref,
+        headline: `${normalizedRef} is the whole domain, and this site is only ${canonical.host}.`,
+        detail:
+          `Every subdomain of ${picked} reports into ${normalizedRef}, so this site's numbers will include traffic that belongs to other subdomains. Bind it only if that is what you want; otherwise pick the URL-prefix property ${canonical.display}.` +
+          caseNote,
+        suggestedRef: normalizedRef,
       };
     }
     return {
       verdict: "mismatch",
       headline: `This site is ${canonical.display}; you picked the domain property ${picked}, which is a different domain.`,
-      detail: `${ref} reports on ${picked} and will never contain a single row for ${canonical.host}. Pick ${domainRef} if you own ${siteBare} in Search Console, or the URL-prefix property ${canonical.display}.`,
+      detail: `${normalizedRef} reports on ${picked} and will never contain a single row for ${canonical.host}. Pick ${domainRef} if you own ${siteBare} in Search Console, or the URL-prefix property ${canonical.display}.`,
       suggestedRef: domainRef,
     };
   }
@@ -280,6 +292,32 @@ export function preflightGscProperty(
     };
   }
 
+  const rawPickedHost = picked.hostname.trim().toLowerCase();
+  const pickedPathRaw =
+    picked.pathname === "/" ? "/" : picked.pathname.replace(/\/+$/, "/");
+  // A PORT IS A DIFFERENT PROPERTY. Search Console stores `https://example.com/`
+  // and `https://example.com:8443/` as two properties; binding the port version
+  // answers 200 with zero rows exactly like a www swap does.
+  if (picked.port) {
+    const withoutPort = `${picked.protocol}//${normalizeHost(rawPickedHost)}${pickedPathRaw}`;
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked ${ref}, and Search Console treats a property with a port as a separate property.`,
+      detail: `Search Console has no property for port ${picked.port} unless you verified one, so ${ref} will report nothing for ${canonical.host} pages. Pick ${domainRef}, which covers the whole domain, or the URL-prefix property ${withoutPort}.`,
+      suggestedRef: domainRef,
+    };
+  }
+  // A TRAILING-DOT HOST IS A DIFFERENT PROPERTY, for the same reason: Google
+  // stores `example.com`, never `example.com.`.
+  if (rawPickedHost.endsWith(".")) {
+    const withoutDot = `${picked.protocol}//${normalizeHost(rawPickedHost)}${pickedPathRaw}`;
+    return {
+      verdict: "mismatch",
+      headline: `This site is ${canonical.display}; you picked ${ref}, and the trailing dot in “${rawPickedHost}” makes it a different property.`,
+      detail: `Search Console stores this host as ${normalizeHost(rawPickedHost)}, with no trailing dot, so ${ref} matches no property Google will answer for. Pick ${domainRef}, or the URL-prefix property ${withoutDot}.`,
+      suggestedRef: domainRef,
+    };
+  }
   const pickedHost = normalizeHost(picked.hostname);
   if (bareDomain(pickedHost) !== siteBare) {
     return {
@@ -305,7 +343,7 @@ export function preflightGscProperty(
       suggestedRef: domainRef,
     };
   }
-  const pickedPath = picked.pathname === "/" ? "/" : picked.pathname.replace(/\/+$/, "/");
+  const pickedPath = pickedPathRaw;
   if (pickedPath !== "/" && !canonical.path.startsWith(pickedPath)) {
     return {
       verdict: "mismatch",
@@ -321,4 +359,88 @@ export function preflightGscProperty(
       "A URL-prefix property reports only on this exact scheme and host. If Google also offers you the domain property, that one covers every version of the domain.",
     suggestedRef: ref,
   };
+}
+
+// ---------------------------------------------------------------------------
+// THE CONNECT-TIME REFUSAL — one judge every write path asks
+// ---------------------------------------------------------------------------
+
+/**
+ * WHY THIS EXISTS (zero-authorship verification, 2026-09-17, defect B-1). The
+ * pre-flight above was correct and ran nowhere that mattered: every surface
+ * asked for it only once the binding was already `enabled`, so the FIRST
+ * Enable — the exact moment PLAN §4.8 was written for — saved whatever
+ * property was selected and immediately fired a ~16-month Search Console
+ * backfill against it. Live proof: site `d7c4aeb1-…`
+ * (`ga4-oauth-qa-00fb6a62a3.invalid`) is bound today to `http://bhrcenter.com/`.
+ *
+ * So the judgement moved out of the components and into ONE function that
+ * every write path asks BEFORE it writes, on the DRAFT, whether or not the
+ * binding is enabled:
+ *
+ *   - the Integrations editor's configuration-issue list (blocks Save),
+ *   - the per-provider Enable/Connect button,
+ *   - `persistBuiltInProvider` (the single choke point for a one-provider
+ *     write, including the auto-bind that follows a Google connection),
+ *   - `kickGscFirstImport` (a refused binding never starts a backfill).
+ *
+ * `enabled` is deliberately NOT part of the test: saving a binding that is
+ * known to point at a different site is refused even when it is switched off,
+ * because the next person to flip the switch would inherit it silently.
+ */
+export interface GscBindingJudgement {
+  /** False only when a property is picked and it is a proven mismatch. */
+  allowed: boolean;
+  /** The refusal, verbatim from the pre-flight, when there is one. */
+  refusal: GscPropertyPreflight | null;
+  /** The whole refusal as one sentence pair, ready to print or throw. */
+  sentence: string | null;
+}
+
+/**
+ * Judge a Search Console binding about to be WRITTEN. An empty property is not
+ * this judge's business (`validateSiteIntegrations` owns "enabled with no
+ * property"); a picked property that fails the pre-flight is refused by name.
+ */
+export function judgeGscBindingWrite(
+  binding: { resourceRef?: string | null },
+  site: { root_url?: string | null; domain: string },
+): GscBindingJudgement {
+  const ref = (binding.resourceRef ?? "").trim();
+  // Nothing picked, or a site row with no domain to judge against: there is no
+  // judgement to make, and inventing one would be a refusal nobody can fix.
+  if (!ref || !site.domain) {
+    return { allowed: true, refusal: null, sentence: null };
+  }
+  const preflight = preflightGscProperty(ref, site);
+  if (preflight.verdict !== "mismatch") {
+    return { allowed: true, refusal: null, sentence: null };
+  }
+  return {
+    allowed: false,
+    refusal: preflight,
+    sentence: `${preflight.headline} ${preflight.detail}`,
+  };
+}
+
+/**
+ * THE BACKFILL GATE. The on-bind import walks to Google's ~16-month horizon;
+ * started against the wrong property it spends the site's daily request
+ * allowance filling the site with another site's history. It runs only for a
+ * binding that is enabled, complete, never synced — AND not refused.
+ */
+export function shouldStartGscFirstImport(
+  binding: {
+    enabled: boolean;
+    credentialRef?: string | null;
+    resourceRef?: string | null;
+  },
+  site: { root_url?: string | null; domain: string },
+  options: { alreadySynced: boolean },
+): boolean {
+  if (options.alreadySynced) return false;
+  if (!binding.enabled || !binding.credentialRef || !binding.resourceRef) {
+    return false;
+  }
+  return judgeGscBindingWrite(binding, site).allowed;
 }

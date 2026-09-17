@@ -11,7 +11,9 @@
 */
 
 import {
+  judgeGscBindingWrite,
   preflightGscProperty,
+  shouldStartGscFirstImport,
   siteCanonicalUrl,
 } from "@/features/marketing/google/gsc-property";
 
@@ -80,5 +82,139 @@ describe("preflightGscProperty", () => {
 
   it("refuses an empty pick instead of letting a blank binding save", () => {
     expect(preflightGscProperty("", wwwSite).verdict).toBe("mismatch");
+  });
+});
+
+/*
+  THE LIVE MISMATCH, as a fixture. Read from the platform database on
+  2026-09-17: site `d7c4aeb1-a920-4fa0-b118-00ffed913c22`
+  ("AI Matrx OAuth QA GA4 00fb6a62a3", domain `ga4-oauth-qa-00fb6a62a3.invalid`,
+  root_url `https://ga4-oauth-qa-00fb6a62a3.invalid`) carries an ENABLED Search
+  Console binding to the property `http://bhrcenter.com/`. Nothing was changed
+  in the database; the row is copied here so the refusal is proven against the
+  pair that actually got through.
+*/
+const LIVE_MISMATCHED_SITE = {
+  root_url: "https://ga4-oauth-qa-00fb6a62a3.invalid",
+  domain: "ga4-oauth-qa-00fb6a62a3.invalid",
+};
+const LIVE_MISMATCHED_PROPERTY = "http://bhrcenter.com/";
+
+describe("THE CONNECT-TIME REFUSAL (the live mismatched pair)", () => {
+  it("refuses the binding that is live today, naming both sides", () => {
+    const judgement = judgeGscBindingWrite(
+      { resourceRef: LIVE_MISMATCHED_PROPERTY },
+      LIVE_MISMATCHED_SITE,
+    );
+    expect(judgement.allowed).toBe(false);
+    expect(judgement.sentence).toContain("ga4-oauth-qa-00fb6a62a3.invalid");
+    expect(judgement.sentence).toContain("bhrcenter.com");
+  });
+
+  it("refuses it while the binding is still DISABLED — the first Enable is the moment that matters", () => {
+    // Before the fix every guard read `enabled`, so the draft a person is
+    // about to switch on was judged by nothing at all.
+    expect(
+      judgeGscBindingWrite(
+        { resourceRef: LIVE_MISMATCHED_PROPERTY },
+        LIVE_MISMATCHED_SITE,
+      ).allowed,
+    ).toBe(false);
+  });
+
+  it("says nothing about a binding with no property picked — that is the validator's job", () => {
+    const judgement = judgeGscBindingWrite({ resourceRef: "" }, LIVE_MISMATCHED_SITE);
+    expect(judgement.allowed).toBe(true);
+    expect(judgement.refusal).toBeNull();
+  });
+
+  it("allows a correct property", () => {
+    expect(
+      judgeGscBindingWrite({ resourceRef: "sc-domain:example.com" }, wwwSite).allowed,
+    ).toBe(true);
+  });
+});
+
+describe("THE BACKFILL GATE", () => {
+  const goodBinding = {
+    enabled: true,
+    credentialRef: "31b75c97-3710-4c2f-9834-dd6da29ca8b6",
+    resourceRef: "sc-domain:example.com",
+  };
+
+  it("never starts the ~16-month import on a refused binding", () => {
+    expect(
+      shouldStartGscFirstImport(
+        { ...goodBinding, resourceRef: LIVE_MISMATCHED_PROPERTY },
+        LIVE_MISMATCHED_SITE,
+        { alreadySynced: false },
+      ),
+    ).toBe(false);
+  });
+
+  it("starts it for a complete, matching, never-synced binding", () => {
+    expect(
+      shouldStartGscFirstImport(goodBinding, wwwSite, { alreadySynced: false }),
+    ).toBe(true);
+  });
+
+  it("does not restart it for a site that already synced", () => {
+    expect(
+      shouldStartGscFirstImport(goodBinding, wwwSite, { alreadySynced: true }),
+    ).toBe(false);
+  });
+
+  it("does not start it for an incomplete binding", () => {
+    expect(
+      shouldStartGscFirstImport(
+        { ...goodBinding, credentialRef: "" },
+        wwwSite,
+        { alreadySynced: false },
+      ),
+    ).toBe(false);
+  });
+});
+
+/*
+  THE SILENT ACCEPTS (found by an adversarial 18-case probe, 2026-09-17). A
+  port, a trailing-dot host and an uppercase ref all sailed through as `ok`,
+  and the uppercase one was echoed back as the ref to bind — a ref Google's
+  API rejects outright.
+*/
+describe("preflightGscProperty — shapes that used to be accepted silently", () => {
+  it("refuses a port, naming it", () => {
+    const result = preflightGscProperty("https://example.com:8443/", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("port");
+    expect(result.detail).toContain("8443");
+  });
+
+  it("refuses a trailing-dot host, naming the dot", () => {
+    const result = preflightGscProperty("https://example.com./", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("trailing dot");
+  });
+
+  it("normalizes an uppercase domain ref and never recommends the uppercase one", () => {
+    const result = preflightGscProperty("SC-DOMAIN:EXAMPLE.COM", wwwSite);
+    expect(result.suggestedRef).toBe("sc-domain:example.com");
+    expect(result.detail).toContain("lowercase");
+    expect(result.headline).not.toContain("SC-DOMAIN:EXAMPLE.COM");
+  });
+
+  it("leaves a correctly cased domain ref's wording alone", () => {
+    const result = preflightGscProperty("sc-domain:example.com", wwwSite);
+    expect(result.verdict).toBe("ok");
+    expect(result.detail).not.toContain("lowercase");
+  });
+
+  it("still accepts the standard https port written explicitly", () => {
+    // `new URL` drops :443 for https — the property is the same one.
+    expect(preflightGscProperty("https://example.com:443/", bareSite).verdict).toBe("ok");
+  });
+
+  it("refuses a foreign host carrying a port, by host not by port", () => {
+    const result = preflightGscProperty("https://other.com:8443/", bareSite);
+    expect(result.verdict).toBe("mismatch");
   });
 });
