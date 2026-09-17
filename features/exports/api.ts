@@ -10,8 +10,27 @@
 // Transport is the canonical `lib/python-client`: it owns base-url selection
 // (the admin server toggle), a fresh Supabase JWT per request, the request id,
 // and Error Inspector capture. Feature-owned `fetch` is a bypass.
+//
+// 🚨 EVERY RESPONSE IS NARROWED, NEVER ASSERTED. A generic type parameter on
+// `getJson` is a promise, not a check — on 2026-09-17 one server key that
+// changed from a count to a list took `/exports` to the global error boundary
+// on every single load, because nothing between the socket and the JSX ever
+// looked. Each function below hands the raw body to `./contract`, which either
+// returns a value every field of which has been checked, or throws an
+// `ExportContractError` whose message is a sentence a person can read. No
+// function in this file returns anything a parser did not build.
 
 import { getJson, postJson, postNdjson } from "@/lib/python-client";
+import {
+  parseAdapterCatalog,
+  parseCreateExportResponse,
+  parseExportItemFacets,
+  parseExportItemsResponse,
+  parseExportLibrary,
+  parseIndexEvent,
+  parseSendToRulebookResponse,
+  type Parsed,
+} from "./contract";
 import type {
   CreateExportResponse,
   ExportAdapterCatalog,
@@ -42,12 +61,9 @@ function queryString(params: Record<string, string | number | boolean | undefine
  */
 export async function fetchExportAdapters(
   signal?: AbortSignal,
-): Promise<ExportAdapterCatalog> {
-  const { data } = await getJson<ExportAdapterCatalog>(
-    "/media/export-adapters",
-    { signal },
-  );
-  return data;
+): Promise<Parsed<ExportAdapterCatalog>> {
+  const { data } = await getJson<unknown>("/media/export-adapters", { signal });
+  return parseAdapterCatalog(data);
 }
 
 /** Turn an uploaded file into a Library. Returns what the bytes were detected as. */
@@ -58,7 +74,7 @@ export async function createExportLibrary(input: {
   organizationId?: string;
 }): Promise<CreateExportResponse> {
   const { data } = await postJson<
-    CreateExportResponse,
+    unknown,
     {
       file_id: string;
       name?: string;
@@ -71,7 +87,7 @@ export async function createExportLibrary(input: {
     visibility: input.visibility,
     organization_id: input.organizationId,
   });
-  return data;
+  return parseCreateExportResponse(data);
 }
 
 /**
@@ -92,11 +108,11 @@ export async function fetchExportLibrary(
   libraryId: string,
   signal?: AbortSignal,
 ): Promise<ExportLibrary> {
-  const { data } = await getJson<ExportLibrary>(
+  const { data } = await getJson<unknown>(
     `/media/exports/${encodeURIComponent(libraryId)}`,
     { signal, captureErrors: false },
   );
-  return data;
+  return parseExportLibrary(data);
 }
 
 /**
@@ -110,10 +126,22 @@ export async function* streamExportIndex(
   const path = `/media/libraries/${encodeURIComponent(libraryId)}/index`;
   for await (const event of postNdjson(path, {}, { signal })) {
     if (event.event !== "data") continue;
-    const payload = event.data as { type?: unknown };
-    if (typeof payload.type !== "string") continue;
-    if (!payload.type.startsWith("library.index.")) continue;
-    yield event.data as unknown as IndexEvent;
+    const read = parseIndexEvent(event.data);
+    if (read === null) continue;
+    if ("problem" in read) {
+      // An update we cannot read is NOT silently dropped and never crashes the
+      // index: it surfaces as a failure event carrying the honest sentence.
+      yield {
+        type: "library.index.failed",
+        library_id: libraryId,
+        seq: -1,
+        at: new Date().toISOString(),
+        partial_total: 0,
+        message: read.problem,
+      };
+      continue;
+    }
+    yield read.event;
   }
 }
 
@@ -133,19 +161,19 @@ export async function fetchExportItems(
   const path =
     `/media/libraries/${encodeURIComponent(libraryId)}/items` +
     queryString({ ...query });
-  const { data } = await getJson<ExportItemsResponse>(path, { signal });
-  return data;
+  const { data } = await getJson<unknown>(path, { signal });
+  return parseExportItemsResponse(data);
 }
 
 export async function fetchExportItemFacets(
   libraryId: string,
   signal?: AbortSignal,
 ): Promise<ExportItemFacets> {
-  const { data } = await getJson<ExportItemFacets>(
+  const { data } = await getJson<unknown>(
     `/media/libraries/${encodeURIComponent(libraryId)}/item-facets`,
     { signal },
   );
-  return data;
+  return parseExportItemFacets(data);
 }
 
 /**
@@ -169,7 +197,7 @@ export async function sendExportItemsToRulebook(input: {
   filter?: ExportItemFilter;
 }): Promise<SendToRulebookResponse> {
   const { data } = await postJson<
-    SendToRulebookResponse,
+    unknown,
     {
       rulebook_id: string;
       confirmed_sentence: string;
@@ -182,5 +210,5 @@ export async function sendExportItemsToRulebook(input: {
     ...(input.filter ? { filter: input.filter } : {}),
     ...(input.itemIds ? { item_ids: input.itemIds } : {}),
   });
-  return data;
+  return parseSendToRulebookResponse(data);
 }
