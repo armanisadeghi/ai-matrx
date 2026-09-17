@@ -166,6 +166,19 @@ export function BadExampleProbe({
   const current = rounds.length ? rounds[rounds.length - 1] : null;
   const started = rounds.length > 0 || finished !== null;
   const roundCount = result?.roundCount || knobs.rounds;
+  /**
+   * 🚨 NEVER INVENT THE COUNT (this file's own rule 3, broken by the restore).
+   *
+   * The counter read `rounds.length`, which is the number of rounds THIS MOUNT
+   * has seen. A restored session has seen exactly one — the last result the
+   * durable pointer carries — so a person returning to round 3 of their probe
+   * was told, in the product's own words, "Round 1 of 5" (cold-walk-3 fix
+   * round, 2026-09-17). The server sends the real index on every round and it
+   * survives the restore; it is the only number allowed on screen. The length
+   * is the fallback for the first round of a fresh mount, before any result
+   * has landed.
+   */
+  const roundNumber = result?.roundIndex || rounds.length;
   /** What is still missing before a probe can start, in plain words. */
   const caseBriefProblem = validateCaseBrief(caseBrief);
   /**
@@ -419,7 +432,7 @@ export function BadExampleProbe({
                 What&apos;s wrong with this, and what would you do?
               </Label>
               <span className="shrink-0 text-xs text-muted-foreground">
-                Round {rounds.length} of {roundCount}
+                Round {roundNumber} of {roundCount}
               </span>
             </div>
             <p className="mb-2 text-xs text-muted-foreground">

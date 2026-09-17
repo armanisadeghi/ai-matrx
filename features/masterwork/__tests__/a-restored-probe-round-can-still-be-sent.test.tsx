@@ -156,7 +156,7 @@ type StreamRequest = {
 /** Every probe request that actually reached the wire, in order. */
 let sent: Record<string, unknown>[] = [];
 
-function serveTheProbe(): void {
+function serveTheProbe(round: typeof ROUND_ONE = ROUND_ONE): void {
   mockDispatch.mockImplementation(async (request: StreamRequest) => {
     if (request.path === PROBE_PATH) {
       sent.push(request.body ?? {});
@@ -164,7 +164,7 @@ function serveTheProbe(): void {
         event: "data",
         data: { type: "masterwork_run", run_id: RUN_ID },
       });
-      request.onStreamEvent?.({ event: "data", data: ROUND_ONE });
+      request.onStreamEvent?.({ event: "data", data: round });
       return { data: null, error: null };
     }
     if (request.path === REJOIN_PATH) {
@@ -176,7 +176,7 @@ function serveTheProbe(): void {
           run_id: RUN_ID,
           status: "completed",
           error: null,
-          result: ROUND_ONE,
+          result: round,
         },
       });
       return { data: null, error: null };
@@ -283,6 +283,27 @@ describe("a probe round restored from the durable run", () => {
     expect(next.rounds[next.rounds.length - 1]?.critique).toBe(CRITIQUE);
     expect(next.finish).toBe(false);
 
+    await back.unmount();
+  });
+
+  it("tells the person the round the SERVER is on, never the one this mount has seen", async () => {
+    // 🚨 NEVER INVENT THE COUNT (BadExampleProbe's own rule 3). The counter
+    // read `rounds.length` — the rounds THIS MOUNT has seen — and a restored
+    // session has seen exactly one, so a person coming back to round 3 was
+    // told "Round 1 of 5" over round 3's example. Found while verifying the
+    // restore fix on the live surface, 2026-09-17.
+    const third = { ...ROUND_ONE, round_index: 3, example_title: "Pallet 9902 — routing decision" };
+    serveTheProbe(third);
+    const first = await mountProbe();
+    await type(first.container, "probe-case", CASE_BRIEF);
+    await click(buttonSaying(first.container, "Write the first one"));
+    expect(first.container.textContent).toContain("Round 3 of 5");
+    await first.unmount();
+
+    const back = await mountProbe();
+    expect(back.container.textContent).toContain("Pallet 9902");
+    expect(back.container.textContent).toContain("Round 3 of 5");
+    expect(back.container.textContent).not.toContain("Round 1 of 5");
     await back.unmount();
   });
 

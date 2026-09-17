@@ -441,6 +441,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-17` — 🚨 **The probe stopped inventing the round number.** Found on the live
+  surface while verifying the restore fix below: the counter read `rounds.length`, which is
+  the number of rounds THIS MOUNT has seen, so a person who came back to round 3 of their
+  probe was told "Round 1 of 5" over round 3's own example — exactly what
+  `BadExampleProbe`'s own rule 3 forbids ("Never invent the count. 'Round 3 of 5' comes from
+  the server's own `round_index` / `round_count`"). The server sends `round_index` on every
+  round and it survives the durable restore, so that is now the only number on screen, with
+  the length as the fallback before any result has landed. Guard: a third case in
+  `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx`, red the moment the counter
+  goes back to the length. **Left behind, NOT fixed:** a restore brings back only the LAST
+  round, so "Earlier in this probe" is empty after a reload even when several rounds were
+  answered — the durable pointer carries one result, not the session. Nothing is lost (every
+  answered round's rules are on the Rulebook) and nothing on screen lies about it now, but
+  the history the person had is not restored with the round.
+
 - `2026-09-16` — 🚨 **A restored probe round had the answer and not the question, and both its
   buttons died in silence** (jobs-bar cold walk 3, finding #1, live-confirmed by a first-time
   Expert). `rounds` come back from the durable-run pointer; `caseBrief` is mount-local
