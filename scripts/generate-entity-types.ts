@@ -43,6 +43,7 @@ import {
   REFERENCE_CATEGORY_DISPLAY,
   type EntityTypeMeta,
 } from "@ai-matrx/associations";
+import { createAssociationGuards } from "@ai-matrx/associations/core";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
@@ -188,6 +189,29 @@ export function evaluateInstalledCompatibility(
   return { additive, removed, drifted };
 }
 
+export function validateRequiredDisplayMaps(
+  metadata: Readonly<Record<string, Pick<EntityTypeMeta, "schema" | "referenceCategory">>>,
+  schemas: ReadonlyArray<{ schema_name: string; display_name: string; sort_order: number; is_active: boolean }>,
+  categories: ReadonlyArray<{ slug: string; label: string; sort_order: number; is_active: boolean }>,
+  schemaDisplay: Readonly<Record<string, { label: string; sortOrder: number; isActive: boolean }>>,
+  categoryDisplay: Readonly<Record<string, { label: string; sortOrder: number; isActive: boolean }>>,
+): string[] {
+  const schemaRows = new Map(schemas.map((row) => [row.schema_name, row]));
+  const categoryRows = new Map(categories.map((row) => [row.slug, row]));
+  const failures: string[] = [];
+  for (const schema of new Set(Object.values(metadata).map((meta) => meta.schema))) {
+    const live = schemaRows.get(schema); const installed = schemaDisplay[schema];
+    if (live === undefined && installed === undefined) continue;
+    if (!live || !installed || installed.label !== live.display_name || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`schema:${schema}`);
+  }
+  for (const category of new Set(Object.values(metadata).flatMap((meta) => meta.referenceCategory ? [meta.referenceCategory] : []))) {
+    const live = categoryRows.get(category); const installed = categoryDisplay[category];
+    if (live === undefined && installed === undefined) continue;
+    if (!live || !installed || installed.label !== live.label || installed.sortOrder !== live.sort_order || installed.isActive !== live.is_active) failures.push(`reference-category:${category}`);
+  }
+  return failures;
+}
+
 async function main(): Promise<void> {
   const rows = await fetchEntityTypes();
 
@@ -258,43 +282,26 @@ async function main(): Promise<void> {
         }>,
       { label: "entity_schemas_list()" },
     );
-    const requiredSchemas = new Set<string>(Object.values(ENTITY_TYPE_METADATA).map((meta) => meta.schema));
-    for (const s of schemas.filter((schema) => requiredSchemas.has(schema.schema_name))) {
-      const installedDisplay = SCHEMA_DISPLAY[s.schema_name as keyof typeof SCHEMA_DISPLAY];
-      if (!installedDisplay || installedDisplay.label !== s.display_name || installedDisplay.sortOrder !== s.sort_order || installedDisplay.isActive !== s.is_active) {
-        console.error(
-          `\n  ✗ Live platform.schemas row "${s.schema_name}" is missing from ` +
-            `the installed SCHEMA_DISPLAY.` +
-            FIX,
-        );
-        process.exit(1);
-      }
-    }
     const refCats = await readAllRows<{ slug: string; label: string; sort_order: number; is_active: boolean }>(
-      ({ from, to }) =>
-        supabase
-          .rpc("reference_categories_list", {}, { count: "exact" })
-          .order("slug", { ascending: true })
-          .range(from, to) as PromiseLike<{
-          data: { slug: string; label: string; sort_order: number; is_active: boolean }[] | null;
-          error: { message: string } | null;
-          count?: number | null;
-        }>,
+      ({ from, to }) => supabase
+        .rpc("reference_categories_list", {}, { count: "exact" })
+        .order("slug", { ascending: true })
+        .range(from, to) as PromiseLike<{ data: { slug: string; label: string; sort_order: number; is_active: boolean }[] | null; error: { message: string } | null; count?: number | null }>,
       { label: "reference_categories_list()" },
     );
-    const requiredCategories = new Set<string>(Object.values(ENTITY_TYPE_METADATA).flatMap((meta) => meta.referenceCategory ? [meta.referenceCategory] : []));
-    for (const c of refCats.filter((category) => requiredCategories.has(category.slug))) {
-      const installedDisplay = REFERENCE_CATEGORY_DISPLAY[c.slug as keyof typeof REFERENCE_CATEGORY_DISPLAY];
-      if (!installedDisplay || installedDisplay.label !== c.label || installedDisplay.sortOrder !== c.sort_order || installedDisplay.isActive !== c.is_active) {
-        console.error(
-          `\n  ✗ Live reference category "${c.slug}" is missing from the ` +
-            `installed REFERENCE_CATEGORY_DISPLAY.` +
-            FIX,
-        );
-        process.exit(1);
-      }
+    const displayFailures = validateRequiredDisplayMaps(
+      ENTITY_TYPE_METADATA as unknown as Record<string, Pick<EntityTypeMeta, "schema" | "referenceCategory">>,
+      schemas,
+      refCats,
+      SCHEMA_DISPLAY,
+      REFERENCE_CATEGORY_DISPLAY,
+    );
+    if (displayFailures.length > 0) {
+      console.error(`\n  ✗ Required installed display metadata is missing or changed: ${displayFailures.join(", ")}.` + FIX);
+      process.exit(1);
     }
   }
+
 
   // 4. ENTITY_OVERLAY carries no database-owned metadata.
   const registrySource = readFileSync(ENTITY_REGISTRY_PATH, "utf8");
@@ -342,8 +349,32 @@ async function selfTest(): Promise<void> {
   if (!scratch.live.length) throw new Error("self-test: scratch registration was accepted");
   const unknown = evaluateInstalledCompatibility([base], { ...installed, unknown_token: rowToMeta(base) });
   if (!unknown.removed.includes("unknown_token")) throw new Error("self-test: unknown installed token was accepted");
-  try { await requireReadableRegistry(async () => { throw new Error("registry RPC unavailable"); }); } catch (error) { if (!(error instanceof Error) || error.message !== "registry RPC unavailable") throw error; }
-  console.log("  ✓ entity vocabulary self-test passed: additive warning, removal, field drift, scratch, unknown token, and registry-read paths are forced.");
+  const guardError = createAssociationGuards(() => {}).checkToken("targetType", "unknown_token");
+  if (guardError?.code !== "invalid_argument") throw new Error("self-test: package guard accepted unknown token before any RPC");
+  let registryReadThrew = false;
+  try { await requireReadableRegistry(async () => { throw new Error("registry RPC unavailable"); }); } catch (error) {
+    if (!(error instanceof Error) || error.message !== "registry RPC unavailable") throw error;
+    registryReadThrew = true;
+  }
+  if (!registryReadThrew) throw new Error("self-test: unreadable registry was accepted");
+  const fallbackDisplay = validateRequiredDisplayMaps(
+    { hr: { schema: "hr", referenceCategory: null }, seo: { schema: "seo", referenceCategory: null }, commerce: { schema: "commerce", referenceCategory: null } },
+    [], [], {}, {},
+  );
+  if (fallbackDisplay.length) throw new Error("self-test: jointly absent fallback schema display was rejected");
+  const displayFailures = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: "required" } },
+    [{ schema_name: "public", display_name: "General", sort_order: 10, is_active: true }],
+    [{ slug: "required", label: "Required", sort_order: 10, is_active: true }], {}, {},
+  );
+  if (displayFailures.join(",") !== "schema:public,reference-category:required") throw new Error("self-test: one-sided required display metadata was accepted");
+  const changedDisplay = validateRequiredDisplayMaps(
+    { installed: { schema: "public", referenceCategory: null } },
+    [{ schema_name: "public", display_name: "Changed", sort_order: 10, is_active: true }], [],
+    { public: { label: "General", sortOrder: 10, isActive: true } }, {},
+  );
+  if (changedDisplay.join(",") !== "schema:public") throw new Error("self-test: changed required display metadata was accepted");
+  console.log("  ✓ entity vocabulary self-test passed: additive warning, removal, field drift, scratch, package pre-RPC unknown-token, and registry-read, and fallback-display, one-sided-display, and changed-display paths are forced.");
 }
 
 if (process.argv.includes("--self-test")) {

@@ -13,6 +13,12 @@ secret. Package projection removes secret, credential, and non-exportable
 values before serializers or custom callbacks. Runtime integration is tracked
 in [Matrx Alchemy](../../../common-docs/projects/matrx-alchemy/REGISTER.md).
 
+## Admin table controls
+
+The UI Surfaces directory uses the package toolbar for ranked search, Refresh, Add and Clear. Domain filters stay in its leading row and participate in Clear through the custom-facet reset contract; they are not yet serialized in saved views. The package footer is the sole shown/matching/loaded count. Header, readiness and table sections use shared 16px gutters.
+
+Updated 2026-09-17: removed duplicate host search, Refresh/Add and footer; preserved existing domain actions and dialogs.
+
 ## What this is
 
 The dedicated admin UI for the `ui_surface` table. Built to scale to the

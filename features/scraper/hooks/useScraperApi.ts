@@ -40,9 +40,11 @@ import type {
   SearchAndScrapeRequest,
   SearchAndScrapeLimitedRequest,
   ScrapedResult,
+  ScrapeEngine,
   SearchResult,
   SearchResultItem,
 } from "@/features/scraper/types/scraper-api";
+import { asScrapeEngine } from "@/features/scraper/types/scraper-api";
 
 /** Standalone scraper service mounts the package router below `/api`. */
 export function scraperServiceEndpoint(endpoint: string): string {
@@ -95,6 +97,19 @@ export interface ScraperResult {
   mainImage: string | null;
   metadata: { execution_time_ms?: number; [key: string]: unknown };
   scrapedAt: string;
+  /**
+   * Which engine actually produced this content — `null` when the backend did
+   * not say (every response older than 2026-09-17). Never guessed: a surface
+   * shows the provenance line only when this is non-null.
+   */
+  engine: ScrapeEngine | null;
+  /**
+   * True when the plain HTTP fetch failed and the server browser was used
+   * instead. `null` when the backend did not say.
+   */
+  escalated: boolean | null;
+  /** The named reason we escalated (e.g. "cloudflare_block"), when given. */
+  escalationReason: string | null;
 }
 
 export interface ScraperApiState {
@@ -663,6 +678,15 @@ function mapToScraperResult(
     mainImage: (raw.main_image as string) || null,
     metadata: resultMetadata,
     scrapedAt: (raw.scraped_at as string) || new Date().toISOString(),
+    // Provenance — read only what the backend actually sent. An absent or
+    // unrecognized value stays null so the UI can say nothing rather than
+    // claim an engine that never ran.
+    engine: asScrapeEngine(raw.engine),
+    escalated: typeof raw.escalated === "boolean" ? raw.escalated : null,
+    escalationReason:
+      typeof raw.escalation_reason === "string" && raw.escalation_reason.trim()
+        ? raw.escalation_reason.trim()
+        : null,
   };
 }
 
