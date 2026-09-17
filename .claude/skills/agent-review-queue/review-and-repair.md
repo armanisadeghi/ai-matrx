@@ -162,6 +162,9 @@ with candidate as materialized (
     and queue.metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
     and not (queue.metadata->'triage'->'required_tools' @> '["human_input"]'::jsonb)
     and queue.metadata->'triage'->'assignment'->>'state' = 'ready'
+    -- A run never re-claims a row it just returned: FAIL leaves the owner in place and
+    -- changes-requested rows rank first, so without this line the next claim grabs it back.
+    and coalesce(queue.metadata->'triage'->'assignment'->>'owner', '') <> '<stable agent/task label>'
   order by
     case queue.status
       when 'human_changes_requested' then 1
