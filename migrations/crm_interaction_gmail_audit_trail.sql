@@ -135,6 +135,14 @@ CREATE INDEX IF NOT EXISTS interaction_approved_by_idx
 -- The external message id is how an inbound reply is matched back to what we
 -- sent, and how a duplicate send is caught. Live rows already use
 -- `provider_interaction_id` for the voice provider's call id.
+-- The approval queue row's FK needs a covering index or the DB's shape guard
+-- (`platform._provision_shape_settled`, lane fk_without_index) refuses the
+-- COMMIT — found on the chair's first apply, 2026-09-17. Partial, like its
+-- siblings: almost every interaction was never in the queue.
+CREATE INDEX IF NOT EXISTS interaction_approval_assist_idx
+  ON crm.interaction (approval_assist_id)
+  WHERE approval_assist_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS interaction_provider_message_idx
   ON crm.interaction (provider, provider_interaction_id)
   WHERE provider_interaction_id IS NOT NULL;
