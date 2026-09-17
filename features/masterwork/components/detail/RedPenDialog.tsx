@@ -537,7 +537,15 @@ export function RedPenDialog({
                 minHeight={180}
                 maxHeight={360}
               />
-              <div className="flex items-center gap-2">
+              {/* MOBILE (390px): this row gives 358px to a 115px nowrap button
+                  label plus a two-line sentence. With neither `flex-wrap` on
+                  the row nor `shrink-0` on the button, flexbox squeezed the
+                  button's BOX to 87px while its own `whitespace-nowrap` label
+                  kept its 115px width and `overflow: visible` painted it ON TOP
+                  of the helper text — the sentence was unreadable and the
+                  button read as starting off the left edge. Wrap the row, and
+                  never let a nowrap label shrink below itself. */}
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -553,6 +561,7 @@ export function RedPenDialog({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="shrink-0"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FileUp className="mr-1.5 size-3.5" aria-hidden />

@@ -27,6 +27,8 @@
     "check:parse:self-test": "node scripts/check-parse.mjs --self-test",
     "check:jsx-text-comments": "node scripts/check-jsx-text-comments.mjs",
     "check:jsx-text-comments:self-test": "node scripts/check-jsx-text-comments.mjs --self-test",
+    "check:theme-color-literals": "node scripts/check-theme-color-literals.mjs",
+    "check:theme-color-literals:self-test": "node scripts/check-theme-color-literals.mjs --self-test",
     "check:note-content-source-constructors": "node scripts/check-note-content-source-constructors.mjs",
     "check:note-content-source-constructors:self-test": "node scripts/check-note-content-source-constructors.mjs --self-test",
     "check:notes-prepared-receipt-mutations": "node scripts/run-notes-2a-isolated-mutations.mjs",

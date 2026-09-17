@@ -2197,12 +2197,26 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
         >
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
+            {/* MOBILE: the Rulebook's NAME is the sentence the expert typed,
+                and it shared this row with the icon utilities. At 390px that
+                left the heading 182px — "An assistant that deci…" — so the one
+                thing on the page that is hers was the one thing she could not
+                read. The row wraps on a phone (`basis-full`): the name takes
+                the card's full width on its own line and the utilities drop
+                below it, right-aligned. From `sm:` up nothing changes. */}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  {/* MOBILE: `truncate` gave this heading ONE line. At 390px
+                      that line is 182px wide and a Rulebook's name is the
+                      sentence the expert typed — 528px of it here — so the
+                      phone showed "An assistant that deci…" and the expert
+                      could not read back her own goal anywhere on the page.
+                      Two lines on a phone, one truncated line from `sm:` up
+                      where the row has the width for it. */}
                   <h2
-                    className="truncate text-base font-semibold text-foreground"
+                    className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
                     data-surface-value="rulebook_name"
                   >
                     {rulebook.name}
@@ -2211,7 +2225,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
               </div>
               {/* Rulebook-level utilities only. Rule actions live with the
                   rule KPIs below; Masterwork actions live in their own section. */}
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0">
                 {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
                     a Rulebook is a registered shareable resource
                     (`platform.shareable_resource_registry` token `rulebook`,
