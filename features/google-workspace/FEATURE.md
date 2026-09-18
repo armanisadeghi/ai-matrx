@@ -65,6 +65,13 @@ through the `google` tool bundle:
 - **`google_workspace`** (server, aidream) — lists the user's selected Docs and
   Sheets, reads/appends a Doc, reads/writes a bounded Sheet range, and
   _prepares_ an email. It never sends.
+  Both tools answer with a registered Shape — `google_workspace_result` and
+  `google_marketing_result` — and each has exactly ONE component:
+  [`components/mardown-display/blocks/google-kinds/`](../../components/mardown-display/blocks/google-kinds/)
+  (`GoogleWorkspaceResultBlock.tsx` / `GoogleMarketingResultBlock.tsx`), routed by that
+  kind's `content_ir.kind_component` row. Never render a Google tool result any
+  other way: a dry-run preview read as a receipt, or a capped marketing window
+  read as a total, is the defect those components exist to prevent.
 - **`google_email_send`** (client-only) — `handlers/google-email-send.handler.ts`
   in `features/agents/ui-first-tools/` resolves the sending mailbox with
   `connection.ts`, then raises an `email_review` pending ask that
@@ -408,6 +415,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-84: the two Google tool-result kinds render as themselves.** `google_workspace_result` and `google_marketing_result` had no `kind_component` row, so every Google answer in chat came out as a generic key/value dump that could not tell a `dry_run` preview from a receipt. Each now has ONE component under [`components/mardown-display/blocks/google-kinds/`](../../components/mardown-display/blocks/google-kinds/); details, states and the RED/GREEN proof: [`features/content-ir/FEATURE.md`](../content-ir/FEATURE.md) Change Log, same date.
 - `2026-09-18` — **F-76: an organization refusal with no organization selected is now honest
   everywhere `calendar/service.ts` / `documents/service.ts` resolve one.** CI's
   `check-org-refusal-honesty` found both modules calling `requireOrganizationContext` and leaving
