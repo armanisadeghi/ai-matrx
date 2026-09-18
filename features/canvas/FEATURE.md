@@ -104,6 +104,21 @@ the rules an agent editing THIS directory must obey.
   a POINTER (`data: { artifactId }`); `CanvasBody` resolves that pointer through `useCanvasItem`
   before invoking the canonical renderer. Legacy `openCanvas` items carry a full payload, so
   anything reading `content.data` must handle both.
+- **THE OPEN ARTIFACT IS PART OF THE PAGE'S ADDRESS.** Because the slice is not
+  persisted, a surface that has no other source for what was open LOSES it on
+  reload. Chat does not notice — it re-derives its artifacts from persisted
+  tool-call rows. A LIST route has no such source, so the address carries it:
+  `/artifacts?open=<canvas_items.id>`, mirrored by
+  `hooks/useCanvasArtifactUrlState.ts`. Any list surface that opens saved canvas
+  items mounts that hook and inherits reload, Back, Forward and a shareable
+  link — never a second persistence layer, never `localStorage`. Restoring goes
+  through the SAME `useOpenCanvasItem` opener a click uses, and it WAITS for
+  `selectCanvasIsAvailable` because the front door is idle-deferred; restoring
+  before it mounts produces a false "canvas is not available here". The two
+  directions are reconciled BY VALUE against one agreed-on id, never by
+  remembering which URLs we wrote — that bookkeeping swallows Forward to an
+  artifact that was open before. Guard:
+  `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`.
 - Use `updateCanvasContent` (not `openCanvas`) to change an item already on the canvas — `openCanvas`
   creates a duplicate. `closeCanvas()` keeps items in memory; `clearCanvas()` destroys them.
 - Pass `titleToString(content.metadata?.title)` — never the raw `metadata.title` — to anything that
@@ -116,9 +131,9 @@ the rules an agent editing THIS directory must obey.
 - `search_vector` and `trending_score` on `shared_canvas_items` are trigger-maintained; never write
   them from app code.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
-  surface wins — verify on `/artifacts` (no route→surface mapping), reached by CLIENT-SIDE
-  navigation with the pane open, since a reload empties the slice. That reload behaviour is a
-  KNOWN OPEN ITEM, not a settled design — see the 2026-09-18 change-log entry.
+  surface wins — verify on `/artifacts` (no route→surface mapping). Since 2026-09-18 a reload
+  there is fine: `?open=<id>` restores the pane. On any OTHER route, still reach it by
+  CLIENT-SIDE navigation with the pane open, because a reload empties the slice.
 - **A public shared canvas owns the viewport.** Both `/canvas/shared/[token]` and the canonical
   `/s/[token]` lens suppress the generic public header/footer through
   `data-public-immersive-surface`, render the same identity/action header, and keep
@@ -130,6 +145,37 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-18` — **`/artifacts` NO LONGER DROPS ITS OPEN CANVAS ITEM ON RELOAD —
+  the open artifact is part of the page's address.** The recorded open item:
+  the canvas slice is deliberately not persisted, chat re-derives its artifacts
+  from persisted tool-call rows, and `/artifacts` had no source at all — so a
+  reload lost what the person was reading, Back did nothing, and the page could
+  not be linked. **Decision (loop owner, 2026-09-18):** the open artifact is
+  part of the address, not session state. **Champion: Claude.ai's artifacts
+  gallery**, where the selected artifact lives in the URL and reload,
+  Back/Forward and a shared link all restore it.
+  Built as a platform primitive, not an `/artifacts` feature:
+  `hooks/useCanvasArtifactUrlState.ts` mirrors the open artifact into
+  `?open=<canvas_items.id>` and back, through the repo's canonical
+  `@ai-matrx/kit/url-state` primitive (`useUrlSearchParams` + `commitUrlParams`) — the same
+  primitive `EnumsContainer` uses for `?selected` and the data-integrity panel
+  for its selected row. No new persistence layer, no `localStorage`. Opening,
+  switching and closing each PUSH one history entry; adopting an artifact that
+  was already open when the route is entered client-side REPLACES, because
+  nobody pressed anything. `CmsArtifactList` mounts the hook; the restore uses
+  the same `useOpenCanvasItem` opener a click uses.
+  Two things the shape forced, both guarded: the restore WAITS for
+  `selectCanvasIsAvailable` (the front door is idle-deferred through
+  `features/shell/islands/DeferredIslands.tsx`, so an immediate restore is
+  refused with a false "canvas is not available here"), and the two directions
+  are reconciled BY VALUE against one agreed-on id — the tempting "ignore any
+  URL we wrote ourselves" bookkeeping swallows Forward to an artifact that was
+  open before, moving the address while the canvas stays behind.
+  Guard: `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`
+  (6 tests; FIVE mutations proven RED — no URL→canvas restore, no
+  canvas→URL write, a close that ignores `isOpen`, the write-bookkeeping loop
+  breaker, and no availability wait).
 
 - `2026-09-18` — **THE HEADER'S CANVAS SLOT IS RESERVED BY AVAILABILITY, NOT BY
   ITEM COUNT.** The 2026-09-17 fix held the slot only between OPEN and CLOSED;
@@ -147,14 +193,6 @@ path updates the node's `STATE.md` in the same session.
   (rendered DOM; mutation = restore `!isAvailable || itemCount === 0` → RED)
   and a fourth case + `MATRX_LAYOUT_GATE_MUTATION=first-item` in
   `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real layout).
-  **Still open, deliberately not changed here:** `/artifacts` drops its canvas
-  item on reload while a chat restores its own. That is NOT a persistence path
-  the artifacts route is missing — the slice is not persisted anywhere. The
-  chat RE-DERIVES its items from persisted `cx_tool_call` rows in the headless
-  `tool-results/ToolResultCanvasOpener`, a source `/artifacts` has none of.
-  Giving `/artifacts` the same behaviour means inventing a new record of which
-  artifact was open (URL param, or a persisted pointer) — a product decision,
-  not a reuse. Owner ruling needed before it is built.
 
 - `2026-09-17` — **THE CANVAS HAS ONE PRESENTATION AGAIN; THE CHAT ROUTE'S
   PARALLEL LAYER IS GONE.** Owner rejection (review row 34bfd1e8, 2026-09-16,
