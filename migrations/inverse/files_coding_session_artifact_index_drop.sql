@@ -39,13 +39,29 @@
 --   pnpm db:apply migrations/inverse/files_coding_session_artifact_index_drop.sql --target branch
 -- Then, interactively, at production (the runner prints this reason and the
 -- whole body, refuses a non-TTY stdin and demands the filename typed back):
---   uv run python db/apply_migrations.py --source matrx-frontend \
---     --only inverse/files_coding_session_artifact_index_drop.sql --target production
---
--- CONCURRENTLY, because the table is hot and a plain DROP INDEX takes an ACCESS
--- EXCLUSIVE lock on it: CLAUDE.md, index hot tables only with CONCURRENTLY.
+--   pnpm db:apply migrations/inverse/files_coding_session_artifact_index_drop.sql --target production
 -- ============================================================================
 
-SET lock_timeout = '2s';
 
-DROP INDEX CONCURRENTLY IF EXISTS files.files_coding_session_artifact_idx;
+-- ⚠️ A PLAIN `DROP INDEX`, NOT `DROP INDEX CONCURRENTLY`, AND THE REASON IS THE
+-- RUNNERS (measured 2026-09-17, CS-30). A file in `migrations/inverse/` is
+-- reachable ONLY by the frontend runner, which names the file directly
+-- (`pnpm db:apply migrations/inverse/<file> --target production`) — the aidream
+-- runner's every glob is non-recursive, so it cannot SEE this directory:
+--     uv run python db/apply_migrations.py --source matrx-frontend \
+--       --only inverse/<file>  ->  "no migration matches"
+--     ... --only <basename>    ->  "no migration matches"
+-- And the frontend runner is transactional, so it refuses ANY statement that
+-- needs autocommit — `DROP INDEX CONCURRENTLY` included — by name, pointing at
+-- the aidream runner that cannot reach the file. So a CONCURRENTLY statement in
+-- an inverse file is unapplicable by either sanctioned path; that gap is filed
+-- rather than worked around. A plain `DROP INDEX` is not the hazard a plain
+-- `CREATE INDEX` is: the build is what takes minutes, the drop is a catalogue
+-- delete and an unlink. What it needs is the ACCESS EXCLUSIVE lock for that
+-- instant, and `SET LOCAL lock_timeout = '2s'` (the runner sets it too) means a
+-- busy table makes this fail FAST instead of queueing in front of live writes.
+-- Re-run it; never widen the wait.
+
+SET LOCAL lock_timeout = '2s';
+
+DROP INDEX IF EXISTS files.files_coding_session_artifact_idx;

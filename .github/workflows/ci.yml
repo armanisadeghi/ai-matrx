@@ -933,6 +933,43 @@ jobs:
         run: NODE_OPTIONS='--max-old-space-size=6144' pnpm type-check
 
   # ---------------------------------------------------------------------------
+  # mandate-references — every Mandate this build names, and every place
+  # intelligence is reached outside a Mandate, found with its exact file, symbol
+  # and line. NON-BLOCKING BY LAW (ruling D23): a reference check may never be
+  # the reason a push to main goes red, so the whole job is continue-on-error and
+  # it is not a required check.
+  #
+  # The scanner version is pinned EXACTLY. The "always latest" law governs
+  # @ai-matrx npm packages; this is a python release gate whose findings are
+  # compared between revisions, so what it measures may not drift underneath the
+  # comparison.
+  #
+  # CI carries no SUPABASE_SECRET_KEY, so this job SCANS and prints and says
+  # UNMEASURED-for-report — loudly, never silently. release.sh (outside
+  # --no-gates) and the scheduled remediation task are what submit.
+  # ---------------------------------------------------------------------------
+  mandate-references:
+    name: mandate references (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      # The installed @ai-matrx/agents is what carries the per-version key
+      # SNAPSHOT the scanner resolves this build's keys against, so the install
+      # is not optional: without it every TypeScript key is UNMEASURED.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: astral-sh/setup-uv@v5
+      - name: Mandate references (scan only in CI)
+        continue-on-error: true
+        run: uvx --from matrx-mandate-scan==0.2.0 matrx-mandate-scan check
+
+  # ---------------------------------------------------------------------------
   # organization-context — every migrated first-party API call must fail before
   # auth lookup/network I/O unless one explicit organization UUID is present.
   # ---------------------------------------------------------------------------
