@@ -33,6 +33,7 @@ import {
   BrainCircuit,
   Boxes,
   CalendarClock,
+  CalendarDays,
   Building2,
   Contact,
   Database,
@@ -194,6 +195,25 @@ export interface EntityOverlay {
     | { ok: true; data: { id: string; title: string }[] }
     | { ok: false; error: string }
   >;
+}
+
+/**
+ * The Detail primitive's PAGE presentation for one record — `/detail/<token>/<id>`.
+ *
+ * This is the PATH HALF of `detailPageHref`
+ * (`features/window-panels/detail/DetailHost.tsx`), which also appends the
+ * list-context query a WINDOW carries and a registry door never does. It is
+ * spelled here instead of imported because `DetailHost` is a `"use client"`
+ * module with the whole window-manager, overlay and supabase graph behind it,
+ * and this registry is imported by server components and by the deliberately
+ * component-free door resolver (`components/official/entity-ref/doors.ts`) —
+ * importing it would drag that graph into every door (THE FRAGMENTATION LAW).
+ * The two spellings are held together by a test, not by hope:
+ * `entityRegistry.test.ts` reads `DetailHost`'s own template and fails when the
+ * route moves.
+ */
+function detailRecordHref(token: string, id: string): string {
+  return `/detail/${encodeURIComponent(token)}/${encodeURIComponent(id)}`;
 }
 
 // ─── The overlay table ──────────────────────────────────────────────────────
@@ -440,6 +460,39 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // No `hrefFor`: `/canvas/{id}` has NO route (only /canvas/discover and
     // /canvas/shared/[token]). Four callsites link there today and 404 —
     // FOUND_DEFECTS D137.
+  },
+
+  // ─── Google Workspace (connected records that open IN PLACE) ─────────────
+  //
+  // 🚨 V-21 — TWO REGISTRIES, AND THIS ONE WAS NOT TOLD. Both tokens are
+  // registered `platform.entity_types` rows (aidream migration 0766) whose ONE
+  // registration is in the item-presentation registry
+  // (`features/item-presentation/registry.tsx`, F-63): they open IN PLACE via
+  // `useOpenItemPresentation` → the Detail primitive's window / docked
+  // presentations. They were absent HERE, which is the registry
+  // `<EntityRef token=…>`, `resolveEntityDoors` and the dead-ends rules read —
+  // so `<EntityRef token="calendar_event">` rendered no controls at all, and the
+  // toast rule could not see a doorless "Calendar event created" (while
+  // "Google document imported" was reported against `udt_document`, the wrong
+  // record).
+  //
+  // The door is the SAME open path, in its addressable form: the Detail
+  // primitive's page presentation, which keys on exactly this token and id
+  // (`/detail/calendar_event/<id>`, `/detail/google_document/<id>` — both named
+  // by the two registrations' own headers). Neither table carries a
+  // `title_column`, so `RegistryPeek` cannot preview them either: without this
+  // line these records have no door in any form. Nothing here is a second
+  // opener — a surface holding the record still opens it in place; this is what
+  // Open-in-new-tab, a pasted link and a generic registry consumer resolve to.
+  calendar_event: {
+    Icon: CalendarDays,
+    labelPlural: "Calendar Events",
+    hrefFor: (id) => detailRecordHref("calendar_event", id),
+  },
+  google_document: {
+    Icon: FileText,
+    labelPlural: "Google Files",
+    hrefFor: (id) => detailRecordHref("google_document", id),
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────

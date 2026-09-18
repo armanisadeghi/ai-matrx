@@ -1,0 +1,23 @@
+"use client";
+
+/**
+ * V-21 probe arm 1, kept as the guard's own fixture: a surface that CREATES a
+ * calendar event and names it in a toast with no door — not on the toast, not on
+ * the surface. `toast-names-record` reported NOTHING over this, because
+ * `calendar_event` was missing from the entity registry the rule reads its
+ * vocabulary from. It must now report exactly one HIGH finding attributed to
+ * `calendar_event`.
+ */
+
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+
+import { createCalendarEvent } from "./service";
+
+export function ScheduleFollowUpButton({ partyId }: { partyId: string }) {
+  const onSchedule = async () => {
+    await createCalendarEvent({ partyId, title: "Follow up" });
+    toast.success("Calendar event created");
+  };
+  return <Button onClick={onSchedule}>Schedule follow-up</Button>;
+}

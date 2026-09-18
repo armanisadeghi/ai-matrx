@@ -20,6 +20,7 @@ import {
   expressionWords,
   inferToken,
   nounsForToken,
+  inferTokenDetailed,
   type EntityTokenInfo,
 } from "./entity-tokens";
 import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
@@ -382,6 +383,28 @@ export function shouldScanFile(relPath: string): boolean {
 export interface ScanContext {
   repoRoot: string;
   tokens: Map<string, EntityTokenInfo>;
+  /**
+   * Optional ledger of the bare nouns that name SEVERAL registered entities
+   * ("document" → four of them) as they appear in a TOAST MESSAGE — prose a human
+   * wrote about a record. Nothing is reported against such a noun (a confident
+   * wrong record name is the defect V-21 found), so the run says out loud how
+   * often it happened and where: qualify the word or register the entity, never
+   * guess. Keyed noun → files.
+   *
+   * Deliberately MESSAGE-ONLY. Fed from identifier text too, it filled with
+   * `item`, `list` and `set` off 400 files of ordinary variable names — an
+   * everyday word in a variable is not a record this platform failed to name, and
+   * a scoreboard nobody can act on is worse than no line at all.
+   */
+  ambiguousNouns?: Map<string, Set<string>>;
+}
+
+/** Record an honest "I could not name this record" against the noun that caused it. */
+function noteAmbiguousNoun(ctx: ScanContext, noun: string, relPath: string): void {
+  if (!ctx.ambiguousNouns) return;
+  const files = ctx.ambiguousNouns.get(noun) ?? new Set<string>();
+  files.add(relPath);
+  ctx.ambiguousNouns.set(noun, files);
 }
 
 export function scanFile(
@@ -663,17 +686,48 @@ function fileRendersRecordsOf(token: string, scopeText: string): boolean {
  */
 function verbNamesThisEntity(flat: string, token: string): boolean {
   const words = flat.replace(/[^A-Za-z0-9]+/g, " ").trim().split(" ");
-  const nouns = new Set(nounsForToken(token));
+  // A camelCase word contributes each of its segments, so "Created calendarEvent"
+  // reads the same as "Created calendar event".
+  const segmentsOf = (word: string): string[] =>
+    word.split(/(?=[A-Z])/).map((part) => part.toLowerCase());
+  const singular = (part: string): string =>
+    part.endsWith("s") ? part.slice(0, -1) : part;
+  const matches = (segment: string, part: string): boolean =>
+    segment === part || singular(segment) === part;
+
   const verbAt: number[] = [];
-  const nounAt: number[] = [];
-  words.forEach((word, i) => {
-    for (const segment of word.split(/(?=[A-Z])/)) {
-      const lower = segment.toLowerCase();
-      if (TOAST_CREATION_VERB_RE.test(lower)) verbAt.push(i);
-      const singular = lower.endsWith("s") ? lower.slice(0, -1) : lower;
-      if (nouns.has(lower) || nouns.has(singular)) nounAt.push(i);
-    }
+  const perWord = words.map(segmentsOf);
+  perWord.forEach((segments, i) => {
+    if (segments.some((segment) => TOAST_CREATION_VERB_RE.test(segment))) verbAt.push(i);
   });
+
+  // 🚨 A MULTI-WORD noun must match CONSECUTIVE segments: "Calendar event created"
+  // names a `calendar_event`, while "event" or "calendar" alone names nothing.
+  // Testing each word against a flat SET of nouns (what this did before any noun
+  // had two words) made every noun phrase unmatchable — the registered entity
+  // would be inferred and then silently gated out here.
+  const nounAt: number[] = [];
+  for (const noun of nounsForToken(token)) {
+    const parts = noun.split(" ");
+    if (parts.length === 1) {
+      perWord.forEach((segments, i) => {
+        if (segments.some((segment) => matches(segment, parts[0]))) nounAt.push(i);
+      });
+      continue;
+    }
+    // (a) one part per word: "Calendar event created".
+    for (let i = 0; i + parts.length <= perWord.length; i++) {
+      if (parts.every((part, k) => perWord[i + k].some((seg) => matches(seg, part)))) {
+        nounAt.push(i + parts.length - 1);
+      }
+    }
+    // (b) every part inside ONE camelCase word: "calendarEvent created".
+    perWord.forEach((segments, i) => {
+      for (let at = 0; at + parts.length <= segments.length; at++) {
+        if (parts.every((part, k) => matches(segments[at + k], part))) nounAt.push(i);
+      }
+    });
+  }
   return verbAt.some((v) => nounAt.some((n) => Math.abs(v - n) <= 2));
 }
 
@@ -909,8 +963,12 @@ function classifyToastCall(
     ...expressionWords(text),
     ...message.interpolations.flatMap((i) => expressionWords(i)),
   ];
-  const tokenInfo = inferToken(words, ctx.tokens);
-  if (!tokenInfo) return null;
+  const inferred = inferTokenDetailed(words, ctx.tokens);
+  const tokenInfo = inferred.info;
+  if (!tokenInfo) {
+    if (inferred.ambiguousNoun) noteAmbiguousNoun(ctx, inferred.ambiguousNoun, relPath);
+    return null;
+  }
 
   // Reference family only: the record is the DESTINATION, so its noun has to
   // come after the phrase. Skipped when the toast also reports a creation —
@@ -951,6 +1009,7 @@ function classifyToastCall(
     severity: tokenInfo.hasRoute ? "high" : "medium",
     entity: tokenInfo.token,
     entityHasRoute: tokenInfo.hasRoute,
+    entityLabel: tokenInfo.label,
     expression: text.length > 120 ? `${text.slice(0, 117)}…` : text,
   });
 }
@@ -985,9 +1044,11 @@ function classifyExpression(
   if (isInPlaceholder(node, sf)) return null;
 
   const words = expressionWords(rawText);
-  const tokenInfo = inferToken(words, ctx.tokens);
+  const inferred = inferTokenDetailed(words, ctx.tokens);
+  const tokenInfo = inferred.info;
   const entity = tokenInfo?.token ?? `?${rootIdentifier(expr) ?? "unknown"}`;
   const entityHasRoute = tokenInfo?.hasRoute ?? false;
+  const entityLabel = tokenInfo?.label;
   const pos = sf.getLineAndCharacterOfPosition(expr.getStart(sf));
   const line = pos.line + 1;
   const column = pos.character + 1;
@@ -1045,6 +1106,7 @@ function classifyExpression(
       severity: entityHasRoute ? "high" : "medium",
       entity,
       entityHasRoute,
+      entityLabel,
       expression: rawText,
     });
   }
@@ -1069,6 +1131,7 @@ function classifyExpression(
       severity: entityHasRoute ? "high" : "medium",
       entity,
       entityHasRoute,
+      entityLabel,
       expression: rawText,
     });
   }
@@ -1098,6 +1161,7 @@ function classifyExpression(
       column,
       rule: "unlinked-count",
       severity: "medium",
+      entityLabel,
       entity,
       entityHasRoute,
       expression: `${rawText} ${noun.trim()}`,
@@ -1920,6 +1984,8 @@ function makeFinding(args: {
   severity: DeadEndSeverity;
   entity: string;
   entityHasRoute: boolean;
+  /** The registry's label for `entity`, when a token was inferred. */
+  entityLabel?: string;
   expression: string;
 }): DeadEndFinding {
   return {
@@ -1930,6 +1996,7 @@ function makeFinding(args: {
     severity: args.severity,
     entity: args.entity,
     entityHasRoute: args.entityHasRoute,
+    ...(args.entityLabel ? { entityLabel: args.entityLabel } : {}),
     expression: args.expression,
     feature: featureOf(args.relPath),
     route: routeOf(args.relPath),
