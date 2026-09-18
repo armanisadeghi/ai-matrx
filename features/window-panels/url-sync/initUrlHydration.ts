@@ -3,6 +3,10 @@ import { initInstanceUIState } from "@/features/agents/redux/execution-system/in
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
+import {
+  parseTopicPanelInstanceId,
+  topicPanelInstanceId,
+} from "@/features/marketing/seo/topical-map/panel/topicPanelInstance";
 
 /**
  * URL sync uses the instance slot for both singleton window identities and
@@ -84,6 +88,33 @@ export function initUrlHydration() {
               : "outline",
           siteId: null,
         },
+      }),
+    );
+  });
+
+  // Topical map — one topic. `?panels=topic:<mapId>|<slug>` reopens the
+  // floating topic panel the link was made from. The instance id IS the
+  // (map, topic) pair, parsed by the module that mints it, so the two never
+  // drift apart. `siteId` is deliberately not carried: it is a viewing scope,
+  // not part of the topic's identity, and the `?panels=` arg encoding
+  // (`k-v` pairs split on `-`) cannot round-trip a UUID.
+  registerPanelHydrator("topic", (dispatch, id) => {
+    const identity = parseTopicPanelInstanceId(id);
+    if (!identity) {
+      // Nothing fails silently: half an identity has no topic to show, and an
+      // empty frame would be worse than not restoring at all.
+      console.warn(
+        `[initUrlHydration] Ignoring "?panels=topic:${id}": a topic panel is ` +
+          `addressed as "<mapId>|<slug>". Re-copy the link from the panel's ` +
+          `own share control.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "topicalMapTopicPanel",
+        instanceId: topicPanelInstanceId(identity),
+        data: { stackIndex: 0, ...identity, siteId: null },
       }),
     );
   });

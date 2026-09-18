@@ -54,6 +54,38 @@ describe("URL hydration registry", () => {
     );
   });
 
+  it("hydrates a topic panel back onto its own (map, topic) pair", () => {
+    // The instance id a real click mints — `topicPanelInstanceId` in
+    // features/marketing/seo/topical-map/panel/topicPanelInstance.ts.
+    expect(hydrate("topic", "8f1c2d3e-map|local-seo-for-dentists"))
+      .toHaveBeenCalledWith(
+        openOverlay({
+          overlayId: "topicalMapTopicPanel",
+          instanceId: "8f1c2d3e-map|local-seo-for-dentists",
+          data: {
+            stackIndex: 0,
+            mapId: "8f1c2d3e-map",
+            slug: "local-seo-for-dentists",
+            siteId: null,
+          },
+        }),
+      );
+  });
+
+  it("opens nothing, loudly, for a topic token with half an identity", () => {
+    // OverlayController skips an instance with no map or no slug, so a panel
+    // opened from "?panels=topic:8f1c2d3e-map" would be an invisible window in
+    // the tray. It must refuse and say so instead.
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const dispatch = jest.fn();
+    getHydrator("topic")?.(dispatch, "8f1c2d3e-map", {});
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("?panels=topic:8f1c2d3e-map"),
+    );
+    warn.mockRestore();
+  });
+
   const structuredListCases: ReadonlyArray<readonly [string, OverlayId]> = [
     ["structuredListManagerV1", "structuredListManagerV1Window"],
     ["structuredListManagerV2", "structuredListManagerV2Window"],
