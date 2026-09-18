@@ -56,9 +56,9 @@ import {
     formatElapsed,
     formatHours,
     formatMonthPeriod,
-    mediaKindLabel,
 } from "../format";
 import type { LibraryMetrics, LibraryRow } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import type { SyncState } from "../redux/sourceLibrarySlice";
 
 /** Fixed number of "top by views" slots, so the list never changes height. */
@@ -72,6 +72,14 @@ interface Tile {
     value: string | null;
     hint: string;
     wide?: boolean;
+    /**
+     * 🚨 THE SLOT SURVIVES, THE CLAIM DOES NOT. A blog has no Shorts and no
+     * running time; a podcast has no long/short split that means anything. Such
+     * a tile is not rendered as "0" and not rendered as a skeleton — it holds
+     * its space, silently, so nothing under the cursor moves while the Library
+     * row and its metrics arrive and the vocabulary settles.
+     */
+    applies?: boolean;
 }
 
 /**
@@ -95,27 +103,38 @@ function formatLiveClock(ms: number | null | undefined): string {
  */
 const UNREADABLE = "—";
 
-function buildTiles(metrics: LibraryMetrics | null, unreadable = false): Tile[] {
+function buildTiles(
+    metrics: LibraryMetrics | null,
+    unreadable = false,
+    vocabulary: SourceVocabulary = sourceVocabulary(null),
+): Tile[] {
     if (metrics === null && unreadable) {
-        return buildTiles(null).map((tile) => ({ ...tile, value: UNREADABLE }));
+        return buildTiles(null, false, vocabulary).map((tile) => ({
+            ...tile,
+            value: UNREADABLE,
+        }));
     }
-    return buildTilesFromMetrics(metrics);
+    return buildTilesFromMetrics(metrics, vocabulary);
 }
 
-function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
+function buildTilesFromMetrics(
+    metrics: LibraryMetrics | null,
+    vocabulary: SourceVocabulary,
+): Tile[] {
     const kinds = metrics?.counts_by_kind;
     const captions = metrics?.caption_coverage;
     const transcripts = metrics?.transcripts;
     return [
         {
             key: "total",
-            label: "Sources",
+            label: vocabulary.item.many,
             value: metrics ? formatCount(metrics.total) : null,
             hint: "Catalogued in this Library",
         },
         {
             key: "long",
-            label: `${mediaKindLabel("long")} videos`,
+            applies: vocabulary.kindSplit !== null,
+            label: vocabulary.kindSplit?.long ?? "",
             value: kinds ? formatCount(kinds.long) : null,
             hint: metrics
                 ? `${formatDuration(metrics.length_by_kind?.long?.median_seconds ?? null)} median`
@@ -123,7 +142,8 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
         },
         {
             key: "short",
-            label: "Shorts",
+            applies: vocabulary.kindSplit !== null,
+            label: vocabulary.kindSplit?.short ?? "",
             value: kinds ? formatCount(kinds.short) : null,
             hint: metrics
                 ? `${formatDuration(metrics.length_by_kind?.short?.median_seconds ?? null)} median`
@@ -131,13 +151,15 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
         },
         {
             key: "live",
-            label: "Live",
+            applies: vocabulary.kindSplit !== null,
+            label: vocabulary.kindSplit?.live ?? "",
             value: kinds ? formatCount(kinds.live) : null,
             hint: "Broadcasts, live or upcoming",
         },
         {
             key: "unknown",
-            label: mediaKindLabel("unknown"),
+            applies: vocabulary.kindSplit !== null,
+            label: vocabulary.kindSplit?.unknown ?? "",
             value: kinds ? formatCount(kinds.unknown) : null,
             hint: "Nothing has classified these yet",
         },
@@ -153,15 +175,19 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
         },
         {
             key: "hours",
-            label: "Total length",
+            applies: vocabulary.length !== null,
+            label: vocabulary.length?.total ?? "",
             value: metrics ? formatHours(metrics.length?.total_seconds ?? null) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length?.mean_seconds ?? null)} mean per video`
-                : "Every Source added up",
+                ? `${formatDuration(metrics.length?.mean_seconds ?? null)} ${
+                      vocabulary.length?.mean ?? ""
+                  }`
+                : `Every ${vocabulary.item.one} added up`,
         },
         {
             key: "median",
-            label: "Median length",
+            applies: vocabulary.length !== null,
+            label: vocabulary.length?.median ?? "",
             value: metrics ? formatDuration(metrics.length?.median_seconds ?? null) : null,
             hint: metrics
                 ? `${formatDuration(metrics.length?.p90_seconds ?? null)} at the 90th percentile`
@@ -169,6 +195,7 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
         },
         {
             key: "captions",
+            applies: vocabulary.transcribable,
             label: "Caption coverage",
             value: captions ? `${(captions.coverage_percent ?? 0).toFixed(1)}%` : null,
             hint: captions
@@ -179,6 +206,7 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
         },
         {
             key: "transcripts",
+            applies: vocabulary.transcribable,
             label: "Transcripts ready",
             value: transcripts ? formatCount(transcripts.ready) : null,
             hint: transcripts
@@ -194,6 +222,14 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
 }
 
 function MetricTile({ tile }: { tile: Tile }): ReactNode {
+    if (tile.applies === false) {
+        return (
+            <div
+                className={cn("h-[84px]", tile.wide && "col-span-2")}
+                aria-hidden="true"
+            />
+        );
+    }
     return (
         <div
             className={cn(
@@ -228,9 +264,14 @@ function CadenceChart({
     periods,
     loading,
     unreadable = false,
+    title = "Publishing cadence, by month",
+    noun = { one: "item", many: "Items" },
 }: {
     periods: LibraryMetrics["cadence_per_month"];
     loading: boolean;
+    /** The Library's own words — never "videos" over a blog. */
+    title?: string;
+    noun?: { one: string; many: string };
     /** The metrics read failed — say so instead of drawing an empty month. */
     unreadable?: boolean;
 }): ReactNode {
@@ -245,15 +286,15 @@ function CadenceChart({
 
     const describe = (p: LibraryMetrics["cadence_per_month"][number]) =>
         `${formatMonthPeriod(p.period)} — ${formatCount(p.count)} ${
-            p.count === 1 ? "video" : "videos"
-        }, ${formatHours(p.seconds)}`;
+            p.count === 1 ? noun.one : noun.many.toLowerCase()
+        }${p.seconds ? `, ${formatHours(p.seconds)}` : ""}`;
 
     const summary =
         unreadable && periods.length === 0
             ? "The publishing cadence could not be read from the server."
             : periods.length === 0
             ? "No months to chart yet."
-            : `Videos per month, ${formatMonthPeriod(periods[0].period)} to ${formatMonthPeriod(
+            : `${noun.many} per month, ${formatMonthPeriod(periods[0].period)} to ${formatMonthPeriod(
                   periods[periods.length - 1].period,
               )}. Busiest month ${peak ? describe(peak) : "—"}.`;
 
@@ -261,7 +302,7 @@ function CadenceChart({
         <section className="flex h-[276px] flex-col rounded-lg border border-border bg-card px-3 py-2">
             <div className="flex h-5 items-center justify-between">
                 <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Publishing cadence, by month
+                    {title}
                 </span>
                 <span className="text-[11px] text-muted-foreground tabular-nums">
                     {loading || unreadable ? "" : `${formatCount(periods.length)} months`}
@@ -667,7 +708,8 @@ export function LibraryMetricsHeader(props: {
     const running = sync.phase === "starting" || sync.phase === "listing";
     const disabled = running || props.bringUpToDateDisabled === true;
     const metricsError = metrics === null ? (props.metricsError ?? null) : null;
-    const tiles = buildTiles(metrics, metricsError !== null);
+    const vocabulary = sourceVocabulary(library);
+    const tiles = buildTiles(metrics, metricsError !== null, vocabulary);
 
     return (
         <header className="flex w-full flex-col gap-3">
@@ -783,6 +825,8 @@ export function LibraryMetricsHeader(props: {
                 )}
             >
                 <CadenceChart
+                    title={vocabulary.cadence}
+                    noun={vocabulary.item}
                     periods={metrics?.cadence_per_month ?? []}
                     loading={metrics === null && metricsError === null}
                     unreadable={metricsError !== null}
