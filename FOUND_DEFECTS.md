@@ -15,64 +15,48 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D330 — An expression index on an RLS table is UNUSABLE by every client read: `->>` is not leakproof (2026-09-17)
+### D331 — Every client read of `files.files` pays 2.5-6 s of RLS predicate SETUP the moment one examined row is not the reader's own (2026-09-17)
 
-**Status:** open · **Priority:** P1 for the one live victim (the coding-session Files tab 500s) · **Repo:** matrx-frontend + DB
+**Status:** open · **Priority:** P1 — it is the whole remaining latency of the coding-session Files tab, and it is not specific to that read · **Repo:** DB (the access system) · **Owner:** the access system's, not a feature lane's
 
-PostgreSQL will not evaluate a qual whose operator is not `LEAKPROOF` before a table's RLS
-security quals, so such a qual can **never become an index condition**.
-`jsonb_object_field_text` (`->>`) has `proleakproof = false`. Therefore **every expression
-index on a `metadata->>'…'` path on an RLS-enabled table is dead weight for any read that
-goes through RLS** — i.e. for every client read in this repo. It works only for a reader
-that bypasses RLS: `service_role`, or a `SECURITY DEFINER` body.
+**What.** `files.files`'s `std_select` policy is a ~180-subplan OR chain whose expensive branches
+build several `iam.accessible_entity_ids(...)`-shaped hashed sets. They are built LAZILY — on the
+first row that reaches those branches — so a read whose rows are all the reader's own
+short-circuits on the cheap `created_by = uid` branch and is free, while a read that examines ONE
+foreign row pays the whole setup, once, whatever the row count.
 
-Proven on the same statement and identity (`files.files`, `admin@admin.com`, production):
-as `postgres` with RLS off the expression index is chosen, both JSONB equalities become
-`Index Cond`, **2.4 ms**; as `authenticated` with RLS on the same index is ignored, the
-planner walks `idx_cld_files_owner` in full and the equalities are demoted into `Filter`,
-cost 3,986,650, **29,147 ms**. Control (so it is leakproofness, not the planner's taste):
-the identical read with `uuid_eq` on `created_by`, or a text range on `file_path`, DOES get
-an `Index Cond` under the same policy — **1.1 ms**.
+**Measured on production (`db.matrxserver.com`), role `authenticated`, `EXPLAIN (ANALYZE, BUFFERS)`
+on the coding-session artifacts read, all with an Index Cond on the new
+`files_artifact_provider_session_idx` so the plan is not the variable:**
 
-**Census of expression indexes on `files.files`** (`\di` on the table): `idx_cld_files_derived_from`
-(`metadata->>'derived_from'`), `idx_cld_files_variant_key` (`… 'derived_from', 'variant_key'`),
-and `files_coding_session_artifact_idx` (added by CS-27 before this was understood). The first
-two are read by server-side variant/derivation code as `service_role`, where they are genuine;
-the third serves nobody and is queued for removal in
-`migrations/inverse/files_coding_session_artifact_index_drop.sql` (a chair step — an interactive
-production apply). Frontend census: `features/ai-work/conversations/artifacts/service.ts` is the
-only client read that filters `files.files` by a JSONB path. The sibling
-`features/pdf/scanner/processing.ts` filters `docproc.processed_documents` by
-`metadata->>'via'` but is bounded by `owner_id` + `limit 12`, so it rides the owner index and is
-not a victim.
+| candidate rows | reader owns them? | time | buffers |
+|---|---|---|---|
+| 0 | n/a | **0.9 ms** | 75 |
+| 2 | yes | **0.1 ms** | — |
+| 377 (188 own, 189 foreign) | mixed | **5,999 ms** | 670,458 hit + 31,263 read |
+| 6,614 (338 own, 6,276 foreign) | mixed | **4,739 ms** warm | 672,911 hit |
+| 377, all foreign, as an ORDINARY user (`test@test.com`) | no | **2,464 ms** | 345,228 |
 
-**The live victim:** that artifacts read is the coding-session Files tab's only read. It walks
-the whole table under RLS and 500s `57014 canceling statement due to statement timeout` about
-one open in four (20 identical production GETs: 15 × 200 / 5 × 500 on 2026-09-17; the same
-guard measured 0/20 on a second session). Guard: `pnpm check:artifact-read-latency` (red).
-Feedback item `b7bc4af8-ea1c-40fd-9d24-b7146cbeb84d`.
+Note rows 3 and 4: 377 candidates cost the same as 6,614. The cost is the SETUP, not the rows,
+and it is not an admin-only phenomenon. Inside the plan, the expensive nodes are
+`Unique → Merge Append → ProjectSet` over ~29,697 ids (1,990-3,086 ms) plus three `Nested Loop`s
+of 380-780 ms each.
 
-**The fix is a platform read-path decision, escalated, not a patch.** Three candidates, all
-measured against: (a) a real column — `ALTER TABLE files.files ADD COLUMN … GENERATED ALWAYS AS
-(metadata->>'cli_session_id') STORED` + btree; `texteq` is leakproof so the qual indexes
-cleanly and no writer changes, but a STORED generated column REWRITES a 335 MB table under
-`ACCESS EXCLUSIVE` while ~30 indexes rebuild, and the DB's own maintenance-DDL guard caps
-`lock_timeout` at 2 s precisely to stop that being taken casually; (b) a nullable plain column
-+ batched backfill + a trigger — no rewrite, but a new trigger on the platform's hottest write
-path; (c) an RLS-bypassing `SECURITY DEFINER` id lookup feeding an outer **SECURITY INVOKER**
-select on `id = any(...)` (`uuid_eq`, leakproof, pkey) — no rewrite, no trigger, no writer
-change, the real policy still decides every row and the ids never reach the client, but it adds
-a client-callable door on `files.files` and needs a `platform.client_callable_door` row, and
-closing the helper's own PUBLIC `EXECUTE` needs a `REVOKE`, which both migration judges deny
-outside the `-- allows: revoke <schema>` header. A fourth, "make the generated RLS predicate
-cheap" (~185 µs/row over 158k rows, ~180 subplans, many for unrelated entity types), would fix
-the whole class of unindexed reads on this table but is a change to `iam.apply_rls`'s output
-and belongs to the access system's owner.
+**Consequence.** Through PostgREST against role `authenticated`'s 8 s `statement_timeout` this is
+4.8-5.3 s for one session (20/20 return 200 but with no headroom), and an exact count doubles it:
+`Prefer: count=exact` on the same request returned **0 ok / 20 HTTP 500, 8,119 ms min**, because
+PostgREST computes the count as its own statement and pays the predicate twice. That is why
+`features/ai-work/conversations/artifacts/service.ts` proves completeness with a short page
+instead of `readAllRows`. Guard: `pnpm check:artifact-read-latency` stays RED on its 4 s headroom
+line for a session holding another account's artifacts (it PASSES at 326-618 ms for a 1,373-row
+session the reader owns).
 
-**Also found, same function, not fixed:** the artifacts read is a list the panel treats as
-COMPLETE (it builds a file tree and counts files) through a bare `.select()`, so PostgREST
-silently caps it at 1000 rows — and the biggest live session holds 5,984 artifacts. It needs
-`readAllRows` from `@ai-matrx/data/db`, which is only affordable once the read is fast.
+**The fix is in `iam.apply_rls`'s generated predicate, not in any reader** — cheapen or reorder
+those accessible-id sets (CS-27 named this option (d): "make `iam.apply_rls`'s generated predicate
+cheap: this would fix every unindexed read on this table, and belongs to the access system's
+owner"). Do NOT "fix" it in a feature read by adding `created_by = <me>`: that would hide
+artifacts legitimately shared with the reader, which is a screen that lies.
+
 
 ### D328 — `str(ctx.organization_id or …)` turns a missing org into the literal `"None"` at 13 aidream call sites (2026-09-17)
 
@@ -3514,6 +3498,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D330** — an expression index on an RLS table is unusable by every client read (`->>` is not LEAKPROOF, so the qual can never be an index condition). FIXED 2026-09-17 by CS-30: the identity moved into real columns `files.files.artifact_kind` / `provider_session_id` (`migrations/20260917_files_artifact_identity_columns.sql` + `…_backfill_and_index.sql` + `…_column_grants.sql`, all ledgered), the server's upload door stamps them (`aidream packages/matrx-files/matrx_files/artifact_identity.py`), the panel's read filters them, and the useless index was dropped through the chair step `migrations/inverse/files_coding_session_artifact_index_drop.sql`. `pnpm check:artifact-read-latency` now refuses a returning `metadata->>` FILTER on that read by name. The two genuine siblings (`idx_cld_files_derived_from`, `idx_cld_files_variant_key`) stay: server-side readers bypass RLS. Remainder is D331, a different cause.
 - **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
 
 - **D327 — the server read the merged payload where it meant the Expert's words, and the orchestrator's own notices were indistinguishable from her turns.** Both halves closed in aidream `23fa31d6b`. Reader: `masterwork_corpus/corpus.py` now selects `role` + `user_content` and projects through the platform's ONE rule (`matrx_ai.config.human_authored_text`), so the Scout's seeded cue is neither quoted nor counted, and a row with nothing human in it is not a turn. Writer: the four orchestrator gates build their injected turns through the new `host_authored_user_turn()` (empty `user_content` + `authored_by: host`), never NULL; `dynamic_drain` stamps both of its halves. Siblings moved onto the same projection: the chat-import distiller, the coding-session title, `vision_interview.transcript_message_text`. Guards proven failing then passing: `packages/matrx-ai/tests/test_host_authored_user_turns.py` (5) and `aidream/services/masterwork_corpus/tests/test_corpus_reads_the_humans_words.py` (4). Backfill after a read-only census — 89 provable historical gate notices stamped, 8 ambiguous rows deliberately untouched (`db/migrations/ai_085_host_authored_user_turns_are_stamped.sql`, applied and verified live). **Open remainder, filed not fixed:** matrx-rag's `sources.py` indexes `content` for every role, so RAG-retrieved text can still carry an agent-seeded template as the human's turn — matrx-rag sits below matrx-ai and cannot import the projection, so closing it needs its own injected seam. 2026-09-16.
