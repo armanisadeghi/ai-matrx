@@ -316,6 +316,9 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
     mapId,
     { siteId, limit: PAGE_INTENT_LIMIT, offset: rollup.offset },
     isConvergence,
+    // The rollup keeps its own pages; the slice's listing belongs to the pages
+    // workspace, which may be open beside this graph in a window host (C-7).
+    { feed: false },
   );
 
   // The accumulator is ADJUSTED DURING RENDER, not in an effect. React

@@ -92,15 +92,46 @@ function workspace(
  * stays empty and `childrenCount` is set, so an expander is still drawn and the
  * view knows it must fetch deeper rather than concluding "leaf".
  */
+/**
+ * Which `include` names the RESPONSE actually carries, judged from the rows
+ * themselves. A caller's request is not evidence: a payload read with a
+ * narrower include than the screen asked for (two screens sharing one map
+ * slice, a cached read, a racing refetch) would otherwise make `countsLoaded`
+ * true for a tree that never sent a count, and "absent is not zero" becomes
+ * a printed "0" (Verifier A, 2026-09-18). With no topics nothing can be
+ * contradicted, so the request stands.
+ */
+const INCLUDE_WITNESS_KEYS: Record<string, keyof MapTreeNode> = {
+  description: "description",
+  status: "status",
+  counts: "pages",
+  path: "path",
+  facets: "facets",
+  associations: "associations",
+};
+
+function carriedIncludes(requested: string[], seenKeys: Set<string>, topicCount: number): string[] {
+  if (topicCount === 0) return requested;
+  return requested.filter((include) => {
+    const witness = INCLUDE_WITNESS_KEYS[include];
+    // An include this table does not know (an association kind narrowing such
+    // as `pages`) is kept as requested — it names rows inside `associations`.
+    return witness === undefined ? true : seenKeys.has(witness);
+  });
+}
+
 function normalizeTree(result: MapTreeResult): {
   topicsBySlug: Record<string, NormalizedMapTopic>;
   rootSlugs: string[];
   totalTopics: number;
+  seenKeys: Set<string>;
 } {
   const topicsBySlug: Record<string, NormalizedMapTopic> = {};
+  const seenKeys = new Set<string>();
 
   function walk(node: MapTreeNode, parentSlug: string | null, depth: number): void {
     const childSlugs = (node.children ?? []).map((child) => child.slug);
+    for (const key of Object.keys(node)) seenKeys.add(key);
     topicsBySlug[node.slug] = {
       slug: node.slug,
       name: node.name,
@@ -126,6 +157,7 @@ function normalizeTree(result: MapTreeResult): {
       topicsBySlug,
       rootSlugs: [result.topic.slug],
       totalTopics: Object.keys(topicsBySlug).length,
+      seenKeys,
     };
   }
   for (const root of result.topics) walk(root, null, 0);
@@ -133,6 +165,7 @@ function normalizeTree(result: MapTreeResult): {
     topicsBySlug,
     rootSlugs: result.topics.map((root) => root.slug),
     totalTopics: result.total_topics,
+    seenKeys,
   };
 }
 
@@ -198,11 +231,11 @@ const topicalMapSlice = createSlice({
     ) {
       const { mapId, result, includes } = action.payload;
       const ws = workspace(state, mapId);
-      const { topicsBySlug, rootSlugs, totalTopics } = normalizeTree(result);
+      const { topicsBySlug, rootSlugs, totalTopics, seenKeys } = normalizeTree(result);
       ws.topicsBySlug = topicsBySlug;
       ws.rootSlugs = rootSlugs;
       ws.totalTopics = totalTopics;
-      ws.loadedIncludes = includes;
+      ws.loadedIncludes = carriedIncludes(includes, seenKeys, Object.keys(topicsBySlug).length);
       ws.loadedAt = new Date().toISOString();
       ws.optimistic = [];
       if (ws.selectedSlug && !topicsBySlug[ws.selectedSlug]) ws.selectedSlug = null;

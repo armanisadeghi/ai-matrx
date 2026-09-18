@@ -459,20 +459,13 @@ describe("OutlineView — recorded All Green Recycling bytes (map_tree without c
     for (const row of rows) expect("counts" in row).toBe(false);
   });
 
-  it("FINDING: mounted through OutlineView, the SAME recorded payload prints confident zeroes, not the absent state", async () => {
-    // This is the class-level defect: `mapTreeLoaded`'s `includes` comes from
-    // the CALLER'S REQUEST (`redux/slice.ts` line ~205, `ws.loadedIncludes =
-    // includes`), never from what the response rows actually carry. OutlineView
-    // always requests `counts`, so `countsLoaded` reads true here even though
-    // this recorded payload has no `pages`/`planned`/`keywords` keys at all —
-    // and `buildOutlineRows` then computes `topic.topic.pages ?? 0` inside the
-    // `countsLoaded` branch, printing "0" for a field that was never in the
-    // response. Nothing in production can feed OutlineView a mismatched
-    // payload today (it always asks for counts), so this is dormant, not
-    // firing in the shipped app — but it is exactly the shape "absent is not
-    // zero" exists to prevent, and it fires the moment two views sharing this
-    // per-map slice (Table/Graph, Lane B/C) ever request a narrower include
-    // than Outline and their loads race.
+  it("mounted through OutlineView, a recorded payload WITHOUT counts renders the absent state, never a zero", async () => {
+    // Found 2026-09-18 (Verifier A): `mapTreeLoaded` used to take `loadedIncludes`
+    // from the CALLER'S REQUEST, so OutlineView's hardcoded `counts` include made
+    // `countsLoaded` true for a tree that never sent `pages`/`planned`/`keywords`,
+    // and `buildOutlineRows` printed "0 pages" for a field the response never
+    // carried. The slice now derives the loaded includes from the rows; this case
+    // was red before that change and is the guard.
     mapTree.mockResolvedValue(ALL_GREEN_WITHOUT_COUNTS);
     knobState.knobs = knobs({ outline_detail: "counts" });
     const { container, root } = mount(ALL_GREEN_MAP_ID);
@@ -481,12 +474,8 @@ describe("OutlineView — recorded All Green Recycling bytes (map_tree without c
       '[data-topic-tree-row="consumer-electronics-recycling"]',
     );
     expect(row).not.toBeNull();
-    // What SHOULD happen (absent is not zero): no counts key at all.
-    // What ACTUALLY happens: OutlineView's hardcoded `include` makes
-    // `countsLoaded` true, so `TopicCounts` renders "0 pages" — a confident
-    // lie about a field the recorded response never sent.
-    expect(row?.textContent).toContain("0");
-    expect(row?.querySelector('[data-counts-loaded="false"]')).toBeNull();
+    expect(row?.textContent).not.toMatch(/\b0 pages\b/);
+    expect(row?.querySelector('[data-counts-loaded="false"]')).not.toBeNull();
     act(() => root.unmount());
   });
 });

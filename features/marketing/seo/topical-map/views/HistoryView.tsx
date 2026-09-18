@@ -444,7 +444,9 @@ function HistoryList({
         }
         confirmLabel="Restore"
         busy={patch.isPending}
-        onConfirm={() => pending && void restore(pending)}
+        onConfirm={() => {
+          if (pending) void restore(pending);
+        }}
       />
     </>
   );

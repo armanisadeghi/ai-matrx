@@ -447,6 +447,15 @@ export function usePageIntents(
   mapId: string,
   options: PageIntentsListOptions = {},
   enabled = true,
+  /**
+   * `feed: false` reads WITHOUT writing the slice's page listing. The slice
+   * holds the rows the pages workspace LISTED; a second reader (the graph's
+   * convergence rollup, which keeps its own pages) mounted beside it in a
+   * window host must never replace that listing with its own window (Lane C,
+   * C-7). The outline/graph colouring reads `intentsByPageId`, which only the
+   * feeding reader fills.
+   */
+  behaviour: { feed: boolean } = { feed: true },
 ) {
   const dispatch = useAppDispatch();
   const query = useQuery({
@@ -458,12 +467,13 @@ export function usePageIntents(
   });
 
   const result = query.data;
+  const feed = behaviour.feed;
   useEffect(() => {
-    if (!result || !mapId) return;
+    if (!feed || !result || !mapId) return;
     dispatch(
       pageIntentsLoaded({ mapId, result, replace: (options.offset ?? 0) === 0 }),
     );
-  }, [dispatch, mapId, result, options.offset]);
+  }, [dispatch, feed, mapId, result, options.offset]);
 
   return query;
 }
@@ -1006,6 +1016,12 @@ export function useSetMapTopicLayout(mapId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: topicalMapKeys.topicRows(mapId) });
+      // The graph's own read carries `layout` too (every groupBy/site variant);
+      // without this a dragged topic's `auto_layout`/`position` in query data
+      // stay stale until the next refetch and the node snaps back (Lane C, C-3).
+      void queryClient.invalidateQueries({
+        queryKey: [...topicalMapKeys.map(mapId), "graph"],
+      });
     },
   });
 }

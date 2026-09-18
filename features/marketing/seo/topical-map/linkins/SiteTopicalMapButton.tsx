@@ -57,7 +57,7 @@ export function SiteTopicalMapButton({
   // No map on this site.
   const href = brandSeg
     ? startMapHref(brandSeg, { source: "data", siteId })
-    : `/marketing/topical-maps/start?source=data`;
+    : marketingRoutes.topicalMapStart({ source: "data" });
   return (
     <Button asChild variant="outline" className={className}>
       <Link href={href} title="This site uses no topical map yet — start one from its data">
@@ -72,5 +72,5 @@ export function SiteTopicalMapButton({
 export function siteTopicalMapFallbackHref(brandSeg: string | null): string {
   return brandSeg
     ? marketingRoutes.brandTopicalMapHome(brandSeg)
-    : `/marketing/topical-maps/start?source=data`;
+    : marketingRoutes.topicalMapStart({ source: "data" });
 }

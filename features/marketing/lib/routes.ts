@@ -388,6 +388,20 @@ export const marketingRoutes = {
    * for `seo_topical_map`.
    */
   topicalMapDoor: (mapId: string) => `/marketing/topical-maps/${mapId}`,
+  /**
+   * The brand-free START door. A research topic belongs to an organization,
+   * never to a brand, and a site can lack a brand context at its call site, so
+   * this page picks the brand first and then lands on that brand's home in
+   * start mode. Every screen that needs it comes here (CONTRACTS §2) — never a
+   * hand-built literal.
+   */
+  topicalMapStart: (options: { source?: string; researchTopicId?: string | null } = {}) => {
+    const params = new URLSearchParams();
+    if (options.researchTopicId) params.set("research", options.researchTopicId);
+    if (options.source) params.set("source", options.source);
+    const query = params.toString();
+    return query ? `/marketing/topical-maps/start?${query}` : "/marketing/topical-maps/start";
+  },
 
   // ── Legacy shim addresses (resolve + redirect; builders keep them only
   //    where the call site lacks the context for a canonical address) ─────

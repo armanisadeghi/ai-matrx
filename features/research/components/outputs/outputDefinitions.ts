@@ -33,6 +33,7 @@
 import type { OutputKind } from "./outputs";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The bundle every publishing output uses — the report, and nothing else. */
 export const REPORT_ONLY_BUNDLE_SLUG = "research-report-only";
@@ -136,7 +137,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     bundleSlug: null,
     outputKind: "topical_map",
     openHref: (topicId) =>
-      `/marketing/topical-maps/start?research=${encodeURIComponent(topicId)}&source=existing_research`,
+      marketingRoutes.topicalMapStart({ researchTopicId: topicId, source: "existing_research" }),
   },
 ];
 
