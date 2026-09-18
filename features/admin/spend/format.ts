@@ -5,7 +5,7 @@
 //
 // Doc: features/admin/spend/FEATURE.md
 
-import { formatRelativeTime, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatRelativeTime, formatUsd } from "@ai-matrx/kit/format";
 
 /**
  * `$144.85`. A null is "not measured" — never rendered as $0.00.
@@ -32,6 +32,11 @@ export function usd(value: number | null | undefined): string {
  */
 export function usdPrecise(value: number | null | undefined): string {
   return formatUsd(value, { digits: "adaptive", unknown: "not measured" });
+}
+
+/** A localized item count, with an honest absence when the ledger is unknown. */
+export function count(value: number | null | undefined): string {
+  return formatCount(value, { unknown: "not measured" });
 }
 
 /** `+18%` / `−7%` against yesterday. Null when yesterday was zero. */
