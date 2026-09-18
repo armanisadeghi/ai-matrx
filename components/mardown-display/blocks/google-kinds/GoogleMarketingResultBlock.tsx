@@ -52,6 +52,7 @@ import {
   StateChip,
   StillArriving,
   isRecord,
+  printsResidualFacts,
   readBool,
   readKindValue,
   readText,
@@ -66,8 +67,10 @@ import {
   TruncationChip,
   UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
+  emptyReadSentence,
   hasStatedBounds,
   hasSubstantiveContent,
+  noteWithoutRepeatedClaim,
   readBlock,
   readRows,
   readWriteClaim,
@@ -225,13 +228,18 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
    * is the ONE place both halves live: this block's own read-branch union,
    * OR any write claim at all (`claim.state !== "none"`).
    */
+  /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
+  const omitKeys = [...PROMOTED, ...claim.previewKeys];
+  const windowStated = hasStatedBounds(value.bounds);
   const substantiveRead = hasSubstantiveContent(
     claim,
     Boolean(verdict) || hasHealthFlag || Boolean(checks) || Boolean(containers) ||
       (value.data !== undefined && value.data !== null),
+    // THE SAME PASS THE STRIP BELOW PRINTS FROM (F-104, V-23 NEW-5): a payload
+    // whose whole answer arrives as unpromoted keys — `sessions: 1234`,
+    // `users: 900` — is not an empty read, and the footer may not say it is.
+    printsResidualFacts(value, omitKeys),
   );
-  /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
-  const omitKeys = [...PROMOTED, ...claim.previewKeys];
 
   return (
     <div className={cn("my-2 min-w-0 space-y-2.5", className)}>
@@ -247,7 +255,7 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
         <CountedFact
           count={value.returned_count}
           unit={value.count_unit}
-          windowStated={hasStatedBounds(value.bounds)}
+          windowStated={windowStated}
         />
       </div>
 
@@ -345,14 +353,14 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
         </Section>
       ) : null}
 
-      <ServerSentence text={value.note} />
+      {/* The lead already states the write claim when there is one, so the
+          server's own note never repeats it (F-104, the F-98 class). */}
+      <ServerSentence text={noteWithoutRepeatedClaim(value.note, claim)} />
       <ServerSentence text={value.limit_note} />
 
+      {/* NEVER "for the window above" when no window was stated (V-23 NEW-5). */}
       {!substantiveRead ? (
-        <p className="text-xs text-muted-foreground">
-          This read returned no rows for the window above. That is an answer, not a
-          failure — widen the window or check the site this question is about.
-        </p>
+        <p className="text-xs text-muted-foreground">{emptyReadSentence(windowStated)}</p>
       ) : null}
 
       <MetaStrip value={value} omit={omitKeys} />

@@ -959,6 +959,90 @@ const RECORD_TABLE_TO_ITEM_TYPE: ReadonlyMap<string, KnownItemType> = (() => {
   return map;
 })();
 
+/**
+ * 🚨 EVERY REGISTERED ENTITY'S TABLE, NOT ONLY THE ITEM TYPES' (lane F-104,
+ * hostile verifier V-23, finding NEW-6).
+ *
+ * `RECORD_TABLE_TO_ITEM_TYPE` above answers ONE question — "which item type
+ * does the Detail primitive open for this table" — and the honest answer for
+ * `media.source_library` is `null`, because no item type reads it. V-23's
+ * attack is what a reader then DID with that null: it rendered no control at
+ * all for a record the card had just named, although `media_source_library` is
+ * a registered entity whose `hrefFor` (`/libraries/<id>`) is a working screen.
+ *
+ * Ruling R35: `hrefFor` is the durable address and `useOpenItemPresentation` is
+ * the door, and BOTH are required. So a stamp resolves in TWO legs, and only a
+ * table NO registered entity claims resolves to nothing:
+ *
+ *   1. the entity TOKEN the table backs — from `ENTITY_TYPE_METADATA`, which is
+ *      generated from `platform.entity_types`, the same row `record_table` is
+ *      stamped from, so every one of the 800+ live tokens is declared here with
+ *      no per-entity edit (the declaration this campaign looked for already
+ *      exists: `{ token, schema, table }` on every row);
+ *   2. the ITEM TYPE with an in-place opener, when one reads that same table.
+ *
+ * A caller renders the opener when leg 2 answers, the token's own durable
+ * address when only leg 1 does, and nothing at all when neither does.
+ */
+const TOKENS_BY_RECORD_TABLE: ReadonlyMap<string, string[]> = (() => {
+  const map = new Map<string, string[]>();
+  for (const meta of Object.values(
+    ENTITY_TYPE_METADATA as Record<
+      string,
+      { token: string; schema: string; table: string }
+    >,
+  )) {
+    if (!meta?.token || !meta.schema || !meta.table) continue;
+    const key = `${meta.schema}.${meta.table}`.toLowerCase();
+    const held = map.get(key);
+    if (held) held.push(meta.token);
+    else map.set(key, [meta.token]);
+  }
+  return map;
+})();
+
+/** Entity token → the item type that opens it in place, when one exists. */
+const ITEM_TYPE_BY_ENTITY_TOKEN: ReadonlyMap<string, KnownItemType> = (() => {
+  const map = new Map<string, KnownItemType>();
+  for (const [type, config] of Object.entries(REGISTRY) as [
+    KnownItemType,
+    ItemTypeConfig,
+  ][]) {
+    const token = config.entityToken ?? type;
+    if (!map.has(token)) map.set(token, type);
+  }
+  return map;
+})();
+
+/** What a `record_table` stamp resolves to — both legs of R35, or null. */
+export interface RecordTableTarget {
+  /** The registered entity token backing that table. */
+  token: string;
+  /** The item type that opens it IN PLACE, or null when none reads the table. */
+  itemType: KnownItemType | null;
+}
+
+/**
+ * THE ONE resolution of a server `record_table` stamp. `null` means no
+ * registered entity claims that table — the only case a reader renders nothing.
+ */
+export function recordTableTarget(recordTable: unknown): RecordTableTarget | null {
+  if (typeof recordTable !== "string") return null;
+  const key = recordTable.trim().toLowerCase();
+  if (!key.includes(".")) return null;
+  const itemType = RECORD_TABLE_TO_ITEM_TYPE.get(key) ?? null;
+  const tokens = TOKENS_BY_RECORD_TABLE.get(key) ?? [];
+  if (itemType) {
+    const config = REGISTRY[itemType];
+    const declared = config.entityToken ?? itemType;
+    // The item type's own token wins when the table backs several (aliases).
+    return { token: tokens.includes(declared) ? declared : (tokens[0] ?? declared), itemType };
+  }
+  if (tokens.length === 0) return null;
+  const token = tokens.find((candidate) => ITEM_TYPE_BY_ENTITY_TOKEN.has(candidate)) ?? tokens[0];
+  return { token, itemType: ITEM_TYPE_BY_ENTITY_TOKEN.get(token) ?? null };
+}
+
 export function itemTypeForRecordTable(
   recordTable: unknown,
 ): KnownItemType | null {

@@ -49,6 +49,7 @@ import GoogleMarketingResultBlock, {
   PROMOTED as MARKETING_PROMOTED,
 } from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 import {
+  RecordDoor,
   WRITE_CLAIM_KEYS,
   readWriteClaim,
   type WriteClaimState,
@@ -908,9 +909,19 @@ describe("readWriteClaim — the one truth table both Google blocks read", () =>
     { said: "dry_run AND appended", value: { dry_run: true, appended: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
     { said: "awaiting_approval AND written", value: { awaiting_approval: true, written: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
     // A FLAG WE CANNOT READ is not an absent flag.
-    { said: "dry_run as the string true", value: { dry_run: "true" }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
-    { said: "dry_run as the string true beside appended", value: { dry_run: "true", appended: true }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
-    { said: "awaiting_approval as a number", value: { awaiting_approval: 1, would_append: {} }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "dry_run as the string true", value: { dry_run: "true" }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    // 🚨 V-23 NEW-4: THE SAME RULE FOR A COMPLETION FLAG. RED on `82d6127e`,
+    // where only the HOLD keys had an unreadable reading: this payload —
+    // verbatim from the verifier — came back `state: "none"`, so the card said
+    // nothing at all about whether the append happened, and `appended` (a
+    // `WRITE_CLAIM_KEYS` member both blocks omit) vanished from the screen too.
+    { said: "appended as the string yes (V-23 NEW-4)", value: { action: "append_document", title: "Q3 Plan", appended: "yes" }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "written as a number", value: { written: 1 }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "created as an object", value: { created: {} }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "imported as the string false", value: { imported: "false" }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "sent as the string true", value: { sent: "true" }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "dry_run as the string true beside appended", value: { dry_run: "true", appended: true }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "awaiting_approval as a number", value: { awaiting_approval: 1, would_append: {} }, state: "unreadable_claim", nothingWasWritten: true, showsReceiptChips: false },
   ];
 
   it.each(CASES.map((row) => [row.said, row] as const))(
@@ -938,9 +949,33 @@ describe("readWriteClaim — the one truth table both Google blocks read", () =>
 
   it("an unreadable hold flag names the value it could not read", () => {
     const claim = readWriteClaim({ dry_run: "true" });
-    expect(claim.unreadableHoldKeys).toEqual(["dry_run"]);
+    expect(claim.unreadableClaimKeys).toEqual(["dry_run"]);
     expect(claim.detail).toContain('"dry_run"');
     expect(claim.detail).toContain('"true"');
+  });
+
+  /**
+   * V-23 NEW-4, the other half of the same class: an unreadable COMPLETION flag
+   * is read exactly like an unreadable hold flag, names the key AND the value,
+   * and never falls to `none`. The two are one rule now, so the truth table
+   * cannot grow a silent side again.
+   */
+  it("an unreadable completion flag names the key and the value too", () => {
+    const claim = readWriteClaim({ action: "append_document", title: "Q3 Plan", appended: "yes" });
+    expect(claim.unreadableClaimKeys).toEqual(["appended"]);
+    expect(claim.detail).toContain('"appended"');
+    expect(claim.detail).toContain('"yes"');
+    expect(claim.completedKeys).toEqual([]);
+  });
+
+  it("every boolean claim key is read by the SAME rule — no key has a silent side", () => {
+    for (const key of WRITE_CLAIM_KEYS) {
+      if (key === "approval") continue; // a block, not a flag.
+      const claim = readWriteClaim({ [key]: "yes" });
+      expect(claim.state).toBe("unreadable_claim");
+      expect(claim.unreadableClaimKeys).toContain(key);
+      expect(claim.detail).toContain(`"${key}"`);
+    }
   });
 });
 
@@ -1592,5 +1627,246 @@ describe("a calendar event's door obeys the server's record_table (NEW-9)", () =
   it("still opens an older payload that carries no stamp at all", () => {
     const markup = render(event({}));
     expect(markup).toContain("Open Weekly sync in AI Matrx");
+  });
+  /**
+   * 🚨 V-23 NEW-4 — AN UNREADABLE COMPLETION MARKER IS NEVER SWALLOWED.
+   *
+   * The verifier's payload, verbatim. RED on `82d6127e` this card rendered, in
+   * full: "Q3 Plan Append document" — nothing about whether the append
+   * happened. `readWriteClaim` only counted `COMPLETED_KEYS` when
+   * `readBool(...) === true`, so a non-boolean fell to `none`; and `appended`
+   * is a `WRITE_CLAIM_KEYS` member both blocks omit from the meta strip and the
+   * leftovers, so the key left the screen entirely. An unreadable HOLD flag
+   * already had its own honest state — same class, opposite treatment.
+   */
+  describe("V-23 NEW-4: an unreadable completion flag gets the same honest state as an unreadable hold flag", () => {
+    const payload = {
+      __kind: WORKSPACE_KIND,
+      action: "append_document",
+      title: "Q3 Plan",
+      appended: "yes",
+    };
+
+    it("says nothing is shown as written, and names the key AND the value", () => {
+      const markup = mount(
+        <GoogleWorkspaceResultBlock content={JSON.stringify(payload)} metadata={undefined} />,
+      );
+      expect(markup).toContain("Nothing is shown as written.");
+      expect(markup).toContain("appended");
+      expect(markup).toContain("yes");
+      expect(markup).toContain("cannot be read");
+    });
+
+    it("shows no green receipt chip for a marker it could not read", () => {
+      const markup = mount(
+        <GoogleWorkspaceResultBlock content={JSON.stringify(payload)} metadata={undefined} />,
+      );
+      expect(markup).not.toContain(">appended</span>");
+    });
+
+    it("the marketing block reads the identical payload the identical way", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({ ...payload, __kind: MARKETING_KIND })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("Nothing is shown as written.");
+      expect(markup).toContain("appended");
+    });
+  });
+
+  /**
+   * 🚨 V-23 NEW-5 — THE CARD MAY NOT SAY "NO ROWS" UNDER THE ROWS IT PRINTED,
+   * AND MAY NOT NAME A WINDOW NOBODY STATED.
+   *
+   * The verifier's payload, verbatim: RED on `82d6127e` this card printed
+   * "This read returned no rows for the window above… widen the window"
+   * directly above "Site: example.com Sessions: 1,234 Users: 900". F-95/F-98
+   * taught the predicate the verdict and the `has_*` flags; the promoted-scalar
+   * residue — the very facts the card prints last — was still outside that
+   * reading. Emptiness now comes from the SAME pass that prints them.
+   */
+  describe("V-23 NEW-5: the empty-read footer is derived from what the card printed", () => {
+    const traffic = {
+      __kind: MARKETING_KIND,
+      action: "traffic_summary",
+      site: "example.com",
+      sessions: 1234,
+      users: 900,
+    };
+
+    it("prints the scalar facts and does NOT call the read empty", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock content={JSON.stringify(traffic)} metadata={undefined} />,
+      );
+      expect(markup).toContain("1,234");
+      expect(markup).toContain("example.com");
+      expect(markup).not.toContain("This read returned no rows");
+    });
+
+    it("a leftover OBJECT counts too — any shape of printed fact is a fact", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "traffic_summary",
+            by_channel: { organic: 700, paid: 534 },
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).not.toContain("This read returned no rows");
+    });
+
+    it("a truly empty read with NO stated window never says 'the window above'", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "read_search_console",
+            source: "persisted",
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("This read returned no rows");
+      expect(markup).toContain("no window was stated");
+      expect(markup).not.toContain("the window above");
+    });
+
+    it("a truly empty read WITH a stated window still points at that window", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "read_search_console",
+            source: "persisted",
+            bounds: { start_date: "2026-09-01", limit: 50 },
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("no rows for the window above");
+    });
+  });
+
+  /**
+   * 🚨 V-23 ADDENDUM — THE LEAD STATES THE CLAIM; THE NOTE CARRIES THE REMEDY.
+   *
+   * On `/shapes/google_workspace_result` the canonical example printed "Nothing
+   * was written." twice: once as the lead and once inside the server's own
+   * `note`, whose remedy ("Show the user this exact block.") is the only part
+   * the reader still needs. Round 8 claimed no fact prints twice (the F-98
+   * class); this is that claim, asserted on the canonical example itself.
+   */
+  describe("V-23 addendum: the write claim is stated exactly once", () => {
+    const canonical = {
+      __kind: WORKSPACE_KIND,
+      action: "append_document",
+      dry_run: true,
+      title: "Q3 Plan",
+      would_append: { position: "end_of_document", text: "\nThree risks remain open." },
+      note: "NOTHING WAS WRITTEN. Show the user this exact block.",
+    };
+
+    it("prints the claim once and keeps the note's remedy", () => {
+      const markup = mount(
+        <GoogleWorkspaceResultBlock content={JSON.stringify(canonical)} metadata={undefined} />,
+      );
+      const claims = markup.toLowerCase().split("nothing was written").length - 1;
+      expect(claims).toBe(1);
+      expect(markup).toContain("Show the user this exact block.");
+    });
+
+    it("a note that is ONLY the claim disappears rather than echoing", () => {
+      const markup = mount(
+        <GoogleWorkspaceResultBlock
+          content={JSON.stringify({ ...canonical, note: "Nothing was written." })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup.toLowerCase().split("nothing was written").length - 1).toBe(1);
+    });
+
+    it("a note whose words are NOT the claim keeps every word", () => {
+      const markup = mount(
+        <GoogleWorkspaceResultBlock
+          content={JSON.stringify({
+            __kind: WORKSPACE_KIND,
+            action: "import_contact",
+            needs_client: { do_this: "Finish this in the app." },
+            note: "NOTHING WAS IMPORTED, and this is not a failure you can retry.",
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("NOTHING WAS IMPORTED, and this is not a failure you can retry.");
+    });
+  });
+  /**
+   * 🚨 V-23 NEW-6 — A RECORD THE CARD NAMES, WHOSE TOKEN HAS A DOOR, GETS A
+   * DOOR (ruling R35).
+   *
+   * RED on `82d6127e`: a row stamped `record_table: "media.source_library"`
+   * rendered NO control. `itemTypeForRecordTable` correctly returned null (no
+   * item type opens that table in place) and `RecordDoor` correctly refused the
+   * wrong door — but `media_source_library` is a registered entity whose
+   * `hrefFor` is `/libraries/<id>`, a working screen. R35: `hrefFor` is the
+   * durable address and `useOpenItemPresentation` is the door, and BOTH are
+   * required, so the refusal needed a second leg. A table no entity claims
+   * still renders nothing — a door to the wrong record reads as a fact.
+   */
+  describe("V-23 NEW-6: the door falls back to the durable address before rendering nothing", () => {
+    const ID = "812e1df9-e3ff-4a60-b90c-ccfaabe2b88e";
+
+    it("media.source_library — no opener, so the entity's own address IS the door", () => {
+      const markup = mount(
+        <RecordDoor
+          type="calendar_event"
+          recordTable="media.source_library"
+          id={ID}
+          name="Weekly sync"
+        />,
+      );
+      expect(markup).toContain(`/libraries/${ID}`);
+      // And never the wrong door: the caller's `calendar_event` guess is dead.
+      expect(markup).not.toContain("Open Weekly sync in AI Matrx");
+    });
+
+    it("web.youtube_video — an in-place opener, not a link", () => {
+      const markup = mount(
+        <RecordDoor
+          type="calendar_event"
+          recordTable="web.youtube_video"
+          id={ID}
+          name="Launch video"
+        />,
+      );
+      expect(markup).toContain("Open Launch video in AI Matrx");
+    });
+
+    it("totally.not_a_table — no entity claims it, so NOTHING renders", () => {
+      const markup = mount(
+        <RecordDoor
+          type="calendar_event"
+          recordTable="totally.not_a_table"
+          id={ID}
+          name="Weekly sync"
+        />,
+      );
+      expect(markup).toBe("");
+    });
+
+    it("an unstamped row still opens through the caller's own type", () => {
+      const markup = mount(<RecordDoor type="calendar_event" id={ID} name="Weekly sync" />);
+      expect(markup).toContain("Open Weekly sync in AI Matrx");
+    });
+
+    it("no id is still no door", () => {
+      expect(
+        mount(<RecordDoor type="calendar_event" recordTable="media.source_library" id={null} />),
+      ).toBe("");
+    });
   });
 });
