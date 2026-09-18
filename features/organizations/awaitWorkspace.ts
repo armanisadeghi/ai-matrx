@@ -108,3 +108,38 @@ export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolutio
   if (settled) return { status: "ready", organizationId: settled };
   return { status: "unavailable", reason: NO_WORKSPACE };
 }
+
+/**
+ * The same sentence, for a READ rather than a write. "Nothing was created" is
+ * true of a press and meaningless about a record somebody opened, and the
+ * remedy is the same picker.
+ */
+const NO_WORKSPACE_FOR_READ =
+  "No organization is selected, so there was nothing to read this record from. Pick the one you are working in from the menu under your avatar and it will load.";
+
+/**
+ * 🚨 THE ORGANIZATION QUESTION IS ASKED BEFORE THE RECORD READ, NOT AFTER IT
+ * (VERIFY-R7-FIX-WAVE NEW-2, seat-proven 2026-09-18).
+ *
+ * From the seat, a cold load of `/detail/google_document/<id>` issued
+ *
+ *   +4231ms  GET …/google_document?select=*&id=eq.…
+ *   +4610ms  POST …/rpc/current_personal_org_id      ← the organization question
+ *
+ * — the read went out with no organization on the wire and none in the store,
+ * and the screen then blamed Google: "it may have been moved, deleted, or isn't
+ * shared with you." Three explanations, and the true one — "you have not
+ * chosen an organization yet" — was not among them. Meanwhile the in-place
+ * opener for the very same record (`features/google-workspace/documents/
+ * openRecord.tsx`) was organization-honest: two doors to one record, one honest.
+ *
+ * So a record read waits for the answer the boot path is already fetching
+ * (bounded, no second request) and, when it settles with nothing selected,
+ * refuses in the person's own words with the remedy — never a claim about the
+ * record.
+ */
+export async function awaitOrganizationForRecordRead(): Promise<WorkspaceResolution> {
+  const resolved = await awaitEffectiveOrganizationId();
+  if (resolved.status === "ready") return resolved;
+  return { status: "unavailable", reason: NO_WORKSPACE_FOR_READ };
+}

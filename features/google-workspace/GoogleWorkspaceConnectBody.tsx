@@ -48,6 +48,7 @@ import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePick
 import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
 
 export interface GoogleWorkspaceConnectBodyProps {
@@ -199,15 +200,21 @@ function GoogleWorkspaceConnectBodyContent({
 
   const connectInThisTab = () =>
     void run("connect-redirect", async () => {
-      if (!organizationContextId) {
-        throw new Error("Choose an organization before connecting Google.");
+      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+      // (VERIFY-R7-FIX-WAVE NEW-1). Reading the selected organization once here
+      // refused a person who HAS one, with a sentence about not having one, for
+      // as long as boot took to answer. The bounded platform wait answers both
+      // states, and its own reason carries the remedy.
+      const workspace = await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") {
+        throw new Error(workspace.reason);
       }
       await google.startAuthorizationCodeRedirect(
         [...GOOGLE_WORKSPACE_FILE_SCOPES],
         {
           returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
           owner: { type: "user" },
-          organizationContextId,
+          organizationContextId: workspace.organizationId,
         },
       );
     });

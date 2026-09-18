@@ -31,6 +31,8 @@
 //   `onRetry`              — re-run the load after a pick; omitted = no button.
 
 import { Building2 } from "lucide-react";
+import { Skeleton } from "@ai-matrx/design-system";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@/components/ui/button";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
@@ -118,5 +120,73 @@ export function OrganizationRequiredNotice({
         {retry}
       </div>
     </div>
+  );
+}
+
+// ─── The three states, in ONE component ─────────────────────────────────────
+
+/**
+ * 🚨 THE THIRD STATE IS NOT THE REFUSAL, AND IT IS NOT AN EMPTY SCREEN.
+ * (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18.)
+ *
+ * `OrganizationRequiredNotice` above is the TERMINAL state: boot settled and
+ * there is nothing selected. A surface that renders it off a bare
+ * `!organizationId` shows it while boot is still resolving too — which is how
+ * the Tasks import control told a person with an organization to "Select an
+ * organization" from 4.0s to 17.4s after load, disabled, while the memberships
+ * read had not even been issued.
+ *
+ * So the states are not a surface's business to spell. Pass the discriminant
+ * from `useOrganizationRequired` and this component picks:
+ *
+ *   `resolving` → a labelled waiting state that says what is being checked
+ *                 (never the refusal, never nothing);
+ *   `required`  → the honest terminal refusal with the picker;
+ *   `ready`     → nothing — the caller renders its own content.
+ */
+export function OrganizationContextNotice({
+  state,
+  what,
+  title,
+  description,
+  compact = false,
+  onRetry,
+  className,
+}: OrganizationRequiredNoticeProps & { state: OrganizationState }) {
+  if (state === "ready") return null;
+  if (state === "resolving") {
+    return (
+      <div
+        className={className}
+        role="status"
+        aria-busy="true"
+        data-testid="organization-resolving-notice"
+      >
+        <div
+          className={
+            compact
+              ? "space-y-2 p-3"
+              : "mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center"
+          }
+        >
+          <p className="text-sm text-muted-foreground">
+            {what
+              ? `Checking which organization ${what.toLowerCase()} belong to…`
+              : "Checking which organization you are working in…"}
+          </p>
+          <Skeleton className="h-8 w-full" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <OrganizationRequiredNotice
+      what={what}
+      title={title}
+      description={description}
+      compact={compact}
+      onRetry={onRetry}
+      className={className}
+    />
   );
 }

@@ -286,6 +286,37 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-18` — **F-89 (V-22, NEW-1): THERE ARE THREE ORGANIZATION STATES, AND
+  THEY ARE ONE READING NOW.** `useOrganizationRequired` had carried all three
+  since F-85, and exactly one Google-surface file read it: the other nine read
+  the bare `selectOrganizationId`, which is `null` in BOTH the resolving and the
+  settled-with-nothing states. Seat-proven cost, headless-Chromium, signed in:
+  the Tasks import control announced *"Select an organization before importing
+  Google Tasks."* from 4.0s to 17.4s after load — while the memberships read had
+  not even been issued (9.6s) — and enabled itself at 20.6s. The person had an
+  organization the whole time. Three additions, so no surface has to spell the
+  states itself: the hook now returns **`organizationState: "resolving" |
+  "required" | "ready"`** (a discriminant a `switch` cannot get half right, the
+  booleans kept for the existing readers); **`useOrganizationGatedControl(act)`**
+  hands a control its ready-made `disabled` + `title` (resolving → "Checking
+  which organization you are working in…", required → "Select an organization
+  before &lt;act&gt;.", ready → neither), which is a one-line fix at the callsite;
+  and **`OrganizationContextNotice`** (beside `OrganizationRequiredNotice`, same
+  props plus `state`) picks the screen — a labelled waiting state, the terminal
+  refusal with the picker, or nothing. A PRESS that must not refuse on a race
+  keeps using `awaitEffectiveOrganizationId`, which gained a READ twin,
+  `awaitOrganizationForRecordRead`, for the same wait with the sentence a reader
+  needs rather than a writer's "nothing was created". Guard, proven
+  failing-then-passing: **`pnpm check:org-three-states`** (+ `:self-test`, both
+  inside `check:organization-context`) fails any module that SPELLS an
+  organization refusal without a three-state reading; its first run found 113
+  pre-existing modules, recorded in `scripts/org-three-states-census.json` as a
+  baseline that only shrinks in both directions (a new offender fails, a
+  repaired entry left on the list fails too). The ten Google-native surfaces are
+  repaired and deliberately absent from it. New
+  `__tests__/the-three-states-are-one-reading.test.tsx` (5) pins hook, control
+  gate and notice in all three states.
+
 - `2026-09-17` — **F-40b fix (Bugbot round 22, PR 228 comment 4042337969).**
   `PartyPeek`'s catch block flattened the thrown error to `e.message` before
   handing it to `AccessGate`, so `fetchPartyDetail`'s `RecordUnavailableError`

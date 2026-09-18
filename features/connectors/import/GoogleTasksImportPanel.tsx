@@ -20,6 +20,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   Check,
   CheckSquare,
@@ -70,6 +73,18 @@ export function GoogleTasksImportPanel({
   projectId = null,
   onImported,
 }: GoogleTasksImportPanelProps) {
+  // 🚨 THREE STATES, AND THE ORGANIZATION THE WINDOW WAS OPENED WITH CAN BE
+  // STALE. The opener reads the selected organization at open time, so a window
+  // opened while boot was still resolving carried `null` FOREVER — a panel that
+  // told the person to choose an organization they had already chosen, and went
+  // on telling them after boot settled. So: the prop wins when it has an
+  // answer, the person's own SELECTED organization fills in when it does not
+  // (never a personal-workspace substitution — this is the same value the
+  // opener would have passed), and with neither the panel shows the CHECKING
+  // beat while boot resolves and the honest refusal only once it has settled
+  // (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18).
+  const organizationGate = useOrganizationRequired();
+  const effectiveOrganizationId = organizationId ?? organizationGate.organizationId;
   const [listing, setListing] = useState<TaskListingResultPending | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +95,7 @@ export function GoogleTasksImportPanel({
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
-    if (!organizationId) return;
+    if (!effectiveOrganizationId) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -88,7 +103,7 @@ export function GoogleTasksImportPanel({
     setError(null);
     try {
       const result = await listGoogleTasks({
-        organizationId,
+        organizationId: effectiveOrganizationId,
         signal: controller.signal,
       });
       setListing(result);
@@ -100,7 +115,7 @@ export function GoogleTasksImportPanel({
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [organizationId]);
+  }, [effectiveOrganizationId]);
 
   useEffect(() => {
     void load();
@@ -153,12 +168,12 @@ export function GoogleTasksImportPanel({
   };
 
   const run = async () => {
-    if (!organizationId || !active || chosen.length === 0) return;
+    if (!effectiveOrganizationId || !active || chosen.length === 0) return;
     setBusy(true);
     setError(null);
     try {
       const result = await importGoogleTasks({
-        organizationId,
+        organizationId: effectiveOrganizationId,
         taskListId: active.task_list_id,
         taskIds: chosen,
         projectId,
@@ -183,14 +198,15 @@ export function GoogleTasksImportPanel({
     }
   };
 
-  if (!organizationId) {
+  if (!effectiveOrganizationId) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center">
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Choose the organization these tasks belong to first — the import writes
-          them into it, and nothing here picks one for you.
-        </p>
-      </div>
+      <OrganizationContextNotice
+        state={organizationGate.organizationState}
+        what="Imported tasks"
+        title="Choose an organization"
+        description="Choose the organization these tasks belong to first — the import writes them into it, and nothing here picks one for you."
+        className="flex h-full items-center justify-center"
+      />
     );
   }
 

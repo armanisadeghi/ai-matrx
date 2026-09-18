@@ -10,7 +10,7 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationGatedControl } from "@/features/organizations/useOrganizationGatedControl";
 import { useOpenGoogleTasksImport } from "@/features/overlays/openers/googleImportWindows";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
@@ -30,10 +30,14 @@ export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   // The organization the import writes into is the one the person selected —
-  // never a personal-workspace fallback. With none selected the control
-  // refuses honestly (disabled, with its reason) instead of opening a window
-  // that would have nothing to write into.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // never a personal-workspace fallback. THREE states, not two: while boot is
+  // still resolving the control waits and says it is checking; once boot has
+  // SETTLED with nothing selected it refuses honestly with the remedy; only
+  // then is it enabled. Reading the bare id told a person who HAS an
+  // organization to "Select an organization" for thirteen seconds of every cold
+  // load (VERIFY-R7-FIX-WAVE NEW-1, seat-proven 2026-09-18) — the exact class
+  // the three-state hook exists to kill, re-armed in this file.
+  const importGate = useOrganizationGatedControl("importing Google Tasks");
   const openGoogleTasksImport = useOpenGoogleTasksImport();
   const sidebarCollapsed = isCollapsed("sidebar");
   const listCollapsed = isCollapsed("list");
@@ -82,15 +86,11 @@ export function TasksHeaderControls() {
         size="sm"
         variant="ghost"
         className="ml-1 h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
-        disabled={!organizationId}
-        title={
-          organizationId
-            ? undefined
-            : "Select an organization before importing Google Tasks."
-        }
+        disabled={importGate.disabled}
+        title={importGate.title}
         onClick={() => {
-          if (!organizationId) return;
-          openGoogleTasksImport({ organizationId });
+          if (!importGate.organizationId) return;
+          openGoogleTasksImport({ organizationId: importGate.organizationId });
         }}
       >
         <CalendarCheck className="h-3.5 w-3.5" />

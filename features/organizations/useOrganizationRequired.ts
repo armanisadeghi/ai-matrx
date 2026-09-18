@@ -27,17 +27,40 @@
 // the chrome around it can never disagree about whether an organization is
 // missing.
 //
-// USAGE
-//   const { organizationId, canLoad, organizationRequired } = useOrganizationRequired();
-//   useEffect(() => { if (!canLoad) return; void load(); }, [canLoad, organizationId]);
-//   if (organizationRequired) return <OrganizationRequiredNotice what="Waiting runs" />;
+//   3. **Boot is still resolving.** Not the same as either of the above, and
+//      the one a surface silently collapses into whichever of the two it
+//      happens to have written first. THREE states, and there is a name for
+//      each: `organizationState`.
+//
+// USAGE — prefer the discriminant, because a boolean pair can be read wrong
+// and a switch cannot:
+//   const { organizationId, organizationState } = useOrganizationRequired();
+//   useEffect(() => { if (organizationState !== "ready") return; void load(); },
+//             [organizationState, organizationId]);
+//   if (organizationState !== "ready")
+//     return <OrganizationContextNotice state={organizationState} what="Waiting runs" />;
 //   if (loading) return <Skeleton />;
+//
+// A CONTROL rather than a body gates through
+// `useOrganizationGatedControl` (same reading, ready-made `disabled` + `title`)
+// so the "checking" beat can never be spelled as the terminal refusal — which
+// is exactly what the Tasks import button announced for thirteen seconds
+// (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18).
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectShouldPromptForOrganization,
 } from "@/lib/redux/slices/appContextSlice";
+
+/**
+ * The three states, named once. Every org-scoped surface reads THIS, never a
+ * hand-rolled pair of booleans over a nullable id — `organization_id === null`
+ * cannot tell "checking" from "you belong to nothing", and a surface that
+ * cannot tell either shows a terminal refusal during boot or an empty state
+ * forever.
+ */
+export type OrganizationState = "resolving" | "required" | "ready";
 
 export interface OrganizationRequiredGate {
   /** The explicitly selected organization, or null. */
@@ -54,16 +77,23 @@ export interface OrganizationRequiredGate {
    * showing the skeleton here, and only here.
    */
   resolving: boolean;
+  /**
+   * The same reading as the three fields above, as ONE value a `switch` or an
+   * equality test cannot get half right. Prefer it in new code.
+   */
+  organizationState: OrganizationState;
 }
 
 export function useOrganizationRequired(): OrganizationRequiredGate {
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationRequired = useAppSelector(selectShouldPromptForOrganization);
   const canLoad = organizationId != null;
+  const resolving = !canLoad && !organizationRequired;
   return {
     organizationId,
     canLoad,
     organizationRequired,
-    resolving: !canLoad && !organizationRequired,
+    resolving,
+    organizationState: canLoad ? "ready" : resolving ? "resolving" : "required",
   };
 }

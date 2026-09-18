@@ -415,6 +415,23 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-89 (V-22, NEW-1 + NEW-2): the Google surfaces are honest
+  about WHICH of the three organization states they are in.** `AgendaPanel`'s
+  "create a note" press, `GoogleWorkspaceConnectBody`'s connect-in-this-tab and
+  `GoogleWorkspaceOverviewBody`'s enable-capability-in-this-tab each read the
+  selected organization once and refused with a sentence about not having one —
+  a false refusal for the several seconds boot takes to answer. All three now
+  WAIT through `awaitEffectiveOrganizationId` (bounded, no request of its own)
+  and carry its sentence when it settles with nothing; the Overview keeps the
+  connection's own organization first and only waits for the ambient fallback.
+  `GoogleAgentToolsSection` and `ConnectorPromptCard` were already correct — they
+  use the organization as a remount key and a knob scope, never as a refusal —
+  and `calendar/useAgenda.ts` was the one file already reading the three-state
+  hook. NEW-2, the record-open PAGE, is fixed one level up in
+  `features/item-presentation/detail.tsx`: see that file's Change log. Guard:
+  `pnpm check:org-three-states` + `:self-test`, both inside
+  `pnpm check:organization-context`.
+
 - `2026-09-18` — **F-78: the contract pin now names the field this repo actually reads.**
   `scripts/aidream-contract-pin.json` sat at aidream `62fa56114` while these surfaces read
   `record_id` (and `record_sync_status`, `record_sync_status_reason`, `record_absent_reason`)
