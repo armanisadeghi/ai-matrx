@@ -401,6 +401,33 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
 }
 
 /**
+ * 🚨 THE ONE "IS THIS ANSWER TRULY EMPTY" PREDICATE (BUGBOT MEDIUM ON `eb641aee`).
+ *
+ * `GoogleMarketingResultBlock`'s footer says "This read returned no rows" when
+ * nothing else printed — but `UnmodelledPreviews` (above) can now print a
+ * `would_*` change even on a payload that carries none of the read-branch
+ * fields (`verdict`, health flags, `checks`, `containers`, `data`). Before
+ * this, a payload that was ONLY a write preview fell through the read-only
+ * predicate and the footer said "no rows" directly under the change it just
+ * showed — claiming nothing came back in the same breath as showing what
+ * would happen.
+ *
+ * A read counts as substantive when it carries any of the block's own
+ * read-branch content (`otherwiseSubstantive`, computed per block — the
+ * marketing block's verdict/health-flag/checks/containers/data union) OR any
+ * write claim at all (`claim.state !== "none"`): a preview, an approval hold,
+ * an unreadable or contradictory hold, or a receipt. Only `"none"` — no
+ * `would_*`, no hold flag, no completed-write marker — means the tool
+ * genuinely said nothing, which is the one case "no rows" is honest.
+ */
+export function hasSubstantiveContent(
+  claim: WriteClaim,
+  otherwiseSubstantive: boolean,
+): boolean {
+  return otherwiseSubstantive || claim.state !== "none";
+}
+
+/**
  * NOTHING WAS WRITTEN — said first, said plainly, and decided by
  * {@link readWriteClaim} rather than by a flag this component reads itself.
  *

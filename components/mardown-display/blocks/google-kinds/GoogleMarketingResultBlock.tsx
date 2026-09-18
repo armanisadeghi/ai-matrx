@@ -67,6 +67,7 @@ import {
   UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
   hasStatedBounds,
+  hasSubstantiveContent,
   readBlock,
   readRows,
   readWriteClaim,
@@ -212,15 +213,23 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
   ];
   const hasHealthFlag = booleans.some(({ key }) => readBool(value[key]) !== null);
   /**
-   * 🚨 THE FOOTER'S "NO ROWS" SENTENCE IS FOR A TRULY EMPTY READ ONLY (F-95).
-   * The tracking-health read (`tracking_health`) never carries `data`, so
-   * `checks: []`/absent plus a real `verdict` and/or `has_*` flags used to
-   * still fall through this predicate and print "no rows" under a real
-   * answer. A read counts as substantive when it carries a verdict, a
-   * health flag, `checks`, `containers`, or `data` — never "no rows" then.
+   * 🚨 THE FOOTER'S "NO ROWS" SENTENCE IS FOR A TRULY EMPTY READ ONLY (F-95,
+   * extended by BUGBOT MEDIUM on `eb641aee`). The tracking-health read
+   * (`tracking_health`) never carries `data`, so `checks: []`/absent plus a
+   * real `verdict` and/or `has_*` flags used to still fall through this
+   * predicate and print "no rows" under a real answer (F-95). Then
+   * `UnmodelledPreviews` started printing a `would_*` change even when NONE
+   * of the read-branch fields below arrived, and the same predicate missed
+   * that too — the card showed a preview and claimed nothing came back in
+   * the same breath. `hasSubstantiveContent` (`google-result-shared.tsx`)
+   * is the ONE place both halves live: this block's own read-branch union,
+   * OR any write claim at all (`claim.state !== "none"`).
    */
-  const substantiveRead = Boolean(verdict) || hasHealthFlag || Boolean(checks) || Boolean(containers) ||
-    (value.data !== undefined && value.data !== null);
+  const substantiveRead = hasSubstantiveContent(
+    claim,
+    Boolean(verdict) || hasHealthFlag || Boolean(checks) || Boolean(containers) ||
+      (value.data !== undefined && value.data !== null),
+  );
   /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
   const omitKeys = [...PROMOTED, ...claim.previewKeys];
 

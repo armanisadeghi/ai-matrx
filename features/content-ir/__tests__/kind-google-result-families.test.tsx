@@ -506,6 +506,16 @@ const FIXTURES: Fixture[] = [
   // section at all (its six actions are read-only), so EVERY `would_*` on it
   // is unmodelled. RED against f881c9f6: "UNIQUE-UPDATE-MARKER-7c3d" is
   // absent, because `would_update` sat in `omit` with nothing printing it.
+  //
+  // BUGBOT MEDIUM ON eb641aee (the follow-up): `substantiveRead` only ever
+  // looked at `verdict` / health flags / `checks` / `containers` / `data` —
+  // never at the write claim `UnmodelledPreviews` above it now renders. A
+  // payload that is ONLY a write preview (no marketing-read fields at all,
+  // exactly this fixture) fell through that predicate, so the card showed the
+  // preview AND ended with "This read returned no rows for the window above"
+  // in the same breath — claiming nothing came back while showing a change.
+  // RED on eb641aee: that sentence is present here; GREEN once
+  // `hasSubstantiveContent` (`google-result-shared.tsx`) also asks the claim.
   {
     name: "BUGBOT MEDIUM (f881c9f6): the marketing block shows an unmodelled would_update preview, not swallowed",
     kind: MARKETING_KIND,
@@ -523,6 +533,7 @@ const FIXTURES: Fixture[] = [
       "Would update",
       "UNIQUE-UPDATE-MARKER-7c3d",
     ],
+    absent: ["This read returned no rows"],
   },
   // ── V-22's HOSTILE SHAPES (VERIFY-R7-FIX-WAVE, findings NEW-8/10/14) ──────
   //
