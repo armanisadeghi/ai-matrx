@@ -296,7 +296,13 @@ export const SYNC_TERMINAL_TYPES = [
 
 /** §7.2 — the estimate. Nothing paid runs without this having been shown and confirmed. */
 export interface SelectionDescriptor {
-    video_ids?: string[] | null;
+    /**
+     * `media.selection_item.source_row_id` and the transcript association both
+     * use the catalogued Source id. `video_ids` is a different, legacy-shaped
+     * name used only by the classifier endpoint; sending it here makes
+     * Pydantic fall back to an empty Selection, which means the whole Library.
+     */
+    source_ids?: string[] | null;
     filter?: VideoQuery | null;
 }
 

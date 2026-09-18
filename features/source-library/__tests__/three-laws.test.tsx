@@ -264,6 +264,33 @@ describe("A · nothing is spent before a person has seen what it costs", () => {
         expect(createJob).not.toHaveBeenCalled();
     });
 
+    it("one selected captioned Source estimates only that Source with paid work off", async () => {
+        estimateAction.mockResolvedValue({
+            ...ESTIMATE,
+            selected_count: 1,
+            free_count: 1,
+            paid_count: 0,
+            requires_confirmation: false,
+        });
+        mount(<Harness actions={[PAID_ACTION]} />);
+        await flush();
+        act(() => {
+            void runner!.bulkActions[0].run(selectionOfIds(["source-captioned-1"]));
+        });
+        await flush();
+
+        const request = estimateAction.mock.calls[0][2] as {
+            selection: { source_ids: string[] | null; filter: Record<string, unknown> | null };
+            allow_paid: boolean;
+            prefer_lane: string;
+        };
+        expect(request).toMatchObject({
+            selection: { source_ids: ["source-captioned-1"], filter: null },
+            allow_paid: false,
+            prefer_lane: "free_captions",
+        });
+    });
+
     it("the person is shown the server's own numbers, not our arithmetic", async () => {
         estimateAction.mockResolvedValue(ESTIMATE);
         mount(<Harness actions={[PAID_ACTION]} />);
@@ -334,9 +361,9 @@ describe("A · nothing is spent before a person has seen what it costs", () => {
         await flush();
 
         const request = estimateAction.mock.calls[0][2] as {
-            selection: { video_ids: string[] | null; filter: Record<string, unknown> | null };
+            selection: { source_ids: string[] | null; filter: Record<string, unknown> | null };
         };
-        expect(request.selection.video_ids).toBeNull();
+        expect(request.selection.source_ids).toBeNull();
         expect(request.selection.filter).toMatchObject({ media_kind: ["long"] });
     });
 });

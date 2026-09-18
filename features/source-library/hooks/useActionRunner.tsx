@@ -16,7 +16,7 @@
  * `run` is still the promise it is watching.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BadgeDollarSign, Play } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type {
@@ -61,7 +61,7 @@ export function selectionToDescriptor(
 ): SelectionDescriptor {
     if (selection.mode === "matching") {
         return {
-            video_ids: null,
+            source_ids: null,
             filter: toVideoQuery({
                 ...DEFAULT_ENTITY_LIST_QUERY,
                 ...selection.filter,
@@ -69,7 +69,32 @@ export function selectionToDescriptor(
             }),
         };
     }
-    return { video_ids: selection.ids, filter: null };
+    return { source_ids: selection.ids, filter: null };
+}
+
+/**
+ * The Action registry declares these two transcription controls. They are
+ * top-level estimate/job fields, rather than opaque Action params, because the
+ * server freezes them into the durable estimate before it creates a job.
+ *
+ * Free captions with paid fallback off is the safe default. A person can opt
+ * into paid work, but that choice always causes a fresh estimate before Start
+ * becomes available.
+ */
+function transcriptionOptions(
+    action: ActionDeclaration,
+    params: Record<string, unknown>,
+): { allow_paid?: boolean; prefer_lane?: "free_captions" | "paid_agent" } {
+    if (action.key !== "transcribe") return {};
+    return {
+        allow_paid: params.allow_paid === true,
+        prefer_lane: params.prefer_lane === "paid_agent" ? "paid_agent" : "free_captions",
+    };
+}
+
+function initialActionParams(action: ActionDeclaration): Record<string, unknown> {
+    if (action.key !== "transcribe") return {};
+    return { allow_paid: false, prefer_lane: "free_captions" };
 }
 
 export function useActionRunner(
@@ -87,9 +112,51 @@ export function useActionRunner(
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [startedJobIds, setStartedJobIds] = useState<string[]>([]);
+    const estimateSequence = useRef(0);
+
+    const loadEstimate = useCallback(
+        (
+            action: ActionDeclaration,
+            selection: EntityBulkSelection<VideoRow>,
+            nextParams: Record<string, unknown>,
+        ) => {
+            if (!actionNeedsEstimate(action)) return;
+            const sequence = ++estimateSequence.current;
+            setEstimateLoading(true);
+            setEstimate(null);
+            setEstimateError(null);
+            setEstimateRemedy(null);
+            const options = transcriptionOptions(action, nextParams);
+            void estimateAction(dispatch, libraryId, {
+                action: action.key,
+                selection: selectionToDescriptor(selection),
+                ...options,
+                params: nextParams,
+            })
+                .then((result) => {
+                    if (sequence === estimateSequence.current) setEstimate(result);
+                })
+                .catch((error: unknown) => {
+                    if (sequence !== estimateSequence.current) return;
+                    setEstimateError(
+                        error instanceof MediaApiError
+                            ? error.message
+                            : `The cost of running ${action.label.toLowerCase()} on this selection could not be worked out, so nothing was started.`,
+                    );
+                    setEstimateRemedy(
+                        error instanceof MediaApiError ? error.remedy : null,
+                    );
+                })
+                .finally(() => {
+                    if (sequence === estimateSequence.current) setEstimateLoading(false);
+                });
+        },
+        [dispatch, libraryId],
+    );
 
     const close = useCallback(
         (result: EntityBulkActionResult | void) => {
+            estimateSequence.current += 1;
             pending?.resolve(result);
             setPending(null);
             setEstimate(null);
@@ -105,37 +172,24 @@ export function useActionRunner(
     const open = useCallback(
         (action: ActionDeclaration, selection: EntityBulkSelection<VideoRow>) =>
             new Promise<EntityBulkActionResult | void>((resolve) => {
+                const nextParams = initialActionParams(action);
                 setPending({ action, selection, resolve });
                 setEstimate(null);
                 setEstimateError(null);
                 setEstimateRemedy(null);
                 setSubmitError(null);
-                setParams({});
-
-                if (!actionNeedsEstimate(action)) return;
-
-                setEstimateLoading(true);
-                void estimateAction(dispatch, libraryId, {
-                    action: action.key,
-                    selection: selectionToDescriptor(selection),
-                    allow_paid: true,
-                })
-                    .then((result) => {
-                        setEstimate(result);
-                    })
-                    .catch((error: unknown) => {
-                        setEstimateError(
-                            error instanceof MediaApiError
-                                ? error.message
-                                : `The cost of running ${action.label.toLowerCase()} on this selection could not be worked out, so nothing was started.`,
-                        );
-                        setEstimateRemedy(
-                            error instanceof MediaApiError ? error.remedy : null,
-                        );
-                    })
-                    .finally(() => setEstimateLoading(false));
+                setParams(nextParams);
+                loadEstimate(action, selection, nextParams);
             }),
-        [dispatch, libraryId],
+        [loadEstimate],
+    );
+
+    const updateParams = useCallback(
+        (nextParams: Record<string, unknown>) => {
+            setParams(nextParams);
+            if (pending) loadEstimate(pending.action, pending.selection, nextParams);
+        },
+        [loadEstimate, pending],
     );
 
     const confirmRun = useCallback(async () => {
@@ -147,7 +201,7 @@ export function useActionRunner(
                 action: pending.action.key,
                 selection: selectionToDescriptor(pending.selection),
                 estimate_token: estimate?.estimate_token ?? null,
-                allow_paid: (estimate?.paid_count ?? 0) > 0,
+                ...transcriptionOptions(pending.action, params),
                 params,
                 name: `${pending.action.label} ${pending.selection.count} videos`,
             });
@@ -188,7 +242,7 @@ export function useActionRunner(
             estimateError={estimateError}
             estimateRemedy={estimateRemedy}
             params={params}
-            onParamsChange={setParams}
+            onParamsChange={updateParams}
             submitting={submitting}
             submitError={submitError}
             onCancel={() => close(undefined)}
