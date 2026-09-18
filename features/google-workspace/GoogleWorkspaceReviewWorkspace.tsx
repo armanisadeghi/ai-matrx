@@ -171,6 +171,20 @@ export function GoogleWorkspaceReviewWorkspace({
   const [pickerSessionConnectionId, setPickerSessionConnectionId] = useState<
     string | null
   >(null);
+  /**
+   * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
+   * `openRecord.tsx`). `selectedResources` renders from the inventory read
+   * (`users.integration_connection_resources`), which has never carried
+   * `record_id` — that field lives only on the registration response
+   * (`SelectedGoogleFile.recordId`, aidream F-57/R29) — so without this every
+   * file on this bench, including one picked seconds ago, takes the slower
+   * read-then-refresh leg `useOpenGoogleDocumentRecord` falls back to. Keyed by
+   * the picked-resource id, which is stable across the `inventory.refetch()`
+   * that follows registration.
+   */
+  const [freshRecords, setFreshRecords] = useState<
+    Record<string, { record_id: string | null; record_sync_status: string | null }>
+  >({});
 
   const personalConnections = useMemo(
     () =>
@@ -280,6 +294,13 @@ export function GoogleWorkspaceReviewWorkspace({
         activeConnection.id,
         picked.id,
       );
+      setFreshRecords((prev) => ({
+        ...prev,
+        [registered.id]: {
+          record_id: registered.recordId,
+          record_sync_status: registered.recordSyncStatus,
+        },
+      }));
       await inventory.refetch();
       setSelectedResourceId(registered.id);
       recordToast.success(
@@ -748,9 +769,10 @@ export function GoogleWorkspaceReviewWorkspace({
                                 resource.resource_type,
                               ) && (
                                 <OpenGoogleDocumentRecordButton
-                                  resource={pickedGoogleRecordResource(
-                                    resource,
-                                  )}
+                                  resource={pickedGoogleRecordResource({
+                                    ...resource,
+                                    ...freshRecords[resource.id],
+                                  })}
                                   variant="ghost"
                                 />
                               )}

@@ -47,6 +47,37 @@ function booleanValue(record: Record<string, unknown>, key: string): boolean {
   return value;
 }
 
+/** Same contract as `requiredString`, but `null`/absent is a real answer, not a defect. */
+function nullableString(
+  record: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = record[key];
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") {
+    throw new Error(`Google Workspace returned an invalid ${key}.`);
+  }
+  return value;
+}
+
+/**
+ * 🚨 EVERY WRITE CARRIES AN EXPLICIT `organization_id`; NO RESOLVER OR DATABASE
+ * TRIGGER MAY CHOOSE ONE. `registerSelectedGoogleFile`, `createGoogleDocument`
+ * and `createGoogleSheet` all write a `workbench.google_document` Record inside
+ * the same server request (aidream lane F-57, R29) — and the server writes NO
+ * Record at all when the request names no organization, recording
+ * `record_absent_reason` instead. Resolved through the SAME kernel
+ * `organizationContextHeaders` already uses for the header on every one of
+ * these calls: the effective organization, or a loud
+ * `OrganizationContextError` — never a silent send with no organization.
+ */
+function effectiveOrganizationId(): string {
+  const store = getStoreSingleton();
+  return requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+}
+
 async function responseRecord(
   response: Response,
 ): Promise<Record<string, unknown>> {
@@ -130,9 +161,14 @@ export async function registerSelectedGoogleFile(
   connectionId: string,
   fileId: string,
 ): Promise<SelectedGoogleFile> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/files/register",
-    { connection_id: connectionId, file_id: fileId },
+    {
+      connection_id: connectionId,
+      file_id: fileId,
+      organization_id: organizationId,
+    },
     "Unable to register the selected Google file.",
   );
   return selectedFile(await responseRecord(response));
@@ -162,6 +198,10 @@ function selectedFile(body: Record<string, unknown>): SelectedGoogleFile {
     name: requiredString(body, "name"),
     mimeType: requiredString(body, "mime_type"),
     webViewLink,
+    recordId: nullableString(body, "record_id"),
+    recordSyncStatus: nullableString(body, "record_sync_status"),
+    recordSyncStatusReason: nullableString(body, "record_sync_status_reason"),
+    recordAbsentReason: nullableString(body, "record_absent_reason"),
   };
 }
 
@@ -178,9 +218,10 @@ export async function createGoogleDocument(
   title: string,
   text: string,
 ): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/create",
-    { connection_id: connectionId, title, text },
+    { connection_id: connectionId, title, text, organization_id: organizationId },
     "Unable to create the Google Doc.",
   );
   return writeOutcome(response, selectedFile);
@@ -192,9 +233,10 @@ export async function createGoogleSheet(
   title: string,
   values: string[][],
 ): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/create",
-    { connection_id: connectionId, title, values },
+    { connection_id: connectionId, title, values, organization_id: organizationId },
     "Unable to create the Google Sheet.",
   );
   return writeOutcome(response, selectedFile);

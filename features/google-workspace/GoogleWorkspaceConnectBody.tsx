@@ -102,6 +102,20 @@ function GoogleWorkspaceConnectBodyContent({
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(() => initialConnectionId ?? preferredGoogleConnectionId("workspace"));
+  /**
+   * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
+   * `openRecord.tsx`). The inventory row `files` renders from
+   * (`users.integration_connection_resources`) has never carried `record_id` —
+   * that field lives only on the registration response
+   * (`SelectedGoogleFile.recordId`, aidream F-57/R29) — so without this, every
+   * file on this list, including one picked seconds ago, takes the slower
+   * read-then-refresh leg `useOpenGoogleDocumentRecord` falls back to. Keyed by
+   * the picked-resource id, which is stable across the `inventory.refetch()`
+   * that follows registration.
+   */
+  const [freshRecords, setFreshRecords] = useState<
+    Record<string, { record_id: string | null; record_sync_status: string | null }>
+  >({});
 
   const connections = useMemo(
     () =>
@@ -229,6 +243,13 @@ function GoogleWorkspaceConnectBodyContent({
         connection.id,
         picked.id,
       );
+      setFreshRecords((prev) => ({
+        ...prev,
+        [registered.id]: {
+          record_id: registered.recordId,
+          record_sync_status: registered.recordSyncStatus,
+        },
+      }));
       await inventory.refetch();
       onFilesPicked?.([registered]);
       recordToast.success(
@@ -402,7 +423,10 @@ function GoogleWorkspaceConnectBodyContent({
                       */}
                       {hasGoogleDocumentRecord(file.resource_type) ? (
                         <OpenGoogleDocumentRecordButton
-                          resource={pickedGoogleRecordResource(file)}
+                          resource={pickedGoogleRecordResource({
+                            ...file,
+                            ...freshRecords[file.id],
+                          })}
                           variant="ghost"
                           className="ml-auto shrink-0"
                         />

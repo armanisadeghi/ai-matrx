@@ -28,6 +28,25 @@ export interface SelectedGoogleFile {
   name: string;
   mimeType: string;
   webViewLink: string | null;
+  /**
+   * 🚨 THE RECORD THIS REGISTRATION CREATED OR KEPT (aidream F-57, R29 — the
+   * server's `SelectedFileResponse` in `aidream/api/routers/google_workspace.py`).
+   * `id` above is the picked-resource row, the authorization boundary; `recordId`
+   * is the `workbench.google_document` Record that references it, written in the
+   * SAME request through the ONE refresh writer — this is the field
+   * `useOpenGoogleDocumentRecord` (`documents/openRecord.tsx`) opens directly. Null
+   * is never silent: `recordAbsentReason` carries the sentence saying why there is
+   * none (most commonly: the caller sent no `organization_id`).
+   *
+   * Hand-typed: the generated `SelectedFileResponse`
+   * (`types/python-generated/api-types.ts`) does not carry these four fields yet.
+   * Run `pnpm sync-types`, then read them off the generated type instead and
+   * delete this comment.
+   */
+  recordId: string | null;
+  recordSyncStatus: string | null;
+  recordSyncStatusReason: string | null;
+  recordAbsentReason: string | null;
 }
 
 export interface GoogleDocumentContent {

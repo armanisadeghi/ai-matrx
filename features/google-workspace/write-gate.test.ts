@@ -24,12 +24,28 @@
 
 const mockPost = jest.fn();
 
+/** A real uuid, so `requireOrganizationContext`'s shape check passes. */
+const TEST_ORGANIZATION_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+let mockOrganizationId: string | null = TEST_ORGANIZATION_ID;
+
 jest.mock("@/features/marketing/google/service", () => ({
   postGoogleBackend: (...args: unknown[]) => mockPost(...args),
 }));
 jest.mock("@/features/google-workspace/connection", () => ({
   GOOGLE_WORKSPACE_SETTINGS_HREF: "/settings/google",
   resolveGoogleWorkspaceConnection: async () => ({ connectionId: "c1" }),
+}));
+// The three writes that also birth or keep a `workbench.google_document`
+// Record (registerSelectedGoogleFile, documents/create, sheets/create) resolve
+// their `organization_id` through the SAME store-singleton kernel
+// `organizationContextHeaders` already uses for the header — mocked here so it
+// resolves to a real organization rather than throwing
+// `OrganizationContextError`.
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({ getState: () => ({}) }),
+}));
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  selectOrganizationId: () => mockOrganizationId,
 }));
 
 // eslint-disable-next-line import/first -- after the mocks above
@@ -38,6 +54,7 @@ import {
   approvalQueueHref,
   createGoogleDocument,
   createGoogleSheet,
+  registerSelectedGoogleFile,
   writeGoogleSheet,
 } from "@/features/google-workspace/service";
 // eslint-disable-next-line import/first -- after the mocks above
@@ -75,12 +92,20 @@ describe("every direct Google write can come back as a proposal", () => {
       assistId: "11111111-2222-3333-4444-555555555555",
       mode: "mode_4",
     });
+    // 🚨 EVERY WRITE CARRIES AN EXPLICIT organization_id — never a request the
+    // server (or a database trigger) is left to pick one for.
+    expect(mockPost.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ organization_id: TEST_ORGANIZATION_ID }),
+    );
   });
 
   it("sheets/create", async () => {
     mockPost.mockResolvedValue(proposedReply("mode_5"));
     const outcome = await createGoogleSheet("c1", "T", [["a"]]);
     expect(outcome.proposed).toBe(true);
+    expect(mockPost.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ organization_id: TEST_ORGANIZATION_ID }),
+    );
   });
 
   it("documents/append", async () => {
@@ -111,6 +136,52 @@ describe("every direct Google write can come back as a proposal", () => {
     const outcome = await createGoogleDocument("c1", "Q3 retro", "body");
     expect(outcome.proposed).toBe(false);
     if (!outcome.proposed) expect(outcome.result.name).toBe("Q3 retro");
+  });
+
+  /**
+   * 🚨 F-74 — the parser keeps the Record the registration wrote (aidream F-57,
+   * R29), instead of dropping it on the floor. Red on HEAD: `SelectedGoogleFile`
+   * carried no `recordId`/`recordSyncStatus` fields at all, so a caller holding
+   * this answer had nothing to hand `useOpenGoogleDocumentRecord`.
+   */
+  it("keeps the record the registration wrote — recordId and its sync status", async () => {
+    mockPost.mockResolvedValue({
+      status: 200,
+      json: async () => ({
+        id: "r1",
+        connection_id: "c1",
+        resource_type: "google_document",
+        file_id: "doc-1",
+        name: "Q3 retro",
+        mime_type: "application/vnd.google-apps.document",
+        web_view_link: "https://docs.google.com/document/d/doc-1",
+        record_id: "record-1",
+        record_sync_status: "available",
+        record_sync_status_reason: null,
+        record_absent_reason: null,
+      }),
+    } as unknown as Response);
+    const outcome = await createGoogleDocument("c1", "Q3 retro", "body");
+    expect(outcome.proposed).toBe(false);
+    if (outcome.proposed) throw new Error("unreachable");
+    expect(outcome.result.recordId).toBe("record-1");
+    expect(outcome.result.recordSyncStatus).toBe("available");
+    expect(outcome.result.recordAbsentReason).toBeNull();
+  });
+
+  /**
+   * 🚨 F-74 — a call site with no organization in reach fails loudly, BEFORE any
+   * network call: it never sends the request without one (Law: every write
+   * carries an explicit `organization_id`; no resolver picks one).
+   */
+  it("registerSelectedGoogleFile refuses to send with no organization in reach — no request is sent", async () => {
+    mockOrganizationId = null;
+    mockPost.mockClear();
+    await expect(
+      registerSelectedGoogleFile("c1", "file-1"),
+    ).rejects.toThrow(/select an organization/i);
+    expect(mockPost).not.toHaveBeenCalled();
+    mockOrganizationId = TEST_ORGANIZATION_ID;
   });
 
   it("REFUSES a 202 that does not say which approval, rather than reporting success", async () => {
