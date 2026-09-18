@@ -273,7 +273,7 @@ begin
   if v_body not like '%12.5%%' then
     raise exception 'REC-68: the margin Field carries format percent, and the document says: %', v_body;
   end if;
-  if v_body not like '%03 November 2026%' then
+  if v_body not like '%3 November 2026%' then
     raise exception 'REC-68: the due Field carries format date, and the document says: %', v_body;
   end if;
   -- The fourth: a Field with NO unit and NO format prints its plain value, so the three
